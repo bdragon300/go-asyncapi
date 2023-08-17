@@ -17,8 +17,7 @@ linters:
     - gocritic
     - govet
     - staticcheck
-    - structcheck
-    - varcheck
+    - unused
     - errname
 linters-settings:
   govet:
