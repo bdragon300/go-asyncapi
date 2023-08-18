@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/bdragon300/asyncapi-codegen/internal/scancontext"
+	"github.com/bdragon300/asyncapi-codegen/internal/scanner"
 	"github.com/dave/jennifer/jen"
 	"github.com/samber/lo"
 )
@@ -100,7 +100,7 @@ func (f *Field) renderDefinition() []*jen.Statement {
 	if f.Type.canBePointer() && f.RequiredValue {
 		stmt = stmt.Op("*")
 	}
-	items := lo.Map(f.Type.(scancontext.LangRenderer).RenderUsage(), func(item *jen.Statement, index int) jen.Code { return item })
+	items := lo.Map(f.Type.(scanner.LangRenderer).RenderUsage(), func(item *jen.Statement, index int) jen.Code { return item })
 	res = append(res, stmt.Add(items...))
 
 	return res
@@ -122,7 +122,7 @@ func (a *Array) RenderDefinition() []*jen.Statement {
 	}
 
 	stmt := jen.Type().Id(a.Name).Index()
-	items := lo.Map(a.ItemsType.(scancontext.LangRenderer).RenderUsage(), func(item *jen.Statement, index int) jen.Code { return item })
+	items := lo.Map(a.ItemsType.(scanner.LangRenderer).RenderUsage(), func(item *jen.Statement, index int) jen.Code { return item })
 	res = append(res, stmt.Add(items...))
 
 	return res
@@ -133,7 +133,7 @@ func (a *Array) RenderUsage() []*jen.Statement {
 		return []*jen.Statement{jen.Id(a.Name)}
 	}
 
-	items := lo.Map(a.ItemsType.(scancontext.LangRenderer).RenderUsage(), func(item *jen.Statement, index int) jen.Code { return item })
+	items := lo.Map(a.ItemsType.(scanner.LangRenderer).RenderUsage(), func(item *jen.Statement, index int) jen.Code { return item })
 	return []*jen.Statement{jen.Index().Add(items...)}
 }
 
@@ -154,7 +154,7 @@ func (m *Map) RenderDefinition() []*jen.Statement {
 	}
 
 	stmt := jen.Type().Id(m.Name).Map(jen.Id(m.KeyType))
-	items := lo.Map(m.ValueType.(scancontext.LangRenderer).RenderUsage(), func(item *jen.Statement, index int) jen.Code { return item })
+	items := lo.Map(m.ValueType.(scanner.LangRenderer).RenderUsage(), func(item *jen.Statement, index int) jen.Code { return item })
 	res = append(res, stmt.Add(items...))
 
 	return res
@@ -165,7 +165,7 @@ func (m *Map) RenderUsage() []*jen.Statement {
 		return []*jen.Statement{jen.Id(m.Name)}
 	}
 
-	items := lo.Map(m.ValueType.(scancontext.LangRenderer).RenderUsage(), func(item *jen.Statement, index int) jen.Code { return item })
+	items := lo.Map(m.ValueType.(scanner.LangRenderer).RenderUsage(), func(item *jen.Statement, index int) jen.Code { return item })
 	return []*jen.Statement{jen.Map(jen.Id(m.KeyType)).Add(items...)}
 }
 
@@ -231,15 +231,15 @@ func (a *Any) RenderUsage() []*jen.Statement {
 
 type TypeBindWrapper struct {
 	BaseType
-	RefQuery *scancontext.RefQuery[LangType]
+	RefQuery *scanner.RefQuery[LangType]
 }
 
 func (r TypeBindWrapper) RenderDefinition() []*jen.Statement {
-	return r.RefQuery.Link.(scancontext.LangRenderer).RenderDefinition()
+	return r.RefQuery.Link.(scanner.LangRenderer).RenderDefinition()
 }
 
 func (r TypeBindWrapper) RenderUsage() []*jen.Statement {
-	return r.RefQuery.Link.(scancontext.LangRenderer).RenderUsage()
+	return r.RefQuery.Link.(scanner.LangRenderer).RenderUsage()
 }
 
 func (r TypeBindWrapper) canBePointer() bool {

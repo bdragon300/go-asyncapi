@@ -1,24 +1,22 @@
-package builder
+package scanner
 
 import (
 	"reflect"
 	"strconv"
 	"strings"
-
-	"github.com/bdragon300/asyncapi-codegen/internal/scancontext"
 )
 
 const tagName = "cgen"
 
-type Builder interface {
-	Build(ctx *scancontext.Context) error
+type builder interface {
+	Build(ctx *Context) error
 }
 
-func WalkSchema(ctx *scancontext.Context, object reflect.Value) error {
+func WalkSchema(ctx *Context, object reflect.Value) error {
 	objectTyp := object.Type()
 
-	gather := func(_ctx *scancontext.Context, _obj reflect.Value) error {
-		if v, ok := _obj.Interface().(Builder); ok {
+	gather := func(_ctx *Context, _obj reflect.Value) error {
+		if v, ok := _obj.Interface().(builder); ok {
 			if (_obj.Kind() == reflect.Pointer || _obj.Kind() == reflect.Interface) && _obj.IsNil() {
 				return nil
 			}
@@ -45,7 +43,7 @@ func WalkSchema(ctx *scancontext.Context, object reflect.Value) error {
 			ctx.Pop()
 		}
 	case reflect.Map:
-		iter := object.MapRange()
+		iter := object.MapRange() // TODO: keep the same order
 		for iter.Next() {
 			pushStack(ctx, iter.Key().String(), ctx.Top().Flags)
 			if err := gather(ctx, iter.Value()); err != nil {
@@ -84,11 +82,11 @@ func parseTags(field reflect.StructField) (tags map[string]string) {
 	return
 }
 
-func pushStack(ctx *scancontext.Context, pathItem string, flags map[string]string) {
+func pushStack(ctx *Context, pathItem string, flags map[string]string) {
 	if flags == nil {
 		flags = make(map[string]string)
 	}
-	item := scancontext.ContextStackItem{
+	item := ContextStackItem{
 		Path:  pathItem,
 		Flags: flags,
 	}

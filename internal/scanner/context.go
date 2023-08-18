@@ -1,14 +1,9 @@
-package scancontext
+package scanner
 
 import (
+	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"github.com/dave/jennifer/jen"
 	"github.com/samber/lo"
-)
-
-type BucketKind int
-
-const (
-	BucketLangType BucketKind = iota
 )
 
 type LangRenderer interface {
@@ -30,7 +25,7 @@ type ContextStackItem struct {
 }
 
 type Context struct {
-	Buckets map[BucketKind]Bucket
+	Buckets map[common.BucketKind]Bucket
 	Stack   []ContextStackItem
 	RefMgr  *RefManager
 }

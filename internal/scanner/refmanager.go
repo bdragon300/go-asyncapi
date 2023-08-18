@@ -1,7 +1,8 @@
-package scancontext
+package scanner
 
 import (
 	"fmt"
+	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"strings"
 )
 
@@ -11,14 +12,14 @@ type RefQuerier interface {
 }
 
 func NewRefManager() *RefManager {
-	return &RefManager{refs: make(map[BucketKind][]RefQuerier)}
+	return &RefManager{refs: make(map[common.BucketKind][]RefQuerier)}
 }
 
 type RefManager struct {
-	refs map[BucketKind][]RefQuerier
+	refs map[common.BucketKind][]RefQuerier
 }
 
-func (m *RefManager) Add(refQuery RefQuerier, fromBucket BucketKind) {
+func (m *RefManager) Add(refQuery RefQuerier, fromBucket common.BucketKind) {
 	if _, ok := m.refs[fromBucket]; !ok {
 		m.refs[fromBucket] = nil
 	}

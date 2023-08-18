@@ -3,10 +3,11 @@ package schema
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"strings"
 
-	"github.com/bdragon300/asyncapi-codegen/internal/lang/types"
-	"github.com/bdragon300/asyncapi-codegen/internal/scancontext"
+	"github.com/bdragon300/asyncapi-codegen/internal/assets/types"
+	"github.com/bdragon300/asyncapi-codegen/internal/scanner"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
@@ -60,22 +61,22 @@ type Object struct {
 	UniqueItems          *bool                                      `json:"uniqueItems" yaml:"uniqueItems"`
 }
 
-func (o Object) Build(ctx *scancontext.Context) error {
+func (o Object) Build(ctx *scanner.Context) error {
 	langObj, err := buildLangType(ctx, o, ctx.Top().Flags)
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
 	}
-	ctx.Buckets[scancontext.BucketLangType].Put(ctx, langObj.(scancontext.LangRenderer))
+	ctx.Buckets[common.BucketLangType].Put(ctx, langObj.(scanner.LangRenderer))
 	return nil
 }
 
-func buildLangType(ctx *scancontext.Context, schema Object, flags map[string]string) (types.LangType, error) {
+func buildLangType(ctx *scanner.Context, schema Object, flags map[string]string) (types.LangType, error) {
 	if schema.Ref != "" {
 		res := &types.TypeBindWrapper{
 			BaseType: types.BaseType{Inline: true},
-			RefQuery: scancontext.NewRefQuery[types.LangType](ctx, schema.Ref),
+			RefQuery: scanner.NewRefQuery[types.LangType](ctx, schema.Ref),
 		}
-		ctx.RefMgr.Add(res.RefQuery, scancontext.BucketLangType)
+		ctx.RefMgr.Add(res.RefQuery, common.BucketLangType)
 		return res, nil
 	}
 
@@ -168,7 +169,7 @@ func inspectMultiType(schemaType []string) (typ string, nullable bool) {
 	}
 }
 
-func buildLangStruct(ctx *scancontext.Context, schema Object, flags map[string]string) (*types.Struct, error) {
+func buildLangStruct(ctx *scanner.Context, schema Object, flags map[string]string) (*types.Struct, error) {
 	_, noInline := flags["noinline"]
 	res := types.Struct{
 		BaseType: types.BaseType{
@@ -251,7 +252,7 @@ func buildLangStruct(ctx *scancontext.Context, schema Object, flags map[string]s
 	return &res, nil
 }
 
-func buildLangArray(ctx *scancontext.Context, schema Object, flags map[string]string) (*types.Array, error) {
+func buildLangArray(ctx *scanner.Context, schema Object, flags map[string]string) (*types.Array, error) {
 	_, noInline := flags["noinline"]
 	res := types.Array{
 		BaseType: types.BaseType{
@@ -295,7 +296,7 @@ func getFieldName(srcName string) string {
 	return utils.NormalizeGolangName(srcName)
 }
 
-func getTypeName(ctx *scancontext.Context, title, suffix string) string {
+func getTypeName(ctx *scanner.Context, title, suffix string) string {
 	n := title
 	if n == "" {
 		n = strings.Join(ctx.PathStack(), pathSep)

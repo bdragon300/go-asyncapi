@@ -1,4 +1,4 @@
-package scancontext
+package scanner
 
 func NewRefQuery[T any](ctx *Context, ref string) *RefQuery[T] {
 	return &RefQuery[T]{
