@@ -2,6 +2,7 @@ package renderer
 
 import (
 	"bytes"
+	"embed"
 	"errors"
 	"html/template"
 	"path"
@@ -16,7 +17,7 @@ type ModelsTplArgs struct {
 	Definitions string
 }
 
-func RenderTypes(bucket *types.LangTypeBucket, tplDir string) (files map[string]bytes.Buffer, err error) {
+func RenderTypes(bucket *types.LangTypeBucket, tplDir embed.FS) (files map[string]bytes.Buffer, err error) {
 	var defBuilder strings.Builder
 
 	names := make(map[string]scanner.LangRenderer)
@@ -43,22 +44,21 @@ func RenderTypes(bucket *types.LangTypeBucket, tplDir string) (files map[string]
 		return
 	}
 
-	tplBuilder, err := renderTemplate(tplDir, "types/models.gotmpl", ModelsTplArgs{Definitions: defBuilder.String()})
+	tplBuilder, err := renderTemplate(tplDir, "models/models.gotmpl", ModelsTplArgs{Definitions: defBuilder.String()})
 	if err != nil {
 		return
 	}
 
 	files = map[string]bytes.Buffer{
-		"models.go": tplBuilder,
+		"models/models.go": tplBuilder,
 	}
 
 	return
 }
 
-func renderTemplate(tplDir, tplName string, tplArgs any) (bytes.Buffer, error) {
+func renderTemplate(tplFS embed.FS, tplPath string, tplArgs any) (bytes.Buffer, error) {
 	var buf bytes.Buffer
-	tplFileName := path.Join(tplDir, tplName)
-	tpl, err := template.New("models.gotmpl").ParseFiles(tplFileName)
+	tpl, err := template.New(path.Base(tplPath)).ParseFS(tplFS, path.Join(path.Dir(tplPath), "*.gotmpl"))
 	if err != nil {
 		return buf, err
 	}
