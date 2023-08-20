@@ -2,18 +2,17 @@ package main
 
 import (
 	"fmt"
+	"github.com/bdragon300/asyncapi-codegen/internal/buckets"
 	"io"
 	"os"
 	"path"
 	"reflect"
 
 	"github.com/alexflint/go-arg"
-	"github.com/bdragon300/asyncapi-codegen/internal/assets/types"
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"github.com/bdragon300/asyncapi-codegen/internal/renderer"
 	"github.com/bdragon300/asyncapi-codegen/internal/scanner"
 	"github.com/bdragon300/asyncapi-codegen/internal/schema"
-	"github.com/bdragon300/asyncapi-codegen/templates"
 	"gopkg.in/yaml.v3"
 )
 
@@ -49,9 +48,9 @@ func main() {
 		panic(err)
 	}
 
-	typeBucket := types.LangTypeBucket{}
+	typeBucket := buckets.Schema{}
 	scanBuckets := map[common.BucketKind]scanner.Bucket{
-		common.BucketLangType: &typeBucket,
+		common.BucketSchema: &typeBucket,
 	}
 	scanCtx := scanner.Context{Buckets: scanBuckets, RefMgr: scanner.NewRefManager()}
 	if err = scanner.WalkSchema(&scanCtx, reflect.ValueOf(specBuf)); err != nil {
@@ -64,23 +63,16 @@ func main() {
 		panic(err)
 	}
 
-	files, err := renderer.RenderTypes(&typeBucket, templates.Content)
+	files, err := renderer.RenderTypes(&typeBucket, cliArgs.OutDir)
 	if err != nil {
 		panic(err)
 	}
-	for fileName, buf := range files {
+	for fileName, fileObj := range files {
 		fullPath := path.Join(cliArgs.OutDir, fileName)
 		if err = ensureDir(path.Dir(fullPath)); err != nil {
 			panic(err)
 		}
-
-		f, err = os.OpenFile(fullPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
-		if err != nil {
-			panic(err)
-		}
-		_, err = f.ReadFrom(&buf)
-		_ = f.Close()
-		if err != nil {
+		if err = fileObj.Save(fullPath); err != nil {
 			panic(err)
 		}
 	}

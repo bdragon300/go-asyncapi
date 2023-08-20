@@ -1,24 +1,20 @@
 package renderer
 
 import (
-	"bytes"
-	"embed"
-	"errors"
-	"html/template"
-	"path"
-	"strconv"
-	"strings"
-
-	"github.com/bdragon300/asyncapi-codegen/internal/assets/types"
+	"github.com/bdragon300/asyncapi-codegen/internal/buckets"
 	"github.com/bdragon300/asyncapi-codegen/internal/scanner"
+	"github.com/dave/jennifer/jen"
 )
 
 type ModelsTplArgs struct {
 	Definitions string
 }
 
-func RenderTypes(bucket *types.LangTypeBucket, tplDir embed.FS) (files map[string]bytes.Buffer, err error) {
-	var defBuilder strings.Builder
+func RenderTypes(bucket *buckets.Schema, baseDir string) (files map[string]*jen.File, err error) {
+	modelsGo := jen.NewFilePathName(baseDir, "models") // FIXME: basedir is actually package path
+	if err != nil {
+		return
+	}
 
 	names := make(map[string]scanner.LangRenderer)
 	var itemsToRender []scanner.LangRenderer
@@ -34,38 +30,16 @@ func RenderTypes(bucket *types.LangTypeBucket, tplDir embed.FS) (files map[strin
 	for _, item := range itemsToRender {
 		rendered := item.RenderDefinition()
 		for _, stmt := range rendered {
-			if e := stmt.Render(&defBuilder); e != nil {
-				err = errors.Join(err, e)
-			}
-			defBuilder.WriteRune('\n')
+			modelsGo.Add(stmt)
 		}
-	}
-	if err != nil {
-		return
+		modelsGo.Add(jen.Line())
 	}
 
-	tplBuilder, err := renderTemplate(tplDir, "models/models.gotmpl", ModelsTplArgs{Definitions: defBuilder.String()})
-	if err != nil {
-		return
-	}
-
-	files = map[string]bytes.Buffer{
-		"models/models.go": tplBuilder,
+	files = map[string]*jen.File{
+		"models/models.go": modelsGo,
 	}
 
 	return
-}
-
-func renderTemplate(tplFS embed.FS, tplPath string, tplArgs any) (bytes.Buffer, error) {
-	var buf bytes.Buffer
-	tpl, err := template.New(path.Base(tplPath)).ParseFS(tplFS, path.Join(path.Dir(tplPath), "*.gotmpl"))
-	if err != nil {
-		return buf, err
-	}
-	if err = tpl.Execute(&buf, tplArgs); err != nil {
-		return buf, err
-	}
-	return buf, nil
 }
 
 func getUniqueName(typ scanner.LangRenderer, names map[string]scanner.LangRenderer) string {

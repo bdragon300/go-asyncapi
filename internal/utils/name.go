@@ -24,3 +24,10 @@ func NormalizeGolangName(srcName string) string {
 
 	return strcase.UpperCamelCase(srcName)
 }
+
+func ToLowerFirstLetter(s string) string {
+	if s == "" {
+		return ""
+	}
+	return strings.ToLower(string(s[0])) + s[1:]
+}

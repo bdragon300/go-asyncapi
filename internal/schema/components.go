@@ -1,5 +1,9 @@
 package schema
 
+import (
+	"github.com/bdragon300/asyncapi-codegen/internal/utils"
+)
+
 type ComponentsItem struct {
-	Schemas map[string]Object `json:"schemas" yaml:"schemas" cgen:"noinline"`
+	Schemas utils.OrderedMap[string, Object] `json:"schemas" yaml:"schemas" cgen:"noinline"`
 }

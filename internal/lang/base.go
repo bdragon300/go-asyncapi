@@ -1,7 +1,8 @@
-package types
+package lang
 
 import (
 	"github.com/bdragon300/asyncapi-codegen/internal/scanner"
+	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	"github.com/dave/jennifer/jen"
 	"github.com/samber/lo"
 )
@@ -34,78 +35,6 @@ func (b *BaseType) SkipRender() bool {
 	return b.Inline
 }
 
-// Struct defines the data required to generate a struct in Go.
-type Struct struct {
-	BaseType
-	Fields map[string]Field
-
-	// Render config
-	Nullable bool // When struct is built from type: ["object", "null"]
-}
-
-func (s *Struct) canBePointer() bool {
-	return !s.Nullable
-}
-
-func (s *Struct) RenderDefinition() []*jen.Statement {
-	var res []*jen.Statement
-	if s.Description != "" {
-		res = append(res, jen.Comment(s.Name+" "+s.Description))
-	}
-	var structFields []jen.Code
-	for _, f := range s.Fields {
-		items := lo.Map(f.renderDefinition(), func(item *jen.Statement, index int) jen.Code { return item })
-		structFields = append(structFields, items...)
-	}
-
-	stmt := jen.Type().Id(s.Name).Struct(structFields...)
-	res = append(res, stmt)
-
-	return res
-}
-
-func (s *Struct) RenderUsage() []*jen.Statement {
-	stmt := &jen.Statement{}
-	if s.Nullable {
-		stmt = stmt.Op("*")
-	}
-	if !s.Inline {
-		return []*jen.Statement{stmt.Id(s.Name)}
-	}
-
-	var structFields []jen.Code
-	for _, f := range s.Fields {
-		items := lo.Map(f.renderDefinition(), func(item *jen.Statement, index int) jen.Code { return item })
-		structFields = append(structFields, items...)
-	}
-	return []*jen.Statement{stmt.Struct(structFields...)}
-}
-
-// Field defines the data required to generate a field in Go.
-type Field struct {
-	Name          string
-	Description   string
-	Type          LangType
-	RequiredValue bool
-	Tags          map[string]string
-}
-
-func (f *Field) renderDefinition() []*jen.Statement {
-	var res []*jen.Statement
-	if f.Description != "" {
-		res = append(res, jen.Comment(f.Name+" "+f.Description))
-	}
-
-	stmt := jen.Id(f.Name)
-	if f.Type.canBePointer() && f.RequiredValue {
-		stmt = stmt.Op("*")
-	}
-	items := lo.Map(f.Type.(scanner.LangRenderer).RenderUsage(), func(item *jen.Statement, index int) jen.Code { return item })
-	res = append(res, stmt.Add(items...))
-
-	return res
-}
-
 type Array struct {
 	BaseType
 	ItemsType LangType
@@ -118,7 +47,7 @@ func (a *Array) canBePointer() bool {
 func (a *Array) RenderDefinition() []*jen.Statement {
 	var res []*jen.Statement
 	if a.Description != "" {
-		res = append(res, jen.Comment(a.Name+" "+a.Description))
+		res = append(res, jen.Comment(a.Name+" -- "+utils.ToLowerFirstLetter(a.Description)))
 	}
 
 	stmt := jen.Type().Id(a.Name).Index()
@@ -150,7 +79,7 @@ func (m *Map) canBePointer() bool {
 func (m *Map) RenderDefinition() []*jen.Statement {
 	var res []*jen.Statement
 	if m.Description != "" {
-		res = append(res, jen.Comment(m.Name+" "+m.Description))
+		res = append(res, jen.Comment(m.Name+" -- "+utils.ToLowerFirstLetter(m.Description)))
 	}
 
 	stmt := jen.Type().Id(m.Name).Map(jen.Id(m.KeyType))
@@ -184,7 +113,7 @@ func (p *PrimitiveType) canBePointer() bool {
 func (p *PrimitiveType) RenderDefinition() []*jen.Statement {
 	var res []*jen.Statement
 	if p.Description != "" {
-		res = append(res, jen.Comment(p.Name+" "+p.Description))
+		res = append(res, jen.Comment(p.Name+" -- "+utils.ToLowerFirstLetter(p.Description)))
 	}
 
 	res = append(res, jen.Type().Id(p.Name).Id(p.LangType))
@@ -214,7 +143,7 @@ func (a *Any) canBePointer() bool {
 func (a *Any) RenderDefinition() []*jen.Statement {
 	var res []*jen.Statement
 	if a.Description != "" {
-		res = append(res, jen.Comment(a.Name+" "+a.Description))
+		res = append(res, jen.Comment(a.Name+" -- "+utils.ToLowerFirstLetter(a.Description)))
 	}
 
 	res = append(res, jen.Type().Id(a.Name).Any())

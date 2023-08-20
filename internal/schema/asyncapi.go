@@ -1,12 +1,16 @@
 package schema
 
+import (
+	"github.com/bdragon300/asyncapi-codegen/internal/utils"
+)
+
 type AsyncAPI struct {
 	Asyncapi           string                 `json:"asyncapi" yaml:"asyncapi"`
 	ID                 string                 `json:"id" yaml:"id"`
 	Info               InfoItem               `json:"info" yaml:"info"`
 	Servers            ServerItem             `json:"servers" yaml:"servers"`
 	DefaultContentType string                 `json:"defaultContentType" yaml:"defaultContentType"`
-	Channels           map[string]ChannelItem `json:"channels" yaml:"channels"`
+	Channels           utils.OrderedMap[string, ChannelItem] `json:"channels" yaml:"channels"`
 	Components         ComponentsItem         `json:"components" yaml:"components"`
 	Tags               []TagItem              `json:"tags" yaml:"tags"`
 	ExternalDocs       ExternalDocsItem       `json:"externalDocs" yaml:"externalDocs"`

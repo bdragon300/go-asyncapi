@@ -12,6 +12,10 @@ type builder interface {
 	Build(ctx *Context) error
 }
 
+type orderedMap interface {
+	OrderedMap()
+}
+
 func WalkSchema(ctx *Context, object reflect.Value) error {
 	objectTyp := object.Type()
 
@@ -25,6 +29,21 @@ func WalkSchema(ctx *Context, object reflect.Value) error {
 			}
 		}
 		return WalkSchema(_ctx, _obj)
+	}
+
+	if _, ok := object.Interface().(orderedMap); ok {
+		mKeys := object.MethodByName("Keys")
+		keys := mKeys.Call(nil)[0]
+		mMustGet := object.MethodByName("MustGet")
+		for j := 0; j < keys.Len(); j++ {
+			key := keys.Index(j)
+			val := mMustGet.Call([]reflect.Value{key})[0]
+			pushStack(ctx, key.String(), ctx.Top().Flags)
+			if err := gather(ctx, val); err != nil {
+				return err
+			}
+			ctx.Pop()
+		}
 	}
 
 	switch object.Kind() {
@@ -43,14 +62,7 @@ func WalkSchema(ctx *Context, object reflect.Value) error {
 			ctx.Pop()
 		}
 	case reflect.Map:
-		iter := object.MapRange() // TODO: keep the same order
-		for iter.Next() {
-			pushStack(ctx, iter.Key().String(), ctx.Top().Flags)
-			if err := gather(ctx, iter.Value()); err != nil {
-				return err
-			}
-			ctx.Pop()
-		}
+		panic("Use OrderedMap instead!")
 	case reflect.Array, reflect.Slice:
 		for j := 0; j < object.Len(); j++ {
 			pushStack(ctx, strconv.Itoa(j), ctx.Top().Flags)

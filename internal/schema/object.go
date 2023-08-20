@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
+	"github.com/bdragon300/asyncapi-codegen/internal/lang"
 	"strings"
 
-	"github.com/bdragon300/asyncapi-codegen/internal/assets/types"
 	"github.com/bdragon300/asyncapi-codegen/internal/scanner"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	"github.com/samber/lo"
@@ -26,7 +26,7 @@ type Object struct {
 	Const                *utils.Union2[json.RawMessage, yaml.Node]  `json:"const" yaml:"const"`
 	Contains             *Object                                    `json:"contains" yaml:"contains"`
 	Default              *utils.Union2[json.RawMessage, yaml.Node]  `json:"default" yaml:"default"`
-	Definitions          map[string]Object                          `json:"definitions" yaml:"definitions"`
+	Definitions          utils.OrderedMap[string, Object]           `json:"definitions" yaml:"definitions"`
 	Deprecated           *bool                                      `json:"deprecated" yaml:"deprecated"`
 	Description          string                                     `json:"description" yaml:"description"`
 	Discriminator        string                                     `json:"discriminator" yaml:"discriminator"`
@@ -51,8 +51,8 @@ type Object struct {
 	Not                  *Object                                    `json:"not" yaml:"not"`
 	OneOf                []Object                                   `json:"oneOf" yaml:"oneOf"`
 	Pattern              string                                     `json:"pattern" yaml:"pattern"`
-	PatternProperties    map[string]Object                          `json:"patternProperties" yaml:"patternProperties"`
-	Properties           map[string]Object                          `json:"properties" yaml:"properties"`
+	PatternProperties    utils.OrderedMap[string, Object]           `json:"patternProperties" yaml:"patternProperties"`
+	Properties           utils.OrderedMap[string, Object]           `json:"properties" yaml:"properties"`
 	PropertyNames        *Object                                    `json:"propertyNames" yaml:"propertyNames"`
 	ReadOnly             *bool                                      `json:"readOnly" yaml:"readOnly"`
 	Required             []string                                   `json:"required" yaml:"required"`
@@ -66,17 +66,17 @@ func (o Object) Build(ctx *scanner.Context) error {
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
 	}
-	ctx.Buckets[common.BucketLangType].Put(ctx, langObj.(scanner.LangRenderer))
+	ctx.Buckets[common.BucketSchema].Put(ctx, langObj.(scanner.LangRenderer))
 	return nil
 }
 
-func buildLangType(ctx *scanner.Context, schema Object, flags map[string]string) (types.LangType, error) {
+func buildLangType(ctx *scanner.Context, schema Object, flags map[string]string) (lang.LangType, error) {
 	if schema.Ref != "" {
-		res := &types.TypeBindWrapper{
-			BaseType: types.BaseType{Inline: true},
-			RefQuery: scanner.NewRefQuery[types.LangType](ctx, schema.Ref),
+		res := &lang.TypeBindWrapper{
+			BaseType: lang.BaseType{Inline: true},
+			RefQuery: scanner.NewRefQuery[lang.LangType](ctx, schema.Ref),
 		}
-		ctx.RefMgr.Add(res.RefQuery, common.BucketLangType)
+		ctx.RefMgr.Add(res.RefQuery, common.BucketSchema)
 		return res, nil
 	}
 
@@ -84,7 +84,7 @@ func buildLangType(ctx *scanner.Context, schema Object, flags map[string]string)
 
 	schemaType := schema.Type
 	typ := schemaType.V0
-	nullable := false
+	nullable := false             // TODO: x-nullable
 	if schemaType.Selector == 1 { // Multiple types, e.g. { "type": [ "object", "array", "null" ] }
 		typ, nullable = inspectMultiType(schemaType.V1)
 	}
@@ -108,8 +108,8 @@ func buildLangType(ctx *scanner.Context, schema Object, flags map[string]string)
 		}
 		return res, nil
 	case "null", "":
-		return &types.Any{
-			BaseType: types.BaseType{
+		return &lang.Any{
+			BaseType: lang.BaseType{
 				DefaultName: getTypeName(ctx, schema.Title, ""),
 				Description: schema.Description,
 				Inline:      !noInline,
@@ -129,8 +129,8 @@ func buildLangType(ctx *scanner.Context, schema Object, flags map[string]string)
 		return nil, fmt.Errorf("unknown jsonschema type %q", typ)
 	}
 
-	return &types.PrimitiveType{
-		BaseType: types.BaseType{
+	return &lang.PrimitiveType{
+		BaseType: lang.BaseType{
 			DefaultName: getTypeName(ctx, schema.Title, ""),
 			Description: schema.Description,
 			Inline:      !noInline,
@@ -143,7 +143,7 @@ func buildLangType(ctx *scanner.Context, schema Object, flags map[string]string)
 // fixMissingTypeValue is backwards compatible, guessing the users intention when they didn't specify a type.
 func fixMissingTypeValue(s *Object) {
 	if s.Type == nil {
-		if s.Ref == "" && len(s.Properties) > 0 {
+		if s.Ref == "" && s.Properties.Len() > 0 {
 			s.Type = utils.ToUnion2[string, []string]("object")
 			return
 		}
@@ -169,32 +169,32 @@ func inspectMultiType(schemaType []string) (typ string, nullable bool) {
 	}
 }
 
-func buildLangStruct(ctx *scanner.Context, schema Object, flags map[string]string) (*types.Struct, error) {
+func buildLangStruct(ctx *scanner.Context, schema Object, flags map[string]string) (*lang.Struct, error) {
 	_, noInline := flags["noinline"]
-	res := types.Struct{
-		BaseType: types.BaseType{
+	res := lang.Struct{
+		BaseType: lang.BaseType{
 			DefaultName: getTypeName(ctx, schema.Title, ""),
 			Description: schema.Description,
 			Inline:      !noInline,
 		},
-		Fields: make(map[string]types.Field),
+		Fields: make([]lang.StructField, 0),
 	}
 	// TODO: cache the object name in case any sub-schemas recursively reference it
 
 	// regular properties
-	for propKey, prop := range schema.Properties {
-		langObj, err := buildLangType(ctx, prop, map[string]string{})
+	for _, key := range schema.Properties.Keys() {
+		langObj, err := buildLangType(ctx, schema.Properties.MustGet(key), map[string]string{})
 		if err != nil {
 			return nil, err
 		}
-		f := types.Field{
-			Name:          getFieldName(propKey),
+		f := lang.StructField{
+			Name:          getFieldName(key),
 			Type:          langObj,
-			RequiredValue: lo.Contains(schema.Required, propKey),
+			RequiredValue: lo.Contains(schema.Required, key),
 			Tags:          nil, // TODO
-			Description:   prop.Description,
+			Description:   schema.Properties.MustGet(key).Description,
 		}
-		res.Fields[f.Name] = f
+		res.Fields = append(res.Fields, f)
 	}
 
 	// additionalProperties with typed sub-schema
@@ -205,10 +205,10 @@ func buildLangStruct(ctx *scanner.Context, schema Object, flags map[string]strin
 			if err != nil {
 				return nil, err
 			}
-			f := types.Field{
+			f := lang.StructField{
 				Name: "AdditionalProperties",
-				Type: &types.Map{
-					BaseType: types.BaseType{
+				Type: &lang.Map{
+					BaseType: lang.BaseType{
 						DefaultName: getTypeName(ctx, schema.Title, "AdditionalProperties"),
 						Description: schema.AdditionalProperties.V0.Description,
 						Inline:      true,
@@ -220,20 +220,20 @@ func buildLangStruct(ctx *scanner.Context, schema Object, flags map[string]strin
 				Tags:          nil, // TODO
 				Description:   schema.AdditionalProperties.V0.Description,
 			}
-			res.Fields[f.Name] = f
+			res.Fields = append(res.Fields, f)
 		case 1:
 			if schema.AdditionalProperties.V1 { // "additionalProperties: true" -- allow any additional properties
-				valTyp := types.Any{
-					BaseType: types.BaseType{
+				valTyp := lang.Any{
+					BaseType: lang.BaseType{
 						DefaultName: getTypeName(ctx, schema.Title, "AdditionalPropertiesValue"),
 						Description: "",
 						Inline:      true,
 					},
 				}
-				f := types.Field{
+				f := lang.StructField{
 					Name: "AdditionalProperties",
-					Type: &types.Map{
-						BaseType: types.BaseType{
+					Type: &lang.Map{
+						BaseType: lang.BaseType{
 							DefaultName: getTypeName(ctx, schema.Title, "AdditionalProperties"),
 							Description: "",
 							Inline:      true,
@@ -244,7 +244,7 @@ func buildLangStruct(ctx *scanner.Context, schema Object, flags map[string]strin
 					RequiredValue: false,
 					Tags:          nil, // TODO
 				}
-				res.Fields[f.Name] = f
+				res.Fields = append(res.Fields, f)
 			}
 		}
 	}
@@ -252,10 +252,10 @@ func buildLangStruct(ctx *scanner.Context, schema Object, flags map[string]strin
 	return &res, nil
 }
 
-func buildLangArray(ctx *scanner.Context, schema Object, flags map[string]string) (*types.Array, error) {
+func buildLangArray(ctx *scanner.Context, schema Object, flags map[string]string) (*lang.Array, error) {
 	_, noInline := flags["noinline"]
-	res := types.Array{
-		BaseType: types.BaseType{
+	res := lang.Array{
+		BaseType: lang.BaseType{
 			DefaultName: getTypeName(ctx, schema.Title, ""),
 			Description: schema.Description,
 			Inline:      !noInline,
@@ -271,15 +271,15 @@ func buildLangArray(ctx *scanner.Context, schema Object, flags map[string]string
 		}
 		res.ItemsType = langObj
 	case schema.Items == nil || schema.Items.Selector == 1: // No items or Several types for each item sequentially
-		valTyp := types.Any{
-			BaseType: types.BaseType{
+		valTyp := lang.Any{
+			BaseType: lang.BaseType{
 				DefaultName: getTypeName(ctx, schema.Title, "ItemsItemValue"),
 				Description: "",
 				Inline:      true,
 			},
 		}
-		res.ItemsType = &types.Map{
-			BaseType: types.BaseType{
+		res.ItemsType = &lang.Map{
+			BaseType: lang.BaseType{
 				DefaultName: getTypeName(ctx, schema.Title, "ItemsItem"),
 				Description: "",
 				Inline:      true,
