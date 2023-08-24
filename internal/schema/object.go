@@ -3,11 +3,12 @@ package schema
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bdragon300/asyncapi-codegen/internal/common"
-	"github.com/bdragon300/asyncapi-codegen/internal/lang"
 	"strings"
 
-	"github.com/bdragon300/asyncapi-codegen/internal/scanner"
+	"github.com/bdragon300/asyncapi-codegen/internal/common"
+	"github.com/bdragon300/asyncapi-codegen/internal/lang"
+
+	"github.com/bdragon300/asyncapi-codegen/internal/scan"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
@@ -16,9 +17,7 @@ import (
 const pathSep = "_"
 
 type Object struct {
-	Ref  string                          `json:"$ref" yaml:"$ref"`
-	Type *utils.Union2[string, []string] `json:"type" yaml:"type"`
-
+	Type                 *utils.Union2[string, []string]            `json:"type" yaml:"type"`
 	AdditionalItems      *utils.Union2[Object, bool]                `json:"additionalItems" yaml:"additionalItems"`
 	AdditionalProperties *utils.Union2[Object, bool]                `json:"additionalProperties" yaml:"additionalProperties"`
 	AllOf                []Object                                   `json:"allOf" yaml:"allOf"`
@@ -59,24 +58,26 @@ type Object struct {
 	Then                 *Object                                    `json:"then" yaml:"then"`
 	Title                string                                     `json:"title" yaml:"title"`
 	UniqueItems          *bool                                      `json:"uniqueItems" yaml:"uniqueItems"`
+
+	Ref string `json:"$ref" yaml:"$ref"`
 }
 
-func (o Object) Build(ctx *scanner.Context) error {
+func (o Object) Build(ctx *scan.Context) error {
 	langObj, err := buildLangType(ctx, o, ctx.Top().Flags)
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
 	}
-	ctx.Buckets[common.BucketSchema].Put(ctx, langObj.(scanner.LangRenderer))
+	ctx.CurrentPackage().Put(ctx, langObj)
 	return nil
 }
 
-func buildLangType(ctx *scanner.Context, schema Object, flags map[string]string) (lang.LangType, error) {
+func buildLangType(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]string) (lang.LangType, error) {
 	if schema.Ref != "" {
-		res := &lang.TypeBindWrapper{
-			BaseType: lang.BaseType{Inline: true},
-			RefQuery: scanner.NewRefQuery[lang.LangType](ctx, schema.Ref),
+		res := &lang.DeferTypeRenderer{
+			Package:  common.ModelsPackageKind,
+			RefQuery: scan.NewRefQuery[lang.LangType](ctx, schema.Ref),
 		}
-		ctx.RefMgr.Add(res.RefQuery, common.BucketSchema)
+		ctx.RefMgr.Add(res.RefQuery, common.ModelsPackageKind)
 		return res, nil
 	}
 
@@ -89,7 +90,7 @@ func buildLangType(ctx *scanner.Context, schema Object, flags map[string]string)
 		typ, nullable = inspectMultiType(schemaType.V1)
 	}
 
-	_, noInline := flags["noinline"]
+	_, noInline := flags[scan.SchemaTagNoInline]
 	// TODO: "type": { "enum": [ "residential", "business" ] }
 	// One type: { "type": "object" }
 	langTyp := ""
@@ -108,12 +109,13 @@ func buildLangType(ctx *scanner.Context, schema Object, flags map[string]string)
 		}
 		return res, nil
 	case "null", "":
-		return &lang.Any{
+		return &lang.TypeAlias{
 			BaseType: lang.BaseType{
-				DefaultName: getTypeName(ctx, schema.Title, ""),
+				Name:        getTypeName(ctx, schema.Title, ""),
 				Description: schema.Description,
-				Inline:      !noInline,
+				Render:      noInline,
 			},
+			AliasedType: &lang.Simple{TypeName: "any"},
 		}, nil
 	case "boolean":
 		langTyp = "bool"
@@ -129,14 +131,14 @@ func buildLangType(ctx *scanner.Context, schema Object, flags map[string]string)
 		return nil, fmt.Errorf("unknown jsonschema type %q", typ)
 	}
 
-	return &lang.PrimitiveType{
+	return &lang.TypeAlias{
 		BaseType: lang.BaseType{
-			DefaultName: getTypeName(ctx, schema.Title, ""),
+			Name:        getTypeName(ctx, schema.Title, ""),
 			Description: schema.Description,
-			Inline:      !noInline,
+			Render:      noInline,
 		},
-		LangType: langTyp,
-		Nullable: nullable,
+		AliasedType: &lang.Simple{TypeName: langTyp},
+		Nullable:    nullable,
 	}, nil
 }
 
@@ -169,13 +171,13 @@ func inspectMultiType(schemaType []string) (typ string, nullable bool) {
 	}
 }
 
-func buildLangStruct(ctx *scanner.Context, schema Object, flags map[string]string) (*lang.Struct, error) {
-	_, noInline := flags["noinline"]
+func buildLangStruct(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]string) (*lang.Struct, error) {
+	_, noInline := flags[scan.SchemaTagNoInline]
 	res := lang.Struct{
 		BaseType: lang.BaseType{
-			DefaultName: getTypeName(ctx, schema.Title, ""),
+			Name:        getTypeName(ctx, schema.Title, ""),
 			Description: schema.Description,
-			Inline:      !noInline,
+			Render:      noInline,
 		},
 		Fields: make([]lang.StructField, 0),
 	}
@@ -183,7 +185,7 @@ func buildLangStruct(ctx *scanner.Context, schema Object, flags map[string]strin
 
 	// regular properties
 	for _, key := range schema.Properties.Keys() {
-		langObj, err := buildLangType(ctx, schema.Properties.MustGet(key), map[string]string{})
+		langObj, err := buildLangType(ctx, schema.Properties.MustGet(key), map[scan.SchemaTag]string{})
 		if err != nil {
 			return nil, err
 		}
@@ -201,7 +203,7 @@ func buildLangStruct(ctx *scanner.Context, schema Object, flags map[string]strin
 	if schema.AdditionalProperties != nil {
 		switch schema.AdditionalProperties.Selector {
 		case 0: // "additionalProperties:" is an object
-			langObj, err := buildLangType(ctx, schema.AdditionalProperties.V0, map[string]string{})
+			langObj, err := buildLangType(ctx, schema.AdditionalProperties.V0, map[scan.SchemaTag]string{})
 			if err != nil {
 				return nil, err
 			}
@@ -209,11 +211,11 @@ func buildLangStruct(ctx *scanner.Context, schema Object, flags map[string]strin
 				Name: "AdditionalProperties",
 				Type: &lang.Map{
 					BaseType: lang.BaseType{
-						DefaultName: getTypeName(ctx, schema.Title, "AdditionalProperties"),
+						Name:        getTypeName(ctx, schema.Title, "AdditionalProperties"),
 						Description: schema.AdditionalProperties.V0.Description,
-						Inline:      true,
+						Render:      false,
 					},
-					KeyType:   "string",
+					KeyType:   &lang.Simple{TypeName: "string"},
 					ValueType: langObj,
 				},
 				RequiredValue: false,
@@ -223,22 +225,23 @@ func buildLangStruct(ctx *scanner.Context, schema Object, flags map[string]strin
 			res.Fields = append(res.Fields, f)
 		case 1:
 			if schema.AdditionalProperties.V1 { // "additionalProperties: true" -- allow any additional properties
-				valTyp := lang.Any{
+				valTyp := lang.TypeAlias{
 					BaseType: lang.BaseType{
-						DefaultName: getTypeName(ctx, schema.Title, "AdditionalPropertiesValue"),
+						Name:        getTypeName(ctx, schema.Title, "AdditionalPropertiesValue"),
 						Description: "",
-						Inline:      true,
+						Render:      false,
 					},
+					AliasedType: &lang.Simple{TypeName: "any"},
 				}
 				f := lang.StructField{
 					Name: "AdditionalProperties",
 					Type: &lang.Map{
 						BaseType: lang.BaseType{
-							DefaultName: getTypeName(ctx, schema.Title, "AdditionalProperties"),
+							Name:        getTypeName(ctx, schema.Title, "AdditionalProperties"),
 							Description: "",
-							Inline:      true,
+							Render:      false,
 						},
-						KeyType:   "string",
+						KeyType:   &lang.Simple{TypeName: "string"},
 						ValueType: &valTyp,
 					},
 					RequiredValue: false,
@@ -252,13 +255,13 @@ func buildLangStruct(ctx *scanner.Context, schema Object, flags map[string]strin
 	return &res, nil
 }
 
-func buildLangArray(ctx *scanner.Context, schema Object, flags map[string]string) (*lang.Array, error) {
-	_, noInline := flags["noinline"]
+func buildLangArray(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]string) (*lang.Array, error) {
+	_, noInline := flags[scan.SchemaTagNoInline]
 	res := lang.Array{
 		BaseType: lang.BaseType{
-			DefaultName: getTypeName(ctx, schema.Title, ""),
+			Name:        getTypeName(ctx, schema.Title, ""),
 			Description: schema.Description,
-			Inline:      !noInline,
+			Render:      noInline,
 		},
 		ItemsType: nil,
 	}
@@ -271,20 +274,21 @@ func buildLangArray(ctx *scanner.Context, schema Object, flags map[string]string
 		}
 		res.ItemsType = langObj
 	case schema.Items == nil || schema.Items.Selector == 1: // No items or Several types for each item sequentially
-		valTyp := lang.Any{
+		valTyp := lang.TypeAlias{
 			BaseType: lang.BaseType{
-				DefaultName: getTypeName(ctx, schema.Title, "ItemsItemValue"),
+				Name:        getTypeName(ctx, schema.Title, "ItemsItemValue"),
 				Description: "",
-				Inline:      true,
+				Render:      false,
 			},
+			AliasedType: &lang.Simple{TypeName: "any"},
 		}
 		res.ItemsType = &lang.Map{
 			BaseType: lang.BaseType{
-				DefaultName: getTypeName(ctx, schema.Title, "ItemsItem"),
+				Name:        getTypeName(ctx, schema.Title, "ItemsItem"),
 				Description: "",
-				Inline:      true,
+				Render:      false,
 			},
-			KeyType:   "string",
+			KeyType:   &lang.Simple{TypeName: "string"},
 			ValueType: &valTyp,
 		}
 	}
@@ -296,7 +300,7 @@ func getFieldName(srcName string) string {
 	return utils.NormalizeGolangName(srcName)
 }
 
-func getTypeName(ctx *scanner.Context, title, suffix string) string {
+func getTypeName(ctx *scan.Context, title, suffix string) string {
 	n := title
 	if n == "" {
 		n = strings.Join(ctx.PathStack(), pathSep)

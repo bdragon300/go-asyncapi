@@ -1,33 +1,27 @@
-package scanner
+package scan
 
 import (
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
-	"github.com/dave/jennifer/jen"
+	"github.com/bdragon300/asyncapi-codegen/internal/render"
 	"github.com/samber/lo"
 )
 
-type LangRenderer interface {
-	SkipRender() bool
-	PrepareRender(name string)
-	RenderDefinition() []*jen.Statement
-	RenderUsage() []*jen.Statement
-	GetDefaultName() string
-}
-
-type Bucket interface {
-	Put(ctx *Context, item LangRenderer)
-	Find(path []string) (LangRenderer, bool)
+type Package interface {
+	Put(ctx *Context, item render.LangRenderer)
+	Find(path []string) (render.LangRenderer, bool)
+	MustFind(path []string) render.LangRenderer
 }
 
 type ContextStackItem struct {
-	Path  string
-	Flags map[string]string
+	Path        string
+	Flags       map[SchemaTag]string
+	PackageKind common.PackageKind
 }
 
 type Context struct {
-	Buckets map[common.BucketKind]Bucket
-	Stack   []ContextStackItem
-	RefMgr  *RefManager
+	Packages map[common.PackageKind]Package
+	Stack    []ContextStackItem
+	RefMgr   *RefManager
 }
 
 func (c *Context) Push(item ContextStackItem) {
@@ -47,6 +41,10 @@ func (c *Context) Top() ContextStackItem {
 	return c.Stack[len(c.Stack)-1]
 }
 
+func (c *Context) CurrentPackage() Package {
+	return c.Packages[c.Top().PackageKind]
+}
+
 func (c *Context) PathStack() []string {
 	return lo.Map(c.Stack, func(item ContextStackItem, _ int) string { return item.Path })
 }
@@ -56,8 +54,8 @@ func (c *Context) Copy() *Context {
 	copy(stack, c.Stack)
 
 	return &Context{
-		Buckets: nil,
-		Stack:   stack,
-		RefMgr:  c.RefMgr,
+		Packages: nil,
+		Stack:    stack,
+		RefMgr:   c.RefMgr,
 	}
 }

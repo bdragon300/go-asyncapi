@@ -2,16 +2,17 @@ package main
 
 import (
 	"fmt"
-	"github.com/bdragon300/asyncapi-codegen/internal/buckets"
 	"io"
 	"os"
 	"path"
 	"reflect"
 
-	"github.com/alexflint/go-arg"
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
-	"github.com/bdragon300/asyncapi-codegen/internal/renderer"
-	"github.com/bdragon300/asyncapi-codegen/internal/scanner"
+	"github.com/bdragon300/asyncapi-codegen/internal/packages"
+	"github.com/samber/lo"
+
+	"github.com/alexflint/go-arg"
+	"github.com/bdragon300/asyncapi-codegen/internal/scan"
 	"github.com/bdragon300/asyncapi-codegen/internal/schema"
 	"gopkg.in/yaml.v3"
 )
@@ -48,12 +49,14 @@ func main() {
 		panic(err)
 	}
 
-	typeBucket := buckets.Schema{}
-	scanBuckets := map[common.BucketKind]scanner.Bucket{
-		common.BucketSchema: &typeBucket,
+	modelsBucket := packages.ModelsPackage{}
+	messageBucket := packages.MessagePackage{}
+	scanPackages := map[common.PackageKind]scan.Package{
+		common.ModelsPackageKind:  &modelsBucket,
+		common.MessagePackageKind: &messageBucket,
 	}
-	scanCtx := scanner.Context{Buckets: scanBuckets, RefMgr: scanner.NewRefManager()}
-	if err = scanner.WalkSchema(&scanCtx, reflect.ValueOf(specBuf)); err != nil {
+	scanCtx := scan.Context{Packages: scanPackages, RefMgr: scan.NewRefManager()}
+	if err = scan.WalkSchema(&scanCtx, reflect.ValueOf(specBuf)); err != nil {
 		panic(err)
 	}
 
@@ -63,10 +66,15 @@ func main() {
 		panic(err)
 	}
 
-	files, err := renderer.RenderTypes(&typeBucket, cliArgs.OutDir)
+	files1, err := packages.RenderModels(&modelsBucket, cliArgs.OutDir)
 	if err != nil {
 		panic(err)
 	}
+	files2, err := packages.RenderMessages(&messageBucket, cliArgs.OutDir)
+	if err != nil {
+		panic(err)
+	}
+	files := lo.Assign(files1, files2)
 	for fileName, fileObj := range files {
 		fullPath := path.Join(cliArgs.OutDir, fileName)
 		if err = ensureDir(path.Dir(fullPath)); err != nil {

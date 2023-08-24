@@ -1,74 +1,94 @@
 package lang
 
 import (
-	"github.com/bdragon300/asyncapi-codegen/internal/scanner"
+	"fmt"
+	"strings"
+
+	"github.com/bdragon300/asyncapi-codegen/internal/render"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	"github.com/dave/jennifer/jen"
-	"github.com/samber/lo"
 )
 
 type LangType interface {
+	render.LangRenderer
 	// canBePointer returns true if a pointer may be applied yet to a type during rendering. E.g. types that are
 	// already pointers can't be pointed the second time -- this function returns false
 	canBePointer() bool
+	GetName() string
 }
 
 type BaseType struct {
 	Name        string
-	DefaultName string
 	Description string
 
-	// Inline type will be inlined on usage rendering, otherwise it will be declared as a separate type.
+	Imports map[string]string
+
+	// Render denotes if this type must be rendered separately. Otherwise, it will only be inlined in a parent definition
 	// Such as inlined `field struct{...}` and separate `field StructName`, or `field []type` and `field ArrayName`
-	Inline bool
+	Render bool
 }
 
-func (b *BaseType) PrepareRender(name string) {
-	b.Name = name
+func (b *BaseType) AllowRender() bool {
+	return b.Render
 }
 
-func (b *BaseType) GetDefaultName() string {
-	return b.DefaultName
+func (b *BaseType) GetName() string {
+	return b.Name
 }
 
-func (b *BaseType) SkipRender() bool {
-	return b.Inline
+func (b *BaseType) AdditionalImports() map[string]string {
+	return b.Imports
+	// return lo.Assign(lo.Map(b.MethodSnippets, func(item DefinitionSnippet, index int) map[string]string {
+	//	return item.Imports
+	// })...)
 }
 
 type Array struct {
 	BaseType
 	ItemsType LangType
+	Size      int
 }
 
 func (a *Array) canBePointer() bool {
 	return false
 }
 
-func (a *Array) RenderDefinition() []*jen.Statement {
+func (a *Array) RenderDefinition(ctx *render.Context) []*jen.Statement {
 	var res []*jen.Statement
 	if a.Description != "" {
 		res = append(res, jen.Comment(a.Name+" -- "+utils.ToLowerFirstLetter(a.Description)))
 	}
 
-	stmt := jen.Type().Id(a.Name).Index()
-	items := lo.Map(a.ItemsType.(scanner.LangRenderer).RenderUsage(), func(item *jen.Statement, index int) jen.Code { return item })
+	stmt := jen.Type().Id(a.Name)
+	if a.Size > 0 {
+		stmt = stmt.Index(jen.Lit(a.Size))
+	} else {
+		stmt = stmt.Index()
+	}
+	items := utils.CastSliceItems[*jen.Statement, jen.Code](a.ItemsType.RenderUsage(ctx))
 	res = append(res, stmt.Add(items...))
+	// res = append(res, lo.FlatMap(a.MethodSnippets, func(item DefinitionSnippet, index int) []*jen.Statement {
+	//	return item.renderDefinitions(a)
+	// })...)
 
 	return res
 }
 
-func (a *Array) RenderUsage() []*jen.Statement {
-	if !a.Inline {
+func (a *Array) RenderUsage(ctx *render.Context) []*jen.Statement {
+	if a.Render {
+		if ctx.ForceImportPackage != "" {
+			return []*jen.Statement{jen.Qual(ctx.ForceImportPackage, a.Name)}
+		}
 		return []*jen.Statement{jen.Id(a.Name)}
 	}
 
-	items := lo.Map(a.ItemsType.(scanner.LangRenderer).RenderUsage(), func(item *jen.Statement, index int) jen.Code { return item })
+	items := utils.CastSliceItems[*jen.Statement, jen.Code](a.ItemsType.RenderUsage(ctx))
 	return []*jen.Statement{jen.Index().Add(items...)}
 }
 
 type Map struct {
 	BaseType
-	KeyType   string
+	KeyType   LangType
 	ValueType LangType
 }
 
@@ -76,101 +96,119 @@ func (m *Map) canBePointer() bool {
 	return false
 }
 
-func (m *Map) RenderDefinition() []*jen.Statement {
+func (m *Map) RenderDefinition(ctx *render.Context) []*jen.Statement {
 	var res []*jen.Statement
 	if m.Description != "" {
 		res = append(res, jen.Comment(m.Name+" -- "+utils.ToLowerFirstLetter(m.Description)))
 	}
 
-	stmt := jen.Type().Id(m.Name).Map(jen.Id(m.KeyType))
-	items := lo.Map(m.ValueType.(scanner.LangRenderer).RenderUsage(), func(item *jen.Statement, index int) jen.Code { return item })
-	res = append(res, stmt.Add(items...))
+	stmt := jen.Type().Id(m.Name)
+	keyType := utils.CastSliceItems[*jen.Statement, jen.Code](m.KeyType.RenderUsage(ctx))
+	valueType := utils.CastSliceItems[*jen.Statement, jen.Code](m.ValueType.RenderUsage(ctx))
+	res = append(res, stmt.Map((&jen.Statement{}).Add(keyType...)).Add(valueType...))
+	// res = append(res, lo.FlatMap(m.MethodSnippets, func(item DefinitionSnippet, index int) []*jen.Statement {
+	//	return item.renderDefinitions(m)
+	// })...)
 
 	return res
 }
 
-func (m *Map) RenderUsage() []*jen.Statement {
-	if !m.Inline {
+func (m *Map) RenderUsage(ctx *render.Context) []*jen.Statement {
+	if m.Render {
+		if ctx.ForceImportPackage != "" {
+			return []*jen.Statement{jen.Qual(ctx.ForceImportPackage, m.Name)}
+		}
 		return []*jen.Statement{jen.Id(m.Name)}
 	}
 
-	items := lo.Map(m.ValueType.(scanner.LangRenderer).RenderUsage(), func(item *jen.Statement, index int) jen.Code { return item })
-	return []*jen.Statement{jen.Map(jen.Id(m.KeyType)).Add(items...)}
+	keyType := utils.CastSliceItems[*jen.Statement, jen.Code](m.KeyType.RenderUsage(ctx))
+	valueType := utils.CastSliceItems[*jen.Statement, jen.Code](m.ValueType.RenderUsage(ctx))
+	return []*jen.Statement{jen.Map((&jen.Statement{}).Add(keyType...)).Add(valueType...)}
 }
 
-type PrimitiveType struct {
+type TypeAlias struct {
 	BaseType
-	LangType string
+	AliasedType LangType
 
 	// Render config
 	Nullable bool
 }
 
-func (p *PrimitiveType) canBePointer() bool {
+func (p *TypeAlias) canBePointer() bool {
 	return !p.Nullable
 }
 
-func (p *PrimitiveType) RenderDefinition() []*jen.Statement {
+func (p *TypeAlias) RenderDefinition(ctx *render.Context) []*jen.Statement {
 	var res []*jen.Statement
 	if p.Description != "" {
 		res = append(res, jen.Comment(p.Name+" -- "+utils.ToLowerFirstLetter(p.Description)))
 	}
 
-	res = append(res, jen.Type().Id(p.Name).Id(p.LangType))
+	aliasedStmt := utils.CastSliceItems[*jen.Statement, jen.Code](p.AliasedType.RenderDefinition(ctx))
+	res = append(res, jen.Type().Id(p.Name).Add(aliasedStmt...))
+	// res = append(res, lo.FlatMap(p.MethodSnippets, func(item DefinitionSnippet, index int) []*jen.Statement {
+	//	return item.renderDefinitions(p)
+	// })...)
 	return res
 }
 
-func (p *PrimitiveType) RenderUsage() []*jen.Statement {
+func (p *TypeAlias) RenderUsage(ctx *render.Context) []*jen.Statement {
 	stmt := &jen.Statement{}
 	if p.Nullable {
 		stmt = stmt.Op("*")
 	}
-	if !p.Inline {
+	if p.Render {
+		if ctx.ForceImportPackage != "" {
+			return []*jen.Statement{jen.Qual(ctx.ForceImportPackage, p.Name)}
+		}
 		return []*jen.Statement{stmt.Id(p.Name)}
 	}
 
-	return []*jen.Statement{stmt.Id(p.LangType)}
+	aliasedStmt := utils.CastSliceItems[*jen.Statement, jen.Code](p.AliasedType.RenderUsage(ctx))
+	return []*jen.Statement{stmt.Add(aliasedStmt...)}
 }
 
-type Any struct {
-	BaseType
+type Simple struct {
+	TypeName   string // type name with or without package name, such as "json.Marshal" or "string"
+	ImportPath string // optional import path, such as "encoding/json"
 }
 
-func (a *Any) canBePointer() bool {
+func (p Simple) AllowRender() bool {
 	return false
 }
 
-func (a *Any) RenderDefinition() []*jen.Statement {
-	var res []*jen.Statement
-	if a.Description != "" {
-		res = append(res, jen.Comment(a.Name+" -- "+utils.ToLowerFirstLetter(a.Description)))
+func (p Simple) RenderDefinition(*render.Context) []*jen.Statement {
+	if p.ImportPath != "" {
+		return []*jen.Statement{jen.Qual(p.ImportPath, p.TypeName)}
 	}
-
-	res = append(res, jen.Type().Id(a.Name).Any())
-	return res
+	return []*jen.Statement{jen.Id(p.TypeName)}
 }
 
-func (a *Any) RenderUsage() []*jen.Statement {
-	if !a.Inline {
-		return []*jen.Statement{jen.Id(a.Name)}
+func (p Simple) RenderUsage(ctx *render.Context) []*jen.Statement {
+	if p.ImportPath != "" {
+		if ctx.ForceImportPackage != "" {
+			return []*jen.Statement{jen.Qual(ctx.ForceImportPackage, p.TypeName)}
+		}
+		return []*jen.Statement{jen.Qual(p.ImportPath, p.TypeName)}
 	}
-
-	return []*jen.Statement{jen.Any()}
+	return []*jen.Statement{jen.Id(p.TypeName)}
 }
 
-type TypeBindWrapper struct {
-	BaseType
-	RefQuery *scanner.RefQuery[LangType]
+func (p Simple) AdditionalImports() map[string]string {
+	if p.ImportPath != "" {
+		parts := strings.Split(p.ImportPath, "/")
+		if len(parts) < 2 {
+			panic(fmt.Sprintf("Wrong import path %q", p.ImportPath))
+		}
+		return map[string]string{p.ImportPath: parts[len(parts)-1]}
+	}
+	return nil
 }
 
-func (r TypeBindWrapper) RenderDefinition() []*jen.Statement {
-	return r.RefQuery.Link.(scanner.LangRenderer).RenderDefinition()
+func (p Simple) canBePointer() bool {
+	return false
 }
 
-func (r TypeBindWrapper) RenderUsage() []*jen.Statement {
-	return r.RefQuery.Link.(scanner.LangRenderer).RenderUsage()
-}
-
-func (r TypeBindWrapper) canBePointer() bool {
-	return r.RefQuery.Link.canBePointer()
+func (p Simple) GetName() string {
+	return ""
 }

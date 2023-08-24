@@ -1,7 +1,9 @@
 package lang
 
 import (
-	"github.com/bdragon300/asyncapi-codegen/internal/scanner"
+	"fmt"
+
+	"github.com/bdragon300/asyncapi-codegen/internal/render"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	"github.com/dave/jennifer/jen"
 	"github.com/samber/lo"
@@ -10,8 +12,7 @@ import (
 // Struct defines the data required to generate a struct in Go.
 type Struct struct {
 	BaseType
-	Fields  []StructField
-	Methods []StructMethod
+	Fields []StructField
 
 	// Render config
 	Nullable bool
@@ -21,38 +22,49 @@ func (s *Struct) canBePointer() bool {
 	return !s.Nullable
 }
 
-func (s *Struct) RenderDefinition() []*jen.Statement {
+func (s *Struct) RenderDefinition(ctx *render.Context) []*jen.Statement {
 	var res []*jen.Statement
 	if s.Description != "" {
 		res = append(res, jen.Comment(s.Name+" -- "+utils.ToLowerFirstLetter(s.Description)))
 	}
-	var structFields []jen.Code
-	for _, f := range s.Fields {
-		items := lo.Map(f.renderDefinition(), func(item *jen.Statement, index int) jen.Code { return item })
-		structFields = append(structFields, items...)
-	}
 
-	stmt := jen.Type().Id(s.Name).Struct(structFields...)
-	res = append(res, stmt)
+	var code []jen.Code
+	for _, f := range s.Fields {
+		items := utils.CastSliceItems[*jen.Statement, jen.Code](f.renderDefinition(ctx))
+		code = append(code, items...)
+	}
+	res = append(res, jen.Type().Id(s.Name).Struct(code...))
 
 	return res
 }
 
-func (s *Struct) RenderUsage() []*jen.Statement {
+func (s *Struct) RenderUsage(ctx *render.Context) []*jen.Statement {
 	stmt := &jen.Statement{}
 	if s.Nullable {
 		stmt = stmt.Op("*")
 	}
-	if !s.Inline {
+	if s.AllowRender() {
+		if ctx.ForceImportPackage != "" {
+			return []*jen.Statement{jen.Qual(ctx.ForceImportPackage, s.Name)}
+		}
 		return []*jen.Statement{stmt.Id(s.Name)}
 	}
 
-	var structFields []jen.Code
+	var code []jen.Code
 	for _, f := range s.Fields {
-		items := lo.Map(f.renderDefinition(), func(item *jen.Statement, index int) jen.Code { return item })
-		structFields = append(structFields, items...)
+		items := utils.CastSliceItems[*jen.Statement, jen.Code](f.renderDefinition(ctx))
+		code = append(code, items...)
 	}
-	return []*jen.Statement{stmt.Struct(structFields...)}
+
+	return []*jen.Statement{stmt.Struct(code...)}
+}
+
+func (s *Struct) MustFindField(name string) StructField {
+	res, ok := lo.Find(s.Fields, func(item StructField) bool { return item.Name == name })
+	if !ok {
+		panic(fmt.Sprintf("Field %s.%s not found", s.Name, name))
+	}
+	return res
 }
 
 // StructField defines the data required to generate a field in Go.
@@ -60,11 +72,11 @@ type StructField struct {
 	Name          string
 	Description   string
 	Type          LangType
-	RequiredValue bool
+	RequiredValue bool // TODO: maybe create lang.Pointer?
 	Tags          map[string]string
 }
 
-func (f *StructField) renderDefinition() []*jen.Statement {
+func (f *StructField) renderDefinition(ctx *render.Context) []*jen.Statement {
 	var res []*jen.Statement
 	if f.Description != "" {
 		res = append(res, jen.Comment(f.Name+" -- "+utils.ToLowerFirstLetter(f.Description)))
@@ -74,78 +86,13 @@ func (f *StructField) renderDefinition() []*jen.Statement {
 	if f.Type.canBePointer() && f.RequiredValue {
 		stmt = stmt.Op("*")
 	}
-	items := lo.Map(f.Type.(scanner.LangRenderer).RenderUsage(), func(item *jen.Statement, index int) jen.Code { return item })
+	items := utils.CastSliceItems[*jen.Statement, jen.Code](f.Type.RenderUsage(ctx))
 	res = append(res, stmt.Add(items...))
 
 	return res
 }
 
-type StructMethod struct {
-	Name            string
-	Description     string
-	ReceiverName    string
-	PointerReceiver bool
-	Parameters      map[string]LangType
-	ReturnType      map[string]LangType
-	Body            MethodBody
-}
-
-func (s *StructMethod) renderDefinition(strct *Struct) []*jen.Statement {
-	var res []*jen.Statement
-	if s.Description != "" {
-		res = append(res, jen.Comment(s.Name+" -- "+utils.ToLowerFirstLetter(s.Description)))
-	}
-	stmt := jen.Func()
-
-	// Receiver
-	receiver := jen.Id(s.ReceiverName)
-	if s.PointerReceiver {
-		receiver = receiver.Op("*")
-	}
-	stmt = stmt.Params(receiver.Id(strct.Name)).Id(s.Name)
-
-	// Parameters
-	var code []jen.Code
-	for _, param := range s.Parameters {
-		items := lo.Map(param.(scanner.LangRenderer).RenderUsage(), func(item *jen.Statement, index int) jen.Code { return item })
-		code = append(code, items...)
-	}
-	stmt = stmt.Params(code...)
-	code = code[:0]
-
-	// Return value
-	for _, ret := range s.ReturnType {
-		items := lo.Map(ret.(scanner.LangRenderer).RenderUsage(), func(item *jen.Statement, index int) jen.Code { return item })
-		code = append(code, items...)
-	}
-	if len(code) > 1 {
-		stmt = stmt.Params(code...) // Several return values
-	} else {
-		stmt = stmt.Add(code[0]) // Single return value
-	}
-
-	// Body
-	code = lo.Map(s.Body.renderDefinition(strct), func(item *jen.Statement, index int) jen.Code { return item })
-	stmt = stmt.Block(code...)
-	res = append(res, stmt)
-
-	return res
-}
-
-type MethodBody struct {
-	ReturnLiter       string
-	ReturnName        string
-	ReturnStructField string
-}
-
-func (m *MethodBody) renderDefinition(strct *Struct) []*jen.Statement {
-	switch {
-	case m.ReturnLiter != "":
-		return []*jen.Statement{jen.Lit(m.ReturnLiter)}
-	case m.ReturnName != "":
-		return []*jen.Statement{jen.Id(m.ReturnName)}
-	case m.ReturnStructField != "":
-		return []*jen.Statement{jen.Id(strct.Name).Dot(m.ReturnName)}
-	}
-	return []*jen.Statement{jen.Empty()}
+type FuncArgument struct {
+	Typ  LangType
+	Name string
 }

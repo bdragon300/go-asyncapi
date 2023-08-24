@@ -1,4 +1,4 @@
-package scanner
+package scan
 
 func NewRefQuery[T any](ctx *Context, ref string) *RefQuery[T] {
 	return &RefQuery[T]{
@@ -20,3 +20,4 @@ func (r *RefQuery[T]) AssignLink(typ any) {
 func (r *RefQuery[T]) Ref() string {
 	return r.ref
 }
+

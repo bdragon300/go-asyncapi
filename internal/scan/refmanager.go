@@ -1,9 +1,10 @@
-package scanner
+package scan
 
 import (
 	"fmt"
-	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"strings"
+
+	"github.com/bdragon300/asyncapi-codegen/internal/common"
 )
 
 type RefQuerier interface {
@@ -12,30 +13,30 @@ type RefQuerier interface {
 }
 
 func NewRefManager() *RefManager {
-	return &RefManager{refs: make(map[common.BucketKind][]RefQuerier)}
+	return &RefManager{refs: make(map[common.PackageKind][]RefQuerier)}
 }
 
 type RefManager struct {
-	refs map[common.BucketKind][]RefQuerier
+	refs map[common.PackageKind][]RefQuerier
 }
 
-func (m *RefManager) Add(refQuery RefQuerier, fromBucket common.BucketKind) {
-	if _, ok := m.refs[fromBucket]; !ok {
-		m.refs[fromBucket] = nil
+func (m *RefManager) Add(refQuery RefQuerier, fromPackage common.PackageKind) {
+	if _, ok := m.refs[fromPackage]; !ok {
+		m.refs[fromPackage] = nil
 	}
-	m.refs[fromBucket] = append(m.refs[fromBucket], refQuery)
+	m.refs[fromPackage] = append(m.refs[fromPackage], refQuery)
 }
 
 func (m *RefManager) ProcessRefs(ctx *Context) {
 	for bktKind, queries := range m.refs {
-		bucket := ctx.Buckets[bktKind]
+		pkg := ctx.Packages[bktKind]
 		for _, query := range queries {
 			if !strings.HasPrefix(query.Ref(), "#/") {
 				panic("We don't support external refs yet")
 			}
 			path, _ := strings.CutPrefix(query.Ref(), "#/")
 			parts := strings.Split(path, "/")
-			item, ok := bucket.Find(parts)
+			item, ok := pkg.Find(parts)
 			if !ok {
 				panic(fmt.Sprintf("Cannot find %s ref path in the document", query.Ref()))
 			}
