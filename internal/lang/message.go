@@ -10,7 +10,6 @@ import (
 )
 
 type Message struct {
-	Name             string
 	Struct           *Struct
 	PayloadType      LangType
 	PayloadHasSchema bool
@@ -38,7 +37,7 @@ func (m Message) RenderDefinition(ctx *render.Context) []*jen.Statement {
 	))
 
 	res = append(res, m.Struct.RenderDefinition(ctx)...)
-	res = append(res, messageMethods(ctx, &m)...)
+	res = append(res, m.messageMethods(ctx)...)
 	return res
 }
 
@@ -46,33 +45,39 @@ func (m Message) RenderUsage(ctx *render.Context) []*jen.Statement {
 	return m.Struct.RenderUsage(ctx)
 }
 
-func (m Message) AdditionalImports() map[string]string {
-	return nil
-}
-
-func messageMethods(ctx *render.Context, msg *Message) []*jen.Statement {
-	structName := msg.Struct.Name
+func (m Message) messageMethods(ctx *render.Context) []*jen.Statement {
+	structName := m.Struct.Name
 	receiverName := strings.ToLower(string(structName[0]))
 	receiver := jen.Id(receiverName).Op("*").Id(structName)
-	payloadFieldType := utils.CastSliceItems[*jen.Statement, jen.Code](msg.Struct.MustFindField("Payload").Type.RenderUsage(ctx))
-	headersFieldType := utils.CastSliceItems[*jen.Statement, jen.Code](msg.Struct.MustFindField("Headers").Type.RenderUsage(ctx))
+	payloadFieldType := utils.CastSliceItems[*jen.Statement, jen.Code](m.PayloadType.RenderUsage(ctx))
+	headersFieldType := utils.CastSliceItems[*jen.Statement, jen.Code](m.HeadersType.RenderUsage(ctx))
 
 	return []*jen.Statement{
-		jen.Func().Params(receiver.Clone()).Id("MarshalBinary").Params().Params(jen.Index().Byte(), jen.Error()).Block(
+		jen.Func().Params(receiver.Clone()).Id("MarshalBinary").
+			Params().
+			Params(jen.Index().Byte(), jen.Error()).Block(
 			jen.Return(jen.Qual("encoding/json", "Marshal").Call(jen.Id(receiverName).Dot("Payload"))),
 		),
-		jen.Func().Params(receiver.Clone()).Id("UnmarshalBinary").Params(jen.Id("data").Index().Byte()).Params(jen.Error()).Block(
+		jen.Func().Params(receiver.Clone()).Id("UnmarshalBinary").
+			Params(jen.Id("data").Index().Byte()).
+			Params(jen.Error()).Block(
 			jen.Return(jen.Qual("encoding/json", "Unmarshal").Call(jen.Id("data"), jen.Op("&").Id(receiverName).Dot("Payload"))),
 		),
-		jen.Func().Params(receiver.Clone()).Id("WithID").Params(jen.Id("ID").String()).Params(jen.Op("*").Id(structName)).Block(
+		jen.Func().Params(receiver.Clone()).Id("WithID").
+			Params(jen.Id("ID").String()).
+			Params(jen.Op("*").Id(structName)).Block(
 			jen.Id(receiverName).Dot("ID").Op("=").Id("ID"),
 			jen.Return(jen.Id(receiverName)),
 		),
-		jen.Func().Params(receiver.Clone()).Id("WithPayload").Params(jen.Id("payload").Add(payloadFieldType...)).Params(jen.Op("*").Id(structName)).Block(
+		jen.Func().Params(receiver.Clone()).Id("WithPayload").
+			Params(jen.Id("payload").Add(payloadFieldType...)).
+			Params(jen.Op("*").Id(structName)).Block(
 			jen.Id(receiverName).Dot("Payload").Op("=").Id("payload"),
 			jen.Return(jen.Id(receiverName)),
 		),
-		jen.Func().Params(receiver.Clone()).Id("WithHeaders").Params(jen.Id("headers").Add(headersFieldType...)).Params(jen.Op("*").Id(structName)).Block(
+		jen.Func().Params(receiver.Clone()).Id("WithHeaders").
+			Params(jen.Id("headers").Add(headersFieldType...)).
+			Params(jen.Op("*").Id(structName)).Block(
 			jen.Id(receiverName).Dot("Headers").Op("=").Id("headers"),
 			jen.Return(jen.Id(receiverName)),
 		),

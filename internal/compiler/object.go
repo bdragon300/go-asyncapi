@@ -1,4 +1,4 @@
-package schema
+package compiler
 
 import (
 	"encoding/json"
@@ -34,7 +34,7 @@ type Object struct {
 	Examples             []utils.Union2[json.RawMessage, yaml.Node] `json:"examples" yaml:"examples"`
 	ExclusiveMaximum     *utils.Union2[bool, json.Number]           `json:"exclusiveMaximum" yaml:"exclusiveMaximum"`
 	ExclusiveMinimum     *utils.Union2[bool, json.Number]           `json:"exclusiveMinimum" yaml:"exclusiveMinimum"`
-	ExternalDocs         *ExternalDocsItem                          `json:"externalDocs" yaml:"externalDocs"`
+	ExternalDocs         *ExternalDocumentation                     `json:"externalDocs" yaml:"externalDocs"`
 	Format               string                                     `json:"format" yaml:"format"`
 	If                   *Object                                    `json:"if" yaml:"if"`
 	Items                *utils.Union2[Object, []Object]            `json:"items" yaml:"items"`
@@ -50,7 +50,7 @@ type Object struct {
 	Not                  *Object                                    `json:"not" yaml:"not"`
 	OneOf                []Object                                   `json:"oneOf" yaml:"oneOf"`
 	Pattern              string                                     `json:"pattern" yaml:"pattern"`
-	PatternProperties    utils.OrderedMap[string, Object]           `json:"patternProperties" yaml:"patternProperties"`
+	PatternProperties    utils.OrderedMap[string, Object]           `json:"patternProperties" yaml:"patternProperties"` // Mapping regex->schema
 	Properties           utils.OrderedMap[string, Object]           `json:"properties" yaml:"properties"`
 	PropertyNames        *Object                                    `json:"propertyNames" yaml:"propertyNames"`
 	ReadOnly             *bool                                      `json:"readOnly" yaml:"readOnly"`
@@ -62,22 +62,19 @@ type Object struct {
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
-func (o Object) Build(ctx *scan.Context) error {
-	langObj, err := buildLangType(ctx, o, ctx.Top().Flags)
+func (m Object) Build(ctx *scan.Context) error {
+	obj, err := buildLangType(ctx, m, ctx.Top().Flags, ctx.Top().Path)
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
 	}
-	ctx.CurrentPackage().Put(ctx, langObj)
+	ctx.CurrentPackage().Put(ctx, obj)
 	return nil
 }
 
-func buildLangType(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]string) (lang.LangType, error) {
+func buildLangType(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]string, name string) (lang.LangType, error) {
 	if schema.Ref != "" {
-		res := &lang.DeferTypeRenderer{
-			Package:  common.ModelsPackageKind,
-			RefQuery: scan.NewRefQuery[lang.LangType](ctx, schema.Ref),
-		}
-		ctx.RefMgr.Add(res.RefQuery, common.ModelsPackageKind)
+		res := lang.NewLinkerQueryTypeRef(common.ModelsPackageKind, schema.Ref)
+		ctx.Linker.Add(res)
 		return res, nil
 	}
 
@@ -96,14 +93,14 @@ func buildLangType(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]st
 	langTyp := ""
 	switch typ {
 	case "object":
-		res, err := buildLangStruct(ctx, schema, flags)
+		res, err := buildLangStruct(ctx, schema, flags, name)
 		if err != nil {
 			return nil, err
 		}
 		res.Nullable = nullable
 		return res, nil
 	case "array":
-		res, err := buildLangArray(ctx, schema, flags)
+		res, err := buildLangArray(ctx, schema, flags, name)
 		if err != nil {
 			return nil, err
 		}
@@ -111,7 +108,7 @@ func buildLangType(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]st
 	case "null", "":
 		return &lang.TypeAlias{
 			BaseType: lang.BaseType{
-				Name:        getTypeName(ctx, schema.Title, ""),
+				Name:        getTypeName(ctx, name, ""),
 				Description: schema.Description,
 				Render:      noInline,
 			},
@@ -133,7 +130,7 @@ func buildLangType(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]st
 
 	return &lang.TypeAlias{
 		BaseType: lang.BaseType{
-			Name:        getTypeName(ctx, schema.Title, ""),
+			Name:        getTypeName(ctx, name, ""),
 			Description: schema.Description,
 			Render:      noInline,
 		},
@@ -171,11 +168,11 @@ func inspectMultiType(schemaType []string) (typ string, nullable bool) {
 	}
 }
 
-func buildLangStruct(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]string) (*lang.Struct, error) {
+func buildLangStruct(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]string, name string) (*lang.Struct, error) {
 	_, noInline := flags[scan.SchemaTagNoInline]
 	res := lang.Struct{
 		BaseType: lang.BaseType{
-			Name:        getTypeName(ctx, schema.Title, ""),
+			Name:        getTypeName(ctx, name, ""),
 			Description: schema.Description,
 			Render:      noInline,
 		},
@@ -185,7 +182,7 @@ func buildLangStruct(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]
 
 	// regular properties
 	for _, key := range schema.Properties.Keys() {
-		langObj, err := buildLangType(ctx, schema.Properties.MustGet(key), map[scan.SchemaTag]string{})
+		langObj, err := buildLangType(ctx, schema.Properties.MustGet(key), map[scan.SchemaTag]string{}, name)
 		if err != nil {
 			return nil, err
 		}
@@ -203,7 +200,7 @@ func buildLangStruct(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]
 	if schema.AdditionalProperties != nil {
 		switch schema.AdditionalProperties.Selector {
 		case 0: // "additionalProperties:" is an object
-			langObj, err := buildLangType(ctx, schema.AdditionalProperties.V0, map[scan.SchemaTag]string{})
+			langObj, err := buildLangType(ctx, schema.AdditionalProperties.V0, map[scan.SchemaTag]string{}, name)
 			if err != nil {
 				return nil, err
 			}
@@ -211,7 +208,7 @@ func buildLangStruct(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]
 				Name: "AdditionalProperties",
 				Type: &lang.Map{
 					BaseType: lang.BaseType{
-						Name:        getTypeName(ctx, schema.Title, "AdditionalProperties"),
+						Name:        getTypeName(ctx, name, "AdditionalProperties"),
 						Description: schema.AdditionalProperties.V0.Description,
 						Render:      false,
 					},
@@ -227,7 +224,7 @@ func buildLangStruct(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]
 			if schema.AdditionalProperties.V1 { // "additionalProperties: true" -- allow any additional properties
 				valTyp := lang.TypeAlias{
 					BaseType: lang.BaseType{
-						Name:        getTypeName(ctx, schema.Title, "AdditionalPropertiesValue"),
+						Name:        getTypeName(ctx, name, "AdditionalPropertiesValue"),
 						Description: "",
 						Render:      false,
 					},
@@ -237,7 +234,7 @@ func buildLangStruct(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]
 					Name: "AdditionalProperties",
 					Type: &lang.Map{
 						BaseType: lang.BaseType{
-							Name:        getTypeName(ctx, schema.Title, "AdditionalProperties"),
+							Name:        getTypeName(ctx, name, "AdditionalProperties"),
 							Description: "",
 							Render:      false,
 						},
@@ -255,11 +252,11 @@ func buildLangStruct(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]
 	return &res, nil
 }
 
-func buildLangArray(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]string) (*lang.Array, error) {
+func buildLangArray(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]string, name string) (*lang.Array, error) {
 	_, noInline := flags[scan.SchemaTagNoInline]
 	res := lang.Array{
 		BaseType: lang.BaseType{
-			Name:        getTypeName(ctx, schema.Title, ""),
+			Name:        getTypeName(ctx, name, ""),
 			Description: schema.Description,
 			Render:      noInline,
 		},
@@ -268,7 +265,7 @@ func buildLangArray(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]s
 
 	switch {
 	case schema.Items != nil && schema.Items.Selector == 0: // Only one "type:" of items
-		langObj, err := buildLangType(ctx, schema.Items.V0, flags)
+		langObj, err := buildLangType(ctx, schema.Items.V0, flags, name)
 		if err != nil {
 			return nil, err
 		}
@@ -276,7 +273,7 @@ func buildLangArray(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]s
 	case schema.Items == nil || schema.Items.Selector == 1: // No items or Several types for each item sequentially
 		valTyp := lang.TypeAlias{
 			BaseType: lang.BaseType{
-				Name:        getTypeName(ctx, schema.Title, "ItemsItemValue"),
+				Name:        getTypeName(ctx, name, "ItemsItemValue"),
 				Description: "",
 				Render:      false,
 			},
@@ -284,7 +281,7 @@ func buildLangArray(ctx *scan.Context, schema Object, flags map[scan.SchemaTag]s
 		}
 		res.ItemsType = &lang.Map{
 			BaseType: lang.BaseType{
-				Name:        getTypeName(ctx, schema.Title, "ItemsItem"),
+				Name:        getTypeName(ctx, name, "ItemsItem"),
 				Description: "",
 				Render:      false,
 			},

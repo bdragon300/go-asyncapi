@@ -111,7 +111,7 @@ func pushStack(ctx *Context, pathItem string, flags map[SchemaTag]string) {
 	if flags == nil {
 		flags = make(map[SchemaTag]string)
 	}
-	pkgKind := common.DefaultPackageKind
+	pkgKind := common.RuntimePackageKind
 	if len(ctx.Stack) > 0 {
 		pkgKind = ctx.Top().PackageKind
 	}

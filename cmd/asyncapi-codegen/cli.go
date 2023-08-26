@@ -12,8 +12,8 @@ import (
 	"github.com/samber/lo"
 
 	"github.com/alexflint/go-arg"
+	"github.com/bdragon300/asyncapi-codegen/internal/compiler"
 	"github.com/bdragon300/asyncapi-codegen/internal/scan"
-	"github.com/bdragon300/asyncapi-codegen/internal/schema"
 	"gopkg.in/yaml.v3"
 )
 
@@ -43,38 +43,50 @@ func main() {
 	}
 	_ = f.Close()
 
-	specBuf := schema.AsyncAPI{}
+	specBuf := compiler.AsyncAPI{}
 	err = yaml.Unmarshal(jsonBuf, &specBuf)
 	if err != nil {
 		panic(err)
 	}
 
-	modelsBucket := packages.ModelsPackage{}
-	messageBucket := packages.MessagePackage{}
+	modelsPackage := packages.ModelsPackage{}
+	messagePackage := packages.MessagesPackage{}
+	channelsPackage := packages.ChannelsPackage{}
+	serversPackage := packages.ServersPackage{}
 	scanPackages := map[common.PackageKind]scan.Package{
-		common.ModelsPackageKind:  &modelsBucket,
-		common.MessagePackageKind: &messageBucket,
+		common.ModelsPackageKind:   &modelsPackage,
+		common.MessagesPackageKind: &messagePackage,
+		common.ChannelsPackageKind: &channelsPackage,
+		common.ServersPackageKind:  &serversPackage,
 	}
-	scanCtx := scan.Context{Packages: scanPackages, RefMgr: scan.NewRefManager()}
+	scanCtx := scan.Context{Packages: scanPackages, Linker: &scan.Linker{}}
 	if err = scan.WalkSchema(&scanCtx, reflect.ValueOf(specBuf)); err != nil {
 		panic(err)
 	}
 
-	scanCtx.RefMgr.ProcessRefs(&scanCtx)
+	scanCtx.Linker.Process(&scanCtx)
 
 	if err = ensureDir(cliArgs.OutDir); err != nil {
 		panic(err)
 	}
 
-	files1, err := packages.RenderModels(&modelsBucket, cliArgs.OutDir)
+	files1, err := packages.RenderModels(&modelsPackage, cliArgs.OutDir)
 	if err != nil {
 		panic(err)
 	}
-	files2, err := packages.RenderMessages(&messageBucket, cliArgs.OutDir)
+	files2, err := packages.RenderMessages(&messagePackage, cliArgs.OutDir)
 	if err != nil {
 		panic(err)
 	}
-	files := lo.Assign(files1, files2)
+	files3, err := packages.RenderChannels(&channelsPackage, cliArgs.OutDir)
+	if err != nil {
+		panic(err)
+	}
+	files4, err := packages.RenderServers(&serversPackage, cliArgs.OutDir)
+	if err != nil {
+		panic(err)
+	}
+	files := lo.Assign(files1, files2, files3, files4)
 	for fileName, fileObj := range files {
 		fullPath := path.Join(cliArgs.OutDir, fileName)
 		if err = ensureDir(path.Dir(fullPath)); err != nil {

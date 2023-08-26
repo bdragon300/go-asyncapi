@@ -1,12 +1,9 @@
 package lang
 
 import (
-	"fmt"
-
 	"github.com/bdragon300/asyncapi-codegen/internal/render"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	"github.com/dave/jennifer/jen"
-	"github.com/samber/lo"
 )
 
 // Struct defines the data required to generate a struct in Go.
@@ -57,14 +54,6 @@ func (s *Struct) RenderUsage(ctx *render.Context) []*jen.Statement {
 	}
 
 	return []*jen.Statement{stmt.Struct(code...)}
-}
-
-func (s *Struct) MustFindField(name string) StructField {
-	res, ok := lo.Find(s.Fields, func(item StructField) bool { return item.Name == name })
-	if !ok {
-		panic(fmt.Sprintf("Field %s.%s not found", s.Name, name))
-	}
-	return res
 }
 
 // StructField defines the data required to generate a field in Go.

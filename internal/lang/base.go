@@ -1,9 +1,9 @@
 package lang
 
 import (
-	"fmt"
-	"strings"
+	"path"
 
+	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"github.com/bdragon300/asyncapi-codegen/internal/render"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	"github.com/dave/jennifer/jen"
@@ -21,8 +21,6 @@ type BaseType struct {
 	Name        string
 	Description string
 
-	Imports map[string]string
-
 	// Render denotes if this type must be rendered separately. Otherwise, it will only be inlined in a parent definition
 	// Such as inlined `field struct{...}` and separate `field StructName`, or `field []type` and `field ArrayName`
 	Render bool
@@ -34,13 +32,6 @@ func (b *BaseType) AllowRender() bool {
 
 func (b *BaseType) GetName() string {
 	return b.Name
-}
-
-func (b *BaseType) AdditionalImports() map[string]string {
-	return b.Imports
-	// return lo.Assign(lo.Map(b.MethodSnippets, func(item DefinitionSnippet, index int) map[string]string {
-	//	return item.Imports
-	// })...)
 }
 
 type Array struct {
@@ -169,8 +160,9 @@ func (p *TypeAlias) RenderUsage(ctx *render.Context) []*jen.Statement {
 }
 
 type Simple struct {
-	TypeName   string // type name with or without package name, such as "json.Marshal" or "string"
-	ImportPath string // optional import path, such as "encoding/json"
+	TypeName        string             // type name with or without package name, such as "json.Marshal" or "string"
+	ExternalPackage string             // optional import path, such as "encoding/json"
+	Package         common.PackageKind // optional import path from any generated package
 }
 
 func (p Simple) AllowRender() bool {
@@ -178,31 +170,20 @@ func (p Simple) AllowRender() bool {
 }
 
 func (p Simple) RenderDefinition(*render.Context) []*jen.Statement {
-	if p.ImportPath != "" {
-		return []*jen.Statement{jen.Qual(p.ImportPath, p.TypeName)}
-	}
 	return []*jen.Statement{jen.Id(p.TypeName)}
 }
 
 func (p Simple) RenderUsage(ctx *render.Context) []*jen.Statement {
-	if p.ImportPath != "" {
-		if ctx.ForceImportPackage != "" {
-			return []*jen.Statement{jen.Qual(ctx.ForceImportPackage, p.TypeName)}
-		}
-		return []*jen.Statement{jen.Qual(p.ImportPath, p.TypeName)}
+	if ctx.ForceImportPackage != "" {
+		return []*jen.Statement{jen.Qual(ctx.ForceImportPackage, p.TypeName)}
+	}
+	if p.ExternalPackage != "" {
+		return []*jen.Statement{jen.Qual(p.ExternalPackage, p.TypeName)}
+	}
+	if p.Package != "" && p.Package != ctx.CurrentPackage {
+		return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, string(p.Package)), p.TypeName)}
 	}
 	return []*jen.Statement{jen.Id(p.TypeName)}
-}
-
-func (p Simple) AdditionalImports() map[string]string {
-	if p.ImportPath != "" {
-		parts := strings.Split(p.ImportPath, "/")
-		if len(parts) < 2 {
-			panic(fmt.Sprintf("Wrong import path %q", p.ImportPath))
-		}
-		return map[string]string{p.ImportPath: parts[len(parts)-1]}
-	}
-	return nil
 }
 
 func (p Simple) canBePointer() bool {

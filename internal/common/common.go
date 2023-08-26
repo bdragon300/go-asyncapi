@@ -3,7 +3,9 @@ package common
 type PackageKind string
 
 const (
-	DefaultPackageKind PackageKind = "default"
-	ModelsPackageKind  PackageKind = "models"
-	MessagePackageKind PackageKind = "message"
+	RuntimePackageKind  PackageKind = "runtime"
+	ModelsPackageKind   PackageKind = "models"
+	MessagesPackageKind PackageKind = "messages"
+	ChannelsPackageKind PackageKind = "channels"
+	ServersPackageKind  PackageKind = "servers"
 )

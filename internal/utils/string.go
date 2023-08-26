@@ -4,6 +4,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/samber/lo"
+
 	"github.com/stoewer/go-strcase"
 )
 
@@ -30,4 +32,9 @@ func ToLowerFirstLetter(s string) string {
 		return ""
 	}
 	return strings.ToLower(string(s[0])) + s[1:]
+}
+
+func JoinNonemptyStrings(sep string, s ...string) string {
+	s = lo.Filter(s, func(item string, _ int) bool { return item != "" })
+	return strings.Join(s, sep)
 }

@@ -9,7 +9,7 @@ import (
 type Package interface {
 	Put(ctx *Context, item render.LangRenderer)
 	Find(path []string) (render.LangRenderer, bool)
-	MustFind(path []string) render.LangRenderer
+	List(path []string) []render.LangRenderer
 }
 
 type ContextStackItem struct {
@@ -21,7 +21,7 @@ type ContextStackItem struct {
 type Context struct {
 	Packages map[common.PackageKind]Package
 	Stack    []ContextStackItem
-	RefMgr   *RefManager
+	Linker   *Linker
 }
 
 func (c *Context) Push(item ContextStackItem) {
@@ -56,6 +56,6 @@ func (c *Context) Copy() *Context {
 	return &Context{
 		Packages: nil,
 		Stack:    stack,
-		RefMgr:   c.RefMgr,
+		Linker:   c.Linker,
 	}
 }
