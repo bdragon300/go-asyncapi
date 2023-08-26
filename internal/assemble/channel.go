@@ -1,27 +1,28 @@
-package lang
+package assemble
 
 import (
 	"fmt"
 
-	"github.com/bdragon300/asyncapi-codegen/internal/render"
+	"github.com/bdragon300/asyncapi-codegen/internal/common"
+
 	"github.com/dave/jennifer/jen"
 	"github.com/samber/lo"
 )
 
 type Channel struct {
-	AppliedServers      []*LinkerQuery[*Server]
-	AppliedToAllServers *LinkerQueryList[*Server]
-	SupportedProtocols  map[string]render.LangRenderer
+	AppliedServers      []*LinkQuery[*Server]
+	AppliedToAllServers *LinkQueryList[*Server]
+	SupportedProtocols  map[string]common.Assembled
 }
 
 func (c Channel) AllowRender() bool {
 	return true
 }
 
-func (c Channel) RenderDefinition(ctx *render.Context) []*jen.Statement {
+func (c Channel) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
 	var res []*jen.Statement
 
-	protocols := lo.Uniq(lo.Map(c.AppliedServers, func(item *LinkerQuery[*Server], index int) string {
+	protocols := lo.Uniq(lo.Map(c.AppliedServers, func(item *LinkQuery[*Server], index int) string {
 		return item.Link().Protocol
 	}))
 	if c.AppliedToAllServers != nil {
@@ -31,7 +32,7 @@ func (c Channel) RenderDefinition(ctx *render.Context) []*jen.Statement {
 	}
 	for _, p := range protocols {
 		if r, ok := c.SupportedProtocols[p]; ok {
-			res = append(res, r.RenderDefinition(ctx)...)
+			res = append(res, r.AssembleDefinition(ctx)...)
 		} else {
 			panic(fmt.Sprintf("%q protocol is not supported", p))
 		}
@@ -39,6 +40,6 @@ func (c Channel) RenderDefinition(ctx *render.Context) []*jen.Statement {
 	return res
 }
 
-func (c Channel) RenderUsage(_ *render.Context) []*jen.Statement {
+func (c Channel) AssembleUsage(_ *common.AssembleContext) []*jen.Statement {
 	panic("not implemented")
 }

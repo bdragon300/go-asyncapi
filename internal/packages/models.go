@@ -2,47 +2,44 @@ package packages
 
 import (
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
-	"github.com/bdragon300/asyncapi-codegen/internal/lang"
-	"github.com/bdragon300/asyncapi-codegen/internal/render"
-	"github.com/bdragon300/asyncapi-codegen/internal/scan"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	"github.com/dave/jennifer/jen"
 	"github.com/samber/lo"
 )
 
-type PackageItem[T render.LangRenderer] struct {
+type PackageItem[T common.Assembled] struct {
 	Typ  T
 	Path []string
 }
 
 type ModelsPackage struct {
-	Items []PackageItem[lang.LangType]
+	Items []PackageItem[common.GolangType]
 }
 
-func (s *ModelsPackage) Put(ctx *scan.Context, item render.LangRenderer) {
-	s.Items = append(s.Items, PackageItem[lang.LangType]{
-		Typ:  item.(lang.LangType),
+func (s *ModelsPackage) Put(ctx *common.Context, item common.Assembled) {
+	s.Items = append(s.Items, PackageItem[common.GolangType]{
+		Typ:  item.(common.GolangType),
 		Path: ctx.PathStack(),
 	})
 }
 
-func (s *ModelsPackage) Find(path []string) (render.LangRenderer, bool) {
+func (s *ModelsPackage) Find(path []string) (common.Assembled, bool) {
 	return findItem(s.Items, path)
 }
 
-func (s *ModelsPackage) List(path []string) []render.LangRenderer {
+func (s *ModelsPackage) List(path []string) []common.Assembled {
 	return listByPath(s.Items, path)
 }
 
-func findItem[T render.LangRenderer](items []PackageItem[T], path []string) (render.LangRenderer, bool) {
+func findItem[T common.Assembled](items []PackageItem[T], path []string) (common.Assembled, bool) {
 	res, ok := lo.Find(items, func(item PackageItem[T]) bool {
 		return utils.SlicesEqual(item.Path, path)
 	})
 	return res.Typ, ok
 }
 
-func listByPath[T render.LangRenderer](items []PackageItem[T], path []string) []render.LangRenderer {
-	return lo.FilterMap(items, func(item PackageItem[T], index int) (render.LangRenderer, bool) {
+func listByPath[T common.Assembled](items []PackageItem[T], path []string) []common.Assembled {
+	return lo.FilterMap(items, func(item PackageItem[T], index int) (common.Assembled, bool) {
 		if _, ok := utils.IsSubsequence(path, item.Path, 0); ok && len(item.Path) == len(path)+1 {
 			return item.Typ, true
 		}
@@ -56,7 +53,7 @@ func RenderModels(pkg *ModelsPackage, baseDir string) (files map[string]*jen.Fil
 		return
 	}
 
-	ctx := &render.Context{
+	ctx := &common.AssembleContext{
 		CurrentPackage: common.ModelsPackageKind,
 		ImportBase:     "github.com/bdragon300/asyncapi-codegen/generated", // FIXME
 		RuntimePackage: "github.com/bdragon300/asyncapi-codegen/runtime",   // FIXME
@@ -67,7 +64,7 @@ func RenderModels(pkg *ModelsPackage, baseDir string) (files map[string]*jen.Fil
 			continue
 		}
 
-		for _, stmt := range item.Typ.RenderDefinition(ctx) {
+		for _, stmt := range item.Typ.AssembleDefinition(ctx) {
 			modelsGo.Add(stmt)
 		}
 		modelsGo.Add(jen.Line())

@@ -1,14 +1,12 @@
-package compiler
+package compile
 
 import (
 	"encoding/json"
 	"fmt"
 	"strings"
 
+	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
-	"github.com/bdragon300/asyncapi-codegen/internal/lang"
-	"github.com/bdragon300/asyncapi-codegen/internal/render"
-	"github.com/bdragon300/asyncapi-codegen/internal/scan"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	"gopkg.in/yaml.v3"
 )
@@ -33,7 +31,7 @@ type Message struct {
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
-func (m Message) Build(ctx *scan.Context) error {
+func (m Message) Compile(ctx *common.Context) error {
 	obj, err := m.buildMessage(ctx, ctx.Top().Path)
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
@@ -42,26 +40,26 @@ func (m Message) Build(ctx *scan.Context) error {
 	return nil
 }
 
-func (m Message) buildMessage(ctx *scan.Context, name string) (render.LangRenderer, error) {
+func (m Message) buildMessage(ctx *common.Context, name string) (common.Assembled, error) {
 	if m.ContentType != "" && m.ContentType != "application/json" {
 		return nil, fmt.Errorf("now is supported only application/json") // TODO: support other content types
 	}
 	if m.Ref != "" {
-		res := lang.NewLinkerQueryRendererRef(common.MessagesPackageKind, m.Ref)
+		res := assemble.NewLinkQueryRendererRef(common.MessagesPackageKind, m.Ref)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
 
 	typeName := getTypeName(ctx, name, "Message")
-	strct := lang.Struct{
-		BaseType: lang.BaseType{
+	strct := assemble.Struct{
+		BaseType: assemble.BaseType{
 			Name:        typeName,
 			Description: utils.JoinNonemptyStrings("\n", m.Summary, m.Description),
 			Render:      true,
 		},
 	}
 
-	obj := lang.Message{
+	obj := assemble.Message{
 		Struct:           &strct,
 		PayloadType:      m.getPayloadType(ctx),
 		PayloadHasSchema: m.Payload != nil,
@@ -72,36 +70,36 @@ func (m Message) buildMessage(ctx *scan.Context, name string) (render.LangRender
 	return &obj, nil
 }
 
-func (m Message) setStructFields(langMessage *lang.Message) {
-	langMessage.Struct.Fields = []lang.StructField{
+func (m Message) setStructFields(langMessage *assemble.Message) {
+	langMessage.Struct.Fields = []assemble.StructField{
 		{
 			Name:        "ID",
 			Description: "ID is unique string used to identify the message. Case-sensitive.",
-			Type:        &lang.Simple{TypeName: "string"},
+			Type:        &assemble.Simple{Name: "string"},
 		},
 		{Name: "Payload", Type: langMessage.PayloadType},
 		{Name: "Headers", Type: langMessage.HeadersType},
 	}
 }
 
-func (m Message) getPayloadType(ctx *scan.Context) lang.LangType {
+func (m Message) getPayloadType(ctx *common.Context) common.GolangType {
 	if m.Payload != nil {
 		path := append(ctx.PathStack(), "payload")
-		q := lang.NewLinkerQueryTypePath(ctx.Top().PackageKind, path)
+		q := assemble.NewLinkQueryTypePath(ctx.Top().PackageKind, path)
 		ctx.Linker.Add(q)
 		return q
 	}
-	return &lang.Simple{TypeName: "any"}
+	return &assemble.Simple{Name: "any"}
 }
 
-func (m Message) getHeadersType(ctx *scan.Context) lang.LangType {
+func (m Message) getHeadersType(ctx *common.Context) common.GolangType {
 	if m.Headers != nil {
 		path := append(ctx.PathStack(), "headers")
-		q := lang.NewLinkerQueryTypePath(ctx.Top().PackageKind, path)
+		q := assemble.NewLinkQueryTypePath(ctx.Top().PackageKind, path)
 		ctx.Linker.Add(q)
 		return q
 	}
-	return &lang.Map{KeyType: &lang.Simple{TypeName: "string"}, ValueType: &lang.Simple{TypeName: "any"}}
+	return &assemble.Map{KeyType: &assemble.Simple{Name: "string"}, ValueType: &assemble.Simple{Name: "any"}}
 }
 
 type CorrelationID struct {

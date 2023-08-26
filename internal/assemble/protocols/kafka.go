@@ -3,8 +3,9 @@ package protocols
 import (
 	"strings"
 
-	"github.com/bdragon300/asyncapi-codegen/internal/lang"
-	"github.com/bdragon300/asyncapi-codegen/internal/render"
+	"github.com/bdragon300/asyncapi-codegen/internal/common"
+
+	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	j "github.com/dave/jennifer/jen"
 )
@@ -12,11 +13,11 @@ import (
 type KafkaChannel struct {
 	Name                string
 	Topic               string
-	PubStruct           *lang.Struct
-	PubMessage          render.LangRenderer
+	PubStruct           *assemble.Struct
+	PubMessage          common.Assembled
 	PubMessageHasSchema bool
-	SubStruct           *lang.Struct
-	SubMessage          render.LangRenderer
+	SubStruct           *assemble.Struct
+	SubMessage          common.Assembled
 	SubMessageHasSchema bool
 }
 
@@ -24,26 +25,26 @@ func (k KafkaChannel) AllowRender() bool {
 	return true
 }
 
-func (k KafkaChannel) RenderDefinition(ctx *render.Context) []*j.Statement {
+func (k KafkaChannel) AssembleDefinition(ctx *common.AssembleContext) []*j.Statement {
 	var res []*j.Statement
 	if k.PubStruct != nil {
-		res = append(res, k.PubStruct.RenderDefinition(ctx)...)
+		res = append(res, k.PubStruct.AssembleDefinition(ctx)...)
 		res = append(res, k.producerMethods(ctx)...)
 	}
 	if k.SubStruct != nil {
-		res = append(res, k.SubStruct.RenderDefinition(ctx)...)
+		res = append(res, k.SubStruct.AssembleDefinition(ctx)...)
 		res = append(res, k.consumerMethods(ctx)...)
 	}
 	return res
 }
 
-func (k KafkaChannel) RenderUsage(_ *render.Context) []*j.Statement {
+func (k KafkaChannel) AssembleUsage(_ *common.AssembleContext) []*j.Statement {
 	panic("not implemented")
 }
 
-func (k KafkaChannel) commonMethods(ctx *render.Context, strct *lang.Struct, msg render.LangRenderer, clientField string) []*j.Statement {
+func (k KafkaChannel) commonMethods(ctx *common.AssembleContext, strct *assemble.Struct, msg common.Assembled, clientField string) []*j.Statement {
 	structName := strct.Name
-	messageType := utils.CastSliceItems[*j.Statement, j.Code](msg.RenderUsage(ctx))
+	messageType := utils.CastSliceItems[*j.Statement, j.Code](msg.AssembleUsage(ctx))
 	receiverName := strings.ToLower(string(structName[0]))
 	receiver := j.Id(receiverName).Op("*").Id(structName)
 
@@ -82,7 +83,7 @@ func (k KafkaChannel) commonMethods(ctx *render.Context, strct *lang.Struct, msg
 	}
 }
 
-func (k KafkaChannel) producerMethods(ctx *render.Context) []*j.Statement {
+func (k KafkaChannel) producerMethods(ctx *common.AssembleContext) []*j.Statement {
 	structName := k.PubStruct.Name
 	receiverName := strings.ToLower(string(structName[0]))
 	receiver := j.Id(receiverName).Op("*").Id(structName)
@@ -107,7 +108,7 @@ return p.Wait(ctx)
 	return append(res, publishMethod)
 }
 
-func (k KafkaChannel) consumerMethods(ctx *render.Context) []*j.Statement {
+func (k KafkaChannel) consumerMethods(ctx *common.AssembleContext) []*j.Statement {
 	structName := k.SubStruct.Name
 	receiverName := strings.ToLower(string(structName[0]))
 	receiver := j.Id(receiverName).Op("*").Id(structName)

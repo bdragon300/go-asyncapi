@@ -7,12 +7,14 @@ import (
 	"path"
 	"reflect"
 
+	"github.com/bdragon300/asyncapi-codegen/internal/linker"
+
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"github.com/bdragon300/asyncapi-codegen/internal/packages"
 	"github.com/samber/lo"
 
 	"github.com/alexflint/go-arg"
-	"github.com/bdragon300/asyncapi-codegen/internal/compiler"
+	"github.com/bdragon300/asyncapi-codegen/internal/compile"
 	"github.com/bdragon300/asyncapi-codegen/internal/scan"
 	"gopkg.in/yaml.v3"
 )
@@ -43,7 +45,7 @@ func main() {
 	}
 	_ = f.Close()
 
-	specBuf := compiler.AsyncAPI{}
+	specBuf := compile.AsyncAPI{}
 	err = yaml.Unmarshal(jsonBuf, &specBuf)
 	if err != nil {
 		panic(err)
@@ -53,18 +55,19 @@ func main() {
 	messagePackage := packages.MessagesPackage{}
 	channelsPackage := packages.ChannelsPackage{}
 	serversPackage := packages.ServersPackage{}
-	scanPackages := map[common.PackageKind]scan.Package{
+	scanPackages := map[common.PackageKind]common.Package{
 		common.ModelsPackageKind:   &modelsPackage,
 		common.MessagesPackageKind: &messagePackage,
 		common.ChannelsPackageKind: &channelsPackage,
 		common.ServersPackageKind:  &serversPackage,
 	}
-	scanCtx := scan.Context{Packages: scanPackages, Linker: &scan.Linker{}}
+	linker := &linker.LocalLinker{}
+	scanCtx := common.Context{Packages: scanPackages, Linker: linker}
 	if err = scan.WalkSchema(&scanCtx, reflect.ValueOf(specBuf)); err != nil {
 		panic(err)
 	}
 
-	scanCtx.Linker.Process(&scanCtx)
+	linker.Process(&scanCtx)
 
 	if err = ensureDir(cliArgs.OutDir); err != nil {
 		panic(err)

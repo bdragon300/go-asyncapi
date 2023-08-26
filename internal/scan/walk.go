@@ -8,35 +8,26 @@ import (
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
 )
 
-const tagName = "cgen"
-
-type SchemaTag string
-
-const (
-	SchemaTagNoInline    SchemaTag = "noinline"
-	SchemaTagPackageDown SchemaTag = "packageDown"
-)
-
-type builder interface {
-	Build(ctx *Context) error
+type compiler interface {
+	Compile(ctx *common.Context) error
 }
 
 type orderedMap interface {
 	OrderedMap()
 }
 
-func WalkSchema(ctx *Context, object reflect.Value) error {
+func WalkSchema(ctx *common.Context, object reflect.Value) error {
 	objectTyp := object.Type()
 
-	gather := func(_ctx *Context, _obj reflect.Value) error {
+	gather := func(_ctx *common.Context, _obj reflect.Value) error {
 		if err := WalkSchema(_ctx, _obj); err != nil {
 			return err
 		}
-		if v, ok := _obj.Interface().(builder); ok {
+		if v, ok := _obj.Interface().(compiler); ok {
 			if (_obj.Kind() == reflect.Pointer || _obj.Kind() == reflect.Interface) && _obj.IsNil() {
 				return nil
 			}
-			if e := v.Build(_ctx); e != nil {
+			if e := v.Compile(_ctx); e != nil {
 				return e
 			}
 		}
@@ -89,36 +80,36 @@ func WalkSchema(ctx *Context, object reflect.Value) error {
 	return nil
 }
 
-func parseTags(field reflect.StructField) (tags map[SchemaTag]string) {
-	tagVal, ok := field.Tag.Lookup(tagName)
+func parseTags(field reflect.StructField) (tags map[common.SchemaTag]string) {
+	tagVal, ok := field.Tag.Lookup(common.TagName)
 	if !ok {
 		return nil
 	}
 
-	tags = make(map[SchemaTag]string)
+	tags = make(map[common.SchemaTag]string)
 	for _, part := range strings.Split(tagVal, ",") {
 		if part == "" {
 			continue
 		}
 		part = strings.Trim(part, " ")
 		k, v, _ := strings.Cut(part, "=")
-		tags[SchemaTag(strings.Trim(k, " "))] = strings.Trim(v, " '")
+		tags[common.SchemaTag(strings.Trim(k, " "))] = strings.Trim(v, " '")
 	}
 	return
 }
 
-func pushStack(ctx *Context, pathItem string, flags map[SchemaTag]string) {
+func pushStack(ctx *common.Context, pathItem string, flags map[common.SchemaTag]string) {
 	if flags == nil {
-		flags = make(map[SchemaTag]string)
+		flags = make(map[common.SchemaTag]string)
 	}
 	pkgKind := common.RuntimePackageKind
 	if len(ctx.Stack) > 0 {
 		pkgKind = ctx.Top().PackageKind
 	}
-	if v, ok := flags[SchemaTagPackageDown]; ok {
+	if v, ok := flags[common.SchemaTagPackageDown]; ok {
 		pkgKind = common.PackageKind(v)
 	}
-	item := ContextStackItem{
+	item := common.ContextStackItem{
 		Path:        pathItem,
 		Flags:       flags,
 		PackageKind: pkgKind,

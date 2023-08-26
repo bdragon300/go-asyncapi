@@ -1,19 +1,20 @@
-package lang
+package assemble
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/bdragon300/asyncapi-codegen/internal/render"
+	"github.com/bdragon300/asyncapi-codegen/internal/common"
+
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	"github.com/dave/jennifer/jen"
 )
 
 type Message struct {
 	Struct           *Struct
-	PayloadType      LangType
+	PayloadType      common.GolangType
 	PayloadHasSchema bool
-	HeadersType      LangType
+	HeadersType      common.GolangType
 	HeadersHasSchema bool
 }
 
@@ -21,36 +22,36 @@ func (m Message) AllowRender() bool {
 	return true
 }
 
-func (m Message) RenderDefinition(ctx *render.Context) []*jen.Statement {
+func (m Message) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
 	var res []*jen.Statement
 
 	if m.PayloadHasSchema {
-		res = append(res, m.PayloadType.RenderDefinition(ctx)...)
+		res = append(res, m.PayloadType.AssembleDefinition(ctx)...)
 	}
 	if m.HeadersHasSchema {
-		res = append(res, m.HeadersType.RenderDefinition(ctx)...)
+		res = append(res, m.HeadersType.AssembleDefinition(ctx)...)
 	}
 
 	// NewMessage constructor function
-	res = append(res, jen.Func().Id(fmt.Sprintf("New%s", m.Struct.Name)).Params().Op("*").Id(m.Struct.GetName()).Block(
-		jen.Return(jen.Op("&").Id(m.Struct.GetName()).Values()),
+	res = append(res, jen.Func().Id(fmt.Sprintf("New%s", m.Struct.Name)).Params().Op("*").Id(m.Struct.TypeName()).Block(
+		jen.Return(jen.Op("&").Id(m.Struct.TypeName()).Values()),
 	))
 
-	res = append(res, m.Struct.RenderDefinition(ctx)...)
+	res = append(res, m.Struct.AssembleDefinition(ctx)...)
 	res = append(res, m.messageMethods(ctx)...)
 	return res
 }
 
-func (m Message) RenderUsage(ctx *render.Context) []*jen.Statement {
-	return m.Struct.RenderUsage(ctx)
+func (m Message) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
+	return m.Struct.AssembleUsage(ctx)
 }
 
-func (m Message) messageMethods(ctx *render.Context) []*jen.Statement {
+func (m Message) messageMethods(ctx *common.AssembleContext) []*jen.Statement {
 	structName := m.Struct.Name
 	receiverName := strings.ToLower(string(structName[0]))
 	receiver := jen.Id(receiverName).Op("*").Id(structName)
-	payloadFieldType := utils.CastSliceItems[*jen.Statement, jen.Code](m.PayloadType.RenderUsage(ctx))
-	headersFieldType := utils.CastSliceItems[*jen.Statement, jen.Code](m.HeadersType.RenderUsage(ctx))
+	payloadFieldType := utils.CastSliceItems[*jen.Statement, jen.Code](m.PayloadType.AssembleUsage(ctx))
+	headersFieldType := utils.CastSliceItems[*jen.Statement, jen.Code](m.HeadersType.AssembleUsage(ctx))
 
 	return []*jen.Statement{
 		jen.Func().Params(receiver.Clone()).Id("MarshalBinary").

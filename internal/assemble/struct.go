@@ -1,7 +1,7 @@
-package lang
+package assemble
 
 import (
-	"github.com/bdragon300/asyncapi-codegen/internal/render"
+	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	"github.com/dave/jennifer/jen"
 )
@@ -15,11 +15,11 @@ type Struct struct {
 	Nullable bool
 }
 
-func (s *Struct) canBePointer() bool {
+func (s *Struct) CanBePointer() bool {
 	return !s.Nullable
 }
 
-func (s *Struct) RenderDefinition(ctx *render.Context) []*jen.Statement {
+func (s *Struct) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
 	var res []*jen.Statement
 	if s.Description != "" {
 		res = append(res, jen.Comment(s.Name+" -- "+utils.ToLowerFirstLetter(s.Description)))
@@ -27,7 +27,7 @@ func (s *Struct) RenderDefinition(ctx *render.Context) []*jen.Statement {
 
 	var code []jen.Code
 	for _, f := range s.Fields {
-		items := utils.CastSliceItems[*jen.Statement, jen.Code](f.renderDefinition(ctx))
+		items := utils.CastSliceItems[*jen.Statement, jen.Code](f.assembleDefinition(ctx))
 		code = append(code, items...)
 	}
 	res = append(res, jen.Type().Id(s.Name).Struct(code...))
@@ -35,7 +35,7 @@ func (s *Struct) RenderDefinition(ctx *render.Context) []*jen.Statement {
 	return res
 }
 
-func (s *Struct) RenderUsage(ctx *render.Context) []*jen.Statement {
+func (s *Struct) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	stmt := &jen.Statement{}
 	if s.Nullable {
 		stmt = stmt.Op("*")
@@ -49,7 +49,7 @@ func (s *Struct) RenderUsage(ctx *render.Context) []*jen.Statement {
 
 	var code []jen.Code
 	for _, f := range s.Fields {
-		items := utils.CastSliceItems[*jen.Statement, jen.Code](f.renderDefinition(ctx))
+		items := utils.CastSliceItems[*jen.Statement, jen.Code](f.assembleDefinition(ctx))
 		code = append(code, items...)
 	}
 
@@ -60,28 +60,23 @@ func (s *Struct) RenderUsage(ctx *render.Context) []*jen.Statement {
 type StructField struct {
 	Name          string
 	Description   string
-	Type          LangType
-	RequiredValue bool // TODO: maybe create lang.Pointer?
+	Type          common.GolangType
+	RequiredValue bool // TODO: maybe create assemble.Pointer?
 	Tags          map[string]string
 }
 
-func (f *StructField) renderDefinition(ctx *render.Context) []*jen.Statement {
+func (f *StructField) assembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
 	var res []*jen.Statement
 	if f.Description != "" {
 		res = append(res, jen.Comment(f.Name+" -- "+utils.ToLowerFirstLetter(f.Description)))
 	}
 
 	stmt := jen.Id(f.Name)
-	if f.Type.canBePointer() && f.RequiredValue {
+	if f.Type.CanBePointer() && f.RequiredValue {
 		stmt = stmt.Op("*")
 	}
-	items := utils.CastSliceItems[*jen.Statement, jen.Code](f.Type.RenderUsage(ctx))
+	items := utils.CastSliceItems[*jen.Statement, jen.Code](f.Type.AssembleUsage(ctx))
 	res = append(res, stmt.Add(items...))
 
 	return res
-}
-
-type FuncArgument struct {
-	Typ  LangType
-	Name string
 }

@@ -1,13 +1,11 @@
-package compiler
+package compile
 
 import (
 	"fmt"
 	"strings"
 
+	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
-	"github.com/bdragon300/asyncapi-codegen/internal/lang"
-	"github.com/bdragon300/asyncapi-codegen/internal/render"
-	"github.com/bdragon300/asyncapi-codegen/internal/scan"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 )
 
@@ -22,7 +20,7 @@ type Channel struct {
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
-func (c Channel) Build(ctx *scan.Context) error {
+func (c Channel) Compile(ctx *common.Context) error {
 	obj, err := c.buildChannel(ctx, ctx.Top().Path)
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
@@ -31,22 +29,22 @@ func (c Channel) Build(ctx *scan.Context) error {
 	return nil
 }
 
-func (c Channel) buildChannel(ctx *scan.Context, name string) (render.LangRenderer, error) {
+func (c Channel) buildChannel(ctx *common.Context, name string) (common.Assembled, error) {
 	if c.Ref != "" {
-		res := lang.NewLinkerQueryRendererRef(common.ChannelsPackageKind, c.Ref)
+		res := assemble.NewLinkQueryRendererRef(common.ChannelsPackageKind, c.Ref)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
-	res := &lang.Channel{SupportedProtocols: make(map[string]render.LangRenderer)}
+	res := &assemble.Channel{SupportedProtocols: make(map[string]common.Assembled)}
 	if len(c.Servers) > 0 {
 		for _, srv := range c.Servers {
 			path := []string{"servers", srv}
-			lnk := lang.NewLinkerPathQuery[*lang.Server](common.ServersPackageKind, path)
+			lnk := assemble.NewLinkPathQuery[*assemble.Server](common.ServersPackageKind, path)
 			ctx.Linker.Add(lnk)
 			res.AppliedServers = append(res.AppliedServers, lnk)
 		}
 	} else {
-		lnk := lang.NewLinkerQueryList[*lang.Server](common.ServersPackageKind, []string{"servers"})
+		lnk := assemble.NewLinkQueryList[*assemble.Server](common.ServersPackageKind, []string{"servers"})
 		ctx.Linker.AddMany(lnk)
 		res.AppliedToAllServers = lnk
 	}

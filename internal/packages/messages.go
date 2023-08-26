@@ -1,34 +1,32 @@
 package packages
 
 import (
+	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
-	"github.com/bdragon300/asyncapi-codegen/internal/lang"
-	"github.com/bdragon300/asyncapi-codegen/internal/render"
-	"github.com/bdragon300/asyncapi-codegen/internal/scan"
 	"github.com/dave/jennifer/jen"
 )
 
 type MessagesPackage struct {
-	Types    []PackageItem[lang.LangType]
-	Messages []PackageItem[*lang.Message]
+	Types    []PackageItem[common.GolangType]
+	Messages []PackageItem[*assemble.Message]
 }
 
-func (m *MessagesPackage) Put(ctx *scan.Context, item render.LangRenderer) {
+func (m *MessagesPackage) Put(ctx *common.Context, item common.Assembled) {
 	switch v := item.(type) {
-	case *lang.Message:
-		m.Messages = append(m.Messages, PackageItem[*lang.Message]{
+	case *assemble.Message:
+		m.Messages = append(m.Messages, PackageItem[*assemble.Message]{
 			Typ:  v,
 			Path: ctx.PathStack(),
 		})
 	default:
-		m.Types = append(m.Types, PackageItem[lang.LangType]{
-			Typ:  v.(lang.LangType),
+		m.Types = append(m.Types, PackageItem[common.GolangType]{
+			Typ:  v.(common.GolangType),
 			Path: ctx.PathStack(),
 		})
 	}
 }
 
-func (m *MessagesPackage) Find(path []string) (render.LangRenderer, bool) {
+func (m *MessagesPackage) Find(path []string) (common.Assembled, bool) {
 	if res, ok := findItem(m.Types, path); ok {
 		return res, true
 	}
@@ -38,7 +36,7 @@ func (m *MessagesPackage) Find(path []string) (render.LangRenderer, bool) {
 	return nil, false
 }
 
-func (m *MessagesPackage) List(path []string) []render.LangRenderer {
+func (m *MessagesPackage) List(path []string) []common.Assembled {
 	res := listByPath(m.Types, path)
 	res = append(res, listByPath(m.Messages, path)...)
 	return res
@@ -50,13 +48,13 @@ func RenderMessages(pkg *MessagesPackage, baseDir string) (files map[string]*jen
 		return
 	}
 
-	ctx := &render.Context{
+	ctx := &common.AssembleContext{
 		CurrentPackage: common.MessagesPackageKind,
 		ImportBase:     "github.com/bdragon300/asyncapi-codegen/generated", // FIXME
 		RuntimePackage: "github.com/bdragon300/asyncapi-codegen/runtime",   // FIXME
 	}
 	for _, item := range pkg.Messages {
-		for _, stmt := range item.Typ.RenderDefinition(ctx) {
+		for _, stmt := range item.Typ.AssembleDefinition(ctx) {
 			channelsGo.Add(stmt)
 		}
 		channelsGo.Add(jen.Line())

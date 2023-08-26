@@ -1,42 +1,28 @@
-package scan
+package linker
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/bdragon300/asyncapi-codegen/internal/render"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
 )
 
-type LinkQuerier interface {
-	Assign(obj any)
-	Package() common.PackageKind
-	Path() []string
-	Ref() string
+type LocalLinker struct {
+	queries     []common.LinkQuerier
+	listQueries []common.ListQuerier
 }
 
-type ListQuerier interface {
-	AssignList(obj []any)
-	Package() common.PackageKind
-	Path() []string
-}
-
-type Linker struct {
-	queries     []LinkQuerier
-	listQueries []ListQuerier
-}
-
-func (l *Linker) Add(query LinkQuerier) {
+func (l *LocalLinker) Add(query common.LinkQuerier) {
 	l.queries = append(l.queries, query)
 }
 
-func (l *Linker) AddMany(query ListQuerier) {
+func (l *LocalLinker) AddMany(query common.ListQuerier) {
 	l.listQueries = append(l.listQueries, query)
 }
 
-func (l *Linker) Process(ctx *Context) {
+func (l *LocalLinker) Process(ctx *common.Context) {
 	// TODO: resolve recursive refs
 	for _, query := range l.queries {
 		pkg := ctx.Packages[query.Package()]
@@ -52,12 +38,12 @@ func (l *Linker) Process(ctx *Context) {
 	}
 	for _, query := range l.listQueries {
 		pkg := ctx.Packages[query.Package()]
-		items := utils.CastSliceItems[render.LangRenderer, any](pkg.List(query.Path()))
+		items := utils.CastSliceItems[common.Assembled, any](pkg.List(query.Path()))
 		query.AssignList(items)
 	}
 }
 
-func (l *Linker) getPathByRef(ref string) []string {
+func (l *LocalLinker) getPathByRef(ref string) []string {
 	if !strings.HasPrefix(ref, "#/") {
 		panic("We don't support external refs yet")
 	}

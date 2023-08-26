@@ -1,13 +1,11 @@
-package compiler
+package compile
 
 import (
 	"fmt"
 	"strings"
 
+	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
-	"github.com/bdragon300/asyncapi-codegen/internal/lang"
-	"github.com/bdragon300/asyncapi-codegen/internal/render"
-	"github.com/bdragon300/asyncapi-codegen/internal/scan"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 )
 
@@ -24,7 +22,7 @@ type Server struct {
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
-func (s Server) Build(ctx *scan.Context) error {
+func (s Server) Compile(ctx *common.Context) error {
 	obj, err := s.buildServer(ctx, ctx.Top().Path)
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
@@ -33,14 +31,14 @@ func (s Server) Build(ctx *scan.Context) error {
 	return nil
 }
 
-func (s Server) buildServer(ctx *scan.Context, _ string) (render.LangRenderer, error) {
+func (s Server) buildServer(ctx *common.Context, _ string) (common.Assembled, error) {
 	if s.Ref != "" {
-		res := lang.NewLinkerQueryRendererRef(common.ServersPackageKind, s.Ref)
+		res := assemble.NewLinkQueryRendererRef(common.ServersPackageKind, s.Ref)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
 
-	res := &lang.Server{Protocol: s.Protocol}
+	res := &assemble.Server{Protocol: s.Protocol}
 	return res, nil
 }
 

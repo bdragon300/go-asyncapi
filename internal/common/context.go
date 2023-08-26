@@ -1,27 +1,30 @@
-package scan
+package common
 
 import (
-	"github.com/bdragon300/asyncapi-codegen/internal/common"
-	"github.com/bdragon300/asyncapi-codegen/internal/render"
 	"github.com/samber/lo"
 )
 
 type Package interface {
-	Put(ctx *Context, item render.LangRenderer)
-	Find(path []string) (render.LangRenderer, bool)
-	List(path []string) []render.LangRenderer
+	Put(ctx *Context, item Assembled)
+	Find(path []string) (Assembled, bool)
+	List(path []string) []Assembled
+}
+
+type Linker interface {
+	Add(query LinkQuerier)
+	AddMany(query ListQuerier)
 }
 
 type ContextStackItem struct {
 	Path        string
 	Flags       map[SchemaTag]string
-	PackageKind common.PackageKind
+	PackageKind PackageKind
 }
 
 type Context struct {
-	Packages map[common.PackageKind]Package
+	Packages map[PackageKind]Package
 	Stack    []ContextStackItem
-	Linker   *Linker
+	Linker   Linker
 }
 
 func (c *Context) Push(item ContextStackItem) {
@@ -59,3 +62,17 @@ func (c *Context) Copy() *Context {
 		Linker:   c.Linker,
 	}
 }
+
+type LinkQuerier interface {
+	Assign(obj any)
+	Package() PackageKind
+	Path() []string
+	Ref() string
+}
+
+type ListQuerier interface {
+	AssignList(obj []any)
+	Package() PackageKind
+	Path() []string
+}
+
