@@ -13,9 +13,8 @@ type Assembler interface {
 }
 
 type AssembleContext struct {
-	CurrentPackage     PackageKind
-	ImportBase         string
-	ForceImportPackage string
+	CurrentPackage PackageKind
+	ImportBase     string
 }
 
 func (a AssembleContext) RuntimePackage() string {

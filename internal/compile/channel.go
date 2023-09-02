@@ -33,7 +33,7 @@ func (c Channel) Compile(ctx *common.CompileContext) error {
 
 func (c Channel) build(ctx *common.CompileContext, name string) (common.Assembler, error) {
 	if c.Ref != "" {
-		res := assemble.NewLinkQueryRendererRef(common.ChannelsPackageKind, c.Ref)
+		res := assemble.NewRefLinkAsAssembler(common.ChannelsPackageKind, c.Ref)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
@@ -41,14 +41,16 @@ func (c Channel) build(ctx *common.CompileContext, name string) (common.Assemble
 	// Empty servers field means "no servers", omitted servers field means "all servers"
 	if c.Servers != nil && len(*c.Servers) > 0 {
 		for _, srv := range *c.Servers {
-			path := []string{"servers", srv}
-			lnk := assemble.NewLinkPathQuery[*assemble.Server](common.ServersPackageKind, path)
+			lnk := assemble.NewRefLink[*assemble.Server](common.ServersPackageKind, "#/servers/"+srv)
 			ctx.Linker.Add(lnk)
 			res.AppliedServerLinks = append(res.AppliedServerLinks, lnk)
 			res.AppliedServers = append(res.AppliedServers, srv)
 		}
 	} else if c.Servers == nil {
-		lnk := assemble.NewLinkQueryList[*assemble.Server](common.ServersPackageKind, []string{"servers"})
+		lnk := assemble.NewListCbLink[*assemble.Server](common.ServersPackageKind, func(item any, path []string) bool {
+			_, ok := item.(*assemble.Server)
+			return ok && len(path) > 0 && path[0] == "servers" // Pick only servers from `servers:` section, skip ones from `components:`
+		})
 		ctx.Linker.AddMany(lnk)
 		res.AppliedToAllServersLinks = lnk
 	}

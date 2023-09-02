@@ -132,7 +132,7 @@ return p.Wait(ctx)`),
 type ProtoServer struct {
 	Name          string
 	Struct        *assemble.Struct
-	ChannelsLinks *assemble.LinkQueryList[*assemble.Channel]
+	ChannelsLinks *assemble.LinkList[*assemble.Channel]
 }
 
 func (p ProtoServer) AllowRender() bool {
@@ -152,6 +152,10 @@ func (p ProtoServer) commonMethods() []*j.Statement {
 			j.Return(j.Lit(p.Name)),
 		),
 	}
+}
+
+func (p ProtoServer) AssembleUsage(ctx *common.AssembleContext) []*j.Statement {
+	return p.Struct.AssembleUsage(ctx)
 }
 
 type ProtoServerSub struct {
@@ -181,10 +185,6 @@ func (p ProtoServerSub) AssembleDefinition(ctx *common.AssembleContext) []*j.Sta
 	return res
 }
 
-func (p ProtoServerSub) AssembleUsage(ctx *common.AssembleContext) []*j.Statement {
-	return p.Struct.AssembleUsage(ctx)
-}
-
 type ProtoServerPub struct {
 	ProtoServer
 }
@@ -212,10 +212,6 @@ func (p ProtoServerPub) AssembleDefinition(ctx *common.AssembleContext) []*j.Sta
 	return res
 }
 
-func (p ProtoServerPub) AssembleUsage(ctx *common.AssembleContext) []*j.Statement {
-	return p.Struct.AssembleUsage(ctx)
-}
-
 type ProtoServerCommon struct {
 	ProtoServer
 }
@@ -236,8 +232,4 @@ func (p ProtoServerCommon) AssembleDefinition(ctx *common.AssembleContext) []*j.
 		res = append(res, stmt)
 	}
 	return res
-}
-
-func (p ProtoServerCommon) AssembleUsage(ctx *common.AssembleContext) []*j.Statement {
-	return p.Struct.AssembleUsage(ctx)
 }

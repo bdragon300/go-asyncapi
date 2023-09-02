@@ -72,7 +72,7 @@ func (m Object) Compile(ctx *common.CompileContext) error {
 
 func buildLangType(ctx *common.CompileContext, schema Object, flags map[common.SchemaTag]string, name string) (common.GolangType, error) {
 	if schema.Ref != "" {
-		res := assemble.NewLinkQueryTypeRef(common.ModelsPackageKind, schema.Ref)
+		res := assemble.NewRefLinkAsGolangType(common.ModelsPackageKind, schema.Ref)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
@@ -132,6 +132,7 @@ func buildLangType(ctx *common.CompileContext, schema Object, flags map[common.S
 			Name:        getTypeName(ctx, name, ""),
 			Description: schema.Description,
 			Render:      noInline,
+			Package:     ctx.Top().PackageKind,
 		},
 		AliasedType: &assemble.Simple{Name: langTyp},
 		Nullable:    nullable,
@@ -174,6 +175,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 			Name:        getTypeName(ctx, name, ""),
 			Description: schema.Description,
 			Render:      noInline,
+			Package:     ctx.Top().PackageKind,
 		},
 		Fields: make([]assemble.StructField, 0),
 	}
@@ -210,6 +212,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 						Name:        getTypeName(ctx, name, "AdditionalProperties"),
 						Description: schema.AdditionalProperties.V0.Description,
 						Render:      false,
+						Package:     ctx.Top().PackageKind,
 					},
 					KeyType:   &assemble.Simple{Name: "string"},
 					ValueType: langObj,
@@ -226,6 +229,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 						Name:        getTypeName(ctx, name, "AdditionalPropertiesValue"),
 						Description: "",
 						Render:      false,
+						Package:     ctx.Top().PackageKind,
 					},
 					AliasedType: &assemble.Simple{Name: "any"},
 				}
@@ -236,6 +240,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 							Name:        getTypeName(ctx, name, "AdditionalProperties"),
 							Description: "",
 							Render:      false,
+							Package:     ctx.Top().PackageKind,
 						},
 						KeyType:   &assemble.Simple{Name: "string"},
 						ValueType: &valTyp,
@@ -258,6 +263,7 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 			Name:        getTypeName(ctx, name, ""),
 			Description: schema.Description,
 			Render:      noInline,
+			Package:     ctx.Top().PackageKind,
 		},
 		ItemsType: nil,
 	}
@@ -275,6 +281,7 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 				Name:        getTypeName(ctx, name, "ItemsItemValue"),
 				Description: "",
 				Render:      false,
+				Package:     ctx.Top().PackageKind,
 			},
 			AliasedType: &assemble.Simple{Name: "any"},
 		}
@@ -283,6 +290,7 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 				Name:        getTypeName(ctx, name, "ItemsItem"),
 				Description: "",
 				Render:      false,
+				Package:     ctx.Top().PackageKind,
 			},
 			KeyType:   &assemble.Simple{Name: "string"},
 			ValueType: &valTyp,

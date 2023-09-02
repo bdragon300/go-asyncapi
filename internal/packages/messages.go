@@ -26,17 +26,6 @@ func (m *MessagesPackage) Put(ctx *common.CompileContext, item common.Assembler)
 	}
 }
 
-// TODO: refactor the methods below
-func (m *MessagesPackage) Find(path []string) (common.Assembler, bool) {
-	if res, ok := findItem(m.Types, path); ok {
-		return res, true
-	}
-	if res, ok := findItem(m.Messages, path); ok {
-		return res, true
-	}
-	return nil, false
-}
-
 func (m *MessagesPackage) FindBy(cb func(item any, path []string) bool) (common.Assembler, bool) {
 	if res, ok := findItemBy(m.Types, cb); ok {
 		return res, true
@@ -45,12 +34,6 @@ func (m *MessagesPackage) FindBy(cb func(item any, path []string) bool) (common.
 		return res, true
 	}
 	return nil, false
-}
-
-func (m *MessagesPackage) List(path []string) []common.Assembler {
-	res := listSubItems(m.Types, path)
-	res = append(res, listSubItems(m.Messages, path)...)
-	return res
 }
 
 func (m *MessagesPackage) ListBy(cb func(item any, path []string) bool) []common.Assembler {

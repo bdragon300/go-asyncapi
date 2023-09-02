@@ -26,16 +26,6 @@ func (c *ServersPackage) Put(ctx *common.CompileContext, item common.Assembler) 
 	}
 }
 
-func (c *ServersPackage) Find(path []string) (common.Assembler, bool) {
-	if res, ok := findItem(c.Types, path); ok {
-		return res, true
-	}
-	if res, ok := findItem(c.Servers, path); ok {
-		return res, true
-	}
-	return nil, false
-}
-
 func (c *ServersPackage) FindBy(cb func(item any, path []string) bool) (common.Assembler, bool) {
 	if res, ok := findItemBy(c.Types, cb); ok {
 		return res, true
@@ -44,12 +34,6 @@ func (c *ServersPackage) FindBy(cb func(item any, path []string) bool) (common.A
 		return res, true
 	}
 	return nil, false
-}
-
-func (c *ServersPackage) List(path []string) []common.Assembler {
-	res := listSubItems(c.Types, path)
-	res = append(res, listSubItems(c.Servers, path)...)
-	return res
 }
 
 func (c *ServersPackage) ListBy(cb func(item any, path []string) bool) []common.Assembler {

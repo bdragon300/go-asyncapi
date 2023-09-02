@@ -26,17 +26,6 @@ func (c *ChannelsPackage) Put(ctx *common.CompileContext, item common.Assembler)
 	}
 }
 
-// TODO: refactor the methods below
-func (c *ChannelsPackage) Find(path []string) (common.Assembler, bool) {
-	if res, ok := findItem(c.Types, path); ok {
-		return res, true
-	}
-	if res, ok := findItem(c.Channels, path); ok {
-		return res, true
-	}
-	return nil, false
-}
-
 func (c *ChannelsPackage) FindBy(cb func(item any, path []string) bool) (common.Assembler, bool) {
 	if res, ok := findItemBy(c.Types, cb); ok {
 		return res, true
@@ -45,12 +34,6 @@ func (c *ChannelsPackage) FindBy(cb func(item any, path []string) bool) (common.
 		return res, true
 	}
 	return nil, false
-}
-
-func (c *ChannelsPackage) List(path []string) []common.Assembler {
-	res := listSubItems(c.Types, path)
-	res = append(res, listSubItems(c.Channels, path)...)
-	return res
 }
 
 func (c *ChannelsPackage) ListBy(cb func(item any, path []string) bool) []common.Assembler {

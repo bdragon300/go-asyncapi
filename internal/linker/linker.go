@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bdragon300/asyncapi-codegen/internal/utils"
+
 	"github.com/samber/lo"
 
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
@@ -26,33 +28,29 @@ func (l *LocalLinker) Process(ctx *common.CompileContext) {
 	// TODO: resolve recursive refs
 	for _, query := range l.queries {
 		pkg := ctx.Packages[query.Package()]
-		if cb := query.FindCallback(); cb != nil {
-			item, ok := pkg.FindBy(cb)
-			if !ok {
-				panic(fmt.Sprintf("Cannot find requested item in the package %s", query.Package()))
-			}
-			query.Assign(item)
-		} else {
-			path := query.Path()
-			if query.Ref() != "" {
-				path = l.getPathByRef(query.Ref())
-			}
-			item, ok := pkg.Find(path)
-			if !ok {
-				panic(fmt.Sprintf("Cannot find %s path in the package %s", path, query.Package()))
-			}
-			query.Assign(item)
+		refPath := l.getPathByRef(query.Ref())
+
+		cb := func(_ any, path []string) bool { return utils.SlicesEqual(path, refPath) }
+		if qcb := query.FindCallback(); qcb != nil {
+			cb = qcb
 		}
+
+		item, ok := pkg.FindBy(cb)
+		if !ok {
+			panic(fmt.Sprintf("Cannot find %s path in the package %s", refPath, query.Package()))
+		}
+		query.Assign(item)
 	}
 	for _, query := range l.listQueries {
 		pkg := ctx.Packages[query.Package()]
-		if cb := query.FindCallback(); cb != nil {
-			items := lo.ToAnySlice(pkg.ListBy(cb))
-			query.AssignList(items)
-		} else {
-			items := lo.ToAnySlice(pkg.List(query.Path()))
-			query.AssignList(items)
+
+		cb := func(_ any, _ []string) bool { return true }
+		if qcb := query.FindCallback(); qcb != nil {
+			cb = qcb
 		}
+
+		items := lo.ToAnySlice(pkg.ListBy(cb))
+		query.AssignList(items)
 	}
 }
 

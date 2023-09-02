@@ -2,7 +2,6 @@ package packages
 
 import (
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
-	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	"github.com/dave/jennifer/jen"
 	"github.com/samber/lo"
 )
@@ -23,27 +22,12 @@ func (m *ModelsPackage) Put(ctx *common.CompileContext, item common.Assembler) {
 	})
 }
 
-func (m *ModelsPackage) Find(path []string) (common.Assembler, bool) {
-	return findItem(m.Items, path)
-}
-
 func (m *ModelsPackage) FindBy(cb func(item any, path []string) bool) (common.Assembler, bool) {
 	return findItemBy(m.Items, cb)
 }
 
-func (m *ModelsPackage) List(path []string) []common.Assembler {
-	return listSubItems(m.Items, path)
-}
-
 func (m *ModelsPackage) ListBy(cb func(item any, path []string) bool) []common.Assembler {
 	return listSubItemsBy(m.Items, cb)
-}
-
-func findItem[T common.Assembler](items []PackageItem[T], path []string) (common.Assembler, bool) {
-	res, ok := lo.Find(items, func(item PackageItem[T]) bool {
-		return utils.SlicesEqual(item.Path, path)
-	})
-	return res.Typ, ok
 }
 
 func findItemBy[T common.Assembler](items []PackageItem[T], cb func(item any, path []string) bool) (common.Assembler, bool) {
@@ -51,15 +35,6 @@ func findItemBy[T common.Assembler](items []PackageItem[T], cb func(item any, pa
 		return cb(item.Typ, item.Path)
 	})
 	return res.Typ, ok
-}
-
-func listSubItems[T common.Assembler](items []PackageItem[T], path []string) []common.Assembler {
-	return lo.FilterMap(items, func(item PackageItem[T], index int) (common.Assembler, bool) {
-		if _, ok := utils.IsSubsequence(path, item.Path, 0); ok && len(item.Path) == len(path)+1 {
-			return item.Typ, true
-		}
-		return nil, false
-	})
 }
 
 func listSubItemsBy[T common.Assembler](items []PackageItem[T], cb func(item any, path []string) bool) []common.Assembler {

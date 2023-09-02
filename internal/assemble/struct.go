@@ -1,6 +1,8 @@
 package assemble
 
 import (
+	"path"
+
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	"github.com/dave/jennifer/jen"
@@ -41,8 +43,8 @@ func (s *Struct) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 		stmt = stmt.Op("*")
 	}
 	if s.AllowRender() {
-		if ctx.ForceImportPackage != "" {
-			return []*jen.Statement{jen.Qual(ctx.ForceImportPackage, s.Name)}
+		if s.Package != "" && s.Package != ctx.CurrentPackage {
+			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, string(s.Package)), s.Name)}
 		}
 		return []*jen.Statement{stmt.Id(s.Name)}
 	}

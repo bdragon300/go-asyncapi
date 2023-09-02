@@ -6,9 +6,7 @@ import (
 
 type Package interface {
 	Put(ctx *CompileContext, item Assembler)
-	Find(path []string) (Assembler, bool)
 	FindBy(cb func(item any, path []string) bool) (Assembler, bool)
-	List(path []string) []Assembler
 	ListBy(cb func(item any, path []string) bool) []Assembler
 }
 
@@ -69,7 +67,6 @@ type LinkQuerier interface {
 	Assign(obj any)
 	FindCallback() func(item any, path []string) bool
 	Package() PackageKind
-	Path() []string
 	Ref() string
 }
 
@@ -77,6 +74,5 @@ type ListQuerier interface {
 	AssignList(obj []any)
 	FindCallback() func(item any, path []string) bool
 	Package() PackageKind
-	Path() []string
 }
 

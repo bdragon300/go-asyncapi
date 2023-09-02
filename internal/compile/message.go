@@ -45,7 +45,7 @@ func (m Message) build(ctx *common.CompileContext, name string) (common.Assemble
 		return nil, fmt.Errorf("now is supported only application/json") // TODO: support other content types
 	}
 	if m.Ref != "" {
-		res := assemble.NewLinkQueryRendererRef(common.MessagesPackageKind, m.Ref)
+		res := assemble.NewRefLinkAsAssembler(common.MessagesPackageKind, m.Ref)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
@@ -56,6 +56,7 @@ func (m Message) build(ctx *common.CompileContext, name string) (common.Assemble
 			Name:        typeName,
 			Description: utils.JoinNonemptyStrings("\n", m.Summary, m.Description),
 			Render:      true,
+			Package:     ctx.Top().PackageKind,
 		},
 	}
 
@@ -84,20 +85,20 @@ func (m Message) setStructFields(langMessage *assemble.Message) {
 
 func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 	if m.Payload != nil {
-		path := append(ctx.PathStack(), "payload")
-		q := assemble.NewLinkQueryTypePath(ctx.Top().PackageKind, path)
-		ctx.Linker.Add(q)
-		return q
+		ref := "#/" + strings.Join(ctx.PathStack(), "/") + "/payload"
+		lnk := assemble.NewRefLinkAsGolangType(ctx.Top().PackageKind, ref)
+		ctx.Linker.Add(lnk)
+		return lnk
 	}
 	return &assemble.Simple{Name: "any"}
 }
 
 func (m Message) getHeadersType(ctx *common.CompileContext) common.GolangType {
 	if m.Headers != nil {
-		path := append(ctx.PathStack(), "headers")
-		q := assemble.NewLinkQueryTypePath(ctx.Top().PackageKind, path)
-		ctx.Linker.Add(q)
-		return q
+		ref := "#/" + strings.Join(ctx.PathStack(), "/") + "/headers"
+		lnk := assemble.NewRefLinkAsGolangType(ctx.Top().PackageKind, ref)
+		ctx.Linker.Add(lnk)
+		return lnk
 	}
 	return &assemble.Map{KeyType: &assemble.Simple{Name: "string"}, ValueType: &assemble.Simple{Name: "any"}}
 }

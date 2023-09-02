@@ -35,7 +35,7 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 
 func (s Server) build(ctx *common.CompileContext, name string) (common.Assembler, error) {
 	if s.Ref != "" {
-		res := assemble.NewLinkQueryRendererRef(common.ServersPackageKind, s.Ref)
+		res := assemble.NewRefLinkAsAssembler(common.ServersPackageKind, s.Ref)
 		ctx.Linker.Add(res)
 		return res, nil
 	}

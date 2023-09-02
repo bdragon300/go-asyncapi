@@ -18,8 +18,8 @@ type ChannelParts struct {
 type Channel struct {
 	Name                     string
 	AppliedServers           []string
-	AppliedServerLinks       []*LinkQuery[*Server] // Avoid using a map to keep definition order in generated code
-	AppliedToAllServersLinks *LinkQueryList[*Server]
+	AppliedServerLinks       []*Link[*Server] // Avoid using a map to keep definition order in generated code
+	AppliedToAllServersLinks *LinkList[*Server]
 	SupportedProtocols       map[string]ChannelParts
 }
 
@@ -30,7 +30,7 @@ func (c Channel) AllowRender() bool {
 func (c Channel) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
 	var res []*jen.Statement
 
-	protocols := lo.Uniq(lo.Map(c.AppliedServerLinks, func(item *LinkQuery[*Server], index int) string {
+	protocols := lo.Uniq(lo.Map(c.AppliedServerLinks, func(item *Link[*Server], index int) string {
 		return item.Link().Protocol
 	}))
 	if c.AppliedToAllServersLinks != nil {

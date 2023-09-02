@@ -14,7 +14,8 @@ type BaseType struct {
 
 	// Render denotes if this type must be rendered separately. Otherwise, it will only be inlined in a parent definition
 	// Such as inlined `field struct{...}` and separate `field StructName`, or `field []type` and `field ArrayName`
-	Render bool
+	Render  bool
+	Package common.PackageKind // optional import path from any generated package
 }
 
 func (b *BaseType) AllowRender() bool {
@@ -55,8 +56,8 @@ func (a *Array) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement
 
 func (a *Array) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	if a.Render {
-		if ctx.ForceImportPackage != "" {
-			return []*jen.Statement{jen.Qual(ctx.ForceImportPackage, a.Name)}
+		if a.Package != "" && a.Package != ctx.CurrentPackage {
+			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, string(a.Package)), a.Name)}
 		}
 		return []*jen.Statement{jen.Id(a.Name)}
 	}
@@ -91,8 +92,8 @@ func (m *Map) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
 
 func (m *Map) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	if m.Render {
-		if ctx.ForceImportPackage != "" {
-			return []*jen.Statement{jen.Qual(ctx.ForceImportPackage, m.Name)}
+		if m.Package != "" && m.Package != ctx.CurrentPackage {
+			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, string(m.Package)), m.Name)}
 		}
 		return []*jen.Statement{jen.Id(m.Name)}
 	}
@@ -131,8 +132,8 @@ func (p *TypeAlias) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement 
 		stmt = stmt.Op("*")
 	}
 	if p.Render {
-		if ctx.ForceImportPackage != "" {
-			return []*jen.Statement{jen.Qual(ctx.ForceImportPackage, p.Name)}
+		if p.Package != "" && p.Package != ctx.CurrentPackage {
+			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, string(p.Package)), p.Name)}
 		}
 		return []*jen.Statement{stmt.Id(p.Name)}
 	}
@@ -156,9 +157,6 @@ func (p Simple) AssembleDefinition(*common.AssembleContext) []*jen.Statement {
 }
 
 func (p Simple) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
-	if ctx.ForceImportPackage != "" {
-		return []*jen.Statement{jen.Qual(ctx.ForceImportPackage, p.Name)}
-	}
 	if p.ExternalPackage != "" {
 		return []*jen.Statement{jen.Qual(p.ExternalPackage, p.Name)}
 	}
