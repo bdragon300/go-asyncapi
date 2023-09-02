@@ -61,7 +61,7 @@ type Object struct {
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
-func (m Object) Compile(ctx *common.Context) error {
+func (m Object) Compile(ctx *common.CompileContext) error {
 	obj, err := buildLangType(ctx, m, ctx.Top().Flags, ctx.Top().Path)
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
@@ -70,7 +70,7 @@ func (m Object) Compile(ctx *common.Context) error {
 	return nil
 }
 
-func buildLangType(ctx *common.Context, schema Object, flags map[common.SchemaTag]string, name string) (common.GolangType, error) {
+func buildLangType(ctx *common.CompileContext, schema Object, flags map[common.SchemaTag]string, name string) (common.GolangType, error) {
 	if schema.Ref != "" {
 		res := assemble.NewLinkQueryTypeRef(common.ModelsPackageKind, schema.Ref)
 		ctx.Linker.Add(res)
@@ -167,7 +167,7 @@ func inspectMultiType(schemaType []string) (typ string, nullable bool) {
 	}
 }
 
-func buildLangStruct(ctx *common.Context, schema Object, flags map[common.SchemaTag]string, name string) (*assemble.Struct, error) {
+func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common.SchemaTag]string, name string) (*assemble.Struct, error) {
 	_, noInline := flags[common.SchemaTagNoInline]
 	res := assemble.Struct{
 		BaseType: assemble.BaseType{
@@ -251,7 +251,7 @@ func buildLangStruct(ctx *common.Context, schema Object, flags map[common.Schema
 	return &res, nil
 }
 
-func buildLangArray(ctx *common.Context, schema Object, flags map[common.SchemaTag]string, name string) (*assemble.Array, error) {
+func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.SchemaTag]string, name string) (*assemble.Array, error) {
 	_, noInline := flags[common.SchemaTagNoInline]
 	res := assemble.Array{
 		BaseType: assemble.BaseType{
@@ -293,10 +293,10 @@ func buildLangArray(ctx *common.Context, schema Object, flags map[common.SchemaT
 }
 
 func getFieldName(srcName string) string {
-	return utils.NormalizeGolangName(srcName)
+	return utils.ToGolangName(srcName)
 }
 
-func getTypeName(ctx *common.Context, title, suffix string) string {
+func getTypeName(ctx *common.CompileContext, title, suffix string) string {
 	n := title
 	if n == "" {
 		n = strings.Join(ctx.PathStack(), pathSep)
@@ -304,5 +304,5 @@ func getTypeName(ctx *common.Context, title, suffix string) string {
 	if suffix != "" {
 		n += pathSep + suffix
 	}
-	return utils.NormalizeGolangName(n)
+	return utils.ToGolangName(n)
 }

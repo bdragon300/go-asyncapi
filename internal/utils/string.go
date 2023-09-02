@@ -9,7 +9,7 @@ import (
 	"github.com/stoewer/go-strcase"
 )
 
-func NormalizeGolangName(srcName string) string {
+func ToGolangName(srcName string) string {
 	if srcName == "" {
 		return ""
 	}

@@ -62,7 +62,7 @@ func main() {
 		common.ServersPackageKind:  &serversPackage,
 	}
 	linker := &linker.LocalLinker{}
-	scanCtx := common.Context{Packages: scanPackages, Linker: linker}
+	scanCtx := common.CompileContext{Packages: scanPackages, Linker: linker}
 	if err = scan.WalkSchema(&scanCtx, reflect.ValueOf(specBuf)); err != nil {
 		panic(err)
 	}

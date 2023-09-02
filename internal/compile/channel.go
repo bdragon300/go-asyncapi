@@ -9,19 +9,21 @@ import (
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 )
 
+type channelProtoBuilderFunc func(ctx *common.CompileContext, name string) (assemble.ChannelParts, error)
+
 type Channel struct {
 	Description string                              `json:"description" yaml:"description"`
-	Servers     []string                            `json:"servers" yaml:"servers"`
+	Servers     *[]string                           `json:"servers" yaml:"servers"`
 	Subscribe   *Operation                          `json:"subscribe" yaml:"subscribe"`
 	Publish     *Operation                          `json:"publish" yaml:"publish"`
 	Parameters  utils.OrderedMap[string, Parameter] `json:"parameters" yaml:"parameters"`
-	Bindings    utils.OrderedMap[string, any]       `json:"bindings" yaml:"bindings"` // TODO: replace any to common bindings object
+	Bindings    utils.OrderedMap[string, any]       `json:"bindings" yaml:"bindings"` // TODO: replace any to common protocols object
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
-func (c Channel) Compile(ctx *common.Context) error {
-	obj, err := c.buildChannel(ctx, ctx.Top().Path)
+func (c Channel) Compile(ctx *common.CompileContext) error {
+	obj, err := c.build(ctx, ctx.Top().Path)
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
 	}
@@ -29,24 +31,26 @@ func (c Channel) Compile(ctx *common.Context) error {
 	return nil
 }
 
-func (c Channel) buildChannel(ctx *common.Context, name string) (common.Assembled, error) {
+func (c Channel) build(ctx *common.CompileContext, name string) (common.Assembler, error) {
 	if c.Ref != "" {
 		res := assemble.NewLinkQueryRendererRef(common.ChannelsPackageKind, c.Ref)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
-	res := &assemble.Channel{SupportedProtocols: make(map[string]common.Assembled)}
-	if len(c.Servers) > 0 {
-		for _, srv := range c.Servers {
+	res := &assemble.Channel{Name: name, SupportedProtocols: make(map[string]assemble.ChannelParts)}
+	// Empty servers field means "no servers", omitted servers field means "all servers"
+	if c.Servers != nil && len(*c.Servers) > 0 {
+		for _, srv := range *c.Servers {
 			path := []string{"servers", srv}
 			lnk := assemble.NewLinkPathQuery[*assemble.Server](common.ServersPackageKind, path)
 			ctx.Linker.Add(lnk)
-			res.AppliedServers = append(res.AppliedServers, lnk)
+			res.AppliedServerLinks = append(res.AppliedServerLinks, lnk)
+			res.AppliedServers = append(res.AppliedServers, srv)
 		}
-	} else {
+	} else if c.Servers == nil {
 		lnk := assemble.NewLinkQueryList[*assemble.Server](common.ServersPackageKind, []string{"servers"})
 		ctx.Linker.AddMany(lnk)
-		res.AppliedToAllServers = lnk
+		res.AppliedToAllServersLinks = lnk
 	}
 
 	for pName, pBuild := range c.supportedProtocols() {
@@ -59,8 +63,8 @@ func (c Channel) buildChannel(ctx *common.Context, name string) (common.Assemble
 	return res, nil
 }
 
-func (c Channel) supportedProtocols() map[string]protocolBuilderFunc {
-	return map[string]protocolBuilderFunc{
+func (c Channel) supportedProtocols() map[string]channelProtoBuilderFunc {
+	return map[string]channelProtoBuilderFunc{
 		"kafka":        c.buildKafka,
 		"kafka-secure": c.buildKafka,
 	}
@@ -73,7 +77,7 @@ type Operation struct {
 	Security     []SecurityRequirement         `json:"security" yaml:"security"`
 	Tags         []Tag                         `json:"tags" yaml:"tags"`
 	ExternalDocs *ExternalDocumentation        `json:"externalDocs" yaml:"externalDocs"`
-	Bindings     utils.OrderedMap[string, any] `json:"bindings" yaml:"bindings"` // TODO: replace any to common bindings object
+	Bindings     utils.OrderedMap[string, any] `json:"bindings" yaml:"bindings"` // TODO: replace any to common protocols object
 	Traits       []OperationTrait              `json:"traits" yaml:"traits"`
 	Message      *Message                      `json:"message" yaml:"message"`
 }
@@ -93,7 +97,7 @@ type OperationTrait struct {
 	Security     []SecurityRequirement         `json:"security" yaml:"security"`
 	Tags         []Tag                         `json:"tags" yaml:"tags"`
 	ExternalDocs *ExternalDocumentation        `json:"externalDocs" yaml:"externalDocs"`
-	Bindings     utils.OrderedMap[string, any] `json:"bindings" yaml:"bindings"` // TODO: replace any to common bindings object
+	Bindings     utils.OrderedMap[string, any] `json:"bindings" yaml:"bindings"` // TODO: replace any to common protocols object
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }

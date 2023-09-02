@@ -7,7 +7,7 @@ import (
 	"github.com/samber/lo"
 )
 
-type PackageItem[T common.Assembled] struct {
+type PackageItem[T common.Assembler] struct {
 	Typ  T
 	Path []string
 }
@@ -16,31 +16,55 @@ type ModelsPackage struct {
 	Items []PackageItem[common.GolangType]
 }
 
-func (s *ModelsPackage) Put(ctx *common.Context, item common.Assembled) {
-	s.Items = append(s.Items, PackageItem[common.GolangType]{
+func (m *ModelsPackage) Put(ctx *common.CompileContext, item common.Assembler) {
+	m.Items = append(m.Items, PackageItem[common.GolangType]{
 		Typ:  item.(common.GolangType),
 		Path: ctx.PathStack(),
 	})
 }
 
-func (s *ModelsPackage) Find(path []string) (common.Assembled, bool) {
-	return findItem(s.Items, path)
+func (m *ModelsPackage) Find(path []string) (common.Assembler, bool) {
+	return findItem(m.Items, path)
 }
 
-func (s *ModelsPackage) List(path []string) []common.Assembled {
-	return listByPath(s.Items, path)
+func (m *ModelsPackage) FindBy(cb func(item any, path []string) bool) (common.Assembler, bool) {
+	return findItemBy(m.Items, cb)
 }
 
-func findItem[T common.Assembled](items []PackageItem[T], path []string) (common.Assembled, bool) {
+func (m *ModelsPackage) List(path []string) []common.Assembler {
+	return listSubItems(m.Items, path)
+}
+
+func (m *ModelsPackage) ListBy(cb func(item any, path []string) bool) []common.Assembler {
+	return listSubItemsBy(m.Items, cb)
+}
+
+func findItem[T common.Assembler](items []PackageItem[T], path []string) (common.Assembler, bool) {
 	res, ok := lo.Find(items, func(item PackageItem[T]) bool {
 		return utils.SlicesEqual(item.Path, path)
 	})
 	return res.Typ, ok
 }
 
-func listByPath[T common.Assembled](items []PackageItem[T], path []string) []common.Assembled {
-	return lo.FilterMap(items, func(item PackageItem[T], index int) (common.Assembled, bool) {
+func findItemBy[T common.Assembler](items []PackageItem[T], cb func(item any, path []string) bool) (common.Assembler, bool) {
+	res, ok := lo.Find(items, func(item PackageItem[T]) bool {
+		return cb(item.Typ, item.Path)
+	})
+	return res.Typ, ok
+}
+
+func listSubItems[T common.Assembler](items []PackageItem[T], path []string) []common.Assembler {
+	return lo.FilterMap(items, func(item PackageItem[T], index int) (common.Assembler, bool) {
 		if _, ok := utils.IsSubsequence(path, item.Path, 0); ok && len(item.Path) == len(path)+1 {
+			return item.Typ, true
+		}
+		return nil, false
+	})
+}
+
+func listSubItemsBy[T common.Assembler](items []PackageItem[T], cb func(item any, path []string) bool) []common.Assembler {
+	return lo.FilterMap(items, func(item PackageItem[T], index int) (common.Assembler, bool) {
+		if cb(item.Typ, item.Path) {
 			return item.Typ, true
 		}
 		return nil, false
@@ -56,7 +80,6 @@ func RenderModels(pkg *ModelsPackage, baseDir string) (files map[string]*jen.Fil
 	ctx := &common.AssembleContext{
 		CurrentPackage: common.ModelsPackageKind,
 		ImportBase:     "github.com/bdragon300/asyncapi-codegen/generated", // FIXME
-		RuntimePackage: "github.com/bdragon300/asyncapi-codegen/runtime",   // FIXME
 	}
 
 	for _, item := range pkg.Items {

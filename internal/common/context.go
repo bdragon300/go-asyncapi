@@ -5,9 +5,11 @@ import (
 )
 
 type Package interface {
-	Put(ctx *Context, item Assembled)
-	Find(path []string) (Assembled, bool)
-	List(path []string) []Assembled
+	Put(ctx *CompileContext, item Assembler)
+	Find(path []string) (Assembler, bool)
+	FindBy(cb func(item any, path []string) bool) (Assembler, bool)
+	List(path []string) []Assembler
+	ListBy(cb func(item any, path []string) bool) []Assembler
 }
 
 type Linker interface {
@@ -21,42 +23,42 @@ type ContextStackItem struct {
 	PackageKind PackageKind
 }
 
-type Context struct {
+type CompileContext struct {
 	Packages map[PackageKind]Package
 	Stack    []ContextStackItem
 	Linker   Linker
 }
 
-func (c *Context) Push(item ContextStackItem) {
+func (c *CompileContext) Push(item ContextStackItem) {
 	c.Stack = append(c.Stack, item)
 }
 
-func (c *Context) Pop() ContextStackItem {
+func (c *CompileContext) Pop() ContextStackItem {
 	top := c.Top()
 	c.Stack = c.Stack[:len(c.Stack)-1]
 	return top
 }
 
-func (c *Context) Top() ContextStackItem {
+func (c *CompileContext) Top() ContextStackItem {
 	if len(c.Stack) == 0 {
 		panic("Stack is empty")
 	}
 	return c.Stack[len(c.Stack)-1]
 }
 
-func (c *Context) CurrentPackage() Package {
+func (c *CompileContext) CurrentPackage() Package {
 	return c.Packages[c.Top().PackageKind]
 }
 
-func (c *Context) PathStack() []string {
+func (c *CompileContext) PathStack() []string {
 	return lo.Map(c.Stack, func(item ContextStackItem, _ int) string { return item.Path })
 }
 
-func (c *Context) Copy() *Context {
+func (c *CompileContext) Copy() *CompileContext {
 	var stack []ContextStackItem
 	copy(stack, c.Stack)
 
-	return &Context{
+	return &CompileContext{
 		Packages: nil,
 		Stack:    stack,
 		Linker:   c.Linker,
@@ -65,6 +67,7 @@ func (c *Context) Copy() *Context {
 
 type LinkQuerier interface {
 	Assign(obj any)
+	FindCallback() func(item any, path []string) bool
 	Package() PackageKind
 	Path() []string
 	Ref() string
@@ -72,6 +75,7 @@ type LinkQuerier interface {
 
 type ListQuerier interface {
 	AssignList(obj []any)
+	FindCallback() func(item any, path []string) bool
 	Package() PackageKind
 	Path() []string
 }

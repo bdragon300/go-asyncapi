@@ -24,15 +24,15 @@ type Message struct {
 	Description   string                        `json:"description" yaml:"description"`
 	Tags          []Tag                         `json:"tags" yaml:"tags"`
 	ExternalDocs  *ExternalDocumentation        `json:"externalDocs" yaml:"externalDocs"`
-	Bindings      utils.OrderedMap[string, any] `json:"bindings" yaml:"bindings"` // TODO: replace any to common bindings object
+	Bindings      utils.OrderedMap[string, any] `json:"bindings" yaml:"bindings"` // TODO: replace any to common protocols object
 	Examples      []MessageExample              `json:"examples" yaml:"examples"`
 	Traits        []MessageTrait                `json:"traits" yaml:"traits"`
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
-func (m Message) Compile(ctx *common.Context) error {
-	obj, err := m.buildMessage(ctx, ctx.Top().Path)
+func (m Message) Compile(ctx *common.CompileContext) error {
+	obj, err := m.build(ctx, ctx.Top().Path)
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
 	}
@@ -40,7 +40,7 @@ func (m Message) Compile(ctx *common.Context) error {
 	return nil
 }
 
-func (m Message) buildMessage(ctx *common.Context, name string) (common.Assembled, error) {
+func (m Message) build(ctx *common.CompileContext, name string) (common.Assembler, error) {
 	if m.ContentType != "" && m.ContentType != "application/json" {
 		return nil, fmt.Errorf("now is supported only application/json") // TODO: support other content types
 	}
@@ -82,7 +82,7 @@ func (m Message) setStructFields(langMessage *assemble.Message) {
 	}
 }
 
-func (m Message) getPayloadType(ctx *common.Context) common.GolangType {
+func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 	if m.Payload != nil {
 		path := append(ctx.PathStack(), "payload")
 		q := assemble.NewLinkQueryTypePath(ctx.Top().PackageKind, path)
@@ -92,7 +92,7 @@ func (m Message) getPayloadType(ctx *common.Context) common.GolangType {
 	return &assemble.Simple{Name: "any"}
 }
 
-func (m Message) getHeadersType(ctx *common.Context) common.GolangType {
+func (m Message) getHeadersType(ctx *common.CompileContext) common.GolangType {
 	if m.Headers != nil {
 		path := append(ctx.PathStack(), "headers")
 		q := assemble.NewLinkQueryTypePath(ctx.Top().PackageKind, path)
@@ -134,7 +134,7 @@ type MessageTrait struct {
 	Description   string                        `json:"description" yaml:"description"`
 	Tags          []Tag                         `json:"tags" yaml:"tags"`
 	ExternalDocs  *ExternalDocumentation        `json:"externalDocs" yaml:"externalDocs"`
-	Bindings      utils.OrderedMap[string, any] `json:"bindings" yaml:"bindings"` // FIXME: replace any to common bindings object
+	Bindings      utils.OrderedMap[string, any] `json:"bindings" yaml:"bindings"` // FIXME: replace any to common protocols object
 	Examples      []MessageExample              `json:"examples" yaml:"examples"`
 
 	Ref string `json:"$ref" yaml:"$ref"`

@@ -9,6 +9,8 @@ import (
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 )
 
+type serverProtoBuilderFunc func(ctx *common.CompileContext, name string) (assemble.ServerParts, error)
+
 type Server struct {
 	URL             string                                   `json:"url" yaml:"url"`
 	Protocol        string                                   `json:"protocol" yaml:"protocol"`
@@ -17,13 +19,13 @@ type Server struct {
 	Variables       utils.OrderedMap[string, ServerVariable] `json:"variables" yaml:"variables"`
 	Security        []SecurityRequirement                    `json:"security" yaml:"security"`
 	Tags            []Tag                                    `json:"tags" yaml:"tags"`
-	Bindings        utils.OrderedMap[string, any]            `json:"bindings" yaml:"bindings"` // TODO: replace any to common bindings object
+	Bindings        utils.OrderedMap[string, any]            `json:"bindings" yaml:"bindings"` // TODO: replace any to common protocols object
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
-func (s Server) Compile(ctx *common.Context) error {
-	obj, err := s.buildServer(ctx, ctx.Top().Path)
+func (s Server) Compile(ctx *common.CompileContext) error {
+	obj, err := s.build(ctx, ctx.Top().Path)
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
 	}
@@ -31,7 +33,7 @@ func (s Server) Compile(ctx *common.Context) error {
 	return nil
 }
 
-func (s Server) buildServer(ctx *common.Context, _ string) (common.Assembled, error) {
+func (s Server) build(ctx *common.CompileContext, name string) (common.Assembler, error) {
 	if s.Ref != "" {
 		res := assemble.NewLinkQueryRendererRef(common.ServersPackageKind, s.Ref)
 		ctx.Linker.Add(res)
@@ -39,7 +41,24 @@ func (s Server) buildServer(ctx *common.Context, _ string) (common.Assembled, er
 	}
 
 	res := &assemble.Server{Protocol: s.Protocol}
+	protoBuilder, ok := s.supportedProtocols()[s.Protocol]
+	if !ok {
+		panic(fmt.Sprintf("Unknown protocol %q at path %s", s.Protocol, ctx.PathStack()))
+	}
+	var err error
+	res.Parts, err = protoBuilder(ctx, name)
+	if err != nil {
+		return nil, fmt.Errorf("error build server at path %s: %w", ctx.PathStack(), err)
+	}
+
 	return res, nil
+}
+
+func (s Server) supportedProtocols() map[string]serverProtoBuilderFunc {
+	return map[string]serverProtoBuilderFunc{
+		"kafka":        s.buildKafka,
+		"kafka-secure": s.buildKafka,
+	}
 }
 
 // TODO: This object MAY be extended with Specification Extensions.

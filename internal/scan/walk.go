@@ -9,17 +9,17 @@ import (
 )
 
 type compiler interface {
-	Compile(ctx *common.Context) error
+	Compile(ctx *common.CompileContext) error
 }
 
 type orderedMap interface {
 	OrderedMap()
 }
 
-func WalkSchema(ctx *common.Context, object reflect.Value) error {
+func WalkSchema(ctx *common.CompileContext, object reflect.Value) error {
 	objectTyp := object.Type()
 
-	gather := func(_ctx *common.Context, _obj reflect.Value) error {
+	gather := func(_ctx *common.CompileContext, _obj reflect.Value) error {
 		if err := WalkSchema(_ctx, _obj); err != nil {
 			return err
 		}
@@ -98,7 +98,7 @@ func parseTags(field reflect.StructField) (tags map[common.SchemaTag]string) {
 	return
 }
 
-func pushStack(ctx *common.Context, pathItem string, flags map[common.SchemaTag]string) {
+func pushStack(ctx *common.CompileContext, pathItem string, flags map[common.SchemaTag]string) {
 	if flags == nil {
 		flags = make(map[common.SchemaTag]string)
 	}

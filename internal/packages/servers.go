@@ -11,7 +11,7 @@ type ServersPackage struct {
 	Servers []PackageItem[*assemble.Server]
 }
 
-func (c *ServersPackage) Put(ctx *common.Context, item common.Assembled) {
+func (c *ServersPackage) Put(ctx *common.CompileContext, item common.Assembler) {
 	switch v := item.(type) {
 	case *assemble.Server:
 		c.Servers = append(c.Servers, PackageItem[*assemble.Server]{
@@ -26,7 +26,7 @@ func (c *ServersPackage) Put(ctx *common.Context, item common.Assembled) {
 	}
 }
 
-func (c *ServersPackage) Find(path []string) (common.Assembled, bool) {
+func (c *ServersPackage) Find(path []string) (common.Assembler, bool) {
 	if res, ok := findItem(c.Types, path); ok {
 		return res, true
 	}
@@ -36,9 +36,25 @@ func (c *ServersPackage) Find(path []string) (common.Assembled, bool) {
 	return nil, false
 }
 
-func (c *ServersPackage) List(path []string) []common.Assembled {
-	res := listByPath(c.Types, path)
-	res = append(res, listByPath(c.Servers, path)...)
+func (c *ServersPackage) FindBy(cb func(item any, path []string) bool) (common.Assembler, bool) {
+	if res, ok := findItemBy(c.Types, cb); ok {
+		return res, true
+	}
+	if res, ok := findItemBy(c.Servers, cb); ok {
+		return res, true
+	}
+	return nil, false
+}
+
+func (c *ServersPackage) List(path []string) []common.Assembler {
+	res := listSubItems(c.Types, path)
+	res = append(res, listSubItems(c.Servers, path)...)
+	return res
+}
+
+func (c *ServersPackage) ListBy(cb func(item any, path []string) bool) []common.Assembler {
+	res := listSubItemsBy(c.Types, cb)
+	res = append(res, listSubItemsBy(c.Servers, cb)...)
 	return res
 }
 
@@ -51,7 +67,6 @@ func RenderServers(pkg *ServersPackage, baseDir string) (files map[string]*jen.F
 	ctx := &common.AssembleContext{
 		CurrentPackage: common.ServersPackageKind,
 		ImportBase:     "github.com/bdragon300/asyncapi-codegen/generated", // FIXME
-		RuntimePackage: "github.com/bdragon300/asyncapi-codegen/runtime",   // FIXME
 	}
 	for _, item := range pkg.Servers {
 		for _, stmt := range item.Typ.AssembleDefinition(ctx) {

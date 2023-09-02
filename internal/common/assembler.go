@@ -1,8 +1,12 @@
 package common
 
-import "github.com/dave/jennifer/jen"
+import (
+	"path"
 
-type Assembled interface {
+	"github.com/dave/jennifer/jen"
+)
+
+type Assembler interface {
 	AllowRender() bool
 	AssembleDefinition(ctx *AssembleContext) []*jen.Statement
 	AssembleUsage(ctx *AssembleContext) []*jen.Statement
@@ -12,5 +16,8 @@ type AssembleContext struct {
 	CurrentPackage     PackageKind
 	ImportBase         string
 	ForceImportPackage string
-	RuntimePackage     string // TODO: replace on package params in appropriate assemble.* struct
+}
+
+func (a AssembleContext) RuntimePackage() string {
+	return path.Join(a.ImportBase, "runtime")
 }

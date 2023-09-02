@@ -22,15 +22,28 @@ func NewLinkRefQuery[T any](pkg common.PackageKind, ref string) *LinkQuery[T] {
 	}
 }
 
+func NewLinkCbQuery[T any](pkg common.PackageKind, findCb func(item any, path []string) bool) *LinkQuery[T] {
+	return &LinkQuery[T]{
+		pkg:    pkg,
+		findCb: findCb,
+	}
+}
+
 type LinkQuery[T any] struct {
-	pkg  common.PackageKind
-	path []string
-	ref  string
+	pkg    common.PackageKind
+	path   []string
+	ref    string
+	findCb func(item any, path []string) bool
+
 	link T
 }
 
 func (r *LinkQuery[T]) Assign(obj any) {
 	r.link = obj.(T)
+}
+
+func (r *LinkQuery[T]) FindCallback() func(item any, path []string) bool {
+	return r.findCb
 }
 
 func (r *LinkQuery[T]) Link() T {
@@ -56,14 +69,27 @@ func NewLinkQueryList[T any](pkg common.PackageKind, path []string) *LinkQueryLi
 	}
 }
 
+func NewLinkCbList[T any](pkg common.PackageKind, findCb func(item any, path []string) bool) *LinkQueryList[T] {
+	return &LinkQueryList[T]{
+		pkg:    pkg,
+		findCb: findCb,
+	}
+}
+
 type LinkQueryList[T any] struct {
-	pkg   common.PackageKind
-	path  []string
+	pkg    common.PackageKind
+	path   []string
+	findCb func(item any, path []string) bool
+
 	links []T
 }
 
 func (r *LinkQueryList[T]) AssignList(obj []any) {
 	r.links = utils.CastSliceItems[any, T](obj)
+}
+
+func (r *LinkQueryList[T]) FindCallback() func(item any, path []string) bool {
+	return r.findCb
 }
 
 func (r *LinkQueryList[T]) Links() []T {
@@ -80,18 +106,18 @@ func (r *LinkQueryList[T]) Path() []string {
 
 func NewLinkQueryRendererPath(pkg common.PackageKind, path []string) *LinkQueryRenderer {
 	return &LinkQueryRenderer{
-		LinkQuery: *NewLinkPathQuery[common.Assembled](pkg, path),
+		LinkQuery: *NewLinkPathQuery[common.Assembler](pkg, path),
 	}
 }
 
 func NewLinkQueryRendererRef(pkg common.PackageKind, ref string) *LinkQueryRenderer {
 	return &LinkQueryRenderer{
-		LinkQuery: *NewLinkRefQuery[common.Assembled](pkg, ref),
+		LinkQuery: *NewLinkRefQuery[common.Assembler](pkg, ref),
 	}
 }
 
 type LinkQueryRenderer struct {
-	LinkQuery[common.Assembled]
+	LinkQuery[common.Assembler]
 }
 
 func (r *LinkQueryRenderer) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {

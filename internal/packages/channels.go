@@ -11,7 +11,7 @@ type ChannelsPackage struct {
 	Channels []PackageItem[*assemble.Channel]
 }
 
-func (c *ChannelsPackage) Put(ctx *common.Context, item common.Assembled) {
+func (c *ChannelsPackage) Put(ctx *common.CompileContext, item common.Assembler) {
 	switch v := item.(type) {
 	case *assemble.Channel:
 		c.Channels = append(c.Channels, PackageItem[*assemble.Channel]{
@@ -26,7 +26,8 @@ func (c *ChannelsPackage) Put(ctx *common.Context, item common.Assembled) {
 	}
 }
 
-func (c *ChannelsPackage) Find(path []string) (common.Assembled, bool) {
+// TODO: refactor the methods below
+func (c *ChannelsPackage) Find(path []string) (common.Assembler, bool) {
 	if res, ok := findItem(c.Types, path); ok {
 		return res, true
 	}
@@ -36,9 +37,25 @@ func (c *ChannelsPackage) Find(path []string) (common.Assembled, bool) {
 	return nil, false
 }
 
-func (c *ChannelsPackage) List(path []string) []common.Assembled {
-	res := listByPath(c.Types, path)
-	res = append(res, listByPath(c.Channels, path)...)
+func (c *ChannelsPackage) FindBy(cb func(item any, path []string) bool) (common.Assembler, bool) {
+	if res, ok := findItemBy(c.Types, cb); ok {
+		return res, true
+	}
+	if res, ok := findItemBy(c.Channels, cb); ok {
+		return res, true
+	}
+	return nil, false
+}
+
+func (c *ChannelsPackage) List(path []string) []common.Assembler {
+	res := listSubItems(c.Types, path)
+	res = append(res, listSubItems(c.Channels, path)...)
+	return res
+}
+
+func (c *ChannelsPackage) ListBy(cb func(item any, path []string) bool) []common.Assembler {
+	res := listSubItemsBy(c.Types, cb)
+	res = append(res, listSubItemsBy(c.Channels, cb)...)
 	return res
 }
 
@@ -51,7 +68,6 @@ func RenderChannels(pkg *ChannelsPackage, baseDir string) (files map[string]*jen
 	ctx := &common.AssembleContext{
 		CurrentPackage: common.MessagesPackageKind,
 		ImportBase:     "github.com/bdragon300/asyncapi-codegen/generated", // FIXME
-		RuntimePackage: "github.com/bdragon300/asyncapi-codegen/runtime",   // FIXME
 	}
 	for _, item := range pkg.Channels {
 		for _, stmt := range item.Typ.AssembleDefinition(ctx) {
