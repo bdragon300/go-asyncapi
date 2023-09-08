@@ -16,7 +16,7 @@ const protoName = "kafka"
 func Register() {
 	compile.ProtoServerBuilders[protoName] = BuildServer
 	compile.ProtoChannelBuilders[protoName] = BuildChannel
-	compile.ProtoServerBuilders["kafka-secure"] = BuildServer
+	compile.ProtoServerBuilders["kafka-secure"] = BuildServer // TODO: make a separate kafka-secure protocol
 	compile.ProtoChannelBuilders["kafka-secure"] = BuildChannel
 }
 
@@ -75,12 +75,6 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, name str
 			Iface:       iface,
 			MessageLink: getOperationMessageType(ctx, channel.Publish, "publish"),
 		}
-		ch.NewFunc = &assemble.NewFunc{
-			BaseType:           assemble.BaseType{Name: "New" + strct.Name, Render: true, Package: ctx.Top().PackageKind},
-			Struct:             &strct,
-			NewFuncArgs:        []assemble.FuncParam{{Name: "servers", Type: ch.Iface, Variadic: true}},
-			NewFuncAllocFields: []string{"servers"},
-		}
 		res.Publish = &ProtoChannelPub{ProtoChannel: ch}
 		commonStruct.Fields = append(commonStruct.Fields, assemble.StructField{
 			Type: assemble.Simple{Name: chGolangName, Package: ctx.Top().PackageKind},
@@ -127,12 +121,6 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, name str
 			Struct:      &strct,
 			Iface:       iface,
 			MessageLink: getOperationMessageType(ctx, channel.Subscribe, "subscribe"),
-		}
-		ch.NewFunc = &assemble.NewFunc{
-			BaseType:           assemble.BaseType{Name: "New" + strct.Name, Render: true, Package: ctx.Top().PackageKind},
-			Struct:             &strct,
-			NewFuncArgs:        []assemble.FuncParam{{Name: "servers", Type: ch.Iface, Variadic: true}},
-			NewFuncAllocFields: []string{"servers"},
 		}
 		res.Subscribe = &ProtoChannelSub{ProtoChannel: ch}
 		commonStruct.Fields = append(commonStruct.Fields, assemble.StructField{
@@ -188,15 +176,6 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, name string
 		},
 		ChannelsLinks: channelsLnk,
 	}
-	pub.NewFunc = &assemble.NewFunc{
-		BaseType: assemble.BaseType{Name: "New" + pub.Struct.Name, Render: true, Package: ctx.Top().PackageKind},
-		Struct:   pub.Struct,
-		NewFuncArgs: []assemble.FuncParam{{
-			Name: "producer",
-			Type: &assemble.Simple{Name: "Producer", Package: common.RuntimeKafkaPackageKind},
-		}},
-		NewFuncAllocFields: []string{"producer"},
-	}
 	res.Publish = ProtoServerPub{ProtoServer: pub}
 
 	sub := ProtoServer{
@@ -215,15 +194,6 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, name string
 		},
 		ChannelsLinks: channelsLnk,
 	}
-	sub.NewFunc = &assemble.NewFunc{
-		BaseType: assemble.BaseType{Name: "New" + sub.Struct.Name, Render: true, Package: ctx.Top().PackageKind},
-		Struct:   sub.Struct,
-		NewFuncArgs: []assemble.FuncParam{{
-			Name: "consumer",
-			Type: &assemble.Simple{Name: "Consumer", Package: common.RuntimeKafkaPackageKind},
-		}},
-		NewFuncAllocFields: []string{"consumer"},
-	}
 	res.Subscribe = ProtoServerSub{ProtoServer: sub}
 
 	srv := ProtoServer{
@@ -235,21 +205,9 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, name string
 				Render:      true,
 				Package:     ctx.Top().PackageKind,
 			},
-			Fields: []assemble.StructField{{Type: sub.Struct}, {Type: pub.Struct}},
+			Fields: []assemble.StructField{{Type: pub.Struct}, {Type: sub.Struct}},
 		},
 		ChannelsLinks: channelsLnk,
-	}
-	srv.NewFunc = &assemble.NewFunc{
-		BaseType: assemble.BaseType{Name: "New" + srv.Struct.Name, Render: true, Package: ctx.Top().PackageKind},
-		Struct:   srv.Struct,
-		NewFuncArgs: []assemble.FuncParam{{
-			Name: "producer",
-			Type: &assemble.Simple{Name: "Producer", Package: common.RuntimeKafkaPackageKind},
-		}, {
-			Name: "consumer",
-			Type: &assemble.Simple{Name: "Consumer", Package: common.RuntimeKafkaPackageKind},
-		}},
-		NewFuncAllocFields: []string{pub.Struct.Name, sub.Struct.Name},
 	}
 	res.Common = ProtoServerCommon{ProtoServer: srv, PubStruct: pub.Struct, SubStruct: sub.Struct}
 

@@ -23,7 +23,7 @@ func (i Interface) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statem
 	code := lo.FlatMap(i.Methods, func(item FunctionSignature, index int) []*jen.Statement {
 		return item.assembleDefinition(ctx)
 	})
-	res = append(res, jen.Type().Id(i.Name).Interface(utils.ToJenCode(code)...))
+	res = append(res, jen.Type().Id(i.Name).Interface(utils.ToCode(code)...))
 	return res
 }
 
@@ -39,7 +39,7 @@ func (i Interface) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 		return item.assembleDefinition(ctx)
 	})
 	return []*jen.Statement{
-		jen.Interface(utils.ToJenCode(code)...),
+		jen.Interface(utils.ToCode(code)...),
 	}
 }
 
@@ -58,14 +58,14 @@ func (i FunctionSignature) assembleDefinition(ctx *common.AssembleContext) []*je
 	code := lo.FlatMap(i.Args, func(item FuncParam, index int) []*jen.Statement {
 		return item.assembleDefinition(ctx)
 	})
-	stmt = stmt.Params(utils.ToJenCode(code)...)
+	stmt = stmt.Params(utils.ToCode(code)...)
 	code = lo.FlatMap(i.Return, func(item FuncParam, index int) []*jen.Statement {
 		return item.assembleDefinition(ctx)
 	})
 	if len(code) > 1 {
-		stmt = stmt.Params(utils.ToJenCode(code)...)
+		stmt = stmt.Params(utils.ToCode(code)...)
 	} else {
-		stmt = stmt.Add(utils.ToJenCode(code)...)
+		stmt = stmt.Add(utils.ToCode(code)...)
 	}
 	return []*jen.Statement{stmt}
 }
@@ -88,6 +88,6 @@ func (n FuncParam) assembleDefinition(ctx *common.AssembleContext) []*jen.Statem
 	if n.Pointer {
 		stmt = stmt.Op("*")
 	}
-	stmt = stmt.Add(utils.ToJenCode(n.Type.AssembleUsage(ctx))...)
+	stmt = stmt.Add(utils.ToCode(n.Type.AssembleUsage(ctx))...)
 	return []*jen.Statement{stmt}
 }

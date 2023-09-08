@@ -2,7 +2,7 @@ package utils
 
 import "github.com/dave/jennifer/jen"
 
-func ToJenCode(in []*jen.Statement) []jen.Code {
+func ToCode(in []*jen.Statement) []jen.Code {
 	result := make([]jen.Code, len(in))
 	for i, item := range in {
 		result[i] = any(item).(jen.Code)

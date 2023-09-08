@@ -12,11 +12,10 @@ import (
 )
 
 type ProtoChannel struct {
-	Name    string
-	Topic   string
-	Iface   *assemble.Interface
-	NewFunc *assemble.NewFunc
-	Struct  *assemble.Struct
+	Name   string
+	Topic  string
+	Iface  *assemble.Interface
+	Struct *assemble.Struct
 
 	MessageLink *assemble.Link[*assemble.Message] // nil when message is not set
 }
@@ -69,7 +68,17 @@ type ProtoChannelSub struct {
 
 func (p ProtoChannelSub) AssembleDefinition(ctx *common.AssembleContext) []*j.Statement {
 	res := p.Iface.AssembleDefinition(ctx)
-	res = append(res, p.NewFunc.AssembleDefinition(ctx)...)
+
+	// NewSubChannel1(servers ...SubChannel1Server) *SubChannel1
+	allocVals := j.Dict{j.Id("servers"): j.Id("servers")}
+	res = append(res,
+		j.Func().Id(p.Struct.NewFuncName()).
+			Params(j.Id("servers").Op("...").Add(utils.ToCode(p.Iface.AssembleUsage(ctx))...)).
+			Op("*").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...).
+			Block(
+				j.Return(j.Op("&").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...).Values(allocVals)),
+			),
+	)
 	res = append(res, p.Struct.AssembleDefinition(ctx)...)
 	res = append(res, p.assembleMethods(ctx)...)
 	return res
@@ -80,8 +89,8 @@ func (p ProtoChannelSub) assembleMethods(ctx *common.AssembleContext) []*j.State
 	messageType := []j.Code{j.Any()}
 	headersType := []j.Code{j.Any()}
 	if p.MessageLink != nil {
-		messageType = utils.ToJenCode(p.MessageLink.Link().AssembleUsage(ctx))
-		headersType = utils.ToJenCode(p.MessageLink.Link().HeadersType.AssembleUsage(ctx))
+		messageType = utils.ToCode(p.MessageLink.Link().AssembleUsage(ctx))
+		headersType = utils.ToCode(p.MessageLink.Link().HeadersType.AssembleUsage(ctx))
 	}
 	rcvName := strings.ToLower(string(structName[0]))
 	receiver := j.Id(rcvName).Op("*").Id(structName)
@@ -168,7 +177,17 @@ type ProtoChannelPub struct {
 
 func (p ProtoChannelPub) AssembleDefinition(ctx *common.AssembleContext) []*j.Statement {
 	res := p.Iface.AssembleDefinition(ctx)
-	res = append(res, p.NewFunc.AssembleDefinition(ctx)...)
+
+	// NewPubChannel1(servers ...PubChannel1Server) *PubChannel1
+	allocVals := j.Dict{j.Id("servers"): j.Id("servers")}
+	res = append(res,
+		j.Func().Id(p.Struct.NewFuncName()).
+			Params(j.Id("servers").Op("...").Add(utils.ToCode(p.Iface.AssembleUsage(ctx))...)).
+			Op("*").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...).
+			Block(
+				j.Return(j.Op("&").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...).Values(allocVals)),
+			),
+	)
 	res = append(res, p.Struct.AssembleDefinition(ctx)...)
 	res = append(res, p.assembleMethods(ctx)...)
 	return res
@@ -176,7 +195,7 @@ func (p ProtoChannelPub) AssembleDefinition(ctx *common.AssembleContext) []*j.St
 
 func (p ProtoChannelPub) assembleMethods(ctx *common.AssembleContext) []*j.Statement {
 	structName := p.Struct.Name
-	messageType := utils.ToJenCode(p.MessageLink.Link().AssembleUsage(ctx))
+	messageType := utils.ToCode(p.MessageLink.Link().AssembleUsage(ctx))
 	receiverName := strings.ToLower(string(structName[0]))
 	receiver := j.Id(receiverName).Id(structName)
 	kafkaPkg := ctx.RuntimePackage("kafka")
@@ -247,7 +266,6 @@ type ProtoChannelCommon struct {
 
 type ProtoServer struct {
 	Name          string
-	NewFunc       *assemble.NewFunc
 	Struct        *assemble.Struct
 	ChannelsLinks *assemble.LinkList[*assemble.Channel]
 }
@@ -284,8 +302,18 @@ func (p ProtoServerSub) AssembleDefinition(ctx *common.AssembleContext) []*j.Sta
 	structName := p.Struct.Name
 	receiverName := strings.ToLower(string(structName[0]))
 	receiver := j.Id(receiverName).Id(structName)
+	var res []*j.Statement
 
-	res := p.NewFunc.AssembleDefinition(ctx)
+	// NewServer1SubServer(consumer kafka.Consumer) *Server1SubServer
+	allocVals := j.Dict{j.Id("consumer"): j.Id("consumer")}
+	res = append(res,
+		j.Func().Id(p.Struct.NewFuncName()).
+			Params(j.Id("consumer").Qual(ctx.RuntimePackage("kafka"), "Consumer")).
+			Op("*").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...).
+			Block(
+				j.Return(j.Op("&").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...).Values(allocVals)),
+			),
+	)
 	res = append(res, p.Struct.AssembleDefinition(ctx)...)
 	res = append(res, p.ProtoServer.commonMethods()...)
 	// Method Consumer() kafka.Consumer
@@ -308,9 +336,9 @@ func (p ProtoServerSub) AssembleDefinition(ctx *common.AssembleContext) []*j.Sta
 			// Method Channel1SubChannel() *Channel1KafkaSubChannel
 			j.Func().Params(receiver.Clone()).Id(utils.ToGolangName(ch.Name+"SubChannel", true)).
 				Params().
-				Op("*").Add(utils.ToJenCode(subscriber.AssembleUsage(ctx))...).
+				Op("*").Add(utils.ToCode(subscriber.AssembleUsage(ctx))...).
 				Block(
-					j.Return(j.Add(utils.ToJenCode(subscriberKafka.NewFunc.AssembleUsage(ctx))...).Call(j.Op("&").Id(receiverName))),
+					j.Return(j.Add(utils.ToCode(subscriberKafka.Struct.NewFuncUsage(ctx))...).Call(j.Op("&").Id(receiverName))),
 				),
 		)
 	}
@@ -325,8 +353,18 @@ func (p ProtoServerPub) AssembleDefinition(ctx *common.AssembleContext) []*j.Sta
 	structName := p.Struct.Name
 	receiverName := strings.ToLower(string(structName[0]))
 	receiver := j.Id(receiverName).Id(structName)
+	var res []*j.Statement
 
-	res := p.NewFunc.AssembleDefinition(ctx)
+	// NewServer1PubServer(producer kafka.Producer) *Server1PubServer
+	allocVals := j.Dict{j.Id("producer"): j.Id("producer")}
+	res = append(res,
+		j.Func().Id(p.Struct.NewFuncName()).
+			Params(j.Id("producer").Qual(ctx.RuntimePackage("kafka"), "Producer")).
+			Op("*").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...).
+			Block(
+				j.Return(j.Op("&").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...).Values(allocVals)),
+			),
+	)
 	res = append(res, p.Struct.AssembleDefinition(ctx)...)
 	res = append(res, p.ProtoServer.commonMethods()...)
 
@@ -350,9 +388,9 @@ func (p ProtoServerPub) AssembleDefinition(ctx *common.AssembleContext) []*j.Sta
 		res = append(res,
 			j.Func().Params(receiver.Clone()).Id(utils.ToGolangName(ch.Name+"PubChannel", true)).
 				Params().
-				Op("*").Add(utils.ToJenCode(publisher.AssembleUsage(ctx))...).
+				Op("*").Add(utils.ToCode(publisher.AssembleUsage(ctx))...).
 				Block(
-					j.Return(j.Add(utils.ToJenCode(publisherKafka.NewFunc.AssembleUsage(ctx))...).Call(j.Op("&").Id(receiverName))),
+					j.Return(j.Add(utils.ToCode(publisherKafka.Struct.NewFuncUsage(ctx))...).Call(j.Op("&").Id(receiverName))),
 				),
 		)
 	}
@@ -369,35 +407,45 @@ func (p ProtoServerCommon) AssembleDefinition(ctx *common.AssembleContext) []*j.
 	structName := p.Struct.Name
 	receiverName := strings.ToLower(string(structName[0]))
 	receiver := j.Id(receiverName).Id(structName)
+	var res []*j.Statement
 
 	// NewServer1Server(producer, consumer) *Server1Server
-	vals := map[string]j.Code{
-		p.PubStruct.Name: j.Add(utils.ToJenCode(p.PubStruct.AssembleAllocation(ctx, map[string]j.Code{"producer": j.Id("producer")}))...),
-		p.SubStruct.Name: j.Add(utils.ToJenCode(p.SubStruct.AssembleAllocation(ctx, map[string]j.Code{"consumer": j.Id("consumer")}))...),
+	allocVals := j.Dict{
+		j.Id(p.PubStruct.Name): j.Add(utils.ToCode(p.PubStruct.AssembleUsage(ctx))...).Values(j.Dict{j.Id("producer"): j.Id("producer")}),
+		j.Id(p.SubStruct.Name): j.Add(utils.ToCode(p.SubStruct.AssembleUsage(ctx))...).Values(j.Dict{j.Id("consumer"): j.Id("consumer")}),
 	}
-	body := []j.Code{j.Return(j.Op("&").Add(utils.ToJenCode(p.Struct.AssembleAllocation(ctx, vals))...))}
-	res := p.NewFunc.AssembleDefinitionWithBody(ctx, body)
+	res = append(res,
+		j.Func().Id(p.Struct.NewFuncName()).
+			Params(
+				j.Id("producer").Qual(ctx.RuntimePackage("kafka"), "Producer"),
+				j.Id("consumer").Qual(ctx.RuntimePackage("kafka"), "Consumer"),
+			).
+			Op("*").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...).
+			Block(
+				j.Return(j.Op("&").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...).Values(allocVals)),
+			),
+	)
 	res = append(res, p.Struct.AssembleDefinition(ctx)...)
 
 	for _, ch := range p.ChannelsLinks.Links() {
 		commonChan := ch.SupportedProtocols[protoName].Common
 		chanKafka := commonChan.(*ProtoChannelCommon)
-		vals := map[string]j.Code{}
+		vals := j.Dict{}
 		if ch.SupportedProtocols[protoName].Publish != nil {
-			kafkaID := utils.ToGolangName(ch.Name+"KafkaPubChannel", true)
+			kafkaID := j.Id(utils.ToGolangName(ch.Name+"KafkaPubChannel", true))
 			vals[kafkaID] = j.Op("*").Id(receiverName).Dot(utils.ToGolangName(ch.Name+"PubChannel", true)).Call()
 		}
 		if ch.SupportedProtocols[protoName].Subscribe != nil {
-			kafkaID := utils.ToGolangName(ch.Name+"KafkaSubChannel", true)
+			kafkaID := j.Id(utils.ToGolangName(ch.Name+"KafkaSubChannel", true))
 			vals[kafkaID] = j.Op("*").Id(receiverName).Dot(utils.ToGolangName(ch.Name+"SubChannel", true)).Call()
 		}
 
 		// Method Channel1Channel() *Channel1KafkaChannel
 		stmt := j.Func().Params(receiver.Clone()).Id(utils.ToGolangName(ch.Name+"Channel", true)).
 			Params().
-			Op("*").Add(utils.ToJenCode(chanKafka.AssembleUsage(ctx))...).
+			Op("*").Add(utils.ToCode(chanKafka.AssembleUsage(ctx))...).
 			Block(
-				j.Return(j.Op("&").Add(utils.ToJenCode(chanKafka.Struct.AssembleAllocation(ctx, vals))...)),
+				j.Return(j.Op("&").Add(utils.ToCode(chanKafka.Struct.AssembleUsage(ctx))...).Values(vals)),
 			)
 		res = append(res, stmt)
 	}
