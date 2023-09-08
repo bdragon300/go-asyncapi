@@ -9,7 +9,9 @@ import (
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 )
 
-type serverProtoBuilderFunc func(ctx *common.CompileContext, name string) (assemble.ServerParts, error)
+type serverProtoBuilderFunc func(ctx *common.CompileContext, server *Server, name string) (assemble.ServerParts, error)
+
+var ProtoServerBuilders = map[string]serverProtoBuilderFunc{}
 
 type Server struct {
 	URL             string                                   `json:"url" yaml:"url"`
@@ -41,24 +43,17 @@ func (s Server) build(ctx *common.CompileContext, name string) (common.Assembler
 	}
 
 	res := &assemble.Server{Protocol: s.Protocol}
-	protoBuilder, ok := s.supportedProtocols()[s.Protocol]
+	protoBuilder, ok := ProtoServerBuilders[s.Protocol]
 	if !ok {
 		panic(fmt.Sprintf("Unknown protocol %q at path %s", s.Protocol, ctx.PathStack()))
 	}
 	var err error
-	res.Parts, err = protoBuilder(ctx, name)
+	res.Parts, err = protoBuilder(ctx, &s, name)
 	if err != nil {
 		return nil, fmt.Errorf("error build server at path %s: %w", ctx.PathStack(), err)
 	}
 
 	return res, nil
-}
-
-func (s Server) supportedProtocols() map[string]serverProtoBuilderFunc {
-	return map[string]serverProtoBuilderFunc{
-		"kafka":        s.buildKafka,
-		"kafka-secure": s.buildKafka,
-	}
 }
 
 // TODO: This object MAY be extended with Specification Extensions.

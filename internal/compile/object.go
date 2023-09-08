@@ -107,7 +107,7 @@ func buildLangType(ctx *common.CompileContext, schema Object, flags map[common.S
 	case "null", "":
 		return &assemble.TypeAlias{
 			BaseType: assemble.BaseType{
-				Name:        getTypeName(ctx, name, ""),
+				Name:        GenerateGolangTypeName(ctx, name, ""),
 				Description: schema.Description,
 				Render:      noInline,
 			},
@@ -129,7 +129,7 @@ func buildLangType(ctx *common.CompileContext, schema Object, flags map[common.S
 
 	return &assemble.TypeAlias{
 		BaseType: assemble.BaseType{
-			Name:        getTypeName(ctx, name, ""),
+			Name:        GenerateGolangTypeName(ctx, name, ""),
 			Description: schema.Description,
 			Render:      noInline,
 			Package:     ctx.Top().PackageKind,
@@ -172,7 +172,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 	_, noInline := flags[common.SchemaTagNoInline]
 	res := assemble.Struct{
 		BaseType: assemble.BaseType{
-			Name:        getTypeName(ctx, name, ""),
+			Name:        GenerateGolangTypeName(ctx, name, ""),
 			Description: schema.Description,
 			Render:      noInline,
 			Package:     ctx.Top().PackageKind,
@@ -209,7 +209,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 				Name: "AdditionalProperties",
 				Type: &assemble.Map{
 					BaseType: assemble.BaseType{
-						Name:        getTypeName(ctx, name, "AdditionalProperties"),
+						Name:        GenerateGolangTypeName(ctx, name, "AdditionalProperties"),
 						Description: schema.AdditionalProperties.V0.Description,
 						Render:      false,
 						Package:     ctx.Top().PackageKind,
@@ -226,7 +226,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 			if schema.AdditionalProperties.V1 { // "additionalProperties: true" -- allow any additional properties
 				valTyp := assemble.TypeAlias{
 					BaseType: assemble.BaseType{
-						Name:        getTypeName(ctx, name, "AdditionalPropertiesValue"),
+						Name:        GenerateGolangTypeName(ctx, name, "AdditionalPropertiesValue"),
 						Description: "",
 						Render:      false,
 						Package:     ctx.Top().PackageKind,
@@ -237,7 +237,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 					Name: "AdditionalProperties",
 					Type: &assemble.Map{
 						BaseType: assemble.BaseType{
-							Name:        getTypeName(ctx, name, "AdditionalProperties"),
+							Name:        GenerateGolangTypeName(ctx, name, "AdditionalProperties"),
 							Description: "",
 							Render:      false,
 							Package:     ctx.Top().PackageKind,
@@ -260,7 +260,7 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 	_, noInline := flags[common.SchemaTagNoInline]
 	res := assemble.Array{
 		BaseType: assemble.BaseType{
-			Name:        getTypeName(ctx, name, ""),
+			Name:        GenerateGolangTypeName(ctx, name, ""),
 			Description: schema.Description,
 			Render:      noInline,
 			Package:     ctx.Top().PackageKind,
@@ -278,7 +278,7 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 	case schema.Items == nil || schema.Items.Selector == 1: // No items or Several types for each item sequentially
 		valTyp := assemble.TypeAlias{
 			BaseType: assemble.BaseType{
-				Name:        getTypeName(ctx, name, "ItemsItemValue"),
+				Name:        GenerateGolangTypeName(ctx, name, "ItemsItemValue"),
 				Description: "",
 				Render:      false,
 				Package:     ctx.Top().PackageKind,
@@ -287,7 +287,7 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 		}
 		res.ItemsType = &assemble.Map{
 			BaseType: assemble.BaseType{
-				Name:        getTypeName(ctx, name, "ItemsItem"),
+				Name:        GenerateGolangTypeName(ctx, name, "ItemsItem"),
 				Description: "",
 				Render:      false,
 				Package:     ctx.Top().PackageKind,
@@ -301,10 +301,10 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 }
 
 func getFieldName(srcName string) string {
-	return utils.ToGolangName(srcName)
+	return utils.ToGolangName(srcName, true)
 }
 
-func getTypeName(ctx *common.CompileContext, title, suffix string) string {
+func GenerateGolangTypeName(ctx *common.CompileContext, title, suffix string) string {
 	n := title
 	if n == "" {
 		n = strings.Join(ctx.PathStack(), pathSep)
@@ -312,5 +312,5 @@ func getTypeName(ctx *common.CompileContext, title, suffix string) string {
 	if suffix != "" {
 		n += pathSep + suffix
 	}
-	return utils.ToGolangName(n)
+	return utils.ToGolangName(n, true)
 }

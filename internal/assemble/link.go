@@ -1,9 +1,11 @@
 package assemble
 
 import (
+	"fmt"
+
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
-	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	"github.com/dave/jennifer/jen"
+	"github.com/samber/lo"
 )
 
 func NewRefLink[T any](pkg common.PackageKind, ref string) *Link[T] {
@@ -63,7 +65,11 @@ type LinkList[T any] struct {
 }
 
 func (r *LinkList[T]) AssignList(obj []any) {
-	r.links = utils.CastSliceItems[any, T](obj)
+	var ok bool
+	r.links, ok = lo.FromAnySlice[T](obj)
+	if !ok {
+		panic(fmt.Sprintf("Cannot assign slice of %+v to %T", obj, r.links))
+	}
 }
 
 func (r *LinkList[T]) FindCallback() func(item any, path []string) bool {

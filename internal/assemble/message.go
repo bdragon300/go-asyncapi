@@ -50,8 +50,8 @@ func (m Message) messageMethods(ctx *common.AssembleContext) []*jen.Statement {
 	structName := m.Struct.Name
 	receiverName := strings.ToLower(string(structName[0]))
 	receiver := jen.Id(receiverName).Op("*").Id(structName)
-	payloadFieldType := utils.CastSliceItems[*jen.Statement, jen.Code](m.PayloadType.AssembleUsage(ctx))
-	headersFieldType := utils.CastSliceItems[*jen.Statement, jen.Code](m.HeadersType.AssembleUsage(ctx))
+	payloadFieldType := utils.ToJenCode(m.PayloadType.AssembleUsage(ctx))
+	headersFieldType := utils.ToJenCode(m.HeadersType.AssembleUsage(ctx))
 
 	return []*jen.Statement{
 		jen.Func().Params(receiver.Clone()).Id("MarshalBinary").

@@ -49,7 +49,7 @@ func RenderChannels(pkg *ChannelsPackage, baseDir string) (files map[string]*jen
 	}
 
 	ctx := &common.AssembleContext{
-		CurrentPackage: common.MessagesPackageKind,
+		CurrentPackage: common.ChannelsPackageKind,
 		ImportBase:     "github.com/bdragon300/asyncapi-codegen/generated", // FIXME
 	}
 	for _, item := range pkg.Channels {

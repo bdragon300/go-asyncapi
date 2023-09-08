@@ -7,6 +7,8 @@ import (
 	"path"
 	"reflect"
 
+	"github.com/bdragon300/asyncapi-codegen/internal/protocols/kafka"
+
 	"github.com/bdragon300/asyncapi-codegen/internal/linker"
 
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
@@ -45,6 +47,9 @@ func main() {
 	}
 	_ = f.Close()
 
+	// Register protocols
+	kafka.Register()
+
 	specBuf := compile.AsyncAPI{}
 	err = yaml.Unmarshal(jsonBuf, &specBuf)
 	if err != nil {
@@ -55,24 +60,29 @@ func main() {
 	messagePackage := packages.MessagesPackage{}
 	channelsPackage := packages.ChannelsPackage{}
 	serversPackage := packages.ServersPackage{}
+	runtimePackage := packages.RuntimePackage{}
 	scanPackages := map[common.PackageKind]common.Package{
 		common.ModelsPackageKind:   &modelsPackage,
 		common.MessagesPackageKind: &messagePackage,
 		common.ChannelsPackageKind: &channelsPackage,
 		common.ServersPackageKind:  &serversPackage,
+		common.RuntimePackageKind:  &runtimePackage, // TODO: not needed probably
 	}
-	linker := &linker.LocalLinker{}
-	scanCtx := common.CompileContext{Packages: scanPackages, Linker: linker}
+	llinker := &linker.LocalLinker{}
+	scanCtx := common.CompileContext{Packages: scanPackages, Linker: llinker}
 	if err = scan.WalkSchema(&scanCtx, reflect.ValueOf(specBuf)); err != nil {
 		panic(err)
 	}
 
-	linker.Process(&scanCtx)
+	llinker.Process(&scanCtx)
 
 	if err = ensureDir(cliArgs.OutDir); err != nil {
 		panic(err)
 	}
 
+	if err = packages.RenderRuntime(&runtimePackage, cliArgs.OutDir); err != nil {
+		panic(err)
+	}
 	files1, err := packages.RenderModels(&modelsPackage, cliArgs.OutDir)
 	if err != nil {
 		panic(err)

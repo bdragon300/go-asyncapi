@@ -17,6 +17,6 @@ type AssembleContext struct {
 	ImportBase     string
 }
 
-func (a AssembleContext) RuntimePackage() string {
-	return path.Join(a.ImportBase, "runtime")
+func (a AssembleContext) RuntimePackage(subPackage string) string {
+	return path.Join(a.ImportBase, "runtime", subPackage)
 }

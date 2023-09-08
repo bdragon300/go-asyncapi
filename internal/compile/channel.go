@@ -9,7 +9,9 @@ import (
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 )
 
-type channelProtoBuilderFunc func(ctx *common.CompileContext, name string) (assemble.ChannelParts, error)
+type channelProtoBuilderFunc func(ctx *common.CompileContext, channel *Channel, name string) (assemble.ChannelParts, error)
+
+var ProtoChannelBuilders = map[string]channelProtoBuilderFunc{}
 
 type Channel struct {
 	Description string                              `json:"description" yaml:"description"`
@@ -55,21 +57,14 @@ func (c Channel) build(ctx *common.CompileContext, name string) (common.Assemble
 		res.AppliedToAllServersLinks = lnk
 	}
 
-	for pName, pBuild := range c.supportedProtocols() {
-		obj, err := pBuild(ctx, name)
+	for pName, pBuild := range ProtoChannelBuilders {
+		obj, err := pBuild(ctx, &c, name)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to build %s protocol: %w", pName, err)
 		}
 		res.SupportedProtocols[pName] = obj
 	}
 	return res, nil
-}
-
-func (c Channel) supportedProtocols() map[string]channelProtoBuilderFunc {
-	return map[string]channelProtoBuilderFunc{
-		"kafka":        c.buildKafka,
-		"kafka-secure": c.buildKafka,
-	}
 }
 
 type Operation struct {

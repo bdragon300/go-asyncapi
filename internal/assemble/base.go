@@ -48,7 +48,7 @@ func (a *Array) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement
 	} else {
 		stmt = stmt.Index()
 	}
-	items := utils.CastSliceItems[*jen.Statement, jen.Code](a.ItemsType.AssembleUsage(ctx))
+	items := utils.ToJenCode(a.ItemsType.AssembleUsage(ctx))
 	res = append(res, stmt.Add(items...))
 
 	return res
@@ -62,7 +62,7 @@ func (a *Array) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 		return []*jen.Statement{jen.Id(a.Name)}
 	}
 
-	items := utils.CastSliceItems[*jen.Statement, jen.Code](a.ItemsType.AssembleUsage(ctx))
+	items := utils.ToJenCode(a.ItemsType.AssembleUsage(ctx))
 	return []*jen.Statement{jen.Index().Add(items...)}
 }
 
@@ -83,8 +83,8 @@ func (m *Map) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
 	}
 
 	stmt := jen.Type().Id(m.Name)
-	keyType := utils.CastSliceItems[*jen.Statement, jen.Code](m.KeyType.AssembleUsage(ctx))
-	valueType := utils.CastSliceItems[*jen.Statement, jen.Code](m.ValueType.AssembleUsage(ctx))
+	keyType := utils.ToJenCode(m.KeyType.AssembleUsage(ctx))
+	valueType := utils.ToJenCode(m.ValueType.AssembleUsage(ctx))
 	res = append(res, stmt.Map((&jen.Statement{}).Add(keyType...)).Add(valueType...))
 
 	return res
@@ -98,8 +98,8 @@ func (m *Map) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 		return []*jen.Statement{jen.Id(m.Name)}
 	}
 
-	keyType := utils.CastSliceItems[*jen.Statement, jen.Code](m.KeyType.AssembleUsage(ctx))
-	valueType := utils.CastSliceItems[*jen.Statement, jen.Code](m.ValueType.AssembleUsage(ctx))
+	keyType := utils.ToJenCode(m.KeyType.AssembleUsage(ctx))
+	valueType := utils.ToJenCode(m.ValueType.AssembleUsage(ctx))
 	return []*jen.Statement{jen.Map((&jen.Statement{}).Add(keyType...)).Add(valueType...)}
 }
 
@@ -121,7 +121,7 @@ func (p *TypeAlias) AssembleDefinition(ctx *common.AssembleContext) []*jen.State
 		res = append(res, jen.Comment(p.Name+" -- "+utils.ToLowerFirstLetter(p.Description)))
 	}
 
-	aliasedStmt := utils.CastSliceItems[*jen.Statement, jen.Code](p.AliasedType.AssembleDefinition(ctx))
+	aliasedStmt := utils.ToJenCode(p.AliasedType.AssembleDefinition(ctx))
 	res = append(res, jen.Type().Id(p.Name).Add(aliasedStmt...))
 	return res
 }
@@ -138,7 +138,7 @@ func (p *TypeAlias) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement 
 		return []*jen.Statement{stmt.Id(p.Name)}
 	}
 
-	aliasedStmt := utils.CastSliceItems[*jen.Statement, jen.Code](p.AliasedType.AssembleUsage(ctx))
+	aliasedStmt := utils.ToJenCode(p.AliasedType.AssembleUsage(ctx))
 	return []*jen.Statement{stmt.Add(aliasedStmt...)}
 }
 

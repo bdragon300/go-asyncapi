@@ -50,7 +50,7 @@ func (m Message) build(ctx *common.CompileContext, name string) (common.Assemble
 		return res, nil
 	}
 
-	typeName := getTypeName(ctx, name, "Message")
+	typeName := GenerateGolangTypeName(ctx, name, "Message")
 	strct := assemble.Struct{
 		BaseType: assemble.BaseType{
 			Name:        typeName,

@@ -1,9 +1,11 @@
 package utils
 
-func CastSliceItems[F any, T any](in []F) []T {
-	result := make([]T, len(in))
+import "github.com/dave/jennifer/jen"
+
+func ToJenCode(in []*jen.Statement) []jen.Code {
+	result := make([]jen.Code, len(in))
 	for i, item := range in {
-		result[i] = any(item).(T)
+		result[i] = any(item).(jen.Code)
 	}
 	return result
 }

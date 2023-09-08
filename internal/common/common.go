@@ -3,11 +3,14 @@ package common
 type PackageKind string
 
 const (
-	RuntimePackageKind  PackageKind = "runtime"
 	ModelsPackageKind   PackageKind = "models"
 	MessagesPackageKind PackageKind = "messages"
 	ChannelsPackageKind PackageKind = "channels"
 	ServersPackageKind  PackageKind = "servers"
+
+	RuntimePackageKind      PackageKind = "runtime"
+	RuntimeKafkaPackageKind PackageKind = "runtime/kafka"
+	RuntimeAMQPPackageKind  PackageKind = "runtime/amqp"
 )
 
 type SchemaTag string

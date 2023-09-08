@@ -9,7 +9,7 @@ import (
 	"github.com/stoewer/go-strcase"
 )
 
-func ToGolangName(srcName string) string {
+func ToGolangName(srcName string, exported bool) string {
 	if srcName == "" {
 		return ""
 	}
@@ -24,7 +24,11 @@ func ToGolangName(srcName string) string {
 	// Cut numbers from string start
 	srcName = strings.TrimLeft(srcName, "1234567890")
 
-	return strcase.UpperCamelCase(srcName)
+	// TODO: detect Go builtin words and replace them
+	if exported {
+		return strcase.UpperCamelCase(srcName)
+	}
+	return strcase.LowerCamelCase(srcName)
 }
 
 func ToLowerFirstLetter(s string) string {
