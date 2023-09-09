@@ -56,7 +56,7 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, name str
 				},
 				{
 					Name:   "Producer",
-					Return: []assemble.FuncParam{{Type: &assemble.Simple{Name: "Producer", Package: common.RuntimeKafkaPackageKind}}},
+					Return: []assemble.FuncParam{{Type: &assemble.Simple{Type: "Producer", Package: common.RuntimeKafkaPackageKind}}},
 				},
 			},
 		}
@@ -66,7 +66,6 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, name str
 				BaseType:  assemble.BaseType{Package: ctx.Top().PackageKind},
 				ItemsType: iface,
 			},
-			RequiredValue: false,
 		}}
 		ch := ProtoChannel{
 			Name:        name,
@@ -77,7 +76,7 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, name str
 		}
 		res.Publish = &ProtoChannelPub{ProtoChannel: ch}
 		commonStruct.Fields = append(commonStruct.Fields, assemble.StructField{
-			Type: assemble.Simple{Name: chGolangName, Package: ctx.Top().PackageKind},
+			Type: assemble.Simple{Type: chGolangName, Package: ctx.Top().PackageKind},
 		})
 	}
 	if channel.Subscribe != nil {
@@ -103,7 +102,7 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, name str
 				},
 				{
 					Name:   "Consumer",
-					Return: []assemble.FuncParam{{Type: &assemble.Simple{Name: "Consumer", Package: common.RuntimeKafkaPackageKind}}},
+					Return: []assemble.FuncParam{{Type: &assemble.Simple{Type: "Consumer", Package: common.RuntimeKafkaPackageKind}}},
 				},
 			},
 		}
@@ -113,7 +112,6 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, name str
 				BaseType:  assemble.BaseType{Package: ctx.Top().PackageKind},
 				ItemsType: iface,
 			},
-			RequiredValue: false,
 		}}
 		ch := ProtoChannel{
 			Name:        name,
@@ -124,7 +122,7 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, name str
 		}
 		res.Subscribe = &ProtoChannelSub{ProtoChannel: ch}
 		commonStruct.Fields = append(commonStruct.Fields, assemble.StructField{
-			Type: assemble.Simple{Name: chGolangName, Package: ctx.Top().PackageKind},
+			Type: assemble.Simple{Type: chGolangName, Package: ctx.Top().PackageKind},
 		})
 	}
 
@@ -171,7 +169,7 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, name string
 			},
 			Fields: []assemble.StructField{{
 				Name: "producer",
-				Type: assemble.Simple{Name: "Producer", Package: common.RuntimeKafkaPackageKind},
+				Type: assemble.Simple{Type: "Producer", Package: common.RuntimeKafkaPackageKind},
 			}},
 		},
 		ChannelsLinks: channelsLnk,
@@ -189,7 +187,7 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, name string
 			},
 			Fields: []assemble.StructField{{
 				Name: "consumer",
-				Type: assemble.Simple{Name: "Consumer", Package: common.RuntimeKafkaPackageKind},
+				Type: assemble.Simple{Type: "Consumer", Package: common.RuntimeKafkaPackageKind},
 			}},
 		},
 		ChannelsLinks: channelsLnk,

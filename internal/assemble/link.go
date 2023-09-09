@@ -120,10 +120,6 @@ func (r *LinkAsGolangType) TypeName() string {
 	return r.link.TypeName()
 }
 
-func (r *LinkAsGolangType) CanBePointer() bool {
-	return r.link.CanBePointer()
-}
-
 func (r *LinkAsGolangType) AllowRender() bool {
 	return false // Prevent rendering the object we're point to for several times
 }

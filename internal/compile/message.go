@@ -76,7 +76,7 @@ func (m Message) setStructFields(langMessage *assemble.Message) {
 		{
 			Name:        "ID",
 			Description: "ID is unique string used to identify the message. Case-sensitive.",
-			Type:        &assemble.Simple{Name: "string"},
+			Type:        &assemble.Simple{Type: "string"},
 		},
 		{Name: "Payload", Type: langMessage.PayloadType},
 		{Name: "Headers", Type: langMessage.HeadersType},
@@ -90,7 +90,7 @@ func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 		ctx.Linker.Add(lnk)
 		return lnk
 	}
-	return &assemble.Simple{Name: "any"}
+	return &assemble.Simple{Type: "any"}
 }
 
 func (m Message) getHeadersType(ctx *common.CompileContext) common.GolangType {
@@ -100,7 +100,7 @@ func (m Message) getHeadersType(ctx *common.CompileContext) common.GolangType {
 		ctx.Linker.Add(lnk)
 		return lnk
 	}
-	return &assemble.Map{KeyType: &assemble.Simple{Name: "string"}, ValueType: &assemble.Simple{Name: "any"}}
+	return &assemble.Map{KeyType: &assemble.Simple{Type: "string"}, ValueType: &assemble.Simple{Type: "any"}}
 }
 
 type CorrelationID struct {

@@ -43,10 +43,6 @@ func (i Interface) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	}
 }
 
-func (i Interface) CanBePointer() bool {
-	return false
-}
-
 type FunctionSignature struct {
 	Name   string
 	Args   []FuncParam

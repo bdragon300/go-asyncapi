@@ -15,13 +15,6 @@ import (
 type Struct struct {
 	BaseType
 	Fields []StructField
-
-	// Render config
-	Nullable bool
-}
-
-func (s Struct) CanBePointer() bool {
-	return !s.Nullable
 }
 
 func (s Struct) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
@@ -40,22 +33,18 @@ func (s Struct) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement
 }
 
 func (s Struct) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
-	stmt := &jen.Statement{}
-	if s.Nullable {
-		stmt = stmt.Op("*")
-	}
 	if s.AllowRender() {
 		if s.Package != "" && s.Package != ctx.CurrentPackage {
 			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, string(s.Package)), s.Name)}
 		}
-		return []*jen.Statement{stmt.Id(s.Name)}
+		return []*jen.Statement{jen.Id(s.Name)}
 	}
 
 	code := lo.FlatMap(s.Fields, func(item StructField, index int) []*jen.Statement {
 		return item.assembleDefinition(ctx)
 	})
 
-	return []*jen.Statement{stmt.Struct(utils.ToCode(code)...)}
+	return []*jen.Statement{jen.Struct(utils.ToCode(code)...)}
 }
 
 func (s Struct) NewFuncUsage(ctx *common.AssembleContext) []*jen.Statement {
@@ -81,11 +70,11 @@ func (s Struct) MustGetField(name string) StructField {
 
 // StructField defines the data required to generate a field in Go.
 type StructField struct {
-	Name          string
-	Description   string
-	Type          common.GolangType
-	RequiredValue bool // TODO: maybe create assemble.Pointer?
-	Tags          map[string]string
+	Name         string
+	Description  string
+	Type         common.GolangType
+	ForcePointer bool
+	Tags         map[string]string
 }
 
 func (f StructField) assembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
@@ -95,7 +84,12 @@ func (f StructField) assembleDefinition(ctx *common.AssembleContext) []*jen.Stat
 	}
 
 	stmt := jen.Id(f.Name)
-	if f.Type.CanBePointer() && f.RequiredValue {
+
+	drawPtr := f.ForcePointer
+	if _, ok := f.Type.(*NullableType); ok {
+		drawPtr = true // Nullable fields require to be pointer on any case
+	}
+	if drawPtr {
 		stmt = stmt.Op("*")
 	}
 	items := utils.ToCode(f.Type.AssembleUsage(ctx))

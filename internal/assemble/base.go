@@ -32,10 +32,6 @@ type Array struct {
 	Size      int
 }
 
-func (a *Array) CanBePointer() bool {
-	return false
-}
-
 func (a *Array) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
 	var res []*jen.Statement
 	if a.Description != "" {
@@ -72,10 +68,6 @@ type Map struct {
 	ValueType common.GolangType
 }
 
-func (m *Map) CanBePointer() bool {
-	return false
-}
-
 func (m *Map) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
 	var res []*jen.Statement
 	if m.Description != "" {
@@ -106,13 +98,6 @@ func (m *Map) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 type TypeAlias struct {
 	BaseType
 	AliasedType common.GolangType
-
-	// Render config
-	Nullable bool
-}
-
-func (p *TypeAlias) CanBePointer() bool {
-	return !p.Nullable
 }
 
 func (p *TypeAlias) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
@@ -127,23 +112,19 @@ func (p *TypeAlias) AssembleDefinition(ctx *common.AssembleContext) []*jen.State
 }
 
 func (p *TypeAlias) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
-	stmt := &jen.Statement{}
-	if p.Nullable {
-		stmt = stmt.Op("*")
-	}
 	if p.Render {
 		if p.Package != "" && p.Package != ctx.CurrentPackage {
 			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, string(p.Package)), p.Name)}
 		}
-		return []*jen.Statement{stmt.Id(p.Name)}
+		return []*jen.Statement{jen.Id(p.Name)}
 	}
 
 	aliasedStmt := utils.ToCode(p.AliasedType.AssembleUsage(ctx))
-	return []*jen.Statement{stmt.Add(aliasedStmt...)}
+	return []*jen.Statement{jen.Add(aliasedStmt...)}
 }
 
 type Simple struct {
-	Name            string             // type name with or without package name, such as "json.Marshal" or "string"
+	Type            string             // type name with or without package name, such as "json.Marshal" or "string"
 	ExternalPackage string             // optional import path, such as "encoding/json"
 	Package         common.PackageKind // optional import path from any generated package
 }
@@ -153,23 +134,51 @@ func (p Simple) AllowRender() bool {
 }
 
 func (p Simple) AssembleDefinition(*common.AssembleContext) []*jen.Statement {
-	return []*jen.Statement{jen.Id(p.Name)}
+	return []*jen.Statement{jen.Id(p.Type)}
 }
 
 func (p Simple) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	if p.ExternalPackage != "" {
-		return []*jen.Statement{jen.Qual(p.ExternalPackage, p.Name)}
+		return []*jen.Statement{jen.Qual(p.ExternalPackage, p.Type)}
 	}
 	if p.Package != "" && p.Package != ctx.CurrentPackage {
-		return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, string(p.Package)), p.Name)}
+		return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, string(p.Package)), p.Type)}
 	}
-	return []*jen.Statement{jen.Id(p.Name)}
-}
-
-func (p Simple) CanBePointer() bool {
-	return false
+	return []*jen.Statement{jen.Id(p.Type)}
 }
 
 func (p Simple) TypeName() string {
 	return ""
+}
+
+type NullableType struct {
+	Type   common.GolangType
+	Render bool
+}
+
+func (n NullableType) AllowRender() bool {
+	return n.Render
+}
+
+func (n NullableType) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
+	return n.Type.AssembleDefinition(ctx)
+}
+
+func (n NullableType) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
+	ignore := false
+	switch v := n.Type.(type) {
+	case *Interface:
+		ignore = true
+	case *Simple:
+		// Very weak criteria, but during assembling we don't know if it's an interface or not. Especially if it is external
+		ignore = v.Type == "any"
+	}
+	if ignore {
+		return n.Type.AssembleUsage(ctx)
+	}
+	return []*jen.Statement{jen.Op("*").Add(utils.ToCode(n.Type.AssembleUsage(ctx))...)}
+}
+
+func (n NullableType) TypeName() string {
+	return n.Type.TypeName()
 }

@@ -62,7 +62,7 @@ type Object struct {
 }
 
 func (m Object) Compile(ctx *common.CompileContext) error {
-	obj, err := buildLangType(ctx, m, ctx.Top().Flags, ctx.Top().Path)
+	obj, err := buildGolangType(ctx, m, ctx.Top().Flags, ctx.Top().Path)
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
 	}
@@ -70,7 +70,7 @@ func (m Object) Compile(ctx *common.CompileContext) error {
 	return nil
 }
 
-func buildLangType(ctx *common.CompileContext, schema Object, flags map[common.SchemaTag]string, name string) (common.GolangType, error) {
+func buildGolangType(ctx *common.CompileContext, schema Object, flags map[common.SchemaTag]string, name string) (common.GolangType, error) {
 	if schema.Ref != "" {
 		res := assemble.NewRefLinkAsGolangType(common.ModelsPackageKind, schema.Ref)
 		ctx.Linker.Add(res)
@@ -81,9 +81,9 @@ func buildLangType(ctx *common.CompileContext, schema Object, flags map[common.S
 
 	schemaType := schema.Type
 	typ := schemaType.V0
-	nullable := false             // TODO: x-nullable
+	// TODO: x-nullable
 	if schemaType.Selector == 1 { // Multiple types, e.g. { "type": [ "object", "array", "null" ] }
-		typ, nullable = inspectMultiType(schemaType.V1)
+		typ = simplifyMultiType(schemaType.V1)
 	}
 
 	_, noInline := flags[common.SchemaTagNoInline]
@@ -96,7 +96,6 @@ func buildLangType(ctx *common.CompileContext, schema Object, flags map[common.S
 		if err != nil {
 			return nil, err
 		}
-		res.Nullable = nullable
 		return res, nil
 	case "array":
 		res, err := buildLangArray(ctx, schema, flags, name)
@@ -105,13 +104,9 @@ func buildLangType(ctx *common.CompileContext, schema Object, flags map[common.S
 		}
 		return res, nil
 	case "null", "":
-		return &assemble.TypeAlias{
-			BaseType: assemble.BaseType{
-				Name:        GenerateGolangTypeName(ctx, name, ""),
-				Description: schema.Description,
-				Render:      noInline,
-			},
-			AliasedType: &assemble.Simple{Name: "any"},
+		return &assemble.NullableType{
+			Type:   &assemble.Simple{Type: "any"},
+			Render: noInline,
 		}, nil
 	case "boolean":
 		langTyp = "bool"
@@ -134,8 +129,7 @@ func buildLangType(ctx *common.CompileContext, schema Object, flags map[common.S
 			Render:      noInline,
 			Package:     ctx.Top().PackageKind,
 		},
-		AliasedType: &assemble.Simple{Name: langTyp},
-		Nullable:    nullable,
+		AliasedType: &assemble.Simple{Type: langTyp},
 	}, nil
 }
 
@@ -155,16 +149,18 @@ func fixMissingTypeValue(s *Object) {
 	}
 }
 
-func inspectMultiType(schemaType []string) (typ string, nullable bool) {
-	nullable = lo.Contains(schemaType, "null")
+func simplifyMultiType(schemaType []string) string {
+	nullable := lo.Contains(schemaType, "null")
 	typs := lo.Reject(schemaType, func(item string, _ int) bool { return item == "null" }) // Throw out null (if any)
 	switch {
-	case len(typs) > 2: // More than one type along with null -> 'any'
-		return "", nullable
-	case len(typs) == 0: // Null only -> 'any', that can be only nil
-		return "null", nullable
-	default: // One type along with null -> pointer to this type
-		return typs[0], nullable
+	case len(typs) > 1: // More than one type along with null -> 'any'
+		return ""
+	case len(typs) > 0: // One type along with null -> pointer to this type
+		return typs[0]
+	case nullable: // Null only -> 'any', that can be only nil
+		return "null"
+	default:
+		panic("Empty schema type")
 	}
 }
 
@@ -183,16 +179,16 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 
 	// regular properties
 	for _, key := range schema.Properties.Keys() {
-		langObj, err := buildLangType(ctx, schema.Properties.MustGet(key), map[common.SchemaTag]string{}, name)
+		langObj, err := buildGolangType(ctx, schema.Properties.MustGet(key), map[common.SchemaTag]string{}, name)
 		if err != nil {
 			return nil, err
 		}
 		f := assemble.StructField{
-			Name:          getFieldName(key),
-			Type:          langObj,
-			RequiredValue: lo.Contains(schema.Required, key),
-			Tags:          nil, // TODO
-			Description:   schema.Properties.MustGet(key).Description,
+			Name:         getFieldName(key),
+			Type:         langObj,
+			ForcePointer: lo.Contains(schema.Required, key),
+			Tags:         nil, // TODO
+			Description:  schema.Properties.MustGet(key).Description,
 		}
 		res.Fields = append(res.Fields, f)
 	}
@@ -201,7 +197,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 	if schema.AdditionalProperties != nil {
 		switch schema.AdditionalProperties.Selector {
 		case 0: // "additionalProperties:" is an object
-			langObj, err := buildLangType(ctx, schema.AdditionalProperties.V0, map[common.SchemaTag]string{}, name)
+			langObj, err := buildGolangType(ctx, schema.AdditionalProperties.V0, map[common.SchemaTag]string{}, name)
 			if err != nil {
 				return nil, err
 			}
@@ -214,12 +210,11 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 						Render:      false,
 						Package:     ctx.Top().PackageKind,
 					},
-					KeyType:   &assemble.Simple{Name: "string"},
+					KeyType:   &assemble.Simple{Type: "string"},
 					ValueType: langObj,
 				},
-				RequiredValue: false,
-				Tags:          nil, // TODO
-				Description:   schema.AdditionalProperties.V0.Description,
+				Tags:        nil, // TODO
+				Description: schema.AdditionalProperties.V0.Description,
 			}
 			res.Fields = append(res.Fields, f)
 		case 1:
@@ -231,7 +226,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 						Render:      false,
 						Package:     ctx.Top().PackageKind,
 					},
-					AliasedType: &assemble.Simple{Name: "any"},
+					AliasedType: &assemble.Simple{Type: "any"},
 				}
 				f := assemble.StructField{
 					Name: "AdditionalProperties",
@@ -242,11 +237,10 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 							Render:      false,
 							Package:     ctx.Top().PackageKind,
 						},
-						KeyType:   &assemble.Simple{Name: "string"},
+						KeyType:   &assemble.Simple{Type: "string"},
 						ValueType: &valTyp,
 					},
-					RequiredValue: false,
-					Tags:          nil, // TODO
+					Tags: nil, // TODO
 				}
 				res.Fields = append(res.Fields, f)
 			}
@@ -270,7 +264,7 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 
 	switch {
 	case schema.Items != nil && schema.Items.Selector == 0: // Only one "type:" of items
-		langObj, err := buildLangType(ctx, schema.Items.V0, flags, name)
+		langObj, err := buildGolangType(ctx, schema.Items.V0, flags, name)
 		if err != nil {
 			return nil, err
 		}
@@ -283,7 +277,7 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 				Render:      false,
 				Package:     ctx.Top().PackageKind,
 			},
-			AliasedType: &assemble.Simple{Name: "any"},
+			AliasedType: &assemble.Simple{Type: "any"},
 		}
 		res.ItemsType = &assemble.Map{
 			BaseType: assemble.BaseType{
@@ -292,7 +286,7 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 				Render:      false,
 				Package:     ctx.Top().PackageKind,
 			},
-			KeyType:   &assemble.Simple{Name: "string"},
+			KeyType:   &assemble.Simple{Type: "string"},
 			ValueType: &valTyp,
 		}
 	}
