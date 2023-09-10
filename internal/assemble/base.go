@@ -124,7 +124,8 @@ func (p *TypeAlias) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement 
 }
 
 type Simple struct {
-	Type            string             // type name with or without package name, such as "json.Marshal" or "string"
+	Type            string // type name with or without package name, such as "json.Marshal" or "string"
+	IsIface         bool
 	ExternalPackage string             // optional import path, such as "encoding/json"
 	Package         common.PackageKind // optional import path from any generated package
 }
@@ -165,18 +166,17 @@ func (n NullableType) AssembleDefinition(ctx *common.AssembleContext) []*jen.Sta
 }
 
 func (n NullableType) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
-	ignore := false
+	isPtr := true
 	switch v := n.Type.(type) {
 	case *Interface:
-		ignore = true
+		isPtr = false
 	case *Simple:
-		// Very weak criteria, but during assembling we don't know if it's an interface or not. Especially if it is external
-		ignore = v.Type == "any"
+		isPtr = !v.IsIface
 	}
-	if ignore {
-		return n.Type.AssembleUsage(ctx)
+	if isPtr {
+		return []*jen.Statement{jen.Op("*").Add(utils.ToCode(n.Type.AssembleUsage(ctx))...)}
 	}
-	return []*jen.Statement{jen.Op("*").Add(utils.ToCode(n.Type.AssembleUsage(ctx))...)}
+	return n.Type.AssembleUsage(ctx)
 }
 
 func (n NullableType) TypeName() string {

@@ -20,9 +20,7 @@ func WalkSchema(ctx *common.CompileContext, object reflect.Value) error {
 	objectTyp := object.Type()
 
 	gather := func(_ctx *common.CompileContext, _obj reflect.Value) error {
-		if err := WalkSchema(_ctx, _obj); err != nil {
-			return err
-		}
+		// BFS tree traversal
 		if v, ok := _obj.Interface().(compiler); ok {
 			if (_obj.Kind() == reflect.Pointer || _obj.Kind() == reflect.Interface) && _obj.IsNil() {
 				return nil
@@ -31,7 +29,7 @@ func WalkSchema(ctx *common.CompileContext, object reflect.Value) error {
 				return e
 			}
 		}
-		return nil
+		return WalkSchema(_ctx, _obj)
 	}
 
 	if _, ok := object.Interface().(orderedMap); ok {
@@ -41,11 +39,11 @@ func WalkSchema(ctx *common.CompileContext, object reflect.Value) error {
 		for j := 0; j < keys.Len(); j++ {
 			key := keys.Index(j)
 			val := mMustGet.Call([]reflect.Value{key})[0]
-			pushStack(ctx, key.String(), ctx.Top().Flags)
+			pushStack(ctx, key.String(), ctx.Stack.Top().Flags)
 			if err := gather(ctx, val); err != nil {
 				return err
 			}
-			ctx.Pop()
+			ctx.Stack.Pop()
 		}
 	}
 	// TODO: add Unions
@@ -63,17 +61,17 @@ func WalkSchema(ctx *common.CompileContext, object reflect.Value) error {
 			if err := gather(ctx, fldVal); err != nil {
 				return err
 			}
-			ctx.Pop()
+			ctx.Stack.Pop()
 		}
 	case reflect.Map:
 		panic("Use OrderedMap instead to keep schema definitions order!")
 	case reflect.Array, reflect.Slice:
 		for j := 0; j < object.Len(); j++ {
-			pushStack(ctx, strconv.Itoa(j), ctx.Top().Flags)
+			pushStack(ctx, strconv.Itoa(j), ctx.Stack.Top().Flags)
 			if err := gather(ctx, object.Index(j)); err != nil {
 				return err
 			}
-			ctx.Pop()
+			ctx.Stack.Pop()
 		}
 	}
 
@@ -103,8 +101,8 @@ func pushStack(ctx *common.CompileContext, pathItem string, flags map[common.Sch
 		flags = make(map[common.SchemaTag]string)
 	}
 	pkgKind := common.RuntimePackageKind
-	if len(ctx.Stack) > 0 {
-		pkgKind = ctx.Top().PackageKind
+	if len(ctx.Stack.Items()) > 0 {
+		pkgKind = ctx.Stack.Top().PackageKind
 	}
 	if v, ok := flags[common.SchemaTagPackageDown]; ok {
 		pkgKind = common.PackageKind(v)
@@ -113,8 +111,9 @@ func pushStack(ctx *common.CompileContext, pathItem string, flags map[common.Sch
 		Path:        pathItem,
 		Flags:       flags,
 		PackageKind: pkgKind,
+		ObjName:     "",
 	}
-	ctx.Push(item)
+	ctx.Stack.Push(item)
 }
 
 func getFieldJSONName(f reflect.StructField) string {

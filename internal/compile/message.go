@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"strings"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
-	"gopkg.in/yaml.v3"
 )
 
 type Message struct {
@@ -32,7 +33,8 @@ type Message struct {
 }
 
 func (m Message) Compile(ctx *common.CompileContext) error {
-	obj, err := m.build(ctx, ctx.Top().Path)
+	ctx.SetObjName(ctx.Stack.Top().Path) // TODO: use title
+	obj, err := m.build(ctx)
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
 	}
@@ -40,7 +42,7 @@ func (m Message) Compile(ctx *common.CompileContext) error {
 	return nil
 }
 
-func (m Message) build(ctx *common.CompileContext, name string) (common.Assembler, error) {
+func (m Message) build(ctx *common.CompileContext) (common.Assembler, error) {
 	if m.ContentType != "" && m.ContentType != "application/json" {
 		return nil, fmt.Errorf("now is supported only application/json") // TODO: support other content types
 	}
@@ -50,13 +52,12 @@ func (m Message) build(ctx *common.CompileContext, name string) (common.Assemble
 		return res, nil
 	}
 
-	typeName := GenerateGolangTypeName(ctx, name, "Message")
 	strct := assemble.Struct{
 		BaseType: assemble.BaseType{
-			Name:        typeName,
+			Name:        GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "Message"),
 			Description: utils.JoinNonemptyStrings("\n", m.Summary, m.Description),
 			Render:      true,
-			Package:     ctx.Top().PackageKind,
+			Package:     ctx.Stack.Top().PackageKind,
 		},
 	}
 
@@ -85,22 +86,22 @@ func (m Message) setStructFields(langMessage *assemble.Message) {
 
 func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 	if m.Payload != nil {
-		ref := "#/" + strings.Join(ctx.PathStack(), "/") + "/payload"
-		lnk := assemble.NewRefLinkAsGolangType(ctx.Top().PackageKind, ref)
+		ref := ctx.PathRef() + "/payload"
+		lnk := assemble.NewRefLinkAsGolangType(ctx.Stack.Top().PackageKind, ref)
 		ctx.Linker.Add(lnk)
 		return lnk
 	}
-	return &assemble.Simple{Type: "any"}
+	return &assemble.Simple{Type: "any", IsIface: true}
 }
 
 func (m Message) getHeadersType(ctx *common.CompileContext) common.GolangType {
 	if m.Headers != nil {
-		ref := "#/" + strings.Join(ctx.PathStack(), "/") + "/headers"
-		lnk := assemble.NewRefLinkAsGolangType(ctx.Top().PackageKind, ref)
+		ref := ctx.PathRef() + "/headers"
+		lnk := assemble.NewRefLinkAsGolangType(ctx.Stack.Top().PackageKind, ref)
 		ctx.Linker.Add(lnk)
 		return lnk
 	}
-	return &assemble.Map{KeyType: &assemble.Simple{Type: "string"}, ValueType: &assemble.Simple{Type: "any"}}
+	return &assemble.Map{KeyType: &assemble.Simple{Type: "string"}, ValueType: &assemble.Simple{Type: "any", IsIface: true}}
 }
 
 type CorrelationID struct {

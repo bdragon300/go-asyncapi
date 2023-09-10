@@ -31,7 +31,7 @@ func (c Channel) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statemen
 	var res []*jen.Statement
 
 	protocols := lo.Uniq(lo.Map(c.AppliedServerLinks, func(item *Link[*Server], index int) string {
-		return item.Link().Protocol
+		return item.Obj().Protocol
 	}))
 	if c.AppliedToAllServersLinks != nil {
 		protocols = lo.Uniq(lo.Map(c.AppliedToAllServersLinks.Links(), func(item *Server, index int) string {

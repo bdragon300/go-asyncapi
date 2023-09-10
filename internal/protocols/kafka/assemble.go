@@ -89,8 +89,8 @@ func (p ProtoChannelSub) assembleMethods(ctx *common.AssembleContext) []*j.State
 	messageType := []j.Code{j.Any()}
 	headersType := []j.Code{j.Any()}
 	if p.MessageLink != nil {
-		messageType = utils.ToCode(p.MessageLink.Link().AssembleUsage(ctx))
-		headersType = utils.ToCode(p.MessageLink.Link().HeadersType.AssembleUsage(ctx))
+		messageType = utils.ToCode(p.MessageLink.Obj().AssembleUsage(ctx))
+		headersType = utils.ToCode(p.MessageLink.Obj().HeadersType.AssembleUsage(ctx))
 	}
 	rcvName := strings.ToLower(string(structName[0]))
 	receiver := j.Id(rcvName).Op("*").Id(structName)
@@ -195,7 +195,7 @@ func (p ProtoChannelPub) AssembleDefinition(ctx *common.AssembleContext) []*j.St
 
 func (p ProtoChannelPub) assembleMethods(ctx *common.AssembleContext) []*j.Statement {
 	structName := p.Struct.Name
-	messageType := utils.ToCode(p.MessageLink.Link().AssembleUsage(ctx))
+	messageType := utils.ToCode(p.MessageLink.Obj().AssembleUsage(ctx))
 	receiverName := strings.ToLower(string(structName[0]))
 	receiver := j.Id(receiverName).Id(structName)
 	kafkaPkg := ctx.RuntimePackage("kafka")

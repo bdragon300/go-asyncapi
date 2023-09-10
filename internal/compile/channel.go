@@ -25,7 +25,8 @@ type Channel struct {
 }
 
 func (c Channel) Compile(ctx *common.CompileContext) error {
-	obj, err := c.build(ctx, ctx.Top().Path)
+	ctx.SetObjName(ctx.Stack.Top().Path) // TODO: use title
+	obj, err := c.build(ctx, ctx.Stack.Top().Path)
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
 	}
@@ -33,13 +34,13 @@ func (c Channel) Compile(ctx *common.CompileContext) error {
 	return nil
 }
 
-func (c Channel) build(ctx *common.CompileContext, name string) (common.Assembler, error) {
+func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Assembler, error) {
 	if c.Ref != "" {
 		res := assemble.NewRefLinkAsAssembler(common.ChannelsPackageKind, c.Ref)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
-	res := &assemble.Channel{Name: name, SupportedProtocols: make(map[string]assemble.ChannelParts)}
+	res := &assemble.Channel{Name: channelKey, SupportedProtocols: make(map[string]assemble.ChannelParts)}
 	// Empty servers field means "no servers", omitted servers field means "all servers"
 	if c.Servers != nil && len(*c.Servers) > 0 {
 		for _, srv := range *c.Servers {
@@ -58,7 +59,7 @@ func (c Channel) build(ctx *common.CompileContext, name string) (common.Assemble
 	}
 
 	for pName, pBuild := range ProtoChannelBuilders {
-		obj, err := pBuild(ctx, &c, name)
+		obj, err := pBuild(ctx, &c, channelKey)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to build %s protocol: %w", pName, err)
 		}

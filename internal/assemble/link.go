@@ -38,7 +38,7 @@ func (r *Link[T]) FindCallback() func(item any, path []string) bool {
 	return r.findCb
 }
 
-func (r *Link[T]) Link() T {
+func (r *Link[T]) Obj() T {
 	return r.link
 }
 

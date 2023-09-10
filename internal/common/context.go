@@ -1,6 +1,9 @@
 package common
 
 import (
+	"path"
+	"strings"
+
 	"github.com/samber/lo"
 )
 
@@ -15,52 +18,77 @@ type Linker interface {
 	AddMany(query ListQuerier)
 }
 
+type SimpleStack[T any] struct {
+	stack []T
+}
+
+func (s *SimpleStack[T]) Top() T {
+	if len(s.stack) == 0 {
+		panic("Stack is empty")
+	}
+	return s.stack[len(s.stack)-1]
+}
+
+func (s *SimpleStack[T]) Pop() T {
+	top := s.Top()
+	s.stack = s.stack[:len(s.stack)-1]
+	return top
+}
+
+func (s *SimpleStack[T]) Push(v T) {
+	s.stack = append(s.stack, v)
+}
+
+func (s *SimpleStack[T]) Items() []T {
+	return s.stack
+}
+
+func (s *SimpleStack[T]) replaceTop(v T) {
+	if len(s.stack) == 0 {
+		panic("Stack is empty")
+	}
+	s.stack[len(s.stack)-1] = v
+}
+
 type ContextStackItem struct {
 	Path        string
 	Flags       map[SchemaTag]string
 	PackageKind PackageKind
+	ObjName     string
 }
 
 type CompileContext struct {
 	Packages map[PackageKind]Package
-	Stack    []ContextStackItem
+	Stack    SimpleStack[ContextStackItem]
 	Linker   Linker
 }
 
-func (c *CompileContext) Push(item ContextStackItem) {
-	c.Stack = append(c.Stack, item)
-}
-
-func (c *CompileContext) Pop() ContextStackItem {
-	top := c.Top()
-	c.Stack = c.Stack[:len(c.Stack)-1]
-	return top
-}
-
-func (c *CompileContext) Top() ContextStackItem {
-	if len(c.Stack) == 0 {
-		panic("Stack is empty")
-	}
-	return c.Stack[len(c.Stack)-1]
-}
-
 func (c *CompileContext) CurrentPackage() Package {
-	return c.Packages[c.Top().PackageKind]
+	return c.Packages[c.Stack.Top().PackageKind]
 }
 
 func (c *CompileContext) PathStack() []string {
-	return lo.Map(c.Stack, func(item ContextStackItem, _ int) string { return item.Path })
+	return lo.Map(c.Stack.Items(), func(item ContextStackItem, _ int) string { return item.Path })
 }
 
-func (c *CompileContext) Copy() *CompileContext {
-	var stack []ContextStackItem
-	copy(stack, c.Stack)
+func (c *CompileContext) PathRef() string {
+	return "#/" + path.Join(c.PathStack()...)
+}
 
-	return &CompileContext{
-		Packages: nil,
-		Stack:    stack,
-		Linker:   c.Linker,
+func (c *CompileContext) SetObjName(n string) {
+	t := c.Stack.Top()
+	t.ObjName = n
+	c.Stack.replaceTop(t)
+}
+
+func (c *CompileContext) CurrentObjName() string {
+	items := lo.FilterMap(c.Stack.Items(), func(item ContextStackItem, index int) (string, bool) {
+		return item.ObjName, item.ObjName != ""
+	})
+	if len(items) == 0 {
+		items = c.PathStack()
 	}
+	return strings.Join(items, "_")
 }
 
 type LinkQuerier interface {

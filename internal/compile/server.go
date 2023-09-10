@@ -27,7 +27,8 @@ type Server struct {
 }
 
 func (s Server) Compile(ctx *common.CompileContext) error {
-	obj, err := s.build(ctx, ctx.Top().Path)
+	ctx.SetObjName(ctx.Stack.Top().Path) // TODO: use title
+	obj, err := s.build(ctx, ctx.Stack.Top().Path)
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
 	}
@@ -35,7 +36,7 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 	return nil
 }
 
-func (s Server) build(ctx *common.CompileContext, name string) (common.Assembler, error) {
+func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Assembler, error) {
 	if s.Ref != "" {
 		res := assemble.NewRefLinkAsAssembler(common.ServersPackageKind, s.Ref)
 		ctx.Linker.Add(res)
@@ -48,7 +49,7 @@ func (s Server) build(ctx *common.CompileContext, name string) (common.Assembler
 		panic(fmt.Sprintf("Unknown protocol %q at path %s", s.Protocol, ctx.PathStack()))
 	}
 	var err error
-	res.Parts, err = protoBuilder(ctx, &s, name)
+	res.Parts, err = protoBuilder(ctx, &s, serverKey)
 	if err != nil {
 		return nil, fmt.Errorf("error build server at path %s: %w", ctx.PathStack(), err)
 	}

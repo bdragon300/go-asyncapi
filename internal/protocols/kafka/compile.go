@@ -1,7 +1,6 @@
 package kafka
 
 import (
-	"fmt"
 	"path"
 
 	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
@@ -20,109 +19,109 @@ func Register() {
 	compile.ProtoChannelBuilders["kafka-secure"] = BuildChannel
 }
 
-func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, name string) (assemble.ChannelParts, error) {
+func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelKey string) (assemble.ChannelParts, error) {
 	commonStruct := ProtoChannelCommon{
 		Struct: assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:        compile.GenerateGolangTypeName(ctx, name, "KafkaChannel"),
+				Name:        compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "KafkaChannel"),
 				Description: channel.Description,
 				Render:      true,
-				Package:     ctx.Top().PackageKind,
+				Package:     ctx.Stack.Top().PackageKind,
 			},
 		},
 	}
 	res := assemble.ChannelParts{Common: &commonStruct}
 
 	if channel.Publish != nil {
-		chGolangName := compile.GenerateGolangTypeName(ctx, name, "KafkaPubChannel")
+		chGolangName := compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "KafkaPubChannel")
 		strct := assemble.Struct{
 			BaseType: assemble.BaseType{
 				Name:        chGolangName,
 				Description: utils.JoinNonemptyStrings("\n", channel.Description, channel.Publish.Description),
 				Render:      true,
-				Package:     ctx.Top().PackageKind,
+				Package:     ctx.Stack.Top().PackageKind,
 			},
 		}
 		iface := &assemble.Interface{
 			BaseType: assemble.BaseType{
-				Name:    compile.GenerateGolangTypeName(ctx, name, "KafkaPubServer"),
+				Name:    compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "KafkaPubServer"),
 				Render:  true,
-				Package: ctx.Top().PackageKind,
+				Package: ctx.Stack.Top().PackageKind,
 			},
 			Methods: []assemble.FunctionSignature{
 				{
-					Name:   compile.GenerateGolangTypeName(ctx, name, "PubChannel"),
+					Name:   compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "PubChannel"),
 					Return: []assemble.FuncParam{{Type: &strct, Pointer: true}},
 				},
 				{
 					Name:   "Producer",
-					Return: []assemble.FuncParam{{Type: &assemble.Simple{Type: "Producer", Package: common.RuntimeKafkaPackageKind}}},
+					Return: []assemble.FuncParam{{Type: &assemble.Simple{Type: "Producer", Package: common.RuntimeKafkaPackageKind, IsIface: true}}},
 				},
 			},
 		}
 		strct.Fields = []assemble.StructField{{
 			Name: "servers",
 			Type: &assemble.Array{
-				BaseType:  assemble.BaseType{Package: ctx.Top().PackageKind},
+				BaseType:  assemble.BaseType{Package: ctx.Stack.Top().PackageKind},
 				ItemsType: iface,
 			},
 		}}
 		ch := ProtoChannel{
-			Name:        name,
-			Topic:       name,
+			Name:        channelKey,
+			Topic:       channelKey,
 			Struct:      &strct,
 			Iface:       iface,
 			MessageLink: getOperationMessageType(ctx, channel.Publish, "publish"),
 		}
 		res.Publish = &ProtoChannelPub{ProtoChannel: ch}
 		commonStruct.Fields = append(commonStruct.Fields, assemble.StructField{
-			Type: assemble.Simple{Type: chGolangName, Package: ctx.Top().PackageKind},
+			Type: assemble.Simple{Type: chGolangName, Package: ctx.Stack.Top().PackageKind},
 		})
 	}
 	if channel.Subscribe != nil {
-		chGolangName := compile.GenerateGolangTypeName(ctx, name, "KafkaSubChannel")
+		chGolangName := compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "KafkaSubChannel")
 		strct := assemble.Struct{
 			BaseType: assemble.BaseType{
 				Name:        chGolangName,
 				Description: utils.JoinNonemptyStrings("\n", channel.Description, channel.Subscribe.Description),
 				Render:      true,
-				Package:     ctx.Top().PackageKind,
+				Package:     ctx.Stack.Top().PackageKind,
 			},
 		}
 		iface := &assemble.Interface{
 			BaseType: assemble.BaseType{
-				Name:    compile.GenerateGolangTypeName(ctx, name, "KafkaSubServer"),
+				Name:    compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "KafkaSubServer"),
 				Render:  true,
-				Package: ctx.Top().PackageKind,
+				Package: ctx.Stack.Top().PackageKind,
 			},
 			Methods: []assemble.FunctionSignature{
 				{
-					Name:   compile.GenerateGolangTypeName(ctx, name, "SubChannel"),
+					Name:   compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "SubChannel"),
 					Return: []assemble.FuncParam{{Type: &strct, Pointer: true}},
 				},
 				{
 					Name:   "Consumer",
-					Return: []assemble.FuncParam{{Type: &assemble.Simple{Type: "Consumer", Package: common.RuntimeKafkaPackageKind}}},
+					Return: []assemble.FuncParam{{Type: &assemble.Simple{Type: "Consumer", Package: common.RuntimeKafkaPackageKind, IsIface: true}}},
 				},
 			},
 		}
 		strct.Fields = []assemble.StructField{{
 			Name: "servers",
 			Type: &assemble.Array{
-				BaseType:  assemble.BaseType{Package: ctx.Top().PackageKind},
+				BaseType:  assemble.BaseType{Package: ctx.Stack.Top().PackageKind},
 				ItemsType: iface,
 			},
 		}}
 		ch := ProtoChannel{
-			Name:        name,
-			Topic:       name,
+			Name:        channelKey,
+			Topic:       channelKey,
 			Struct:      &strct,
 			Iface:       iface,
 			MessageLink: getOperationMessageType(ctx, channel.Subscribe, "subscribe"),
 		}
 		res.Subscribe = &ProtoChannelSub{ProtoChannel: ch}
 		commonStruct.Fields = append(commonStruct.Fields, assemble.StructField{
-			Type: assemble.Simple{Type: chGolangName, Package: ctx.Top().PackageKind},
+			Type: assemble.Simple{Type: chGolangName, Package: ctx.Stack.Top().PackageKind},
 		})
 	}
 
@@ -134,8 +133,8 @@ func getOperationMessageType(ctx *common.CompileContext, operation *compile.Oper
 		return nil
 	}
 
-	ref := fmt.Sprintf("#/%s/%s/message", path.Join(ctx.PathStack()...), operationField)
-	lnk := assemble.NewRefLink[*assemble.Message](ctx.Top().PackageKind, ref)
+	ref := path.Join(ctx.PathRef(), operationField, "message")
+	lnk := assemble.NewRefLink[*assemble.Message](ctx.Stack.Top().PackageKind, ref)
 	if operation.Message.Ref != "" {
 		lnk = assemble.NewRefLink[*assemble.Message](common.MessagesPackageKind, operation.Message.Ref)
 	}
@@ -143,7 +142,7 @@ func getOperationMessageType(ctx *common.CompileContext, operation *compile.Oper
 	return lnk
 }
 
-func BuildServer(ctx *common.CompileContext, server *compile.Server, name string) (assemble.ServerParts, error) {
+func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey string) (assemble.ServerParts, error) {
 	res := assemble.ServerParts{}
 
 	channelsLnk := assemble.NewListCbLink[*assemble.Channel](common.ChannelsPackageKind, func(item any, path []string) bool {
@@ -152,24 +151,24 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, name string
 			return false
 		}
 		if len(ch.AppliedServers) > 0 {
-			return lo.Contains(ch.AppliedServers, name)
+			return lo.Contains(ch.AppliedServers, serverKey)
 		}
 		return ch.AppliedToAllServersLinks != nil
 	})
 	ctx.Linker.AddMany(channelsLnk)
 
 	pub := ProtoServer{
-		Name: name,
+		Name: serverKey,
 		Struct: &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:        compile.GenerateGolangTypeName(ctx, name, "PubServer"),
+				Name:        compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "PubServer"),
 				Description: server.Description,
 				Render:      true,
-				Package:     ctx.Top().PackageKind,
+				Package:     ctx.Stack.Top().PackageKind,
 			},
 			Fields: []assemble.StructField{{
 				Name: "producer",
-				Type: assemble.Simple{Type: "Producer", Package: common.RuntimeKafkaPackageKind},
+				Type: assemble.Simple{Type: "Producer", Package: common.RuntimeKafkaPackageKind, IsIface: true},
 			}},
 		},
 		ChannelsLinks: channelsLnk,
@@ -177,17 +176,17 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, name string
 	res.Publish = ProtoServerPub{ProtoServer: pub}
 
 	sub := ProtoServer{
-		Name: name,
+		Name: serverKey,
 		Struct: &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:        compile.GenerateGolangTypeName(ctx, name, "SubServer"),
+				Name:        compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "SubServer"),
 				Description: server.Description,
 				Render:      true,
-				Package:     ctx.Top().PackageKind,
+				Package:     ctx.Stack.Top().PackageKind,
 			},
 			Fields: []assemble.StructField{{
 				Name: "consumer",
-				Type: assemble.Simple{Type: "Consumer", Package: common.RuntimeKafkaPackageKind},
+				Type: assemble.Simple{Type: "Consumer", Package: common.RuntimeKafkaPackageKind, IsIface: true},
 			}},
 		},
 		ChannelsLinks: channelsLnk,
@@ -195,13 +194,13 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, name string
 	res.Subscribe = ProtoServerSub{ProtoServer: sub}
 
 	srv := ProtoServer{
-		Name: name,
+		Name: serverKey,
 		Struct: &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:        compile.GenerateGolangTypeName(ctx, name, "Server"),
+				Name:        compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "Server"),
 				Description: server.Description,
 				Render:      true,
-				Package:     ctx.Top().PackageKind,
+				Package:     ctx.Stack.Top().PackageKind,
 			},
 			Fields: []assemble.StructField{{Type: pub.Struct}, {Type: sub.Struct}},
 		},
