@@ -47,7 +47,7 @@ func (m Message) build(ctx *common.CompileContext) (common.Assembler, error) {
 		return nil, fmt.Errorf("now is supported only application/json") // TODO: support other content types
 	}
 	if m.Ref != "" {
-		res := assemble.NewRefLinkAsAssembler(common.MessagesPackageKind, m.Ref)
+		res := assemble.NewRefLinkAsAssembler(m.Ref)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
@@ -87,7 +87,7 @@ func (m Message) setStructFields(langMessage *assemble.Message) {
 func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 	if m.Payload != nil {
 		ref := ctx.PathRef() + "/payload"
-		lnk := assemble.NewRefLinkAsGolangType(ctx.Stack.Top().PackageKind, ref)
+		lnk := assemble.NewRefLinkAsGolangType(ref)
 		ctx.Linker.Add(lnk)
 		return lnk
 	}
@@ -97,7 +97,7 @@ func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 func (m Message) getHeadersType(ctx *common.CompileContext) common.GolangType {
 	if m.Headers != nil {
 		ref := ctx.PathRef() + "/headers"
-		lnk := assemble.NewRefLinkAsGolangType(ctx.Stack.Top().PackageKind, ref)
+		lnk := assemble.NewRefLinkAsGolangType(ref)
 		ctx.Linker.Add(lnk)
 		return lnk
 	}

@@ -9,7 +9,7 @@ import (
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 )
 
-type channelProtoBuilderFunc func(ctx *common.CompileContext, channel *Channel, name string) (assemble.ChannelParts, error)
+type channelProtoBuilderFunc func(ctx *common.CompileContext, channel *Channel, name string) (common.Assembler, error)
 
 var ProtoChannelBuilders = map[string]channelProtoBuilderFunc{}
 
@@ -36,21 +36,21 @@ func (c Channel) Compile(ctx *common.CompileContext) error {
 
 func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Assembler, error) {
 	if c.Ref != "" {
-		res := assemble.NewRefLinkAsAssembler(common.ChannelsPackageKind, c.Ref)
+		res := assemble.NewRefLinkAsAssembler(c.Ref)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
-	res := &assemble.Channel{Name: channelKey, SupportedProtocols: make(map[string]assemble.ChannelParts)}
+	res := &assemble.Channel{Name: channelKey, SupportedProtocols: make(map[string]common.Assembler)}
 	// Empty servers field means "no servers", omitted servers field means "all servers"
 	if c.Servers != nil && len(*c.Servers) > 0 {
 		for _, srv := range *c.Servers {
-			lnk := assemble.NewRefLink[*assemble.Server](common.ServersPackageKind, "#/servers/"+srv)
+			lnk := assemble.NewRefLink[*assemble.Server]("#/servers/" + srv)
 			ctx.Linker.Add(lnk)
 			res.AppliedServerLinks = append(res.AppliedServerLinks, lnk)
 			res.AppliedServers = append(res.AppliedServers, srv)
 		}
 	} else if c.Servers == nil {
-		lnk := assemble.NewListCbLink[*assemble.Server](common.ServersPackageKind, func(item any, path []string) bool {
+		lnk := assemble.NewListCbLink[*assemble.Server](func(item common.Assembler, path []string) bool {
 			_, ok := item.(*assemble.Server)
 			return ok && len(path) > 0 && path[0] == "servers" // Pick only servers from `servers:` section, skip ones from `components:`
 		})

@@ -1,45 +1,23 @@
 package packages
 
 import (
-	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"github.com/dave/jennifer/jen"
 )
 
 type MessagesPackage struct {
-	Types    []PackageItem[common.GolangType]
-	Messages []PackageItem[*assemble.Message]
+	items []common.PackageItem[common.Assembler]
 }
 
 func (m *MessagesPackage) Put(ctx *common.CompileContext, item common.Assembler) {
-	switch v := item.(type) {
-	case *assemble.Message:
-		m.Messages = append(m.Messages, PackageItem[*assemble.Message]{
-			Typ:  v,
-			Path: ctx.PathStack(),
-		})
-	default:
-		m.Types = append(m.Types, PackageItem[common.GolangType]{
-			Typ:  v.(common.GolangType),
-			Path: ctx.PathStack(),
-		})
-	}
+	m.items = append(m.items, common.PackageItem[common.Assembler]{
+		Typ:  item,
+		Path: ctx.PathStack(),
+	})
 }
 
-func (m *MessagesPackage) FindBy(cb func(item any, path []string) bool) (common.Assembler, bool) {
-	if res, ok := findItemBy(m.Types, cb); ok {
-		return res, true
-	}
-	if res, ok := findItemBy(m.Messages, cb); ok {
-		return res, true
-	}
-	return nil, false
-}
-
-func (m *MessagesPackage) ListBy(cb func(item any, path []string) bool) []common.Assembler {
-	res := listSubItemsBy(m.Types, cb)
-	res = append(res, listSubItemsBy(m.Messages, cb)...)
-	return res
+func (m *MessagesPackage) Items() []common.PackageItem[common.Assembler] {
+	return m.items
 }
 
 func RenderMessages(pkg *MessagesPackage, baseDir string) (files map[string]*jen.File, err error) {
@@ -52,7 +30,10 @@ func RenderMessages(pkg *MessagesPackage, baseDir string) (files map[string]*jen
 		CurrentPackage: common.MessagesPackageKind,
 		ImportBase:     "github.com/bdragon300/asyncapi-codegen/generated", // FIXME
 	}
-	for _, item := range pkg.Messages {
+	for _, item := range pkg.items {
+		if !item.Typ.AllowRender() {
+			continue
+		}
 		for _, stmt := range item.Typ.AssembleDefinition(ctx) {
 			channelsGo.Add(stmt)
 		}

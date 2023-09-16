@@ -65,9 +65,9 @@ func (m Message) messageMethods(ctx *common.AssembleContext) []*jen.Statement {
 			jen.Return(jen.Qual("encoding/json", "Unmarshal").Call(jen.Id("data"), jen.Op("&").Id(receiverName).Dot("Payload"))),
 		),
 		jen.Func().Params(receiver.Clone()).Id("WithID").
-			Params(jen.Id("ID").String()).
+			Params(jen.Id("id").String()).
 			Params(jen.Op("*").Id(structName)).Block(
-			jen.Id(receiverName).Dot("ID").Op("=").Id("ID"),
+			jen.Id(receiverName).Dot("ID").Op("=").Id("id"),
 			jen.Return(jen.Id(receiverName)),
 		),
 		jen.Func().Params(receiver.Clone()).Id("WithPayload").

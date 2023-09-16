@@ -9,18 +9,12 @@ import (
 	"github.com/samber/lo"
 )
 
-type ChannelParts struct {
-	Publish   common.Assembler
-	Subscribe common.Assembler
-	Common    common.Assembler
-}
-
 type Channel struct {
 	Name                     string
 	AppliedServers           []string
 	AppliedServerLinks       []*Link[*Server] // Avoid using a map to keep definition order in generated code
 	AppliedToAllServersLinks *LinkList[*Server]
-	SupportedProtocols       map[string]ChannelParts
+	SupportedProtocols       map[string]common.Assembler
 }
 
 func (c Channel) AllowRender() bool {
@@ -31,27 +25,19 @@ func (c Channel) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statemen
 	var res []*jen.Statement
 
 	protocols := lo.Uniq(lo.Map(c.AppliedServerLinks, func(item *Link[*Server], index int) string {
-		return item.Obj().Protocol
+		return item.Target().Protocol
 	}))
 	if c.AppliedToAllServersLinks != nil {
-		protocols = lo.Uniq(lo.Map(c.AppliedToAllServersLinks.Links(), func(item *Server, index int) string {
+		protocols = lo.Uniq(lo.Map(c.AppliedToAllServersLinks.Targets(), func(item *Server, index int) string {
 			return item.Protocol
 		}))
 	}
 	for _, p := range protocols {
-		if r, ok := c.SupportedProtocols[p]; ok {
-			if r.Subscribe != nil {
-				res = append(res, r.Subscribe.AssembleDefinition(ctx)...)
-			}
-			if r.Publish != nil {
-				res = append(res, r.Publish.AssembleDefinition(ctx)...)
-			}
-			if r.Common != nil {
-				res = append(res, r.Common.AssembleDefinition(ctx)...)
-			}
-		} else {
+		r, ok := c.SupportedProtocols[p]
+		if !ok {
 			panic(fmt.Sprintf("%q protocol is not supported", p))
 		}
+		res = append(res, r.AssembleDefinition(ctx)...)
 	}
 	return res
 }

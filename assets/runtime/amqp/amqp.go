@@ -1,37 +1,39 @@
 package amqp
 
-import "context"
+// TODO: fix local import
+import "github.com/bdragon300/asyncapi-codegen/assets/runtime"
 
-type ConsumerInfo struct {
+type AMQPProducer interface {
+	Publisher(params AMQPChannelParams) (runtime.Publisher[AMQPOutEnvelope], error)
+}
+
+type AMQPConsumer interface {
+	Publisher(params AMQPChannelParams) (runtime.Publisher[AMQPInEnvelope], error)
+}
+
+type AMQPConsumerInfo struct {
 	Topics []string
 }
 
-type EnvelopeMeta struct {
+type AMQPMeta struct {
 	Exchange string
 	Queue    string
 }
 
-type OutEnvelope struct {
+type AMQPOutEnvelope struct {
 	Payload  []byte
-	Metadata EnvelopeMeta
+	Metadata AMQPMeta
 }
 
-type InEnvelope struct {
+type AMQPInEnvelope struct {
 	Payload  []byte
-	Metadata EnvelopeMeta
+	Metadata AMQPMeta
 }
 
-type ServerParams struct {
+type AMQPServerParams struct {
 	URL             string
 	ProtocolVersion string
 }
 
-type ChannelParams struct{}
+type AMQPChannelParams struct{}
 
-type Producer interface {
-	Produce(ctx context.Context, params ChannelParams, msgs []OutEnvelope) error
-}
-
-type Consumer interface {
-	Consume(ctx context.Context, params ChannelParams) (<-chan *InEnvelope, error)
-}

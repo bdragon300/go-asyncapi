@@ -1,45 +1,23 @@
 package packages
 
 import (
-	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"github.com/dave/jennifer/jen"
 )
 
 type ChannelsPackage struct {
-	Types    []PackageItem[common.GolangType]
-	Channels []PackageItem[*assemble.Channel]
+	items []common.PackageItem[common.Assembler]
 }
 
 func (c *ChannelsPackage) Put(ctx *common.CompileContext, item common.Assembler) {
-	switch v := item.(type) {
-	case *assemble.Channel:
-		c.Channels = append(c.Channels, PackageItem[*assemble.Channel]{
-			Typ:  v,
-			Path: ctx.PathStack(),
-		})
-	default:
-		c.Types = append(c.Types, PackageItem[common.GolangType]{
-			Typ:  v.(common.GolangType),
-			Path: ctx.PathStack(),
-		})
-	}
+	c.items = append(c.items, common.PackageItem[common.Assembler]{
+		Typ:  item,
+		Path: ctx.PathStack(),
+	})
 }
 
-func (c *ChannelsPackage) FindBy(cb func(item any, path []string) bool) (common.Assembler, bool) {
-	if res, ok := findItemBy(c.Types, cb); ok {
-		return res, true
-	}
-	if res, ok := findItemBy(c.Channels, cb); ok {
-		return res, true
-	}
-	return nil, false
-}
-
-func (c *ChannelsPackage) ListBy(cb func(item any, path []string) bool) []common.Assembler {
-	res := listSubItemsBy(c.Types, cb)
-	res = append(res, listSubItemsBy(c.Channels, cb)...)
-	return res
+func (c *ChannelsPackage) Items() []common.PackageItem[common.Assembler] {
+	return c.items
 }
 
 func RenderChannels(pkg *ChannelsPackage, baseDir string) (files map[string]*jen.File, err error) {
@@ -52,7 +30,10 @@ func RenderChannels(pkg *ChannelsPackage, baseDir string) (files map[string]*jen
 		CurrentPackage: common.ChannelsPackageKind,
 		ImportBase:     "github.com/bdragon300/asyncapi-codegen/generated", // FIXME
 	}
-	for _, item := range pkg.Channels {
+	for _, item := range pkg.items {
+		if !item.Typ.AllowRender() {
+			continue
+		}
 		for _, stmt := range item.Typ.AssembleDefinition(ctx) {
 			channelsGo.Add(stmt)
 		}

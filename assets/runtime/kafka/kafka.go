@@ -1,16 +1,18 @@
 package kafka
 
+// TODO: fix local import
 import (
-	"context"
 	"time"
+
+	"github.com/bdragon300/asyncapi-codegen/generated/runtime"
 )
 
 type Producer interface {
-	Produce(ctx context.Context, params ChannelParams, msgs []OutEnvelope) error
+	Publisher(params ChannelParams) (runtime.Publisher[OutEnvelope], error)
 }
 
 type Consumer interface {
-	Consume(ctx context.Context, params ChannelParams) (<-chan *InEnvelope, error)
+	Subscriber(params ChannelParams) (runtime.Subscriber[InEnvelope], error)
 }
 
 // Params below are passed to the New* implementation functions

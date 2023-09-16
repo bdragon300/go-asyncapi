@@ -3,6 +3,8 @@ package assemble
 import (
 	"path"
 
+	"github.com/samber/lo"
+
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	"github.com/dave/jennifer/jen"
@@ -128,24 +130,43 @@ type Simple struct {
 	IsIface         bool
 	ExternalPackage string             // optional import path, such as "encoding/json"
 	Package         common.PackageKind // optional import path from any generated package
+	TypeParamValues []common.Assembler // optional type parameter types to be filled in definition and usage
 }
 
 func (p Simple) AllowRender() bool {
 	return false
 }
 
-func (p Simple) AssembleDefinition(*common.AssembleContext) []*jen.Statement {
-	return []*jen.Statement{jen.Id(p.Type)}
+func (p Simple) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
+	stmt := jen.Id(p.Type)
+	if len(p.TypeParamValues) > 0 {
+		typeParams := lo.FlatMap(p.TypeParamValues, func(item common.Assembler, index int) []jen.Code {
+			return utils.ToCode(item.AssembleUsage(ctx))
+		})
+		stmt = stmt.Types(typeParams...)
+	}
+	return []*jen.Statement{stmt}
 }
 
 func (p Simple) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
-	if p.ExternalPackage != "" {
-		return []*jen.Statement{jen.Qual(p.ExternalPackage, p.Type)}
+	stmt := &jen.Statement{}
+	switch {
+	case p.ExternalPackage != "":
+		stmt = stmt.Qual(p.ExternalPackage, p.Type)
+	case p.Package != "" && p.Package != ctx.CurrentPackage:
+		stmt = stmt.Qual(path.Join(ctx.ImportBase, string(p.Package)), p.Type)
+	default:
+		stmt = stmt.Id(p.Type)
 	}
-	if p.Package != "" && p.Package != ctx.CurrentPackage {
-		return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, string(p.Package)), p.Type)}
+
+	if len(p.TypeParamValues) > 0 {
+		typeParams := lo.FlatMap(p.TypeParamValues, func(item common.Assembler, index int) []jen.Code {
+			return utils.ToCode(item.AssembleUsage(ctx))
+		})
+		stmt = stmt.Types(typeParams...)
 	}
-	return []*jen.Statement{jen.Id(p.Type)}
+
+	return []*jen.Statement{stmt}
 }
 
 func (p Simple) TypeName() string {

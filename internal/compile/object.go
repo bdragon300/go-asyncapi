@@ -75,7 +75,7 @@ func (m Object) Compile(ctx *common.CompileContext) error {
 
 func buildGolangType(ctx *common.CompileContext, schema Object, flags map[common.SchemaTag]string) (common.GolangType, error) {
 	if schema.Ref != "" {
-		res := assemble.NewRefLinkAsGolangType(common.ModelsPackageKind, schema.Ref)
+		res := assemble.NewRefLinkAsGolangType(schema.Ref)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
@@ -186,7 +186,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 	// regular properties
 	for _, key := range schema.Properties.Keys() {
 		ref := path.Join(ctx.PathRef(), "properties", key)
-		langObj := assemble.NewRefLinkAsGolangType(ctx.Stack.Top().PackageKind, ref)
+		langObj := assemble.NewRefLinkAsGolangType(ref)
 		ctx.Linker.Add(langObj)
 		f := assemble.StructField{
 			Name:         utils.ToGolangName(key, true),
@@ -203,7 +203,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 		switch schema.AdditionalProperties.Selector {
 		case 0: // "additionalProperties:" is an object
 			ref := path.Join(ctx.PathRef(), "additionalProperties")
-			langObj := assemble.NewRefLinkAsGolangType(ctx.Stack.Top().PackageKind, ref)
+			langObj := assemble.NewRefLinkAsGolangType(ref)
 			f := assemble.StructField{
 				Name: "AdditionalProperties",
 				Type: &assemble.Map{
@@ -268,7 +268,7 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 	switch {
 	case schema.Items != nil && schema.Items.Selector == 0: // Only one "type:" of items
 		ref := path.Join(ctx.PathRef(), "items")
-		res.ItemsType = assemble.NewRefLinkAsGolangType(ctx.Stack.Top().PackageKind, ref)
+		res.ItemsType = assemble.NewRefLinkAsGolangType(ref)
 	case schema.Items == nil || schema.Items.Selector == 1: // No items or Several types for each item sequentially
 		valTyp := assemble.TypeAlias{
 			BaseType: assemble.BaseType{
@@ -308,19 +308,19 @@ func buildUnionStruct(ctx *common.CompileContext, schema Object) (*assemble.Unio
 
 	res.Fields = lo.Times(len(schema.OneOf), func(index int) assemble.StructField {
 		ref := path.Join(ctx.PathRef(), "oneOf", strconv.Itoa(index))
-		langTyp := assemble.NewRefLinkAsGolangType(ctx.Stack.Top().PackageKind, ref)
+		langTyp := assemble.NewRefLinkAsGolangType(ref)
 		ctx.Linker.Add(langTyp)
 		return assemble.StructField{Type: langTyp, ForcePointer: true, Tags: nil}
 	})
 	res.Fields = append(res.Fields, lo.Times(len(schema.AnyOf), func(index int) assemble.StructField {
 		ref := path.Join(ctx.PathRef(), "anyOf", strconv.Itoa(index))
-		langTyp := assemble.NewRefLinkAsGolangType(ctx.Stack.Top().PackageKind, ref)
+		langTyp := assemble.NewRefLinkAsGolangType(ref)
 		ctx.Linker.Add(langTyp)
 		return assemble.StructField{Type: langTyp, ForcePointer: true, Tags: nil}
 	})...)
 	res.Fields = append(res.Fields, lo.Times(len(schema.AllOf), func(index int) assemble.StructField {
 		ref := path.Join(ctx.PathRef(), "allOf", strconv.Itoa(index))
-		langTyp := assemble.NewRefLinkAsGolangType(ctx.Stack.Top().PackageKind, ref)
+		langTyp := assemble.NewRefLinkAsGolangType(ref)
 		ctx.Linker.Add(langTyp)
 		return assemble.StructField{Type: langTyp, Tags: nil}
 	})...)

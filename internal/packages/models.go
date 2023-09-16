@@ -3,47 +3,21 @@ package packages
 import (
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"github.com/dave/jennifer/jen"
-	"github.com/samber/lo"
 )
 
-type PackageItem[T common.Assembler] struct {
-	Typ  T
-	Path []string
-}
-
 type ModelsPackage struct {
-	Items []PackageItem[common.GolangType]
+	items []common.PackageItem[common.Assembler]
 }
 
 func (m *ModelsPackage) Put(ctx *common.CompileContext, item common.Assembler) {
-	m.Items = append(m.Items, PackageItem[common.GolangType]{
-		Typ:  item.(common.GolangType),
+	m.items = append(m.items, common.PackageItem[common.Assembler]{
+		Typ:  item,
 		Path: ctx.PathStack(),
 	})
 }
 
-func (m *ModelsPackage) FindBy(cb func(item any, path []string) bool) (common.Assembler, bool) {
-	return findItemBy(m.Items, cb)
-}
-
-func (m *ModelsPackage) ListBy(cb func(item any, path []string) bool) []common.Assembler {
-	return listSubItemsBy(m.Items, cb)
-}
-
-func findItemBy[T common.Assembler](items []PackageItem[T], cb func(item any, path []string) bool) (common.Assembler, bool) {
-	res, ok := lo.Find(items, func(item PackageItem[T]) bool {
-		return cb(item.Typ, item.Path)
-	})
-	return res.Typ, ok
-}
-
-func listSubItemsBy[T common.Assembler](items []PackageItem[T], cb func(item any, path []string) bool) []common.Assembler {
-	return lo.FilterMap(items, func(item PackageItem[T], index int) (common.Assembler, bool) {
-		if cb(item.Typ, item.Path) {
-			return item.Typ, true
-		}
-		return nil, false
-	})
+func (m *ModelsPackage) Items() []common.PackageItem[common.Assembler] {
+	return m.items
 }
 
 func RenderModels(pkg *ModelsPackage, baseDir string) (files map[string]*jen.File, err error) {
@@ -57,7 +31,7 @@ func RenderModels(pkg *ModelsPackage, baseDir string) (files map[string]*jen.Fil
 		ImportBase:     "github.com/bdragon300/asyncapi-codegen/generated", // FIXME
 	}
 
-	for _, item := range pkg.Items {
+	for _, item := range pkg.items {
 		if !item.Typ.AllowRender() {
 			continue
 		}

@@ -8,85 +8,78 @@ import (
 	"github.com/samber/lo"
 )
 
-func NewRefLink[T any](pkg common.PackageKind, ref string) *Link[T] {
-	return &Link[T]{
-		pkg: pkg,
-		ref: ref,
-	}
+func NewRefLink[T any](ref string) *Link[T] {
+	return &Link[T]{ref: ref}
 }
 
-func NewCbLink[T any](pkg common.PackageKind, findCb func(item any, path []string) bool) *Link[T] {
-	return &Link[T]{
-		pkg:    pkg,
-		findCb: findCb,
-	}
+func NewCbLink[T any](findCb func(item common.Assembler, path []string) bool) *Link[T] {
+	return &Link[T]{findCb: findCb}
 }
 
 type Link[T any] struct {
-	pkg    common.PackageKind
 	ref    string
-	findCb func(item any, path []string) bool
+	findCb func(item common.Assembler, path []string) bool
 
-	link T
+	target   T
+	assigned bool
 }
 
 func (r *Link[T]) Assign(obj any) {
-	r.link = obj.(T)
+	r.target = obj.(T)
+	r.assigned = true
 }
 
-func (r *Link[T]) FindCallback() func(item any, path []string) bool {
+func (r *Link[T]) Assigned() bool {
+	return r.assigned
+}
+
+func (r *Link[T]) FindCallback() func(item common.Assembler, path []string) bool {
 	return r.findCb
 }
 
-func (r *Link[T]) Obj() T {
-	return r.link
-}
-
-func (r *Link[T]) Package() common.PackageKind {
-	return r.pkg
+func (r *Link[T]) Target() T {
+	return r.target
 }
 
 func (r *Link[T]) Ref() string {
 	return r.ref
 }
 
-func NewListCbLink[T any](pkg common.PackageKind, findCb func(item any, path []string) bool) *LinkList[T] {
-	return &LinkList[T]{
-		pkg:    pkg,
-		findCb: findCb,
-	}
+func NewListCbLink[T any](findCb func(item common.Assembler, path []string) bool) *LinkList[T] {
+	return &LinkList[T]{findCb: findCb}
 }
 
 type LinkList[T any] struct {
-	pkg    common.PackageKind
-	findCb func(item any, path []string) bool
+	findCb func(item common.Assembler, path []string) bool
 
-	links []T
+	targets  []T
+	assigned bool
 }
 
-func (r *LinkList[T]) AssignList(obj []any) {
+func (r *LinkList[T]) AssignList(objs []any) {
 	var ok bool
-	r.links, ok = lo.FromAnySlice[T](obj)
+	r.targets, ok = lo.FromAnySlice[T](objs)
 	if !ok {
-		panic(fmt.Sprintf("Cannot assign slice of %+v to %T", obj, r.links))
+		panic(fmt.Sprintf("Cannot assign slice of %+v to %T", objs, r.targets))
 	}
+	r.assigned = true
 }
 
-func (r *LinkList[T]) FindCallback() func(item any, path []string) bool {
+func (r *LinkList[T]) Assigned() bool {
+	return r.assigned
+}
+
+func (r *LinkList[T]) FindCallback() func(item common.Assembler, path []string) bool {
 	return r.findCb
 }
 
-func (r *LinkList[T]) Links() []T {
-	return r.links
+func (r *LinkList[T]) Targets() []T {
+	return r.targets
 }
 
-func (r *LinkList[T]) Package() common.PackageKind {
-	return r.pkg
-}
-
-func NewRefLinkAsAssembler(pkg common.PackageKind, ref string) *LinkAsAssembler {
+func NewRefLinkAsAssembler(ref string) *LinkAsAssembler {
 	return &LinkAsAssembler{
-		Link: *NewRefLink[common.Assembler](pkg, ref),
+		Link: *NewRefLink[common.Assembler](ref),
 	}
 }
 
@@ -95,20 +88,20 @@ type LinkAsAssembler struct {
 }
 
 func (r *LinkAsAssembler) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
-	return r.link.AssembleDefinition(ctx)
+	return r.target.AssembleDefinition(ctx)
 }
 
 func (r *LinkAsAssembler) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
-	return r.link.AssembleUsage(ctx)
+	return r.target.AssembleUsage(ctx)
 }
 
 func (r *LinkAsAssembler) AllowRender() bool {
 	return false // Prevent rendering the object we're point to for several times
 }
 
-func NewRefLinkAsGolangType(pkg common.PackageKind, ref string) *LinkAsGolangType {
+func NewRefLinkAsGolangType(ref string) *LinkAsGolangType {
 	return &LinkAsGolangType{
-		Link: *NewRefLink[common.GolangType](pkg, ref),
+		Link: *NewRefLink[common.GolangType](ref),
 	}
 }
 
@@ -117,7 +110,7 @@ type LinkAsGolangType struct {
 }
 
 func (r *LinkAsGolangType) TypeName() string {
-	return r.link.TypeName()
+	return r.target.TypeName()
 }
 
 func (r *LinkAsGolangType) AllowRender() bool {
@@ -125,9 +118,9 @@ func (r *LinkAsGolangType) AllowRender() bool {
 }
 
 func (r *LinkAsGolangType) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
-	return r.link.AssembleDefinition(ctx)
+	return r.target.AssembleDefinition(ctx)
 }
 
 func (r *LinkAsGolangType) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
-	return r.link.AssembleUsage(ctx)
+	return r.target.AssembleUsage(ctx)
 }

@@ -7,10 +7,14 @@ import (
 	"github.com/samber/lo"
 )
 
+type PackageItem[T Assembler] struct {
+	Typ  T
+	Path []string
+}
+
 type Package interface {
 	Put(ctx *CompileContext, item Assembler)
-	FindBy(cb func(item any, path []string) bool) (Assembler, bool)
-	ListBy(cb func(item any, path []string) bool) []Assembler
+	Items() []PackageItem[Assembler]
 }
 
 type Linker interface {
@@ -93,14 +97,14 @@ func (c *CompileContext) CurrentObjName() string {
 
 type LinkQuerier interface {
 	Assign(obj any)
-	FindCallback() func(item any, path []string) bool
-	Package() PackageKind
+	Assigned() bool
+	FindCallback() func(item Assembler, path []string) bool
 	Ref() string
 }
 
 type ListQuerier interface {
-	AssignList(obj []any)
-	FindCallback() func(item any, path []string) bool
-	Package() PackageKind
+	AssignList(objs []any)
+	Assigned() bool
+	FindCallback() func(item Assembler, path []string) bool
 }
 

@@ -9,7 +9,7 @@ import (
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 )
 
-type serverProtoBuilderFunc func(ctx *common.CompileContext, server *Server, name string) (assemble.ServerParts, error)
+type serverProtoBuilderFunc func(ctx *common.CompileContext, server *Server, name string) (common.Assembler, error)
 
 var ProtoServerBuilders = map[string]serverProtoBuilderFunc{}
 
@@ -38,23 +38,21 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 
 func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Assembler, error) {
 	if s.Ref != "" {
-		res := assemble.NewRefLinkAsAssembler(common.ServersPackageKind, s.Ref)
+		res := assemble.NewRefLinkAsAssembler(s.Ref)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
 
-	res := &assemble.Server{Protocol: s.Protocol}
 	protoBuilder, ok := ProtoServerBuilders[s.Protocol]
 	if !ok {
 		panic(fmt.Sprintf("Unknown protocol %q at path %s", s.Protocol, ctx.PathStack()))
 	}
-	var err error
-	res.Parts, err = protoBuilder(ctx, &s, serverKey)
+	protoServer, err := protoBuilder(ctx, &s, serverKey)
 	if err != nil {
 		return nil, fmt.Errorf("error build server at path %s: %w", ctx.PathStack(), err)
 	}
 
-	return res, nil
+	return &assemble.Server{Protocol: s.Protocol, ProtoServer: protoServer}, nil
 }
 
 // TODO: This object MAY be extended with Specification Extensions.

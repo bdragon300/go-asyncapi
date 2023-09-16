@@ -60,6 +60,10 @@ func (s Struct) NewFuncName() string {
 	return "New" + s.Name
 }
 
+func (s Struct) ReceiverName() string {
+	return strings.ToLower(string(s.Name[0]))
+}
+
 func (s Struct) MustGetField(name string) StructField {
 	f, ok := lo.Find(s.Fields, func(item StructField) bool {
 		return item.Name == name
@@ -166,7 +170,7 @@ func isTypeStruct(typ common.GolangType) bool {
 	case *Struct, *UnionStruct:
 		return true
 	case *LinkAsGolangType:
-		return isTypeStruct(v.Obj())
+		return isTypeStruct(v.Target())
 	case *NullableType:
 		_, ok := v.Type.(*Struct)
 		return ok

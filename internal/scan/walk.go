@@ -17,8 +17,6 @@ type orderedMap interface {
 }
 
 func WalkSchema(ctx *common.CompileContext, object reflect.Value) error {
-	objectTyp := object.Type()
-
 	gather := func(_ctx *common.CompileContext, _obj reflect.Value) error {
 		// BFS tree traversal
 		if v, ok := _obj.Interface().(compiler); ok {
@@ -48,8 +46,13 @@ func WalkSchema(ctx *common.CompileContext, object reflect.Value) error {
 	}
 	// TODO: add Unions
 
+	if object.Kind() == reflect.Pointer {
+		object = reflect.Indirect(object)
+	}
+
 	switch object.Kind() {
 	case reflect.Struct:
+		objectTyp := object.Type()
 		for i := 0; i < object.NumField(); i++ {
 			fld := objectTyp.Field(i)
 			fldVal := object.Field(i)

@@ -12,6 +12,10 @@ func (r RuntimePackage) Put(_ *common.CompileContext, _ common.Assembler) {
 	panic("implement me")
 }
 
+func (r RuntimePackage) Items() []common.PackageItem[common.Assembler] {
+	return nil
+}
+
 func (r RuntimePackage) FindBy(_ func(item any, path []string) bool) (common.Assembler, bool) {
 	return nil, false
 }
