@@ -8,15 +8,15 @@ import (
 )
 
 type Producer interface {
-	Publisher(params ChannelParams) (runtime.Publisher[OutEnvelope], error)
+	Publisher(bindings *ChannelBindings) (runtime.Publisher[OutEnvelope], error)
 }
 
 type Consumer interface {
-	Subscriber(params ChannelParams) (runtime.Subscriber[InEnvelope], error)
+	Subscriber(bindings *ChannelBindings) (runtime.Subscriber[InEnvelope], error)
 }
 
 // Params below are passed to the New* implementation functions
-type ServerParams struct {
+type ServerBindings struct {
 	URL             string
 	ProtocolVersion string
 	// From server bindings
@@ -24,7 +24,7 @@ type ServerParams struct {
 	SchemaRegistryVendor string
 }
 
-type ChannelParams struct {
+type ChannelBindings struct {
 	// From channel/operation bindings
 	Topic      string
 	Partitions int
@@ -33,11 +33,16 @@ type ChannelParams struct {
 	GroupID    string
 
 	// TopicConfiguration
-	CleanupPolicy     [2]string
+	CleanupPolicy     TopicCleanupPolicy
 	RetentionMs       time.Duration
 	RetentionBytes    int
 	DeleteRetentionMs time.Duration
 	MaxMessageBytes   int
+}
+
+type TopicCleanupPolicy struct {
+	Delete  bool
+	Compact bool
 }
 
 type EnvelopeMeta struct {

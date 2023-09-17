@@ -14,7 +14,7 @@ type Channel struct {
 	AppliedServers           []string
 	AppliedServerLinks       []*Link[*Server] // Avoid using a map to keep definition order in generated code
 	AppliedToAllServersLinks *LinkList[*Server]
-	SupportedProtocols       map[string]common.Assembler
+	AllProtocols             map[string]common.Assembler
 }
 
 func (c Channel) AllowRender() bool {
@@ -33,7 +33,7 @@ func (c Channel) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statemen
 		}))
 	}
 	for _, p := range protocols {
-		r, ok := c.SupportedProtocols[p]
+		r, ok := c.AllProtocols[p]
 		if !ok {
 			panic(fmt.Sprintf("%q protocol is not supported", p))
 		}

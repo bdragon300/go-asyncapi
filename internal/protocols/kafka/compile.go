@@ -1,12 +1,15 @@
 package kafka
 
 import (
+	"encoding/json"
 	"path"
 
 	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"github.com/bdragon300/asyncapi-codegen/internal/compile"
+	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	"github.com/samber/lo"
+	"gopkg.in/yaml.v3"
 )
 
 const protoName = "kafka"
@@ -16,6 +19,26 @@ func Register() {
 	compile.ProtoChannelBuilders[protoName] = BuildChannel
 	compile.ProtoServerBuilders["kafka-secure"] = BuildServer // TODO: make a separate kafka-secure protocol
 	compile.ProtoChannelBuilders["kafka-secure"] = BuildChannel
+}
+
+type channelBindings struct {
+	Topic              *string             `json:"topic" yaml:"topic"`
+	Partitions         *int                `json:"partitions" yaml:"partitions"`
+	Replicas           *int                `json:"replicas" yaml:"replicas"`
+	TopicConfiguration *topicConfiguration `json:"topicConfiguration" yaml:"topicConfiguration"`
+}
+
+type topicConfiguration struct {
+	CleanupPolicy     []string `json:"cleanup.policy" yaml:"cleanup.policy"`
+	RetentionMs       *int     `json:"retention.ms" yaml:"retention.ms"`
+	RetentionBytes    *int     `json:"retention.bytes" yaml:"retention.bytes"`
+	DeleteRetentionMs *int     `json:"delete.retention.ms" yaml:"delete.retention.ms"`
+	MaxMessageBytes   *int     `json:"max.message.bytes" yaml:"max.message.bytes"`
+}
+
+type operationBindings struct {
+	GroupID  *compile.Object `json:"groupId" yaml:"groupId"`
+	ClientID *compile.Object `json:"clientId" yaml:"clientId"`
 }
 
 func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelKey string) (common.Assembler, error) {
@@ -56,6 +79,15 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 			chanResult.PubMessageLink = assemble.NewRefLink[*assemble.Message](ref)
 			ctx.Linker.Add(chanResult.PubMessageLink)
 		}
+		chBindings, chOk := channel.Bindings.Get(protoName)
+		opBindings, opOk := channel.Publish.Bindings.Get(protoName)
+		if chOk || opOk {
+			var err error
+			chanResult.PubChannelBindings, err = buildChannelBindings(&chBindings, &opBindings)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 	if channel.Subscribe != nil {
 		fld := assemble.StructField{
@@ -80,9 +112,72 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 			chanResult.SubMessageLink = assemble.NewRefLink[*assemble.Message](ref)
 			ctx.Linker.Add(chanResult.SubMessageLink)
 		}
+		chBindings, chOk := channel.Bindings.Get(protoName)
+		opBindings, opOk := channel.Subscribe.Bindings.Get(protoName)
+		if chOk || opOk {
+			var err error
+			chanResult.SubChannelBindings, err = buildChannelBindings(&chBindings, &opBindings)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	return chanResult, nil
+}
+
+func buildChannelBindings(chBindings, opBindings *utils.Union2[json.RawMessage, yaml.Node]) (*ProtoChannelBindings, error) {
+	res := ProtoChannelBindings{}
+	if chBindings != nil {
+		var bindings channelBindings
+		if err := utils.UnmarhalRawsUnion2(*chBindings, &bindings); err != nil {
+			return nil, err
+		}
+		if bindings.Topic != nil {
+			res.Values.Set("Topic", *bindings.Topic)
+		}
+		if bindings.Partitions != nil {
+			res.Values.Set("Partitions", *bindings.Partitions)
+		}
+		if bindings.Replicas != nil {
+			res.Values.Set("Replicas", *bindings.Replicas)
+		}
+		if bindings.TopicConfiguration != nil {
+			tc := bindings.TopicConfiguration
+			if lo.Contains(tc.CleanupPolicy, "delete") {
+				res.CleanupPolicyValue.Set("Delete", true)
+			}
+			if lo.Contains(tc.CleanupPolicy, "compact") {
+				res.CleanupPolicyValue.Set("Compact", true)
+			}
+			if tc.RetentionMs != nil {
+				res.Values.Set("RetentionMs", *tc.RetentionMs)
+			}
+			if tc.RetentionBytes != nil {
+				res.Values.Set("RetentionBytes", *tc.RetentionBytes)
+			}
+			if tc.DeleteRetentionMs != nil {
+				res.Values.Set("DeleteRetentionMs", *tc.DeleteRetentionMs)
+			}
+			if tc.MaxMessageBytes != nil {
+				res.Values.Set("MaxMessageBytes", *tc.MaxMessageBytes)
+			}
+		}
+	}
+	if opBindings != nil {
+		var bindings operationBindings
+		if err := utils.UnmarhalRawsUnion2(*opBindings, &bindings); err != nil {
+			return nil, err
+		}
+		if bindings.GroupID != nil {
+			res.GroupIDArgSchema = "string"
+		}
+		if bindings.ClientID != nil {
+			res.ClientIDArgSchema = "string"
+		}
+	}
+
+	return &res, nil
 }
 
 func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey string) (common.Assembler, error) {

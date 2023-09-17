@@ -1,8 +1,11 @@
 package compile
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
@@ -14,14 +17,14 @@ type serverProtoBuilderFunc func(ctx *common.CompileContext, server *Server, nam
 var ProtoServerBuilders = map[string]serverProtoBuilderFunc{}
 
 type Server struct {
-	URL             string                                   `json:"url" yaml:"url"`
-	Protocol        string                                   `json:"protocol" yaml:"protocol"`
-	ProtocolVersion string                                   `json:"protocolVersion" yaml:"protocolVersion"`
-	Description     string                                   `json:"description" yaml:"description"`
-	Variables       utils.OrderedMap[string, ServerVariable] `json:"variables" yaml:"variables"`
-	Security        []SecurityRequirement                    `json:"security" yaml:"security"`
-	Tags            []Tag                                    `json:"tags" yaml:"tags"`
-	Bindings        utils.OrderedMap[string, any]            `json:"bindings" yaml:"bindings"` // TODO: replace any to common protocols object
+	URL             string                                                             `json:"url" yaml:"url"`
+	Protocol        string                                                             `json:"protocol" yaml:"protocol"`
+	ProtocolVersion string                                                             `json:"protocolVersion" yaml:"protocolVersion"`
+	Description     string                                                             `json:"description" yaml:"description"`
+	Variables       utils.OrderedMap[string, ServerVariable]                           `json:"variables" yaml:"variables"`
+	Security        []SecurityRequirement                                              `json:"security" yaml:"security"`
+	Tags            []Tag                                                              `json:"tags" yaml:"tags"`
+	Bindings        utils.OrderedMap[string, utils.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }

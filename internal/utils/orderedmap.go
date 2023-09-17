@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/samber/lo"
+
 	"github.com/buger/jsonparser"
 	"gopkg.in/yaml.v3"
 )
@@ -14,10 +16,6 @@ type OrderedMap[K comparable, V any] struct {
 }
 
 func (o *OrderedMap[K, V]) UnmarshalJSON(bytes []byte) error {
-	if o.data == nil {
-		o.data = make(map[K]V)
-	}
-
 	return jsonparser.ObjectEach(
 		bytes,
 		func(keyData []byte, valueData []byte, dataType jsonparser.ValueType, offset int) error {
@@ -31,10 +29,7 @@ func (o *OrderedMap[K, V]) UnmarshalJSON(bytes []byte) error {
 				return err
 			}
 
-			if _, ok := o.data[key]; !ok {
-				o.keys = append(o.keys, key)
-			}
-			o.data[key] = val
+			o.Set(key, val)
 			return nil
 		},
 	)
@@ -43,10 +38,6 @@ func (o *OrderedMap[K, V]) UnmarshalJSON(bytes []byte) error {
 func (o *OrderedMap[K, V]) UnmarshalYAML(value *yaml.Node) error {
 	if value.Kind != yaml.MappingNode {
 		return fmt.Errorf("pipeline must contain YAML mapping, got %v", value.Kind)
-	}
-
-	if o.data == nil {
-		o.data = make(map[K]V)
 	}
 
 	for index := 0; index < len(value.Content); index += 2 {
@@ -60,26 +51,36 @@ func (o *OrderedMap[K, V]) UnmarshalYAML(value *yaml.Node) error {
 			return err
 		}
 
-		if _, ok := o.data[key]; !ok {
-			o.keys = append(o.keys, key)
-		}
-		o.data[key] = val
+		o.Set(key, val)
 	}
 
 	return nil
+}
+
+func (o *OrderedMap[K, V]) Set(key K, value V) {
+	if o.data == nil {
+		o.data = make(map[K]V)
+	}
+	if _, ok := o.data[key]; ok {
+		o.keys = lo.DropWhile(o.keys, func(item K) bool { return item == key })
+	}
+	o.data[key] = value
+	o.keys = append(o.keys, key)
 }
 
 func (o OrderedMap[K, V]) Keys() []K {
 	return o.keys
 }
 
-func (o OrderedMap[K, V]) MustGet(key K) V {
-	return o.data[key]
-}
-
 func (o OrderedMap[K, V]) Get(key K) (V, bool) {
 	v, ok := o.data[key]
 	return v, ok
+}
+
+func (o OrderedMap[K, V]) Entries() []lo.Entry[K, V] {
+	return lo.Map(o.keys, func(item K, index int) lo.Entry[K, V] {
+		return lo.Entry[K, V]{Key: item, Value: o.data[item]}
+	})
 }
 
 func (o OrderedMap[K, V]) Len() int {

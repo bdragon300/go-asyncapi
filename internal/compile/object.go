@@ -7,12 +7,13 @@ import (
 	"strconv"
 	"strings"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
 
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	"github.com/samber/lo"
-	"gopkg.in/yaml.v3"
 )
 
 const pathSep = "_"
@@ -184,16 +185,16 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 	// TODO: cache the object name in case any sub-schemas recursively reference it
 
 	// regular properties
-	for _, key := range schema.Properties.Keys() {
-		ref := path.Join(ctx.PathRef(), "properties", key)
+	for _, entry := range schema.Properties.Entries() {
+		ref := path.Join(ctx.PathRef(), "properties", entry.Key)
 		langObj := assemble.NewRefLinkAsGolangType(ref)
 		ctx.Linker.Add(langObj)
 		f := assemble.StructField{
-			Name:         utils.ToGolangName(key, true),
+			Name:         utils.ToGolangName(entry.Key, true),
 			Type:         langObj,
-			ForcePointer: lo.Contains(schema.Required, key),
+			ForcePointer: lo.Contains(schema.Required, entry.Key),
 			Tags:         nil, // TODO
-			Description:  schema.Properties.MustGet(key).Description,
+			Description:  entry.Value.Description,
 		}
 		res.Fields = append(res.Fields, f)
 	}

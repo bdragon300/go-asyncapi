@@ -17,7 +17,7 @@ type orderedMap interface {
 }
 
 func WalkSchema(ctx *common.CompileContext, object reflect.Value) error {
-	gather := func(_ctx *common.CompileContext, _obj reflect.Value) error {
+	traverse := func(_ctx *common.CompileContext, _obj reflect.Value) error {
 		// BFS tree traversal
 		if v, ok := _obj.Interface().(compiler); ok {
 			if (_obj.Kind() == reflect.Pointer || _obj.Kind() == reflect.Interface) && _obj.IsNil() {
@@ -31,14 +31,12 @@ func WalkSchema(ctx *common.CompileContext, object reflect.Value) error {
 	}
 
 	if _, ok := object.Interface().(orderedMap); ok {
-		mKeys := object.MethodByName("Keys")
-		keys := mKeys.Call(nil)[0]
-		mMustGet := object.MethodByName("MustGet")
-		for j := 0; j < keys.Len(); j++ {
-			key := keys.Index(j)
-			val := mMustGet.Call([]reflect.Value{key})[0]
-			pushStack(ctx, key.String(), ctx.Stack.Top().Flags)
-			if err := gather(ctx, val); err != nil {
+		mEntries := object.MethodByName("Entries")
+		entries := mEntries.Call(nil)[0]
+		for j := 0; j < entries.Len(); j++ {
+			entry := entries.Index(j)
+			pushStack(ctx, entry.FieldByName("Key").String(), ctx.Stack.Top().Flags)
+			if err := traverse(ctx, entry.FieldByName("Value")); err != nil {
 				return err
 			}
 			ctx.Stack.Pop()
@@ -61,7 +59,7 @@ func WalkSchema(ctx *common.CompileContext, object reflect.Value) error {
 			}
 
 			pushStack(ctx, getFieldJSONName(fld), parseTags(fld))
-			if err := gather(ctx, fldVal); err != nil {
+			if err := traverse(ctx, fldVal); err != nil {
 				return err
 			}
 			ctx.Stack.Pop()
@@ -71,7 +69,7 @@ func WalkSchema(ctx *common.CompileContext, object reflect.Value) error {
 	case reflect.Array, reflect.Slice:
 		for j := 0; j < object.Len(); j++ {
 			pushStack(ctx, strconv.Itoa(j), ctx.Stack.Top().Flags)
-			if err := gather(ctx, object.Index(j)); err != nil {
+			if err := traverse(ctx, object.Index(j)); err != nil {
 				return err
 			}
 			ctx.Stack.Pop()

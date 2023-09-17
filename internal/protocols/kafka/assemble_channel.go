@@ -3,12 +3,22 @@ package kafka
 import (
 	"fmt"
 
+	"github.com/samber/lo"
+
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
 
 	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	j "github.com/dave/jennifer/jen"
 )
+
+type ProtoChannelBindings struct {
+	Values             utils.OrderedMap[string, any]
+	CleanupPolicyValue utils.OrderedMap[string, bool]
+	// TODO: implement args validation by jsonschema
+	GroupIDArgSchema  string
+	ClientIDArgSchema string
+}
 
 type ProtoChannel struct {
 	Name       string
@@ -18,7 +28,9 @@ type ProtoChannel struct {
 	Subscriber bool
 
 	PubMessageLink      *assemble.Link[*assemble.Message] // nil when message is not set
+	PubChannelBindings  *ProtoChannelBindings
 	SubMessageLink      *assemble.Link[*assemble.Message] // nil when message is not set
+	SubChannelBindings  *ProtoChannelBindings
 	FallbackMessageType common.Assembler
 }
 
@@ -28,6 +40,12 @@ func (p ProtoChannel) AllowRender() bool {
 
 func (p ProtoChannel) AssembleDefinition(ctx *common.AssembleContext) []*j.Statement {
 	res := p.assembleNewFunc(ctx)
+	if p.PubChannelBindings != nil {
+		res = append(res, p.assembleBindings(ctx, p.PubChannelBindings, "PubBindings")...)
+	}
+	if p.SubChannelBindings != nil {
+		res = append(res, p.assembleBindings(ctx, p.SubChannelBindings, "SubBindings")...)
+	}
 	res = append(res, p.Struct.AssembleDefinition(ctx)...)
 	res = append(res, p.assembleCommonMethods()...)
 	if p.Publisher {
@@ -41,6 +59,40 @@ func (p ProtoChannel) AssembleDefinition(ctx *common.AssembleContext) []*j.State
 
 func (p ProtoChannel) AssembleUsage(ctx *common.AssembleContext) []*j.Statement {
 	return p.Struct.AssembleUsage(ctx)
+}
+
+func (p ProtoChannel) assembleBindings(ctx *common.AssembleContext, bindings *ProtoChannelBindings, funcSuffix string) []*j.Statement {
+	if bindings != nil {
+		vals := lo.FromEntries(lo.Map(bindings.Values.Entries(), func(item lo.Entry[string, any], index int) lo.Entry[j.Code, j.Code] {
+			return lo.Entry[j.Code, j.Code]{Key: j.Id(item.Key), Value: j.Lit(item.Value)}
+		}))
+		if bindings.CleanupPolicyValue.Len() > 0 {
+			cleanupVals := lo.FromEntries(lo.Map(bindings.CleanupPolicyValue.Entries(), func(item lo.Entry[string, bool], index int) lo.Entry[j.Code, j.Code] {
+				return lo.Entry[j.Code, j.Code]{Key: j.Id(item.Key), Value: j.Lit(item.Value)}
+			}))
+			vals[j.Id("CleanupPolicy")] = j.Qual(ctx.RuntimePackage("kafka"), "TopicCleanupPolicy").Values(j.Dict(cleanupVals))
+		}
+
+		var params []j.Code
+		if bindings.GroupIDArgSchema != "" {
+			params = append(params, j.Id("groupID").Id(bindings.GroupIDArgSchema))
+			vals[j.Id("GroupID")] = j.Id("groupID")
+		}
+		if bindings.ClientIDArgSchema != "" {
+			params = append(params, j.Id("clientID").Id(bindings.ClientIDArgSchema))
+			vals[j.Id("ClientID")] = j.Id("clientID")
+		}
+		return []*j.Statement{
+			j.Func().Id(p.Struct.Name+funcSuffix).
+				Params(params...).
+				Qual(ctx.RuntimePackage("kafka"), "ChannelBindings").
+				Block(
+					j.Return(j.Qual(ctx.RuntimePackage("kafka"), "ChannelBindings").Values(j.Dict(vals))),
+				),
+		}
+
+	}
+	return nil
 }
 
 func (p ProtoChannel) assembleNewFunc(ctx *common.AssembleContext) []*j.Statement {

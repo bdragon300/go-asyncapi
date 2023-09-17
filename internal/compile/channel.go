@@ -1,8 +1,11 @@
 package compile
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
@@ -14,12 +17,12 @@ type channelProtoBuilderFunc func(ctx *common.CompileContext, channel *Channel, 
 var ProtoChannelBuilders = map[string]channelProtoBuilderFunc{}
 
 type Channel struct {
-	Description string                              `json:"description" yaml:"description"`
-	Servers     *[]string                           `json:"servers" yaml:"servers"`
-	Subscribe   *Operation                          `json:"subscribe" yaml:"subscribe"`
-	Publish     *Operation                          `json:"publish" yaml:"publish"`
-	Parameters  utils.OrderedMap[string, Parameter] `json:"parameters" yaml:"parameters"`
-	Bindings    utils.OrderedMap[string, any]       `json:"bindings" yaml:"bindings"` // TODO: replace any to common protocols object
+	Description string                                                             `json:"description" yaml:"description"`
+	Servers     *[]string                                                          `json:"servers" yaml:"servers"`
+	Subscribe   *Operation                                                         `json:"subscribe" yaml:"subscribe"`
+	Publish     *Operation                                                         `json:"publish" yaml:"publish"`
+	Parameters  utils.OrderedMap[string, Parameter]                                `json:"parameters" yaml:"parameters"`
+	Bindings    utils.OrderedMap[string, utils.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }
@@ -40,7 +43,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.As
 		ctx.Linker.Add(res)
 		return res, nil
 	}
-	res := &assemble.Channel{Name: channelKey, SupportedProtocols: make(map[string]common.Assembler)}
+	res := &assemble.Channel{Name: channelKey, AllProtocols: make(map[string]common.Assembler)}
 	// Empty servers field means "no servers", omitted servers field means "all servers"
 	if c.Servers != nil && len(*c.Servers) > 0 {
 		for _, srv := range *c.Servers {
@@ -63,39 +66,39 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.As
 		if err != nil {
 			return nil, fmt.Errorf("Unable to build %s protocol: %w", pName, err)
 		}
-		res.SupportedProtocols[pName] = obj
+		res.AllProtocols[pName] = obj
 	}
 	return res, nil
 }
 
 type Operation struct {
-	OperationID  string                        `json:"operationId" yaml:"operationId"`
-	Summary      string                        `json:"summary" yaml:"summary"`
-	Description  string                        `json:"description" yaml:"description"`
-	Security     []SecurityRequirement         `json:"security" yaml:"security"`
-	Tags         []Tag                         `json:"tags" yaml:"tags"`
-	ExternalDocs *ExternalDocumentation        `json:"externalDocs" yaml:"externalDocs"`
-	Bindings     utils.OrderedMap[string, any] `json:"bindings" yaml:"bindings"` // TODO: replace any to common protocols object
-	Traits       []OperationTrait              `json:"traits" yaml:"traits"`
-	Message      *Message                      `json:"message" yaml:"message"`
+	OperationID  string                                                             `json:"operationId" yaml:"operationId"`
+	Summary      string                                                             `json:"summary" yaml:"summary"`
+	Description  string                                                             `json:"description" yaml:"description"`
+	Security     []SecurityRequirement                                              `json:"security" yaml:"security"`
+	Tags         []Tag                                                              `json:"tags" yaml:"tags"`
+	ExternalDocs *ExternalDocumentation                                             `json:"externalDocs" yaml:"externalDocs"`
+	Bindings     utils.OrderedMap[string, utils.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
+	Traits       []OperationTrait                                                   `json:"traits" yaml:"traits"`
+	Message      *Message                                                           `json:"message" yaml:"message"`
 }
 
 type Parameter struct {
 	Description string  `json:"description" yaml:"description"`
-	Schema      *Object `json:"schema" yaml:"schema"`
-	Location    string  `json:"location" yaml:"location"`
+	Schema      *Object `json:"schema" yaml:"schema"`     // TODO: implement
+	Location    string  `json:"location" yaml:"location"` // TODO: implement
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
 type OperationTrait struct {
-	OperationID  string                        `json:"operationId" yaml:"operationId"`
-	Summary      string                        `json:"summary" yaml:"summary"`
-	Description  string                        `json:"description" yaml:"description"`
-	Security     []SecurityRequirement         `json:"security" yaml:"security"`
-	Tags         []Tag                         `json:"tags" yaml:"tags"`
-	ExternalDocs *ExternalDocumentation        `json:"externalDocs" yaml:"externalDocs"`
-	Bindings     utils.OrderedMap[string, any] `json:"bindings" yaml:"bindings"` // TODO: replace any to common protocols object
+	OperationID  string                                                             `json:"operationId" yaml:"operationId"`
+	Summary      string                                                             `json:"summary" yaml:"summary"`
+	Description  string                                                             `json:"description" yaml:"description"`
+	Security     []SecurityRequirement                                              `json:"security" yaml:"security"`
+	Tags         []Tag                                                              `json:"tags" yaml:"tags"`
+	ExternalDocs *ExternalDocumentation                                             `json:"externalDocs" yaml:"externalDocs"`
+	Bindings     utils.OrderedMap[string, utils.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }

@@ -4,11 +4,11 @@ package amqp
 import "github.com/bdragon300/asyncapi-codegen/assets/runtime"
 
 type AMQPProducer interface {
-	Publisher(params AMQPChannelParams) (runtime.Publisher[AMQPOutEnvelope], error)
+	Publisher(bindings *AMQPChannelBindings) (runtime.Publisher[AMQPOutEnvelope], error)
 }
 
 type AMQPConsumer interface {
-	Publisher(params AMQPChannelParams) (runtime.Publisher[AMQPInEnvelope], error)
+	Publisher(bindings *AMQPChannelBindings) (runtime.Publisher[AMQPInEnvelope], error)
 }
 
 type AMQPConsumerInfo struct {
@@ -30,10 +30,10 @@ type AMQPInEnvelope struct {
 	Metadata AMQPMeta
 }
 
-type AMQPServerParams struct {
+type AMQPServerBindings struct {
 	URL             string
 	ProtocolVersion string
 }
 
-type AMQPChannelParams struct{}
+type AMQPChannelBindings struct{}
 

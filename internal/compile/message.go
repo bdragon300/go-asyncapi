@@ -13,21 +13,21 @@ import (
 )
 
 type Message struct {
-	MessageID     string                        `json:"messageId" yaml:"messageId"`
-	Headers       *Object                       `json:"headers" yaml:"headers"`
-	Payload       *Object                       `json:"payload" yaml:"payload"` // TODO: other formats
-	CorrelationID *CorrelationID                `json:"correlationId" yaml:"correlationId"`
-	SchemaFormat  string                        `json:"schemaFormat" yaml:"schemaFormat"`
-	ContentType   string                        `json:"contentType" yaml:"contentType"`
-	Name          string                        `json:"name" yaml:"name"`
-	Title         string                        `json:"title" yaml:"title"`
-	Summary       string                        `json:"summary" yaml:"summary"`
-	Description   string                        `json:"description" yaml:"description"`
-	Tags          []Tag                         `json:"tags" yaml:"tags"`
-	ExternalDocs  *ExternalDocumentation        `json:"externalDocs" yaml:"externalDocs"`
-	Bindings      utils.OrderedMap[string, any] `json:"bindings" yaml:"bindings"` // TODO: replace any to common protocols object
-	Examples      []MessageExample              `json:"examples" yaml:"examples"`
-	Traits        []MessageTrait                `json:"traits" yaml:"traits"`
+	MessageID     string                                                             `json:"messageId" yaml:"messageId"`
+	Headers       *Object                                                            `json:"headers" yaml:"headers"`
+	Payload       *Object                                                            `json:"payload" yaml:"payload"` // TODO: other formats
+	CorrelationID *CorrelationID                                                     `json:"correlationId" yaml:"correlationId"`
+	SchemaFormat  string                                                             `json:"schemaFormat" yaml:"schemaFormat"`
+	ContentType   string                                                             `json:"contentType" yaml:"contentType"`
+	Name          string                                                             `json:"name" yaml:"name"`
+	Title         string                                                             `json:"title" yaml:"title"`
+	Summary       string                                                             `json:"summary" yaml:"summary"`
+	Description   string                                                             `json:"description" yaml:"description"`
+	Tags          []Tag                                                              `json:"tags" yaml:"tags"`
+	ExternalDocs  *ExternalDocumentation                                             `json:"externalDocs" yaml:"externalDocs"`
+	Bindings      utils.OrderedMap[string, utils.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
+	Examples      []MessageExample                                                   `json:"examples" yaml:"examples"`
+	Traits        []MessageTrait                                                     `json:"traits" yaml:"traits"`
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }
@@ -125,19 +125,19 @@ type MessageExample struct {
 }
 
 type MessageTrait struct {
-	MessageID     string                        `json:"messageId" yaml:"messageId"`
-	Headers       *Object                       `json:"headers" yaml:"headers"`
-	CorrelationID *CorrelationID                `json:"correlationId" yaml:"correlationId"`
-	SchemaFormat  string                        `json:"schemaFormat" yaml:"schemaFormat"`
-	ContentType   string                        `json:"contentType" yaml:"contentType"`
-	Name          string                        `json:"name" yaml:"name"`
-	Title         string                        `json:"title" yaml:"title"`
-	Summary       string                        `json:"summary" yaml:"summary"`
-	Description   string                        `json:"description" yaml:"description"`
-	Tags          []Tag                         `json:"tags" yaml:"tags"`
-	ExternalDocs  *ExternalDocumentation        `json:"externalDocs" yaml:"externalDocs"`
-	Bindings      utils.OrderedMap[string, any] `json:"bindings" yaml:"bindings"` // FIXME: replace any to common protocols object
-	Examples      []MessageExample              `json:"examples" yaml:"examples"`
+	MessageID     string                                                             `json:"messageId" yaml:"messageId"`
+	Headers       *Object                                                            `json:"headers" yaml:"headers"`
+	CorrelationID *CorrelationID                                                     `json:"correlationId" yaml:"correlationId"`
+	SchemaFormat  string                                                             `json:"schemaFormat" yaml:"schemaFormat"`
+	ContentType   string                                                             `json:"contentType" yaml:"contentType"`
+	Name          string                                                             `json:"name" yaml:"name"`
+	Title         string                                                             `json:"title" yaml:"title"`
+	Summary       string                                                             `json:"summary" yaml:"summary"`
+	Description   string                                                             `json:"description" yaml:"description"`
+	Tags          []Tag                                                              `json:"tags" yaml:"tags"`
+	ExternalDocs  *ExternalDocumentation                                             `json:"externalDocs" yaml:"externalDocs"`
+	Bindings      utils.OrderedMap[string, utils.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
+	Examples      []MessageExample                                                   `json:"examples" yaml:"examples"`
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }
