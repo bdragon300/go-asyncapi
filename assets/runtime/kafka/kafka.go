@@ -17,9 +17,6 @@ type Consumer interface {
 
 // Params below are passed to the New* implementation functions
 type ServerBindings struct {
-	URL             string
-	ProtocolVersion string
-	// From server bindings
 	SchemaRegistryURL    string
 	SchemaRegistryVendor string
 }

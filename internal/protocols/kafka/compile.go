@@ -41,6 +41,11 @@ type operationBindings struct {
 	ClientID *compile.Object `json:"clientId" yaml:"clientId"`
 }
 
+type serverBindings struct {
+	SchemaRegistryURL    *string `json:"schemaRegistryUrl" yaml:"schemaRegistryUrl"`
+	SchemaRegistryVendor *string `json:"schemaRegistryVendor" yaml:"schemaRegistryVendor"`
+}
+
 func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelKey string) (common.Assembler, error) {
 	chanResult := &ProtoChannel{
 		Name:  channelKey,
@@ -134,33 +139,33 @@ func buildChannelBindings(chBindings, opBindings *utils.Union2[json.RawMessage, 
 			return nil, err
 		}
 		if bindings.Topic != nil {
-			res.Values.Set("Topic", *bindings.Topic)
+			res.StructValues.Set("Topic", *bindings.Topic)
 		}
 		if bindings.Partitions != nil {
-			res.Values.Set("Partitions", *bindings.Partitions)
+			res.StructValues.Set("Partitions", *bindings.Partitions)
 		}
 		if bindings.Replicas != nil {
-			res.Values.Set("Replicas", *bindings.Replicas)
+			res.StructValues.Set("Replicas", *bindings.Replicas)
 		}
 		if bindings.TopicConfiguration != nil {
 			tc := bindings.TopicConfiguration
 			if lo.Contains(tc.CleanupPolicy, "delete") {
-				res.CleanupPolicyValue.Set("Delete", true)
+				res.CleanupPolicyStructValue.Set("Delete", true)
 			}
 			if lo.Contains(tc.CleanupPolicy, "compact") {
-				res.CleanupPolicyValue.Set("Compact", true)
+				res.CleanupPolicyStructValue.Set("Compact", true)
 			}
 			if tc.RetentionMs != nil {
-				res.Values.Set("RetentionMs", *tc.RetentionMs)
+				res.StructValues.Set("RetentionMs", *tc.RetentionMs)
 			}
 			if tc.RetentionBytes != nil {
-				res.Values.Set("RetentionBytes", *tc.RetentionBytes)
+				res.StructValues.Set("RetentionBytes", *tc.RetentionBytes)
 			}
 			if tc.DeleteRetentionMs != nil {
-				res.Values.Set("DeleteRetentionMs", *tc.DeleteRetentionMs)
+				res.StructValues.Set("DeleteRetentionMs", *tc.DeleteRetentionMs)
 			}
 			if tc.MaxMessageBytes != nil {
-				res.Values.Set("MaxMessageBytes", *tc.MaxMessageBytes)
+				res.StructValues.Set("MaxMessageBytes", *tc.MaxMessageBytes)
 			}
 		}
 	}
@@ -224,6 +229,21 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 		}
 		srvResult.Struct.Fields = append(srvResult.Struct.Fields, fld)
 		srvResult.Consumer = true
+	}
+	if server.Bindings.Len() > 0 {
+		if srvBindings, ok := server.Bindings.Get(protoName); ok {
+			var bindings serverBindings
+			if err := utils.UnmarhalRawsUnion2(srvBindings, &bindings); err != nil {
+				return nil, err
+			}
+			srvResult.Bindings = &ProtoServerBindings{}
+			if bindings.SchemaRegistryURL != nil {
+				srvResult.Bindings.StructValues.Set("SchemaRegistryURL", *bindings.SchemaRegistryURL)
+			}
+			if bindings.SchemaRegistryVendor != nil {
+				srvResult.Bindings.StructValues.Set("SchemaRegistryVendor", *bindings.SchemaRegistryVendor)
+			}
+		}
 	}
 
 	return srvResult, nil

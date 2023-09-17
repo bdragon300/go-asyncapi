@@ -13,8 +13,8 @@ import (
 )
 
 type ProtoChannelBindings struct {
-	Values             utils.OrderedMap[string, any]
-	CleanupPolicyValue utils.OrderedMap[string, bool]
+	StructValues             utils.OrderedMap[string, any]
+	CleanupPolicyStructValue utils.OrderedMap[string, bool]
 	// TODO: implement args validation by jsonschema
 	GroupIDArgSchema  string
 	ClientIDArgSchema string
@@ -62,37 +62,33 @@ func (p ProtoChannel) AssembleUsage(ctx *common.AssembleContext) []*j.Statement 
 }
 
 func (p ProtoChannel) assembleBindings(ctx *common.AssembleContext, bindings *ProtoChannelBindings, funcSuffix string) []*j.Statement {
-	if bindings != nil {
-		vals := lo.FromEntries(lo.Map(bindings.Values.Entries(), func(item lo.Entry[string, any], index int) lo.Entry[j.Code, j.Code] {
+	vals := lo.FromEntries(lo.Map(bindings.StructValues.Entries(), func(item lo.Entry[string, any], index int) lo.Entry[j.Code, j.Code] {
+		return lo.Entry[j.Code, j.Code]{Key: j.Id(item.Key), Value: j.Lit(item.Value)}
+	}))
+	if bindings.CleanupPolicyStructValue.Len() > 0 {
+		cleanupVals := lo.FromEntries(lo.Map(bindings.CleanupPolicyStructValue.Entries(), func(item lo.Entry[string, bool], index int) lo.Entry[j.Code, j.Code] {
 			return lo.Entry[j.Code, j.Code]{Key: j.Id(item.Key), Value: j.Lit(item.Value)}
 		}))
-		if bindings.CleanupPolicyValue.Len() > 0 {
-			cleanupVals := lo.FromEntries(lo.Map(bindings.CleanupPolicyValue.Entries(), func(item lo.Entry[string, bool], index int) lo.Entry[j.Code, j.Code] {
-				return lo.Entry[j.Code, j.Code]{Key: j.Id(item.Key), Value: j.Lit(item.Value)}
-			}))
-			vals[j.Id("CleanupPolicy")] = j.Qual(ctx.RuntimePackage("kafka"), "TopicCleanupPolicy").Values(j.Dict(cleanupVals))
-		}
-
-		var params []j.Code
-		if bindings.GroupIDArgSchema != "" {
-			params = append(params, j.Id("groupID").Id(bindings.GroupIDArgSchema))
-			vals[j.Id("GroupID")] = j.Id("groupID")
-		}
-		if bindings.ClientIDArgSchema != "" {
-			params = append(params, j.Id("clientID").Id(bindings.ClientIDArgSchema))
-			vals[j.Id("ClientID")] = j.Id("clientID")
-		}
-		return []*j.Statement{
-			j.Func().Id(p.Struct.Name+funcSuffix).
-				Params(params...).
-				Qual(ctx.RuntimePackage("kafka"), "ChannelBindings").
-				Block(
-					j.Return(j.Qual(ctx.RuntimePackage("kafka"), "ChannelBindings").Values(j.Dict(vals))),
-				),
-		}
-
+		vals[j.Id("CleanupPolicy")] = j.Qual(ctx.RuntimePackage("kafka"), "TopicCleanupPolicy").Values(j.Dict(cleanupVals))
 	}
-	return nil
+
+	var params []j.Code
+	if bindings.GroupIDArgSchema != "" {
+		params = append(params, j.Id("groupID").Id(bindings.GroupIDArgSchema))
+		vals[j.Id("GroupID")] = j.Id("groupID")
+	}
+	if bindings.ClientIDArgSchema != "" {
+		params = append(params, j.Id("clientID").Id(bindings.ClientIDArgSchema))
+		vals[j.Id("ClientID")] = j.Id("clientID")
+	}
+	return []*j.Statement{
+		j.Func().Id(p.Struct.Name+funcSuffix).
+			Params(params...).
+			Qual(ctx.RuntimePackage("kafka"), "ChannelBindings").
+			Block(
+				j.Return(j.Qual(ctx.RuntimePackage("kafka"), "ChannelBindings").Values(j.Dict(vals))),
+			),
+	}
 }
 
 func (p ProtoChannel) assembleNewFunc(ctx *common.AssembleContext) []*j.Statement {

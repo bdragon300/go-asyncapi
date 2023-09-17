@@ -5,7 +5,12 @@ import (
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	j "github.com/dave/jennifer/jen"
+	"github.com/samber/lo"
 )
+
+type ProtoServerBindings struct {
+	StructValues utils.OrderedMap[string, any]
+}
 
 type ProtoServer struct {
 	Name            string
@@ -13,6 +18,7 @@ type ProtoServer struct {
 	ChannelLinkList *assemble.LinkList[*assemble.Channel]
 	Producer        bool
 	Consumer        bool
+	Bindings        *ProtoServerBindings
 }
 
 func (p ProtoServer) AllowRender() bool {
@@ -21,6 +27,9 @@ func (p ProtoServer) AllowRender() bool {
 
 func (p ProtoServer) AssembleDefinition(ctx *common.AssembleContext) []*j.Statement {
 	var res []*j.Statement
+	if p.Bindings != nil {
+		res = append(res, p.assembleBindings(ctx, p.Bindings)...)
+	}
 	res = append(res, p.assembleNewFunc(ctx)...)
 	res = append(res, p.Struct.AssembleDefinition(ctx)...)
 	res = append(res, p.assembleCommonMethods()...)
@@ -36,6 +45,20 @@ func (p ProtoServer) AssembleDefinition(ctx *common.AssembleContext) []*j.Statem
 
 func (p ProtoServer) AssembleUsage(ctx *common.AssembleContext) []*j.Statement {
 	return p.Struct.AssembleUsage(ctx)
+}
+
+func (p ProtoServer) assembleBindings(ctx *common.AssembleContext, bindings *ProtoServerBindings) []*j.Statement {
+	vals := lo.FromEntries(lo.Map(bindings.StructValues.Entries(), func(item lo.Entry[string, any], index int) lo.Entry[j.Code, j.Code] {
+		return lo.Entry[j.Code, j.Code]{Key: j.Id(item.Key), Value: j.Lit(item.Value)}
+	}))
+	return []*j.Statement{
+		j.Func().Id(p.Struct.Name+"Bindings").
+			Params().
+			Qual(ctx.RuntimePackage("kafka"), "ServerBindings").
+			Block(
+				j.Return(j.Qual(ctx.RuntimePackage("kafka"), "ServerBindings").Values(j.Dict(vals))),
+			),
+	}
 }
 
 func (p ProtoServer) assembleNewFunc(ctx *common.AssembleContext) []*j.Statement {
