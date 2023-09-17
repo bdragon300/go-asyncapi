@@ -39,13 +39,14 @@ func (p ProtoChannel) AllowRender() bool {
 }
 
 func (p ProtoChannel) AssembleDefinition(ctx *common.AssembleContext) []*j.Statement {
-	res := p.assembleNewFunc(ctx)
+	var res []*j.Statement
 	if p.PubChannelBindings != nil {
 		res = append(res, p.assembleBindings(ctx, p.PubChannelBindings, "PubBindings")...)
 	}
 	if p.SubChannelBindings != nil {
 		res = append(res, p.assembleBindings(ctx, p.SubChannelBindings, "SubBindings")...)
 	}
+	res = append(res, p.assembleNewFunc(ctx)...)
 	res = append(res, p.Struct.AssembleDefinition(ctx)...)
 	res = append(res, p.assembleCommonMethods()...)
 	if p.Publisher {

@@ -14,6 +14,8 @@ type ProtoServerBindings struct {
 
 type ProtoServer struct {
 	Name            string
+	URL             string
+	ProtocolVersion string
 	Struct          *assemble.Struct
 	ChannelLinkList *assemble.LinkList[*assemble.Channel]
 	Producer        bool
@@ -30,6 +32,7 @@ func (p ProtoServer) AssembleDefinition(ctx *common.AssembleContext) []*j.Statem
 	if p.Bindings != nil {
 		res = append(res, p.assembleBindings(ctx, p.Bindings)...)
 	}
+	res = append(res, p.assembleConnArgsFunc()...)
 	res = append(res, p.assembleNewFunc(ctx)...)
 	res = append(res, p.Struct.AssembleDefinition(ctx)...)
 	res = append(res, p.assembleCommonMethods()...)
@@ -57,6 +60,17 @@ func (p ProtoServer) assembleBindings(ctx *common.AssembleContext, bindings *Pro
 			Qual(ctx.RuntimePackage("kafka"), "ServerBindings").
 			Block(
 				j.Return(j.Qual(ctx.RuntimePackage("kafka"), "ServerBindings").Values(j.Dict(vals))),
+			),
+	}
+}
+
+func (p ProtoServer) assembleConnArgsFunc() []*j.Statement {
+	return []*j.Statement{
+		j.Func().Id(p.Struct.Name+"ConnArgs").
+			Params().
+			Params(j.Id("URL").String(), j.Id("protocolVersion").String()).
+			Block(
+				j.Return(j.Lit(p.URL), j.Lit(p.ProtocolVersion)),
 			),
 	}
 }

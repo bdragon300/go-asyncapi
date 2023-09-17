@@ -190,7 +190,9 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 	const buildConsumer = true
 
 	srvResult := ProtoServer{
-		Name: serverKey,
+		Name:            serverKey,
+		URL:             server.URL,
+		ProtocolVersion: server.ProtocolVersion,
 		Struct: &assemble.Struct{
 			BaseType: assemble.BaseType{
 				Name:        compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "Server"),
