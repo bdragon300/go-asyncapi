@@ -12,6 +12,13 @@ type ProtoServerBindings struct {
 	StructValues utils.OrderedMap[string, any]
 }
 
+type ProtoServerVariable struct {
+	ArgName     string
+	Enum        []string // TODO: implement validation
+	Default     string
+	Description string // TODO
+}
+
 type ProtoServer struct {
 	Name            string
 	URL             string
@@ -21,6 +28,7 @@ type ProtoServer struct {
 	Producer        bool
 	Consumer        bool
 	Bindings        *ProtoServerBindings
+	Variables       utils.OrderedMap[string, ProtoServerVariable]
 }
 
 func (p ProtoServer) AllowRender() bool {
@@ -32,7 +40,7 @@ func (p ProtoServer) AssembleDefinition(ctx *common.AssembleContext) []*j.Statem
 	if p.Bindings != nil {
 		res = append(res, p.assembleBindings(ctx, p.Bindings)...)
 	}
-	res = append(res, p.assembleConnArgsFunc()...)
+	res = append(res, p.assembleConnArgsFunc(ctx)...)
 	res = append(res, p.assembleNewFunc(ctx)...)
 	res = append(res, p.Struct.AssembleDefinition(ctx)...)
 	res = append(res, p.assembleCommonMethods()...)
@@ -64,14 +72,42 @@ func (p ProtoServer) assembleBindings(ctx *common.AssembleContext, bindings *Pro
 	}
 }
 
-func (p ProtoServer) assembleConnArgsFunc() []*j.Statement {
+func (p ProtoServer) assembleConnArgsFunc(ctx *common.AssembleContext) []*j.Statement {
+	var args []j.Code
+	var body []j.Code
+	if p.Variables.Len() > 0 {
+		mapVals := j.Dict{}
+		for _, v := range p.Variables.Entries() {
+			mapVals[j.Lit(v.Key)] = j.Id(v.Value.ArgName)
+			args = append(args, j.Id(v.Value.ArgName).String())
+			if v.Value.Default != "" {
+				body = append(body,
+					j.If(j.Id(v.Value.ArgName).Op("==").Lit("")).
+						Block(j.Id(v.Value.ArgName).Op("=").Lit(v.Value.Default)),
+				)
+			}
+		}
+		body = append(body,
+			j.Op("p := map[string]string").Values(mapVals),
+			j.Op("connArgs.ProtocolVersion = ").Lit(p.ProtocolVersion),
+			j.Op("connArgs.URL, _, err =").Qual(ctx.RuntimePackage("3rd/uritemplates"), "Expand").Call(
+				j.Lit(p.URL), j.Id("p"),
+			),
+			j.Return(),
+		)
+	} else {
+		body = append(body,
+			j.Op("connArgs.ProtocolVersion = ").Lit(p.ProtocolVersion),
+			j.Op("connArgs.URL = ").Lit(p.URL),
+			j.Return(),
+		)
+	}
+
 	return []*j.Statement{
 		j.Func().Id(p.Struct.Name+"ConnArgs").
-			Params().
-			Params(j.Id("URL").String(), j.Id("protocolVersion").String()).
-			Block(
-				j.Return(j.Lit(p.URL), j.Lit(p.ProtocolVersion)),
-			),
+			Params(args...).
+			Params(j.Id("connArgs").Qual(ctx.RuntimePackage(""), "ServerConnArgs"), j.Err().Error()).
+			Block(body...),
 	}
 }
 
@@ -124,7 +160,6 @@ func (p ProtoServer) assembleChannelMethods(ctx *common.AssembleContext) []*j.St
 		protoChan := ch.AllProtocols[protoName]
 		protoChanKafka := protoChan.(*ProtoChannel)
 
-		// TODO: bindings are optional
 		if protoChanKafka.Publisher {
 			callArg := j.Nil()
 			if protoChanKafka.PubChannelBindings != nil {

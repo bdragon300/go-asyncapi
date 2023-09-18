@@ -14,6 +14,11 @@ type Subscriber[E any] interface {
 	Close() error
 }
 
+type ServerConnArgs struct {
+	URL             string
+	ProtocolVersion string
+}
+
 func NewPublisherFanOut[E any](publishers []Publisher[E]) *PublisherFanOut[E] {
 	return &PublisherFanOut[E]{publishers: publishers}
 }

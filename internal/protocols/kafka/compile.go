@@ -203,6 +203,16 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 		},
 	}
 
+	// Server variables
+	for _, v := range server.Variables.Entries() {
+		srvResult.Variables.Set(v.Key, ProtoServerVariable{
+			ArgName:     utils.ToGolangName(v.Key, false),
+			Enum:        v.Value.Enum,
+			Default:     v.Value.Default,
+			Description: v.Value.Description,
+		})
+	}
+
 	channelsLnks := assemble.NewListCbLink[*assemble.Channel](func(item common.Assembler, path []string) bool {
 		ch, ok := item.(*assemble.Channel)
 		if !ok {
