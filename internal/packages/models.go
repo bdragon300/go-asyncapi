@@ -5,22 +5,22 @@ import (
 	"github.com/dave/jennifer/jen"
 )
 
-type ModelsPackage struct {
+type Package struct {
 	items []common.PackageItem[common.Assembler]
 }
 
-func (m *ModelsPackage) Put(ctx *common.CompileContext, item common.Assembler) {
+func (m *Package) Put(ctx *common.CompileContext, item common.Assembler) {
 	m.items = append(m.items, common.PackageItem[common.Assembler]{
 		Typ:  item,
 		Path: ctx.PathStack(),
 	})
 }
 
-func (m *ModelsPackage) Items() []common.PackageItem[common.Assembler] {
+func (m *Package) Items() []common.PackageItem[common.Assembler] {
 	return m.items
 }
 
-func RenderModels(pkg *ModelsPackage, baseDir string) (files map[string]*jen.File, err error) {
+func RenderModels(pkg *Package, baseDir string) (files map[string]*jen.File, err error) {
 	modelsGo := jen.NewFilePathName(baseDir, "models") // FIXME: basedir is actually package path
 	if err != nil {
 		return

@@ -2,5 +2,5 @@ package assets
 
 import "embed"
 
-//go:embed runtime/3rd/uritemplates/*.go
+//go:embed runtime
 var AssetsFS embed.FS

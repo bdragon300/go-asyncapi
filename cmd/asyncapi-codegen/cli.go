@@ -56,17 +56,19 @@ func main() {
 		panic(err)
 	}
 
-	modelsPackage := packages.ModelsPackage{}
-	messagePackage := packages.MessagesPackage{}
-	channelsPackage := packages.ChannelsPackage{}
-	serversPackage := packages.ServersPackage{}
+	modelsPackage := packages.Package{}
+	messagePackage := packages.Package{}
+	channelsPackage := packages.Package{}
+	serversPackage := packages.Package{}
+	parametersPackage := packages.Package{}
 	runtimePackage := packages.RuntimePackage{}
 	scanPackages := map[common.PackageKind]common.Package{
-		common.ModelsPackageKind:   &modelsPackage,
-		common.MessagesPackageKind: &messagePackage,
-		common.ChannelsPackageKind: &channelsPackage,
-		common.ServersPackageKind:  &serversPackage,
-		common.RuntimePackageKind:  &runtimePackage, // TODO: not needed probably
+		common.ModelsPackageKind:     &modelsPackage,
+		common.MessagesPackageKind:   &messagePackage,
+		common.ChannelsPackageKind:   &channelsPackage,
+		common.ServersPackageKind:    &serversPackage,
+		common.RuntimePackageKind:    &runtimePackage, // TODO: not needed probably
+		common.ParametersPackageKind: &parametersPackage,
 	}
 	llinker := &linker.LocalLinker{}
 	scanCtx := common.CompileContext{Packages: scanPackages, Linker: llinker}
@@ -99,7 +101,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	files := lo.Assign(files1, files2, files3, files4)
+	files5, err := packages.RenderParameters(&parametersPackage, cliArgs.OutDir)
+	if err != nil {
+		panic(err)
+	}
+	files := lo.Assign(files1, files2, files3, files4, files5)
 	for fileName, fileObj := range files {
 		fullPath := path.Join(cliArgs.OutDir, fileName)
 		if err = ensureDir(path.Dir(fullPath)); err != nil {

@@ -25,6 +25,7 @@ func ToGolangName(srcName string, exported bool) string {
 	srcName = strings.TrimLeft(srcName, "1234567890")
 
 	// TODO: detect Go builtin words and replace them
+	// TODO: transform words such as ID, URL, etc., to upper case
 	if exported {
 		return strcase.UpperCamelCase(srcName)
 	}

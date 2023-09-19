@@ -81,3 +81,8 @@ func (s SubscriberFanIn[E]) Close() error {
 func ToSlice[T any](elements ...T) []T {
 	return elements
 }
+
+type Parameter interface {
+	Name() string
+	String() string
+}

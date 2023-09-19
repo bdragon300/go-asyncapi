@@ -5,14 +5,14 @@ import (
 	"github.com/dave/jennifer/jen"
 )
 
-func RenderChannels(pkg *Package, baseDir string) (files map[string]*jen.File, err error) {
-	channelsGo := jen.NewFilePathName(baseDir, "channels") // FIXME: basedir is actually package path
+func RenderParameters(pkg *Package, baseDir string) (files map[string]*jen.File, err error) {
+	channelsGo := jen.NewFilePathName(baseDir, "parameters") // FIXME: basedir is actually package path
 	if err != nil {
 		return
 	}
 
 	ctx := &common.AssembleContext{
-		CurrentPackage: common.ChannelsPackageKind,
+		CurrentPackage: common.ParametersPackageKind,
 		ImportBase:     "github.com/bdragon300/asyncapi-codegen/generated", // FIXME
 	}
 	for _, item := range pkg.items {
@@ -26,7 +26,7 @@ func RenderChannels(pkg *Package, baseDir string) (files map[string]*jen.File, e
 	}
 
 	files = map[string]*jen.File{
-		"channels/channels.go": channelsGo,
+		"parameters/parameters.go": channelsGo,
 	}
 
 	return

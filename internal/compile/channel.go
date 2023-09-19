@@ -83,14 +83,6 @@ type Operation struct {
 	Message      *Message                                                           `json:"message" yaml:"message"`
 }
 
-type Parameter struct {
-	Description string  `json:"description" yaml:"description"`
-	Schema      *Object `json:"schema" yaml:"schema"`     // TODO: implement
-	Location    string  `json:"location" yaml:"location"` // TODO: implement
-
-	Ref string `json:"$ref" yaml:"$ref"`
-}
-
 type OperationTrait struct {
 	OperationID  string                                                             `json:"operationId" yaml:"operationId"`
 	Summary      string                                                             `json:"summary" yaml:"summary"`

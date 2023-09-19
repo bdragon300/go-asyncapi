@@ -68,11 +68,11 @@ func (m Message) build(ctx *common.CompileContext) (common.Assembler, error) {
 		HeadersType:      m.getHeadersType(ctx),
 		HeadersHasSchema: m.Headers != nil,
 	}
-	m.setStructFields(&obj)
+	m.setStructFields(ctx, &obj)
 	return &obj, nil
 }
 
-func (m Message) setStructFields(langMessage *assemble.Message) {
+func (m Message) setStructFields(ctx *common.CompileContext, langMessage *assemble.Message) {
 	langMessage.Struct.Fields = []assemble.StructField{
 		{
 			Name:        "ID",
@@ -81,6 +81,11 @@ func (m Message) setStructFields(langMessage *assemble.Message) {
 		},
 		{Name: "Payload", Type: langMessage.PayloadType},
 		{Name: "Headers", Type: langMessage.HeadersType},
+		{Name: "ChannelParameters", Type: &assemble.Map{
+			BaseType:  assemble.BaseType{Package: ctx.Stack.Top().PackageKind},
+			KeyType:   &assemble.Simple{Type: "string"},
+			ValueType: &assemble.Simple{Type: "Parameter", Package: common.RuntimePackageKind, IsIface: true},
+		}},
 	}
 }
 

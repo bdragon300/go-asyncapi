@@ -90,7 +90,7 @@ func (p ProtoServer) assembleConnArgsFunc(ctx *common.AssembleContext) []*j.Stat
 		body = append(body,
 			j.Op("p := map[string]string").Values(mapVals),
 			j.Op("connArgs.ProtocolVersion = ").Lit(p.ProtocolVersion),
-			j.Op("connArgs.URL, _, err =").Qual(ctx.RuntimePackage("3rd/uritemplates"), "Expand").Call(
+			j.Op("connArgs.URL, _, err =").Qual(ctx.RuntimePackage("3rdparty/uritemplates"), "Expand").Call(
 				j.Lit(p.URL), j.Id("p"),
 			),
 			j.Return(),
@@ -154,20 +154,29 @@ func (p ProtoServer) assembleChannelMethods(ctx *common.AssembleContext) []*j.St
 
 	for _, ch := range p.ChannelLinkList.Targets() {
 		// Method Channel1PubChannel(publisherParams, subscriberParams kafka.ChannelParams) *Channel1KafkaPubChannel
-		var params []j.Code
+		var funcArgs []j.Code
 		var newFuncParams []j.Code
 		var body []j.Code
 		protoChan := ch.AllProtocols[protoName]
 		protoChanKafka := protoChan.(*ProtoChannel)
 
+		if len(protoChanKafka.ParameterLinks.Targets()) > 0 {
+			funcArgs = append(funcArgs, j.Id("channelName").String())
+			newFuncParams = append(newFuncParams, j.Id("channelName"))
+		} else {
+			body = append(body, j.Const().Id("channelName").Op("=").Lit(protoChanKafka.Name))
+		}
+
 		if protoChanKafka.Publisher {
-			callArg := j.Nil()
+			args := []j.Code{j.Id("channelName")}
 			if protoChanKafka.PubChannelBindings != nil {
-				params = append(params, j.Id("publisherBindings").Qual(ctx.RuntimePackage("kafka"), "ChannelBindings"))
-				callArg = j.Op("&").Id("publisherBindings")
+				funcArgs = append(funcArgs, j.Id("publisherBindings").Qual(ctx.RuntimePackage("kafka"), "ChannelBindings"))
+				args = append(args, j.Op("&").Id("publisherBindings"))
+			} else {
+				args = append(args, j.Nil())
 			}
 			body = append(body,
-				j.Op("pub, err := ").Id(rn).Dot("producer.Publisher").Call(callArg),
+				j.Op("pub, err := ").Id(rn).Dot("producer.Publisher").Call(args...),
 				j.If(j.Err().Op("!=").Nil().Block(j.Op("return nil, err"))),
 			)
 			newFuncParams = append(newFuncParams, j.Qual(ctx.RuntimePackage(""), "ToSlice").Call(j.Id("pub")))
@@ -179,13 +188,15 @@ func (p ProtoServer) assembleChannelMethods(ctx *common.AssembleContext) []*j.St
 			}
 			ifBody = append(ifBody, j.Op("return nil, err"))
 
-			callArg := j.Nil()
+			args := []j.Code{j.Id("channelName")}
 			if protoChanKafka.PubChannelBindings != nil {
-				params = append(params, j.Id("subscriberBindings").Qual(ctx.RuntimePackage("kafka"), "ChannelBindings"))
-				callArg = j.Op("&").Id("subscriberBindings")
+				funcArgs = append(funcArgs, j.Id("subscriberBindings").Qual(ctx.RuntimePackage("kafka"), "ChannelBindings"))
+				args = append(args, j.Op("&").Id("subscriberBindings"))
+			} else {
+				args = append(args, j.Nil())
 			}
 			body = append(body,
-				j.Op("sub, err := ").Id(rn).Dot("consumer.Subscriber").Call(callArg),
+				j.Op("sub, err := ").Id(rn).Dot("consumer.Subscriber").Call(args...),
 				j.If(j.Err().Op("!=").Nil().Block(ifBody...)),
 			)
 			newFuncParams = append(newFuncParams, j.Qual(ctx.RuntimePackage(""), "ToSlice").Call(j.Id("sub")))
@@ -193,7 +204,7 @@ func (p ProtoServer) assembleChannelMethods(ctx *common.AssembleContext) []*j.St
 		body = append(body, j.Return(j.List(j.Add(utils.ToCode(protoChanKafka.Struct.NewFuncUsage(ctx))...).Call(newFuncParams...), j.Nil())))
 		res = append(res,
 			j.Func().Params(receiver.Clone()).Id(utils.ToGolangName(ch.Name+"Channel", true)).
-				Params(params...).
+				Params(funcArgs...).
 				Params(j.Op("*").Add(utils.ToCode(protoChan.AssembleUsage(ctx))...), j.Error()).
 				Block(body...),
 		)

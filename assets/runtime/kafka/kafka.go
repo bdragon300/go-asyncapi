@@ -8,11 +8,11 @@ import (
 )
 
 type Producer interface {
-	Publisher(bindings *ChannelBindings) (runtime.Publisher[OutEnvelope], error)
+	Publisher(topic string, bindings *ChannelBindings) (runtime.Publisher[OutEnvelope], error)
 }
 
 type Consumer interface {
-	Subscriber(bindings *ChannelBindings) (runtime.Subscriber[InEnvelope], error)
+	Subscriber(topic string, bindings *ChannelBindings) (runtime.Subscriber[InEnvelope], error)
 }
 
 // Params below are passed to the New* implementation functions

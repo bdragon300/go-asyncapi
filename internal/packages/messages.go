@@ -5,22 +5,7 @@ import (
 	"github.com/dave/jennifer/jen"
 )
 
-type MessagesPackage struct {
-	items []common.PackageItem[common.Assembler]
-}
-
-func (m *MessagesPackage) Put(ctx *common.CompileContext, item common.Assembler) {
-	m.items = append(m.items, common.PackageItem[common.Assembler]{
-		Typ:  item,
-		Path: ctx.PathStack(),
-	})
-}
-
-func (m *MessagesPackage) Items() []common.PackageItem[common.Assembler] {
-	return m.items
-}
-
-func RenderMessages(pkg *MessagesPackage, baseDir string) (files map[string]*jen.File, err error) {
+func RenderMessages(pkg *Package, baseDir string) (files map[string]*jen.File, err error) {
 	channelsGo := jen.NewFilePathName(baseDir, "messages") // FIXME: basedir is actually package path
 	if err != nil {
 		return

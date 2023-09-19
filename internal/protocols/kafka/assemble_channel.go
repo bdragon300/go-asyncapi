@@ -32,6 +32,7 @@ type ProtoChannel struct {
 	SubMessageLink      *assemble.Link[*assemble.Message] // nil when message is not set
 	SubChannelBindings  *ProtoChannelBindings
 	FallbackMessageType common.Assembler
+	ParameterLinks      *assemble.LinkList[*assemble.Parameter]
 }
 
 func (p ProtoChannel) AllowRender() bool {
@@ -46,6 +47,7 @@ func (p ProtoChannel) AssembleDefinition(ctx *common.AssembleContext) []*j.State
 	if p.SubChannelBindings != nil {
 		res = append(res, p.assembleBindings(ctx, p.SubChannelBindings, "SubBindings")...)
 	}
+	res = append(res, p.assembleChannelNameFunc(ctx)...)
 	res = append(res, p.assembleNewFunc(ctx)...)
 	res = append(res, p.Struct.AssembleDefinition(ctx)...)
 	res = append(res, p.assembleCommonMethods()...)
@@ -92,9 +94,50 @@ func (p ProtoChannel) assembleBindings(ctx *common.AssembleContext, bindings *Pr
 	}
 }
 
+func (p ProtoChannel) assembleChannelNameFunc(ctx *common.AssembleContext) []*j.Statement {
+	var params []j.Code
+	body := []j.Code{j.Return(j.Lit(p.Name), j.Nil())}
+	if len(p.ParameterLinks.Targets()) > 0 {
+		paramMapVals := j.Dict{}
+		for _, item := range p.ParameterLinks.Targets() {
+			n := utils.ToLowerFirstLetter(item.Type.TypeName())
+			k := j.Id(n).Dot("Name").Call()
+			v := j.Id(n).Dot("String").Call()
+			paramMapVals[k] = v
+			params = append(params, j.Id(n).Add(utils.ToCode(item.AssembleUsage(ctx))...))
+		}
+		body = []j.Code{
+			j.Id("paramMap").Op(":=").Map(j.String()).String().Values(j.Dict(paramMapVals)),
+			j.Op("_, key, err :=").Qual(ctx.RuntimePackage("3rdparty/uritemplates"), "Expand").Call(
+				j.Lit(p.Name), j.Id("paramMap"),
+			),
+			j.Op(`
+				if err != nil {
+					return "", err
+				}
+				return key, nil`,
+			),
+		}
+	}
+
+	return []*j.Statement{
+		j.Func().Id(p.Struct.Name+"Name").
+			Params(params...).
+			Params(j.String(), j.Error()).
+			Block(body...),
+	}
+}
+
 func (p ProtoChannel) assembleNewFunc(ctx *common.AssembleContext) []*j.Statement {
 	var params []j.Code
 	vals := j.Dict{}
+	if len(p.ParameterLinks.Targets()) > 0 {
+		params = append(params, j.Id("name").String())
+		vals[j.Id("name")] = j.Id("name")
+	} else {
+		vals[j.Id("name")] = j.Lit(p.Name)
+	}
+
 	if p.Publisher {
 		params = append(params,
 			j.Id("publishers").Index().Qual(ctx.RuntimePackage(""), "Publisher").Types(
@@ -149,7 +192,7 @@ func (p ProtoChannel) assembleCommonMethods() []*j.Statement {
 			Params().
 			String().
 			Block(
-				j.Return(j.Lit(p.Name)),
+				j.Return(j.Id(rn).Dot("name")),
 			),
 
 		// Method Topic() string

@@ -47,6 +47,16 @@ type serverBindings struct {
 }
 
 func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelKey string) (common.Assembler, error) {
+	paramsLnk := assemble.NewListCbLink[*assemble.Parameter](func(item common.Assembler, path []string) bool {
+		par, ok := item.(*assemble.Parameter)
+		if !ok {
+			return false
+		}
+		_, ok = channel.Parameters.Get(par.Name)
+		return ok
+	})
+	ctx.Linker.AddMany(paramsLnk)
+
 	chanResult := &ProtoChannel{
 		Name:  channelKey,
 		Topic: channelKey,
@@ -57,8 +67,12 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 				Render:      true,
 				Package:     ctx.Stack.Top().PackageKind,
 			},
+			Fields: []assemble.StructField{
+				{Name: "name", Type: &assemble.Simple{Type: "string"}},
+			},
 		},
 		FallbackMessageType: &assemble.Simple{Type: "any", IsIface: true},
+		ParameterLinks:      paramsLnk,
 	}
 
 	if channel.Publish != nil {
