@@ -22,12 +22,11 @@ type ServerBindings struct {
 }
 
 type ChannelBindings struct {
-	// From channel/operation bindings
-	Topic      string
-	Partitions int
-	Replicas   int
-	ClientID   string
-	GroupID    string
+	Topic              string
+	Partitions         int
+	Replicas           int
+	PublisherBindings  OperationBindings // TODO: implement when validation will get implemented
+	SubscriberBindings OperationBindings
 
 	// TopicConfiguration
 	CleanupPolicy     TopicCleanupPolicy
@@ -35,6 +34,11 @@ type ChannelBindings struct {
 	RetentionBytes    int
 	DeleteRetentionMs time.Duration
 	MaxMessageBytes   int
+}
+
+type OperationBindings struct {
+	ClientID string
+	GroupID  string
 }
 
 type TopicCleanupPolicy struct {

@@ -98,11 +98,9 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 			chanResult.PubMessageLink = assemble.NewRefLink[*assemble.Message](ref)
 			ctx.Linker.Add(chanResult.PubMessageLink)
 		}
-		chBindings, chOk := channel.Bindings.Get(protoName)
-		opBindings, opOk := channel.Publish.Bindings.Get(protoName)
-		if chOk || opOk {
+		if chBindings, ok := channel.Bindings.Get(protoName); ok {
 			var err error
-			chanResult.PubChannelBindings, err = buildChannelBindings(&chBindings, &opBindings)
+			chanResult.PubChannelBindings, err = buildChannelBindings(&chBindings)
 			if err != nil {
 				return nil, err
 			}
@@ -131,11 +129,9 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 			chanResult.SubMessageLink = assemble.NewRefLink[*assemble.Message](ref)
 			ctx.Linker.Add(chanResult.SubMessageLink)
 		}
-		chBindings, chOk := channel.Bindings.Get(protoName)
-		opBindings, opOk := channel.Subscribe.Bindings.Get(protoName)
-		if chOk || opOk {
+		if chBindings, ok := channel.Bindings.Get(protoName); ok {
 			var err error
-			chanResult.SubChannelBindings, err = buildChannelBindings(&chBindings, &opBindings)
+			chanResult.SubChannelBindings, err = buildChannelBindings(&chBindings)
 			if err != nil {
 				return nil, err
 			}
@@ -145,7 +141,7 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 	return chanResult, nil
 }
 
-func buildChannelBindings(chBindings, opBindings *utils.Union2[json.RawMessage, yaml.Node]) (*ProtoChannelBindings, error) {
+func buildChannelBindings(chBindings *utils.Union2[json.RawMessage, yaml.Node]) (*ProtoChannelBindings, error) {
 	res := ProtoChannelBindings{}
 	if chBindings != nil {
 		var bindings channelBindings
@@ -181,18 +177,6 @@ func buildChannelBindings(chBindings, opBindings *utils.Union2[json.RawMessage, 
 			if tc.MaxMessageBytes != nil {
 				res.StructValues.Set("MaxMessageBytes", *tc.MaxMessageBytes)
 			}
-		}
-	}
-	if opBindings != nil {
-		var bindings operationBindings
-		if err := utils.UnmarhalRawsUnion2(*opBindings, &bindings); err != nil {
-			return nil, err
-		}
-		if bindings.GroupID != nil {
-			res.GroupIDArgSchema = "string"
-		}
-		if bindings.ClientID != nil {
-			res.ClientIDArgSchema = "string"
 		}
 	}
 

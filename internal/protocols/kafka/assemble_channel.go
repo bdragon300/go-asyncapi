@@ -15,9 +15,6 @@ import (
 type ProtoChannelBindings struct {
 	StructValues             utils.OrderedMap[string, any]
 	CleanupPolicyStructValue utils.OrderedMap[string, bool]
-	// TODO: implement args validation by jsonschema
-	GroupIDArgSchema  string
-	ClientIDArgSchema string
 }
 
 type ProtoChannel struct {
@@ -75,18 +72,9 @@ func (p ProtoChannel) assembleBindings(ctx *common.AssembleContext, bindings *Pr
 		vals[j.Id("CleanupPolicy")] = j.Qual(ctx.RuntimePackage("kafka"), "TopicCleanupPolicy").Values(j.Dict(cleanupVals))
 	}
 
-	var params []j.Code
-	if bindings.GroupIDArgSchema != "" {
-		params = append(params, j.Id("groupID").Id(bindings.GroupIDArgSchema))
-		vals[j.Id("GroupID")] = j.Id("groupID")
-	}
-	if bindings.ClientIDArgSchema != "" {
-		params = append(params, j.Id("clientID").Id(bindings.ClientIDArgSchema))
-		vals[j.Id("ClientID")] = j.Id("clientID")
-	}
 	return []*j.Statement{
 		j.Func().Id(p.Struct.Name+funcSuffix).
-			Params(params...).
+			Params().
 			Qual(ctx.RuntimePackage("kafka"), "ChannelBindings").
 			Block(
 				j.Return(j.Qual(ctx.RuntimePackage("kafka"), "ChannelBindings").Values(j.Dict(vals))),
