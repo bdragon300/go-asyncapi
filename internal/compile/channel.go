@@ -3,6 +3,7 @@ package compile
 import (
 	"encoding/json"
 	"fmt"
+	"path"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -43,7 +44,30 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.As
 		ctx.Linker.Add(res)
 		return res, nil
 	}
+
 	res := &assemble.Channel{Name: channelKey, AllProtocols: make(map[string]common.Assembler)}
+
+	// Channel parameters
+	if c.Parameters.Len() > 0 {
+		res.ParametersStruct = &assemble.Struct{
+			BaseType: assemble.BaseType{
+				Name:    utils.ToGolangName(channelKey, true) + "Parameters",
+				Render:  true,
+				Package: ctx.Stack.Top().PackageKind,
+			},
+		}
+		for _, paramName := range c.Parameters.Keys() {
+			ref := path.Join(ctx.PathRef(), "parameters", paramName)
+			lnk := assemble.NewRefLinkAsGolangType(ref)
+			ctx.Linker.Add(lnk)
+			res.ParametersStruct.Fields = append(res.ParametersStruct.Fields, assemble.StructField{
+				Name: utils.ToGolangName(paramName, true),
+				Type: lnk,
+			})
+		}
+	}
+
+	// Servers which this channel is connected to
 	// Empty servers field means "no servers", omitted servers field means "all servers"
 	if c.Servers != nil && len(*c.Servers) > 0 {
 		for _, srv := range *c.Servers {
@@ -61,6 +85,38 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.As
 		res.AppliedToAllServersLinks = lnk
 	}
 
+	// Channel/operation bindings
+	if c.Bindings.Len() > 0 || c.Publish != nil && c.Publish.Bindings.Len() > 0 || c.Subscribe != nil && c.Subscribe.Bindings.Len() > 0 {
+		res.BindingsStruct = &assemble.Struct{
+			BaseType: assemble.BaseType{
+				Name:    GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "Bindings"),
+				Render:  true,
+				Package: ctx.Stack.Top().PackageKind,
+			},
+		}
+	}
+
+	if c.Parameters.Len() > 0 {
+		res.ParametersStruct = &assemble.Struct{
+			BaseType: assemble.BaseType{
+				Name:    GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "Parameters"),
+				Render:  true,
+				Package: ctx.Stack.Top().PackageKind,
+			},
+			Fields: nil,
+		}
+		for _, paramName := range c.Parameters.Keys() {
+			ref := path.Join(ctx.PathRef(), "parameters", paramName)
+			lnk := assemble.NewRefLinkAsGolangType(ref)
+			ctx.Linker.Add(lnk)
+			res.ParametersStruct.Fields = append(res.ParametersStruct.Fields, assemble.StructField{
+				Name: utils.ToGolangName(paramName, true),
+				Type: lnk,
+			})
+		}
+	}
+
+	// Build protocol-specific channels
 	for pName, pBuild := range ProtoChannelBuilders {
 		obj, err := pBuild(ctx, &c, channelKey)
 		if err != nil {
@@ -68,6 +124,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.As
 		}
 		res.AllProtocols[pName] = obj
 	}
+
 	return res, nil
 }
 

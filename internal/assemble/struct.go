@@ -21,16 +21,13 @@ type Struct struct {
 
 func (s Struct) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
 	var res []*jen.Statement
-
 	if s.Description != "" {
 		res = append(res, jen.Comment(s.Name+" -- "+utils.ToLowerFirstLetter(s.Description)))
 	}
-
 	code := lo.FlatMap(s.Fields, func(item StructField, index int) []*jen.Statement {
 		return item.assembleDefinition(ctx)
 	})
 	res = append(res, jen.Type().Id(s.Name).Struct(utils.ToCode(code)...))
-
 	return res
 }
 
@@ -47,13 +44,6 @@ func (s Struct) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	})
 
 	return []*jen.Statement{jen.Struct(utils.ToCode(code)...)}
-}
-
-func (s Struct) NewFuncUsage(ctx *common.AssembleContext) []*jen.Statement {
-	if s.Package != "" && s.Package != ctx.CurrentPackage {
-		return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, string(s.Package)), s.NewFuncName())}
-	}
-	return []*jen.Statement{jen.Id(s.NewFuncName())}
 }
 
 func (s Struct) NewFuncName() string {

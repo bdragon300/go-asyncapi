@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"path"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"github.com/bdragon300/asyncapi-codegen/internal/compile"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	"github.com/samber/lo"
-	"gopkg.in/yaml.v3"
 )
 
 const protoName = "kafka"
@@ -17,8 +18,6 @@ const protoName = "kafka"
 func Register() {
 	compile.ProtoServerBuilders[protoName] = BuildServer
 	compile.ProtoChannelBuilders[protoName] = BuildChannel
-	compile.ProtoServerBuilders["kafka-secure"] = BuildServer // TODO: make a separate kafka-secure protocol
-	compile.ProtoChannelBuilders["kafka-secure"] = BuildChannel
 }
 
 type channelBindings struct {
@@ -37,8 +36,8 @@ type topicConfiguration struct {
 }
 
 type operationBindings struct {
-	GroupID  *compile.Object `json:"groupId" yaml:"groupId"`
-	ClientID *compile.Object `json:"clientId" yaml:"clientId"`
+	GroupID  any `json:"groupId" yaml:"groupId"`   // TODO: here is jsonschema, figure out how it's needed to be represented in bindings
+	ClientID any `json:"clientId" yaml:"clientId"` //
 }
 
 type serverBindings struct {
@@ -58,129 +57,193 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 	ctx.Linker.AddMany(paramsLnk)
 
 	chanResult := &ProtoChannel{
-		Name:  channelKey,
-		Topic: channelKey,
+		Name: channelKey,
 		Struct: &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:        compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "KafkaChannel"),
+				Name:        compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "Kafka"),
 				Description: channel.Description,
 				Render:      true,
 				Package:     ctx.Stack.Top().PackageKind,
 			},
 			Fields: []assemble.StructField{
-				{Name: "name", Type: &assemble.Simple{Type: "string"}},
+				{Name: "name", Type: &assemble.Simple{Type: "ParamString", Package: common.RuntimePackageKind}},
+				{Name: "topic", Type: &assemble.Simple{Type: "string"}},
 			},
 		},
 		FallbackMessageType: &assemble.Simple{Type: "any", IsIface: true},
-		ParameterLinks:      paramsLnk,
 	}
 
-	if channel.Publish != nil {
-		fld := assemble.StructField{
-			Name:        "publishers",
-			Description: channel.Publish.Description,
-			Type: &assemble.Array{
-				BaseType: assemble.BaseType{Package: ctx.Stack.Top().PackageKind},
-				ItemsType: &assemble.Simple{
-					Type:    "Publisher",
-					Package: common.RuntimePackageKind,
-					TypeParamValues: []common.Assembler{
-						&assemble.Simple{Type: "OutEnvelope", Package: common.RuntimeKafkaPackageKind},
-					},
-					IsIface: true,
+	// FIXME: remove in favor of the non-proto channel
+	if channel.Parameters.Len() > 0 {
+		chanResult.ParametersStructNoAssemble = &assemble.Struct{
+			BaseType: assemble.BaseType{
+				Name:    compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "Parameters"),
+				Render:  true,
+				Package: ctx.Stack.Top().PackageKind,
+			},
+			Fields: nil,
+		}
+		for _, paramName := range channel.Parameters.Keys() {
+			ref := path.Join(ctx.PathRef(), "parameters", paramName)
+			lnk := assemble.NewRefLinkAsGolangType(ref)
+			ctx.Linker.Add(lnk)
+			chanResult.ParametersStructNoAssemble.Fields = append(chanResult.ParametersStructNoAssemble.Fields, assemble.StructField{
+				Name: utils.ToGolangName(paramName, true),
+				Type: lnk,
+			})
+		}
+	}
+
+	// Interface to match servers bound with a channel
+	var ifaceFirstMethodParams []assemble.FuncParam
+	if chanResult.ParametersStructNoAssemble != nil {
+		ifaceFirstMethodParams = append(ifaceFirstMethodParams, assemble.FuncParam{
+			Name: "params",
+			Type: &assemble.Simple{Type: chanResult.ParametersStructNoAssemble.Name, Package: ctx.Stack.Top().PackageKind},
+		})
+	}
+	chanResult.ServerIface = &assemble.Interface{
+		BaseType: assemble.BaseType{
+			Name:    utils.ToLowerFirstLetter(chanResult.Struct.Name + "Server"),
+			Render:  true,
+			Package: ctx.Stack.Top().PackageKind,
+		},
+		Methods: []assemble.FunctionSignature{
+			{
+				Name: "Open" + chanResult.Struct.Name,
+				Args: ifaceFirstMethodParams,
+				Return: []assemble.FuncParam{
+					{Type: &assemble.Simple{Type: chanResult.Struct.Name, Package: ctx.Stack.Top().PackageKind}, Pointer: true},
+					{Type: &assemble.Simple{Type: "error"}},
 				},
 			},
-		}
-		chanResult.Struct.Fields = append(chanResult.Struct.Fields, fld)
+		},
+	}
+
+	// Publisher stuff
+	if channel.Publish != nil {
+		chanResult.Struct.Fields = append(chanResult.Struct.Fields, assemble.StructField{
+			Name:        "publisher",
+			Description: channel.Publish.Description,
+			Type: &assemble.Simple{
+				Type:    "Publisher",
+				Package: common.RuntimeKafkaPackageKind,
+				IsIface: true,
+			},
+		})
 		chanResult.Publisher = true
 		if channel.Publish.Message != nil {
 			ref := path.Join(ctx.PathRef(), "publish/message")
 			chanResult.PubMessageLink = assemble.NewRefLink[*assemble.Message](ref)
 			ctx.Linker.Add(chanResult.PubMessageLink)
 		}
-		if chBindings, ok := channel.Bindings.Get(protoName); ok {
-			var err error
-			chanResult.PubChannelBindings, err = buildChannelBindings(&chBindings)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-	if channel.Subscribe != nil {
-		fld := assemble.StructField{
-			Name:        "subscribers",
-			Description: channel.Subscribe.Description,
-			Type: &assemble.Array{
-				BaseType: assemble.BaseType{Package: ctx.Stack.Top().PackageKind},
-				ItemsType: &assemble.Simple{
-					Type:    "Subscriber",
-					Package: common.RuntimePackageKind,
-					TypeParamValues: []common.Assembler{
-						&assemble.Simple{Type: "InEnvelope", Package: common.RuntimeKafkaPackageKind},
-					},
-					IsIface: true,
-				},
+		chanResult.ServerIface.Methods = append(chanResult.ServerIface.Methods, assemble.FunctionSignature{
+			Name: "Producer",
+			Args: nil,
+			Return: []assemble.FuncParam{
+				{Type: &assemble.Simple{Type: "Producer", Package: common.RuntimeKafkaPackageKind, IsIface: true}},
 			},
-		}
-		chanResult.Struct.Fields = append(chanResult.Struct.Fields, fld)
+		})
+	}
+
+	// Subscriber stuff
+	if channel.Subscribe != nil {
+		chanResult.Struct.Fields = append(chanResult.Struct.Fields, assemble.StructField{
+			Name:        "subscriber",
+			Description: channel.Subscribe.Description,
+			Type: &assemble.Simple{
+				Type:    "Subscriber",
+				Package: common.RuntimeKafkaPackageKind,
+				IsIface: true,
+			},
+		})
 		chanResult.Subscriber = true
 		if channel.Subscribe.Message != nil {
 			ref := path.Join(ctx.PathRef(), "subscribe/message")
 			chanResult.SubMessageLink = assemble.NewRefLink[*assemble.Message](ref)
 			ctx.Linker.Add(chanResult.SubMessageLink)
 		}
-		if chBindings, ok := channel.Bindings.Get(protoName); ok {
-			var err error
-			chanResult.SubChannelBindings, err = buildChannelBindings(&chBindings)
-			if err != nil {
-				return nil, err
-			}
+		chanResult.ServerIface.Methods = append(chanResult.ServerIface.Methods, assemble.FunctionSignature{
+			Name: "Consumer",
+			Args: nil,
+			Return: []assemble.FuncParam{
+				{Type: &assemble.Simple{Type: "Consumer", Package: common.RuntimeKafkaPackageKind, IsIface: true}},
+			},
+		})
+	}
+
+	if bindings, ok, err := buildChannelBindings(channel); err != nil {
+		return nil, err
+	} else if ok {
+		chanResult.BindingsStructNoAssemble = &assemble.Struct{ // TODO: remove in favor of parent channel
+			BaseType: assemble.BaseType{
+				Name:    compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "Bindings"),
+				Render:  true,
+				Package: ctx.Stack.Top().PackageKind,
+			},
 		}
+		chanResult.BindingsValues = &bindings
 	}
 
 	return chanResult, nil
 }
 
-func buildChannelBindings(chBindings *utils.Union2[json.RawMessage, yaml.Node]) (*ProtoChannelBindings, error) {
-	res := ProtoChannelBindings{}
-	if chBindings != nil {
+func buildChannelBindings(channel *compile.Channel) (res ProtoChannelBindings, hasBindings bool, err error) {
+	if chBindings, ok := channel.Bindings.Get(protoName); ok {
 		var bindings channelBindings
-		if err := utils.UnmarhalRawsUnion2(*chBindings, &bindings); err != nil {
-			return nil, err
+		hasBindings = true
+		if err = utils.UnmarhalRawsUnion2(chBindings, &bindings); err != nil {
+			return
 		}
-		if bindings.Topic != nil {
-			res.StructValues.Set("Topic", *bindings.Topic)
+		marshalFields := []string{"Topic", "Partitions", "Replicas"}
+		if err = utils.StructToOrderedMap(bindings, &res.StructValues, marshalFields); err != nil {
+			return
 		}
-		if bindings.Partitions != nil {
-			res.StructValues.Set("Partitions", *bindings.Partitions)
-		}
-		if bindings.Replicas != nil {
-			res.StructValues.Set("Replicas", *bindings.Replicas)
-		}
+
 		if bindings.TopicConfiguration != nil {
 			tc := bindings.TopicConfiguration
+			marshalFields = []string{"RetentionMs", "RetentionBytes", "DeleteRetentionMs", "MaxMessageBytes"}
+			if err = utils.StructToOrderedMap(*bindings.TopicConfiguration, &res.StructValues, marshalFields); err != nil {
+				return
+			}
 			if lo.Contains(tc.CleanupPolicy, "delete") {
 				res.CleanupPolicyStructValue.Set("Delete", true)
 			}
 			if lo.Contains(tc.CleanupPolicy, "compact") {
 				res.CleanupPolicyStructValue.Set("Compact", true)
 			}
-			if tc.RetentionMs != nil {
-				res.StructValues.Set("RetentionMs", *tc.RetentionMs)
-			}
-			if tc.RetentionBytes != nil {
-				res.StructValues.Set("RetentionBytes", *tc.RetentionBytes)
-			}
-			if tc.DeleteRetentionMs != nil {
-				res.StructValues.Set("DeleteRetentionMs", *tc.DeleteRetentionMs)
-			}
-			if tc.MaxMessageBytes != nil {
-				res.StructValues.Set("MaxMessageBytes", *tc.MaxMessageBytes)
+		}
+	}
+
+	if channel.Publish != nil {
+		if opBindings, ok := channel.Publish.Bindings.Get(protoName); ok {
+			hasBindings = true
+			if res.PublisherValues, err = buildOperationBuilding(opBindings); err != nil {
+				return
 			}
 		}
 	}
 
-	return &res, nil
+	if channel.Subscribe != nil {
+		if opBindings, ok := channel.Subscribe.Bindings.Get(protoName); ok {
+			hasBindings = true
+			if res.SubscriberValues, err = buildOperationBuilding(opBindings); err != nil {
+				return
+			}
+		}
+	}
+
+	return
+}
+
+func buildOperationBuilding(opBindings utils.Union2[json.RawMessage, yaml.Node]) (res utils.OrderedMap[string, any], err error) {
+	var bindings operationBindings
+	if err = utils.UnmarhalRawsUnion2(opBindings, &bindings); err != nil {
+		return
+	}
+	// TODO: represent jsonschemas in bindings somehow
+
+	return
 }
 
 func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey string) (common.Assembler, error) {
@@ -193,7 +256,7 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 		ProtocolVersion: server.ProtocolVersion,
 		Struct: &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:        compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "Server"),
+				Name:        compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), ""),
 				Description: server.Description,
 				Render:      true,
 				Package:     ctx.Stack.Top().PackageKind,
@@ -211,6 +274,7 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 		})
 	}
 
+	// Channels which are connected to this server
 	channelsLnks := assemble.NewListCbLink[*assemble.Channel](func(item common.Assembler, path []string) bool {
 		ch, ok := item.(*assemble.Channel)
 		if !ok {
@@ -224,6 +288,7 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 	srvResult.ChannelLinkList = channelsLnks
 	ctx.Linker.AddMany(channelsLnks)
 
+	// Producer/consumer
 	if buildProducer {
 		fld := assemble.StructField{
 			Name: "producer",
@@ -240,18 +305,24 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 		srvResult.Struct.Fields = append(srvResult.Struct.Fields, fld)
 		srvResult.Consumer = true
 	}
+
+	// Server bindings
 	if server.Bindings.Len() > 0 {
+		srvResult.BindingsStructNoAssemble = &assemble.Struct{
+			BaseType: assemble.BaseType{
+				Name:    srvResult.Struct.Name + "Bindings",
+				Render:  true,
+				Package: ctx.Stack.Top().PackageKind,
+			},
+		}
 		if srvBindings, ok := server.Bindings.Get(protoName); ok {
 			var bindings serverBindings
-			if err := utils.UnmarhalRawsUnion2(srvBindings, &bindings); err != nil {
+			if err := utils.UnmarhalRawsUnion2(srvBindings, &bindings); err != nil { // TODO: implement $ref
 				return nil, err
 			}
-			srvResult.Bindings = &ProtoServerBindings{}
-			if bindings.SchemaRegistryURL != nil {
-				srvResult.Bindings.StructValues.Set("SchemaRegistryURL", *bindings.SchemaRegistryURL)
-			}
-			if bindings.SchemaRegistryVendor != nil {
-				srvResult.Bindings.StructValues.Set("SchemaRegistryVendor", *bindings.SchemaRegistryVendor)
+			marshalFields := []string{"SchemaRegistryURL", "SchemaRegistryVendor"}
+			if err := utils.StructToOrderedMap(bindings, &srvResult.BindingsValues, marshalFields); err != nil {
+				return nil, err
 			}
 		}
 	}

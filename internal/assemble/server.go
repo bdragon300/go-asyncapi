@@ -6,8 +6,9 @@ import (
 )
 
 type Server struct {
-	Protocol    string
-	ProtoServer common.Assembler
+	Protocol       string
+	ProtoServer    common.Assembler
+	BindingsStruct *Struct // nil if no bindings set in spec
 }
 
 func (s Server) AllowRender() bool {
@@ -15,7 +16,10 @@ func (s Server) AllowRender() bool {
 }
 
 func (s Server) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
-	return s.ProtoServer.AssembleDefinition(ctx)
+	var res []*jen.Statement
+	res = append(res, s.BindingsStruct.AssembleDefinition(ctx)...)
+	res = append(res, s.ProtoServer.AssembleDefinition(ctx)...)
+	return res
 }
 
 func (s Server) AssembleUsage(_ *common.AssembleContext) []*jen.Statement {

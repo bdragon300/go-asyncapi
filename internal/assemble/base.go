@@ -28,6 +28,13 @@ func (b *BaseType) TypeName() string {
 	return b.Name
 }
 
+func (b *BaseType) AssembleNameUsage(ctx *common.AssembleContext, name string) []*jen.Statement {
+	if b.Package != "" && b.Package != ctx.CurrentPackage {
+		return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, string(b.Package)), name)}
+	}
+	return []*jen.Statement{jen.Id(name)}
+}
+
 type Array struct {
 	BaseType
 	ItemsType common.GolangType

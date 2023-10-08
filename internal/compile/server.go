@@ -55,7 +55,18 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Asse
 		return nil, fmt.Errorf("error build server at path %s: %w", ctx.PathStack(), err)
 	}
 
-	return &assemble.Server{Protocol: s.Protocol, ProtoServer: protoServer}, nil
+	return &assemble.Server{
+		Protocol:    s.Protocol,
+		ProtoServer: protoServer,
+		BindingsStruct: &assemble.Struct{
+			BaseType: assemble.BaseType{
+				Name:    GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "Bindings"),
+				Render:  true,
+				Package: ctx.Stack.Top().PackageKind,
+			},
+			Fields: nil,
+		},
+	}, nil
 }
 
 // TODO: This object MAY be extended with Specification Extensions.

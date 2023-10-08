@@ -50,3 +50,7 @@ func (p Parameter) assembleMethods() []*j.Statement {
 func (p Parameter) AssembleUsage(ctx *common.AssembleContext) []*j.Statement {
 	return p.Type.AssembleUsage(ctx)
 }
+
+func (p Parameter) TypeName() string {
+	return p.Type.TypeName()
+}

@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"runtime/debug"
@@ -18,29 +17,18 @@ func (p panicError) Error() string {
 }
 
 func NewErrorPool() *ErrorPool {
-	ctx, cancel := context.WithCancel(context.Background())
 	return &ErrorPool{
-		wg:     &sync.WaitGroup{},
-		errs:   make(chan error),
-		ctx:    ctx,
-		cancel: cancel,
+		wg:   &sync.WaitGroup{},
+		errs: make(chan error),
 	}
 }
 
 type ErrorPool struct {
-	wg     *sync.WaitGroup
-	errs   chan error
-	ctx    context.Context
-	cancel context.CancelFunc
+	wg   *sync.WaitGroup
+	errs chan error
 }
 
 func (p *ErrorPool) Go(cb func() error) {
-	select {
-	case <-p.ctx.Done():
-		panic("Pool has already finished")
-	default:
-	}
-
 	p.wg.Add(1)
 	go func() {
 		defer p.wg.Done()
@@ -50,19 +38,14 @@ func (p *ErrorPool) Go(cb func() error) {
 					val:   v,
 					stack: debug.Stack(),
 				}
-				p.cancel()
 			}
 		}()
-		select {
-		case <-p.ctx.Done():
-		case p.errs <- cb():
-		}
+		p.errs <- cb()
 	}()
 }
 
 func (p *ErrorPool) Wait() (err error) {
 	p.wg.Wait()
-	p.cancel()
 	close(p.errs)
 
 	for e := range p.errs {

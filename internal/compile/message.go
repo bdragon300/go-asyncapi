@@ -52,41 +52,63 @@ func (m Message) build(ctx *common.CompileContext) (common.Assembler, error) {
 		return res, nil
 	}
 
-	strct := assemble.Struct{
-		BaseType: assemble.BaseType{
-			Name:        GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "Message"),
-			Description: utils.JoinNonemptyStrings("\n", m.Summary, m.Description),
-			Render:      true,
-			Package:     ctx.Stack.Top().PackageKind,
-		},
-	}
-
 	obj := assemble.Message{
-		Struct:           &strct,
-		PayloadType:      m.getPayloadType(ctx),
-		PayloadHasSchema: m.Payload != nil,
-		HeadersType:      m.getHeadersType(ctx),
-		HeadersHasSchema: m.Headers != nil,
+		OutStruct: &assemble.Struct{
+			BaseType: assemble.BaseType{
+				Name:        GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "Out"),
+				Description: utils.JoinNonemptyStrings("\n", m.Summary+" (Outbound Message)", m.Description),
+				Render:      true,
+				Package:     ctx.Stack.Top().PackageKind,
+			},
+		},
+		InStruct: &assemble.Struct{
+			BaseType: assemble.BaseType{
+				Name:        GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "In"),
+				Description: utils.JoinNonemptyStrings("\n", m.Summary+" (Inbound Message)", m.Description),
+				Render:      true,
+				Package:     ctx.Stack.Top().PackageKind,
+			},
+		},
+		PayloadType:         m.getPayloadType(ctx),
+		PayloadHasSchema:    m.Payload != nil,
+		HeadersFallbackType: &assemble.Map{KeyType: &assemble.Simple{Type: "string"}, ValueType: &assemble.Simple{Type: "any", IsIface: true}},
+	}
+	allServersLnk := assemble.NewListCbLink[*assemble.Server](func(item common.Assembler, path []string) bool {
+		_, ok := item.(*assemble.Server)
+		return ok
+	})
+	ctx.Linker.AddMany(allServersLnk)
+	obj.AllServers = allServersLnk
+
+	// Link to Headers struct if any
+	if m.Headers != nil {
+		ref := ctx.PathRef() + "/headers"
+		obj.HeadersTypeLink = assemble.NewRefLink[*assemble.Struct](ref)
+		ctx.Linker.Add(obj.HeadersTypeLink)
 	}
 	m.setStructFields(ctx, &obj)
 	return &obj, nil
 }
 
 func (m Message) setStructFields(ctx *common.CompileContext, langMessage *assemble.Message) {
-	langMessage.Struct.Fields = []assemble.StructField{
+	fields := []assemble.StructField{
 		{
 			Name:        "ID",
 			Description: "ID is unique string used to identify the message. Case-sensitive.",
 			Type:        &assemble.Simple{Type: "string"},
 		},
 		{Name: "Payload", Type: langMessage.PayloadType},
-		{Name: "Headers", Type: langMessage.HeadersType},
-		{Name: "ChannelParameters", Type: &assemble.Map{
-			BaseType:  assemble.BaseType{Package: ctx.Stack.Top().PackageKind},
-			KeyType:   &assemble.Simple{Type: "string"},
-			ValueType: &assemble.Simple{Type: "Parameter", Package: common.RuntimePackageKind, IsIface: true},
-		}},
 	}
+	if langMessage.HeadersTypeLink != nil {
+		lnk := assemble.NewRefLinkAsGolangType(langMessage.HeadersTypeLink.Ref())
+		ctx.Linker.Add(lnk)
+		fields = append(fields, assemble.StructField{Name: "Headers", Type: lnk})
+	} else {
+		fields = append(fields, assemble.StructField{Name: "Headers", Type: langMessage.HeadersFallbackType})
+	}
+
+	langMessage.OutStruct.Fields = fields
+	langMessage.InStruct.Fields = fields
 }
 
 func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
@@ -97,16 +119,6 @@ func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 		return lnk
 	}
 	return &assemble.Simple{Type: "any", IsIface: true}
-}
-
-func (m Message) getHeadersType(ctx *common.CompileContext) common.GolangType {
-	if m.Headers != nil {
-		ref := ctx.PathRef() + "/headers"
-		lnk := assemble.NewRefLinkAsGolangType(ref)
-		ctx.Linker.Add(lnk)
-		return lnk
-	}
-	return &assemble.Map{KeyType: &assemble.Simple{Type: "string"}, ValueType: &assemble.Simple{Type: "any", IsIface: true}}
 }
 
 type CorrelationID struct {

@@ -2,69 +2,58 @@ package runtime
 
 import (
 	"context"
+	"errors"
 )
 
-type Publisher[E any] interface {
-	Send(ctx context.Context, envelopes ...*E) error
-	Close() error
+type PublisherFanOut[E EnvelopeWriter] struct {
+	Publishers []Publisher[E]
 }
 
-type Subscriber[E any] interface {
-	Receive(ctx context.Context, cb func(envelope *E) error) error
-	Close() error
-}
+func (p PublisherFanOut[E]) Send(ctx context.Context, envelopes ...E) error {
+	if len(p.Publishers) == 1 {
+		return p.Publishers[0].Send(ctx, envelopes...)
+	}
 
-type ServerConnArgs struct {
-	URL             string
-	ProtocolVersion string
-}
-
-func NewPublisherFanOut[E any](publishers []Publisher[E]) *PublisherFanOut[E] {
-	return &PublisherFanOut[E]{publishers: publishers}
-}
-
-type PublisherFanOut[E any] struct {
-	publishers []Publisher[E]
-}
-
-func (p PublisherFanOut[E]) Send(ctx context.Context, envelopes ...*E) error {
 	pool := NewErrorPool()
 
-	for i := 0; i < len(p.publishers); i++ {
+	for i := 0; i < len(p.Publishers); i++ {
 		i := i
 		pool.Go(func() error {
-			return p.publishers[i].Send(ctx, envelopes...)
+			return p.Publishers[i].Send(ctx, envelopes...)
 		})
 	}
 	return pool.Wait()
 }
 
-func (p PublisherFanOut[E]) Close() error {
-	return nil
+func (p PublisherFanOut[E]) Close() (err error) {
+	for _, pub := range p.Publishers {
+		if pub != nil {
+			err = errors.Join(pub.Close())
+		}
+	}
+	return
 }
 
-func NewSubscriberFanIn[E any](subscribers []Subscriber[E], bufSize int, stopOnFirstError bool) *SubscriberFanIn[E] {
-	return &SubscriberFanIn[E]{subscribers: subscribers, bufSize: bufSize, stopOnFirstError: stopOnFirstError}
+type SubscriberFanIn[E EnvelopeReader] struct {
+	Subscribers      []Subscriber[E]
+	StopOnFirstError bool
 }
 
-type SubscriberFanIn[E any] struct {
-	subscribers      []Subscriber[E]
-	bufSize          int
-	stopOnFirstError bool
-}
+func (s SubscriberFanIn[E]) Receive(ctx context.Context, cb func(envelope E) error) error {
+	if len(s.Subscribers) == 1 {
+		return s.Subscribers[0].Receive(ctx, cb)
+	}
 
-func (s SubscriberFanIn[E]) Receive(ctx context.Context, cb func(envelope *E) error) error {
 	poolCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	pool := NewErrorPool()
 
-	for i := 0; i < len(s.subscribers); i++ {
+	for i := 0; i < len(s.Subscribers); i++ {
 		i := i
 		pool.Go(func() error {
-			// TODO: add option to ignore error in one connection or close all connections
-			return s.subscribers[i].Receive(poolCtx, func(envelope *E) error {
+			return s.Subscribers[i].Receive(poolCtx, func(envelope E) error {
 				err := cb(envelope)
-				if err != nil && s.stopOnFirstError {
+				if err != nil && s.StopOnFirstError {
 					cancel()
 				}
 				return err
@@ -74,15 +63,55 @@ func (s SubscriberFanIn[E]) Receive(ctx context.Context, cb func(envelope *E) er
 	return pool.Wait()
 }
 
-func (s SubscriberFanIn[E]) Close() error {
-	return nil
+func (s SubscriberFanIn[E]) Close() (err error) {
+	for _, sub := range s.Subscribers {
+		if sub != nil {
+			err = errors.Join(sub.Close())
+		}
+	}
+	return
 }
 
-func ToSlice[T any](elements ...T) []T {
-	return elements
+func GatherPublishers[E EnvelopeWriter, B any, P Producer[B, E]](chName ParamString, channelBindings *B, producers []P) ([]Publisher[E], error) {
+	pubs := make([]Publisher[E], len(producers))
+	pool := NewErrorPool()
+	for ind, prod := range producers {
+		prod := prod
+		ind := ind
+		pool.Go(func() error {
+			var e error
+			pubs[ind], e = prod.Publisher(chName.String(), channelBindings)
+			return e
+		})
+	}
+	if err := pool.Wait(); err != nil {
+		for _, pub := range pubs {
+			err = errors.Join(err, pub.Close())
+		}
+		return nil, err
+	}
+
+	return pubs, nil
 }
 
-type Parameter interface {
-	Name() string
-	String() string
+func GatherSubscribers[E EnvelopeReader, B any, C Consumer[B, E]](chName ParamString, channelBindings *B, consumers []C) ([]Subscriber[E], error) {
+	subs := make([]Subscriber[E], len(consumers))
+	pool := NewErrorPool()
+	for ind, cons := range consumers {
+		cons := cons
+		ind := ind
+		pool.Go(func() error {
+			var e error
+			subs[ind], e = cons.Subscriber(chName.String(), channelBindings)
+			return e
+		})
+	}
+	if err := pool.Wait(); err != nil {
+		for _, sub := range subs {
+			err = errors.Join(err, sub.Close())
+		}
+		return nil, err
+	}
+
+	return subs, nil
 }

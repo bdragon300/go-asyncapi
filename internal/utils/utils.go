@@ -1,44 +1,12 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
-	"strings"
+	"reflect"
 
-	"github.com/dave/jennifer/jen"
+	"github.com/samber/lo"
 )
-
-func ToCode(in []*jen.Statement) []jen.Code {
-	result := make([]jen.Code, len(in))
-	for i, item := range in {
-		result[i] = any(item).(jen.Code)
-	}
-	return result
-}
-
-func QualSprintf(format string, args ...any) jen.Code {
-	res := &jen.Statement{}
-	format = strings.ReplaceAll(format, "%Q(", "%%Q(")
-	s := fmt.Sprintf(format, args...)
-
-	// Expression: %Q(encoding/json,Marshal)
-	blocks := strings.Split(s, "%Q(")
-	if len(blocks) == 0 {
-		return jen.Op("")
-	}
-
-	res = res.Add(jen.Op(blocks[0]))
-	for _, p := range blocks[1:] {
-		parts := strings.SplitN(p, ")", 2)
-		params := strings.SplitN(parts[0], ",", 2)
-		code := jen.Qual(params[0], params[1])
-		if len(parts) > 1 {
-			code = code.Op(parts[1])
-		}
-		res = res.Add(code)
-	}
-
-	return res
-}
 
 func IsSubsequence[T comparable](subseq, iterable []T, searchIndex int) (int, bool) {
 	if searchIndex+len(subseq) > len(iterable) {
@@ -58,4 +26,30 @@ func SlicesEqual[T comparable](a, b []T) bool {
 	}
 	_, ok := IsSubsequence(a, b, 0)
 	return ok
+}
+
+func StructToOrderedMap(value any, target *OrderedMap[string, any], marshalFields []string) error {
+	if target == nil {
+		return errors.New("target is nil")
+	}
+	rval := reflect.ValueOf(value)
+	if rval.Kind() != reflect.Struct {
+		return fmt.Errorf("expected %v (Struct), got %v", reflect.Struct, rval.Kind())
+	}
+
+	rtyp := rval.Type()
+	for i := 0; i < rval.NumField(); i++ {
+		fld := rtyp.Field(i)
+		if lo.Contains(marshalFields, fld.Name) {
+			fldVal := rval.Field(i)
+			if fldVal.IsValid() && !fldVal.IsZero() {
+				if fldVal.Kind() == reflect.Pointer {
+					fldVal = reflect.Indirect(fldVal)
+				}
+				target.Set(fld.Name, fldVal.Interface())
+			}
+		}
+	}
+
+	return nil
 }

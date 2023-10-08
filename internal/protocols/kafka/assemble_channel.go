@@ -3,33 +3,33 @@ package kafka
 import (
 	"fmt"
 
-	"github.com/samber/lo"
-
-	"github.com/bdragon300/asyncapi-codegen/internal/common"
-
 	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
+	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	j "github.com/dave/jennifer/jen"
+	"github.com/samber/lo"
 )
 
 type ProtoChannelBindings struct {
 	StructValues             utils.OrderedMap[string, any]
 	CleanupPolicyStructValue utils.OrderedMap[string, bool]
+	PublisherValues          utils.OrderedMap[string, any]
+	SubscriberValues         utils.OrderedMap[string, any]
 }
 
 type ProtoChannel struct {
-	Name       string
-	Topic      string
-	Struct     *assemble.Struct
-	Publisher  bool
-	Subscriber bool
+	Name                       string
+	Publisher                  bool
+	Subscriber                 bool
+	Struct                     *assemble.Struct
+	ServerIface                *assemble.Interface
+	ParametersStructNoAssemble *assemble.Struct      // nil if parameters not set
+	BindingsStructNoAssemble   *assemble.Struct      // nil if bindings not set FIXME: remove in favor of struct in parent channel
+	BindingsValues             *ProtoChannelBindings // nil if bindings don't set particularly for this protocol
 
 	PubMessageLink      *assemble.Link[*assemble.Message] // nil when message is not set
-	PubChannelBindings  *ProtoChannelBindings
 	SubMessageLink      *assemble.Link[*assemble.Message] // nil when message is not set
-	SubChannelBindings  *ProtoChannelBindings
 	FallbackMessageType common.Assembler
-	ParameterLinks      *assemble.LinkList[*assemble.Parameter]
 }
 
 func (p ProtoChannel) AllowRender() bool {
@@ -38,16 +38,14 @@ func (p ProtoChannel) AllowRender() bool {
 
 func (p ProtoChannel) AssembleDefinition(ctx *common.AssembleContext) []*j.Statement {
 	var res []*j.Statement
-	if p.PubChannelBindings != nil {
-		res = append(res, p.assembleBindings(ctx, p.PubChannelBindings, "PubBindings")...)
+	if p.BindingsStructNoAssemble != nil && p.BindingsValues != nil {
+		res = append(res, p.assembleBindingsMethod(ctx)...)
 	}
-	if p.SubChannelBindings != nil {
-		res = append(res, p.assembleBindings(ctx, p.SubChannelBindings, "SubBindings")...)
-	}
-	res = append(res, p.assembleChannelNameFunc(ctx)...)
+	res = append(res, p.ServerIface.AssembleDefinition(ctx)...)
+	res = append(res, p.assembleOpenFunc(ctx)...)
 	res = append(res, p.assembleNewFunc(ctx)...)
 	res = append(res, p.Struct.AssembleDefinition(ctx)...)
-	res = append(res, p.assembleCommonMethods()...)
+	res = append(res, p.assembleCommonMethods(ctx)...)
 	if p.Publisher {
 		res = append(res, p.assemblePublisherMethods(ctx)...)
 	}
@@ -61,124 +59,178 @@ func (p ProtoChannel) AssembleUsage(ctx *common.AssembleContext) []*j.Statement 
 	return p.Struct.AssembleUsage(ctx)
 }
 
-func (p ProtoChannel) assembleBindings(ctx *common.AssembleContext, bindings *ProtoChannelBindings, funcSuffix string) []*j.Statement {
-	vals := lo.FromEntries(lo.Map(bindings.StructValues.Entries(), func(item lo.Entry[string, any], index int) lo.Entry[j.Code, j.Code] {
-		return lo.Entry[j.Code, j.Code]{Key: j.Id(item.Key), Value: j.Lit(item.Value)}
-	}))
-	if bindings.CleanupPolicyStructValue.Len() > 0 {
-		cleanupVals := lo.FromEntries(lo.Map(bindings.CleanupPolicyStructValue.Entries(), func(item lo.Entry[string, bool], index int) lo.Entry[j.Code, j.Code] {
-			return lo.Entry[j.Code, j.Code]{Key: j.Id(item.Key), Value: j.Lit(item.Value)}
-		}))
-		vals[j.Id("CleanupPolicy")] = j.Qual(ctx.RuntimePackage("kafka"), "TopicCleanupPolicy").Values(j.Dict(cleanupVals))
-	}
+func (p ProtoChannel) assembleBindingsMethod(ctx *common.AssembleContext) []*j.Statement {
+	rn := p.BindingsStructNoAssemble.ReceiverName()
+	receiver := j.Id(rn).Id(p.BindingsStructNoAssemble.Name)
 
 	return []*j.Statement{
-		j.Func().Id(p.Struct.Name+funcSuffix).
+		j.Func().Params(receiver.Clone()).Id("Kafka").
 			Params().
 			Qual(ctx.RuntimePackage("kafka"), "ChannelBindings").
 			Block(
-				j.Return(j.Qual(ctx.RuntimePackage("kafka"), "ChannelBindings").Values(j.Dict(vals))),
+				j.Return(j.Qual(ctx.RuntimePackage("kafka"), "ChannelBindings").Values(j.DictFunc(func(d j.Dict) {
+					for _, v := range p.BindingsValues.StructValues.Entries() {
+						d[j.Id(v.Key)] = j.Lit(v.Value)
+					}
+					d[j.Id("PublisherBindings")] = j.Qual(ctx.RuntimePackage("kafka"), "OperationBindings").Values(j.DictFunc(func(d2 j.Dict) {
+						for _, v2 := range p.BindingsValues.PublisherValues.Entries() {
+							d2[j.Id(v2.Key)] = j.Lit(v2.Value)
+						}
+					}))
+					d[j.Id("SubscriberBindings")] = j.Qual(ctx.RuntimePackage("kafka"), "OperationBindings").Values(j.DictFunc(func(d2 j.Dict) {
+						for _, v2 := range p.BindingsValues.SubscriberValues.Entries() {
+							d2[j.Id(v2.Key)] = j.Lit(v2.Value)
+						}
+					}))
+					d[j.Id("CleanupPolicy")] = j.Qual(ctx.RuntimePackage("kafka"), "TopicCleanupPolicy").Values(j.DictFunc(func(d2 j.Dict) {
+						for _, v2 := range p.BindingsValues.CleanupPolicyStructValue.Entries() {
+							d2[j.Id(v2.Key)] = j.Lit(v2.Value)
+						}
+					}))
+				}))),
 			),
 	}
 }
 
-func (p ProtoChannel) assembleChannelNameFunc(ctx *common.AssembleContext) []*j.Statement {
-	var params []j.Code
-	body := []j.Code{j.Return(j.Lit(p.Name), j.Nil())}
-	if len(p.ParameterLinks.Targets()) > 0 {
-		paramMapVals := j.Dict{}
-		for _, item := range p.ParameterLinks.Targets() {
-			n := utils.ToLowerFirstLetter(item.Type.TypeName())
-			k := j.Id(n).Dot("Name").Call()
-			v := j.Id(n).Dot("String").Call()
-			paramMapVals[k] = v
-			params = append(params, j.Id(n).Add(utils.ToCode(item.AssembleUsage(ctx))...))
-		}
-		body = []j.Code{
-			j.Id("paramMap").Op(":=").Map(j.String()).String().Values(j.Dict(paramMapVals)),
-			j.Op("_, key, err :=").Qual(ctx.RuntimePackage("3rdparty/uritemplates"), "Expand").Call(
-				j.Lit(p.Name), j.Id("paramMap"),
-			),
-			j.Op(`
-				if err != nil {
-					return "", err
-				}
-				return key, nil`,
-			),
-		}
-	}
-
+func (p ProtoChannel) assembleOpenFunc(ctx *common.AssembleContext) []*j.Statement {
 	return []*j.Statement{
-		j.Func().Id(p.Struct.Name+"Name").
-			Params(params...).
-			Params(j.String(), j.Error()).
-			Block(body...),
+		j.Func().Id("Open"+p.Struct.Name).
+			ParamsFunc(func(g *j.Group) {
+				if p.ParametersStructNoAssemble != nil {
+					g.Id("params").Add(utils.ToCode(p.ParametersStructNoAssemble.AssembleUsage(ctx))...)
+				}
+				g.Id("servers").Op("...").Add(utils.ToCode(p.ServerIface.AssembleUsage(ctx))...)
+			}).
+			Params(j.Op("*").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...), j.Error()).
+			BlockFunc(func(bodyGroup *j.Group) {
+				bodyGroup.Op("if len(servers) == 0").Block(j.Op("return nil, ").Qual(ctx.RuntimePackage(""), "ErrEmptyServers"))
+				bodyGroup.Id("name").Op(":=").Id(utils.ToGolangName(p.Name, true) + "Name").CallFunc(func(g *j.Group) {
+					if p.ParametersStructNoAssemble != nil {
+						g.Id("params")
+					}
+				})
+				if p.BindingsStructNoAssemble != nil {
+					bodyGroup.Op(fmt.Sprintf("bindings := %s{}.Kafka()", p.BindingsStructNoAssemble.Name))
+				}
+				if p.Publisher {
+					bodyGroup.Var().Id("prod").Index().Qual(ctx.RuntimePackage("kafka"), "Producer")
+				}
+				if p.Subscriber {
+					bodyGroup.Var().Id("cons").Index().Qual(ctx.RuntimePackage("kafka"), "Consumer")
+				}
+				bodyGroup.Op("for _, srv := range servers").BlockFunc(func(g *j.Group) {
+					if p.Publisher {
+						g.Op("prod = append(prod, srv.Producer())")
+					}
+					if p.Subscriber {
+						g.Op("cons = append(cons, srv.Consumer())")
+					}
+				})
+				if p.Publisher {
+					bodyGroup.Op("pubs, err := ").
+						Qual(ctx.RuntimePackage(""), "GatherPublishers").
+						Types(j.Qual(ctx.RuntimePackage("kafka"), "EnvelopeWriter"), j.Qual(ctx.RuntimePackage("kafka"), "ChannelBindings")).
+						CallFunc(func(g *j.Group) {
+							g.Id("name")
+							g.Id(lo.Ternary(p.BindingsStructNoAssemble != nil, "&bindings", "nil"))
+							g.Id("prod")
+						})
+					bodyGroup.Op(`
+						if err != nil {
+							return nil, err
+						}`)
+					bodyGroup.Op("pub := ").Qual(ctx.RuntimePackage(""), "PublisherFanOut").
+						Types(j.Qual(ctx.RuntimePackage("kafka"), "EnvelopeWriter")).
+						Op("{Publishers: pubs}")
+				}
+				if p.Subscriber {
+					bodyGroup.Op("subs, err := ").
+						Qual(ctx.RuntimePackage(""), "GatherSubscribers").
+						Types(j.Qual(ctx.RuntimePackage("kafka"), "EnvelopeReader"), j.Qual(ctx.RuntimePackage("kafka"), "ChannelBindings")).
+						CallFunc(func(g *j.Group) {
+							g.Id("name")
+							g.Id(lo.Ternary(p.BindingsStructNoAssemble != nil, "&bindings", "nil"))
+							g.Id("cons")
+						})
+					bodyGroup.Op("if err != nil").BlockFunc(func(g *j.Group) {
+						if p.Publisher {
+							g.Add(utils.QualSprintf("err = %Q(errors,Join)(err, pub.Close())"))
+						}
+						g.Op("return nil, err")
+					})
+					bodyGroup.Op("sub := ").Qual(ctx.RuntimePackage(""), "SubscriberFanIn").
+						Types(j.Qual(ctx.RuntimePackage("kafka"), "EnvelopeReader")).
+						Op("{Subscribers: subs}")
+				}
+				bodyGroup.Op("ch := ").Id(p.Struct.NewFuncName()).CallFunc(func(g *j.Group) {
+					g.Id("params")
+					if p.Publisher {
+						g.Id("pub")
+					}
+					if p.Subscriber {
+						g.Id("sub")
+					}
+				})
+				bodyGroup.Op("return ch, nil")
+			}),
 	}
 }
 
 func (p ProtoChannel) assembleNewFunc(ctx *common.AssembleContext) []*j.Statement {
-	var params []j.Code
-	vals := j.Dict{}
-	if len(p.ParameterLinks.Targets()) > 0 {
-		params = append(params, j.Id("name").String())
-		vals[j.Id("name")] = j.Id("name")
-	} else {
-		vals[j.Id("name")] = j.Lit(p.Name)
-	}
-
-	if p.Publisher {
-		params = append(params,
-			j.Id("publishers").Index().Qual(ctx.RuntimePackage(""), "Publisher").Types(
-				j.Qual(ctx.RuntimePackage("kafka"), "OutEnvelope"),
-			),
-		)
-		vals[j.Id("publishers")] = j.Id("publishers")
-	}
-	if p.Subscriber {
-		params = append(params,
-			j.Id("subscribers").Index().Qual(ctx.RuntimePackage(""), "Subscriber").Types(
-				j.Qual(ctx.RuntimePackage("kafka"), "InEnvelope"),
-			),
-		)
-		vals[j.Id("subscribers")] = j.Id("subscribers")
-	}
 	return []*j.Statement{
-		// NewServer1Server(producer kafka.Producer, consumer kafka.Consumer) *Server1Server
 		j.Func().Id(p.Struct.NewFuncName()).
-			Params(params...).
+			ParamsFunc(func(g *j.Group) {
+				if p.ParametersStructNoAssemble != nil {
+					g.Id("params").Add(utils.ToCode(p.ParametersStructNoAssemble.AssembleUsage(ctx))...)
+				}
+				if p.Publisher {
+					g.Id("publisher").Qual(ctx.RuntimePackage("kafka"), "Publisher")
+				}
+				if p.Subscriber {
+					g.Id("subscriber").Qual(ctx.RuntimePackage("kafka"), "Subscriber")
+				}
+			}).
 			Op("*").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...).
-			Block(
-				j.Return(j.Op("&").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...).Values(vals)),
-			),
+			BlockFunc(func(bodyGroup *j.Group) {
+				bodyGroup.Op("res := ").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...).Values(j.DictFunc(func(d j.Dict) {
+					d[j.Id("name")] = j.Id(utils.ToGolangName(p.Name, true) + "Name").CallFunc(func(g *j.Group) {
+						if p.ParametersStructNoAssemble != nil {
+							g.Id("params")
+						}
+					})
+					if p.Publisher {
+						d[j.Id("publisher")] = j.Id("publisher")
+					}
+					if p.Subscriber {
+						d[j.Id("subscriber")] = j.Id("subscriber")
+					}
+				}))
+				bodyGroup.Op("res.topic = res.name.String()")
+				if p.BindingsStructNoAssemble != nil {
+					bodyGroup.Op(fmt.Sprintf("bindings := %s{}.Kafka()", p.BindingsStructNoAssemble.Name))
+					bodyGroup.Op(`
+						if bindings.Topic != "" {
+							res.topic = bindings.Topic
+						}`)
+				}
+				bodyGroup.Op(`
+					if res.topic == "" {
+						res.topic = res.name.String()
+					}
+					return &res`)
+			}),
 	}
 }
 
-func (p ProtoChannel) assembleCommonMethods() []*j.Statement {
+func (p ProtoChannel) assembleCommonMethods(ctx *common.AssembleContext) []*j.Statement {
 	rn := p.Struct.ReceiverName()
 	receiver := j.Id(rn).Id(p.Struct.Name)
-
-	var closeBody []j.Code
-	if p.Publisher {
-		closeBody = append(closeBody, utils.QualSprintf(`
-			for _, pub := range %[1]s.publishers {
-				err = %Q(errors,Join)(err, pub.Close())
-			}`, rn),
-		)
-	}
-	if p.Subscriber {
-		closeBody = append(closeBody, utils.QualSprintf(`
-			for _, sub := range %[1]s.subscribers {
-				err = %Q(errors,Join)(err, sub.Close())
-			}`, rn),
-		)
-	}
-	closeBody = append(closeBody, j.Return())
 
 	return []*j.Statement{
 		// Method Name() string
 		j.Func().Params(receiver.Clone()).Id("Name").
 			Params().
-			String().
+			Qual(ctx.RuntimePackage(""), "ParamString").
 			Block(
 				j.Return(j.Id(rn).Dot("name")),
 			),
@@ -188,14 +240,30 @@ func (p ProtoChannel) assembleCommonMethods() []*j.Statement {
 			Params().
 			String().
 			Block(
-				j.Return(j.Lit(p.Topic)),
+				j.Return(j.Id(rn).Dot("topic")),
+			),
+
+		// Protocol() runtime.Protocol
+		j.Func().Params(receiver.Clone()).Id("Protocol").
+			Params().
+			Qual(ctx.RuntimePackage(""), "Protocol").
+			Block(
+				j.Return(j.Qual(ctx.RuntimePackage(""), "ProtocolKafka")),
 			),
 
 		// Method Close() (err error)
 		j.Func().Params(receiver.Clone()).Id("Close").
 			Params().
 			Params(j.Err().Error()).
-			Block(closeBody...),
+			BlockFunc(func(g *j.Group) {
+				if p.Publisher {
+					g.Add(utils.QualSprintf("err = %Q(errors,Join)(err, %[1]s.publisher.Close())", rn))
+				}
+				if p.Subscriber {
+					g.Add(utils.QualSprintf("err = %Q(errors,Join)(err, %[1]s.subscriber.Close())", rn))
+				}
+				g.Return()
+			}),
 	}
 }
 
@@ -204,59 +272,56 @@ func (p ProtoChannel) assemblePublisherMethods(ctx *common.AssembleContext) []*j
 	receiver := j.Id(rn).Id(p.Struct.Name)
 	msgTyp := p.FallbackMessageType
 	if p.PubMessageLink != nil {
-		msgTyp = p.PubMessageLink.Target()
+		msgTyp = p.PubMessageLink.Target().OutStruct
 	}
 
 	return []*j.Statement{
-		// Method MakeEnvelope(envelope *kafka.OutEnvelope, message *Message1) error
+		// Method MakeEnvelope(envelope kafka.EnvelopeWriter, message kafka.EnvelopeMarshaler) error
 		j.Func().Params(receiver.Clone()).Id("MakeEnvelope").
 			Params(
-				j.Id("envelope").Op("*").Qual(ctx.RuntimePackage("kafka"), "OutEnvelope"),
-				j.Id("message").Op("*").Add(utils.ToCode(msgTyp.AssembleUsage(ctx))...),
+				j.Id("envelope").Qual(ctx.RuntimePackage("kafka"), "EnvelopeWriter"),
+				j.Id("message").Qual(ctx.RuntimePackage("kafka"), "EnvelopeMarshaler"),
 			).
 			Error().
-			Block(
-				utils.QualSprintf(`
-					b, err := %Q(encoding/json,Marshal)(message.Payload)
-					if err != nil {
-						return err
-					}
-					envelope.Payload = b
-					envelope.Headers = nil
-					envelope.Metadata.Topic = %[1]s.Topic()
-					envelope.Metadata.Partition = -1
-					return nil
-				`, rn),
-			),
+			Block(utils.QualSprintf(`
+				envelope.ResetPayload()
+				if err := message.MarshalKafkaEnvelope(envelope); err != nil {
+					return err
+				}
 
-		// Method Publisher() runtime.Publisher[kafka.OutEnvelope]
+				envelope.SetMetadata(kafka.EnvelopeMeta{
+					Topic:     %[1]s.topic,
+					Partition: -1, // not set
+					Timestamp: %Q(time,Time){},
+				})
+				return nil`, rn)),
+
+		// Method Publisher() kafka.Publisher
 		j.Func().Params(receiver.Clone()).Id("Publisher").
 			Params().
-			Qual(ctx.RuntimePackage(""), "Publisher").Types(j.Qual(ctx.RuntimePackage("kafka"), "OutEnvelope")).
+			Qual(ctx.RuntimePackage("kafka"), "Publisher").
 			Block(
-				j.Return(j.Qual(ctx.RuntimePackage(""), "NewPublisherFanOut").Call(j.Id(rn).Dot("publishers"))),
+				j.Return(j.Id(rn).Dot("publisher")),
 			),
 
-		// Method Publish(ctx context.Context, messages ...*Message1) error
+		// Method Publish(ctx context.Context, messages ...*Message2Out) (err error)
 		j.Func().Params(receiver.Clone()).Id("Publish").
 			Params(
 				j.Id("ctx").Qual("context", "Context"),
-				j.Id("messages").Op("...").Op("*").Add(utils.ToCode(msgTyp.AssembleUsage(ctx))...),
+				j.Id("messages").Op("...").Op("*").Add(utils.ToCode(msgTyp.AssembleUsage(ctx))...), // FIXME: *any on fallback variant
 			).
 			Error().
 			Block(
 				utils.QualSprintf(`
-					pub := %[1]s.Publisher()
-					defer pub.Close()
-					envelopes := make([]*%Q(%[2]s,OutEnvelope), 0, len(messages))
-					for ind := 0; ind < len(messages); ind++ {
-						buf := new(%Q(%[2]s,OutEnvelope))
-						if err := %[1]s.MakeEnvelope(buf, messages[ind]); err != nil {
-							return %Q(fmt,Errorf)("envelope #%%d making error: %%w", ind, err)
+					envelopes := make([]%Q(%[2]s,EnvelopeWriter), 0, len(messages))
+					for i := 0; i < len(messages); i++ {
+						buf := new(%Q(%[2]s,EnvelopeOut))
+						if err := %[1]s.MakeEnvelope(buf, messages[i]); err != nil {
+							return %Q(fmt,Errorf)("make envelope #%%d error: %%w", i, err)
 						}
 						envelopes = append(envelopes, buf)
 					}
-					return pub.Send(ctx, envelopes...)`, rn, ctx.RuntimePackage("kafka")),
+					return %[1]s.publisher.Send(ctx, envelopes...)`, rn, ctx.RuntimePackage("kafka")),
 			),
 	}
 }
@@ -266,61 +331,56 @@ func (p ProtoChannel) assembleSubscriberMethods(ctx *common.AssembleContext) []*
 	receiver := j.Id(rn).Id(p.Struct.Name)
 	msgTyp := p.FallbackMessageType
 	if p.SubMessageLink != nil {
-		msgTyp = p.SubMessageLink.Target()
+		msgTyp = p.SubMessageLink.Target().InStruct
 	}
 
 	return []*j.Statement{
-		// Method ExtractEnvelope(envelope *kafka.InEnvelope, message *Message1) error
+		// Method ExtractEnvelope(envelope kafka.EnvelopeReader, message kafka.EnvelopeUnmarshaler) error
 		j.Func().Params(receiver.Clone()).Id("ExtractEnvelope").
 			Params(
-				j.Id("envelope").Op("*").Qual(ctx.RuntimePackage("kafka"), "InEnvelope"),
-				j.Id("message").Op("*").Add(utils.ToCode(msgTyp.AssembleUsage(ctx))...),
+				j.Id("envelope").Qual(ctx.RuntimePackage("kafka"), "EnvelopeReader"),
+				j.Id("message").Qual(ctx.RuntimePackage("kafka"), "EnvelopeUnmarshaler"),
 			).
 			Error().
 			Block(
-				utils.QualSprintf(`
-					if err := %Q(encoding/json,Unmarshal)(envelope.Payload, &message.Payload); err != nil {
+				j.Op(`
+					if err := message.UnmarshalKafkaEnvelope(envelope); err != nil {
 						return err
 					}
-					message.Headers = nil // TODO
-					message.ID = ""
-					return nil
-				`),
+					return nil`),
 			),
 
-		// Method Subscriber() runtime.Subscriber[kafka.InEnvelope]
+		// Method Subscriber() kafka.Subscriber
 		j.Func().Params(receiver.Clone()).Id("Subscriber").
 			Params().
-			Qual(ctx.RuntimePackage(""), "Subscriber").Types(j.Qual(ctx.RuntimePackage("kafka"), "InEnvelope")).
+			Qual(ctx.RuntimePackage("kafka"), "Subscriber").
 			Block(
-				j.Return(j.Qual(ctx.RuntimePackage(""), "NewSubscriberFanIn").Call(
-					j.Id(rn).Dot("subscribers"),
-					j.Len(j.Id(rn).Dot("subscribers")),
-					j.False(),
-				)),
+				j.Return(j.Id(rn).Dot("subscriber")),
 			),
 
-		// Method Subscribe(ctx context.Context, cb func(message *Message2) error) (err error)
+		// Method Subscribe(ctx context.Context, cb func(msg *Message2In) error) (err error)
 		j.Func().Params(receiver.Clone()).Id("Subscribe").
 			Params(
 				j.Id("ctx").Qual("context", "Context"),
-				j.Id("cb").Func().Params(j.Id("message").Op("*").Add(utils.ToCode(msgTyp.AssembleUsage(ctx))...)).Error(),
+				j.Id("cb").Func().Params(j.Id("message").Op("*").Add(utils.ToCode(msgTyp.AssembleUsage(ctx))...)).Error(), // FIXME: *any on fallback variant
 			).
 			Error().
 			Block(
-				j.Op(fmt.Sprintf(`
-					sub := %[1]s.Subscriber()
-					defer sub.Close()
-					return sub.Receive(ctx, func(envelope *kafka.InEnvelope) error {`, rn),
-				),
-				j.Id("buf").Op(":=").New(j.Add(utils.ToCode(msgTyp.AssembleUsage(ctx))...)),
-				j.Op(fmt.Sprintf(`
-						if err := %[1]s.ExtractEnvelope(envelope, buf); err != nil {
-							return fmt.Errorf("envelope extraction error: %%w", err)
-						}
-						return cb(buf)
-					})`, rn),
-				),
+				j.Return(j.Id(rn).Dot("subscriber.Receive").Call(
+					j.Id("ctx"),
+					j.Func().
+						Params(j.Id("envelope").Qual(ctx.RuntimePackage("kafka"), "EnvelopeReader")).
+						Error().
+						BlockFunc(func(g *j.Group) {
+							g.Op("buf := new").Call(j.Add(utils.ToCode(msgTyp.AssembleUsage(ctx))...))
+							g.Add(utils.QualSprintf(`
+								if err := %[1]s.ExtractEnvelope(envelope, buf); err != nil {
+									return %Q(fmt,Errorf)("envelope extraction error: %%w", err)
+								}
+								envelope.Commit()
+								return cb(buf)`, rn))
+						}),
+				)),
 			),
 	}
 }
