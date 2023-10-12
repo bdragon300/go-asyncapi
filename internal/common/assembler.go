@@ -13,10 +13,10 @@ type Assembler interface {
 }
 
 type AssembleContext struct {
-	CurrentPackage PackageKind
+	CurrentPackage string
 	ImportBase     string
 }
 
-func (a AssembleContext) RuntimePackage(subPackage string) string {
-	return path.Join(a.ImportBase, "runtime", subPackage)
+func (a AssembleContext) RuntimePackage(protoName string) string {
+	return path.Join(RunPackagePath, protoName)
 }

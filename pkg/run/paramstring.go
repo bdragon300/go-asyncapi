@@ -1,6 +1,6 @@
-package runtime
+package run
 
-import "github.com/bdragon300/asyncapi-codegen/example/runtime/3rdparty/uritemplates"
+import "github.com/bdragon300/asyncapi-codegen/pkg/run/3rdparty/uritemplates"
 
 type ParamString struct {
 	Expr       string

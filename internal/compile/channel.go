@@ -29,12 +29,12 @@ type Channel struct {
 }
 
 func (c Channel) Compile(ctx *common.CompileContext) error {
-	ctx.SetObjName(ctx.Stack.Top().Path) // TODO: use title
+	ctx.SetTopObjName(ctx.Stack.Top().Path) // TODO: use title
 	obj, err := c.build(ctx, ctx.Stack.Top().Path)
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
 	}
-	ctx.CurrentPackage().Put(ctx, obj)
+	ctx.PutToCurrentPkg(obj)
 	return nil
 }
 
@@ -53,7 +53,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.As
 			BaseType: assemble.BaseType{
 				Name:    utils.ToGolangName(channelKey, true) + "Parameters",
 				Render:  true,
-				Package: ctx.Stack.Top().PackageKind,
+				Package: ctx.TopPackageName(),
 			},
 		}
 		for _, paramName := range c.Parameters.Keys() {
@@ -89,9 +89,9 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.As
 	if c.Bindings.Len() > 0 || c.Publish != nil && c.Publish.Bindings.Len() > 0 || c.Subscribe != nil && c.Subscribe.Bindings.Len() > 0 {
 		res.BindingsStruct = &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:    GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "Bindings"),
+				Name:    ctx.GenerateObjName("", "Bindings"),
 				Render:  true,
-				Package: ctx.Stack.Top().PackageKind,
+				Package: ctx.TopPackageName(),
 			},
 		}
 	}
@@ -99,9 +99,9 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.As
 	if c.Parameters.Len() > 0 {
 		res.ParametersStruct = &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:    GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "Parameters"),
+				Name:    ctx.GenerateObjName("", "Parameters"),
 				Render:  true,
-				Package: ctx.Stack.Top().PackageKind,
+				Package: ctx.TopPackageName(),
 			},
 			Fields: nil,
 		}

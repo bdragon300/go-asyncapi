@@ -24,8 +24,8 @@ func (l *LocalLinker) AddMany(query common.ListQuerier) {
 	l.listQueries = append(l.listQueries, query)
 }
 
-func (l *LocalLinker) Process(ctx *common.CompileContext) {
-	objects := lo.Flatten(lo.MapToSlice(ctx.Packages, func(k common.PackageKind, v common.Package) []common.PackageItem[common.Assembler] {
+func (l *LocalLinker) Process(ctx *common.CompileContext) error {
+	objects := lo.Flatten(lo.MapToSlice(ctx.Packages, func(k string, v *common.Package) []common.PackageItem {
 		return v.Items()
 	}))
 
@@ -39,7 +39,14 @@ func (l *LocalLinker) Process(ctx *common.CompileContext) {
 			}
 		}
 		if assigned == prevAssigned {
-			panic(fmt.Sprintf("%d refs in schema are not resolvable", len(l.queries)-assigned))
+			notAssigned := lo.FilterMap(l.queries, func(item common.LinkQuerier, index int) (string, bool) {
+				return item.Ref(), !item.Assigned()
+			})
+			// FIXME: here can be also internal refs, not only those from spec. It's better not to show them to user
+			return fmt.Errorf(
+				"orphan $refs (target not found, reference recursion, etc.): %s",
+				strings.Join(notAssigned, "; "),
+			)
 		}
 		prevAssigned = assigned
 	}
@@ -54,10 +61,18 @@ func (l *LocalLinker) Process(ctx *common.CompileContext) {
 			}
 		}
 		if assigned == prevAssigned {
-			panic(fmt.Sprintf("%d refs in schema are not resolvable", len(l.queries)-assigned))
+			notAssigned := lo.FilterMap(l.queries, func(item common.LinkQuerier, index int) (string, bool) {
+				return item.Ref(), !item.Assigned()
+			})
+			// FIXME: here can be also internal refs, not only those from spec. It's better not to show them to user
+			return fmt.Errorf(
+				"orphan $refs (target not found, reference recursion, etc.): %s",
+				strings.Join(notAssigned, "; "),
+			)
 		}
 		prevAssigned = assigned
 	}
+	return nil
 }
 
 func getPathByRef(ref string) []string {
@@ -75,13 +90,13 @@ func isLinker(obj any) bool {
 }
 
 // TODO: detect ref loops to avoid infinite recursion
-func resolveLink(q common.LinkQuerier, objects []common.PackageItem[common.Assembler]) (common.Assembler, bool) {
+func resolveLink(q common.LinkQuerier, objects []common.PackageItem) (common.Assembler, bool) {
 	refPath := getPathByRef(q.Ref())
 	cb := func(_ common.Assembler, path []string) bool { return utils.SlicesEqual(path, refPath) }
 	if qcb := q.FindCallback(); qcb != nil {
 		cb = qcb
 	}
-	found := lo.Filter(objects, func(obj common.PackageItem[common.Assembler], _ int) bool {
+	found := lo.Filter(objects, func(obj common.PackageItem, _ int) bool {
 		return cb(obj.Typ, obj.Path)
 	})
 	if len(found) != 1 {
@@ -105,13 +120,13 @@ func resolveLink(q common.LinkQuerier, objects []common.PackageItem[common.Assem
 }
 
 // TODO: detect ref loops to avoid infinite recursion
-func resolveListLink(q common.ListQuerier, objects []common.PackageItem[common.Assembler]) ([]common.Assembler, bool) {
+func resolveListLink(q common.ListQuerier, objects []common.PackageItem) ([]common.Assembler, bool) {
 	// Exclude links from selection in order to avoid duplicates in list
 	cb := func(obj common.Assembler, _ []string) bool { return !isLinker(obj) }
 	if qcb := q.FindCallback(); qcb != nil {
 		cb = qcb
 	}
-	found := lo.Filter(objects, func(obj common.PackageItem[common.Assembler], _ int) bool {
+	found := lo.Filter(objects, func(obj common.PackageItem, _ int) bool {
 		return cb(obj.Typ, obj.Path)
 	})
 

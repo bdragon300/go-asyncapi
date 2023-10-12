@@ -60,13 +60,13 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 		Name: channelKey,
 		Struct: &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:        compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "Kafka"),
+				Name:        ctx.GenerateObjName("", "Kafka"),
 				Description: channel.Description,
 				Render:      true,
-				Package:     ctx.Stack.Top().PackageKind,
+				Package:     ctx.TopPackageName(),
 			},
 			Fields: []assemble.StructField{
-				{Name: "name", Type: &assemble.Simple{Type: "ParamString", Package: common.RuntimePackageKind}},
+				{Name: "name", Type: &assemble.Simple{Type: "ParamString", Package: ctx.RuntimePackage("")}},
 				{Name: "topic", Type: &assemble.Simple{Type: "string"}},
 			},
 		},
@@ -77,9 +77,9 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 	if channel.Parameters.Len() > 0 {
 		chanResult.ParametersStructNoAssemble = &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:    compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "Parameters"),
+				Name:    ctx.GenerateObjName("", "Parameters"),
 				Render:  true,
-				Package: ctx.Stack.Top().PackageKind,
+				Package: ctx.TopPackageName(),
 			},
 			Fields: nil,
 		}
@@ -99,21 +99,21 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 	if chanResult.ParametersStructNoAssemble != nil {
 		ifaceFirstMethodParams = append(ifaceFirstMethodParams, assemble.FuncParam{
 			Name: "params",
-			Type: &assemble.Simple{Type: chanResult.ParametersStructNoAssemble.Name, Package: ctx.Stack.Top().PackageKind},
+			Type: &assemble.Simple{Type: chanResult.ParametersStructNoAssemble.Name, Package: ctx.TopPackageName()},
 		})
 	}
 	chanResult.ServerIface = &assemble.Interface{
 		BaseType: assemble.BaseType{
 			Name:    utils.ToLowerFirstLetter(chanResult.Struct.Name + "Server"),
 			Render:  true,
-			Package: ctx.Stack.Top().PackageKind,
+			Package: ctx.TopPackageName(),
 		},
 		Methods: []assemble.FunctionSignature{
 			{
 				Name: "Open" + chanResult.Struct.Name,
 				Args: ifaceFirstMethodParams,
 				Return: []assemble.FuncParam{
-					{Type: &assemble.Simple{Type: chanResult.Struct.Name, Package: ctx.Stack.Top().PackageKind}, Pointer: true},
+					{Type: &assemble.Simple{Type: chanResult.Struct.Name, Package: ctx.TopPackageName()}, Pointer: true},
 					{Type: &assemble.Simple{Type: "error"}},
 				},
 			},
@@ -127,7 +127,7 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 			Description: channel.Publish.Description,
 			Type: &assemble.Simple{
 				Type:    "Publisher",
-				Package: common.RuntimeKafkaPackageKind,
+				Package: ctx.RuntimePackage(protoName),
 				IsIface: true,
 			},
 		})
@@ -141,7 +141,7 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 			Name: "Producer",
 			Args: nil,
 			Return: []assemble.FuncParam{
-				{Type: &assemble.Simple{Type: "Producer", Package: common.RuntimeKafkaPackageKind, IsIface: true}},
+				{Type: &assemble.Simple{Type: "Producer", Package: ctx.RuntimePackage(protoName), IsIface: true}},
 			},
 		})
 	}
@@ -153,7 +153,7 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 			Description: channel.Subscribe.Description,
 			Type: &assemble.Simple{
 				Type:    "Subscriber",
-				Package: common.RuntimeKafkaPackageKind,
+				Package: ctx.RuntimePackage(protoName),
 				IsIface: true,
 			},
 		})
@@ -167,7 +167,7 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 			Name: "Consumer",
 			Args: nil,
 			Return: []assemble.FuncParam{
-				{Type: &assemble.Simple{Type: "Consumer", Package: common.RuntimeKafkaPackageKind, IsIface: true}},
+				{Type: &assemble.Simple{Type: "Consumer", Package: ctx.RuntimePackage(protoName), IsIface: true}},
 			},
 		})
 	}
@@ -177,9 +177,9 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 	} else if ok {
 		chanResult.BindingsStructNoAssemble = &assemble.Struct{ // TODO: remove in favor of parent channel
 			BaseType: assemble.BaseType{
-				Name:    compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "Bindings"),
+				Name:    ctx.GenerateObjName("", "Bindings"),
 				Render:  true,
-				Package: ctx.Stack.Top().PackageKind,
+				Package: ctx.TopPackageName(),
 			},
 		}
 		chanResult.BindingsValues = &bindings
@@ -256,10 +256,10 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 		ProtocolVersion: server.ProtocolVersion,
 		Struct: &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:        compile.GenerateGolangTypeName(ctx, ctx.CurrentObjName(), ""),
+				Name:        ctx.GenerateObjName("", ""),
 				Description: server.Description,
 				Render:      true,
-				Package:     ctx.Stack.Top().PackageKind,
+				Package:     ctx.TopPackageName(),
 			},
 		},
 	}
@@ -292,7 +292,7 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 	if buildProducer {
 		fld := assemble.StructField{
 			Name: "producer",
-			Type: &assemble.Simple{Type: "Producer", Package: common.RuntimeKafkaPackageKind, IsIface: true},
+			Type: &assemble.Simple{Type: "Producer", Package: ctx.RuntimePackage(protoName), IsIface: true},
 		}
 		srvResult.Struct.Fields = append(srvResult.Struct.Fields, fld)
 		srvResult.Producer = true
@@ -300,7 +300,7 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 	if buildConsumer {
 		fld := assemble.StructField{
 			Name: "consumer",
-			Type: &assemble.Simple{Type: "Consumer", Package: common.RuntimeKafkaPackageKind, IsIface: true},
+			Type: &assemble.Simple{Type: "Consumer", Package: ctx.RuntimePackage(protoName), IsIface: true},
 		}
 		srvResult.Struct.Fields = append(srvResult.Struct.Fields, fld)
 		srvResult.Consumer = true
@@ -312,7 +312,7 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 			BaseType: assemble.BaseType{
 				Name:    srvResult.Struct.Name + "Bindings",
 				Render:  true,
-				Package: ctx.Stack.Top().PackageKind,
+				Package: ctx.TopPackageName(),
 			},
 		}
 		if srvBindings, ok := server.Bindings.Get(protoName); ok {

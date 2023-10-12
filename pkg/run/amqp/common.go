@@ -1,13 +1,13 @@
 package amqp
 
-import "github.com/bdragon300/asyncapi-codegen/generated/runtime"
+import "github.com/bdragon300/asyncapi-codegen/pkg/run"
 
 // Pub
 type (
-	Producer       = runtime.Producer[ChannelBindings, EnvelopeWriter]
-	Publisher      = runtime.Publisher[EnvelopeWriter]
+	Producer       = run.Producer[ChannelBindings, EnvelopeWriter]
+	Publisher      = run.Publisher[EnvelopeWriter]
 	EnvelopeWriter interface {
-		runtime.EnvelopeWriter
+		run.EnvelopeWriter
 		SetMetadata(meta EnvelopeMeta)
 		SetBindings(provider MessageBindings)
 	}
@@ -19,10 +19,10 @@ type EnvelopeMarshaler interface {
 
 // Sub
 type (
-	Consumer       = runtime.Consumer[ChannelBindings, EnvelopeReader]
-	Subscriber     = runtime.Subscriber[EnvelopeReader]
+	Consumer       = run.Consumer[ChannelBindings, EnvelopeReader]
+	Subscriber     = run.Subscriber[EnvelopeReader]
 	EnvelopeReader interface {
-		runtime.EnvelopeReader
+		run.EnvelopeReader
 		Metadata() EnvelopeMeta
 		Ack()
 		Nack()

@@ -33,12 +33,12 @@ type Message struct {
 }
 
 func (m Message) Compile(ctx *common.CompileContext) error {
-	ctx.SetObjName(ctx.Stack.Top().Path) // TODO: use title
+	ctx.SetTopObjName(ctx.Stack.Top().Path) // TODO: use title
 	obj, err := m.build(ctx)
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
 	}
-	ctx.CurrentPackage().Put(ctx, obj)
+	ctx.PutToCurrentPkg(obj)
 	return nil
 }
 
@@ -55,18 +55,18 @@ func (m Message) build(ctx *common.CompileContext) (common.Assembler, error) {
 	obj := assemble.Message{
 		OutStruct: &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:        GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "Out"),
+				Name:        ctx.GenerateObjName("", "Out"),
 				Description: utils.JoinNonemptyStrings("\n", m.Summary+" (Outbound Message)", m.Description),
 				Render:      true,
-				Package:     ctx.Stack.Top().PackageKind,
+				Package:     ctx.TopPackageName(),
 			},
 		},
 		InStruct: &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:        GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "In"),
+				Name:        ctx.GenerateObjName("", "In"),
 				Description: utils.JoinNonemptyStrings("\n", m.Summary+" (Inbound Message)", m.Description),
 				Render:      true,
-				Package:     ctx.Stack.Top().PackageKind,
+				Package:     ctx.TopPackageName(),
 			},
 		},
 		PayloadType:         m.getPayloadType(ctx),

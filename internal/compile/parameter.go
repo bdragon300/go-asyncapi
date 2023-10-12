@@ -19,12 +19,12 @@ type Parameter struct {
 }
 
 func (p Parameter) Compile(ctx *common.CompileContext) error {
-	ctx.SetObjName(ctx.Stack.Top().Path)
+	ctx.SetTopObjName(ctx.Stack.Top().Path)
 	obj, err := p.build(ctx, ctx.Stack.Top().Path)
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
 	}
-	ctx.CurrentPackage().Put(ctx, obj)
+	ctx.PutToCurrentPkg(obj)
 	return nil
 }
 
@@ -45,7 +45,7 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 				Name:        utils.ToGolangName(parameterKey, true),
 				Description: p.Description,
 				Render:      true,
-				Package:     ctx.Stack.Top().PackageKind,
+				Package:     ctx.TopPackageName(),
 			},
 			Fields: []assemble.StructField{{Name: "Value", Type: lnk}},
 		}
@@ -55,7 +55,7 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 				Name:        utils.ToGolangName(parameterKey, true),
 				Description: p.Description,
 				Render:      true,
-				Package:     ctx.Stack.Top().PackageKind,
+				Package:     ctx.TopPackageName(),
 			},
 			AliasedType: &assemble.Simple{Type: "string"},
 		}

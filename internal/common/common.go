@@ -1,18 +1,6 @@
 package common
 
-type PackageKind string
-
-const (
-	ModelsPackageKind     PackageKind = "models"
-	MessagesPackageKind   PackageKind = "messages"
-	ChannelsPackageKind   PackageKind = "channels"
-	ServersPackageKind    PackageKind = "servers"
-	ParametersPackageKind PackageKind = "parameters"
-
-	RuntimePackageKind      PackageKind = "runtime"
-	RuntimeKafkaPackageKind PackageKind = "runtime/kafka"
-	RuntimeAMQPPackageKind  PackageKind = "runtime/amqp"
-)
+const RunPackagePath = "github.com/bdragon300/asyncapi-codegen/pkg/run"
 
 type SchemaTag string
 
@@ -23,3 +11,20 @@ const (
 
 const TagName = "cgen"
 
+type Linker interface {
+	Add(query LinkQuerier)
+	AddMany(query ListQuerier)
+}
+
+type LinkQuerier interface {
+	Assign(obj any)
+	Assigned() bool
+	FindCallback() func(item Assembler, path []string) bool
+	Ref() string
+}
+
+type ListQuerier interface {
+	AssignList(objs []any)
+	Assigned() bool
+	FindCallback() func(item Assembler, path []string) bool
+}

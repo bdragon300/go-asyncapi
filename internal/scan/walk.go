@@ -16,7 +16,7 @@ type orderedMap interface {
 	OrderedMap()
 }
 
-func WalkSchema(ctx *common.CompileContext, object reflect.Value) error {
+func CompileSchema(ctx *common.CompileContext, object reflect.Value) error {
 	traverse := func(_ctx *common.CompileContext, _obj reflect.Value) error {
 		// BFS tree traversal
 		if v, ok := _obj.Interface().(compiler); ok {
@@ -27,7 +27,7 @@ func WalkSchema(ctx *common.CompileContext, object reflect.Value) error {
 				return e
 			}
 		}
-		return WalkSchema(_ctx, _obj)
+		return CompileSchema(_ctx, _obj)
 	}
 
 	if _, ok := object.Interface().(orderedMap); ok {
@@ -101,17 +101,17 @@ func pushStack(ctx *common.CompileContext, pathItem string, flags map[common.Sch
 	if flags == nil {
 		flags = make(map[common.SchemaTag]string)
 	}
-	pkgKind := common.RuntimePackageKind
+	var pkgName string
 	if len(ctx.Stack.Items()) > 0 {
-		pkgKind = ctx.Stack.Top().PackageKind
+		pkgName = ctx.TopPackageName()
 	}
 	if v, ok := flags[common.SchemaTagPackageDown]; ok {
-		pkgKind = common.PackageKind(v)
+		pkgName = v
 	}
 	item := common.ContextStackItem{
 		Path:        pathItem,
 		Flags:       flags,
-		PackageKind: pkgKind,
+		PackageName: pkgName,
 		ObjName:     "",
 	}
 	ctx.Stack.Push(item)
@@ -127,4 +127,3 @@ func getFieldJSONName(f reflect.StructField) string {
 	}
 	return f.Name
 }
-

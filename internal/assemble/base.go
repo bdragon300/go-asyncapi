@@ -17,7 +17,7 @@ type BaseType struct {
 	// Render denotes if this type must be rendered separately. Otherwise, it will only be inlined in a parent definition
 	// Such as inlined `field struct{...}` and separate `field StructName`, or `field []type` and `field ArrayName`
 	Render  bool
-	Package common.PackageKind // optional import path from any generated package
+	Package string // optional import path from any generated package
 }
 
 func (b *BaseType) AllowRender() bool {
@@ -135,8 +135,7 @@ func (p *TypeAlias) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement 
 type Simple struct {
 	Type            string // type name with or without package name, such as "json.Marshal" or "string"
 	IsIface         bool
-	ExternalPackage string             // optional import path, such as "encoding/json"
-	Package         common.PackageKind // optional import path from any generated package
+	Package         string             // optional import path from any generated package
 	TypeParamValues []common.Assembler // optional type parameter types to be filled in definition and usage
 }
 
@@ -158,10 +157,8 @@ func (p Simple) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement
 func (p Simple) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	stmt := &jen.Statement{}
 	switch {
-	case p.ExternalPackage != "":
-		stmt = stmt.Qual(p.ExternalPackage, p.Type)
-	case p.Package != "" && p.Package != ctx.CurrentPackage:
-		stmt = stmt.Qual(path.Join(ctx.ImportBase, string(p.Package)), p.Type)
+	case p.Package != "" && p.Package != string(ctx.CurrentPackage):
+		stmt = stmt.Qual(p.Package, p.Type)
 	default:
 		stmt = stmt.Id(p.Type)
 	}

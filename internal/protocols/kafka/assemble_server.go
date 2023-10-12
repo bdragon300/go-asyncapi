@@ -61,9 +61,9 @@ func (p ProtoServer) assembleBindings(ctx *common.AssembleContext) []*j.Statemen
 	return []*j.Statement{
 		j.Func().Params(receiver.Clone()).Id("Kafka").
 			Params().
-			Qual(ctx.RuntimePackage("kafka"), "ServerBindings").
+			Qual(ctx.RuntimePackage(protoName), "ServerBindings").
 			Block(
-				j.Return(j.Qual(ctx.RuntimePackage("kafka"), "ServerBindings")).Values(j.DictFunc(func(d j.Dict) {
+				j.Return(j.Qual(ctx.RuntimePackage(protoName), "ServerBindings")).Values(j.DictFunc(func(d j.Dict) {
 					for _, e := range p.BindingsValues.Entries() {
 						d[j.Id(e.Key)] = j.Lit(e.Value)
 					}
@@ -83,7 +83,7 @@ func (p ProtoServer) assembleProtocolVersionConst(_ *common.AssembleContext) []*
 }
 
 func (p ProtoServer) assembleURLFunc(ctx *common.AssembleContext) []*j.Statement {
-	// Server1URL(param1 string, param2 string) runtime.ParamString
+	// Server1URL(param1 string, param2 string) run.ParamString
 	return []*j.Statement{
 		j.Func().Id(p.Struct.Name+"URL").
 			ParamsFunc(func(g *j.Group) {
@@ -126,10 +126,10 @@ func (p ProtoServer) assembleNewFunc(ctx *common.AssembleContext) []*j.Statement
 		j.Func().Id(p.Struct.NewFuncName()).
 			ParamsFunc(func(g *j.Group) {
 				if p.Producer {
-					g.Id("producer").Qual(ctx.RuntimePackage("kafka"), "Producer")
+					g.Id("producer").Qual(ctx.RuntimePackage(protoName), "Producer")
 				}
 				if p.Consumer {
-					g.Id("consumer").Qual(ctx.RuntimePackage("kafka"), "Consumer")
+					g.Id("consumer").Qual(ctx.RuntimePackage(protoName), "Consumer")
 				}
 			}).
 			Op("*").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...).
@@ -158,7 +158,7 @@ func (p ProtoServer) assembleCommonMethods(ctx *common.AssembleContext) []*j.Sta
 				j.Return(j.Lit(p.Name)),
 			),
 
-		// Protocol() runtime.Protocol
+		// Protocol() run.Protocol
 		j.Func().Params(receiver.Clone()).Id("Protocol").
 			Params().
 			Qual(ctx.RuntimePackage(""), "Protocol").
@@ -205,7 +205,7 @@ func (p ProtoServer) assembleProducerMethods(ctx *common.AssembleContext) []*j.S
 	return []*j.Statement{
 		j.Func().Params(receiver.Clone()).Id("Producer").
 			Params().
-			Qual(ctx.RuntimePackage("kafka"), "Producer").
+			Qual(ctx.RuntimePackage(protoName), "Producer").
 			Block(
 				j.Return(j.Id(rn).Dot("producer")),
 			),
@@ -218,7 +218,7 @@ func (p ProtoServer) assembleConsumerMethods(ctx *common.AssembleContext) []*j.S
 	return []*j.Statement{
 		j.Func().Params(receiver.Clone()).Id("Consumer").
 			Params().
-			Qual(ctx.RuntimePackage("kafka"), "Consumer").
+			Qual(ctx.RuntimePackage(protoName), "Consumer").
 			Block(
 				j.Return(j.Id(rn).Dot("consumer")),
 			),

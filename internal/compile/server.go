@@ -30,12 +30,12 @@ type Server struct {
 }
 
 func (s Server) Compile(ctx *common.CompileContext) error {
-	ctx.SetObjName(ctx.Stack.Top().Path) // TODO: use title
+	ctx.SetTopObjName(ctx.Stack.Top().Path) // TODO: use title
 	obj, err := s.build(ctx, ctx.Stack.Top().Path)
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
 	}
-	ctx.CurrentPackage().Put(ctx, obj)
+	ctx.PutToCurrentPkg(obj)
 	return nil
 }
 
@@ -60,9 +60,9 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Asse
 		ProtoServer: protoServer,
 		BindingsStruct: &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:    GenerateGolangTypeName(ctx, ctx.CurrentObjName(), "Bindings"),
+				Name:    ctx.GenerateObjName("", "Bindings"),
 				Render:  true,
-				Package: ctx.Stack.Top().PackageKind,
+				Package: ctx.TopPackageName(),
 			},
 			Fields: nil,
 		},

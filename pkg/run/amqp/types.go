@@ -4,7 +4,7 @@ package amqp
 import (
 	"bytes"
 
-	"github.com/bdragon300/asyncapi-codegen/generated/runtime"
+	"github.com/bdragon300/asyncapi-codegen/pkg/run"
 )
 
 type ServerBindings struct{}
@@ -26,7 +26,7 @@ type EnvelopeMeta struct {
 
 type EnvelopeOut struct {
 	Payload         bytes.Buffer
-	MessageHeaders  runtime.Header
+	MessageHeaders  run.Header
 	MessageMetadata EnvelopeMeta
 	MessageBindings MessageBindings
 }
@@ -35,12 +35,12 @@ func (o *EnvelopeOut) Write(p []byte) (n int, err error) {
 	return o.Payload.Write(p)
 }
 
-func (o *EnvelopeOut) SetHeaders(headers runtime.Header) {
+func (o *EnvelopeOut) SetHeaders(headers run.Header) {
 	o.MessageHeaders = headers
 }
 
-func (o *EnvelopeOut) Protocol() runtime.Protocol {
-	return runtime.ProtocolAMQP
+func (o *EnvelopeOut) Protocol() run.Protocol {
+	return run.ProtocolAMQP
 }
 
 func (o *EnvelopeOut) SetMetadata(meta EnvelopeMeta) {
@@ -57,20 +57,20 @@ func (o *EnvelopeOut) ResetPayload() {
 
 type EnvelopeIn struct {
 	Payload         bytes.Buffer
-	MessageHeaders  runtime.Header
+	MessageHeaders  run.Header
 	MessageMetadata EnvelopeMeta
 }
 
 func (i *EnvelopeIn) Read(p []byte) (n int, err error) {
-	return i.Read(p)
+	return i.Payload.Read(p)
 }
 
-func (i *EnvelopeIn) Headers() runtime.Header {
+func (i *EnvelopeIn) Headers() run.Header {
 	return i.MessageHeaders
 }
 
-func (i *EnvelopeIn) Protocol() runtime.Protocol {
-	return runtime.ProtocolAMQP
+func (i *EnvelopeIn) Protocol() run.Protocol {
+	return run.ProtocolAMQP
 }
 
 func (i *EnvelopeIn) Metadata() EnvelopeMeta {

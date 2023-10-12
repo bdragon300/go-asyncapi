@@ -1,132 +1,138 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path"
 	"reflect"
+	"strings"
 
 	"github.com/bdragon300/asyncapi-codegen/internal/protocols/kafka"
+	"github.com/bdragon300/asyncapi-codegen/internal/render"
+	"github.com/samber/lo"
+	"golang.org/x/mod/modfile"
 
 	"github.com/bdragon300/asyncapi-codegen/internal/linker"
 
-	"github.com/bdragon300/asyncapi-codegen/internal/common"
-	"github.com/bdragon300/asyncapi-codegen/internal/packages"
-	"github.com/samber/lo"
-
 	"github.com/alexflint/go-arg"
+	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"github.com/bdragon300/asyncapi-codegen/internal/compile"
 	"github.com/bdragon300/asyncapi-codegen/internal/scan"
 	"gopkg.in/yaml.v3"
 )
 
-type GenerateCmd struct{}
+type GenerateCmd struct {
+	SpecFile      string `arg:"required,positional" help:"AsyncAPI specification file, yaml or json"`
+	TargetDir     string `arg:"-t,--target-dir" default:"./asyncapi" help:"Directory to save the generated code"`
+	ModuleName    string `arg:"-M,--module-path" help:"Go module name to use. By default it is extracted from go.mod file in the current directory"`
+	TargetPackage string `arg:"-T,--target-package" help:"Package for generated code. By default it is equal to the target directory"`
+}
 
 type cli struct {
-	Spec     string       `arg:"required,--spec" help:"AsyncAPI spec file path"`
-	OutDir   string       `arg:"--out-dir" default:"./generated" help:"Directory where the generated code will be placed"`
-	Generate *GenerateCmd `arg:"subcommand:generate"`
+	GenerateCmd *GenerateCmd `arg:"subcommand:generate" help:"Generate the code based on AsyncAPI specification"`
 }
 
 func main() {
 	cliArgs := cli{}
-	arg.MustParse(&cliArgs)
+	cliParser := arg.MustParse(&cliArgs)
 
-	if cliArgs.Generate == nil {
-		panic("No command given")
-	}
-
-	f, err := os.Open(cliArgs.Spec)
-	if err != nil {
-		panic(err)
-	}
-	jsonBuf, err := io.ReadAll(f)
-	if err != nil {
-		panic(err)
-	}
-	_ = f.Close()
-
-	// Register protocols
-	kafka.Register()
-
-	specBuf := compile.AsyncAPI{}
-	err = yaml.Unmarshal(jsonBuf, &specBuf)
-	if err != nil {
-		panic(err)
+	if cliArgs.GenerateCmd == nil {
+		cliParser.WriteHelp(os.Stderr)
+		os.Exit(1)
 	}
 
-	modelsPackage := packages.Package{}
-	messagePackage := packages.Package{}
-	channelsPackage := packages.Package{}
-	serversPackage := packages.Package{}
-	parametersPackage := packages.Package{}
-	runtimePackage := packages.RuntimePackage{}
-	scanPackages := map[common.PackageKind]common.Package{
-		common.ModelsPackageKind:     &modelsPackage,
-		common.MessagesPackageKind:   &messagePackage,
-		common.ChannelsPackageKind:   &channelsPackage,
-		common.ServersPackageKind:    &serversPackage,
-		common.RuntimePackageKind:    &runtimePackage, // TODO: not needed probably
-		common.ParametersPackageKind: &parametersPackage,
-	}
-	llinker := &linker.LocalLinker{}
-	scanCtx := common.CompileContext{Packages: scanPackages, Linker: llinker}
-	if err = scan.WalkSchema(&scanCtx, reflect.ValueOf(specBuf)); err != nil {
-		panic(err)
-	}
+	registerProtocols()
 
-	llinker.Process(&scanCtx)
-
-	if err = ensureDir(cliArgs.OutDir); err != nil {
-		panic(err)
-	}
-
-	if err = packages.RenderRuntime(&runtimePackage, cliArgs.OutDir); err != nil {
-		panic(err)
-	}
-	files1, err := packages.RenderModels(&modelsPackage, cliArgs.OutDir)
-	if err != nil {
-		panic(err)
-	}
-	files2, err := packages.RenderMessages(&messagePackage, cliArgs.OutDir)
-	if err != nil {
-		panic(err)
-	}
-	files3, err := packages.RenderChannels(&channelsPackage, cliArgs.OutDir)
-	if err != nil {
-		panic(err)
-	}
-	files4, err := packages.RenderServers(&serversPackage, cliArgs.OutDir)
-	if err != nil {
-		panic(err)
-	}
-	files5, err := packages.RenderParameters(&parametersPackage, cliArgs.OutDir)
-	if err != nil {
-		panic(err)
-	}
-	files := lo.Assign(files1, files2, files3, files4, files5)
-	for fileName, fileObj := range files {
-		fullPath := path.Join(cliArgs.OutDir, fileName)
-		if err = ensureDir(path.Dir(fullPath)); err != nil {
-			panic(err)
-		}
-		if err = fileObj.Save(fullPath); err != nil {
-			panic(err)
-		}
+	cmd := cliArgs.GenerateCmd
+	if err := generate(cmd); err != nil {
+		cliParser.Fail(fmt.Sprintf("Error: %v", err))
 	}
 }
 
-func ensureDir(path string) error {
-	if info, err := os.Stat(path); os.IsNotExist(err) {
-		if err2 := os.MkdirAll(path, 0o755); err2 != nil {
-			return err2
+func registerProtocols() {
+	kafka.Register()
+}
+
+func generate(cmd *GenerateCmd) error {
+	var err error
+
+	importBase := cmd.ModuleName
+	if importBase == "" {
+		if importBase, err = getImportBase(); err != nil {
+			return fmt.Errorf("cannot extract module name from go.mod (you can specify it by -M argument): %w", err)
 		}
-	} else if err != nil {
-		return err
-	} else if !info.IsDir() {
-		return fmt.Errorf("path %q is already exists and is not a directory", path)
+	}
+	targetPkg, _ := lo.Coalesce(cmd.TargetPackage, cmd.TargetDir)
+	importBase = path.Join(importBase, targetPkg)
+
+	spec, err := unmarshalSpecFile(cmd.SpecFile)
+	if err != nil {
+		return fmt.Errorf("error while reading spec file: %v", err)
+	}
+
+	localLinker := &linker.LocalLinker{}
+	compileCtx := common.CompileContext{Packages: make(map[string]*common.Package), Linker: localLinker}
+	if err = scan.CompileSchema(&compileCtx, reflect.ValueOf(spec)); err != nil {
+		return fmt.Errorf("schema compile error: %v", err)
+	}
+
+	if err = localLinker.Process(&compileCtx); err != nil {
+		return fmt.Errorf("schema linking error: %v", err)
+	}
+
+	files, err := render.AssemblePackages(compileCtx.Packages, importBase, cmd.TargetDir)
+	if err != nil {
+		return fmt.Errorf("schema assemble/render error: %v", err)
+	}
+	if err = render.WriteFiles(files, cmd.TargetDir); err != nil {
+		return fmt.Errorf("error while writing code to files: %v", err)
 	}
 
 	return nil
+}
+
+func unmarshalSpecFile(fileName string) (*compile.AsyncAPI, error) {
+	res := compile.AsyncAPI{}
+
+	f, err := os.Open(fileName)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = f.Close() }()
+
+	switch {
+	case strings.HasSuffix(fileName, ".yaml") || strings.HasSuffix(fileName, ".yml"):
+		dec := yaml.NewDecoder(f)
+		err = dec.Decode(&res)
+	case strings.HasSuffix(fileName, ".json"):
+		dec := json.NewDecoder(f)
+		err = dec.Decode(&res)
+	default:
+		err = errors.New("cannot determine format of a spec file: unknown filename extension")
+	}
+	return &res, err
+}
+
+func getImportBase() (string, error) {
+	pwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("cannot get current working directory: %w", err)
+	}
+	fn := path.Join(pwd, "go.mod")
+	f, err := os.Open(fn)
+	if err != nil {
+		return "", fmt.Errorf("unable to open %q: %w", fn, err)
+	}
+	data, err := io.ReadAll(f)
+	if err != nil {
+		return "", fmt.Errorf("unable read %q file: %w", fn, err)
+	}
+	modpath := modfile.ModulePath(data)
+	if modpath == "" {
+		return "", fmt.Errorf("module path not found in %q", fn)
+	}
+	return modpath, nil
 }
