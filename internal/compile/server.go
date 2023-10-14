@@ -12,9 +12,9 @@ import (
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 )
 
-type serverProtoBuilderFunc func(ctx *common.CompileContext, server *Server, name string) (common.Assembler, error)
+type protoServerCompilerFunc func(ctx *common.CompileContext, server *Server, name string) (common.Assembler, error)
 
-var ProtoServerBuilders = map[string]serverProtoBuilderFunc{}
+var ProtoServerCompiler = map[string]protoServerCompilerFunc{}
 
 type Server struct {
 	URL             string                                                             `json:"url" yaml:"url"`
@@ -46,7 +46,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Asse
 		return res, nil
 	}
 
-	protoBuilder, ok := ProtoServerBuilders[s.Protocol]
+	protoBuilder, ok := ProtoServerCompiler[s.Protocol]
 	if !ok {
 		panic(fmt.Sprintf("Unknown protocol %q at path %s", s.Protocol, ctx.PathStack()))
 	}

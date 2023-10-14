@@ -9,13 +9,15 @@ import (
 )
 
 type Message struct {
-	OutStruct           *Struct
-	InStruct            *Struct
-	PayloadType         common.GolangType
-	PayloadHasSchema    bool
-	HeadersFallbackType *Map
-	HeadersTypeLink     *Link[*Struct]
-	AllServers          *LinkList[*Server] // For extracting all using protocols
+	OutStruct                  *Struct
+	InStruct                   *Struct
+	PayloadType                common.GolangType
+	PayloadHasSchema           bool
+	HeadersFallbackType        *Map
+	HeadersTypeLink            *Link[*Struct]
+	AllServers                 *LinkList[*Server] // For extracting all using protocols
+	BindingsStruct             *Struct
+	BindingsStructProtoMethods []common.Assembler
 }
 
 func (m Message) AllowRender() bool {
@@ -24,6 +26,13 @@ func (m Message) AllowRender() bool {
 
 func (m Message) AssembleDefinition(ctx *common.AssembleContext) []*j.Statement {
 	var res []*j.Statement
+
+	if m.BindingsStruct != nil {
+		res = append(res, m.BindingsStruct.AssembleDefinition(ctx)...)
+		for _, mtd := range m.BindingsStructProtoMethods {
+			res = append(res, mtd.AssembleDefinition(ctx)...)
+		}
+	}
 
 	if m.PayloadHasSchema {
 		res = append(res, m.PayloadType.AssembleDefinition(ctx)...)
@@ -62,6 +71,7 @@ func (m Message) assemblePublishProtoMethod(ctx *common.AssembleContext, protoPa
 	receiver := j.Id(rn).Op("*").Id(m.OutStruct.Name)
 
 	return []*j.Statement{
+		// Method MarshalKafkaEnvelope(envelope kafka.EnvelopeWriter) error
 		j.Func().Params(receiver.Clone()).Id(fmt.Sprintf("Marshal%sEnvelope", utils.ToGolangName(protoPackage, true))).
 			Params(j.Id("envelope").Qual(ctx.RuntimePackage(protoPackage), "EnvelopeWriter")).
 			Error().
@@ -100,6 +110,7 @@ func (m Message) assemblePublishCommonMethods(ctx *common.AssembleContext) []*j.
 	}
 
 	return []*j.Statement{
+		// Method WithID(ID string) *Message2Out
 		j.Func().Params(receiver.Clone()).Id("WithID").
 			Params(j.Id("ID").String()).
 			Params(j.Op("*").Id(structName)).
@@ -108,6 +119,7 @@ func (m Message) assemblePublishCommonMethods(ctx *common.AssembleContext) []*j.
 					%[1]s.ID = ID
 					return %[1]s`, rn)),
 			),
+		// Method WithPayload(payload Model2) *Message2Out
 		j.Func().Params(receiver.Clone()).Id("WithPayload").
 			Params(j.Id("payload").Add(payloadFieldType...)).
 			Params(j.Op("*").Id(structName)).
@@ -116,6 +128,7 @@ func (m Message) assemblePublishCommonMethods(ctx *common.AssembleContext) []*j.
 					%[1]s.Payload = payload
 					return %[1]s`, rn)),
 			),
+		// Method WithHeaders(headers Message2Headers) *Message2Out
 		j.Func().Params(receiver.Clone()).Id("WithHeaders").
 			Params(j.Id("headers").Add(headersFieldType...)).
 			Params(j.Op("*").Id(structName)).
@@ -147,6 +160,7 @@ func (m Message) assembleSubscribeProtoMethod(ctx *common.AssembleContext, proto
 	receiver := j.Id(rn).Op("*").Id(m.InStruct.Name)
 
 	return []*j.Statement{
+		// Method UnmarshalKafkaEnvelope(envelope kafka.EnvelopeReader) error
 		j.Func().Params(receiver.Clone()).Id(fmt.Sprintf("Unmarshal%sEnvelope", utils.ToGolangName(protoPackage, true))).
 			Params(j.Id("envelope").Qual(ctx.RuntimePackage(protoPackage), "EnvelopeReader")).
 			Error().
@@ -181,18 +195,21 @@ func (m Message) assembleSubscribeCommonMethods(ctx *common.AssembleContext) []*
 	}
 
 	return []*j.Statement{
+		// Method MessageID() string
 		j.Func().Params(receiver.Clone()).Id("MessageID").
 			Params().
 			String().
 			Block(
 				j.Return(j.Id(rn).Dot("ID")),
 			),
+		// Method MessagePayload() Model2
 		j.Func().Params(receiver.Clone()).Id("MessagePayload").
 			Params().
 			Add(payloadFieldType...).
 			Block(
 				j.Return(j.Id(rn).Dot("Payload")),
 			),
+		// Method MessageHeaders() Message2Headers
 		j.Func().Params(receiver.Clone()).Id("MessageHeaders").
 			Params().
 			Add(headersFieldType...).

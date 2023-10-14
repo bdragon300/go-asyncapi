@@ -11,7 +11,7 @@ import (
 
 type Interface struct {
 	BaseType
-	Methods []FunctionSignature
+	Methods []FuncSignature
 }
 
 func (i Interface) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
@@ -20,8 +20,8 @@ func (i Interface) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statem
 		res = append(res, jen.Comment(i.Name+" -- "+utils.ToLowerFirstLetter(i.Description)))
 	}
 
-	code := lo.FlatMap(i.Methods, func(item FunctionSignature, index int) []*jen.Statement {
-		return item.assembleDefinition(ctx)
+	code := lo.FlatMap(i.Methods, func(item FuncSignature, index int) []*jen.Statement {
+		return item.AssembleDefinition(ctx)
 	})
 	res = append(res, jen.Type().Id(i.Name).Interface(utils.ToCode(code)...))
 	return res
@@ -35,55 +35,11 @@ func (i Interface) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 		return []*jen.Statement{jen.Id(i.Name)}
 	}
 
-	code := lo.FlatMap(i.Methods, func(item FunctionSignature, index int) []*jen.Statement {
-		return item.assembleDefinition(ctx)
+	code := lo.FlatMap(i.Methods, func(item FuncSignature, index int) []*jen.Statement {
+		return item.AssembleDefinition(ctx)
 	})
 	return []*jen.Statement{
 		jen.Interface(utils.ToCode(code)...),
 	}
 }
 
-type FunctionSignature struct {
-	Name   string
-	Args   []FuncParam
-	Return []FuncParam
-}
-
-func (i FunctionSignature) assembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
-	stmt := jen.Id(i.Name)
-	code := lo.FlatMap(i.Args, func(item FuncParam, index int) []*jen.Statement {
-		return item.assembleDefinition(ctx)
-	})
-	stmt = stmt.Params(utils.ToCode(code)...)
-	code = lo.FlatMap(i.Return, func(item FuncParam, index int) []*jen.Statement {
-		return item.assembleDefinition(ctx)
-	})
-	if len(code) > 1 {
-		stmt = stmt.Params(utils.ToCode(code)...)
-	} else {
-		stmt = stmt.Add(utils.ToCode(code)...)
-	}
-	return []*jen.Statement{stmt}
-}
-
-type FuncParam struct {
-	Name     string
-	Type     common.GolangType
-	Pointer  bool
-	Variadic bool
-}
-
-func (n FuncParam) assembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
-	stmt := &jen.Statement{}
-	if n.Name != "" {
-		stmt = stmt.Id(n.Name)
-	}
-	if n.Variadic {
-		stmt = stmt.Op("...")
-	}
-	if n.Pointer {
-		stmt = stmt.Op("*")
-	}
-	stmt = stmt.Add(utils.ToCode(n.Type.AssembleUsage(ctx))...)
-	return []*jen.Statement{stmt}
-}

@@ -3,9 +3,100 @@ package kafka
 import (
 	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
+	"github.com/bdragon300/asyncapi-codegen/internal/compile"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	j "github.com/dave/jennifer/jen"
+	"github.com/samber/lo"
 )
+
+type serverBindings struct {
+	SchemaRegistryURL    *string `json:"schemaRegistryUrl" yaml:"schemaRegistryUrl"`
+	SchemaRegistryVendor *string `json:"schemaRegistryVendor" yaml:"schemaRegistryVendor"`
+}
+
+func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey string) (common.Assembler, error) {
+	const buildProducer = true
+	const buildConsumer = true
+
+	srvResult := ProtoServer{
+		Name:            serverKey,
+		URL:             server.URL,
+		ProtocolVersion: server.ProtocolVersion,
+		Struct: &assemble.Struct{
+			BaseType: assemble.BaseType{
+				Name:        ctx.GenerateObjName("", ""),
+				Description: server.Description,
+				Render:      true,
+				Package:     ctx.TopPackageName(),
+			},
+		},
+	}
+
+	// Server variables
+	for _, v := range server.Variables.Entries() {
+		srvResult.Variables.Set(v.Key, ProtoServerVariable{
+			ArgName:     utils.ToGolangName(v.Key, false),
+			Enum:        v.Value.Enum,
+			Default:     v.Value.Default,
+			Description: v.Value.Description,
+		})
+	}
+
+	// Channels which are connected to this server
+	channelsLnks := assemble.NewListCbLink[*assemble.Channel](func(item common.Assembler, path []string) bool {
+		ch, ok := item.(*assemble.Channel)
+		if !ok {
+			return false
+		}
+		if len(ch.AppliedServers) > 0 {
+			return lo.Contains(ch.AppliedServers, serverKey)
+		}
+		return ch.AppliedToAllServersLinks != nil
+	})
+	srvResult.ChannelLinkList = channelsLnks
+	ctx.Linker.AddMany(channelsLnks)
+
+	// Producer/consumer
+	if buildProducer {
+		fld := assemble.StructField{
+			Name: "producer",
+			Type: &assemble.Simple{Type: "Producer", Package: ctx.RuntimePackage(protoName), IsIface: true},
+		}
+		srvResult.Struct.Fields = append(srvResult.Struct.Fields, fld)
+		srvResult.Producer = true
+	}
+	if buildConsumer {
+		fld := assemble.StructField{
+			Name: "consumer",
+			Type: &assemble.Simple{Type: "Consumer", Package: ctx.RuntimePackage(protoName), IsIface: true},
+		}
+		srvResult.Struct.Fields = append(srvResult.Struct.Fields, fld)
+		srvResult.Consumer = true
+	}
+
+	// Server bindings
+	if server.Bindings.Len() > 0 {
+		srvResult.BindingsStructNoAssemble = &assemble.Struct{
+			BaseType: assemble.BaseType{
+				Name:    srvResult.Struct.Name + "Bindings",
+				Render:  true,
+				Package: ctx.TopPackageName(),
+			},
+		}
+		if srvBindings, ok := server.Bindings.Get(protoName); ok {
+			var bindings serverBindings
+			if err := utils.UnmarshalRawsUnion2(srvBindings, &bindings); err != nil { // TODO: implement $ref
+				return nil, err
+			}
+			marshalFields := []string{"SchemaRegistryURL", "SchemaRegistryVendor"}
+			if err := utils.StructToOrderedMap(bindings, &srvResult.BindingsValues, marshalFields); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return srvResult, nil
+}
 
 type ProtoServerVariable struct {
 	ArgName     string

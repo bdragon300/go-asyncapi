@@ -12,6 +12,10 @@ import (
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 )
 
+type protoMessageBindingsBuilderFunc func(ctx *common.CompileContext, message *Message, bindingsStruct *assemble.Struct, name string) (common.Assembler, error)
+
+var ProtoMessageBindingsBuilder = map[string]protoMessageBindingsBuilderFunc{}
+
 type Message struct {
 	MessageID     string                                                             `json:"messageId" yaml:"messageId"`
 	Headers       *Object                                                            `json:"headers" yaml:"headers"`
@@ -34,7 +38,7 @@ type Message struct {
 
 func (m Message) Compile(ctx *common.CompileContext) error {
 	ctx.SetTopObjName(ctx.Stack.Top().Path) // TODO: use title
-	obj, err := m.build(ctx)
+	obj, err := m.build(ctx, ctx.Stack.Top().Path)
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
 	}
@@ -42,7 +46,7 @@ func (m Message) Compile(ctx *common.CompileContext) error {
 	return nil
 }
 
-func (m Message) build(ctx *common.CompileContext) (common.Assembler, error) {
+func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Assembler, error) {
 	if m.ContentType != "" && m.ContentType != "application/json" {
 		return nil, fmt.Errorf("now is supported only application/json") // TODO: support other content types
 	}
@@ -70,7 +74,7 @@ func (m Message) build(ctx *common.CompileContext) (common.Assembler, error) {
 			},
 		},
 		PayloadType:         m.getPayloadType(ctx),
-		PayloadHasSchema:    m.Payload != nil,
+		PayloadHasSchema:    m.Payload != nil && m.Payload.Ref == "",
 		HeadersFallbackType: &assemble.Map{KeyType: &assemble.Simple{Type: "string"}, ValueType: &assemble.Simple{Type: "any", IsIface: true}},
 	}
 	allServersLnk := assemble.NewListCbLink[*assemble.Server](func(item common.Assembler, path []string) bool {
@@ -87,6 +91,29 @@ func (m Message) build(ctx *common.CompileContext) (common.Assembler, error) {
 		ctx.Linker.Add(obj.HeadersTypeLink)
 	}
 	m.setStructFields(ctx, &obj)
+
+	// Bindings
+	if m.Bindings.Len() > 0 {
+		obj.BindingsStruct = &assemble.Struct{
+			BaseType: assemble.BaseType{
+				Name:    ctx.GenerateObjName("", "Bindings"),
+				Render:  true,
+				Package: ctx.TopPackageName(),
+			},
+			Fields: nil,
+		}
+		for _, e := range m.Bindings.Entries() {
+			b, ok := ProtoMessageBindingsBuilder[e.Key]
+			if !ok {
+				panic("Unknown protocol " + e.Key)
+			}
+			protoMethod, err := b(ctx, &m, obj.BindingsStruct, messageKey)
+			if err != nil {
+				return nil, err
+			}
+			obj.BindingsStructProtoMethods = append(obj.BindingsStructProtoMethods, protoMethod)
+		}
+	}
 	return &obj, nil
 }
 

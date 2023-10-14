@@ -13,9 +13,9 @@ import (
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 )
 
-type channelProtoBuilderFunc func(ctx *common.CompileContext, channel *Channel, name string) (common.Assembler, error)
+type protoChannelCompilerFunc func(ctx *common.CompileContext, channel *Channel, name string) (common.Assembler, error)
 
-var ProtoChannelBuilders = map[string]channelProtoBuilderFunc{}
+var ProtoChannelCompiler = map[string]protoChannelCompilerFunc{}
 
 type Channel struct {
 	Description string                                                             `json:"description" yaml:"description"`
@@ -117,7 +117,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.As
 	}
 
 	// Build protocol-specific channels
-	for pName, pBuild := range ProtoChannelBuilders {
+	for pName, pBuild := range ProtoChannelCompiler {
 		obj, err := pBuild(ctx, &c, channelKey)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to build %s protocol: %w", pName, err)

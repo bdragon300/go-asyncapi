@@ -30,8 +30,8 @@ type ChannelBindings struct {
 }
 
 type OperationBindings struct {
-	ClientID any
-	GroupID  any
+	ClientID any // jsonschema contents
+	GroupID  any // jsonschema contents
 }
 
 type MessageBindings struct {
