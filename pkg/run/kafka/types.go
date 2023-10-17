@@ -18,7 +18,7 @@ type ChannelBindings struct {
 	Topic              string
 	Partitions         int
 	Replicas           int
-	PublisherBindings  OperationBindings // TODO: implement when validation will get implemented
+	PublisherBindings  OperationBindings
 	SubscriberBindings OperationBindings
 
 	// TopicConfiguration
@@ -46,17 +46,15 @@ type TopicCleanupPolicy struct {
 	Compact bool
 }
 
-type EnvelopeMeta struct {
-	Topic     string
-	Partition int       // negative if not set
-	Timestamp time.Time // If not set then will be set automatically
-}
-
+// "Fallback" variant for envelope when no implementation has been selected
 type EnvelopeOut struct {
 	Payload         bytes.Buffer
 	MessageHeaders  run.Header
-	MessageMetadata EnvelopeMeta
 	MessageBindings MessageBindings
+
+	Topic     string
+	Partition int       // negative if not set
+	Timestamp time.Time // If not set then will be set automatically
 }
 
 func (o *EnvelopeOut) Write(p []byte) (n int, err error) {
@@ -71,10 +69,6 @@ func (o *EnvelopeOut) Protocol() run.Protocol {
 	return run.ProtocolKafka
 }
 
-func (o *EnvelopeOut) SetMetadata(meta EnvelopeMeta) {
-	o.MessageMetadata = meta
-}
-
 func (o *EnvelopeOut) SetBindings(bindings MessageBindings) {
 	o.MessageBindings = bindings
 }
@@ -83,10 +77,14 @@ func (o *EnvelopeOut) ResetPayload() {
 	o.Payload.Reset()
 }
 
+// "Fallback" variant for envelope when no implementation has been selected
 type EnvelopeIn struct {
-	Payload         bytes.Buffer
-	MessageHeaders  run.Header
-	MessageMetadata EnvelopeMeta
+	Payload        bytes.Buffer
+	MessageHeaders run.Header
+
+	Topic     string
+	Partition int       // negative if not set
+	Timestamp time.Time // If not set then will be set automatically
 }
 
 func (i *EnvelopeIn) Read(p []byte) (n int, err error) {
@@ -99,10 +97,6 @@ func (i *EnvelopeIn) Headers() run.Header {
 
 func (i *EnvelopeIn) Protocol() run.Protocol {
 	return run.ProtocolKafka
-}
-
-func (i *EnvelopeIn) Metadata() EnvelopeMeta {
-	return i.MessageMetadata
 }
 
 func (i *EnvelopeIn) Commit() {

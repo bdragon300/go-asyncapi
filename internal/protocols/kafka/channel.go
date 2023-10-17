@@ -515,30 +515,42 @@ func (p ProtoChannel) assemblePublisherMethods(ctx *common.AssembleContext) []*j
 	rn := p.Struct.ReceiverName()
 	receiver := j.Id(rn).Id(p.Struct.Name)
 	msgTyp := p.FallbackMessageType
+	var msgBindings *assemble.Struct
+	envelopeType := j.Op("*").Qual(ctx.RuntimePackage(protoName), "EnvelopeOut") // TODO: depends on selected implementation
 	if p.PubMessageLink != nil {
 		msgTyp = p.PubMessageLink.Target().OutStruct
+		if p.PubMessageLink.Target().BindingsStruct != nil {
+			msgBindings = p.PubMessageLink.Target().BindingsStruct
+		}
 	}
 
 	return []*j.Statement{
-		// Method MakeEnvelope(envelope kafka.EnvelopeWriter, message kafka.EnvelopeMarshaler) error
+		// Method MakeEnvelope(envelope kafka.EnvelopeWriter, message kafka.EnvelopeMarshaler, messageBindings kafka.MessageBindings) error
 		j.Func().Params(receiver.Clone()).Id("MakeEnvelope").
-			Params(
-				j.Id("envelope").Qual(ctx.RuntimePackage(protoName), "EnvelopeWriter"),
-				j.Id("message").Qual(ctx.RuntimePackage(protoName), "EnvelopeMarshaler"),
-			).
-			Error().
-			Block(utils.QualSprintf(`
-				envelope.ResetPayload()
-				if err := message.MarshalKafkaEnvelope(envelope); err != nil {
-					return err
+			ParamsFunc(func(g *j.Group) {
+				g.Id("envelope").Add(envelopeType)
+				g.Id("message").Qual(ctx.RuntimePackage(protoName), "EnvelopeMarshaler")
+				if msgBindings != nil {
+					g.Id("messageBindings").Qual(ctx.RuntimePackage(protoName), "MessageBindings")
 				}
-
-				envelope.SetMetadata(kafka.EnvelopeMeta{
-					Topic:     %[1]s.topic,
-					Partition: -1, // not set
-					Timestamp: %Q(time,Time){},
-				})
-				return nil`, rn)),
+			}).
+			Error().
+			BlockFunc(func(blockGroup *j.Group) {
+				blockGroup.Op(fmt.Sprintf(`
+					envelope.ResetPayload()
+					if err := message.MarshalKafkaEnvelope(envelope); err != nil {
+						return err
+					}
+	
+					envelope.Topic = %[1]s.topic
+					envelope.Partition = -1
+					envelope.Timestamp = time.Now()`, rn),
+				)
+				if msgBindings != nil {
+					blockGroup.Op("envelope.SetBindings(messageBindings)")
+				}
+				blockGroup.Return(j.Nil())
+			}),
 
 		// Method Publisher() kafka.Publisher
 		j.Func().Params(receiver.Clone()).Id("Publisher").
@@ -552,21 +564,27 @@ func (p ProtoChannel) assemblePublisherMethods(ctx *common.AssembleContext) []*j
 		j.Func().Params(receiver.Clone()).Id("Publish").
 			Params(
 				j.Id("ctx").Qual("context", "Context"),
-				j.Id("messages").Op("...").Op("*").Add(utils.ToCode(msgTyp.AssembleUsage(ctx))...), // FIXME: *any on fallback variant
+				j.Id("msgs").Op("...").Op("*").Add(utils.ToCode(msgTyp.AssembleUsage(ctx))...), // FIXME: *any on fallback variant
 			).
 			Error().
-			Block(
-				utils.QualSprintf(`
-					envelopes := make([]%Q(%[2]s,EnvelopeWriter), 0, len(messages))
-					for i := 0; i < len(messages); i++ {
+			BlockFunc(func(blockGroup *j.Group) {
+				call := "MakeEnvelope(buf, msgs[i])"
+				if msgBindings != nil {
+					blockGroup.Op("bindings :=").Add(utils.ToCode(msgBindings.AssembleUsage(ctx))...).Values().Dot("Kafka()")
+					call = "MakeEnvelope(buf, msgs[i], bindings)"
+				}
+				blockGroup.Add(utils.QualSprintf(`
+					envelopes := make([]%Q(%[2]s,EnvelopeWriter), 0, len(msgs))
+					for i := 0; i < len(msgs); i++ {
 						buf := new(%Q(%[2]s,EnvelopeOut))
-						if err := %[1]s.MakeEnvelope(buf, messages[i]); err != nil {
+						if err := %[1]s.%[3]s; err != nil {
 							return %Q(fmt,Errorf)("make envelope #%%d error: %%w", i, err)
 						}
 						envelopes = append(envelopes, buf)
 					}
-					return %[1]s.publisher.Send(ctx, envelopes...)`, rn, ctx.RuntimePackage(protoName)),
-			),
+					return %[1]s.publisher.Send(ctx, envelopes...)`, rn, ctx.RuntimePackage(protoName), call),
+				)
+			}),
 	}
 }
 

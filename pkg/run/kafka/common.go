@@ -1,6 +1,8 @@
 package kafka
 
-import "github.com/bdragon300/asyncapi-codegen/pkg/run"
+import (
+	"github.com/bdragon300/asyncapi-codegen/pkg/run"
+)
 
 // Pub
 type (
@@ -8,7 +10,6 @@ type (
 	Publisher      = run.Publisher[EnvelopeWriter]
 	EnvelopeWriter interface {
 		run.EnvelopeWriter
-		SetMetadata(meta EnvelopeMeta)
 		SetBindings(provider MessageBindings)
 	}
 )
@@ -23,7 +24,6 @@ type (
 	Subscriber     = run.Subscriber[EnvelopeReader]
 	EnvelopeReader interface {
 		run.EnvelopeReader
-		Metadata() EnvelopeMeta
 		Commit()
 	}
 )

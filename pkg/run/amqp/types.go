@@ -11,24 +11,24 @@ type ServerBindings struct{}
 
 type ChannelBindings struct {
 	ExchangeName       string
-	PublisherBindings  OperationBindings
-	SubscriberBindings OperationBindings
+	PublisherBindings  PublishOperationBindings
+	SubscriberBindings SubscribeOperationBindings
 }
 
-type OperationBindings struct{}
+type PublishOperationBindings struct{}
+
+type SubscribeOperationBindings struct{}
 
 type MessageBindings struct{}
 
-type EnvelopeMeta struct {
-	Exchange string
-	Queue    string
-}
-
+// "Fallback" variant for envelope when no implementation has been selected
 type EnvelopeOut struct {
 	Payload         bytes.Buffer
 	MessageHeaders  run.Header
-	MessageMetadata EnvelopeMeta
 	MessageBindings MessageBindings
+
+	Exchange string
+	Queue    string
 }
 
 func (o *EnvelopeOut) Write(p []byte) (n int, err error) {
@@ -43,10 +43,6 @@ func (o *EnvelopeOut) Protocol() run.Protocol {
 	return run.ProtocolAMQP
 }
 
-func (o *EnvelopeOut) SetMetadata(meta EnvelopeMeta) {
-	o.MessageMetadata = meta
-}
-
 func (o *EnvelopeOut) SetBindings(bindings MessageBindings) {
 	o.MessageBindings = bindings
 }
@@ -55,10 +51,13 @@ func (o *EnvelopeOut) ResetPayload() {
 	o.Payload.Reset()
 }
 
+// "Fallback" variant for envelope when no implementation has been selected
 type EnvelopeIn struct {
-	Payload         bytes.Buffer
-	MessageHeaders  run.Header
-	MessageMetadata EnvelopeMeta
+	Payload        bytes.Buffer
+	MessageHeaders run.Header
+
+	Exchange string
+	Queue    string
 }
 
 func (i *EnvelopeIn) Read(p []byte) (n int, err error) {
@@ -71,10 +70,6 @@ func (i *EnvelopeIn) Headers() run.Header {
 
 func (i *EnvelopeIn) Protocol() run.Protocol {
 	return run.ProtocolAMQP
-}
-
-func (i *EnvelopeIn) Metadata() EnvelopeMeta {
-	return i.MessageMetadata
 }
 
 func (i *EnvelopeIn) Ack() {

@@ -23,7 +23,7 @@ type Message struct {
 	HeadersFallbackType        *Map
 	HeadersTypeLink            *Link[*Struct]
 	AllServers                 *LinkList[*Server] // For extracting all using protocols
-	BindingsStruct             *Struct
+	BindingsStruct             *Struct            // nil if message bindings are not defined
 	BindingsStructProtoMethods []common.Assembler
 }
 

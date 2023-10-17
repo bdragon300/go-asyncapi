@@ -8,7 +8,6 @@ type (
 	Publisher      = run.Publisher[EnvelopeWriter]
 	EnvelopeWriter interface {
 		run.EnvelopeWriter
-		SetMetadata(meta EnvelopeMeta)
 		SetBindings(provider MessageBindings)
 	}
 )
@@ -23,7 +22,6 @@ type (
 	Subscriber     = run.Subscriber[EnvelopeReader]
 	EnvelopeReader interface {
 		run.EnvelopeReader
-		Metadata() EnvelopeMeta
 		Ack()
 		Nack()
 	}
