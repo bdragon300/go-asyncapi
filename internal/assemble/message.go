@@ -8,6 +8,13 @@ import (
 	j "github.com/dave/jennifer/jen"
 )
 
+type protoMessageAssemblerFunc func(ctx *common.AssembleContext, message *Message) []*j.Statement
+
+var (
+	ProtoMessageUnmarshalEnvelopeMethodAssembler = map[string]protoMessageAssemblerFunc{}
+	ProtoMessageMarshalEnvelopeMethodAssembler   = map[string]protoMessageAssemblerFunc{}
+)
+
 type Message struct {
 	OutStruct                  *Struct
 	InStruct                   *Struct
@@ -59,44 +66,11 @@ func (m Message) assemblePublishMessageStruct(ctx *common.AssembleContext) []*j.
 	res = append(res, m.OutStruct.AssembleDefinition(ctx)...)
 
 	for _, srv := range m.AllServers.Targets() {
-		res = append(res, m.assemblePublishProtoMethod(ctx, utils.ToGolangName(srv.Protocol, false))...)
+		res = append(res, ProtoMessageMarshalEnvelopeMethodAssembler[srv.Protocol](ctx, &m)...)
 	}
 	res = append(res, m.assemblePublishCommonMethods(ctx)...)
 
 	return res
-}
-
-func (m Message) assemblePublishProtoMethod(ctx *common.AssembleContext, protoPackage string) []*j.Statement {
-	rn := m.OutStruct.ReceiverName()
-	receiver := j.Id(rn).Op("*").Id(m.OutStruct.Name)
-
-	return []*j.Statement{
-		// Method MarshalKafkaEnvelope(envelope kafka.EnvelopeWriter) error
-		j.Func().Params(receiver.Clone()).Id(fmt.Sprintf("Marshal%sEnvelope", utils.ToGolangName(protoPackage, true))).
-			Params(j.Id("envelope").Qual(ctx.RuntimePackage(protoPackage), "EnvelopeWriter")).
-			Error().
-			BlockFunc(func(blockGroup *j.Group) {
-				blockGroup.Add(utils.QualSprintf(`
-					enc := %Q(encoding/json,NewEncoder)(envelope)
-					if err := enc.Encode(%[1]s.Payload); err != nil {
-						return err
-					}`, rn))
-				if m.HeadersTypeLink != nil {
-					blockGroup.Id("envelope").Dot("SetHeaders").Call(
-						j.Qual(ctx.RuntimePackage(""), "Header").Values(j.DictFunc(func(d j.Dict) {
-							for _, f := range m.HeadersTypeLink.Target().Fields {
-								d[j.Lit(f.Name)] = j.Id(rn).Dot("Headers").Dot(f.Name)
-							}
-						})),
-					)
-				} else {
-					blockGroup.Id("envelope.SetHeaders").Call(
-						j.Qual(ctx.RuntimePackage(""), "Header").Call(j.Id(rn).Dot("Headers")),
-					)
-				}
-				blockGroup.Return(j.Nil())
-			}),
-	}
 }
 
 func (m Message) assemblePublishCommonMethods(ctx *common.AssembleContext) []*j.Statement {
@@ -112,11 +86,11 @@ func (m Message) assemblePublishCommonMethods(ctx *common.AssembleContext) []*j.
 	return []*j.Statement{
 		// Method WithID(ID string) *Message2Out
 		j.Func().Params(receiver.Clone()).Id("WithID").
-			Params(j.Id("ID").String()).
+			Params(j.Id("id").String()).
 			Params(j.Op("*").Id(structName)).
 			Block(
 				j.Op(fmt.Sprintf(`
-					%[1]s.ID = ID
+					%[1]s.ID = id
 					return %[1]s`, rn)),
 			),
 		// Method WithPayload(payload Model2) *Message2Out
@@ -148,40 +122,11 @@ func (m Message) assembleSubscribeMessageStruct(ctx *common.AssembleContext) []*
 	res = append(res, m.InStruct.AssembleDefinition(ctx)...)
 
 	for _, srv := range m.AllServers.Targets() {
-		res = append(res, m.assembleSubscribeProtoMethod(ctx, utils.ToGolangName(srv.Protocol, false))...)
+		res = append(res, ProtoMessageUnmarshalEnvelopeMethodAssembler[srv.Protocol](ctx, &m)...)
 	}
 	res = append(res, m.assembleSubscribeCommonMethods(ctx)...)
 
 	return res
-}
-
-func (m Message) assembleSubscribeProtoMethod(ctx *common.AssembleContext, protoPackage string) []*j.Statement {
-	rn := m.InStruct.ReceiverName()
-	receiver := j.Id(rn).Op("*").Id(m.InStruct.Name)
-
-	return []*j.Statement{
-		// Method UnmarshalKafkaEnvelope(envelope kafka.EnvelopeReader) error
-		j.Func().Params(receiver.Clone()).Id(fmt.Sprintf("Unmarshal%sEnvelope", utils.ToGolangName(protoPackage, true))).
-			Params(j.Id("envelope").Qual(ctx.RuntimePackage(protoPackage), "EnvelopeReader")).
-			Error().
-			BlockFunc(func(blockGroup *j.Group) {
-				blockGroup.Add(utils.QualSprintf(`
-					dec := %Q(encoding/json,NewDecoder)(envelope)
-					if err := dec.Decode(&%[1]s.Payload); err != nil {
-						return err
-					}`, rn))
-				if m.HeadersTypeLink != nil {
-					for _, f := range m.HeadersTypeLink.Target().Fields {
-						fType := j.Add(utils.ToCode(f.Type.AssembleUsage(ctx))...)
-						blockGroup.If(j.Op("v, ok := headers").Index(j.Lit(f.Name)), j.Id("ok")).
-							Block(j.Id(rn).Dot("Headers").Id(f.Name).Op("=").Id("v").Assert(fType))
-					}
-				} else {
-					blockGroup.Id(rn).Dot("Headers").Op("=").Add(utils.ToCode(m.HeadersFallbackType.AssembleUsage(ctx))...).Call(j.Op("envelope.Headers()"))
-				}
-				blockGroup.Return(j.Nil())
-			}),
-	}
 }
 
 func (m Message) assembleSubscribeCommonMethods(ctx *common.AssembleContext) []*j.Statement {

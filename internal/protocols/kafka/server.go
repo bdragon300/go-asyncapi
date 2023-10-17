@@ -185,11 +185,6 @@ func (p ProtoServer) assembleURLFunc(ctx *common.AssembleContext) []*j.Statement
 			Qual(ctx.RuntimePackage(""), "ParamString").
 			BlockFunc(func(blockGroup *j.Group) {
 				if p.Variables.Len() > 0 {
-					blockGroup.Op("paramMap := map[string]string").Values(j.DictFunc(func(d j.Dict) {
-						for _, entry := range p.Variables.Entries() {
-							d[j.Lit(entry.Key)] = j.Id(entry.Value.ArgName)
-						}
-					}))
 					for _, entry := range p.Variables.Entries() {
 						if entry.Value.Default != "" {
 							blockGroup.If(j.Id(entry.Value.ArgName).Op("==").Lit("")).
@@ -198,6 +193,11 @@ func (p ProtoServer) assembleURLFunc(ctx *common.AssembleContext) []*j.Statement
 								)
 						}
 					}
+					blockGroup.Op("paramMap := map[string]string").Values(j.DictFunc(func(d j.Dict) {
+						for _, entry := range p.Variables.Entries() {
+							d[j.Lit(entry.Key)] = j.Id(entry.Value.ArgName)
+						}
+					}))
 					blockGroup.Return(j.Qual(ctx.RuntimePackage(""), "ParamString").Values(j.Dict{
 						j.Id("Expr"):       j.Lit(p.URL),
 						j.Id("Parameters"): j.Id("paramMap"),

@@ -328,6 +328,7 @@ func (p ProtoChannel) assembleBindingsMethod(ctx *common.AssembleContext) []*j.S
 					blockGroup.Id(n).Op(":=").Lit(e.Value)
 					blockGroup.Empty().Add(utils.QualSprintf("_ = %Q(encoding/json,Unmarshal)([]byte(%[1]s), &b.SubscriberBindings.%[2]s)", n, e.Key))
 				}
+				blockGroup.Return(j.Id("b"))
 			},
 			),
 	}
@@ -586,11 +587,7 @@ func (p ProtoChannel) assembleSubscriberMethods(ctx *common.AssembleContext) []*
 			).
 			Error().
 			Block(
-				j.Op(`
-					if err := message.UnmarshalKafkaEnvelope(envelope); err != nil {
-						return err
-					}
-					return nil`),
+				j.Op(`return message.UnmarshalKafkaEnvelope(envelope)`),
 			),
 
 		// Method Subscriber() kafka.Subscriber
