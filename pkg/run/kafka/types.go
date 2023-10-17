@@ -52,6 +52,7 @@ type EnvelopeOut struct {
 	MessageHeaders  run.Header
 	MessageBindings MessageBindings
 
+	Key       string
 	Topic     string
 	Partition int       // negative if not set
 	Timestamp time.Time // If not set then will be set automatically
@@ -84,6 +85,7 @@ type EnvelopeIn struct {
 
 	Topic     string
 	Partition int       // negative if not set
+	Offset    int64
 	Timestamp time.Time // If not set then will be set automatically
 }
 

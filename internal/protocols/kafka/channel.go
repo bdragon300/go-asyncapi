@@ -541,10 +541,7 @@ func (p ProtoChannel) assemblePublisherMethods(ctx *common.AssembleContext) []*j
 					if err := message.MarshalKafkaEnvelope(envelope); err != nil {
 						return err
 					}
-	
-					envelope.Topic = %[1]s.topic
-					envelope.Partition = -1
-					envelope.Timestamp = time.Now()`, rn),
+					envelope.Topic = %[1]s.topic`, rn),
 				)
 				if msgBindings != nil {
 					blockGroup.Op("envelope.SetBindings(messageBindings)")
