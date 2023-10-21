@@ -3,23 +3,89 @@ package amqp
 // TODO: fix local import
 import (
 	"bytes"
+	"time"
 
 	"github.com/bdragon300/asyncapi-codegen/pkg/run"
 )
 
 type ServerBindings struct{}
 
+type ChannelType int
+
+const (
+	ChannelTypeRoutingKey ChannelType = iota // Default
+	ChannelTypeQueue
+)
+
+type ExchangeType int
+
+const (
+	ExchangeTypeDefault ExchangeType = iota
+	ExchangeTypeTopic
+	ExchangeTypeDirect
+	ExchangeTypeFanout
+	ExchangeTypeHeaders
+)
+
+type DeliveryMode int
+
+const (
+	DeliveryModeTransient  DeliveryMode = 1
+	DeliveryModePersistent DeliveryMode = 2
+)
+
 type ChannelBindings struct {
-	ExchangeName       string
+	ChannelType           ChannelType
+	ExchangeConfiguration ExchangeConfiguration
+	QueueConfiguration    QueueConfiguration
+
 	PublisherBindings  PublishOperationBindings
 	SubscriberBindings SubscribeOperationBindings
 }
 
-type PublishOperationBindings struct{}
+type ExchangeConfiguration struct {
+	Name       string
+	Type       ExchangeType
+	Durable    bool
+	AutoDelete bool
+	VHost      string
+}
 
-type SubscribeOperationBindings struct{}
+type QueueConfiguration struct {
+	Name       string
+	Durable    bool
+	Exclusive  bool
+	AutoDelete bool
+	VHost      string
+}
 
-type MessageBindings struct{}
+type PublishOperationBindings struct {
+	Expiration   time.Duration
+	UserID       string
+	CC           []string
+	Priority     int
+	DeliveryMode DeliveryMode
+	Mandatory    bool
+	BCC          []string
+	ReplyTo      string
+	Timestamp    bool
+}
+
+type SubscribeOperationBindings struct {
+	Expiration   time.Duration
+	UserID       string
+	CC           []string
+	Priority     int
+	DeliveryMode DeliveryMode
+	ReplyTo      string
+	Timestamp    bool
+	Ack          bool
+}
+
+type MessageBindings struct {
+	ContentEncoding string
+	MessageType     string
+}
 
 // "Fallback" variant for envelope when no implementation has been selected
 type EnvelopeOut struct {

@@ -20,13 +20,20 @@ type ChannelBindings struct {
 	Replicas           int
 	PublisherBindings  OperationBindings
 	SubscriberBindings OperationBindings
+	TopicConfiguration TopicConfiguration
+}
 
-	// TopicConfiguration
+type TopicConfiguration struct {
 	CleanupPolicy     TopicCleanupPolicy
 	RetentionMs       time.Duration
 	RetentionBytes    int
 	DeleteRetentionMs time.Duration
 	MaxMessageBytes   int
+}
+
+type TopicCleanupPolicy struct {
+	Delete  bool
+	Compact bool
 }
 
 type OperationBindings struct {
@@ -39,11 +46,6 @@ type MessageBindings struct {
 	SchemaIDLocation        string
 	SchemaIDPayloadEncoding string
 	SchemaLookupStrategy    string
-}
-
-type TopicCleanupPolicy struct {
-	Delete  bool
-	Compact bool
 }
 
 // "Fallback" variant for envelope when no implementation has been selected
@@ -84,7 +86,7 @@ type EnvelopeIn struct {
 	MessageHeaders run.Header
 
 	Topic     string
-	Partition int       // negative if not set
+	Partition int // negative if not set
 	Offset    int64
 	Timestamp time.Time // If not set then will be set automatically
 }

@@ -155,6 +155,36 @@ func (s UnionStruct) assembleMethods(_ *common.AssembleContext) []*jen.Statement
 	return res
 }
 
+type structInitAssembler interface {
+	AssembleInit(ctx *common.AssembleContext) []*jen.Statement
+}
+
+type StructInit struct {
+	Type   common.GolangType
+	Values utils.OrderedMap[string, any]
+}
+
+func (s StructInit) AssembleInit(ctx *common.AssembleContext) []*jen.Statement {
+	stmt := &jen.Statement{}
+	if s.Type != nil {
+		stmt.Add(utils.ToCode(s.Type.AssembleUsage(ctx))...)
+	}
+
+	dict := make(jen.Dict)
+	for _, e := range s.Values.Entries() {
+		switch v := e.Value.(type) {
+		case common.Assembler:
+			dict[jen.Id(e.Key)] = jen.Add(utils.ToCode(v.AssembleUsage(ctx))...)
+		case structInitAssembler:
+			dict[jen.Id(e.Key)] = jen.Add(utils.ToCode(v.AssembleInit(ctx))...)
+		default:
+			dict[jen.Id(e.Key)] = jen.Lit(v)
+		}
+	}
+
+	return []*jen.Statement{stmt.Values(dict)}
+}
+
 func isTypeStruct(typ common.GolangType) bool {
 	switch v := typ.(type) {
 	case *Struct, *UnionStruct:

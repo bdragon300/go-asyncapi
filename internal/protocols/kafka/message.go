@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/bdragon300/asyncapi-codegen/internal/protocols"
+
 	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"github.com/bdragon300/asyncapi-codegen/internal/compile"
@@ -43,7 +45,7 @@ func BuildMessageBindingsFunc(ctx *common.CompileContext, message *compile.Messa
 
 	return &assemble.Func{
 		FuncSignature: assemble.FuncSignature{
-			Name: "Kafka",
+			Name: protoAbbr,
 			Args: nil,
 			Return: []assemble.FuncParam{
 				{Type: assemble.Simple{Type: "MessageBindings", Package: ctx.RuntimePackage(protoName)}},
@@ -51,90 +53,14 @@ func BuildMessageBindingsFunc(ctx *common.CompileContext, message *compile.Messa
 		},
 		Receiver:      bindingsStruct,
 		Package:       ctx.TopPackageName(),
-		BodyAssembler: messageBindingsBody(values, jsonValues),
+		BodyAssembler: protocols.MessageBindingsBody(values, jsonValues, protoName),
 	}, nil
 }
 
-func messageBindingsBody(values utils.OrderedMap[string, any], jsonValues utils.OrderedMap[string, string]) func(ctx *common.AssembleContext, p *assemble.Func) []*j.Statement {
-	return func(ctx *common.AssembleContext, p *assemble.Func) []*j.Statement {
-		var res []*j.Statement
-		res = append(res,
-			j.Id("b").Op(":=").Qual(ctx.RuntimePackage(protoName), "MessageBindings").Values(j.DictFunc(func(d j.Dict) {
-				for _, e := range values.Entries() {
-					d[j.Id(e.Key)] = j.Lit(e.Value)
-				}
-			})),
-		)
-		for _, e := range jsonValues.Entries() {
-			n := utils.ToLowerFirstLetter(e.Key)
-			res = append(res,
-				j.Id(n).Op(":=").Lit(e.Value),
-				j.Add(utils.QualSprintf("_ = %Q(encoding/json,Unmarshal)([]byte(%[1]s), &b.%[2]s)", n, e.Key)),
-			)
-		}
-		res = append(res, j.Return(j.Id("b")))
-		return res
-	}
-}
-
 func AssembleMessageMarshalEnvelopeMethod(ctx *common.AssembleContext, message *assemble.Message) []*j.Statement {
-	rn := message.OutStruct.ReceiverName()
-	receiver := j.Id(rn).Op("*").Id(message.OutStruct.Name)
-
-	return []*j.Statement{
-		// Method MarshalKafkaEnvelope(envelope kafka.EnvelopeWriter) error
-		j.Func().Params(receiver.Clone()).Id("MarshalKafkaEnvelope").
-			Params(j.Id("envelope").Qual(ctx.RuntimePackage(protoName), "EnvelopeWriter")).
-			Error().
-			BlockFunc(func(blockGroup *j.Group) {
-				blockGroup.Add(utils.QualSprintf(`
-					enc := %Q(encoding/json,NewEncoder)(envelope)
-					if err := enc.Encode(%[1]s.Payload); err != nil {
-						return err
-					}`, rn))
-				if message.HeadersTypeLink != nil {
-					blockGroup.Id("envelope").Dot("SetHeaders").Call(
-						j.Qual(ctx.RuntimePackage(""), "Header").Values(j.DictFunc(func(d j.Dict) {
-							for _, f := range message.HeadersTypeLink.Target().Fields {
-								d[j.Lit(f.Name)] = j.Id(rn).Dot("Headers").Dot(f.Name)
-							}
-						})),
-					)
-				} else {
-					blockGroup.Id("envelope.SetHeaders").Call(
-						j.Qual(ctx.RuntimePackage(""), "Header").Call(j.Id(rn).Dot("Headers")),
-					)
-				}
-				blockGroup.Return(j.Nil())
-			}),
-	}
+	return protocols.AssembleMessageMarshalEnvelopeMethod(ctx, message, protoName, protoAbbr)
 }
 
 func AssembleMessageUnmarshalEnvelopeMethod(ctx *common.AssembleContext, message *assemble.Message) []*j.Statement {
-	rn := message.InStruct.ReceiverName()
-	receiver := j.Id(rn).Op("*").Id(message.InStruct.Name)
-
-	return []*j.Statement{
-		// Method UnmarshalKafkaEnvelope(envelope kafka.EnvelopeReader) error
-		j.Func().Params(receiver.Clone()).Id("UnmarshalKafkaEnvelope").
-			Params(j.Id("envelope").Qual(ctx.RuntimePackage(protoName), "EnvelopeReader")).
-			Error().
-			BlockFunc(func(blockGroup *j.Group) {
-				blockGroup.Add(utils.QualSprintf(`
-					dec := %Q(encoding/json,NewDecoder)(envelope)
-					if err := dec.Decode(&%[1]s.Payload); err != nil {
-						return err
-					}`, rn))
-				if message.HeadersTypeLink != nil {
-					for _, f := range message.HeadersTypeLink.Target().Fields {
-						fType := j.Add(utils.ToCode(f.Type.AssembleUsage(ctx))...)
-						blockGroup.If(j.Op("v, ok := headers").Index(j.Lit(f.Name)), j.Id("ok")).
-							Block(j.Id(rn).Dot("Headers").Id(f.Name).Op("=").Id("v").Assert(fType))
-					}
-				} else {
-					blockGroup.Id(rn).Dot("Headers").Op("=").Add(utils.ToCode(message.HeadersFallbackType.AssembleUsage(ctx))...).Call(j.Op("envelope.Headers()"))
-				}
-				blockGroup.Return(j.Nil())
-			}),
-	}
+	return protocols.AssembleMessageUnmarshalEnvelopeMethod(ctx, message, protoName, protoAbbr)
 }

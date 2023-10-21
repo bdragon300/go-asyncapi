@@ -5,7 +5,10 @@ import (
 	"github.com/bdragon300/asyncapi-codegen/internal/compile"
 )
 
-const protoName = "kafka"
+const (
+	protoName = "kafka"
+	protoAbbr = "Kafka"
+)
 
 func Register() {
 	compile.ProtoServerCompiler[protoName] = BuildServer
