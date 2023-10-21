@@ -271,22 +271,22 @@ func AssembleServerProtocolVersionConst(serverStruct *assemble.Struct, protocolV
 	}
 }
 
-func AssembleServerBindingsSimple(
-	ctx *common.AssembleContext,
-	serverStruct *assemble.Struct,
-	bindingsStructNoAssemble *assemble.Struct,
-	bindingsValues *assemble.StructInit,
-	protoName, protoAbbr string,
-) []*j.Statement {
-	receiver := j.Id(bindingsStructNoAssemble.ReceiverName()).Id(serverStruct.Name)
-
-	return []*j.Statement{
-		// Method of Server1Bindings struct: Proto() proto.ServerBindings
-		j.Func().Params(receiver.Clone()).Id(protoAbbr).
-			Params().
-			Qual(ctx.RuntimePackage(protoName), "ServerBindings").
-			Block(
-				j.Return(utils.ToCode(bindingsValues.AssembleInit(ctx))...),
-			),
+func ServerBindingsMethodBody(values *assemble.StructInit, jsonValues *utils.OrderedMap[string, any]) func(ctx *common.AssembleContext, p *assemble.Func) []*j.Statement {
+	return func(ctx *common.AssembleContext, p *assemble.Func) []*j.Statement {
+		var res []*j.Statement
+		res = append(res,
+			j.Id("b").Op(":=").Add(utils.ToCode(values.AssembleInit(ctx))...),
+		)
+		if jsonValues != nil {
+			for _, e := range jsonValues.Entries() {
+				n := utils.ToLowerFirstLetter(e.Key)
+				res = append(res,
+					j.Id(n).Op(":=").Lit(e.Value),
+					j.Add(utils.QualSprintf("_ = %Q(encoding/json,Unmarshal)([]byte(%[1]s), &b.%[2]s)", n, e.Key)),
+				)
+			}
+		}
+		res = append(res, j.Return(j.Id("b")))
+		return res
 	}
 }

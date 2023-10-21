@@ -356,8 +356,8 @@ func AssembleChannelOpenFunc(
 	channelName string,
 	serverIface *assemble.Interface,
 	parametersStructNoAssemble, bindingsStructNoAssemble *assemble.Struct,
-	protoName, protoAbbr string,
 	publisher, subscriber bool,
+	protoName, protoAbbr string,
 ) []*j.Statement {
 	return []*j.Statement{
 		// OpenChannel1Proto(params Channel1Parameters, servers ...channel1ProtoServer) (*Channel1Proto, error)
@@ -440,5 +440,38 @@ func AssembleChannelOpenFunc(
 				})
 				bg.Op("return ch, nil")
 			}),
+	}
+}
+
+func ChannelBindingsMethodBody(
+	values *assemble.StructInit,
+	publisherJSONValues *utils.OrderedMap[string, any],
+	subscriberJSONValues *utils.OrderedMap[string, any],
+) func(ctx *common.AssembleContext, p *assemble.Func) []*j.Statement {
+	return func(ctx *common.AssembleContext, p *assemble.Func) []*j.Statement {
+		var res []*j.Statement
+		res = append(res,
+			j.Id("b").Op(":=").Add(utils.ToCode(values.AssembleInit(ctx))...),
+		)
+		if publisherJSONValues != nil {
+			for _, e := range subscriberJSONValues.Entries() {
+				n := utils.ToLowerFirstLetter(e.Key)
+				res = append(res,
+					j.Id(n).Op(":=").Lit(e.Value),
+					j.Add(utils.QualSprintf("_ = %Q(encoding/json,Unmarshal)([]byte(%[1]s), &b.SubscriberBindings.%[2]s)", n, e.Key)),
+				)
+			}
+		}
+		if subscriberJSONValues != nil {
+			for _, e := range publisherJSONValues.Entries() {
+				n := utils.ToLowerFirstLetter(e.Key)
+				res = append(res,
+					j.Id(n).Op(":=").Lit(e.Value),
+					j.Add(utils.QualSprintf("_ = %Q(encoding/json,Unmarshal)([]byte(%[1]s), &b.PublisherBindings.%[2]s)", n, e.Key)),
+				)
+			}
+		}
+		res = append(res, j.Return(j.Id("b")))
+		return res
 	}
 }

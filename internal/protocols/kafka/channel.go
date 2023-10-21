@@ -45,24 +45,28 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 	chanResult := &ProtoChannel{BaseProtoChannel: *baseChan}
 
 	// Channel bindings
-	if bindings, ok, err := buildChannelBindings(ctx, channel); err != nil {
+	bindingsStruct := &assemble.Struct{ // TODO: remove in favor of parent channel
+		BaseType: assemble.BaseType{
+			Name:    ctx.GenerateObjName("", "Bindings"),
+			Render:  true,
+			Package: ctx.TopPackageName(),
+		},
+	}
+	method, err := buildChannelBindingsMethod(ctx, channel, bindingsStruct)
+	if err != nil {
 		return nil, err
-	} else if ok {
-		chanResult.BindingsStructNoAssemble = &assemble.Struct{ // TODO: remove in favor of parent channel
-			BaseType: assemble.BaseType{
-				Name:    ctx.GenerateObjName("", "Bindings"),
-				Render:  true,
-				Package: ctx.TopPackageName(),
-			},
-		}
-		chanResult.BindingsValues = &bindings
+	}
+	if method != nil {
+		chanResult.BindingsStructNoAssemble = bindingsStruct
+		chanResult.BindingsMethod = method
 	}
 
 	return chanResult, nil
 }
 
-func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel) (res ProtoChannelBindings, hasBindings bool, err error) {
-	res.StructInit = &assemble.StructInit{Type: &assemble.Simple{Type: "ChannelBindings", Package: ctx.RuntimePackage(protoName)}}
+func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Channel, bindingsStruct *assemble.Struct) (res *assemble.Func, err error) {
+	structValues := &assemble.StructInit{Type: &assemble.Simple{Type: "ChannelBindings", Package: ctx.RuntimePackage(protoName)}}
+	var hasBindings bool
 
 	if chBindings, ok := channel.Bindings.Get(protoName); ok {
 		hasBindings = true
@@ -71,7 +75,7 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel) 
 			return
 		}
 		marshalFields := []string{"Topic", "Partitions", "Replicas"}
-		if err = utils.StructToOrderedMap(bindings, &res.StructInit.Values, marshalFields); err != nil {
+		if err = utils.StructToOrderedMap(bindings, &structValues.Values, marshalFields); err != nil {
 			return
 		}
 
@@ -97,28 +101,48 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel) 
 				tc.Values.Set("CleanupPolicy", tcp)
 			}
 
-			res.StructInit.Values.Set("TopicConfiguration", tc)
+			structValues.Values.Set("TopicConfiguration", tc)
 		}
 	}
 
 	// Publish channel bindings
+	var publisherJSON utils.OrderedMap[string, any]
 	if channel.Publish != nil {
 		if b, ok := channel.Publish.Bindings.Get(protoName); ok {
 			hasBindings = true
-			if res.PublisherJSONValues, err = buildOperationBindings(b); err != nil {
+			if publisherJSON, err = buildOperationBindings(b); err != nil {
 				return
 			}
 		}
 	}
 
 	// Subscribe channel bindings
+	var subscriberJSON utils.OrderedMap[string, any]
 	if channel.Subscribe != nil {
 		if b, ok := channel.Subscribe.Bindings.Get(protoName); ok {
 			hasBindings = true
-			if res.SubscriberJSONValues, err = buildOperationBindings(b); err != nil {
+			if subscriberJSON, err = buildOperationBindings(b); err != nil {
 				return
 			}
 		}
+	}
+
+	if !hasBindings {
+		return nil, nil
+	}
+
+	// Method Proto() proto.ChannelBindings
+	res = &assemble.Func{
+		FuncSignature: assemble.FuncSignature{
+			Name: protoAbbr,
+			Args: nil,
+			Return: []assemble.FuncParam{
+				{Type: assemble.Simple{Type: "ChannelBindings", Package: ctx.RuntimePackage(protoName)}},
+			},
+		},
+		Receiver:      bindingsStruct,
+		Package:       ctx.TopPackageName(),
+		BodyAssembler: protocols.ChannelBindingsMethodBody(structValues, &publisherJSON, &subscriberJSON),
 	}
 
 	return
@@ -147,16 +171,10 @@ func buildOperationBindings(opBindings utils.Union2[json.RawMessage, yaml.Node])
 	return
 }
 
-type ProtoChannelBindings struct {
-	StructInit           *assemble.StructInit
-	PublisherJSONValues  utils.OrderedMap[string, any]
-	SubscriberJSONValues utils.OrderedMap[string, any]
-}
-
 type ProtoChannel struct {
 	protocols.BaseProtoChannel
-	BindingsStructNoAssemble *assemble.Struct      // nil if bindings not set FIXME: remove in favor of struct in parent channel
-	BindingsValues           *ProtoChannelBindings // nil if bindings don't set particularly for this protocol
+	BindingsStructNoAssemble *assemble.Struct // nil if bindings not set FIXME: remove in favor of struct in parent channel
+	BindingsMethod           *assemble.Func
 }
 
 func (p ProtoChannel) AllowRender() bool {
@@ -165,13 +183,13 @@ func (p ProtoChannel) AllowRender() bool {
 
 func (p ProtoChannel) AssembleDefinition(ctx *common.AssembleContext) []*j.Statement {
 	var res []*j.Statement
-	if p.BindingsStructNoAssemble != nil && p.BindingsValues != nil {
-		res = append(res, p.assembleBindingsMethod(ctx)...)
+	if p.BindingsMethod != nil {
+		res = append(res, p.BindingsMethod.AssembleDefinition(ctx)...)
 	}
 	res = append(res, p.ServerIface.AssembleDefinition(ctx)...)
 	res = append(res, protocols.AssembleChannelOpenFunc(
 		ctx, p.Struct, p.Name, p.ServerIface, p.ParametersStructNoAssemble, p.BindingsStructNoAssemble,
-		protoName, protoAbbr, p.Publisher, p.Subscriber,
+		p.Publisher, p.Subscriber, protoName, protoAbbr,
 	)...)
 	res = append(res, p.assembleNewFunc(ctx)...)
 	res = append(res, p.Struct.AssembleDefinition(ctx)...)
@@ -191,32 +209,6 @@ func (p ProtoChannel) AssembleDefinition(ctx *common.AssembleContext) []*j.State
 
 func (p ProtoChannel) AssembleUsage(ctx *common.AssembleContext) []*j.Statement {
 	return p.Struct.AssembleUsage(ctx)
-}
-
-func (p ProtoChannel) assembleBindingsMethod(ctx *common.AssembleContext) []*j.Statement {
-	rn := p.BindingsStructNoAssemble.ReceiverName()
-	receiver := j.Id(rn).Id(p.BindingsStructNoAssemble.Name)
-
-	return []*j.Statement{
-		// Method Proto() proto.ChannelBindings
-		j.Func().Params(receiver.Clone()).Id(protoAbbr).
-			Params().
-			Qual(ctx.RuntimePackage(protoName), "ChannelBindings").
-			BlockFunc(func(bg *j.Group) {
-				bg.Id("b").Op(":=").Add(utils.ToCode(p.BindingsValues.StructInit.AssembleInit(ctx))...)
-				for _, e := range p.BindingsValues.PublisherJSONValues.Entries() {
-					n := utils.ToLowerFirstLetter(e.Key)
-					bg.Id(n).Op(":=").Lit(e.Value)
-					bg.Empty().Add(utils.QualSprintf("_ = %Q(encoding/json,Unmarshal)([]byte(%[1]s), &b.PublisherBindings.%[2]s)", n, e.Key))
-				}
-				for _, e := range p.BindingsValues.SubscriberJSONValues.Entries() {
-					n := utils.ToLowerFirstLetter(e.Key)
-					bg.Id(n).Op(":=").Lit(e.Value)
-					bg.Empty().Add(utils.QualSprintf("_ = %Q(encoding/json,Unmarshal)([]byte(%[1]s), &b.SubscriberBindings.%[2]s)", n, e.Key))
-				}
-				bg.Return(j.Id("b"))
-			}),
-	}
 }
 
 func (p ProtoChannel) assembleNewFunc(ctx *common.AssembleContext) []*j.Statement {

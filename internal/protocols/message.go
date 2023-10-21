@@ -69,7 +69,7 @@ func AssembleMessageMarshalEnvelopeMethod(ctx *common.AssembleContext, message *
 	}
 }
 
-func MessageBindingsBody(values utils.OrderedMap[string, any], jsonValues utils.OrderedMap[string, string], protoName string) func(ctx *common.AssembleContext, p *assemble.Func) []*j.Statement {
+func MessageBindingsBody(values utils.OrderedMap[string, any], jsonValues *utils.OrderedMap[string, string], protoName string) func(ctx *common.AssembleContext, p *assemble.Func) []*j.Statement {
 	return func(ctx *common.AssembleContext, p *assemble.Func) []*j.Statement {
 		var res []*j.Statement
 		res = append(res,
@@ -79,12 +79,14 @@ func MessageBindingsBody(values utils.OrderedMap[string, any], jsonValues utils.
 				}
 			})),
 		)
-		for _, e := range jsonValues.Entries() {
-			n := utils.ToLowerFirstLetter(e.Key)
-			res = append(res,
-				j.Id(n).Op(":=").Lit(e.Value),
-				j.Add(utils.QualSprintf("_ = %Q(encoding/json,Unmarshal)([]byte(%[1]s), &b.%[2]s)", n, e.Key)),
-			)
+		if jsonValues != nil {
+			for _, e := range jsonValues.Entries() {
+				n := utils.ToLowerFirstLetter(e.Key)
+				res = append(res,
+					j.Id(n).Op(":=").Lit(e.Value),
+					j.Add(utils.QualSprintf("_ = %Q(encoding/json,Unmarshal)([]byte(%[1]s), &b.%[2]s)", n, e.Key)),
+				)
+			}
 		}
 		res = append(res, j.Return(j.Id("b")))
 		return res

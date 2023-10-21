@@ -10,6 +10,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/bdragon300/asyncapi-codegen/internal/protocols/amqp"
+
 	"github.com/bdragon300/asyncapi-codegen/internal/protocols/kafka"
 	"github.com/bdragon300/asyncapi-codegen/internal/render"
 	"github.com/samber/lo"
@@ -54,6 +56,7 @@ func main() {
 
 func registerProtocols() {
 	kafka.Register()
+	amqp.Register()
 }
 
 func generate(cmd *GenerateCmd) error {

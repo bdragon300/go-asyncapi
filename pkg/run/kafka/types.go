@@ -9,44 +9,45 @@ import (
 )
 
 // Params below are passed to the New* implementation functions
-type ServerBindings struct {
-	SchemaRegistryURL    string
-	SchemaRegistryVendor string
-}
+type (
+	ServerBindings struct {
+		SchemaRegistryURL    string
+		SchemaRegistryVendor string
+	}
 
-type ChannelBindings struct {
-	Topic              string
-	Partitions         int
-	Replicas           int
-	PublisherBindings  OperationBindings
-	SubscriberBindings OperationBindings
-	TopicConfiguration TopicConfiguration
-}
+	ChannelBindings struct {
+		Topic              string
+		Partitions         int
+		Replicas           int
+		PublisherBindings  OperationBindings
+		SubscriberBindings OperationBindings
+		TopicConfiguration TopicConfiguration
+	}
 
-type TopicConfiguration struct {
-	CleanupPolicy     TopicCleanupPolicy
-	RetentionMs       time.Duration
-	RetentionBytes    int
-	DeleteRetentionMs time.Duration
-	MaxMessageBytes   int
-}
+	OperationBindings struct {
+		ClientID any // jsonschema contents
+		GroupID  any // jsonschema contents
+	}
 
-type TopicCleanupPolicy struct {
-	Delete  bool
-	Compact bool
-}
+	MessageBindings struct {
+		Key                     any // TODO: jsonschema
+		SchemaIDLocation        string
+		SchemaIDPayloadEncoding string
+		SchemaLookupStrategy    string
+	}
+	TopicConfiguration struct {
+		CleanupPolicy     TopicCleanupPolicy
+		RetentionMs       time.Duration
+		RetentionBytes    int
+		DeleteRetentionMs time.Duration
+		MaxMessageBytes   int
+	}
 
-type OperationBindings struct {
-	ClientID any // jsonschema contents
-	GroupID  any // jsonschema contents
-}
-
-type MessageBindings struct {
-	Key                     any // TODO: jsonschema
-	SchemaIDLocation        string
-	SchemaIDPayloadEncoding string
-	SchemaLookupStrategy    string
-}
+	TopicCleanupPolicy struct {
+		Delete  bool
+		Compact bool
+	}
+)
 
 // "Fallback" variant for envelope when no implementation has been selected
 type EnvelopeOut struct {

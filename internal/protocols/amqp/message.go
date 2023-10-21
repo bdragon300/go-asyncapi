@@ -1,23 +1,19 @@
-package kafka
+package amqp
 
 import (
-	"encoding/json"
 	"fmt"
-
-	"github.com/bdragon300/asyncapi-codegen/internal/protocols"
 
 	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"github.com/bdragon300/asyncapi-codegen/internal/compile"
+	"github.com/bdragon300/asyncapi-codegen/internal/protocols"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	j "github.com/dave/jennifer/jen"
 )
 
 type messageBindings struct {
-	Key                     any    `json:"key" yaml:"key"` // jsonschema object
-	SchemaIDLocation        string `json:"schemaIdLocation" yaml:"schemaIdLocation"`
-	SchemaIDPayloadEncoding string `json:"schemaIdPayloadEncoding" yaml:"schemaIdPayloadEncoding"`
-	SchemaLookupStrategy    string `json:"schemaLookupStrategy" yaml:"schemaLookupStrategy"`
+	ContentEncoding string `json:"contentEncoding" yaml:"contentEncoding"`
+	MessageType     string `json:"messageType" yaml:"messageType"`
 }
 
 func BuildMessageBindingsFunc(ctx *common.CompileContext, message *compile.Message, bindingsStruct *assemble.Struct, _ string) (common.Assembler, error) {
@@ -30,17 +26,9 @@ func BuildMessageBindingsFunc(ctx *common.CompileContext, message *compile.Messa
 		return nil, err
 	}
 	var values utils.OrderedMap[string, any]
-	marshalFields := []string{"SchemaIDLocation", "SchemaIDPayloadEncoding", "SchemaLookupStrategy"}
+	marshalFields := []string{"ContentEncoding", "MessageType"}
 	if err := utils.StructToOrderedMap(bindings, &values, marshalFields); err != nil {
 		return nil, err
-	}
-	var jsonValues utils.OrderedMap[string, string]
-	if bindings.Key != nil {
-		v, err := json.Marshal(bindings.Key)
-		if err != nil {
-			return nil, err
-		}
-		jsonValues.Set("Key", string(v))
 	}
 
 	return &assemble.Func{
@@ -53,7 +41,7 @@ func BuildMessageBindingsFunc(ctx *common.CompileContext, message *compile.Messa
 		},
 		Receiver:      bindingsStruct,
 		Package:       ctx.TopPackageName(),
-		BodyAssembler: protocols.MessageBindingsBody(values, &jsonValues, protoName),
+		BodyAssembler: protocols.MessageBindingsBody(values, nil, protoName),
 	}, nil
 }
 

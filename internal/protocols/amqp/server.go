@@ -1,18 +1,12 @@
-package kafka
+package amqp
 
 import (
 	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
 	"github.com/bdragon300/asyncapi-codegen/internal/compile"
 	"github.com/bdragon300/asyncapi-codegen/internal/protocols"
-	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	j "github.com/dave/jennifer/jen"
 )
-
-type serverBindings struct {
-	SchemaRegistryURL    *string `json:"schemaRegistryUrl" yaml:"schemaRegistryUrl"`
-	SchemaRegistryVendor *string `json:"schemaRegistryVendor" yaml:"schemaRegistryVendor"`
-}
 
 func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey string) (common.Assembler, error) {
 	baseServer, err := protocols.BuildServer(ctx, server, serverKey, protoName)
@@ -21,27 +15,18 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 	}
 	srvResult := ProtoServer{BaseProtoServer: *baseServer}
 
-	// Server bindings
+	// Server bindings (protocol has no server bindings)
 	if server.Bindings.Len() > 0 {
-		if b, ok := server.Bindings.Get(protoName); ok {
+		if _, ok := server.Bindings.Get(protoName); ok {
 			vals := &assemble.StructInit{
 				Type: &assemble.Simple{Type: "ServerBindings", Package: ctx.RuntimePackage(protoName)},
 			}
-			bindingsStruct := &assemble.Struct{ // TODO: remove in favor of parent server
+			bindingsStruct := &assemble.Struct{
 				BaseType: assemble.BaseType{
-					Name:    ctx.GenerateObjName("", "Bindings"),
+					Name:    srvResult.Struct.Name + "Bindings",
 					Render:  true,
 					Package: ctx.TopPackageName(),
 				},
-			}
-
-			var bindings serverBindings
-			if err := utils.UnmarshalRawsUnion2(b, &bindings); err != nil { // TODO: implement $ref
-				return nil, err
-			}
-			marshalFields := []string{"SchemaRegistryURL", "SchemaRegistryVendor"}
-			if err := utils.StructToOrderedMap(bindings, &vals.Values, marshalFields); err != nil {
-				return nil, err
 			}
 
 			srvResult.BindingsMethod = &assemble.Func{

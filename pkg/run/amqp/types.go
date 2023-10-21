@@ -8,8 +8,6 @@ import (
 	"github.com/bdragon300/asyncapi-codegen/pkg/run"
 )
 
-type ServerBindings struct{}
-
 type ChannelType int
 
 const (
@@ -34,58 +32,62 @@ const (
 	DeliveryModePersistent DeliveryMode = 2
 )
 
-type ChannelBindings struct {
-	ChannelType           ChannelType
-	ExchangeConfiguration ExchangeConfiguration
-	QueueConfiguration    QueueConfiguration
+type (
+	ServerBindings struct{}
 
-	PublisherBindings  PublishOperationBindings
-	SubscriberBindings SubscribeOperationBindings
-}
+	ChannelBindings struct {
+		ChannelType           ChannelType
+		ExchangeConfiguration ExchangeConfiguration
+		QueueConfiguration    QueueConfiguration
 
-type ExchangeConfiguration struct {
-	Name       string
-	Type       ExchangeType
-	Durable    bool
-	AutoDelete bool
-	VHost      string
-}
+		PublisherBindings  PublishOperationBindings
+		SubscriberBindings SubscribeOperationBindings
+	}
 
-type QueueConfiguration struct {
-	Name       string
-	Durable    bool
-	Exclusive  bool
-	AutoDelete bool
-	VHost      string
-}
+	PublishOperationBindings struct {
+		Expiration   time.Duration
+		UserID       string
+		CC           []string
+		Priority     int
+		DeliveryMode DeliveryMode
+		Mandatory    bool
+		BCC          []string
+		ReplyTo      string
+		Timestamp    bool
+	}
 
-type PublishOperationBindings struct {
-	Expiration   time.Duration
-	UserID       string
-	CC           []string
-	Priority     int
-	DeliveryMode DeliveryMode
-	Mandatory    bool
-	BCC          []string
-	ReplyTo      string
-	Timestamp    bool
-}
+	SubscribeOperationBindings struct {
+		Expiration   time.Duration
+		UserID       string
+		CC           []string
+		Priority     int
+		DeliveryMode DeliveryMode
+		ReplyTo      string
+		Timestamp    bool
+		Ack          bool
+	}
 
-type SubscribeOperationBindings struct {
-	Expiration   time.Duration
-	UserID       string
-	CC           []string
-	Priority     int
-	DeliveryMode DeliveryMode
-	ReplyTo      string
-	Timestamp    bool
-	Ack          bool
-}
+	MessageBindings struct {
+		ContentEncoding string
+		MessageType     string
+	}
 
-type MessageBindings struct {
-	ContentEncoding string
-	MessageType     string
-}
+	ExchangeConfiguration struct {
+		Name       string
+		Type       ExchangeType
+		Durable    bool
+		AutoDelete bool
+		VHost      string
+	}
+
+	QueueConfiguration struct {
+		Name       string
+		Durable    bool
+		Exclusive  bool
+		AutoDelete bool
+		VHost      string
+	}
+)
 
 // "Fallback" variant for envelope when no implementation has been selected
 type EnvelopeOut struct {

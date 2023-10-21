@@ -1,0 +1,311 @@
+package amqp
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
+	"github.com/bdragon300/asyncapi-codegen/internal/common"
+	"github.com/bdragon300/asyncapi-codegen/internal/compile"
+	"github.com/bdragon300/asyncapi-codegen/internal/protocols"
+	"github.com/bdragon300/asyncapi-codegen/internal/utils"
+	j "github.com/dave/jennifer/jen"
+)
+
+type channelBindings struct {
+	Is       string          `json:"is" yaml:"is"`
+	Exchange *exchangeParams `json:"exchange" yaml:"exchange"`
+	Queue    *queueParams    `json:"queue" yaml:"queue"`
+}
+
+type exchangeParams struct {
+	Name       string `json:"name" yaml:"name"`
+	Type       string `json:"type" yaml:"type"`
+	Durable    bool   `json:"durable" yaml:"durable"`
+	AutoDelete bool   `json:"autoDelete" yaml:"autoDelete"`
+	VHost      string `json:"vhost" yaml:"vhost"`
+}
+
+type queueParams struct {
+	Name       string `json:"name" yaml:"name"`
+	Durable    bool   `json:"durable" yaml:"durable"`
+	Exclusive  bool   `json:"exclusive" yaml:"exclusive"`
+	AutoDelete bool   `json:"autoDelete" yaml:"autoDelete"`
+	VHost      string `json:"vhost" yaml:"vhost"`
+}
+
+type publishOperationBindings struct {
+	Expiration   time.Duration `json:"expiration" yaml:"expiration"`
+	UserID       string        `json:"userId" yaml:"userId"`
+	CC           []string      `json:"cc" yaml:"cc"`
+	Priority     int           `json:"priority" yaml:"priority"`
+	DeliveryMode int           `json:"deliveryMode" yaml:"deliveryMode"`
+	Mandatory    bool          `json:"mandatory" yaml:"mandatory"`
+	BCC          []string      `json:"bcc" yaml:"bcc"`
+	ReplyTo      string        `json:"replyTo" yaml:"replyTo"`
+	Timestamp    bool          `json:"timestamp" yaml:"timestamp"`
+}
+
+type subscribeOperationBindings struct {
+	Expiration   time.Duration `json:"expiration" yaml:"expiration"`
+	UserID       string        `json:"userID" yaml:"userID"`
+	CC           []string      `json:"cc" yaml:"cc"`
+	Priority     int           `json:"priority" yaml:"priority"`
+	DeliveryMode int           `json:"deliveryMode" yaml:"deliveryMode"`
+	ReplyTo      string        `json:"replyTo" yaml:"replyTo"`
+	Timestamp    bool          `json:"timestamp" yaml:"timestamp"`
+	Ack          bool          `json:"ack" yaml:"ack"`
+}
+
+func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelKey string) (common.Assembler, error) {
+	baseChan, err := protocols.BuildChannel(ctx, channel, channelKey, protoName, protoAbbr)
+	if err != nil {
+		return nil, err
+	}
+
+	baseChan.Struct.Fields = append(baseChan.Struct.Fields, assemble.StructField{Name: "topic", Type: &assemble.Simple{Type: "string"}})
+
+	chanResult := &ProtoChannel{BaseProtoChannel: *baseChan}
+
+	// Channel bindings
+	bindinbsStruct := &assemble.Struct{ // TODO: remove in favor of parent channel
+		BaseType: assemble.BaseType{
+			Name:    ctx.GenerateObjName("", "Bindings"),
+			Render:  true,
+			Package: ctx.TopPackageName(),
+		},
+	}
+	method, err := buildChannelBindings(ctx, channel, bindinbsStruct)
+	if err != nil {
+		return nil, err
+	}
+	if method != nil {
+		chanResult.BindingsMethod = method
+		chanResult.BindingsStructNoAssemble = bindinbsStruct
+	}
+
+	return chanResult, nil
+}
+
+func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, bindingsStruct *assemble.Struct) (res *assemble.Func, err error) {
+	structValues := &assemble.StructInit{Type: &assemble.Simple{Type: "ChannelBindings", Package: ctx.RuntimePackage(protoName)}}
+	var hasBindings bool
+
+	if chBindings, ok := channel.Bindings.Get(protoName); ok {
+		hasBindings = true
+		var bindings channelBindings
+		if err = utils.UnmarshalRawsUnion2(chBindings, &bindings); err != nil {
+			return
+		}
+		switch bindings.Is {
+		case "routingKey":
+			structValues.Values.Set("ChannelType", &assemble.Simple{Type: "ChannelTypeRoutingKey", Package: ctx.RuntimePackage(protoName)})
+		case "queue":
+			structValues.Values.Set("ChannelType", &assemble.Simple{Type: "ChannelTypeQueue", Package: ctx.RuntimePackage(protoName)})
+		case "":
+		default:
+			panic(fmt.Sprintf("Unknown channel type %q", bindings.Is))
+		}
+
+		if bindings.Exchange != nil {
+			ex := &assemble.StructInit{
+				Type: &assemble.Simple{Type: "ExchangeConfiguration", Package: ctx.RuntimePackage(protoName)},
+			}
+			marshalFields := []string{"Name", "Durable", "AutoDelete", "VHost"}
+			if err = utils.StructToOrderedMap(*bindings.Exchange, &ex.Values, marshalFields); err != nil {
+				return
+			}
+			switch bindings.Exchange.Type {
+			case "default":
+				ex.Values.Set("Type", &assemble.Simple{Type: "ExchangeTypeDefault", Package: ctx.RuntimePackage(protoName)})
+			case "topic":
+				ex.Values.Set("Type", &assemble.Simple{Type: "ExchangeTypeTopic", Package: ctx.RuntimePackage(protoName)})
+			case "direct":
+				ex.Values.Set("Type", &assemble.Simple{Type: "ExchangeTypeDirect", Package: ctx.RuntimePackage(protoName)})
+			case "fanout":
+				ex.Values.Set("Type", &assemble.Simple{Type: "ExchangeTypeFanout", Package: ctx.RuntimePackage(protoName)})
+			case "headers":
+				ex.Values.Set("Type", &assemble.Simple{Type: "ExchangeTypeHeaders", Package: ctx.RuntimePackage(protoName)})
+			case "":
+			default:
+				panic(fmt.Sprintf("Unknown exchange type %q", bindings.Is))
+			}
+			structValues.Values.Set("ExchangeConfiguration", ex)
+		}
+		if bindings.Queue != nil {
+			ex := &assemble.StructInit{
+				Type: &assemble.Simple{Type: "QueueConfiguration", Package: ctx.RuntimePackage(protoName)},
+			}
+			marshalFields := []string{"Name", "Durable", "Exclusive", "AutoDelete", "VHost"}
+			if err = utils.StructToOrderedMap(*bindings.Exchange, &ex.Values, marshalFields); err != nil {
+				return
+			}
+			structValues.Values.Set("QueueConfiguration", ex)
+		}
+	}
+
+	// Publish channel bindings
+	if channel.Publish != nil {
+		if b, ok := channel.Publish.Bindings.Get(protoName); ok {
+			pob := &assemble.StructInit{
+				Type: &assemble.Simple{Type: "PublishOperationBindings", Package: ctx.RuntimePackage(protoName)},
+			}
+			hasBindings = true
+			var bindings publishOperationBindings
+			if err = utils.UnmarshalRawsUnion2(b, &bindings); err != nil {
+				return
+			}
+			marshalFields := []string{"Expiration", "UserID", "CC", "Priority", "Mandatory", "BCC", "ReplyTo", "Timestamp"}
+			if err = utils.StructToOrderedMap(bindings, &pob.Values, marshalFields); err != nil {
+				return
+			}
+			switch bindings.DeliveryMode {
+			case 1:
+				pob.Values.Set("DeliveryMode", &assemble.Simple{Type: "DeliveryModeTransient", Package: ctx.RuntimePackage(protoName)})
+			case 2:
+				pob.Values.Set("DeliveryMode", &assemble.Simple{Type: "DeliveryModePersistent", Package: ctx.RuntimePackage(protoName)})
+			case 0:
+			default:
+				panic(fmt.Sprintf("Unknown delivery mode %v", bindings.DeliveryMode))
+			}
+
+			structValues.Values.Set("PublisherBindings", pob)
+		}
+	}
+
+	// Subscribe channel bindings
+	if channel.Subscribe != nil {
+		if b, ok := channel.Subscribe.Bindings.Get(protoName); ok {
+			sob := &assemble.StructInit{
+				Type: &assemble.Simple{Type: "SubscribeOperationBindings", Package: ctx.RuntimePackage(protoName)},
+			}
+			hasBindings = true
+			var bindings subscribeOperationBindings
+			if err = utils.UnmarshalRawsUnion2(b, &bindings); err != nil {
+				return
+			}
+			marshalFields := []string{"Expiration", "UserID", "CC", "Priority", "ReplyTo", "Timestamp", "Ack"}
+			if err = utils.StructToOrderedMap(bindings, &sob.Values, marshalFields); err != nil {
+				return
+			}
+			switch bindings.DeliveryMode {
+			case 1:
+				sob.Values.Set("DeliveryMode", &assemble.Simple{Type: "DeliveryModeTransient", Package: ctx.RuntimePackage(protoName)})
+			case 2:
+				sob.Values.Set("DeliveryMode", &assemble.Simple{Type: "DeliveryModePersistent", Package: ctx.RuntimePackage(protoName)})
+			case 0:
+			default:
+				panic(fmt.Sprintf("Unknown delivery mode %v", bindings.DeliveryMode))
+			}
+
+			structValues.Values.Set("SubscriberBindings", sob)
+		}
+	}
+
+	if !hasBindings {
+		return nil, nil
+	}
+
+	// Method Proto() proto.ChannelBindings
+	res = &assemble.Func{
+		FuncSignature: assemble.FuncSignature{
+			Name: protoAbbr,
+			Args: nil,
+			Return: []assemble.FuncParam{
+				{Type: assemble.Simple{Type: "ChannelBindings", Package: ctx.RuntimePackage(protoName)}},
+			},
+		},
+		Receiver:      bindingsStruct,
+		Package:       ctx.TopPackageName(),
+		BodyAssembler: protocols.ChannelBindingsMethodBody(structValues, nil, nil),
+	}
+
+	return
+}
+
+type ProtoChannel struct {
+	protocols.BaseProtoChannel
+	BindingsStructNoAssemble *assemble.Struct // nil if bindings not set FIXME: remove in favor of struct in parent channel
+	BindingsMethod           *assemble.Func
+}
+
+func (p ProtoChannel) AllowRender() bool {
+	return true
+}
+
+func (p ProtoChannel) AssembleDefinition(ctx *common.AssembleContext) []*j.Statement {
+	var res []*j.Statement
+	if p.BindingsMethod != nil {
+		res = append(res, p.BindingsMethod.AssembleDefinition(ctx)...)
+	}
+	res = append(res, p.ServerIface.AssembleDefinition(ctx)...)
+	res = append(res, protocols.AssembleChannelOpenFunc(
+		ctx, p.Struct, p.Name, p.ServerIface, p.ParametersStructNoAssemble, p.BindingsStructNoAssemble,
+		p.Publisher, p.Subscriber, protoName, protoAbbr,
+	)...)
+	res = append(res, p.assembleNewFunc(ctx)...)
+	res = append(res, p.Struct.AssembleDefinition(ctx)...)
+	res = append(res, protocols.AssembleChannelCommonMethods(ctx, p.Struct, p.Publisher, p.Subscriber, protoAbbr)...)
+	if p.Publisher {
+		res = append(res, protocols.AssembleChannelPublisherMethods(
+			ctx, p.Struct, p.PubMessageLink, p.FallbackMessageType, protoName, protoAbbr,
+		)...)
+	}
+	if p.Subscriber {
+		res = append(res, protocols.AssembleChannelSubscriberMethods(
+			ctx, p.Struct, p.SubMessageLink, p.FallbackMessageType, protoName, protoAbbr,
+		)...)
+	}
+	return res
+}
+
+func (p ProtoChannel) AssembleUsage(ctx *common.AssembleContext) []*j.Statement {
+	return p.Struct.AssembleUsage(ctx)
+}
+
+func (p ProtoChannel) assembleNewFunc(ctx *common.AssembleContext) []*j.Statement {
+	return []*j.Statement{
+		// NewChannel1Proto(params Channel1Parameters, publisher proto.Publisher, subscriber proto.Subscriber) *Channel1Proto
+		j.Func().Id(p.Struct.NewFuncName()).
+			ParamsFunc(func(g *j.Group) {
+				if p.ParametersStructNoAssemble != nil {
+					g.Id("params").Add(utils.ToCode(p.ParametersStructNoAssemble.AssembleUsage(ctx))...)
+				}
+				if p.Publisher {
+					g.Id("publisher").Qual(ctx.RuntimePackage(protoName), "Publisher")
+				}
+				if p.Subscriber {
+					g.Id("subscriber").Qual(ctx.RuntimePackage(protoName), "Subscriber")
+				}
+			}).
+			Op("*").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...).
+			BlockFunc(func(bg *j.Group) {
+				bg.Op("res := ").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...).Values(j.DictFunc(func(d j.Dict) {
+					d[j.Id("name")] = j.Id(utils.ToGolangName(p.Name, true) + "Name").CallFunc(func(g *j.Group) {
+						if p.ParametersStructNoAssemble != nil {
+							g.Id("params")
+						}
+					})
+					if p.Publisher {
+						d[j.Id("publisher")] = j.Id("publisher")
+					}
+					if p.Subscriber {
+						d[j.Id("subscriber")] = j.Id("subscriber")
+					}
+				}))
+				bg.Op("res.topic = res.name.String()")
+				if p.BindingsStructNoAssemble != nil {
+					bg.Id("bindings").Op(":=").Add(utils.ToCode(p.BindingsStructNoAssemble.AssembleUsage(ctx))...).Values().Dot(protoAbbr).Call()
+					bg.Op(`
+						if bindings.Topic != "" {
+							res.topic = bindings.Topic
+						}`)
+				}
+				bg.Op(`
+					if res.topic == "" {
+						res.topic = res.name.String()
+					}
+					return &res`)
+			}),
+	}
+}
