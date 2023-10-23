@@ -249,11 +249,7 @@ func (p ProtoChannel) assembleNewFunc(ctx *common.AssembleContext) []*j.Statemen
 							res.topic = bindings.Topic
 						}`)
 				}
-				bg.Op(`
-					if res.topic == "" {
-						res.topic = res.name.String()
-					}
-					return &res`)
+				bg.Op(`return &res`)
 			}),
 	}
 }

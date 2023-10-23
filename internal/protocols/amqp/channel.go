@@ -68,26 +68,27 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 	chanResult := &ProtoChannel{BaseProtoChannel: *baseChan}
 
 	// Channel bindings
-	bindinbsStruct := &assemble.Struct{ // TODO: remove in favor of parent channel
+	bindingsStruct := &assemble.Struct{ // TODO: remove in favor of parent channel
 		BaseType: assemble.BaseType{
 			Name:    ctx.GenerateObjName("", "Bindings"),
 			Render:  true,
 			Package: ctx.TopPackageName(),
 		},
 	}
-	method, err := buildChannelBindings(ctx, channel, bindinbsStruct)
+	method, chanType, err := buildChannelBindings(ctx, channel, bindingsStruct)
 	if err != nil {
 		return nil, err
 	}
 	if method != nil {
 		chanResult.BindingsMethod = method
-		chanResult.BindingsStructNoAssemble = bindinbsStruct
+		chanResult.BindingsStructNoAssemble = bindingsStruct
+		chanResult.BindingsChannelType = chanType
 	}
 
 	return chanResult, nil
 }
 
-func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, bindingsStruct *assemble.Struct) (res *assemble.Func, err error) {
+func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, bindingsStruct *assemble.Struct) (res *assemble.Func, chanType string, err error) {
 	structValues := &assemble.StructInit{Type: &assemble.Simple{Type: "ChannelBindings", Package: ctx.RuntimePackage(protoName)}}
 	var hasBindings bool
 
@@ -106,6 +107,7 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 		default:
 			panic(fmt.Sprintf("Unknown channel type %q", bindings.Is))
 		}
+		chanType = bindings.Is
 
 		if bindings.Exchange != nil {
 			ex := &assemble.StructInit{
@@ -203,7 +205,7 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 	}
 
 	if !hasBindings {
-		return nil, nil
+		return nil, "", nil
 	}
 
 	// Method Proto() proto.ChannelBindings
@@ -227,6 +229,7 @@ type ProtoChannel struct {
 	protocols.BaseProtoChannel
 	BindingsStructNoAssemble *assemble.Struct // nil if bindings not set FIXME: remove in favor of struct in parent channel
 	BindingsMethod           *assemble.Func
+	BindingsChannelType      string
 }
 
 func (p ProtoChannel) AllowRender() bool {
@@ -293,19 +296,32 @@ func (p ProtoChannel) assembleNewFunc(ctx *common.AssembleContext) []*j.Statemen
 						d[j.Id("subscriber")] = j.Id("subscriber")
 					}
 				}))
-				bg.Op("res.topic = res.name.String()")
-				if p.BindingsStructNoAssemble != nil {
-					bg.Id("bindings").Op(":=").Add(utils.ToCode(p.BindingsStructNoAssemble.AssembleUsage(ctx))...).Values().Dot(protoAbbr).Call()
-					bg.Op(`
-						if bindings.Topic != "" {
-							res.topic = bindings.Topic
-						}`)
-				}
-				bg.Op(`
-					if res.topic == "" {
-						res.topic = res.name.String()
+
+				switch p.BindingsChannelType {
+				case "routingKey", "":
+					bg.Op("res.exchange = res.name.String()")
+					if p.BindingsStructNoAssemble != nil {
+						bg.Id("bindings").Op(":=").Add(utils.ToCode(p.BindingsStructNoAssemble.AssembleUsage(ctx))...).Values().Dot(protoAbbr).Call()
+						bg.Op(`
+							if bindings.ExchangeConfiguration.Name != "" {
+								res.exchange = bindings.ExchangeConfiguration.Name
+							}
+							res.queue = bindings.QueueConfiguration.Name`)
 					}
-					return &res`)
+				case "queue":
+					bg.Op("res.queue = res.name.String()")
+					if p.BindingsStructNoAssemble != nil {
+						bg.Id("bindings").Op(":=").Add(utils.ToCode(p.BindingsStructNoAssemble.AssembleUsage(ctx))...).Values().Dot(protoAbbr).Call()
+						bg.Op(`
+							if bindings.QueueConfiguration.Name != "" {
+								res.queue = bindings.QueueConfiguration.Name
+							}
+							res.exchange = bindings.ExchangeConfiguration.Name`)
+					}
+				default:
+					panic(fmt.Sprintf("Unknown channel type: %q", p.BindingsChannelType))
+				}
+				bg.Op(`return &res`)
 			}),
 	}
 }
