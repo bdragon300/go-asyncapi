@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"gopkg.in/yaml.v3"
 
@@ -194,10 +195,12 @@ func (p ProtoChannel) AssembleDefinition(ctx *common.AssembleContext) []*j.State
 	res = append(res, p.assembleNewFunc(ctx)...)
 	res = append(res, p.Struct.AssembleDefinition(ctx)...)
 	res = append(res, protocols.AssembleChannelCommonMethods(ctx, p.Struct, p.Publisher, p.Subscriber, protoAbbr)...)
+	res = append(res, p.assembleCommonMethods(ctx)...)
 	if p.Publisher {
 		res = append(res, protocols.AssembleChannelPublisherMethods(
 			ctx, p.Struct, p.PubMessageLink, p.FallbackMessageType, protoName, protoAbbr,
 		)...)
+		res = append(res, p.assemblePublisherMethods(ctx)...)
 	}
 	if p.Subscriber {
 		res = append(res, protocols.AssembleChannelSubscriberMethods(
@@ -250,6 +253,56 @@ func (p ProtoChannel) assembleNewFunc(ctx *common.AssembleContext) []*j.Statemen
 						}`)
 				}
 				bg.Op(`return &res`)
+			}),
+	}
+}
+
+func (p ProtoChannel) assembleCommonMethods(_ *common.AssembleContext) []*j.Statement {
+	rn := p.Struct.ReceiverName()
+	receiver := j.Id(rn).Id(p.Struct.Name)
+
+	return []*j.Statement{
+		// Method Topic() string
+		j.Func().Params(receiver.Clone()).Id("Topic").
+			Params().
+			String().
+			Block(
+				j.Return(j.Id(rn).Dot("topic")),
+			),
+	}
+}
+
+func (p ProtoChannel) assemblePublisherMethods(ctx *common.AssembleContext) []*j.Statement {
+	rn := p.Struct.ReceiverName()
+	receiver := j.Id(rn).Id(p.Struct.Name)
+	var msgBindings *assemble.Struct
+	if p.PubMessageLink != nil && p.PubMessageLink.Target().BindingsStruct != nil {
+		msgBindings = p.PubMessageLink.Target().BindingsStruct
+	}
+
+	return []*j.Statement{
+		// Method MakeEnvelope(envelope proto.EnvelopeWriter, message proto.EnvelopeMarshaler, messageBindings proto.MessageBindings) error
+		j.Func().Params(receiver.Clone()).Id("MakeEnvelope").
+			ParamsFunc(func(g *j.Group) {
+				g.Id("envelope").Qual(ctx.RuntimePackage(protoName), "EnvelopeWriter")
+				g.Id("message").Qual(ctx.RuntimePackage(protoName), "EnvelopeMarshaler")
+				if msgBindings != nil {
+					g.Id("messageBindings").Qual(ctx.RuntimePackage(protoName), "MessageBindings")
+				}
+			}).
+			Error().
+			BlockFunc(func(blockGroup *j.Group) {
+				blockGroup.Op(fmt.Sprintf(`
+					envelope.ResetPayload()
+					if err := message.Marshal%[2]sEnvelope(envelope); err != nil {
+						return err
+					}
+					envelope.SetTopic(%[1]s.topic)`, rn, protoAbbr),
+				)
+				if msgBindings != nil {
+					blockGroup.Op("envelope.SetBindings(messageBindings)")
+				}
+				blockGroup.Return(j.Nil())
 			}),
 	}
 }

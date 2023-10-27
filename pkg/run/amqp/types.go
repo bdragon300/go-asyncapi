@@ -118,6 +118,14 @@ func (o *EnvelopeOut) SetBindings(bindings MessageBindings) {
 	o.MessageBindings = bindings
 }
 
+func (o *EnvelopeOut) SetExchange(exchange string) {
+	o.Exchange = exchange
+}
+
+func (o *EnvelopeOut) SetQueue(queue string) {
+	o.Queue = queue
+}
+
 func (o *EnvelopeOut) ResetPayload() {
 	o.Payload.Reset()
 }

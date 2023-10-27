@@ -9,6 +9,8 @@ type (
 	EnvelopeWriter interface {
 		run.EnvelopeWriter
 		SetBindings(provider MessageBindings)
+		SetExchange(exchange string)
+		SetQueue(queue string)
 	}
 )
 

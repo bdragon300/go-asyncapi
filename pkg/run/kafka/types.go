@@ -80,12 +80,12 @@ func (o *EnvelopeOut) SetBindings(bindings MessageBindings) {
 	o.MessageBindings = bindings
 }
 
-func (o *EnvelopeOut) ResetPayload() {
-	o.Payload.Reset()
-}
-
 func (o *EnvelopeOut) SetTopic(topic string) {
 	o.Topic = topic
+}
+
+func (o *EnvelopeOut) ResetPayload() {
+	o.Payload.Reset()
 }
 
 func NewEnvelopeIn() *EnvelopeIn {

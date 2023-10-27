@@ -238,30 +238,6 @@ func AssembleChannelPublisherMethods(
 	}
 
 	return []*j.Statement{
-		// Method MakeEnvelope(envelope proto.EnvelopeWriter, message proto.EnvelopeMarshaler, messageBindings proto.MessageBindings) error
-		j.Func().Params(receiver.Clone()).Id("MakeEnvelope").
-			ParamsFunc(func(g *j.Group) {
-				g.Id("envelope").Qual(ctx.RuntimePackage(protoName), "EnvelopeWriter")
-				g.Id("message").Qual(ctx.RuntimePackage(protoName), "EnvelopeMarshaler")
-				if msgBindings != nil {
-					g.Id("messageBindings").Qual(ctx.RuntimePackage(protoName), "MessageBindings")
-				}
-			}).
-			Error().
-			BlockFunc(func(blockGroup *j.Group) {
-				blockGroup.Op(fmt.Sprintf(`
-					envelope.ResetPayload()
-					if err := message.Marshal%[2]sEnvelope(envelope); err != nil {
-						return err
-					}
-					envelope.SetTopic(%[1]s.topic)`, rn, protoAbbr), // FIXME: remove kafka-specific code
-				)
-				if msgBindings != nil {
-					blockGroup.Op("envelope.SetBindings(messageBindings)")
-				}
-				blockGroup.Return(j.Nil())
-			}),
-
 		// Method Publisher() proto.Publisher
 		j.Func().Params(receiver.Clone()).Id("Publisher").
 			Params().
@@ -315,14 +291,6 @@ func AssembleChannelCommonMethods(
 			Qual(ctx.RuntimePackage(""), "ParamString").
 			Block(
 				j.Return(j.Id(rn).Dot("name")),
-			),
-
-		// Method Topic() string
-		j.Func().Params(receiver.Clone()).Id("Topic").
-			Params().
-			String().
-			Block(
-				j.Return(j.Id(rn).Dot("topic")),
 			),
 
 		// Protocol() run.Protocol
