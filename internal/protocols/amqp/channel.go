@@ -251,9 +251,7 @@ func (p ProtoChannel) AssembleDefinition(ctx *common.AssembleContext) []*j.State
 	res = append(res, protocols.AssembleChannelCommonMethods(ctx, p.Struct, p.Publisher, p.Subscriber, protoAbbr)...)
 	res = append(res, p.assembleCommonMethods(ctx)...)
 	if p.Publisher {
-		res = append(res, protocols.AssembleChannelPublisherMethods(
-			ctx, p.Struct, p.PubMessageLink, p.FallbackMessageType, protoName, protoAbbr,
-		)...)
+		res = append(res, protocols.AssembleChannelPublisherMethods(ctx, p.Struct, protoName)...)
 		res = append(res, p.assemblePublisherMethods(ctx)...)
 	}
 	if p.Subscriber {
@@ -354,35 +352,47 @@ func (p ProtoChannel) assembleCommonMethods(_ *common.AssembleContext) []*j.Stat
 func (p ProtoChannel) assemblePublisherMethods(ctx *common.AssembleContext) []*j.Statement {
 	rn := p.Struct.ReceiverName()
 	receiver := j.Id(rn).Id(p.Struct.Name)
+
+	var msgTyp common.GolangType = assemble.NullableType{Type: p.FallbackMessageType, Render: true}
+	if p.PubMessageLink != nil {
+		msgTyp = assemble.NullableType{Type: p.PubMessageLink.Target().OutStruct, Render: true}
+	}
+
 	var msgBindings *assemble.Struct
 	if p.PubMessageLink != nil && p.PubMessageLink.Target().BindingsStruct != nil {
 		msgBindings = p.PubMessageLink.Target().BindingsStruct
 	}
 
 	return []*j.Statement{
-		// Method MakeEnvelope(envelope proto.EnvelopeWriter, message proto.EnvelopeMarshaler, messageBindings proto.MessageBindings) error
+		// Method MakeEnvelope(envelope kafka.EnvelopeWriter, message *Message1Out) error
 		j.Func().Params(receiver.Clone()).Id("MakeEnvelope").
 			ParamsFunc(func(g *j.Group) {
 				g.Id("envelope").Qual(ctx.RuntimePackage(protoName), "EnvelopeWriter")
-				g.Id("message").Qual(ctx.RuntimePackage(protoName), "EnvelopeMarshaler")
-				if msgBindings != nil {
-					g.Id("messageBindings").Qual(ctx.RuntimePackage(protoName), "MessageBindings")
-				}
+				g.Id("message").Add(utils.ToCode(msgTyp.AssembleUsage(ctx))...)
 			}).
 			Error().
-			BlockFunc(func(blockGroup *j.Group) {
-				blockGroup.Op(fmt.Sprintf(`
-					envelope.ResetPayload()
-					if err := message.Marshal%[2]sEnvelope(envelope); err != nil {
-						return err
-					}
-					envelope.SetExchange(%[1]s.exchange)
-					envelope.SetQueue(%[1]s.queue)`, rn, protoAbbr),
-				)
-				if msgBindings != nil {
-					blockGroup.Op("envelope.SetBindings(messageBindings)")
+			BlockFunc(func(bg *j.Group) {
+				bg.Op("envelope.ResetPayload()")
+				if p.PubMessageLink == nil {
+					bg.Empty().Add(utils.QualSprintf(`
+						enc := %Q(encoding/json,NewEncoder)(envelope)
+						if err := enc.Encode(message); err != nil {
+							return err
+						}`))
+				} else {
+					bg.Op(`
+						if err := message.MarshalAMQPEnvelope(envelope); err != nil {
+							return err
+						}`)
 				}
-				blockGroup.Return(j.Nil())
+				bg.Op("envelope.SetExchange").Call(j.Id(rn).Dot("exchange"))
+				bg.Op("envelope.SetQueue").Call(j.Id(rn).Dot("queue"))
+				if msgBindings != nil {
+					bg.Op("envelope.SetBindings").Call(
+						j.Add(utils.ToCode(msgBindings.AssembleUsage(ctx))...).Values().Dot("AMQP()"),
+					)
+				}
+				bg.Return(j.Nil())
 			}),
 	}
 }

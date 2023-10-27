@@ -156,34 +156,42 @@ type BaseProtoChannel struct {
 
 	PubMessageLink      *assemble.Link[*assemble.Message] // nil when message is not set
 	SubMessageLink      *assemble.Link[*assemble.Message] // nil when message is not set
-	FallbackMessageType common.Assembler
+	FallbackMessageType common.GolangType
 }
 
 func AssembleChannelSubscriberMethods(
 	ctx *common.AssembleContext,
 	channelStruct *assemble.Struct,
 	subMessageLink *assemble.Link[*assemble.Message],
-	fallbackMessageType common.Assembler,
+	fallbackMessageType common.GolangType,
 	protoName, protoAbbr string,
 ) []*j.Statement {
 	rn := channelStruct.ReceiverName()
 	receiver := j.Id(rn).Id(channelStruct.Name)
-	msgTyp := fallbackMessageType
+	var msgTyp common.GolangType = assemble.NullableType{Type: fallbackMessageType, Render: true}
 	if subMessageLink != nil {
-		msgTyp = subMessageLink.Target().InStruct
+		msgTyp = assemble.NullableType{Type: subMessageLink.Target().InStruct, Render: true}
 	}
 
 	return []*j.Statement{
-		// Method ExtractEnvelope(envelope proto.EnvelopeReader, message proto.EnvelopeUnmarshaler) error
+		// Method ExtractEnvelope(envelope proto.EnvelopeReader, message *Message1In) error
 		j.Func().Params(receiver.Clone()).Id("ExtractEnvelope").
 			Params(
 				j.Id("envelope").Qual(ctx.RuntimePackage(protoName), "EnvelopeReader"),
-				j.Id("message").Qual(ctx.RuntimePackage(protoName), "EnvelopeUnmarshaler"),
+				j.Id("message").Add(utils.ToCode(msgTyp.AssembleUsage(ctx))...),
 			).
 			Error().
-			Block(
-				j.Op(fmt.Sprintf(`return message.Unmarshal%sEnvelope(envelope)`, protoAbbr)),
-			),
+			BlockFunc(func(bg *j.Group) {
+				if subMessageLink == nil {
+					bg.Empty().Add(utils.QualSprintf(`
+						enc := %Q(encoding/json,NewDecoder)(envelope)
+						if err := enc.Decode(message); err != nil {
+							return err
+						}`))
+				} else {
+					bg.Op(fmt.Sprintf(`return message.Unmarshal%sEnvelope(envelope)`, protoAbbr))
+				}
+			}),
 
 		// Method Subscriber() proto.Subscriber
 		j.Func().Params(receiver.Clone()).Id("Subscriber").
@@ -193,28 +201,15 @@ func AssembleChannelSubscriberMethods(
 				j.Return(j.Id(rn).Dot("subscriber")),
 			),
 
-		// Method Subscribe(ctx context.Context, cb func(msg *Message2In) error) (err error)
+		// Method Subscribe(ctx context.Context, cb func(envelope proto.EnvelopeReader) error) error
 		j.Func().Params(receiver.Clone()).Id("Subscribe").
 			Params(
 				j.Id("ctx").Qual("context", "Context"),
-				j.Id("cb").Func().Params(j.Id("message").Op("*").Add(utils.ToCode(msgTyp.AssembleUsage(ctx))...)).Error(), // FIXME: *any on fallback variant
+				j.Id("cb").Func().Params(j.Id("envelope").Qual(ctx.RuntimePackage(protoName), "EnvelopeReader")).Error(), // FIXME: *any on fallback variant
 			).
 			Error().
 			Block(
-				j.Return(j.Id(rn).Dot("subscriber.Receive").Call(
-					j.Id("ctx"),
-					j.Func().
-						Params(j.Id("envelope").Qual(ctx.RuntimePackage(protoName), "EnvelopeReader")).
-						Error().
-						BlockFunc(func(g *j.Group) {
-							g.Op("buf := new").Call(j.Add(utils.ToCode(msgTyp.AssembleUsage(ctx))...))
-							g.Add(utils.QualSprintf(`
-								if err := %[1]s.ExtractEnvelope(envelope, buf); err != nil {
-									return %Q(fmt,Errorf)("envelope extraction error: %%w", err)
-								}
-								return cb(buf)`, rn))
-						}),
-				)),
+				j.Return(j.Id(rn).Dot("subscriber.Receive(ctx, cb)")),
 			),
 	}
 }
@@ -222,20 +217,10 @@ func AssembleChannelSubscriberMethods(
 func AssembleChannelPublisherMethods(
 	ctx *common.AssembleContext,
 	channelStruct *assemble.Struct,
-	pubMessageLink *assemble.Link[*assemble.Message],
-	fallbackMessageType common.Assembler,
-	protoName, protoAbbr string,
+	protoName string,
 ) []*j.Statement {
 	rn := channelStruct.ReceiverName()
 	receiver := j.Id(rn).Id(channelStruct.Name)
-	msgTyp := fallbackMessageType
-	var msgBindings *assemble.Struct
-	if pubMessageLink != nil {
-		msgTyp = pubMessageLink.Target().OutStruct
-		if pubMessageLink.Target().BindingsStruct != nil {
-			msgBindings = pubMessageLink.Target().BindingsStruct
-		}
-	}
 
 	return []*j.Statement{
 		// Method Publisher() proto.Publisher
@@ -246,32 +231,16 @@ func AssembleChannelPublisherMethods(
 				j.Return(j.Id(rn).Dot("publisher")),
 			),
 
-		// Method Publish(ctx context.Context, messages ...*Message2Out) (err error)
+		// Method Publish(ctx context.Context, envelopes ...proto.EnvelopeWriter) error
 		j.Func().Params(receiver.Clone()).Id("Publish").
 			Params(
 				j.Id("ctx").Qual("context", "Context"),
-				j.Id("msgs").Op("...").Op("*").Add(utils.ToCode(msgTyp.AssembleUsage(ctx))...), // FIXME: *any on fallback variant
+				j.Id("envelopes").Op("...").Qual(ctx.RuntimePackage(protoName), "EnvelopeWriter"),
 			).
 			Error().
-			BlockFunc(func(blockGroup *j.Group) {
-				call := "MakeEnvelope(buf, msgs[i])"
-				if msgBindings != nil {
-					blockGroup.Op("bindings :=").Add(utils.ToCode(msgBindings.AssembleUsage(ctx))...).Values().Dot(protoAbbr + "()")
-					call = "MakeEnvelope(buf, msgs[i], bindings)"
-				}
-				// TODO: kafka.NewEnvelopeOut() depends on selected implementation
-				blockGroup.Add(utils.QualSprintf(`
-					envelopes := make([]%Q(%[2]s,EnvelopeWriter), 0, len(msgs))
-					for i := 0; i < len(msgs); i++ {
-						buf := %Q(%[2]s,NewEnvelopeOut)()
-						if err := %[1]s.%[3]s; err != nil {
-							return %Q(fmt,Errorf)("make envelope #%%d error: %%w", i, err)
-						}
-						envelopes = append(envelopes, buf)
-					}
-					return %[1]s.publisher.Send(ctx, envelopes...)`, rn, ctx.RuntimePackage(protoName), call),
-				)
-			}),
+			Block(
+				j.Return(j.Id(rn).Dot("publisher.Send(ctx, envelopes...)")),
+			),
 	}
 }
 

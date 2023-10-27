@@ -61,7 +61,7 @@ func AssembleMessageMarshalEnvelopeMethod(ctx *common.AssembleContext, message *
 					)
 				} else {
 					blockGroup.Id("envelope.SetHeaders").Call(
-						j.Qual(ctx.RuntimePackage(""), "Header").Call(j.Id(rn).Dot("Headers")),
+						j.Qual(ctx.RuntimePackage(""), "Headers").Call(j.Id(rn).Dot("Headers")),
 					)
 				}
 				blockGroup.Return(j.Nil())
