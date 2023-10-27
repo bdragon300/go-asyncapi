@@ -212,7 +212,6 @@ func AssembleChannelSubscriberMethods(
 								if err := %[1]s.ExtractEnvelope(envelope, buf); err != nil {
 									return %Q(fmt,Errorf)("envelope extraction error: %%w", err)
 								}
-								envelope.Commit()
 								return cb(buf)`, rn))
 						}),
 				)),
@@ -231,7 +230,6 @@ func AssembleChannelPublisherMethods(
 	receiver := j.Id(rn).Id(channelStruct.Name)
 	msgTyp := fallbackMessageType
 	var msgBindings *assemble.Struct
-	envelopeType := j.Op("*").Qual(ctx.RuntimePackage(protoName), "EnvelopeOut") // TODO: depends on selected implementation
 	if pubMessageLink != nil {
 		msgTyp = pubMessageLink.Target().OutStruct
 		if pubMessageLink.Target().BindingsStruct != nil {
@@ -243,7 +241,7 @@ func AssembleChannelPublisherMethods(
 		// Method MakeEnvelope(envelope proto.EnvelopeWriter, message proto.EnvelopeMarshaler, messageBindings proto.MessageBindings) error
 		j.Func().Params(receiver.Clone()).Id("MakeEnvelope").
 			ParamsFunc(func(g *j.Group) {
-				g.Id("envelope").Add(envelopeType)
+				g.Id("envelope").Qual(ctx.RuntimePackage(protoName), "EnvelopeWriter")
 				g.Id("message").Qual(ctx.RuntimePackage(protoName), "EnvelopeMarshaler")
 				if msgBindings != nil {
 					g.Id("messageBindings").Qual(ctx.RuntimePackage(protoName), "MessageBindings")
@@ -256,7 +254,7 @@ func AssembleChannelPublisherMethods(
 					if err := message.Marshal%[2]sEnvelope(envelope); err != nil {
 						return err
 					}
-					envelope.Topic = %[1]s.topic`, rn, protoAbbr),
+					envelope.SetTopic(%[1]s.topic)`, rn, protoAbbr), // FIXME: remove kafka-specific code
 				)
 				if msgBindings != nil {
 					blockGroup.Op("envelope.SetBindings(messageBindings)")
@@ -285,10 +283,11 @@ func AssembleChannelPublisherMethods(
 					blockGroup.Op("bindings :=").Add(utils.ToCode(msgBindings.AssembleUsage(ctx))...).Values().Dot(protoAbbr + "()")
 					call = "MakeEnvelope(buf, msgs[i], bindings)"
 				}
+				// TODO: kafka.NewEnvelopeOut() depends on selected implementation
 				blockGroup.Add(utils.QualSprintf(`
 					envelopes := make([]%Q(%[2]s,EnvelopeWriter), 0, len(msgs))
 					for i := 0; i < len(msgs); i++ {
-						buf := new(%Q(%[2]s,EnvelopeOut))
+						buf := %Q(%[2]s,NewEnvelopeOut)()
 						if err := %[1]s.%[3]s; err != nil {
 							return %Q(fmt,Errorf)("make envelope #%%d error: %%w", i, err)
 						}

@@ -76,7 +76,9 @@ func (p ProtoServer) AssembleDefinition(ctx *common.AssembleContext) []*j.Statem
 	if p.BindingsMethod != nil {
 		res = append(res, p.BindingsMethod.AssembleDefinition(ctx)...)
 	}
-	res = append(res, protocols.AssembleServerProtocolVersionConst(p.Struct, p.ProtocolVersion)...)
+	if p.ProtocolVersion != "" {
+		res = append(res, protocols.AssembleServerProtocolVersionConst(p.Struct, p.ProtocolVersion)...)
+	}
 	res = append(res, protocols.AssembleServerURLFunc(ctx, p.Struct, p.Variables, p.URL)...)
 	res = append(res, protocols.AssembleServerNewFunc(ctx, p.Struct, p.Producer, p.Consumer, protoName)...)
 	res = append(res, p.Struct.AssembleDefinition(ctx)...)

@@ -3,12 +3,12 @@ package kafka
 import (
 	"encoding/json"
 
-	"github.com/bdragon300/asyncapi-codegen/internal/compile"
-	"github.com/bdragon300/asyncapi-codegen/internal/protocols"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen/internal/common"
+	"github.com/bdragon300/asyncapi-codegen/internal/compile"
+	"github.com/bdragon300/asyncapi-codegen/internal/protocols"
 	"github.com/bdragon300/asyncapi-codegen/internal/utils"
 	j "github.com/dave/jennifer/jen"
 	"github.com/samber/lo"

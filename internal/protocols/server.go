@@ -262,10 +262,6 @@ func AssembleServerURLFunc(
 }
 
 func AssembleServerProtocolVersionConst(serverStruct *assemble.Struct, protocolVersion string) []*j.Statement {
-	if protocolVersion == "" {
-		return nil
-	}
-
 	return []*j.Statement{
 		j.Const().Id(serverStruct.Name + "ProtocolVersion").Op("=").Lit(protocolVersion),
 	}

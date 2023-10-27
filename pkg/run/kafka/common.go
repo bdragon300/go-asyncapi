@@ -11,6 +11,7 @@ type (
 	EnvelopeWriter interface {
 		run.EnvelopeWriter
 		SetBindings(provider MessageBindings)
+		SetTopic(topic string)
 	}
 )
 
@@ -24,7 +25,6 @@ type (
 	Subscriber     = run.Subscriber[EnvelopeReader]
 	EnvelopeReader interface {
 		run.EnvelopeReader
-		Commit()
 	}
 )
 

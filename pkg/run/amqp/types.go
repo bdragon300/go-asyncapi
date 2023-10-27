@@ -1,6 +1,5 @@
 package amqp
 
-// TODO: fix local import
 import (
 	"bytes"
 	"time"
@@ -89,10 +88,14 @@ type (
 	}
 )
 
+func NewEnvelopeOut() *EnvelopeOut {
+	return &EnvelopeOut{Payload: bytes.NewBuffer(make([]byte, 0))}
+}
+
 // "Fallback" variant for envelope when no implementation has been selected
 type EnvelopeOut struct {
-	Payload         bytes.Buffer
-	MessageHeaders  run.Header
+	Payload         *bytes.Buffer
+	MessageHeaders  run.Headers
 	MessageBindings MessageBindings
 
 	Exchange string
@@ -103,7 +106,7 @@ func (o *EnvelopeOut) Write(p []byte) (n int, err error) {
 	return o.Payload.Write(p)
 }
 
-func (o *EnvelopeOut) SetHeaders(headers run.Header) {
+func (o *EnvelopeOut) SetHeaders(headers run.Headers) {
 	o.MessageHeaders = headers
 }
 
@@ -119,10 +122,14 @@ func (o *EnvelopeOut) ResetPayload() {
 	o.Payload.Reset()
 }
 
+func NewEnvelopeIn() *EnvelopeIn {
+	return &EnvelopeIn{Payload: bytes.NewBuffer(make([]byte, 0))}
+}
+
 // "Fallback" variant for envelope when no implementation has been selected
 type EnvelopeIn struct {
-	Payload        bytes.Buffer
-	MessageHeaders run.Header
+	Payload        *bytes.Buffer
+	MessageHeaders run.Headers
 
 	Exchange string
 	Queue    string
@@ -132,7 +139,7 @@ func (i *EnvelopeIn) Read(p []byte) (n int, err error) {
 	return i.Payload.Read(p)
 }
 
-func (i *EnvelopeIn) Headers() run.Header {
+func (i *EnvelopeIn) Headers() run.Headers {
 	return i.MessageHeaders
 }
 
