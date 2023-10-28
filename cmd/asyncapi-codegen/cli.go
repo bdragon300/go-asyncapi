@@ -199,7 +199,7 @@ func getImportBase() (string, error) {
 
 func getSelectedImplementations(opts ImplementationsOpts) map[string]string {
 	return map[string]string{
-		"kafka": opts.Kafka,
+		kafka.ProtoName: opts.Kafka,
 	}
 }
 

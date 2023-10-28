@@ -21,9 +21,9 @@ type messageBindings struct {
 }
 
 func BuildMessageBindingsFunc(ctx *common.CompileContext, message *compile.Message, bindingsStruct *assemble.Struct, _ string) (common.Assembler, error) {
-	msgBindings, ok := message.Bindings.Get(protoName)
+	msgBindings, ok := message.Bindings.Get(ProtoName)
 	if !ok {
-		return nil, fmt.Errorf("no binding for protocol %s", protoName)
+		return nil, fmt.Errorf("no binding for protocol %s", ProtoName)
 	}
 	var bindings messageBindings
 	if err := utils.UnmarshalRawsUnion2(msgBindings, &bindings); err != nil {
@@ -48,19 +48,19 @@ func BuildMessageBindingsFunc(ctx *common.CompileContext, message *compile.Messa
 			Name: protoAbbr,
 			Args: nil,
 			Return: []assemble.FuncParam{
-				{Type: assemble.Simple{Type: "MessageBindings", Package: ctx.RuntimePackage(protoName)}},
+				{Type: assemble.Simple{Type: "MessageBindings", Package: ctx.RuntimePackage(ProtoName)}},
 			},
 		},
 		Receiver:      bindingsStruct,
 		Package:       ctx.TopPackageName(),
-		BodyAssembler: protocols.MessageBindingsBody(values, &jsonValues, protoName),
+		BodyAssembler: protocols.MessageBindingsBody(values, &jsonValues, ProtoName),
 	}, nil
 }
 
 func AssembleMessageMarshalEnvelopeMethod(ctx *common.AssembleContext, message *assemble.Message) []*j.Statement {
-	return protocols.AssembleMessageMarshalEnvelopeMethod(ctx, message, protoName, protoAbbr)
+	return protocols.AssembleMessageMarshalEnvelopeMethod(ctx, message, ProtoName, protoAbbr)
 }
 
 func AssembleMessageUnmarshalEnvelopeMethod(ctx *common.AssembleContext, message *assemble.Message) []*j.Statement {
-	return protocols.AssembleMessageUnmarshalEnvelopeMethod(ctx, message, protoName, protoAbbr)
+	return protocols.AssembleMessageUnmarshalEnvelopeMethod(ctx, message, ProtoName, protoAbbr)
 }

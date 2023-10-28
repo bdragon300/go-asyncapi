@@ -58,7 +58,7 @@ type subscribeOperationBindings struct {
 }
 
 func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelKey string) (common.Assembler, error) {
-	baseChan, err := protocols.BuildChannel(ctx, channel, channelKey, protoName, protoAbbr)
+	baseChan, err := protocols.BuildChannel(ctx, channel, channelKey, ProtoName, protoAbbr)
 	if err != nil {
 		return nil, err
 	}
@@ -89,10 +89,10 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 }
 
 func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, bindingsStruct *assemble.Struct) (res *assemble.Func, chanType string, err error) {
-	structValues := &assemble.StructInit{Type: &assemble.Simple{Type: "ChannelBindings", Package: ctx.RuntimePackage(protoName)}}
+	structValues := &assemble.StructInit{Type: &assemble.Simple{Type: "ChannelBindings", Package: ctx.RuntimePackage(ProtoName)}}
 	var hasBindings bool
 
-	if chBindings, ok := channel.Bindings.Get(protoName); ok {
+	if chBindings, ok := channel.Bindings.Get(ProtoName); ok {
 		hasBindings = true
 		var bindings channelBindings
 		if err = utils.UnmarshalRawsUnion2(chBindings, &bindings); err != nil {
@@ -100,9 +100,9 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 		}
 		switch bindings.Is {
 		case "routingKey":
-			structValues.Values.Set("ChannelType", &assemble.Simple{Type: "ChannelTypeRoutingKey", Package: ctx.RuntimePackage(protoName)})
+			structValues.Values.Set("ChannelType", &assemble.Simple{Type: "ChannelTypeRoutingKey", Package: ctx.RuntimePackage(ProtoName)})
 		case "queue":
-			structValues.Values.Set("ChannelType", &assemble.Simple{Type: "ChannelTypeQueue", Package: ctx.RuntimePackage(protoName)})
+			structValues.Values.Set("ChannelType", &assemble.Simple{Type: "ChannelTypeQueue", Package: ctx.RuntimePackage(ProtoName)})
 		case "":
 		default:
 			panic(fmt.Sprintf("Unknown channel type %q", bindings.Is))
@@ -111,7 +111,7 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 
 		if bindings.Exchange != nil {
 			ex := &assemble.StructInit{
-				Type: &assemble.Simple{Type: "ExchangeConfiguration", Package: ctx.RuntimePackage(protoName)},
+				Type: &assemble.Simple{Type: "ExchangeConfiguration", Package: ctx.RuntimePackage(ProtoName)},
 			}
 			marshalFields := []string{"Name", "Durable", "AutoDelete", "VHost"}
 			if err = utils.StructToOrderedMap(*bindings.Exchange, &ex.Values, marshalFields); err != nil {
@@ -119,15 +119,15 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 			}
 			switch bindings.Exchange.Type {
 			case "default":
-				ex.Values.Set("Type", &assemble.Simple{Type: "ExchangeTypeDefault", Package: ctx.RuntimePackage(protoName)})
+				ex.Values.Set("Type", &assemble.Simple{Type: "ExchangeTypeDefault", Package: ctx.RuntimePackage(ProtoName)})
 			case "topic":
-				ex.Values.Set("Type", &assemble.Simple{Type: "ExchangeTypeTopic", Package: ctx.RuntimePackage(protoName)})
+				ex.Values.Set("Type", &assemble.Simple{Type: "ExchangeTypeTopic", Package: ctx.RuntimePackage(ProtoName)})
 			case "direct":
-				ex.Values.Set("Type", &assemble.Simple{Type: "ExchangeTypeDirect", Package: ctx.RuntimePackage(protoName)})
+				ex.Values.Set("Type", &assemble.Simple{Type: "ExchangeTypeDirect", Package: ctx.RuntimePackage(ProtoName)})
 			case "fanout":
-				ex.Values.Set("Type", &assemble.Simple{Type: "ExchangeTypeFanout", Package: ctx.RuntimePackage(protoName)})
+				ex.Values.Set("Type", &assemble.Simple{Type: "ExchangeTypeFanout", Package: ctx.RuntimePackage(ProtoName)})
 			case "headers":
-				ex.Values.Set("Type", &assemble.Simple{Type: "ExchangeTypeHeaders", Package: ctx.RuntimePackage(protoName)})
+				ex.Values.Set("Type", &assemble.Simple{Type: "ExchangeTypeHeaders", Package: ctx.RuntimePackage(ProtoName)})
 			case "":
 			default:
 				panic(fmt.Sprintf("Unknown exchange type %q", bindings.Is))
@@ -136,7 +136,7 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 		}
 		if bindings.Queue != nil {
 			ex := &assemble.StructInit{
-				Type: &assemble.Simple{Type: "QueueConfiguration", Package: ctx.RuntimePackage(protoName)},
+				Type: &assemble.Simple{Type: "QueueConfiguration", Package: ctx.RuntimePackage(ProtoName)},
 			}
 			marshalFields := []string{"Name", "Durable", "Exclusive", "AutoDelete", "VHost"}
 			if err = utils.StructToOrderedMap(*bindings.Exchange, &ex.Values, marshalFields); err != nil {
@@ -148,9 +148,9 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 
 	// Publish channel bindings
 	if channel.Publish != nil {
-		if b, ok := channel.Publish.Bindings.Get(protoName); ok {
+		if b, ok := channel.Publish.Bindings.Get(ProtoName); ok {
 			pob := &assemble.StructInit{
-				Type: &assemble.Simple{Type: "PublishOperationBindings", Package: ctx.RuntimePackage(protoName)},
+				Type: &assemble.Simple{Type: "PublishOperationBindings", Package: ctx.RuntimePackage(ProtoName)},
 			}
 			hasBindings = true
 			var bindings publishOperationBindings
@@ -163,9 +163,9 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 			}
 			switch bindings.DeliveryMode {
 			case 1:
-				pob.Values.Set("DeliveryMode", &assemble.Simple{Type: "DeliveryModeTransient", Package: ctx.RuntimePackage(protoName)})
+				pob.Values.Set("DeliveryMode", &assemble.Simple{Type: "DeliveryModeTransient", Package: ctx.RuntimePackage(ProtoName)})
 			case 2:
-				pob.Values.Set("DeliveryMode", &assemble.Simple{Type: "DeliveryModePersistent", Package: ctx.RuntimePackage(protoName)})
+				pob.Values.Set("DeliveryMode", &assemble.Simple{Type: "DeliveryModePersistent", Package: ctx.RuntimePackage(ProtoName)})
 			case 0:
 			default:
 				panic(fmt.Sprintf("Unknown delivery mode %v", bindings.DeliveryMode))
@@ -177,9 +177,9 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 
 	// Subscribe channel bindings
 	if channel.Subscribe != nil {
-		if b, ok := channel.Subscribe.Bindings.Get(protoName); ok {
+		if b, ok := channel.Subscribe.Bindings.Get(ProtoName); ok {
 			sob := &assemble.StructInit{
-				Type: &assemble.Simple{Type: "SubscribeOperationBindings", Package: ctx.RuntimePackage(protoName)},
+				Type: &assemble.Simple{Type: "SubscribeOperationBindings", Package: ctx.RuntimePackage(ProtoName)},
 			}
 			hasBindings = true
 			var bindings subscribeOperationBindings
@@ -192,9 +192,9 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 			}
 			switch bindings.DeliveryMode {
 			case 1:
-				sob.Values.Set("DeliveryMode", &assemble.Simple{Type: "DeliveryModeTransient", Package: ctx.RuntimePackage(protoName)})
+				sob.Values.Set("DeliveryMode", &assemble.Simple{Type: "DeliveryModeTransient", Package: ctx.RuntimePackage(ProtoName)})
 			case 2:
-				sob.Values.Set("DeliveryMode", &assemble.Simple{Type: "DeliveryModePersistent", Package: ctx.RuntimePackage(protoName)})
+				sob.Values.Set("DeliveryMode", &assemble.Simple{Type: "DeliveryModePersistent", Package: ctx.RuntimePackage(ProtoName)})
 			case 0:
 			default:
 				panic(fmt.Sprintf("Unknown delivery mode %v", bindings.DeliveryMode))
@@ -214,7 +214,7 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 			Name: protoAbbr,
 			Args: nil,
 			Return: []assemble.FuncParam{
-				{Type: assemble.Simple{Type: "ChannelBindings", Package: ctx.RuntimePackage(protoName)}},
+				{Type: assemble.Simple{Type: "ChannelBindings", Package: ctx.RuntimePackage(ProtoName)}},
 			},
 		},
 		Receiver:      bindingsStruct,
@@ -244,19 +244,19 @@ func (p ProtoChannel) AssembleDefinition(ctx *common.AssembleContext) []*j.State
 	res = append(res, p.ServerIface.AssembleDefinition(ctx)...)
 	res = append(res, protocols.AssembleChannelOpenFunc(
 		ctx, p.Struct, p.Name, p.ServerIface, p.ParametersStructNoAssemble, p.BindingsStructNoAssemble,
-		p.Publisher, p.Subscriber, protoName, protoAbbr,
+		p.Publisher, p.Subscriber, ProtoName, protoAbbr,
 	)...)
 	res = append(res, p.assembleNewFunc(ctx)...)
 	res = append(res, p.Struct.AssembleDefinition(ctx)...)
 	res = append(res, protocols.AssembleChannelCommonMethods(ctx, p.Struct, p.Publisher, p.Subscriber, protoAbbr)...)
 	res = append(res, p.assembleCommonMethods(ctx)...)
 	if p.Publisher {
-		res = append(res, protocols.AssembleChannelPublisherMethods(ctx, p.Struct, protoName)...)
+		res = append(res, protocols.AssembleChannelPublisherMethods(ctx, p.Struct, ProtoName)...)
 		res = append(res, p.assemblePublisherMethods(ctx)...)
 	}
 	if p.Subscriber {
 		res = append(res, protocols.AssembleChannelSubscriberMethods(
-			ctx, p.Struct, p.SubMessageLink, p.FallbackMessageType, protoName, protoAbbr,
+			ctx, p.Struct, p.SubMessageLink, p.FallbackMessageType, ProtoName, protoAbbr,
 		)...)
 	}
 	return res
@@ -275,10 +275,10 @@ func (p ProtoChannel) assembleNewFunc(ctx *common.AssembleContext) []*j.Statemen
 					g.Id("params").Add(utils.ToCode(p.ParametersStructNoAssemble.AssembleUsage(ctx))...)
 				}
 				if p.Publisher {
-					g.Id("publisher").Qual(ctx.RuntimePackage(protoName), "Publisher")
+					g.Id("publisher").Qual(ctx.RuntimePackage(ProtoName), "Publisher")
 				}
 				if p.Subscriber {
-					g.Id("subscriber").Qual(ctx.RuntimePackage(protoName), "Subscriber")
+					g.Id("subscriber").Qual(ctx.RuntimePackage(ProtoName), "Subscriber")
 				}
 			}).
 			Op("*").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...).
@@ -367,7 +367,7 @@ func (p ProtoChannel) assemblePublisherMethods(ctx *common.AssembleContext) []*j
 		// Method MakeEnvelope(envelope kafka.EnvelopeWriter, message *Message1Out) error
 		j.Func().Params(receiver.Clone()).Id("MakeEnvelope").
 			ParamsFunc(func(g *j.Group) {
-				g.Id("envelope").Qual(ctx.RuntimePackage(protoName), "EnvelopeWriter")
+				g.Id("envelope").Qual(ctx.RuntimePackage(ProtoName), "EnvelopeWriter")
 				g.Id("message").Add(utils.ToCode(msgTyp.AssembleUsage(ctx))...)
 			}).
 			Error().

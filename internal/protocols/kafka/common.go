@@ -6,14 +6,14 @@ import (
 )
 
 const (
-	protoName = "kafka"
+	ProtoName = "kafka"
 	protoAbbr = "Kafka"
 )
 
 func Register() {
-	compile.ProtoServerCompiler[protoName] = BuildServer
-	compile.ProtoChannelCompiler[protoName] = BuildChannel
-	compile.ProtoMessageBindingsBuilder[protoName] = BuildMessageBindingsFunc
-	assemble.ProtoMessageMarshalEnvelopeMethodAssembler[protoName] = AssembleMessageMarshalEnvelopeMethod
-	assemble.ProtoMessageUnmarshalEnvelopeMethodAssembler[protoName] = AssembleMessageUnmarshalEnvelopeMethod
+	compile.ProtoServerCompiler[ProtoName] = BuildServer
+	compile.ProtoChannelCompiler[ProtoName] = BuildChannel
+	compile.ProtoMessageBindingsBuilder[ProtoName] = BuildMessageBindingsFunc
+	assemble.ProtoMessageMarshalEnvelopeMethodAssembler[ProtoName] = AssembleMessageMarshalEnvelopeMethod
+	assemble.ProtoMessageUnmarshalEnvelopeMethodAssembler[ProtoName] = AssembleMessageUnmarshalEnvelopeMethod
 }

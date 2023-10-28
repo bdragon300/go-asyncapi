@@ -6,13 +6,13 @@ import (
 )
 
 const (
-	protoName = "amqp"
+	ProtoName = "amqp"
 	protoAbbr = "AMQP"
 )
 
 func Register() {
-	compile.ProtoChannelCompiler[protoName] = BuildChannel
-	compile.ProtoMessageBindingsBuilder[protoName] = BuildMessageBindingsFunc
-	assemble.ProtoMessageMarshalEnvelopeMethodAssembler[protoName] = AssembleMessageMarshalEnvelopeMethod
-	assemble.ProtoMessageUnmarshalEnvelopeMethodAssembler[protoName] = AssembleMessageUnmarshalEnvelopeMethod
+	compile.ProtoChannelCompiler[ProtoName] = BuildChannel
+	compile.ProtoMessageBindingsBuilder[ProtoName] = BuildMessageBindingsFunc
+	assemble.ProtoMessageMarshalEnvelopeMethodAssembler[ProtoName] = AssembleMessageMarshalEnvelopeMethod
+	assemble.ProtoMessageUnmarshalEnvelopeMethodAssembler[ProtoName] = AssembleMessageUnmarshalEnvelopeMethod
 }

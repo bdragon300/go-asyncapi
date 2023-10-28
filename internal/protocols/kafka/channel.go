@@ -35,7 +35,7 @@ type operationBindings struct {
 }
 
 func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelKey string) (common.Assembler, error) {
-	baseChan, err := protocols.BuildChannel(ctx, channel, channelKey, protoName, protoAbbr)
+	baseChan, err := protocols.BuildChannel(ctx, channel, channelKey, ProtoName, protoAbbr)
 	if err != nil {
 		return nil, err
 	}
@@ -65,10 +65,10 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 }
 
 func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Channel, bindingsStruct *assemble.Struct) (res *assemble.Func, err error) {
-	structValues := &assemble.StructInit{Type: &assemble.Simple{Type: "ChannelBindings", Package: ctx.RuntimePackage(protoName)}}
+	structValues := &assemble.StructInit{Type: &assemble.Simple{Type: "ChannelBindings", Package: ctx.RuntimePackage(ProtoName)}}
 	var hasBindings bool
 
-	if chBindings, ok := channel.Bindings.Get(protoName); ok {
+	if chBindings, ok := channel.Bindings.Get(ProtoName); ok {
 		hasBindings = true
 		var bindings channelBindings
 		if err = utils.UnmarshalRawsUnion2(chBindings, &bindings); err != nil {
@@ -81,7 +81,7 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 
 		if bindings.TopicConfiguration != nil {
 			tc := &assemble.StructInit{
-				Type: &assemble.Simple{Type: "TopicConfiguration", Package: ctx.RuntimePackage(protoName)},
+				Type: &assemble.Simple{Type: "TopicConfiguration", Package: ctx.RuntimePackage(ProtoName)},
 			}
 			marshalFields = []string{"RetentionMs", "RetentionBytes", "DeleteRetentionMs", "MaxMessageBytes"}
 			if err = utils.StructToOrderedMap(*bindings.TopicConfiguration, &tc.Values, marshalFields); err != nil {
@@ -90,7 +90,7 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 
 			if len(bindings.TopicConfiguration.CleanupPolicy) > 0 {
 				tcp := &assemble.StructInit{
-					Type: &assemble.Simple{Type: "TopicCleanupPolicy", Package: ctx.RuntimePackage(protoName)},
+					Type: &assemble.Simple{Type: "TopicCleanupPolicy", Package: ctx.RuntimePackage(ProtoName)},
 				}
 				if lo.Contains(bindings.TopicConfiguration.CleanupPolicy, "delete") {
 					tcp.Values.Set("Delete", true)
@@ -108,7 +108,7 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 	// Publish channel bindings
 	var publisherJSON utils.OrderedMap[string, any]
 	if channel.Publish != nil {
-		if b, ok := channel.Publish.Bindings.Get(protoName); ok {
+		if b, ok := channel.Publish.Bindings.Get(ProtoName); ok {
 			hasBindings = true
 			if publisherJSON, err = buildOperationBindings(b); err != nil {
 				return
@@ -119,7 +119,7 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 	// Subscribe channel bindings
 	var subscriberJSON utils.OrderedMap[string, any]
 	if channel.Subscribe != nil {
-		if b, ok := channel.Subscribe.Bindings.Get(protoName); ok {
+		if b, ok := channel.Subscribe.Bindings.Get(ProtoName); ok {
 			hasBindings = true
 			if subscriberJSON, err = buildOperationBindings(b); err != nil {
 				return
@@ -137,7 +137,7 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 			Name: protoAbbr,
 			Args: nil,
 			Return: []assemble.FuncParam{
-				{Type: assemble.Simple{Type: "ChannelBindings", Package: ctx.RuntimePackage(protoName)}},
+				{Type: assemble.Simple{Type: "ChannelBindings", Package: ctx.RuntimePackage(ProtoName)}},
 			},
 		},
 		Receiver:      bindingsStruct,
@@ -189,19 +189,19 @@ func (p ProtoChannel) AssembleDefinition(ctx *common.AssembleContext) []*j.State
 	res = append(res, p.ServerIface.AssembleDefinition(ctx)...)
 	res = append(res, protocols.AssembleChannelOpenFunc(
 		ctx, p.Struct, p.Name, p.ServerIface, p.ParametersStructNoAssemble, p.BindingsStructNoAssemble,
-		p.Publisher, p.Subscriber, protoName, protoAbbr,
+		p.Publisher, p.Subscriber, ProtoName, protoAbbr,
 	)...)
 	res = append(res, p.assembleNewFunc(ctx)...)
 	res = append(res, p.Struct.AssembleDefinition(ctx)...)
 	res = append(res, protocols.AssembleChannelCommonMethods(ctx, p.Struct, p.Publisher, p.Subscriber, protoAbbr)...)
 	res = append(res, p.assembleCommonMethods(ctx)...)
 	if p.Publisher {
-		res = append(res, protocols.AssembleChannelPublisherMethods(ctx, p.Struct, protoName)...)
+		res = append(res, protocols.AssembleChannelPublisherMethods(ctx, p.Struct, ProtoName)...)
 		res = append(res, p.assemblePublisherMethods(ctx)...)
 	}
 	if p.Subscriber {
 		res = append(res, protocols.AssembleChannelSubscriberMethods(
-			ctx, p.Struct, p.SubMessageLink, p.FallbackMessageType, protoName, protoAbbr,
+			ctx, p.Struct, p.SubMessageLink, p.FallbackMessageType, ProtoName, protoAbbr,
 		)...)
 	}
 	return res
@@ -220,10 +220,10 @@ func (p ProtoChannel) assembleNewFunc(ctx *common.AssembleContext) []*j.Statemen
 					g.Id("params").Add(utils.ToCode(p.ParametersStructNoAssemble.AssembleUsage(ctx))...)
 				}
 				if p.Publisher {
-					g.Id("publisher").Qual(ctx.RuntimePackage(protoName), "Publisher")
+					g.Id("publisher").Qual(ctx.RuntimePackage(ProtoName), "Publisher")
 				}
 				if p.Subscriber {
-					g.Id("subscriber").Qual(ctx.RuntimePackage(protoName), "Subscriber")
+					g.Id("subscriber").Qual(ctx.RuntimePackage(ProtoName), "Subscriber")
 				}
 			}).
 			Op("*").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...).
@@ -287,7 +287,7 @@ func (p ProtoChannel) assemblePublisherMethods(ctx *common.AssembleContext) []*j
 		// Method MakeEnvelope(envelope kafka.EnvelopeWriter, message *Message1Out) error
 		j.Func().Params(receiver.Clone()).Id("MakeEnvelope").
 			ParamsFunc(func(g *j.Group) {
-				g.Id("envelope").Qual(ctx.RuntimePackage(protoName), "EnvelopeWriter")
+				g.Id("envelope").Qual(ctx.RuntimePackage(ProtoName), "EnvelopeWriter")
 				g.Id("message").Add(utils.ToCode(msgTyp.AssembleUsage(ctx))...)
 			}).
 			Error().

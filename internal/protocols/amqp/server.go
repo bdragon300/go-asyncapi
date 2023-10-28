@@ -9,7 +9,7 @@ import (
 )
 
 func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey string) (common.Assembler, error) {
-	baseServer, err := protocols.BuildServer(ctx, server, serverKey, protoName)
+	baseServer, err := protocols.BuildServer(ctx, server, serverKey, ProtoName)
 	if err != nil {
 		return nil, err
 	}
@@ -17,9 +17,9 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 
 	// Server bindings (protocol has no server bindings)
 	if server.Bindings.Len() > 0 {
-		if _, ok := server.Bindings.Get(protoName); ok {
+		if _, ok := server.Bindings.Get(ProtoName); ok {
 			vals := &assemble.StructInit{
-				Type: &assemble.Simple{Type: "ServerBindings", Package: ctx.RuntimePackage(protoName)},
+				Type: &assemble.Simple{Type: "ServerBindings", Package: ctx.RuntimePackage(ProtoName)},
 			}
 			bindingsStruct := &assemble.Struct{
 				BaseType: assemble.BaseType{
@@ -34,7 +34,7 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 					Name: protoAbbr,
 					Args: nil,
 					Return: []assemble.FuncParam{
-						{Type: assemble.Simple{Type: "ServerBindings", Package: ctx.RuntimePackage(protoName)}},
+						{Type: assemble.Simple{Type: "ServerBindings", Package: ctx.RuntimePackage(ProtoName)}},
 					},
 				},
 				Receiver:      bindingsStruct,
@@ -65,15 +65,15 @@ func (p ProtoServer) AssembleDefinition(ctx *common.AssembleContext) []*j.Statem
 		res = append(res, protocols.AssembleServerProtocolVersionConst(p.Struct, p.ProtocolVersion)...)
 	}
 	res = append(res, protocols.AssembleServerURLFunc(ctx, p.Struct, p.Variables, p.URL)...)
-	res = append(res, protocols.AssembleServerNewFunc(ctx, p.Struct, p.Producer, p.Consumer, protoName)...)
+	res = append(res, protocols.AssembleServerNewFunc(ctx, p.Struct, p.Producer, p.Consumer, ProtoName)...)
 	res = append(res, p.Struct.AssembleDefinition(ctx)...)
 	res = append(res, protocols.AssembleServerCommonMethods(ctx, p.Struct, p.Name, protoAbbr)...)
 	res = append(res, p.assembleChannelMethods(ctx)...)
 	if p.Producer {
-		res = append(res, protocols.AssembleServerProducerMethods(ctx, p.Struct, protoName)...)
+		res = append(res, protocols.AssembleServerProducerMethods(ctx, p.Struct, ProtoName)...)
 	}
 	if p.Consumer {
-		res = append(res, protocols.AssembleServerConsumerMethods(ctx, p.Struct, protoName)...)
+		res = append(res, protocols.AssembleServerConsumerMethods(ctx, p.Struct, ProtoName)...)
 	}
 	return res
 }
@@ -86,7 +86,7 @@ func (p ProtoServer) assembleChannelMethods(ctx *common.AssembleContext) []*j.St
 	var res []*j.Statement
 
 	for _, ch := range p.ChannelLinkList.Targets() {
-		protoChan := ch.AllProtocols[protoName].(*ProtoChannel)
+		protoChan := ch.AllProtocols[ProtoName].(*ProtoChannel)
 		res = append(res,
 			protocols.AssembleServerChannelMethod(ctx, p.Struct, protoChan.Struct, protoChan, protoChan.ParametersStructNoAssemble)...,
 		)
