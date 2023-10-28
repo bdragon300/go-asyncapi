@@ -1,6 +1,6 @@
 package amqp
 
-import "github.com/bdragon300/asyncapi-codegen/pkg/run"
+import "github.com/bdragon300/asyncapi-codegen-go/pkg/run"
 
 // Pub
 type (

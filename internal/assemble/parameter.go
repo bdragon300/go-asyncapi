@@ -3,7 +3,7 @@ package assemble
 import (
 	"strings"
 
-	"github.com/bdragon300/asyncapi-codegen/internal/common"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	j "github.com/dave/jennifer/jen"
 )
 

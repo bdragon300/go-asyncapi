@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"time"
 
-	"github.com/bdragon300/asyncapi-codegen/pkg/run"
+	"github.com/bdragon300/asyncapi-codegen-go/pkg/run"
 )
 
 type ChannelType int

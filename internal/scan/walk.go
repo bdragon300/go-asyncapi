@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bdragon300/asyncapi-codegen/internal/common"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 )
 
 type compiler interface {

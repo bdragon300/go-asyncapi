@@ -3,8 +3,8 @@ package franzgo
 import (
 	"bytes"
 
-	"github.com/bdragon300/asyncapi-codegen/pkg/run"
-	"github.com/bdragon300/asyncapi-codegen/pkg/run/kafka"
+	"github.com/bdragon300/asyncapi-codegen-go/pkg/run"
+	"github.com/bdragon300/asyncapi-codegen-go/pkg/run/kafka"
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 

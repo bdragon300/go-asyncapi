@@ -1,6 +1,6 @@
 package common
 
-const RunPackagePath = "github.com/bdragon300/asyncapi-codegen/pkg/run"
+const RunPackagePath = "github.com/bdragon300/asyncapi-codegen-go/pkg/run"
 
 type SchemaTag string
 

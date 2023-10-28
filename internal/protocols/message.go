@@ -1,9 +1,9 @@
 package protocols
 
 import (
-	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
-	"github.com/bdragon300/asyncapi-codegen/internal/common"
-	"github.com/bdragon300/asyncapi-codegen/internal/utils"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	j "github.com/dave/jennifer/jen"
 )
 

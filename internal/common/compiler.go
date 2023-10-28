@@ -4,7 +4,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/bdragon300/asyncapi-codegen/internal/utils"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	"github.com/samber/lo"
 )
 

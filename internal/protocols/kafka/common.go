@@ -1,8 +1,8 @@
 package kafka
 
 import (
-	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
-	"github.com/bdragon300/asyncapi-codegen/internal/compile"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/compile"
 )
 
 const (

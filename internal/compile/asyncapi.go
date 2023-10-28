@@ -1,6 +1,6 @@
 package compile
 
-import "github.com/bdragon300/asyncapi-codegen/internal/utils"
+import "github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 
 type AsyncAPI struct {
 	Asyncapi           string                            `json:"asyncapi" yaml:"asyncapi"`

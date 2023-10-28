@@ -3,7 +3,7 @@ package assemble
 import (
 	"fmt"
 
-	"github.com/bdragon300/asyncapi-codegen/internal/common"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/dave/jennifer/jen"
 	"github.com/samber/lo"
 )

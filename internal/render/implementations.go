@@ -5,8 +5,8 @@ import (
 	"io/fs"
 	"os"
 
-	"github.com/bdragon300/asyncapi-codegen/implementations"
-	"github.com/bdragon300/asyncapi-codegen/internal/utils"
+	"github.com/bdragon300/asyncapi-codegen-go/implementations"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 )
 
 func WriteImplementation(implDir, baseDir string) error {

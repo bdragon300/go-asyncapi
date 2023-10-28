@@ -10,21 +10,21 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/bdragon300/asyncapi-codegen/implementations"
+	"github.com/bdragon300/asyncapi-codegen-go/implementations"
 
-	"github.com/bdragon300/asyncapi-codegen/internal/protocols/amqp"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols/amqp"
 
-	"github.com/bdragon300/asyncapi-codegen/internal/protocols/kafka"
-	"github.com/bdragon300/asyncapi-codegen/internal/render"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols/kafka"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	"github.com/samber/lo"
 	"golang.org/x/mod/modfile"
 
-	"github.com/bdragon300/asyncapi-codegen/internal/linker"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/linker"
 
 	"github.com/alexflint/go-arg"
-	"github.com/bdragon300/asyncapi-codegen/internal/common"
-	"github.com/bdragon300/asyncapi-codegen/internal/compile"
-	"github.com/bdragon300/asyncapi-codegen/internal/scan"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/compile"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/scan"
 	"gopkg.in/yaml.v3"
 )
 

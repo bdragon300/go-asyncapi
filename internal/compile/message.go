@@ -7,9 +7,9 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/bdragon300/asyncapi-codegen/internal/assemble"
-	"github.com/bdragon300/asyncapi-codegen/internal/common"
-	"github.com/bdragon300/asyncapi-codegen/internal/utils"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 )
 
 type protoMessageBindingsBuilderFunc func(ctx *common.CompileContext, message *Message, bindingsStruct *assemble.Struct, name string) (common.Assembler, error)
