@@ -38,7 +38,7 @@ type GenerateCmd struct {
 }
 
 type ImplementationsOpts struct {
-	Kafka string `arg:"--kafka-impl" default:"franz-go" help:"Implementation for kafka protocol" placeholder:"NAME"`
+	Kafka string `arg:"--kafka-impl" default:"franz-go" help:"Implementation for kafka protocol or 'no' to disable implementation" placeholder:"NAME"`
 }
 
 type cli struct {
@@ -81,8 +81,9 @@ func listImplementations() {
 	for proto, implInfo := range manifest {
 		os.Stdout.WriteString(proto + ":\n")
 		for implName, info := range implInfo {
-			os.Stdout.WriteString(fmt.Sprintf("* %s -- %s\n", implName, info.URL))
+			os.Stdout.WriteString(fmt.Sprintf("* %s (%s)\n", implName, info.URL))
 		}
+		os.Stdout.WriteString("\n")
 	}
 }
 
@@ -135,6 +136,9 @@ func generate(cmd *GenerateCmd) error {
 	}
 	selectedImpls := getSelectedImplementations(cmd.ImplementationsOpts)
 	for p := range compileCtx.Protocols {
+		if selectedImpls[p] == "no" {
+			continue
+		}
 		if _, ok := implManifest[p][selectedImpls[p]]; !ok {
 			return fmt.Errorf("unknown implementation %s for %s protocol, use list-implementations command to see possible values", selectedImpls[p], p)
 		}
