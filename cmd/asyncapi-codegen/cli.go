@@ -142,11 +142,7 @@ func generate(cmd *GenerateCmd) error {
 		if _, ok := implManifest[p][selectedImpls[p]]; !ok {
 			return fmt.Errorf("unknown implementation %s for %s protocol, use list-implementations command to see possible values", selectedImpls[p], p)
 		}
-		d := path.Join(implDir, p)
-		if err = os.MkdirAll(d, 0o750); err != nil {
-			return fmt.Errorf("cannot create directory %q: %w", d, err)
-		}
-		if err = render.WriteImplementation(implManifest[p][selectedImpls[p]].Dir, d); err != nil {
+		if err = render.WriteImplementation(implManifest[p][selectedImpls[p]].Dir, path.Join(implDir, p)); err != nil {
 			return fmt.Errorf("cannot render implementation for protocol %q: %w", p, err)
 		}
 	}
