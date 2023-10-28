@@ -1,0 +1,8 @@
+{
+  "kafka": {
+    "franz-go": {
+      "url": "https://github.com/twmb/franz-go",
+      "dir": "kafka/franz-go"
+    }
+  }
+}

@@ -36,6 +36,9 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
 	}
 	ctx.PutToCurrentPkg(obj)
+	if ctx.TopPackageName() == "servers" {
+		ctx.NotifyProtocol(s.Protocol)
+	}
 	return nil
 }
 

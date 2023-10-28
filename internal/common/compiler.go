@@ -22,10 +22,19 @@ type ContextStackItem struct {
 	ObjName     string
 }
 
+func NewCompileContext(linker Linker) *CompileContext {
+	return &CompileContext{
+		Packages:  make(map[string]*Package),
+		Linker:    linker,
+		Protocols: make(map[string]int),
+	}
+}
+
 type CompileContext struct {
-	Packages map[string]*Package
-	Stack    SimpleStack[ContextStackItem]
-	Linker   Linker
+	Packages  map[string]*Package
+	Stack     SimpleStack[ContextStackItem]
+	Linker    Linker
+	Protocols map[string]int
 }
 
 func (c *CompileContext) PutToCurrentPkg(obj Assembler) {
@@ -79,4 +88,11 @@ func (c *CompileContext) GenerateObjName(name, suffix string) string {
 		name += nameWordSep + suffix
 	}
 	return utils.ToGolangName(name, true)
+}
+
+func (c *CompileContext) NotifyProtocol(protoName string) {
+	if _, ok := c.Protocols[protoName]; !ok {
+		c.Protocols[protoName] = 0
+	}
+	c.Protocols[protoName]++
 }

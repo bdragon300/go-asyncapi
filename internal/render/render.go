@@ -33,7 +33,7 @@ func AssemblePackages(packages map[string]*common.Package, importBase, baseDir s
 	return
 }
 
-func WriteFiles(files map[string]*jen.File, baseDir string) error {
+func WriteAssembled(files map[string]*jen.File, baseDir string) error {
 	if err := ensureDir(baseDir); err != nil {
 		return err
 	}
