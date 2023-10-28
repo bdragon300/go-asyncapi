@@ -8,7 +8,7 @@ import (
 	"path"
 )
 
-func CopyRecursive(srcFS fs.FS, dstBase string) error {
+func CopyRecursive(srcFS fs.FS, dstBase string, copyCb func(w io.Writer, r io.Reader) (int64, error)) error {
 	entries, err := fs.ReadDir(srcFS, ".")
 	if err != nil {
 		return fmt.Errorf("cannot get dir entries: %w", err)
@@ -24,7 +24,7 @@ func CopyRecursive(srcFS fs.FS, dstBase string) error {
 			if err := os.MkdirAll(dst, os.ModePerm); err != nil {
 				return fmt.Errorf("cannot create a dst directory %q: %w", dst, err)
 			}
-			if err := CopyRecursive(src, dst); err != nil {
+			if err := CopyRecursive(src, dst, copyCb); err != nil {
 				return fmt.Errorf("error while copy dir %q: %w", entry.Name(), err)
 			}
 		} else {
@@ -39,7 +39,7 @@ func CopyRecursive(srcFS fs.FS, dstBase string) error {
 					return fmt.Errorf("cannot craate/truncate dst file %q: %w", dst, err)
 				}
 				defer dstFile.Close()
-				if _, err := io.Copy(dstFile, srcFile); err != nil {
+				if _, err = copyCb(dstFile, srcFile); err != nil {
 					return fmt.Errorf("cannot copy contents from %q to %q: %w", entry.Name(), dst, err)
 				}
 				return nil
