@@ -41,7 +41,7 @@ type Func struct {
 	FuncSignature
 	Receiver        common.GolangType
 	PointerReceiver bool
-	Package         string // optional import path from any generated package
+	PackageName     string // optional import path from any generated package
 	BodyAssembler   func(ctx *common.AssembleContext, f *Func) []*jen.Statement
 }
 
@@ -65,8 +65,8 @@ func (f Func) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
 }
 
 func (f Func) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
-	if f.Package != "" && f.Package != ctx.CurrentPackage && f.Receiver == nil {
-		return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, f.Package), f.Name)}
+	if f.PackageName != "" && f.PackageName != ctx.CurrentPackage && f.Receiver == nil {
+		return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, f.PackageName), f.Name)}
 	}
 	return []*jen.Statement{jen.Id(f.Name)}
 }

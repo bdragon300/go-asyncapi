@@ -45,7 +45,7 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 				Name:        utils.ToGolangName(parameterKey, true),
 				Description: p.Description,
 				Render:      true,
-				Package:     ctx.TopPackageName(),
+				PackageName: ctx.TopPackageName(),
 			},
 			Fields: []assemble.StructField{{Name: "Value", Type: lnk}},
 		}
@@ -55,9 +55,9 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 				Name:        utils.ToGolangName(parameterKey, true),
 				Description: p.Description,
 				Render:      true,
-				Package:     ctx.TopPackageName(),
+				PackageName: ctx.TopPackageName(),
 			},
-			AliasedType: &assemble.Simple{Type: "string"},
+			AliasedType: &assemble.Simple{Name: "string"},
 		}
 		res.PureString = true
 	}

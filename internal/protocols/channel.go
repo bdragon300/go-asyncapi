@@ -35,22 +35,22 @@ func BuildChannel(
 				Name:        ctx.GenerateObjName("", protoAbbr),
 				Description: channel.Description,
 				Render:      true,
-				Package:     ctx.TopPackageName(),
+				PackageName: ctx.TopPackageName(),
 			},
 			Fields: []assemble.StructField{
-				{Name: "name", Type: &assemble.Simple{Type: "ParamString", Package: ctx.RuntimePackage("")}},
+				{Name: "name", Type: &assemble.Simple{Name: "ParamString", Package: ctx.RuntimePackage("")}},
 			},
 		},
-		FallbackMessageType: &assemble.Simple{Type: "any", IsIface: true},
+		FallbackMessageType: &assemble.Simple{Name: "any", IsIface: true},
 	}
 
 	// FIXME: remove in favor of the non-proto channel
 	if channel.Parameters.Len() > 0 {
 		chanResult.ParametersStructNoAssemble = &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:    ctx.GenerateObjName("", "Parameters"),
-				Render:  true,
-				Package: ctx.TopPackageName(),
+				Name:        ctx.GenerateObjName("", "Parameters"),
+				Render:      true,
+				PackageName: ctx.TopPackageName(),
 			},
 			Fields: nil,
 		}
@@ -70,22 +70,22 @@ func BuildChannel(
 	if chanResult.ParametersStructNoAssemble != nil {
 		ifaceFirstMethodParams = append(ifaceFirstMethodParams, assemble.FuncParam{
 			Name: "params",
-			Type: &assemble.Simple{Type: chanResult.ParametersStructNoAssemble.Name, Package: ctx.TopPackageName()},
+			Type: &assemble.Simple{Name: chanResult.ParametersStructNoAssemble.Name, Package: ctx.TopPackageName()},
 		})
 	}
 	chanResult.ServerIface = &assemble.Interface{
 		BaseType: assemble.BaseType{
-			Name:    utils.ToLowerFirstLetter(chanResult.Struct.Name + "Server"),
-			Render:  true,
-			Package: ctx.TopPackageName(),
+			Name:        utils.ToLowerFirstLetter(chanResult.Struct.Name + "Server"),
+			Render:      true,
+			PackageName: ctx.TopPackageName(),
 		},
 		Methods: []assemble.FuncSignature{
 			{
 				Name: "Open" + chanResult.Struct.Name,
 				Args: ifaceFirstMethodParams,
 				Return: []assemble.FuncParam{
-					{Type: &assemble.Simple{Type: chanResult.Struct.Name, Package: ctx.TopPackageName()}, Pointer: true},
-					{Type: &assemble.Simple{Type: "error"}},
+					{Type: &assemble.Simple{Name: chanResult.Struct.Name, Package: ctx.TopPackageName()}, Pointer: true},
+					{Type: &assemble.Simple{Name: "error"}},
 				},
 			},
 		},
@@ -97,7 +97,7 @@ func BuildChannel(
 			Name:        "publisher",
 			Description: channel.Publish.Description,
 			Type: &assemble.Simple{
-				Type:    "Publisher",
+				Name:    "Publisher",
 				Package: ctx.RuntimePackage(protoName),
 				IsIface: true,
 			},
@@ -112,7 +112,7 @@ func BuildChannel(
 			Name: "Producer",
 			Args: nil,
 			Return: []assemble.FuncParam{
-				{Type: &assemble.Simple{Type: "Producer", Package: ctx.RuntimePackage(protoName), IsIface: true}},
+				{Type: &assemble.Simple{Name: "Producer", Package: ctx.RuntimePackage(protoName), IsIface: true}},
 			},
 		})
 	}
@@ -123,7 +123,7 @@ func BuildChannel(
 			Name:        "subscriber",
 			Description: channel.Subscribe.Description,
 			Type: &assemble.Simple{
-				Type:    "Subscriber",
+				Name:    "Subscriber",
 				Package: ctx.RuntimePackage(protoName),
 				IsIface: true,
 			},
@@ -138,7 +138,7 @@ func BuildChannel(
 			Name: "Consumer",
 			Args: nil,
 			Return: []assemble.FuncParam{
-				{Type: &assemble.Simple{Type: "Consumer", Package: ctx.RuntimePackage(protoName), IsIface: true}},
+				{Type: &assemble.Simple{Name: "Consumer", Package: ctx.RuntimePackage(protoName), IsIface: true}},
 			},
 		})
 	}

@@ -20,3 +20,7 @@ type AssembleContext struct {
 func (a AssembleContext) RuntimePackage(subPackage string) string {
 	return path.Join(RunPackagePath, subPackage)
 }
+
+func (a AssembleContext) GeneratedPackage(subPackage string) string {
+	return path.Join(a.ImportBase, subPackage)
+}

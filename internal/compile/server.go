@@ -63,9 +63,9 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Asse
 		ProtoServer: protoServer,
 		BindingsStruct: &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:    ctx.GenerateObjName("", "Bindings"),
-				Render:  true,
-				Package: ctx.TopPackageName(),
+				Name:        ctx.GenerateObjName("", "Bindings"),
+				Render:      true,
+				PackageName: ctx.TopPackageName(),
 			},
 			Fields: nil,
 		},

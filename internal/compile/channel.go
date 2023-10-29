@@ -51,9 +51,9 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.As
 	if c.Parameters.Len() > 0 {
 		res.ParametersStruct = &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:    utils.ToGolangName(channelKey, true) + "Parameters",
-				Render:  true,
-				Package: ctx.TopPackageName(),
+				Name:        utils.ToGolangName(channelKey, true) + "Parameters",
+				Render:      true,
+				PackageName: ctx.TopPackageName(),
 			},
 		}
 		for _, paramName := range c.Parameters.Keys() {
@@ -89,9 +89,9 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.As
 	if c.Bindings.Len() > 0 || c.Publish != nil && c.Publish.Bindings.Len() > 0 || c.Subscribe != nil && c.Subscribe.Bindings.Len() > 0 {
 		res.BindingsStruct = &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:    ctx.GenerateObjName("", "Bindings"),
-				Render:  true,
-				Package: ctx.TopPackageName(),
+				Name:        ctx.GenerateObjName("", "Bindings"),
+				Render:      true,
+				PackageName: ctx.TopPackageName(),
 			},
 		}
 	}
@@ -99,9 +99,9 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.As
 	if c.Parameters.Len() > 0 {
 		res.ParametersStruct = &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:    ctx.GenerateObjName("", "Parameters"),
-				Render:  true,
-				Package: ctx.TopPackageName(),
+				Name:        ctx.GenerateObjName("", "Parameters"),
+				Render:      true,
+				PackageName: ctx.TopPackageName(),
 			},
 			Fields: nil,
 		}

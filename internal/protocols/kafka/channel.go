@@ -40,16 +40,16 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 		return nil, err
 	}
 
-	baseChan.Struct.Fields = append(baseChan.Struct.Fields, assemble.StructField{Name: "topic", Type: &assemble.Simple{Type: "string"}})
+	baseChan.Struct.Fields = append(baseChan.Struct.Fields, assemble.StructField{Name: "topic", Type: &assemble.Simple{Name: "string"}})
 
 	chanResult := &ProtoChannel{BaseProtoChannel: *baseChan}
 
 	// Channel bindings
 	bindingsStruct := &assemble.Struct{ // TODO: remove in favor of parent channel
 		BaseType: assemble.BaseType{
-			Name:    ctx.GenerateObjName("", "Bindings"),
-			Render:  true,
-			Package: ctx.TopPackageName(),
+			Name:        ctx.GenerateObjName("", "Bindings"),
+			Render:      true,
+			PackageName: ctx.TopPackageName(),
 		},
 	}
 	method, err := buildChannelBindingsMethod(ctx, channel, bindingsStruct)
@@ -65,7 +65,7 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 }
 
 func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Channel, bindingsStruct *assemble.Struct) (res *assemble.Func, err error) {
-	structValues := &assemble.StructInit{Type: &assemble.Simple{Type: "ChannelBindings", Package: ctx.RuntimePackage(ProtoName)}}
+	structValues := &assemble.StructInit{Type: &assemble.Simple{Name: "ChannelBindings", Package: ctx.RuntimePackage(ProtoName)}}
 	var hasBindings bool
 
 	if chBindings, ok := channel.Bindings.Get(ProtoName); ok {
@@ -81,7 +81,7 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 
 		if bindings.TopicConfiguration != nil {
 			tc := &assemble.StructInit{
-				Type: &assemble.Simple{Type: "TopicConfiguration", Package: ctx.RuntimePackage(ProtoName)},
+				Type: &assemble.Simple{Name: "TopicConfiguration", Package: ctx.RuntimePackage(ProtoName)},
 			}
 			marshalFields = []string{"RetentionMs", "RetentionBytes", "DeleteRetentionMs", "MaxMessageBytes"}
 			if err = utils.StructToOrderedMap(*bindings.TopicConfiguration, &tc.Values, marshalFields); err != nil {
@@ -90,7 +90,7 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 
 			if len(bindings.TopicConfiguration.CleanupPolicy) > 0 {
 				tcp := &assemble.StructInit{
-					Type: &assemble.Simple{Type: "TopicCleanupPolicy", Package: ctx.RuntimePackage(ProtoName)},
+					Type: &assemble.Simple{Name: "TopicCleanupPolicy", Package: ctx.RuntimePackage(ProtoName)},
 				}
 				if lo.Contains(bindings.TopicConfiguration.CleanupPolicy, "delete") {
 					tcp.Values.Set("Delete", true)
@@ -137,11 +137,11 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 			Name: protoAbbr,
 			Args: nil,
 			Return: []assemble.FuncParam{
-				{Type: assemble.Simple{Type: "ChannelBindings", Package: ctx.RuntimePackage(ProtoName)}},
+				{Type: assemble.Simple{Name: "ChannelBindings", Package: ctx.RuntimePackage(ProtoName)}},
 			},
 		},
 		Receiver:      bindingsStruct,
-		Package:       ctx.TopPackageName(),
+		PackageName:   ctx.TopPackageName(),
 		BodyAssembler: protocols.ChannelBindingsMethodBody(structValues, &publisherJSON, &subscriberJSON),
 	}
 

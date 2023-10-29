@@ -19,7 +19,7 @@ func AssembleMessageUnmarshalEnvelopeMethod(ctx *common.AssembleContext, message
 			Params(j.Id("envelope").Qual(ctx.RuntimePackage(protoName), "EnvelopeReader")).
 			Error().
 			BlockFunc(func(bg *j.Group) {
-				bg.Op("dec := ").Qual(ctx.RuntimePackage("serializer"), "NewDecoder").Call(j.Lit(message.ContentType), j.Id("envelope"))
+				bg.Op("dec := ").Qual(ctx.GeneratedPackage("utils"), "NewDecoder").Call(j.Lit(message.ContentType), j.Id("envelope"))
 				bg.Op(fmt.Sprintf(`
 					if err := dec.Decode(&%[1]s.Payload); err != nil {
 						return err
@@ -48,7 +48,7 @@ func AssembleMessageMarshalEnvelopeMethod(ctx *common.AssembleContext, message *
 			Params(j.Id("envelope").Qual(ctx.RuntimePackage(protoName), "EnvelopeWriter")).
 			Error().
 			BlockFunc(func(bg *j.Group) {
-				bg.Op("enc := ").Qual(ctx.RuntimePackage("serializer"), "NewEncoder").Call(j.Lit(message.ContentType), j.Id("envelope"))
+				bg.Op("enc := ").Qual(ctx.GeneratedPackage("utils"), "NewEncoder").Call(j.Lit(message.ContentType), j.Id("envelope"))
 				bg.Op(fmt.Sprintf(`
 					if err := enc.Encode(%[1]s.Payload); err != nil {
 						return err

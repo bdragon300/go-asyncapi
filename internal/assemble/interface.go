@@ -29,8 +29,8 @@ func (i Interface) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statem
 
 func (i Interface) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	if i.AllowRender() {
-		if i.Package != "" && i.Package != ctx.CurrentPackage {
-			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, string(i.Package)), i.Name)}
+		if i.PackageName != "" && i.PackageName != ctx.CurrentPackage {
+			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, string(i.PackageName)), i.Name)}
 		}
 		return []*jen.Statement{jen.Id(i.Name)}
 	}

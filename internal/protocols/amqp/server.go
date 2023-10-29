@@ -19,13 +19,13 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 	if server.Bindings.Len() > 0 {
 		if _, ok := server.Bindings.Get(ProtoName); ok {
 			vals := &assemble.StructInit{
-				Type: &assemble.Simple{Type: "ServerBindings", Package: ctx.RuntimePackage(ProtoName)},
+				Type: &assemble.Simple{Name: "ServerBindings", Package: ctx.RuntimePackage(ProtoName)},
 			}
 			bindingsStruct := &assemble.Struct{
 				BaseType: assemble.BaseType{
-					Name:    srvResult.Struct.Name + "Bindings",
-					Render:  true,
-					Package: ctx.TopPackageName(),
+					Name:        srvResult.Struct.Name + "Bindings",
+					Render:      true,
+					PackageName: ctx.TopPackageName(),
 				},
 			}
 
@@ -34,11 +34,11 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 					Name: protoAbbr,
 					Args: nil,
 					Return: []assemble.FuncParam{
-						{Type: assemble.Simple{Type: "ServerBindings", Package: ctx.RuntimePackage(ProtoName)}},
+						{Type: assemble.Simple{Name: "ServerBindings", Package: ctx.RuntimePackage(ProtoName)}},
 					},
 				},
 				Receiver:      bindingsStruct,
-				Package:       ctx.TopPackageName(),
+				PackageName:   ctx.TopPackageName(),
 				BodyAssembler: protocols.ServerBindingsMethodBody(vals, nil),
 			}
 		}

@@ -16,8 +16,8 @@ type BaseType struct {
 
 	// Render denotes if this type must be rendered separately. Otherwise, it will only be inlined in a parent definition
 	// Such as inlined `field struct{...}` and separate `field StructName`, or `field []type` and `field ArrayName`
-	Render  bool
-	Package string // optional import path from any generated package
+	Render      bool
+	PackageName string // optional import path from any generated package
 }
 
 func (b *BaseType) AllowRender() bool {
@@ -29,8 +29,8 @@ func (b *BaseType) TypeName() string {
 }
 
 func (b *BaseType) AssembleNameUsage(ctx *common.AssembleContext, name string) []*jen.Statement {
-	if b.Package != "" && b.Package != ctx.CurrentPackage {
-		return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, string(b.Package)), name)}
+	if b.PackageName != "" && b.PackageName != ctx.CurrentPackage {
+		return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, b.PackageName), name)}
 	}
 	return []*jen.Statement{jen.Id(name)}
 }
@@ -61,8 +61,8 @@ func (a *Array) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement
 
 func (a *Array) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	if a.Render {
-		if a.Package != "" && a.Package != ctx.CurrentPackage {
-			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, string(a.Package)), a.Name)}
+		if a.PackageName != "" && a.PackageName != ctx.CurrentPackage {
+			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, a.PackageName), a.Name)}
 		}
 		return []*jen.Statement{jen.Id(a.Name)}
 	}
@@ -93,8 +93,8 @@ func (m *Map) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
 
 func (m *Map) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	if m.Render {
-		if m.Package != "" && m.Package != ctx.CurrentPackage {
-			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, string(m.Package)), m.Name)}
+		if m.PackageName != "" && m.PackageName != ctx.CurrentPackage {
+			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, m.PackageName), m.Name)}
 		}
 		return []*jen.Statement{jen.Id(m.Name)}
 	}
@@ -122,8 +122,8 @@ func (p *TypeAlias) AssembleDefinition(ctx *common.AssembleContext) []*jen.State
 
 func (p *TypeAlias) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	if p.Render {
-		if p.Package != "" && p.Package != ctx.CurrentPackage {
-			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, string(p.Package)), p.Name)}
+		if p.PackageName != "" && p.PackageName != ctx.CurrentPackage {
+			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, p.PackageName), p.Name)}
 		}
 		return []*jen.Statement{jen.Id(p.Name)}
 	}
@@ -133,7 +133,7 @@ func (p *TypeAlias) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement 
 }
 
 type Simple struct {
-	Type            string // type name with or without package name, such as "json.Marshal" or "string"
+	Name            string // type name with or without package name, such as "json.Marshal" or "string"
 	IsIface         bool
 	Package         string             // optional import path from any generated package
 	TypeParamValues []common.Assembler // optional type parameter types to be filled in definition and usage
@@ -144,7 +144,7 @@ func (p Simple) AllowRender() bool {
 }
 
 func (p Simple) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
-	stmt := jen.Id(p.Type)
+	stmt := jen.Id(p.Name)
 	if len(p.TypeParamValues) > 0 {
 		typeParams := lo.FlatMap(p.TypeParamValues, func(item common.Assembler, index int) []jen.Code {
 			return utils.ToCode(item.AssembleUsage(ctx))
@@ -157,10 +157,10 @@ func (p Simple) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement
 func (p Simple) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	stmt := &jen.Statement{}
 	switch {
-	case p.Package != "" && p.Package != string(ctx.CurrentPackage):
-		stmt = stmt.Qual(p.Package, p.Type)
+	case p.Package != "" && p.Package != ctx.CurrentPackage:
+		stmt = stmt.Qual(p.Package, p.Name)
 	default:
-		stmt = stmt.Id(p.Type)
+		stmt = stmt.Id(p.Name)
 	}
 
 	if len(p.TypeParamValues) > 0 {

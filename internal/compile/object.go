@@ -111,7 +111,7 @@ func buildGolangType(ctx *common.CompileContext, schema Object, flags map[common
 		return res, nil
 	case "null", "":
 		return &assemble.NullableType{
-			Type:   &assemble.Simple{Type: "any", IsIface: true},
+			Type:   &assemble.Simple{Name: "any", IsIface: true},
 			Render: noInline,
 		}, nil
 	case "boolean":
@@ -133,9 +133,9 @@ func buildGolangType(ctx *common.CompileContext, schema Object, flags map[common
 			Name:        ctx.GenerateObjName("", ""),
 			Description: schema.Description,
 			Render:      noInline,
-			Package:     ctx.TopPackageName(),
+			PackageName: ctx.TopPackageName(),
 		},
-		AliasedType: &assemble.Simple{Type: langTyp},
+		AliasedType: &assemble.Simple{Name: langTyp},
 	}, nil
 }
 
@@ -177,7 +177,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 			Name:        ctx.GenerateObjName("", ""),
 			Description: schema.Description,
 			Render:      noInline,
-			Package:     ctx.TopPackageName(),
+			PackageName: ctx.TopPackageName(),
 		},
 	}
 	// TODO: cache the object name in case any sub-schemas recursively reference it
@@ -210,9 +210,9 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 						Name:        ctx.GenerateObjName("", "AdditionalProperties"),
 						Description: schema.AdditionalProperties.V0.Description,
 						Render:      false,
-						Package:     ctx.TopPackageName(),
+						PackageName: ctx.TopPackageName(),
 					},
-					KeyType:   &assemble.Simple{Type: "string"},
+					KeyType:   &assemble.Simple{Name: "string"},
 					ValueType: langObj,
 				},
 				Tags:        nil, // TODO
@@ -226,9 +226,9 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 						Name:        ctx.GenerateObjName("", "AdditionalPropertiesValue"),
 						Description: "",
 						Render:      false,
-						Package:     ctx.TopPackageName(),
+						PackageName: ctx.TopPackageName(),
 					},
-					AliasedType: &assemble.Simple{Type: "any", IsIface: true},
+					AliasedType: &assemble.Simple{Name: "any", IsIface: true},
 				}
 				f := assemble.StructField{
 					Name: "AdditionalProperties",
@@ -237,9 +237,9 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 							Name:        ctx.GenerateObjName("", "AdditionalProperties"),
 							Description: "",
 							Render:      false,
-							Package:     ctx.TopPackageName(),
+							PackageName: ctx.TopPackageName(),
 						},
-						KeyType:   &assemble.Simple{Type: "string"},
+						KeyType:   &assemble.Simple{Name: "string"},
 						ValueType: &valTyp,
 					},
 					Tags: nil, // TODO
@@ -259,7 +259,7 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 			Name:        ctx.GenerateObjName("", ""),
 			Description: schema.Description,
 			Render:      noInline,
-			Package:     ctx.TopPackageName(),
+			PackageName: ctx.TopPackageName(),
 		},
 		ItemsType: nil,
 	}
@@ -274,18 +274,18 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 				Name:        ctx.GenerateObjName("", "ItemsItemValue"),
 				Description: "",
 				Render:      false,
-				Package:     ctx.TopPackageName(),
+				PackageName: ctx.TopPackageName(),
 			},
-			AliasedType: &assemble.Simple{Type: "any", IsIface: true},
+			AliasedType: &assemble.Simple{Name: "any", IsIface: true},
 		}
 		res.ItemsType = &assemble.Map{
 			BaseType: assemble.BaseType{
 				Name:        ctx.GenerateObjName("", "ItemsItem"),
 				Description: "",
 				Render:      false,
-				Package:     ctx.TopPackageName(),
+				PackageName: ctx.TopPackageName(),
 			},
-			KeyType:   &assemble.Simple{Type: "string"},
+			KeyType:   &assemble.Simple{Name: "string"},
 			ValueType: &valTyp,
 		}
 	}
@@ -300,7 +300,7 @@ func buildUnionStruct(ctx *common.CompileContext, schema Object) (*assemble.Unio
 				Name:        ctx.GenerateObjName("", ""),
 				Description: schema.Description,
 				Render:      true, // Always render unions as separate types
-				Package:     ctx.TopPackageName(),
+				PackageName: ctx.TopPackageName(),
 			},
 		},
 	}

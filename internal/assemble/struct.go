@@ -33,8 +33,8 @@ func (s Struct) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement
 
 func (s Struct) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	if s.AllowRender() {
-		if s.Package != "" && s.Package != ctx.CurrentPackage {
-			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, string(s.Package)), s.Name)}
+		if s.PackageName != "" && s.PackageName != ctx.CurrentPackage {
+			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, s.PackageName), s.Name)}
 		}
 		return []*jen.Statement{jen.Id(s.Name)}
 	}

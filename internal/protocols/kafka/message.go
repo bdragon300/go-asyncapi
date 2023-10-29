@@ -48,11 +48,11 @@ func BuildMessageBindingsFunc(ctx *common.CompileContext, message *compile.Messa
 			Name: protoAbbr,
 			Args: nil,
 			Return: []assemble.FuncParam{
-				{Type: assemble.Simple{Type: "MessageBindings", Package: ctx.RuntimePackage(ProtoName)}},
+				{Type: assemble.Simple{Name: "MessageBindings", Package: ctx.RuntimePackage(ProtoName)}},
 			},
 		},
 		Receiver:      bindingsStruct,
-		Package:       ctx.TopPackageName(),
+		PackageName:   ctx.TopPackageName(),
 		BodyAssembler: protocols.MessageBindingsBody(values, &jsonValues, ProtoName),
 	}, nil
 }

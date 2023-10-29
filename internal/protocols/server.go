@@ -34,7 +34,7 @@ func BuildServer(
 				Name:        ctx.GenerateObjName("", ""),
 				Description: server.Description,
 				Render:      true,
-				Package:     ctx.TopPackageName(),
+				PackageName: ctx.TopPackageName(),
 			},
 		},
 	}
@@ -67,7 +67,7 @@ func BuildServer(
 	if buildProducer {
 		fld := assemble.StructField{
 			Name: "producer",
-			Type: &assemble.Simple{Type: "Producer", Package: ctx.RuntimePackage(protoName), IsIface: true},
+			Type: &assemble.Simple{Name: "Producer", Package: ctx.RuntimePackage(protoName), IsIface: true},
 		}
 		srvResult.Struct.Fields = append(srvResult.Struct.Fields, fld)
 		srvResult.Producer = true
@@ -75,7 +75,7 @@ func BuildServer(
 	if buildConsumer {
 		fld := assemble.StructField{
 			Name: "consumer",
-			Type: &assemble.Simple{Type: "Consumer", Package: ctx.RuntimePackage(protoName), IsIface: true},
+			Type: &assemble.Simple{Name: "Consumer", Package: ctx.RuntimePackage(protoName), IsIface: true},
 		}
 		srvResult.Struct.Fields = append(srvResult.Struct.Fields, fld)
 		srvResult.Consumer = true

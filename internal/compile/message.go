@@ -61,7 +61,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.As
 				Name:        ctx.GenerateObjName("", "Out"),
 				Description: utils.JoinNonemptyStrings("\n", m.Summary+" (Outbound Message)", m.Description),
 				Render:      true,
-				Package:     ctx.TopPackageName(),
+				PackageName: ctx.TopPackageName(),
 			},
 		},
 		InStruct: &assemble.Struct{
@@ -69,12 +69,12 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.As
 				Name:        ctx.GenerateObjName("", "In"),
 				Description: utils.JoinNonemptyStrings("\n", m.Summary+" (Inbound Message)", m.Description),
 				Render:      true,
-				Package:     ctx.TopPackageName(),
+				PackageName: ctx.TopPackageName(),
 			},
 		},
 		PayloadType:         m.getPayloadType(ctx),
 		PayloadHasSchema:    m.Payload != nil && m.Payload.Ref == "",
-		HeadersFallbackType: &assemble.Map{KeyType: &assemble.Simple{Type: "string"}, ValueType: &assemble.Simple{Type: "any", IsIface: true}},
+		HeadersFallbackType: &assemble.Map{KeyType: &assemble.Simple{Name: "string"}, ValueType: &assemble.Simple{Name: "any", IsIface: true}},
 	}
 	obj.ContentType, _ = lo.Coalesce(m.ContentType, ctx.DefaultContentType)
 	allServersLnk := assemble.NewListCbLink[*assemble.Server](func(item common.Assembler, path []string) bool {
@@ -96,9 +96,9 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.As
 	if m.Bindings.Len() > 0 {
 		obj.BindingsStruct = &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:    ctx.GenerateObjName("", "Bindings"),
-				Render:  true,
-				Package: ctx.TopPackageName(),
+				Name:        ctx.GenerateObjName("", "Bindings"),
+				Render:      true,
+				PackageName: ctx.TopPackageName(),
 			},
 			Fields: nil,
 		}
@@ -122,7 +122,7 @@ func (m Message) setStructFields(ctx *common.CompileContext, langMessage *assemb
 		{
 			Name:        "ID",
 			Description: "ID is unique string used to identify the message. Case-sensitive.",
-			Type:        &assemble.Simple{Type: "string"},
+			Type:        &assemble.Simple{Name: "string"},
 		},
 		{Name: "Payload", Type: langMessage.PayloadType},
 	}
@@ -145,7 +145,7 @@ func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 		ctx.Linker.Add(lnk)
 		return lnk
 	}
-	return &assemble.Simple{Type: "any", IsIface: true}
+	return &assemble.Simple{Name: "any", IsIface: true}
 }
 
 type CorrelationID struct {

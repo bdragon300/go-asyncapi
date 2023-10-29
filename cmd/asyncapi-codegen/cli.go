@@ -115,6 +115,9 @@ func generate(cmd *GenerateCmd) error {
 	if err = scan.CompileSchema(compileCtx, reflect.ValueOf(spec)); err != nil {
 		return fmt.Errorf("schema compile error: %v", err)
 	}
+	if err = compile.UtilsCompile(compileCtx); err != nil {
+		return fmt.Errorf("schema compile error: %v", err)
+	}
 
 	// Linking
 	if err = localLinker.Process(compileCtx); err != nil {
