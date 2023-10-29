@@ -233,27 +233,27 @@ func AssembleServerURLFunc(
 				}
 			}).
 			Qual(ctx.RuntimePackage(""), "ParamString").
-			BlockFunc(func(blockGroup *j.Group) {
+			BlockFunc(func(bg *j.Group) {
 				if serverVariables.Len() > 0 {
 					for _, entry := range serverVariables.Entries() {
 						if entry.Value.Default != "" {
-							blockGroup.If(j.Id(entry.Value.ArgName).Op("==").Lit("")).
+							bg.If(j.Id(entry.Value.ArgName).Op("==").Lit("")).
 								Block(
 									j.Id(entry.Value.ArgName).Op("=").Lit(entry.Value.Default),
 								)
 						}
 					}
-					blockGroup.Op("paramMap := map[string]string").Values(j.DictFunc(func(d j.Dict) {
+					bg.Op("paramMap := map[string]string").Values(j.DictFunc(func(d j.Dict) {
 						for _, entry := range serverVariables.Entries() {
 							d[j.Lit(entry.Key)] = j.Id(entry.Value.ArgName)
 						}
 					}))
-					blockGroup.Return(j.Qual(ctx.RuntimePackage(""), "ParamString").Values(j.Dict{
+					bg.Return(j.Qual(ctx.RuntimePackage(""), "ParamString").Values(j.Dict{
 						j.Id("Expr"):       j.Lit(url),
 						j.Id("Parameters"): j.Id("paramMap"),
 					}))
 				} else {
-					blockGroup.Return(j.Qual(ctx.RuntimePackage(""), "ParamString").Values(j.Dict{
+					bg.Return(j.Qual(ctx.RuntimePackage(""), "ParamString").Values(j.Dict{
 						j.Id("Expr"): j.Lit(url),
 					}))
 				}

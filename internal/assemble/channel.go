@@ -69,18 +69,18 @@ func (c Channel) assembleChannelNameFunc(ctx *common.AssembleContext) []*j.State
 				}
 			}).
 			Qual(ctx.RuntimePackage(""), "ParamString").
-			BlockFunc(func(blockGroup *j.Group) {
+			BlockFunc(func(bg *j.Group) {
 				if c.ParametersStruct == nil {
-					blockGroup.Return(j.Qual(ctx.RuntimePackage(""), "ParamString").Values(j.Dict{
+					bg.Return(j.Qual(ctx.RuntimePackage(""), "ParamString").Values(j.Dict{
 						j.Id("Expr"): j.Lit(c.Name),
 					}))
 				} else {
-					blockGroup.Op("paramMap := map[string]string").Values(j.DictFunc(func(d j.Dict) {
+					bg.Op("paramMap := map[string]string").Values(j.DictFunc(func(d j.Dict) {
 						for _, f := range c.ParametersStruct.Fields {
 							d[j.Id("params").Dot(f.Name).Dot("Name").Call()] = j.Id("params").Dot(f.Name).Dot("String").Call()
 						}
 					}))
-					blockGroup.Return(j.Qual(ctx.RuntimePackage(""), "ParamString").Values(j.Dict{
+					bg.Return(j.Qual(ctx.RuntimePackage(""), "ParamString").Values(j.Dict{
 						j.Id("Expr"):       j.Lit(c.Name),
 						j.Id("Parameters"): j.Id("paramMap"),
 					}))
