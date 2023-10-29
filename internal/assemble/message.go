@@ -25,6 +25,7 @@ type Message struct {
 	AllServers                 *LinkList[*Server] // For extracting all using protocols
 	BindingsStruct             *Struct            // nil if message bindings are not defined
 	BindingsStructProtoMethods []common.Assembler
+	ContentType                string // Message's content type or default from schema or fallback
 }
 
 func (m Message) AllowRender() bool {

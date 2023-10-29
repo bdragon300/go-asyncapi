@@ -1,6 +1,8 @@
 package protocols
 
 import (
+	"fmt"
+
 	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
@@ -16,22 +18,22 @@ func AssembleMessageUnmarshalEnvelopeMethod(ctx *common.AssembleContext, message
 		j.Func().Params(receiver.Clone()).Id("Unmarshal" + protoAbbr + "Envelope").
 			Params(j.Id("envelope").Qual(ctx.RuntimePackage(protoName), "EnvelopeReader")).
 			Error().
-			BlockFunc(func(blockGroup *j.Group) {
-				blockGroup.Add(utils.QualSprintf(`
-					dec := %Q(encoding/json,NewDecoder)(envelope)
+			BlockFunc(func(bg *j.Group) {
+				bg.Op("dec := ").Qual(ctx.RuntimePackage("serializer"), "NewDecoder").Call(j.Lit(message.ContentType), j.Id("envelope"))
+				bg.Op(fmt.Sprintf(`
 					if err := dec.Decode(&%[1]s.Payload); err != nil {
 						return err
 					}`, rn))
 				if message.HeadersTypeLink != nil {
 					for _, f := range message.HeadersTypeLink.Target().Fields {
 						fType := j.Add(utils.ToCode(f.Type.AssembleUsage(ctx))...)
-						blockGroup.If(j.Op("v, ok := headers").Index(j.Lit(f.Name)), j.Id("ok")).
+						bg.If(j.Op("v, ok := headers").Index(j.Lit(f.Name)), j.Id("ok")).
 							Block(j.Id(rn).Dot("Headers").Id(f.Name).Op("=").Id("v").Assert(fType))
 					}
 				} else {
-					blockGroup.Id(rn).Dot("Headers").Op("=").Add(utils.ToCode(message.HeadersFallbackType.AssembleUsage(ctx))...).Call(j.Op("envelope.Headers()"))
+					bg.Id(rn).Dot("Headers").Op("=").Add(utils.ToCode(message.HeadersFallbackType.AssembleUsage(ctx))...).Call(j.Op("envelope.Headers()"))
 				}
-				blockGroup.Return(j.Nil())
+				bg.Return(j.Nil())
 			}),
 	}
 }
@@ -45,14 +47,14 @@ func AssembleMessageMarshalEnvelopeMethod(ctx *common.AssembleContext, message *
 		j.Func().Params(receiver.Clone()).Id("Marshal" + protoAbbr + "Envelope").
 			Params(j.Id("envelope").Qual(ctx.RuntimePackage(protoName), "EnvelopeWriter")).
 			Error().
-			BlockFunc(func(blockGroup *j.Group) {
-				blockGroup.Add(utils.QualSprintf(`
-					enc := %Q(encoding/json,NewEncoder)(envelope)
+			BlockFunc(func(bg *j.Group) {
+				bg.Op("enc := ").Qual(ctx.RuntimePackage("serializer"), "NewEncoder").Call(j.Lit(message.ContentType), j.Id("envelope"))
+				bg.Op(fmt.Sprintf(`
 					if err := enc.Encode(%[1]s.Payload); err != nil {
 						return err
 					}`, rn))
 				if message.HeadersTypeLink != nil {
-					blockGroup.Id("envelope").Dot("SetHeaders").Call(
+					bg.Id("envelope").Dot("SetHeaders").Call(
 						j.Qual(ctx.RuntimePackage(""), "Header").Values(j.DictFunc(func(d j.Dict) {
 							for _, f := range message.HeadersTypeLink.Target().Fields {
 								d[j.Lit(f.Name)] = j.Id(rn).Dot("Headers").Dot(f.Name)
@@ -60,11 +62,11 @@ func AssembleMessageMarshalEnvelopeMethod(ctx *common.AssembleContext, message *
 						})),
 					)
 				} else {
-					blockGroup.Id("envelope.SetHeaders").Call(
+					bg.Id("envelope.SetHeaders").Call(
 						j.Qual(ctx.RuntimePackage(""), "Headers").Call(j.Id(rn).Dot("Headers")),
 					)
 				}
-				blockGroup.Return(j.Nil())
+				bg.Return(j.Nil())
 			}),
 	}
 }

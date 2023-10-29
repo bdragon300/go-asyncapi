@@ -37,7 +37,7 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 	}
 	ctx.PutToCurrentPkg(obj)
 	if ctx.TopPackageName() == "servers" {
-		ctx.NotifyProtocol(s.Protocol)
+		ctx.AddProtocol(s.Protocol)
 	}
 	return nil
 }

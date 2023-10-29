@@ -13,7 +13,10 @@ type GolangType interface {
 	TypeName() string
 }
 
-const nameWordSep = "_"
+const (
+	nameWordSep         = "_"
+	fallbackContentType = "application/json"
+)
 
 type ContextStackItem struct {
 	Path        string
@@ -24,17 +27,19 @@ type ContextStackItem struct {
 
 func NewCompileContext(linker Linker) *CompileContext {
 	return &CompileContext{
-		Packages:  make(map[string]*Package),
-		Linker:    linker,
-		Protocols: make(map[string]int),
+		Packages:           make(map[string]*Package),
+		Linker:             linker,
+		Protocols:          make(map[string]int),
+		DefaultContentType: fallbackContentType,
 	}
 }
 
 type CompileContext struct {
-	Packages  map[string]*Package
-	Stack     SimpleStack[ContextStackItem]
-	Linker    Linker
-	Protocols map[string]int
+	Packages           map[string]*Package
+	Stack              SimpleStack[ContextStackItem]
+	Linker             Linker
+	Protocols          map[string]int
+	DefaultContentType string
 }
 
 func (c *CompileContext) PutToCurrentPkg(obj Assembler) {
@@ -68,8 +73,8 @@ func (c *CompileContext) TopPackageName() string {
 	return c.Stack.Top().PackageName
 }
 
-func (c *CompileContext) RuntimePackage(protoName string) string {
-	return path.Join(RunPackagePath, protoName)
+func (c *CompileContext) RuntimePackage(subPackage string) string {
+	return path.Join(RunPackagePath, subPackage)
 }
 
 func (c *CompileContext) GenerateObjName(name, suffix string) string {
@@ -90,7 +95,7 @@ func (c *CompileContext) GenerateObjName(name, suffix string) string {
 	return utils.ToGolangName(name, true)
 }
 
-func (c *CompileContext) NotifyProtocol(protoName string) {
+func (c *CompileContext) AddProtocol(protoName string) {
 	if _, ok := c.Protocols[protoName]; !ok {
 		c.Protocols[protoName] = 0
 	}

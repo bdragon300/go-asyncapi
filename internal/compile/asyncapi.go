@@ -1,6 +1,9 @@
 package compile
 
-import "github.com/bdragon300/asyncapi-codegen-go/internal/utils"
+import (
+	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
+)
 
 type AsyncAPI struct {
 	Asyncapi           string                            `json:"asyncapi" yaml:"asyncapi"`
@@ -12,6 +15,13 @@ type AsyncAPI struct {
 	Components         ComponentsItem                    `json:"components" yaml:"components"`
 	Tags               []Tag                             `json:"tags" yaml:"tags"`
 	ExternalDocs       ExternalDocumentation             `json:"externalDocs" yaml:"externalDocs"`
+}
+
+func (a AsyncAPI) Compile(ctx *common.CompileContext) error {
+	if a.DefaultContentType != "" {
+		ctx.DefaultContentType = a.DefaultContentType
+	}
+	return nil
 }
 
 type InfoItem struct {

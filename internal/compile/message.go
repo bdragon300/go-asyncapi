@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/samber/lo"
+
 	"gopkg.in/yaml.v3"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
@@ -47,9 +49,6 @@ func (m Message) Compile(ctx *common.CompileContext) error {
 }
 
 func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Assembler, error) {
-	if m.ContentType != "" && m.ContentType != "application/json" {
-		return nil, fmt.Errorf("now is supported only application/json") // TODO: support other content types
-	}
 	if m.Ref != "" {
 		res := assemble.NewRefLinkAsAssembler(m.Ref)
 		ctx.Linker.Add(res)
@@ -77,6 +76,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.As
 		PayloadHasSchema:    m.Payload != nil && m.Payload.Ref == "",
 		HeadersFallbackType: &assemble.Map{KeyType: &assemble.Simple{Type: "string"}, ValueType: &assemble.Simple{Type: "any", IsIface: true}},
 	}
+	obj.ContentType, _ = lo.Coalesce(m.ContentType, ctx.DefaultContentType)
 	allServersLnk := assemble.NewListCbLink[*assemble.Server](func(item common.Assembler, path []string) bool {
 		_, ok := item.(*assemble.Server)
 		return ok
