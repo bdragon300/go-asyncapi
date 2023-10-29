@@ -1,7 +1,6 @@
 package assemble
 
 import (
-	"path"
 	"strings"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
@@ -66,7 +65,7 @@ func (f Func) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
 
 func (f Func) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	if f.PackageName != "" && f.PackageName != ctx.CurrentPackage && f.Receiver == nil {
-		return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, f.PackageName), f.Name)}
+		return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(f.PackageName), f.Name)}
 	}
 	return []*jen.Statement{jen.Id(f.Name)}
 }

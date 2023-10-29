@@ -1,8 +1,6 @@
 package assemble
 
 import (
-	"path"
-
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	"github.com/dave/jennifer/jen"
@@ -30,7 +28,7 @@ func (i Interface) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statem
 func (i Interface) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	if i.AllowRender() {
 		if i.PackageName != "" && i.PackageName != ctx.CurrentPackage {
-			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, string(i.PackageName)), i.Name)}
+			return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(i.PackageName), i.Name)}
 		}
 		return []*jen.Statement{jen.Id(i.Name)}
 	}

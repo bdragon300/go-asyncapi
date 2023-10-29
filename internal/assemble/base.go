@@ -1,8 +1,6 @@
 package assemble
 
 import (
-	"path"
-
 	"github.com/samber/lo"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
@@ -26,13 +24,6 @@ func (b *BaseType) AllowRender() bool {
 
 func (b *BaseType) TypeName() string {
 	return b.Name
-}
-
-func (b *BaseType) AssembleNameUsage(ctx *common.AssembleContext, name string) []*jen.Statement {
-	if b.PackageName != "" && b.PackageName != ctx.CurrentPackage {
-		return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, b.PackageName), name)}
-	}
-	return []*jen.Statement{jen.Id(name)}
 }
 
 type Array struct {
@@ -62,7 +53,7 @@ func (a *Array) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement
 func (a *Array) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	if a.Render {
 		if a.PackageName != "" && a.PackageName != ctx.CurrentPackage {
-			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, a.PackageName), a.Name)}
+			return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(a.PackageName), a.Name)}
 		}
 		return []*jen.Statement{jen.Id(a.Name)}
 	}
@@ -94,7 +85,7 @@ func (m *Map) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
 func (m *Map) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	if m.Render {
 		if m.PackageName != "" && m.PackageName != ctx.CurrentPackage {
-			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, m.PackageName), m.Name)}
+			return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(m.PackageName), m.Name)}
 		}
 		return []*jen.Statement{jen.Id(m.Name)}
 	}
@@ -123,7 +114,7 @@ func (p *TypeAlias) AssembleDefinition(ctx *common.AssembleContext) []*jen.State
 func (p *TypeAlias) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	if p.Render {
 		if p.PackageName != "" && p.PackageName != ctx.CurrentPackage {
-			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, p.PackageName), p.Name)}
+			return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(p.PackageName), p.Name)}
 		}
 		return []*jen.Statement{jen.Id(p.Name)}
 	}

@@ -150,7 +150,7 @@ func AssembleServerChannelMethod(
 			}).
 			Params(j.Op("*").Add(utils.ToCode(channel.AssembleUsage(ctx))...), j.Error()).
 			Block(
-				j.Return(j.Add(utils.ToCode(channelStruct.AssembleNameUsage(ctx, "Open"+channelStruct.Name))...).CallFunc(func(g *j.Group) {
+				j.Return(j.Qual(ctx.GeneratedPackage(channelStruct.PackageName), "Open"+channelStruct.Name).CallFunc(func(g *j.Group) {
 					if channelParametersStructNoAssemble != nil {
 						g.Id("params")
 					}

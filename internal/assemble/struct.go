@@ -2,7 +2,6 @@ package assemble
 
 import (
 	"fmt"
-	"path"
 	"reflect"
 	"strings"
 
@@ -34,7 +33,7 @@ func (s Struct) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement
 func (s Struct) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	if s.AllowRender() {
 		if s.PackageName != "" && s.PackageName != ctx.CurrentPackage {
-			return []*jen.Statement{jen.Qual(path.Join(ctx.ImportBase, s.PackageName), s.Name)}
+			return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(s.PackageName), s.Name)}
 		}
 		return []*jen.Statement{jen.Id(s.Name)}
 	}
