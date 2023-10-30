@@ -182,6 +182,16 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 	}
 	// TODO: cache the object name in case any sub-schemas recursively reference it
 
+	var msgLinks *assemble.LinkList[*assemble.Message]
+	// Collect all messages to retrieve struct field tags
+	if ctx.TopPackageName() == "models" {
+		msgLinks = assemble.NewListCbLink[*assemble.Message](func(item common.Assembler, _ []string) bool {
+			_, ok := item.(*assemble.Message)
+			return ok
+		})
+		ctx.Linker.AddMany(msgLinks)
+	}
+
 	// regular properties
 	for _, entry := range schema.Properties.Entries() {
 		ref := path.Join(ctx.PathRef(), "properties", entry.Key)
@@ -189,10 +199,11 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 		ctx.Linker.Add(langObj)
 		f := assemble.StructField{
 			Name:         utils.ToGolangName(entry.Key, true),
+			MarshalName:  entry.Key,
 			Type:         langObj,
 			ForcePointer: lo.Contains(schema.Required, entry.Key),
-			Tags:         nil, // TODO
 			Description:  entry.Value.Description,
+			TagsSource:   msgLinks,
 		}
 		res.Fields = append(res.Fields, f)
 	}
@@ -215,7 +226,6 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 					KeyType:   &assemble.Simple{Name: "string"},
 					ValueType: langObj,
 				},
-				Tags:        nil, // TODO
 				Description: schema.AdditionalProperties.V0.Description,
 			}
 			res.Fields = append(res.Fields, f)
@@ -242,7 +252,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 						KeyType:   &assemble.Simple{Name: "string"},
 						ValueType: &valTyp,
 					},
-					Tags: nil, // TODO
+					TagsSource: msgLinks,
 				}
 				res.Fields = append(res.Fields, f)
 			}
@@ -305,23 +315,30 @@ func buildUnionStruct(ctx *common.CompileContext, schema Object) (*assemble.Unio
 		},
 	}
 
+	// Collect all messages to retrieve struct field tags
+	msgLinks := assemble.NewListCbLink[*assemble.Message](func(item common.Assembler, _ []string) bool {
+		_, ok := item.(*assemble.Message)
+		return ok
+	})
+	ctx.Linker.AddMany(msgLinks)
+
 	res.Fields = lo.Times(len(schema.OneOf), func(index int) assemble.StructField {
 		ref := path.Join(ctx.PathRef(), "oneOf", strconv.Itoa(index))
 		langTyp := assemble.NewRefLinkAsGolangType(ref)
 		ctx.Linker.Add(langTyp)
-		return assemble.StructField{Type: langTyp, ForcePointer: true, Tags: nil}
+		return assemble.StructField{Type: langTyp, ForcePointer: true}
 	})
 	res.Fields = append(res.Fields, lo.Times(len(schema.AnyOf), func(index int) assemble.StructField {
 		ref := path.Join(ctx.PathRef(), "anyOf", strconv.Itoa(index))
 		langTyp := assemble.NewRefLinkAsGolangType(ref)
 		ctx.Linker.Add(langTyp)
-		return assemble.StructField{Type: langTyp, ForcePointer: true, Tags: nil}
+		return assemble.StructField{Type: langTyp, ForcePointer: true}
 	})...)
 	res.Fields = append(res.Fields, lo.Times(len(schema.AllOf), func(index int) assemble.StructField {
 		ref := path.Join(ctx.PathRef(), "allOf", strconv.Itoa(index))
 		langTyp := assemble.NewRefLinkAsGolangType(ref)
 		ctx.Linker.Add(langTyp)
-		return assemble.StructField{Type: langTyp, Tags: nil}
+		return assemble.StructField{Type: langTyp}
 	})...)
 
 	return &res, nil

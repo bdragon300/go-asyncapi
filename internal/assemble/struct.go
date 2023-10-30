@@ -66,10 +66,11 @@ func (s Struct) MustGetField(name string) StructField {
 // StructField defines the data required to generate a field in Go.
 type StructField struct {
 	Name         string
+	MarshalName  string
 	Description  string
 	Type         common.GolangType
 	ForcePointer bool
-	Tags         map[string]string
+	TagsSource   *LinkList[*Message]
 }
 
 func (f StructField) assembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
@@ -88,7 +89,20 @@ func (f StructField) assembleDefinition(ctx *common.AssembleContext) []*jen.Stat
 		stmt = stmt.Op("*")
 	}
 	items := utils.ToCode(f.Type.AssembleUsage(ctx))
-	res = append(res, stmt.Add(items...))
+	stmt = stmt.Add(items...)
+
+	if f.TagsSource != nil {
+		tagNames := lo.Uniq(lo.FilterMap(f.TagsSource.Targets(), func(item *Message, index int) (string, bool) {
+			format := getFormatByContentType(item.ContentType)
+			return format, format != ""
+		}))
+		tags := lo.SliceToMap(tagNames, func(item string) (string, string) {
+			return item, f.MarshalName
+		})
+		stmt.Tag(tags)
+	}
+
+	res = append(res, stmt)
 
 	return res
 }

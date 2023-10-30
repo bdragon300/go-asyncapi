@@ -3,10 +3,11 @@ package assemble
 import (
 	"strings"
 
+	"github.com/samber/lo"
+
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	j "github.com/dave/jennifer/jen"
-	"github.com/samber/lo"
 )
 
 var serializerEncoders = map[string]j.Code{
@@ -46,13 +47,12 @@ func (u UtilsSerializer) AssembleDefinition(_ *common.AssembleContext) []*j.Stat
 
 		j.Add(utils.QualSprintf(`var Encoders = map[string]func(w %Q(io,Writer)) Encoder`)).Values(j.DictFunc(func(d j.Dict) {
 			for _, ct := range contentTypes {
-				switch {
-				case strings.HasSuffix(ct, "json"):
-					d[j.Lit(ct)] = serializerEncoders["json"]
-				case strings.HasSuffix(ct, "yaml"):
-					d[j.Lit(ct)] = serializerEncoders["yaml"]
-				// TODO: add other encoders: protobuf, avro, etc.
-				default:
+				format := getFormatByContentType(ct)
+				if format != "" {
+					if v, ok := serializerEncoders[format]; ok {
+						d[j.Lit(ct)] = v
+					}
+				} else {
 					d[j.Lit(ct)] = j.Add(utils.QualSprintf(`func(_ %Q(io,Writer)) Encoder { panic("No encoder is set for content type %s") }`, ct))
 				}
 			}
@@ -60,13 +60,12 @@ func (u UtilsSerializer) AssembleDefinition(_ *common.AssembleContext) []*j.Stat
 
 		j.Add(utils.QualSprintf(`var Decoders = map[string]func(r %Q(io,Reader)) Decoder`)).Values(j.DictFunc(func(d j.Dict) {
 			for _, ct := range contentTypes {
-				switch {
-				case strings.HasSuffix(ct, "json"):
-					d[j.Lit(ct)] = serializerDecoders["json"]
-				case strings.HasSuffix(ct, "yaml"):
-					d[j.Lit(ct)] = serializerDecoders["yaml"]
-				// TODO: add other decoders: protobuf, avro, etc.
-				default:
+				format := getFormatByContentType(ct)
+				if format != "" {
+					if v, ok := serializerDecoders[format]; ok {
+						d[j.Lit(ct)] = v
+					}
+				} else {
 					d[j.Lit(ct)] = j.Add(utils.QualSprintf(`func(_ %Q(io,Reader)) Decoder { panic("No decoder is set for content type %s") }`, ct))
 				}
 			}
@@ -91,4 +90,15 @@ func (u UtilsSerializer) AssembleDefinition(_ *common.AssembleContext) []*j.Stat
 
 func (u UtilsSerializer) AssembleUsage(_ *common.AssembleContext) []*j.Statement {
 	panic("not implemented")
+}
+
+func getFormatByContentType(contentType string) string {
+	// TODO: add other formats: protobuf, avro, etc.
+	switch {
+	case strings.HasSuffix(contentType, "json"):
+		return "json"
+	case strings.HasSuffix(contentType, "yaml"):
+		return "yaml"
+	}
+	return ""
 }

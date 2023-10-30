@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/samber/lo"
-
 	"gopkg.in/yaml.v3"
+
+	"github.com/samber/lo"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
