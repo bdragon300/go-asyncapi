@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"gopkg.in/yaml.v3"
+	yaml "gopkg.in/yaml.v3"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
@@ -130,7 +130,7 @@ func buildGolangType(ctx *common.CompileContext, schema Object, flags map[common
 
 	return &assemble.TypeAlias{
 		BaseType: assemble.BaseType{
-			Name:        ctx.GenerateObjName("", ""),
+			Name:        ctx.GenerateObjName(schema.Title, ""),
 			Description: schema.Description,
 			Render:      noInline,
 			PackageName: ctx.TopPackageName(),
@@ -174,7 +174,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 	_, noInline := flags[common.SchemaTagNoInline]
 	res := assemble.Struct{
 		BaseType: assemble.BaseType{
-			Name:        ctx.GenerateObjName("", ""),
+			Name:        ctx.GenerateObjName(schema.Title, ""),
 			Description: schema.Description,
 			Render:      noInline,
 			PackageName: ctx.TopPackageName(),
@@ -218,7 +218,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 				Name: "AdditionalProperties",
 				Type: &assemble.Map{
 					BaseType: assemble.BaseType{
-						Name:        ctx.GenerateObjName("", "AdditionalProperties"),
+						Name:        ctx.GenerateObjName(schema.Title, "AdditionalProperties"),
 						Description: schema.AdditionalProperties.V0.Description,
 						Render:      false,
 						PackageName: ctx.TopPackageName(),
@@ -233,7 +233,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 			if schema.AdditionalProperties.V1 { // "additionalProperties: true" -- allow any additional properties
 				valTyp := assemble.TypeAlias{
 					BaseType: assemble.BaseType{
-						Name:        ctx.GenerateObjName("", "AdditionalPropertiesValue"),
+						Name:        ctx.GenerateObjName(schema.Title, "AdditionalPropertiesValue"),
 						Description: "",
 						Render:      false,
 						PackageName: ctx.TopPackageName(),
@@ -244,7 +244,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 					Name: "AdditionalProperties",
 					Type: &assemble.Map{
 						BaseType: assemble.BaseType{
-							Name:        ctx.GenerateObjName("", "AdditionalProperties"),
+							Name:        ctx.GenerateObjName(schema.Title, "AdditionalProperties"),
 							Description: "",
 							Render:      false,
 							PackageName: ctx.TopPackageName(),
@@ -266,7 +266,7 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 	_, noInline := flags[common.SchemaTagNoInline]
 	res := assemble.Array{
 		BaseType: assemble.BaseType{
-			Name:        ctx.GenerateObjName("", ""),
+			Name:        ctx.GenerateObjName(schema.Title, ""),
 			Description: schema.Description,
 			Render:      noInline,
 			PackageName: ctx.TopPackageName(),
@@ -281,7 +281,7 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 	case schema.Items == nil || schema.Items.Selector == 1: // No items or Several types for each item sequentially
 		valTyp := assemble.TypeAlias{
 			BaseType: assemble.BaseType{
-				Name:        ctx.GenerateObjName("", "ItemsItemValue"),
+				Name:        ctx.GenerateObjName(schema.Title, "ItemsItemValue"),
 				Description: "",
 				Render:      false,
 				PackageName: ctx.TopPackageName(),
@@ -290,7 +290,7 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 		}
 		res.ItemsType = &assemble.Map{
 			BaseType: assemble.BaseType{
-				Name:        ctx.GenerateObjName("", "ItemsItem"),
+				Name:        ctx.GenerateObjName(schema.Title, "ItemsItem"),
 				Description: "",
 				Render:      false,
 				PackageName: ctx.TopPackageName(),
@@ -307,7 +307,7 @@ func buildUnionStruct(ctx *common.CompileContext, schema Object) (*assemble.Unio
 	res := assemble.UnionStruct{
 		Struct: assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:        ctx.GenerateObjName("", ""),
+				Name:        ctx.GenerateObjName(schema.Title, ""),
 				Description: schema.Description,
 				Render:      true, // Always render unions as separate types
 				PackageName: ctx.TopPackageName(),

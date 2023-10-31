@@ -31,7 +31,7 @@ func BuildServer(
 		ProtocolVersion: server.ProtocolVersion,
 		Struct: &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:        ctx.GenerateObjName("", ""),
+				Name:        ctx.GenerateObjName(serverKey, ""),
 				Description: server.Description,
 				Render:      true,
 				PackageName: ctx.TopPackageName(),

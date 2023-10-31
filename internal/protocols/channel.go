@@ -32,7 +32,7 @@ func BuildChannel(
 		Name: channelKey,
 		Struct: &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:        ctx.GenerateObjName("", protoAbbr),
+				Name:        ctx.GenerateObjName(channelKey, protoAbbr),
 				Description: channel.Description,
 				Render:      true,
 				PackageName: ctx.TopPackageName(),
@@ -48,7 +48,7 @@ func BuildChannel(
 	if channel.Parameters.Len() > 0 {
 		chanResult.ParametersStructNoAssemble = &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:        ctx.GenerateObjName("", "Parameters"),
+				Name:        ctx.GenerateObjName(channelKey, "Parameters"),
 				Render:      true,
 				PackageName: ctx.TopPackageName(),
 			},

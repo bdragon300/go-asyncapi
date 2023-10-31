@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"gopkg.in/yaml.v3"
+	yaml "gopkg.in/yaml.v3"
 
 	"github.com/samber/lo"
 
@@ -39,7 +39,7 @@ type Message struct {
 }
 
 func (m Message) Compile(ctx *common.CompileContext) error {
-	ctx.SetTopObjName(ctx.Stack.Top().Path) // TODO: use title
+	ctx.SetTopObjName(ctx.Stack.Top().Path)
 	obj, err := m.build(ctx, ctx.Stack.Top().Path)
 	if err != nil {
 		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
@@ -58,7 +58,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.As
 	obj := assemble.Message{
 		OutStruct: &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:        ctx.GenerateObjName("", "Out"),
+				Name:        ctx.GenerateObjName(m.Name, "Out"),
 				Description: utils.JoinNonemptyStrings("\n", m.Summary+" (Outbound Message)", m.Description),
 				Render:      true,
 				PackageName: ctx.TopPackageName(),
@@ -66,7 +66,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.As
 		},
 		InStruct: &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:        ctx.GenerateObjName("", "In"),
+				Name:        ctx.GenerateObjName(m.Name, "In"),
 				Description: utils.JoinNonemptyStrings("\n", m.Summary+" (Inbound Message)", m.Description),
 				Render:      true,
 				PackageName: ctx.TopPackageName(),
@@ -96,7 +96,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.As
 	if m.Bindings.Len() > 0 {
 		obj.BindingsStruct = &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:        ctx.GenerateObjName("", "Bindings"),
+				Name:        ctx.GenerateObjName(m.Name, "Bindings"),
 				Render:      true,
 				PackageName: ctx.TopPackageName(),
 			},

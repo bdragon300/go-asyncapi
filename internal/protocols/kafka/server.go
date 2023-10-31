@@ -29,7 +29,7 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 			}
 			bindingsStruct := &assemble.Struct{ // TODO: remove in favor of parent server
 				BaseType: assemble.BaseType{
-					Name:        ctx.GenerateObjName("", "Bindings"),
+					Name:        ctx.GenerateObjName(serverKey, "Bindings"),
 					Render:      true,
 					PackageName: ctx.TopPackageName(),
 				},

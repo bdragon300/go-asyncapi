@@ -7,7 +7,6 @@ import (
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 )
 
 type Parameter struct {
@@ -42,7 +41,7 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 		ctx.Linker.Add(lnk)
 		res.Type = &assemble.Struct{
 			BaseType: assemble.BaseType{
-				Name:        utils.ToGolangName(parameterKey, true),
+				Name:        ctx.GenerateObjName(parameterKey, ""),
 				Description: p.Description,
 				Render:      true,
 				PackageName: ctx.TopPackageName(),
@@ -52,7 +51,7 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 	} else {
 		res.Type = &assemble.TypeAlias{
 			BaseType: assemble.BaseType{
-				Name:        utils.ToGolangName(parameterKey, true),
+				Name:        ctx.GenerateObjName(parameterKey, ""),
 				Description: p.Description,
 				Render:      true,
 				PackageName: ctx.TopPackageName(),

@@ -70,7 +70,7 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 	// Channel bindings
 	bindingsStruct := &assemble.Struct{ // TODO: remove in favor of parent channel
 		BaseType: assemble.BaseType{
-			Name:        ctx.GenerateObjName("", "Bindings"),
+			Name:        ctx.GenerateObjName(channelKey, "Bindings"),
 			Render:      true,
 			PackageName: ctx.TopPackageName(),
 		},
