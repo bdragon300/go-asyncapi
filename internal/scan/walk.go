@@ -17,19 +17,6 @@ type orderedMap interface {
 }
 
 func CompileSchema(ctx *common.CompileContext, object reflect.Value) error {
-	traverse := func(_ctx *common.CompileContext, _obj reflect.Value) error {
-		// BFS tree traversal
-		if v, ok := _obj.Interface().(compiler); ok {
-			if (_obj.Kind() == reflect.Pointer || _obj.Kind() == reflect.Interface) && _obj.IsNil() {
-				return nil
-			}
-			if e := v.Compile(_ctx); e != nil {
-				return e
-			}
-		}
-		return CompileSchema(_ctx, _obj)
-	}
-
 	if _, ok := object.Interface().(orderedMap); ok {
 		mEntries := object.MethodByName("Entries")
 		entries := mEntries.Call(nil)[0]
@@ -77,6 +64,23 @@ func CompileSchema(ctx *common.CompileContext, object reflect.Value) error {
 	}
 
 	return nil
+}
+
+func traverse(ctx *common.CompileContext, object reflect.Value) error {
+	// BFS tree traversal
+	if v, ok := object.Interface().(compiler); ok {
+		if (object.Kind() == reflect.Pointer || object.Kind() == reflect.Interface) && object.IsNil() {
+			return nil
+		}
+		ctx.LogInfo(reflect.Indirect(object).Type().Name())
+		ctx.IncrementLogCallLvl()
+		if e := v.Compile(ctx); e != nil {
+			ctx.LogFatal("Compilation error", e)
+			return e
+		}
+		ctx.DecrementLogCallLvl()
+	}
+	return CompileSchema(ctx, object)
 }
 
 func parseTags(field reflect.StructField) (tags map[common.SchemaTag]string) {

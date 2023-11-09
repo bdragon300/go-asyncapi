@@ -2,10 +2,10 @@ package compile
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path"
 	"strconv"
-	"strings"
 
 	yaml "gopkg.in/yaml.v3"
 
@@ -66,7 +66,7 @@ func (m Object) Compile(ctx *common.CompileContext) error {
 	ctx.SetTopObjName(ctx.Stack.Top().Path)
 	obj, err := buildGolangType(ctx, m, ctx.Stack.Top().Flags)
 	if err != nil {
-		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
+		return err
 	}
 	ctx.PutToCurrentPkg(obj)
 	return nil
@@ -74,22 +74,29 @@ func (m Object) Compile(ctx *common.CompileContext) error {
 
 func buildGolangType(ctx *common.CompileContext, schema Object, flags map[common.SchemaTag]string) (common.GolangType, error) {
 	if schema.Ref != "" {
-		res := assemble.NewRefLinkAsGolangType(schema.Ref)
+		ctx.LogDebug("Ref", "$ref", schema.Ref)
+		res := assemble.NewRefLinkAsGolangType(schema.Ref, common.LinkOriginUser)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
 
 	if len(schema.OneOf)+len(schema.AnyOf)+len(schema.AllOf) > 0 {
+		ctx.LogDebug("Object is union struct")
 		return buildUnionStruct(ctx, schema) // TODO: process other items that can be set along with oneof/anyof/allof
 	}
 
-	fixMissingTypeValue(&schema)
+	fixMissingTypeValue(ctx, &schema)
 
 	schemaType := schema.Type
 	typ := schemaType.V0
 	// TODO: x-nullable
 	if schemaType.Selector == 1 { // Multiple types, e.g. { "type": [ "object", "array", "null" ] }
-		typ = simplifyMultiType(schemaType.V1)
+		t, err := simplifyMultiType(schemaType.V1)
+		if err != nil {
+			return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
+		}
+		typ = t
+		ctx.LogDebug(fmt.Sprintf("Multitype object type inferred as %q", typ))
 	}
 
 	_, noInline := flags[common.SchemaTagNoInline]
@@ -98,34 +105,40 @@ func buildGolangType(ctx *common.CompileContext, schema Object, flags map[common
 	langTyp := ""
 	switch typ {
 	case "object":
+		ctx.LogDebug("Object is struct")
+		ctx.IncrementLogCallLvl()
 		res, err := buildLangStruct(ctx, schema, flags)
-		if err != nil {
-			return nil, err
-		}
-		return res, nil
+		ctx.DecrementLogCallLvl()
+		return res, err
 	case "array":
+		ctx.LogDebug("Object is array")
+		ctx.IncrementLogCallLvl()
 		res, err := buildLangArray(ctx, schema, flags)
-		if err != nil {
-			return nil, err
-		}
-		return res, nil
+		ctx.DecrementLogCallLvl()
+		return res, err
 	case "null", "":
-		return &assemble.NullableType{
+		ctx.LogDebug("Object is nullable any")
+		res := &assemble.NullableType{
 			Type:   &assemble.Simple{Name: "any", IsIface: true},
 			Render: noInline,
-		}, nil
+		}
+		return res, nil
 	case "boolean":
+		ctx.LogDebug("Object is bool")
 		langTyp = "bool"
 	case "integer":
 		// TODO: "format:"
+		ctx.LogDebug("Object is int")
 		langTyp = "int"
 	case "number":
 		// TODO: "format:"
+		ctx.LogDebug("Object is float64")
 		langTyp = "float64"
 	case "string":
+		ctx.LogDebug("Object is string")
 		langTyp = "string"
 	default:
-		return nil, fmt.Errorf("unknown jsonschema type %q", typ)
+		return nil, common.CompileError{Err: fmt.Errorf("unknown jsonschema type %q", typ), Path: ctx.PathRef()}
 	}
 
 	return &assemble.TypeAlias{
@@ -140,33 +153,37 @@ func buildGolangType(ctx *common.CompileContext, schema Object, flags map[common
 }
 
 // fixMissingTypeValue is backwards compatible, guessing the users intention when they didn't specify a type.
-func fixMissingTypeValue(s *Object) {
+func fixMissingTypeValue(ctx *common.CompileContext, s *Object) {
 	if s.Type == nil {
 		if s.Ref == "" && s.Properties.Len() > 0 {
+			ctx.LogDebug("Object type is empty, determined `object` because of `properties` presence")
 			s.Type = utils.ToUnion2[string, []string]("object")
 			return
 		}
 		// TODO: fix type when AllOf, AnyOf, OneOf
 		if s.Items != nil {
+			ctx.LogDebug("Object type is empty, determined `array` because of `items` presence")
 			s.Type = utils.ToUnion2[string, []string]("array")
 			return
 		}
-		panic("Unable to determine object type")
+
+		ctx.LogDebug("Object type is empty, guessing it `object` by default")
+		s.Type = utils.ToUnion2[string, []string]("object")
 	}
 }
 
-func simplifyMultiType(schemaType []string) string {
+func simplifyMultiType(schemaType []string) (string, error) {
 	nullable := lo.Contains(schemaType, "null")
 	typs := lo.Reject(schemaType, func(item string, _ int) bool { return item == "null" }) // Throw out null (if any)
 	switch {
 	case len(typs) > 1: // More than one type along with null -> 'any'
-		return ""
+		return "", nil
 	case len(typs) > 0: // One type along with null -> pointer to this type
-		return typs[0]
+		return typs[0], nil
 	case nullable: // Null only -> 'any', that can be only nil
-		return "null"
+		return "null", nil
 	default:
-		panic("Empty schema type")
+		return "", errors.New("empty object type")
 	}
 }
 
@@ -194,8 +211,9 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 
 	// regular properties
 	for _, entry := range schema.Properties.Entries() {
+		ctx.LogDebug("Object property", "name", entry.Key)
 		ref := path.Join(ctx.PathRef(), "properties", entry.Key)
-		langObj := assemble.NewRefLinkAsGolangType(ref)
+		langObj := assemble.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
 		ctx.Linker.Add(langObj)
 		f := assemble.StructField{
 			Name:         utils.ToGolangName(entry.Key, true),
@@ -212,8 +230,9 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 	if schema.AdditionalProperties != nil {
 		switch schema.AdditionalProperties.Selector {
 		case 0: // "additionalProperties:" is an object
+			ctx.LogDebug("Object additional properties as an object")
 			ref := path.Join(ctx.PathRef(), "additionalProperties")
-			langObj := assemble.NewRefLinkAsGolangType(ref)
+			langObj := assemble.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
 			f := assemble.StructField{
 				Name: "AdditionalProperties",
 				Type: &assemble.Map{
@@ -230,6 +249,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 			}
 			res.Fields = append(res.Fields, f)
 		case 1:
+			ctx.LogDebug("Object additional properties as boolean flag")
 			if schema.AdditionalProperties.V1 { // "additionalProperties: true" -- allow any additional properties
 				valTyp := assemble.TypeAlias{
 					BaseType: assemble.BaseType{
@@ -276,9 +296,11 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 
 	switch {
 	case schema.Items != nil && schema.Items.Selector == 0: // Only one "type:" of items
+		ctx.LogDebug("Object items (single type)")
 		ref := path.Join(ctx.PathRef(), "items")
-		res.ItemsType = assemble.NewRefLinkAsGolangType(ref)
+		res.ItemsType = assemble.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
 	case schema.Items == nil || schema.Items.Selector == 1: // No items or Several types for each item sequentially
+		ctx.LogDebug("Object items (zero or several types)")
 		valTyp := assemble.TypeAlias{
 			BaseType: assemble.BaseType{
 				Name:        ctx.GenerateObjName(schema.Title, "ItemsItemValue"),
@@ -324,23 +346,22 @@ func buildUnionStruct(ctx *common.CompileContext, schema Object) (*assemble.Unio
 
 	res.Fields = lo.Times(len(schema.OneOf), func(index int) assemble.StructField {
 		ref := path.Join(ctx.PathRef(), "oneOf", strconv.Itoa(index))
-		langTyp := assemble.NewRefLinkAsGolangType(ref)
+		langTyp := assemble.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
 		ctx.Linker.Add(langTyp)
 		return assemble.StructField{Type: langTyp, ForcePointer: true}
 	})
 	res.Fields = append(res.Fields, lo.Times(len(schema.AnyOf), func(index int) assemble.StructField {
 		ref := path.Join(ctx.PathRef(), "anyOf", strconv.Itoa(index))
-		langTyp := assemble.NewRefLinkAsGolangType(ref)
+		langTyp := assemble.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
 		ctx.Linker.Add(langTyp)
 		return assemble.StructField{Type: langTyp, ForcePointer: true}
 	})...)
 	res.Fields = append(res.Fields, lo.Times(len(schema.AllOf), func(index int) assemble.StructField {
 		ref := path.Join(ctx.PathRef(), "allOf", strconv.Itoa(index))
-		langTyp := assemble.NewRefLinkAsGolangType(ref)
+		langTyp := assemble.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
 		ctx.Linker.Add(langTyp)
 		return assemble.StructField{Type: langTyp}
 	})...)
 
 	return &res, nil
 }
-

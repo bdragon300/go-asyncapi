@@ -45,6 +45,8 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 	chanResult := &ProtoChannel{BaseProtoChannel: *baseChan}
 
 	// Channel bindings
+	ctx.LogDebug("Channel bindings")
+	ctx.IncrementLogCallLvl()
 	bindingsStruct := &assemble.Struct{ // TODO: remove in favor of parent channel
 		BaseType: assemble.BaseType{
 			Name:        ctx.GenerateObjName(channelKey, "Bindings"),
@@ -53,6 +55,7 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 		},
 	}
 	method, err := buildChannelBindingsMethod(ctx, channel, bindingsStruct)
+	ctx.DecrementLogCallLvl()
 	if err != nil {
 		return nil, err
 	}
@@ -64,19 +67,20 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 	return chanResult, nil
 }
 
-func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Channel, bindingsStruct *assemble.Struct) (res *assemble.Func, err error) {
+func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Channel, bindingsStruct *assemble.Struct) (*assemble.Func, error) {
 	structValues := &assemble.StructInit{Type: &assemble.Simple{Name: "ChannelBindings", Package: ctx.RuntimePackage(ProtoName)}}
 	var hasBindings bool
 
 	if chBindings, ok := channel.Bindings.Get(ProtoName); ok {
+		ctx.LogDebug("Channel bindings", "proto", ProtoName)
 		hasBindings = true
 		var bindings channelBindings
-		if err = utils.UnmarshalRawsUnion2(chBindings, &bindings); err != nil {
-			return
+		if err := utils.UnmarshalRawsUnion2(chBindings, &bindings); err != nil {
+			return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
 		}
 		marshalFields := []string{"Topic", "Partitions", "Replicas"}
-		if err = utils.StructToOrderedMap(bindings, &structValues.Values, marshalFields); err != nil {
-			return
+		if err := utils.StructToOrderedMap(bindings, &structValues.Values, marshalFields); err != nil {
+			return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
 		}
 
 		if bindings.TopicConfiguration != nil {
@@ -84,8 +88,8 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 				Type: &assemble.Simple{Name: "TopicConfiguration", Package: ctx.RuntimePackage(ProtoName)},
 			}
 			marshalFields = []string{"RetentionMs", "RetentionBytes", "DeleteRetentionMs", "MaxMessageBytes"}
-			if err = utils.StructToOrderedMap(*bindings.TopicConfiguration, &tc.Values, marshalFields); err != nil {
-				return
+			if err := utils.StructToOrderedMap(*bindings.TopicConfiguration, &tc.Values, marshalFields); err != nil {
+				return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
 			}
 
 			if len(bindings.TopicConfiguration.CleanupPolicy) > 0 {
@@ -108,10 +112,12 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 	// Publish channel bindings
 	var publisherJSON utils.OrderedMap[string, any]
 	if channel.Publish != nil {
+		ctx.LogDebug("Channel publish operation bindings")
 		if b, ok := channel.Publish.Bindings.Get(ProtoName); ok {
 			hasBindings = true
+			var err error
 			if publisherJSON, err = buildOperationBindings(b); err != nil {
-				return
+				return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
 			}
 		}
 	}
@@ -119,10 +125,12 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 	// Subscribe channel bindings
 	var subscriberJSON utils.OrderedMap[string, any]
 	if channel.Subscribe != nil {
+		ctx.LogDebug("Channel subscribe operation bindings")
 		if b, ok := channel.Subscribe.Bindings.Get(ProtoName); ok {
 			hasBindings = true
+			var err error
 			if subscriberJSON, err = buildOperationBindings(b); err != nil {
-				return
+				return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
 			}
 		}
 	}
@@ -132,7 +140,7 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 	}
 
 	// Method Proto() proto.ChannelBindings
-	res = &assemble.Func{
+	return &assemble.Func{
 		FuncSignature: assemble.FuncSignature{
 			Name: protoAbbr,
 			Args: nil,
@@ -143,9 +151,7 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 		Receiver:      bindingsStruct,
 		PackageName:   ctx.TopPackageName(),
 		BodyAssembler: protocols.ChannelBindingsMethodBody(structValues, &publisherJSON, &subscriberJSON),
-	}
-
-	return
+	}, nil
 }
 
 func buildOperationBindings(opBindings utils.Union2[json.RawMessage, yaml.Node]) (res utils.OrderedMap[string, any], err error) {
@@ -209,6 +215,10 @@ func (p ProtoChannel) AssembleDefinition(ctx *common.AssembleContext) []*j.State
 
 func (p ProtoChannel) AssembleUsage(ctx *common.AssembleContext) []*j.Statement {
 	return p.Struct.AssembleUsage(ctx)
+}
+
+func (p ProtoChannel) String() string {
+	return "Kafka channel " + p.BaseProtoChannel.Name
 }
 
 func (p ProtoChannel) assembleNewFunc(ctx *common.AssembleContext) []*j.Statement {

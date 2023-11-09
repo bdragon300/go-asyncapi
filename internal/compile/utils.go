@@ -8,12 +8,13 @@ import (
 const utilsPackageName = "utils"
 
 func UtilsCompile(ctx *common.CompileContext) error {
+	ctx.LogInfo("Utils package")
 	pkg := common.Package{}
 	if _, ok := ctx.Packages[utilsPackageName]; !ok {
 		ctx.Packages[utilsPackageName] = &pkg
 	}
 
-	pkg.Put(buildSerializer(ctx), nil)
+	ctx.Packages[utilsPackageName].Put(buildSerializer(ctx), nil)
 
 	return nil
 }

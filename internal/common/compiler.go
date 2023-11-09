@@ -1,8 +1,11 @@
 package common
 
 import (
+	"fmt"
 	"path"
 	"strings"
+
+	"github.com/charmbracelet/log"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	"github.com/samber/lo"
@@ -31,6 +34,7 @@ func NewCompileContext(linker Linker) *CompileContext {
 		Linker:             linker,
 		Protocols:          make(map[string]int),
 		DefaultContentType: fallbackContentType,
+		logger:             log.Default().WithPrefix("Compilation 🔨"),
 	}
 }
 
@@ -40,6 +44,8 @@ type CompileContext struct {
 	Linker             Linker
 	Protocols          map[string]int
 	DefaultContentType string
+	logger             *log.Logger
+	logCallLvl         int
 }
 
 func (c *CompileContext) PutToCurrentPkg(obj Assembler) {
@@ -55,12 +61,12 @@ func (c *CompileContext) PutToCurrentPkg(obj Assembler) {
 	pkg.Put(obj, c.PathStack())
 }
 
-func (c *CompileContext) PathStack() []string {
-	return lo.Map(c.Stack.Items(), func(item ContextStackItem, _ int) string { return item.Path })
-}
-
 func (c *CompileContext) PathRef() string {
 	return "#/" + path.Join(c.PathStack()...)
+}
+
+func (c *CompileContext) PathStack() []string {
+	return lo.Map(c.Stack.Items(), func(item ContextStackItem, _ int) string { return item.Path })
 }
 
 func (c *CompileContext) SetTopObjName(n string) {
@@ -79,7 +85,7 @@ func (c *CompileContext) RuntimePackage(subPackage string) string {
 
 func (c *CompileContext) GenerateObjName(name, suffix string) string {
 	if name == "" {
-		// Join name from user names, set earlier by SetTopObjName (if any)
+		// Join name from usernames, set earlier by SetTopObjName (if any)
 		items := lo.FilterMap(c.Stack.Items(), func(item ContextStackItem, index int) (string, bool) {
 			return item.ObjName, item.ObjName != ""
 		})
@@ -100,4 +106,48 @@ func (c *CompileContext) AddProtocol(protoName string) {
 		c.Protocols[protoName] = 0
 	}
 	c.Protocols[protoName]++
+}
+
+func (c *CompileContext) LogFatal(msg string, err error) {
+	if err != nil {
+		c.logger.Error(msg, "err", err, "path", c.PathRef())
+	}
+	c.logger.Error(msg, "path", c.PathRef())
+}
+
+func (c *CompileContext) LogWarn(msg string, args ...any) {
+	l := c.logger
+	if c.logCallLvl > 0 {
+		msg = fmt.Sprintf("%s> %s", strings.Repeat("-", c.logCallLvl), msg) // Ex: prefix: --> Message...
+	}
+	args = append(args, "path", c.PathRef())
+	l.Warn(msg, args...)
+}
+
+func (c *CompileContext) LogInfo(msg string, args ...any) {
+	l := c.logger
+	if c.logCallLvl > 0 {
+		msg = fmt.Sprintf("%s> %s", strings.Repeat("-", c.logCallLvl), msg) // Ex: prefix: --> Message...
+	}
+	args = append(args, "path", c.PathRef())
+	l.Info(msg, args...)
+}
+
+func (c *CompileContext) LogDebug(msg string, args ...any) {
+	l := c.logger
+	if c.logCallLvl > 0 {
+		msg = fmt.Sprintf("%s> %s", strings.Repeat("-", c.logCallLvl), msg) // Ex: prefix: --> Message...
+	}
+	args = append(args, "path", c.PathRef())
+	l.Debug(msg, args...)
+}
+
+func (c *CompileContext) IncrementLogCallLvl() {
+	c.logCallLvl++
+}
+
+func (c *CompileContext) DecrementLogCallLvl() {
+	if c.logCallLvl > 0 {
+		c.logCallLvl--
+	}
 }

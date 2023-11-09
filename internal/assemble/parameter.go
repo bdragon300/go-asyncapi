@@ -24,6 +24,10 @@ func (p Parameter) AssembleDefinition(ctx *common.AssembleContext) []*j.Statemen
 	return res
 }
 
+func (p Parameter) String() string {
+	return "Parameter " + p.Name
+}
+
 func (p Parameter) assembleMethods() []*j.Statement {
 	rn := strings.ToLower(string(p.Type.TypeName()[0]))
 	receiver := j.Id(rn).Id(p.Type.TypeName())

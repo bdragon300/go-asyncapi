@@ -10,6 +10,7 @@ type Assembler interface {
 	AllowRender() bool
 	AssembleDefinition(ctx *AssembleContext) []*jen.Statement
 	AssembleUsage(ctx *AssembleContext) []*jen.Statement
+	String() string
 }
 
 type AssembleContext struct {

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/log"
+
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 
 	"github.com/samber/lo"
@@ -11,9 +13,14 @@ import (
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 )
 
+func NewLocalLinker() *LocalLinker {
+	return &LocalLinker{logger: log.Default().WithPrefix("Linking 🔗")}
+}
+
 type LocalLinker struct {
 	queries     []common.LinkQuerier
 	listQueries []common.ListQuerier
+	logger      *log.Logger
 }
 
 func (l *LocalLinker) Add(query common.LinkQuerier) {
@@ -34,6 +41,15 @@ func (l *LocalLinker) Process(ctx *common.CompileContext) error {
 	for assigned < len(l.queries) {
 		for _, query := range l.queries {
 			if res, ok := resolveLink(query, objects); ok {
+				switch query.Origin() {
+				case common.LinkOriginInternal:
+					l.logger.Debug("Internal ref resolved", "$ref", query.Ref(), "target", res)
+				case common.LinkOriginUser:
+					l.logger.Info("Ref resolved", "$ref", query.Ref(), "target", res)
+				default:
+					panic(fmt.Sprintf("Unknown link origin: %v", query.Origin()))
+				}
+
 				query.Assign(res)
 				assigned++
 			}
@@ -56,6 +72,15 @@ func (l *LocalLinker) Process(ctx *common.CompileContext) error {
 	for assigned < len(l.listQueries) {
 		for _, query := range l.listQueries {
 			if res, ok := resolveListLink(query, objects); ok {
+				targets := strings.Join(
+					lo.Map(lo.Slice(res, 0, 2), func(item common.Assembler, _ int) string { return item.String() }),
+					", ",
+				)
+				if len(res) > 2 {
+					targets += ", ..."
+				}
+				l.logger.Debug("Internal list link resolved", "count", len(res), "targets", targets)
+
 				query.AssignList(lo.ToAnySlice(res))
 				assigned++
 			}

@@ -1,6 +1,7 @@
 package assemble
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
@@ -34,6 +35,18 @@ func (f FuncSignature) AssembleDefinition(ctx *common.AssembleContext) []*jen.St
 
 func (f FuncSignature) AssembleUsage(_ *common.AssembleContext) []*jen.Statement {
 	return []*jen.Statement{jen.Id(f.Name)}
+}
+
+func (f FuncSignature) String() string {
+	ret := ""
+	switch {
+	case len(f.Return) == 1:
+		ret = f.Return[0].String()
+	case len(f.Return) > 1:
+		ret = strings.Join(lo.Map(f.Return, func(item FuncParam, _ int) string { return item.String() }), ", ")
+	}
+	args := strings.Join(lo.Map(f.Return, func(item FuncParam, _ int) string { return item.String() }), ", ")
+	return fmt.Sprintf("%s(%s)%s", f.Name, args, ret)
 }
 
 type Func struct {
@@ -74,6 +87,10 @@ func (f Func) AllowRender() bool {
 	return true
 }
 
+func (f Func) String() string {
+	return fmt.Sprintf("(%s) %s", f.Receiver.String(), f.FuncSignature.String())
+}
+
 func (f Func) ReceiverName() string {
 	if f.Receiver == nil {
 		panic("receiver has not set")
@@ -101,4 +118,8 @@ func (n FuncParam) assembleDefinition(ctx *common.AssembleContext) []*jen.Statem
 	}
 	stmt = stmt.Add(utils.ToCode(n.Type.AssembleUsage(ctx))...)
 	return []*jen.Statement{stmt}
+}
+
+func (n FuncParam) String() string {
+	return n.Type.String() + " " + n.Type.String()
 }

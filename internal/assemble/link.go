@@ -8,16 +8,17 @@ import (
 	"github.com/samber/lo"
 )
 
-func NewRefLink[T any](ref string) *Link[T] {
-	return &Link[T]{ref: ref}
+func NewRefLink[T any](ref string, origin common.LinkOrigin) *Link[T] {
+	return &Link[T]{ref: ref, origin: origin}
 }
 
-func NewCbLink[T any](findCb func(item common.Assembler, path []string) bool) *Link[T] {
-	return &Link[T]{findCb: findCb}
+func NewCbLink[T any](findCb func(item common.Assembler, path []string) bool, origin common.LinkOrigin) *Link[T] {
+	return &Link[T]{findCb: findCb, origin: origin}
 }
 
 type Link[T any] struct {
 	ref    string
+	origin common.LinkOrigin
 	findCb func(item common.Assembler, path []string) bool
 
 	target   T
@@ -45,6 +46,11 @@ func (r *Link[T]) Ref() string {
 	return r.ref
 }
 
+func (r *Link[T]) Origin() common.LinkOrigin {
+	return r.origin
+}
+
+// List links can only be LinkOriginInternal, no way to set a callback in spec
 func NewListCbLink[T any](findCb func(item common.Assembler, path []string) bool) *LinkList[T] {
 	return &LinkList[T]{findCb: findCb}
 }
@@ -77,9 +83,9 @@ func (r *LinkList[T]) Targets() []T {
 	return r.targets
 }
 
-func NewRefLinkAsAssembler(ref string) *LinkAsAssembler {
+func NewRefLinkAsAssembler(ref string, origin common.LinkOrigin) *LinkAsAssembler {
 	return &LinkAsAssembler{
-		Link: *NewRefLink[common.Assembler](ref),
+		Link: *NewRefLink[common.Assembler](ref, origin),
 	}
 }
 
@@ -99,9 +105,13 @@ func (r *LinkAsAssembler) AllowRender() bool {
 	return false // Prevent rendering the object we're point to for several times
 }
 
-func NewRefLinkAsGolangType(ref string) *LinkAsGolangType {
+func (r *LinkAsAssembler) String() string {
+	return "Ref to " + r.ref
+}
+
+func NewRefLinkAsGolangType(ref string, origin common.LinkOrigin) *LinkAsGolangType {
 	return &LinkAsGolangType{
-		Link: *NewRefLink[common.GolangType](ref),
+		Link: *NewRefLink[common.GolangType](ref, origin),
 	}
 }
 
@@ -123,4 +133,8 @@ func (r *LinkAsGolangType) AssembleDefinition(ctx *common.AssembleContext) []*je
 
 func (r *LinkAsGolangType) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	return r.target.AssembleUsage(ctx)
+}
+
+func (r *LinkAsGolangType) String() string {
+	return "Ref to " + r.ref
 }

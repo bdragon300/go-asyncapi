@@ -59,6 +59,10 @@ func (c Channel) AssembleUsage(_ *common.AssembleContext) []*j.Statement {
 	panic("not implemented")
 }
 
+func (c Channel) String() string {
+	return "Channel " + c.Name
+}
+
 func (c Channel) assembleChannelNameFunc(ctx *common.AssembleContext) []*j.Statement {
 	// Channel1Name(params Chan1Parameters) runtime.ParamString
 	return []*j.Statement{

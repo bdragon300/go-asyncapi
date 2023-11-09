@@ -18,6 +18,7 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 	// Server bindings (protocol has no server bindings)
 	if server.Bindings.Len() > 0 {
 		if _, ok := server.Bindings.Get(ProtoName); ok {
+			ctx.LogDebug("Server bindings", "proto", ProtoName)
 			vals := &assemble.StructInit{
 				Type: &assemble.Simple{Name: "ServerBindings", Package: ctx.RuntimePackage(ProtoName)},
 			}
@@ -80,6 +81,10 @@ func (p ProtoServer) AssembleDefinition(ctx *common.AssembleContext) []*j.Statem
 
 func (p ProtoServer) AssembleUsage(ctx *common.AssembleContext) []*j.Statement {
 	return p.Struct.AssembleUsage(ctx)
+}
+
+func (p ProtoServer) String() string {
+	return "AMQP server " + p.BaseProtoServer.Name
 }
 
 func (p ProtoServer) assembleChannelMethods(ctx *common.AssembleContext) []*j.Statement {

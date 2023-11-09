@@ -46,6 +46,8 @@ func BuildChannel(
 
 	// FIXME: remove in favor of the non-proto channel
 	if channel.Parameters.Len() > 0 {
+		ctx.LogDebug("Channel parameters", "proto", protoName)
+		ctx.IncrementLogCallLvl()
 		chanResult.ParametersStructNoAssemble = &assemble.Struct{
 			BaseType: assemble.BaseType{
 				Name:        ctx.GenerateObjName(channelKey, "Parameters"),
@@ -55,14 +57,16 @@ func BuildChannel(
 			Fields: nil,
 		}
 		for _, paramName := range channel.Parameters.Keys() {
+			ctx.LogDebug("Channel parameter", "name", paramName, "proto", protoName)
 			ref := path.Join(ctx.PathRef(), "parameters", paramName)
-			lnk := assemble.NewRefLinkAsGolangType(ref)
+			lnk := assemble.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
 			ctx.Linker.Add(lnk)
 			chanResult.ParametersStructNoAssemble.Fields = append(chanResult.ParametersStructNoAssemble.Fields, assemble.StructField{
 				Name: utils.ToGolangName(paramName, true),
 				Type: lnk,
 			})
 		}
+		ctx.DecrementLogCallLvl()
 	}
 
 	// Interface to match servers bound with a channel
@@ -93,6 +97,7 @@ func BuildChannel(
 
 	// Publisher stuff
 	if channel.Publish != nil {
+		ctx.LogDebug("Channel publish operation", "proto", protoName)
 		chanResult.Struct.Fields = append(chanResult.Struct.Fields, assemble.StructField{
 			Name:        "publisher",
 			Description: channel.Publish.Description,
@@ -104,8 +109,9 @@ func BuildChannel(
 		})
 		chanResult.Publisher = true
 		if channel.Publish.Message != nil {
+			ctx.LogDebug("Channel publish operation message", "proto", protoName)
 			ref := path.Join(ctx.PathRef(), "publish/message")
-			chanResult.PubMessageLink = assemble.NewRefLink[*assemble.Message](ref)
+			chanResult.PubMessageLink = assemble.NewRefLink[*assemble.Message](ref, common.LinkOriginInternal)
 			ctx.Linker.Add(chanResult.PubMessageLink)
 		}
 		chanResult.ServerIface.Methods = append(chanResult.ServerIface.Methods, assemble.FuncSignature{
@@ -119,6 +125,7 @@ func BuildChannel(
 
 	// Subscriber stuff
 	if channel.Subscribe != nil {
+		ctx.LogDebug("Channel subscribe operation", "proto", protoName)
 		chanResult.Struct.Fields = append(chanResult.Struct.Fields, assemble.StructField{
 			Name:        "subscriber",
 			Description: channel.Subscribe.Description,
@@ -130,8 +137,9 @@ func BuildChannel(
 		})
 		chanResult.Subscriber = true
 		if channel.Subscribe.Message != nil {
+			ctx.LogDebug("Channel subscribe operation message", "proto", protoName)
 			ref := path.Join(ctx.PathRef(), "subscribe/message")
-			chanResult.SubMessageLink = assemble.NewRefLink[*assemble.Message](ref)
+			chanResult.SubMessageLink = assemble.NewRefLink[*assemble.Message](ref, common.LinkOriginInternal)
 			ctx.Linker.Add(chanResult.SubMessageLink)
 		}
 		chanResult.ServerIface.Methods = append(chanResult.ServerIface.Methods, assemble.FuncSignature{

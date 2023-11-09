@@ -2,8 +2,6 @@ package compile
 
 import (
 	"encoding/json"
-	"fmt"
-	"strings"
 
 	"gopkg.in/yaml.v3"
 
@@ -33,7 +31,10 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 	ctx.SetTopObjName(ctx.Stack.Top().Path) // TODO: use title
 	obj, err := s.build(ctx, ctx.Stack.Top().Path)
 	if err != nil {
-		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
+		return err
+	}
+	if obj == nil {
+		return nil
 	}
 	ctx.PutToCurrentPkg(obj)
 	if ctx.TopPackageName() == "servers" {
@@ -44,21 +45,24 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 
 func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Assembler, error) {
 	if s.Ref != "" {
-		res := assemble.NewRefLinkAsAssembler(s.Ref)
+		ctx.LogDebug("Ref", "$ref", s.Ref)
+		res := assemble.NewRefLinkAsAssembler(s.Ref, common.LinkOriginUser)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
 
 	protoBuilder, ok := ProtoServerCompiler[s.Protocol]
 	if !ok {
-		panic(fmt.Sprintf("Unknown protocol %q at path %s", s.Protocol, ctx.PathStack()))
+		ctx.LogWarn("Skip unsupported server protocol", "proto", s.Protocol)
+		return nil, nil
 	}
 	protoServer, err := protoBuilder(ctx, &s, serverKey)
 	if err != nil {
-		return nil, fmt.Errorf("error build server at path %s: %w", ctx.PathStack(), err)
+		return nil, err
 	}
 
 	return &assemble.Server{
+		Name:        serverKey,
 		Protocol:    s.Protocol,
 		ProtoServer: protoServer,
 		BindingsStruct: &assemble.Struct{

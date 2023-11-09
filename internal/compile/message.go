@@ -3,7 +3,6 @@ package compile
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	yaml "gopkg.in/yaml.v3"
 
@@ -42,7 +41,7 @@ func (m Message) Compile(ctx *common.CompileContext) error {
 	ctx.SetTopObjName(ctx.Stack.Top().Path)
 	obj, err := m.build(ctx, ctx.Stack.Top().Path)
 	if err != nil {
-		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
+		return err
 	}
 	ctx.PutToCurrentPkg(obj)
 	return nil
@@ -50,12 +49,14 @@ func (m Message) Compile(ctx *common.CompileContext) error {
 
 func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Assembler, error) {
 	if m.Ref != "" {
-		res := assemble.NewRefLinkAsAssembler(m.Ref)
+		ctx.LogDebug("Ref", "$ref", m.Ref)
+		res := assemble.NewRefLinkAsAssembler(m.Ref, common.LinkOriginUser)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
 
 	obj := assemble.Message{
+		Name: messageKey,
 		OutStruct: &assemble.Struct{
 			BaseType: assemble.BaseType{
 				Name:        ctx.GenerateObjName(m.Name, "Out"),
@@ -77,6 +78,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.As
 		HeadersFallbackType: &assemble.Map{KeyType: &assemble.Simple{Name: "string"}, ValueType: &assemble.Simple{Name: "any", IsIface: true}},
 	}
 	obj.ContentType, _ = lo.Coalesce(m.ContentType, ctx.DefaultContentType)
+	ctx.LogDebug(fmt.Sprintf("Message content type is %q", obj.ContentType))
 	allServersLnk := assemble.NewListCbLink[*assemble.Server](func(item common.Assembler, path []string) bool {
 		_, ok := item.(*assemble.Server)
 		return ok
@@ -86,14 +88,17 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.As
 
 	// Link to Headers struct if any
 	if m.Headers != nil {
+		ctx.LogDebug("Message headers")
 		ref := ctx.PathRef() + "/headers"
-		obj.HeadersTypeLink = assemble.NewRefLink[*assemble.Struct](ref)
+		obj.HeadersTypeLink = assemble.NewRefLink[*assemble.Struct](ref, common.LinkOriginInternal)
 		ctx.Linker.Add(obj.HeadersTypeLink)
 	}
 	m.setStructFields(ctx, &obj)
 
 	// Bindings
 	if m.Bindings.Len() > 0 {
+		ctx.LogDebug("Message bindings")
+		ctx.IncrementLogCallLvl()
 		obj.BindingsStruct = &assemble.Struct{
 			BaseType: assemble.BaseType{
 				Name:        ctx.GenerateObjName(m.Name, "Bindings"),
@@ -103,16 +108,21 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.As
 			Fields: nil,
 		}
 		for _, e := range m.Bindings.Entries() {
-			b, ok := ProtoMessageBindingsBuilder[e.Key]
+			ctx.LogDebug("Message bindings", "proto", e.Key)
+			f, ok := ProtoMessageBindingsBuilder[e.Key]
 			if !ok {
-				panic("Unknown protocol " + e.Key)
+				ctx.LogWarn(fmt.Sprintf("Skip unsupported bindings protocol %q", e.Key))
+				continue
 			}
-			protoMethod, err := b(ctx, &m, obj.BindingsStruct, messageKey)
+			ctx.IncrementLogCallLvl()
+			protoMethod, err := f(ctx, &m, obj.BindingsStruct, messageKey)
+			ctx.DecrementLogCallLvl()
 			if err != nil {
 				return nil, err
 			}
 			obj.BindingsStructProtoMethods = append(obj.BindingsStructProtoMethods, protoMethod)
 		}
+		ctx.DecrementLogCallLvl()
 	}
 	return &obj, nil
 }
@@ -127,10 +137,12 @@ func (m Message) setStructFields(ctx *common.CompileContext, langMessage *assemb
 		{Name: "Payload", Type: langMessage.PayloadType},
 	}
 	if langMessage.HeadersTypeLink != nil {
-		lnk := assemble.NewRefLinkAsGolangType(langMessage.HeadersTypeLink.Ref())
+		ctx.LogDebug("Message headers has a concrete type")
+		lnk := assemble.NewRefLinkAsGolangType(langMessage.HeadersTypeLink.Ref(), common.LinkOriginInternal)
 		ctx.Linker.Add(lnk)
 		fields = append(fields, assemble.StructField{Name: "Headers", Type: lnk})
 	} else {
+		ctx.LogDebug("Message headers has `any` type")
 		fields = append(fields, assemble.StructField{Name: "Headers", Type: langMessage.HeadersFallbackType})
 	}
 
@@ -140,11 +152,14 @@ func (m Message) setStructFields(ctx *common.CompileContext, langMessage *assemb
 
 func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 	if m.Payload != nil {
+		ctx.LogDebug("Message payload has a concrete type")
 		ref := ctx.PathRef() + "/payload"
-		lnk := assemble.NewRefLinkAsGolangType(ref)
+		lnk := assemble.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
 		ctx.Linker.Add(lnk)
 		return lnk
 	}
+
+	ctx.LogDebug("Message payload has `any` type")
 	return &assemble.Simple{Name: "any", IsIface: true}
 }
 

@@ -23,6 +23,7 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 
 	// Server bindings
 	if server.Bindings.Len() > 0 {
+		ctx.LogDebug("Server bindings", "proto", ProtoName)
 		if b, ok := server.Bindings.Get(ProtoName); ok {
 			vals := &assemble.StructInit{
 				Type: &assemble.Simple{Name: "ServerBindings", Package: ctx.RuntimePackage(ProtoName)},
@@ -37,11 +38,11 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 
 			var bindings serverBindings
 			if err := utils.UnmarshalRawsUnion2(b, &bindings); err != nil { // TODO: implement $ref
-				return nil, err
+				return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
 			}
 			marshalFields := []string{"SchemaRegistryURL", "SchemaRegistryVendor"}
 			if err := utils.StructToOrderedMap(bindings, &vals.Values, marshalFields); err != nil {
-				return nil, err
+				return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
 			}
 
 			srvResult.BindingsMethod = &assemble.Func{
@@ -95,6 +96,10 @@ func (p ProtoServer) AssembleDefinition(ctx *common.AssembleContext) []*j.Statem
 
 func (p ProtoServer) AssembleUsage(ctx *common.AssembleContext) []*j.Statement {
 	return p.Struct.AssembleUsage(ctx)
+}
+
+func (p ProtoServer) String() string {
+	return "Kafka server " + p.BaseProtoServer.Name
 }
 
 func (p ProtoServer) assembleChannelMethods(ctx *common.AssembleContext) []*j.Statement {

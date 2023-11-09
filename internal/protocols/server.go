@@ -41,6 +41,7 @@ func BuildServer(
 
 	// Server variables
 	for _, v := range server.Variables.Entries() {
+		ctx.LogDebug("Server variable", "name", v.Key, "proto", protoName)
 		srvResult.Variables.Set(v.Key, ProtoServerVariable{
 			ArgName:     utils.ToGolangName(v.Key, false),
 			Enum:        v.Value.Enum,
@@ -65,6 +66,7 @@ func BuildServer(
 
 	// Producer/consumer
 	if buildProducer {
+		ctx.LogDebug("Server producer", "proto", protoName)
 		fld := assemble.StructField{
 			Name: "producer",
 			Type: &assemble.Simple{Name: "Producer", Package: ctx.RuntimePackage(protoName), IsIface: true},
@@ -73,6 +75,7 @@ func BuildServer(
 		srvResult.Producer = true
 	}
 	if buildConsumer {
+		ctx.LogDebug("Server consumer", "proto", protoName)
 		fld := assemble.StructField{
 			Name: "consumer",
 			Type: &assemble.Simple{Name: "Consumer", Package: ctx.RuntimePackage(protoName), IsIface: true},

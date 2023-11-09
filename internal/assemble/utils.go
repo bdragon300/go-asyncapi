@@ -92,6 +92,10 @@ func (u UtilsSerializer) AssembleUsage(_ *common.AssembleContext) []*j.Statement
 	panic("not implemented")
 }
 
+func (u UtilsSerializer) String() string {
+	return "UtilsSerializer"
+}
+
 func getFormatByContentType(contentType string) string {
 	// TODO: add other formats: protobuf, avro, etc.
 	switch {

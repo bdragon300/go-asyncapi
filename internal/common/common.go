@@ -9,6 +9,13 @@ const (
 	SchemaTagPackageDown SchemaTag = "packageDown"
 )
 
+type LinkOrigin int
+
+const (
+	LinkOriginUser LinkOrigin = iota
+	LinkOriginInternal
+)
+
 const TagName = "cgen"
 
 type Linker interface {
@@ -21,6 +28,7 @@ type LinkQuerier interface {
 	Assigned() bool
 	FindCallback() func(item Assembler, path []string) bool
 	Ref() string
+	Origin() LinkOrigin
 }
 
 type ListQuerier interface {

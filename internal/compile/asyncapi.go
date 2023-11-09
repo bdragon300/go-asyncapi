@@ -1,6 +1,8 @@
 package compile
 
 import (
+	"fmt"
+
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 )
@@ -21,6 +23,7 @@ func (a AsyncAPI) Compile(ctx *common.CompileContext) error {
 	if a.DefaultContentType != "" {
 		ctx.DefaultContentType = a.DefaultContentType
 	}
+	ctx.LogDebug(fmt.Sprintf("Default content type set to %s", ctx.DefaultContentType))
 	return nil
 }
 

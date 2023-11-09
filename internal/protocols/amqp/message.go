@@ -1,7 +1,7 @@
 package amqp
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
@@ -19,16 +19,16 @@ type messageBindings struct {
 func BuildMessageBindingsFunc(ctx *common.CompileContext, message *compile.Message, bindingsStruct *assemble.Struct, _ string) (common.Assembler, error) {
 	msgBindings, ok := message.Bindings.Get(ProtoName)
 	if !ok {
-		return nil, fmt.Errorf("no binding for protocol %s", ProtoName)
+		return nil, common.CompileError{Err: errors.New("expected message bindings for protocol"), Path: ctx.PathRef(), Proto: ProtoName}
 	}
 	var bindings messageBindings
 	if err := utils.UnmarshalRawsUnion2(msgBindings, &bindings); err != nil {
-		return nil, err
+		return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
 	}
 	var values utils.OrderedMap[string, any]
 	marshalFields := []string{"ContentEncoding", "MessageType"}
 	if err := utils.StructToOrderedMap(bindings, &values, marshalFields); err != nil {
-		return nil, err
+		return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
 	}
 
 	return &assemble.Func{

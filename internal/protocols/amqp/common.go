@@ -11,6 +11,7 @@ const (
 )
 
 func Register() {
+	compile.ProtoServerCompiler[ProtoName] = BuildServer
 	compile.ProtoChannelCompiler[ProtoName] = BuildChannel
 	compile.ProtoMessageBindingsBuilder[ProtoName] = BuildMessageBindingsFunc
 	assemble.ProtoMessageMarshalEnvelopeMethodAssembler[ProtoName] = AssembleMessageMarshalEnvelopeMethod

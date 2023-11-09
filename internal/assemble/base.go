@@ -26,6 +26,10 @@ func (b *BaseType) TypeName() string {
 	return b.Name
 }
 
+func (b *BaseType) String() string {
+	return b.Name
+}
+
 type Array struct {
 	BaseType
 	ItemsType common.GolangType
@@ -168,6 +172,10 @@ func (p Simple) TypeName() string {
 	return ""
 }
 
+func (p Simple) String() string {
+	return p.Name
+}
+
 type NullableType struct {
 	Type   common.GolangType
 	Render bool
@@ -197,4 +205,8 @@ func (n NullableType) AssembleUsage(ctx *common.AssembleContext) []*jen.Statemen
 
 func (n NullableType) TypeName() string {
 	return n.Type.TypeName()
+}
+
+func (n NullableType) String() string {
+	return n.Type.String()
 }

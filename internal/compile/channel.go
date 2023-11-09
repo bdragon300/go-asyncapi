@@ -2,9 +2,7 @@ package compile
 
 import (
 	"encoding/json"
-	"fmt"
 	"path"
-	"strings"
 
 	"gopkg.in/yaml.v3"
 
@@ -32,7 +30,7 @@ func (c Channel) Compile(ctx *common.CompileContext) error {
 	ctx.SetTopObjName(ctx.Stack.Top().Path) // TODO: use title
 	obj, err := c.build(ctx, ctx.Stack.Top().Path)
 	if err != nil {
-		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
+		return err
 	}
 	ctx.PutToCurrentPkg(obj)
 	return nil
@@ -40,7 +38,8 @@ func (c Channel) Compile(ctx *common.CompileContext) error {
 
 func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Assembler, error) {
 	if c.Ref != "" {
-		res := assemble.NewRefLinkAsAssembler(c.Ref)
+		ctx.LogDebug("Ref", "$ref", c.Ref)
+		res := assemble.NewRefLinkAsAssembler(c.Ref, common.LinkOriginUser)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
@@ -49,6 +48,8 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.As
 
 	// Channel parameters
 	if c.Parameters.Len() > 0 {
+		ctx.LogDebug("Channel parameters")
+		ctx.IncrementLogCallLvl()
 		res.ParametersStruct = &assemble.Struct{
 			BaseType: assemble.BaseType{
 				Name:        ctx.GenerateObjName(channelKey, "Parameters"),
@@ -57,26 +58,33 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.As
 			},
 		}
 		for _, paramName := range c.Parameters.Keys() {
+			ctx.LogDebug("Channel parameter", "name", paramName)
 			ref := path.Join(ctx.PathRef(), "parameters", paramName)
-			lnk := assemble.NewRefLinkAsGolangType(ref)
+			lnk := assemble.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
 			ctx.Linker.Add(lnk)
 			res.ParametersStruct.Fields = append(res.ParametersStruct.Fields, assemble.StructField{
 				Name: utils.ToGolangName(paramName, true),
 				Type: lnk,
 			})
 		}
+		ctx.DecrementLogCallLvl()
 	}
 
 	// Servers which this channel is connected to
 	// Empty servers field means "no servers", omitted servers field means "all servers"
-	if c.Servers != nil && len(*c.Servers) > 0 {
+	if c.Servers != nil {
+		ctx.LogDebug("Servers applied to channel")
+		ctx.IncrementLogCallLvl()
 		for _, srv := range *c.Servers {
-			lnk := assemble.NewRefLink[*assemble.Server]("#/servers/" + srv)
+			ctx.LogDebug("Server", "name", srv)
+			lnk := assemble.NewRefLink[*assemble.Server]("#/servers/"+srv, common.LinkOriginInternal)
 			ctx.Linker.Add(lnk)
 			res.AppliedServerLinks = append(res.AppliedServerLinks, lnk)
 			res.AppliedServers = append(res.AppliedServers, srv)
 		}
-	} else if c.Servers == nil {
+		ctx.DecrementLogCallLvl()
+	} else {
+		ctx.LogDebug("Channel applied to all servers")
 		lnk := assemble.NewListCbLink[*assemble.Server](func(item common.Assembler, path []string) bool {
 			_, ok := item.(*assemble.Server)
 			return ok && len(path) > 0 && path[0] == "servers" // Pick only servers from `servers:` section, skip ones from `components:`
@@ -86,7 +94,20 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.As
 	}
 
 	// Channel/operation bindings
-	if c.Bindings.Len() > 0 || c.Publish != nil && c.Publish.Bindings.Len() > 0 || c.Subscribe != nil && c.Subscribe.Bindings.Len() > 0 {
+	hasBindings := false
+	if c.Bindings.Len() > 0 {
+		ctx.LogDebug("Found channel bindings")
+		hasBindings = true
+	}
+	if c.Publish != nil && c.Publish.Bindings.Len() > 0 {
+		ctx.LogDebug("Found publish operation bindings")
+		hasBindings = true
+	}
+	if c.Subscribe != nil && c.Subscribe.Bindings.Len() > 0 {
+		ctx.LogDebug("Found subscribe operation bindings")
+		hasBindings = true
+	}
+	if hasBindings {
 		res.BindingsStruct = &assemble.Struct{
 			BaseType: assemble.BaseType{
 				Name:        ctx.GenerateObjName(channelKey, "Bindings"),
@@ -96,33 +117,16 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.As
 		}
 	}
 
-	if c.Parameters.Len() > 0 {
-		res.ParametersStruct = &assemble.Struct{
-			BaseType: assemble.BaseType{
-				Name:        ctx.GenerateObjName(channelKey, "Parameters"),
-				Render:      true,
-				PackageName: ctx.TopPackageName(),
-			},
-			Fields: nil,
-		}
-		for _, paramName := range c.Parameters.Keys() {
-			ref := path.Join(ctx.PathRef(), "parameters", paramName)
-			lnk := assemble.NewRefLinkAsGolangType(ref)
-			ctx.Linker.Add(lnk)
-			res.ParametersStruct.Fields = append(res.ParametersStruct.Fields, assemble.StructField{
-				Name: utils.ToGolangName(paramName, true),
-				Type: lnk,
-			})
-		}
-	}
-
 	// Build protocol-specific channels
-	for pName, pBuild := range ProtoChannelCompiler {
-		obj, err := pBuild(ctx, &c, channelKey)
+	for proto, f := range ProtoChannelCompiler {
+		ctx.LogDebug("Channel", "proto", proto)
+		ctx.IncrementLogCallLvl()
+		obj, err := f(ctx, &c, channelKey)
+		ctx.DecrementLogCallLvl()
 		if err != nil {
-			return nil, fmt.Errorf("Unable to build %s protocol: %w", pName, err)
+			return nil, err
 		}
-		res.AllProtocols[pName] = obj
+		res.AllProtocols[proto] = obj
 	}
 
 	return res, nil

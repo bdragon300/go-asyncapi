@@ -10,6 +10,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/charmbracelet/log"
+
 	"github.com/bdragon300/asyncapi-codegen-go/implementations"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols/amqp"
@@ -44,6 +46,7 @@ type ImplementationsOpts struct {
 type cli struct {
 	GenerateCmd         *GenerateCmd `arg:"subcommand:generate" help:"Generate the code based on AsyncAPI specification"`
 	ListImplementations *struct{}    `arg:"subcommand:list-implementations" help:"Show all available protocol implementations"`
+	Verbose             bool         `arg:"-v" help:"Verbose output in debug log level"`
 }
 
 func main() {
@@ -59,6 +62,13 @@ func main() {
 		cliParser.WriteHelp(os.Stderr)
 		os.Exit(1)
 	}
+
+	// Setting up the logger
+	log.SetLevel(log.InfoLevel)
+	if cliArgs.Verbose {
+		log.SetLevel(log.DebugLevel)
+	}
+	log.SetReportTimestamp(false)
 
 	registerProtocols()
 
@@ -79,11 +89,11 @@ func listImplementations() {
 		panic(err.Error())
 	}
 	for proto, implInfo := range manifest {
-		os.Stdout.WriteString(proto + ":\n")
+		_, _ = os.Stdout.WriteString(proto + ":\n")
 		for implName, info := range implInfo {
-			os.Stdout.WriteString(fmt.Sprintf("* %s (%s)\n", implName, info.URL))
+			_, _ = os.Stdout.WriteString(fmt.Sprintf("* %s (%s)\n", implName, info.URL))
 		}
-		os.Stdout.WriteString("\n")
+		_, _ = os.Stdout.WriteString("\n")
 	}
 }
 
@@ -105,10 +115,11 @@ func generate(cmd *GenerateCmd) error {
 		return fmt.Errorf("error while reading spec file: %v", err)
 	}
 
-	localLinker := &linker.LocalLinker{}
+	localLinker := linker.NewLocalLinker()
 	compileCtx := common.NewCompileContext(localLinker)
 
 	// Compilation
+	compileCtx.LogInfo("AsyncAPI")
 	if err = spec.Compile(compileCtx); err != nil {
 		return fmt.Errorf("schema compile error: %w", err)
 	}

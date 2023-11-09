@@ -88,15 +88,17 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 	return chanResult, nil
 }
 
-func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, bindingsStruct *assemble.Struct) (res *assemble.Func, chanType string, err error) {
+func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, bindingsStruct *assemble.Struct) (*assemble.Func, string, error) {
 	structValues := &assemble.StructInit{Type: &assemble.Simple{Name: "ChannelBindings", Package: ctx.RuntimePackage(ProtoName)}}
 	var hasBindings bool
+	var chanType string
 
 	if chBindings, ok := channel.Bindings.Get(ProtoName); ok {
+		ctx.LogDebug("Channel bindings", "proto", ProtoName)
 		hasBindings = true
 		var bindings channelBindings
-		if err = utils.UnmarshalRawsUnion2(chBindings, &bindings); err != nil {
-			return
+		if err := utils.UnmarshalRawsUnion2(chBindings, &bindings); err != nil {
+			return nil, "", common.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
 		}
 		switch bindings.Is {
 		case "routingKey":
@@ -105,7 +107,7 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 			structValues.Values.Set("ChannelType", &assemble.Simple{Name: "ChannelTypeQueue", Package: ctx.RuntimePackage(ProtoName)})
 		case "":
 		default:
-			panic(fmt.Sprintf("Unknown channel type %q", bindings.Is))
+			return nil, "", common.CompileError{Err: fmt.Errorf("unknown channel type %q", bindings.Is), Path: ctx.PathRef(), Proto: ProtoName}
 		}
 		chanType = bindings.Is
 
@@ -114,8 +116,8 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 				Type: &assemble.Simple{Name: "ExchangeConfiguration", Package: ctx.RuntimePackage(ProtoName)},
 			}
 			marshalFields := []string{"Name", "Durable", "AutoDelete", "VHost"}
-			if err = utils.StructToOrderedMap(*bindings.Exchange, &ex.Values, marshalFields); err != nil {
-				return
+			if err := utils.StructToOrderedMap(*bindings.Exchange, &ex.Values, marshalFields); err != nil {
+				return nil, "", common.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
 			}
 			switch bindings.Exchange.Type {
 			case "default":
@@ -130,7 +132,11 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 				ex.Values.Set("Type", &assemble.Simple{Name: "ExchangeTypeHeaders", Package: ctx.RuntimePackage(ProtoName)})
 			case "":
 			default:
-				panic(fmt.Sprintf("Unknown exchange type %q", bindings.Is))
+				return nil, "", common.CompileError{
+					Err:   fmt.Errorf("unknown exchange type %q", bindings.Exchange.Type),
+					Path:  ctx.PathRef(),
+					Proto: ProtoName,
+				}
 			}
 			structValues.Values.Set("ExchangeConfiguration", ex)
 		}
@@ -139,8 +145,8 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 				Type: &assemble.Simple{Name: "QueueConfiguration", Package: ctx.RuntimePackage(ProtoName)},
 			}
 			marshalFields := []string{"Name", "Durable", "Exclusive", "AutoDelete", "VHost"}
-			if err = utils.StructToOrderedMap(*bindings.Exchange, &ex.Values, marshalFields); err != nil {
-				return
+			if err := utils.StructToOrderedMap(*bindings.Exchange, &ex.Values, marshalFields); err != nil {
+				return nil, "", common.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
 			}
 			structValues.Values.Set("QueueConfiguration", ex)
 		}
@@ -149,17 +155,18 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 	// Publish channel bindings
 	if channel.Publish != nil {
 		if b, ok := channel.Publish.Bindings.Get(ProtoName); ok {
+			ctx.LogDebug("Channel publish operation bindings", "proto", ProtoName)
 			pob := &assemble.StructInit{
 				Type: &assemble.Simple{Name: "PublishOperationBindings", Package: ctx.RuntimePackage(ProtoName)},
 			}
 			hasBindings = true
 			var bindings publishOperationBindings
-			if err = utils.UnmarshalRawsUnion2(b, &bindings); err != nil {
-				return
+			if err := utils.UnmarshalRawsUnion2(b, &bindings); err != nil {
+				return nil, "", common.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
 			}
 			marshalFields := []string{"Expiration", "UserID", "CC", "Priority", "Mandatory", "BCC", "ReplyTo", "Timestamp"}
-			if err = utils.StructToOrderedMap(bindings, &pob.Values, marshalFields); err != nil {
-				return
+			if err := utils.StructToOrderedMap(bindings, &pob.Values, marshalFields); err != nil {
+				return nil, "", common.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
 			}
 			switch bindings.DeliveryMode {
 			case 1:
@@ -168,7 +175,11 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 				pob.Values.Set("DeliveryMode", &assemble.Simple{Name: "DeliveryModePersistent", Package: ctx.RuntimePackage(ProtoName)})
 			case 0:
 			default:
-				panic(fmt.Sprintf("Unknown delivery mode %v", bindings.DeliveryMode))
+				return nil, "", common.CompileError{
+					Err:   fmt.Errorf("unknown delivery mode %v", bindings.DeliveryMode),
+					Path:  ctx.PathRef(),
+					Proto: ProtoName,
+				}
 			}
 
 			structValues.Values.Set("PublisherBindings", pob)
@@ -178,17 +189,18 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 	// Subscribe channel bindings
 	if channel.Subscribe != nil {
 		if b, ok := channel.Subscribe.Bindings.Get(ProtoName); ok {
+			ctx.LogDebug("Channel subscribe operation bindings", "proto", ProtoName)
 			sob := &assemble.StructInit{
 				Type: &assemble.Simple{Name: "SubscribeOperationBindings", Package: ctx.RuntimePackage(ProtoName)},
 			}
 			hasBindings = true
 			var bindings subscribeOperationBindings
-			if err = utils.UnmarshalRawsUnion2(b, &bindings); err != nil {
-				return
+			if err := utils.UnmarshalRawsUnion2(b, &bindings); err != nil {
+				return nil, "", common.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
 			}
 			marshalFields := []string{"Expiration", "UserID", "CC", "Priority", "ReplyTo", "Timestamp", "Ack"}
-			if err = utils.StructToOrderedMap(bindings, &sob.Values, marshalFields); err != nil {
-				return
+			if err := utils.StructToOrderedMap(bindings, &sob.Values, marshalFields); err != nil {
+				return nil, "", common.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
 			}
 			switch bindings.DeliveryMode {
 			case 1:
@@ -197,7 +209,11 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 				sob.Values.Set("DeliveryMode", &assemble.Simple{Name: "DeliveryModePersistent", Package: ctx.RuntimePackage(ProtoName)})
 			case 0:
 			default:
-				panic(fmt.Sprintf("Unknown delivery mode %v", bindings.DeliveryMode))
+				return nil, "", common.CompileError{
+					Err:   fmt.Errorf("unknown delivery mode %v", bindings.DeliveryMode),
+					Path:  ctx.PathRef(),
+					Proto: ProtoName,
+				}
 			}
 
 			structValues.Values.Set("SubscriberBindings", sob)
@@ -209,7 +225,7 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 	}
 
 	// Method Proto() proto.ChannelBindings
-	res = &assemble.Func{
+	res := &assemble.Func{
 		FuncSignature: assemble.FuncSignature{
 			Name: protoAbbr,
 			Args: nil,
@@ -222,7 +238,7 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 		BodyAssembler: protocols.ChannelBindingsMethodBody(structValues, nil, nil),
 	}
 
-	return
+	return res, chanType, nil
 }
 
 type ProtoChannel struct {
@@ -264,6 +280,10 @@ func (p ProtoChannel) AssembleDefinition(ctx *common.AssembleContext) []*j.State
 
 func (p ProtoChannel) AssembleUsage(ctx *common.AssembleContext) []*j.Statement {
 	return p.Struct.AssembleUsage(ctx)
+}
+
+func (p ProtoChannel) String() string {
+	return "AMQP channel " + p.BaseProtoChannel.Name
 }
 
 func (p ProtoChannel) assembleNewFunc(ctx *common.AssembleContext) []*j.Statement {

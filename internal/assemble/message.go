@@ -16,6 +16,7 @@ var (
 )
 
 type Message struct {
+	Name                       string
 	OutStruct                  *Struct
 	InStruct                   *Struct
 	PayloadType                common.GolangType
@@ -57,6 +58,10 @@ func (m Message) AssembleDefinition(ctx *common.AssembleContext) []*j.Statement 
 
 func (m Message) AssembleUsage(_ *common.AssembleContext) []*j.Statement {
 	panic("not implemented")
+}
+
+func (m Message) String() string {
+	return "Message " + m.Name
 }
 
 func (m Message) assemblePublishMessageStruct(ctx *common.AssembleContext) []*j.Statement {

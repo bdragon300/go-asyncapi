@@ -6,6 +6,7 @@ import (
 )
 
 type Server struct {
+	Name           string
 	Protocol       string
 	ProtoServer    common.Assembler
 	BindingsStruct *Struct // nil if no bindings set in spec
@@ -24,4 +25,8 @@ func (s Server) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement
 
 func (s Server) AssembleUsage(_ *common.AssembleContext) []*jen.Statement {
 	panic("not implemented")
+}
+
+func (s Server) String() string {
+	return "Server " + s.Name
 }

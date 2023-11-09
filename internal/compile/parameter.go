@@ -1,9 +1,7 @@
 package compile
 
 import (
-	"fmt"
 	"path"
-	"strings"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
@@ -21,7 +19,7 @@ func (p Parameter) Compile(ctx *common.CompileContext) error {
 	ctx.SetTopObjName(ctx.Stack.Top().Path)
 	obj, err := p.build(ctx, ctx.Stack.Top().Path)
 	if err != nil {
-		return fmt.Errorf("error on %q: %w", strings.Join(ctx.PathStack(), "."), err)
+		return err
 	}
 	ctx.PutToCurrentPkg(obj)
 	return nil
@@ -29,7 +27,8 @@ func (p Parameter) Compile(ctx *common.CompileContext) error {
 
 func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (common.Assembler, error) {
 	if p.Ref != "" {
-		res := assemble.NewRefLinkAsAssembler(p.Ref)
+		ctx.LogDebug("Ref", "$ref", p.Ref)
+		res := assemble.NewRefLinkAsAssembler(p.Ref, common.LinkOriginUser)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
@@ -37,7 +36,8 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 	res := &assemble.Parameter{Name: parameterKey}
 
 	if p.Schema != nil {
-		lnk := assemble.NewRefLinkAsGolangType(path.Join(ctx.PathRef(), "schema"))
+		ctx.LogDebug("Parameter schema")
+		lnk := assemble.NewRefLinkAsGolangType(path.Join(ctx.PathRef(), "schema"), common.LinkOriginInternal)
 		ctx.Linker.Add(lnk)
 		res.Type = &assemble.Struct{
 			BaseType: assemble.BaseType{
@@ -49,6 +49,7 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 			Fields: []assemble.StructField{{Name: "Value", Type: lnk}},
 		}
 	} else {
+		ctx.LogDebug("Parameter has no schema")
 		res.Type = &assemble.TypeAlias{
 			BaseType: assemble.BaseType{
 				Name:        ctx.GenerateObjName(parameterKey, ""),
