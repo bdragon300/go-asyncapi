@@ -70,9 +70,9 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 	// Channel bindings
 	bindingsStruct := &render.Struct{ // TODO: remove in favor of parent channel
 		BaseType: render.BaseType{
-			Name:        ctx.GenerateObjName(channelKey, "Bindings"),
-			Render:      true,
-			PackageName: ctx.TopPackageName(),
+			Name:         ctx.GenerateObjName(channelKey, "Bindings"),
+			DirectRender: true,
+			PackageName:  ctx.TopPackageName(),
 		},
 	}
 	method, chanType, err := buildChannelBindings(ctx, channel, bindingsStruct)
@@ -248,7 +248,7 @@ type ProtoChannel struct {
 	BindingsChannelType    string
 }
 
-func (p ProtoChannel) AllowRender() bool {
+func (p ProtoChannel) DirectRendering() bool {
 	return true
 }
 

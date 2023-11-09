@@ -32,10 +32,10 @@ func BuildChannel(
 		Name: channelKey,
 		Struct: &render.Struct{
 			BaseType: render.BaseType{
-				Name:        ctx.GenerateObjName(channelKey, protoAbbr),
-				Description: channel.Description,
-				Render:      true,
-				PackageName: ctx.TopPackageName(),
+				Name:         ctx.GenerateObjName(channelKey, protoAbbr),
+				Description:  channel.Description,
+				DirectRender: true,
+				PackageName:  ctx.TopPackageName(),
 			},
 			Fields: []render.StructField{
 				{Name: "name", Type: &render.Simple{Name: "ParamString", Package: ctx.RuntimePackage("")}},
@@ -50,9 +50,9 @@ func BuildChannel(
 		ctx.IncrementLogCallLvl()
 		chanResult.ParametersStructNoRender = &render.Struct{
 			BaseType: render.BaseType{
-				Name:        ctx.GenerateObjName(channelKey, "Parameters"),
-				Render:      true,
-				PackageName: ctx.TopPackageName(),
+				Name:         ctx.GenerateObjName(channelKey, "Parameters"),
+				DirectRender: true,
+				PackageName:  ctx.TopPackageName(),
 			},
 			Fields: nil,
 		}
@@ -79,9 +79,9 @@ func BuildChannel(
 	}
 	chanResult.ServerIface = &render.Interface{
 		BaseType: render.BaseType{
-			Name:        utils.ToLowerFirstLetter(chanResult.Struct.Name + "Server"),
-			Render:      true,
-			PackageName: ctx.TopPackageName(),
+			Name:         utils.ToLowerFirstLetter(chanResult.Struct.Name + "Server"),
+			DirectRender: true,
+			PackageName:  ctx.TopPackageName(),
 		},
 		Methods: []render.FuncSignature{
 			{

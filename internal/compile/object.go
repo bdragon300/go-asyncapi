@@ -143,10 +143,10 @@ func buildGolangType(ctx *common.CompileContext, schema Object, flags map[common
 
 	return &render.TypeAlias{
 		BaseType: render.BaseType{
-			Name:        ctx.GenerateObjName(schema.Title, ""),
-			Description: schema.Description,
-			Render:      noInline,
-			PackageName: ctx.TopPackageName(),
+			Name:         ctx.GenerateObjName(schema.Title, ""),
+			Description:  schema.Description,
+			DirectRender: noInline,
+			PackageName:  ctx.TopPackageName(),
 		},
 		AliasedType: &render.Simple{Name: langTyp},
 	}, nil
@@ -191,10 +191,10 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 	_, noInline := flags[common.SchemaTagNoInline]
 	res := render.Struct{
 		BaseType: render.BaseType{
-			Name:        ctx.GenerateObjName(schema.Title, ""),
-			Description: schema.Description,
-			Render:      noInline,
-			PackageName: ctx.TopPackageName(),
+			Name:         ctx.GenerateObjName(schema.Title, ""),
+			Description:  schema.Description,
+			DirectRender: noInline,
+			PackageName:  ctx.TopPackageName(),
 		},
 	}
 	// TODO: cache the object name in case any sub-schemas recursively reference it
@@ -237,10 +237,10 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 				Name: "AdditionalProperties",
 				Type: &render.Map{
 					BaseType: render.BaseType{
-						Name:        ctx.GenerateObjName(schema.Title, "AdditionalProperties"),
-						Description: schema.AdditionalProperties.V0.Description,
-						Render:      false,
-						PackageName: ctx.TopPackageName(),
+						Name:         ctx.GenerateObjName(schema.Title, "AdditionalProperties"),
+						Description:  schema.AdditionalProperties.V0.Description,
+						DirectRender: false,
+						PackageName:  ctx.TopPackageName(),
 					},
 					KeyType:   &render.Simple{Name: "string"},
 					ValueType: langObj,
@@ -253,10 +253,10 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 			if schema.AdditionalProperties.V1 { // "additionalProperties: true" -- allow any additional properties
 				valTyp := render.TypeAlias{
 					BaseType: render.BaseType{
-						Name:        ctx.GenerateObjName(schema.Title, "AdditionalPropertiesValue"),
-						Description: "",
-						Render:      false,
-						PackageName: ctx.TopPackageName(),
+						Name:         ctx.GenerateObjName(schema.Title, "AdditionalPropertiesValue"),
+						Description:  "",
+						DirectRender: false,
+						PackageName:  ctx.TopPackageName(),
 					},
 					AliasedType: &render.Simple{Name: "any", IsIface: true},
 				}
@@ -264,10 +264,10 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 					Name: "AdditionalProperties",
 					Type: &render.Map{
 						BaseType: render.BaseType{
-							Name:        ctx.GenerateObjName(schema.Title, "AdditionalProperties"),
-							Description: "",
-							Render:      false,
-							PackageName: ctx.TopPackageName(),
+							Name:         ctx.GenerateObjName(schema.Title, "AdditionalProperties"),
+							Description:  "",
+							DirectRender: false,
+							PackageName:  ctx.TopPackageName(),
 						},
 						KeyType:   &render.Simple{Name: "string"},
 						ValueType: &valTyp,
@@ -286,10 +286,10 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 	_, noInline := flags[common.SchemaTagNoInline]
 	res := render.Array{
 		BaseType: render.BaseType{
-			Name:        ctx.GenerateObjName(schema.Title, ""),
-			Description: schema.Description,
-			Render:      noInline,
-			PackageName: ctx.TopPackageName(),
+			Name:         ctx.GenerateObjName(schema.Title, ""),
+			Description:  schema.Description,
+			DirectRender: noInline,
+			PackageName:  ctx.TopPackageName(),
 		},
 		ItemsType: nil,
 	}
@@ -303,19 +303,19 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 		ctx.LogDebug("Object items (zero or several types)")
 		valTyp := render.TypeAlias{
 			BaseType: render.BaseType{
-				Name:        ctx.GenerateObjName(schema.Title, "ItemsItemValue"),
-				Description: "",
-				Render:      false,
-				PackageName: ctx.TopPackageName(),
+				Name:         ctx.GenerateObjName(schema.Title, "ItemsItemValue"),
+				Description:  "",
+				DirectRender: false,
+				PackageName:  ctx.TopPackageName(),
 			},
 			AliasedType: &render.Simple{Name: "any", IsIface: true},
 		}
 		res.ItemsType = &render.Map{
 			BaseType: render.BaseType{
-				Name:        ctx.GenerateObjName(schema.Title, "ItemsItem"),
-				Description: "",
-				Render:      false,
-				PackageName: ctx.TopPackageName(),
+				Name:         ctx.GenerateObjName(schema.Title, "ItemsItem"),
+				Description:  "",
+				DirectRender: false,
+				PackageName:  ctx.TopPackageName(),
 			},
 			KeyType:   &render.Simple{Name: "string"},
 			ValueType: &valTyp,
@@ -329,10 +329,10 @@ func buildUnionStruct(ctx *common.CompileContext, schema Object) (*render.UnionS
 	res := render.UnionStruct{
 		Struct: render.Struct{
 			BaseType: render.BaseType{
-				Name:        ctx.GenerateObjName(schema.Title, ""),
-				Description: schema.Description,
-				Render:      true, // Always render unions as separate types
-				PackageName: ctx.TopPackageName(),
+				Name:         ctx.GenerateObjName(schema.Title, ""),
+				Description:  schema.Description,
+				DirectRender: true, // Always render unions as separate types
+				PackageName:  ctx.TopPackageName(),
 			},
 		},
 	}

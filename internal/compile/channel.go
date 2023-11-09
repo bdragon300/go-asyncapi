@@ -52,9 +52,9 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 		ctx.IncrementLogCallLvl()
 		res.ParametersStruct = &render.Struct{
 			BaseType: render.BaseType{
-				Name:        ctx.GenerateObjName(channelKey, "Parameters"),
-				Render:      true,
-				PackageName: ctx.TopPackageName(),
+				Name:         ctx.GenerateObjName(channelKey, "Parameters"),
+				DirectRender: true,
+				PackageName:  ctx.TopPackageName(),
 			},
 		}
 		for _, paramName := range c.Parameters.Keys() {
@@ -110,9 +110,9 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 	if hasBindings {
 		res.BindingsStruct = &render.Struct{
 			BaseType: render.BaseType{
-				Name:        ctx.GenerateObjName(channelKey, "Bindings"),
-				Render:      true,
-				PackageName: ctx.TopPackageName(),
+				Name:         ctx.GenerateObjName(channelKey, "Bindings"),
+				DirectRender: true,
+				PackageName:  ctx.TopPackageName(),
 			},
 		}
 	}

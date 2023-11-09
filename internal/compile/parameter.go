@@ -41,10 +41,10 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 		ctx.Linker.Add(lnk)
 		res.Type = &render.Struct{
 			BaseType: render.BaseType{
-				Name:        ctx.GenerateObjName(parameterKey, ""),
-				Description: p.Description,
-				Render:      true,
-				PackageName: ctx.TopPackageName(),
+				Name:         ctx.GenerateObjName(parameterKey, ""),
+				Description:  p.Description,
+				DirectRender: true,
+				PackageName:  ctx.TopPackageName(),
 			},
 			Fields: []render.StructField{{Name: "Value", Type: lnk}},
 		}
@@ -52,10 +52,10 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 		ctx.LogDebug("Parameter has no schema")
 		res.Type = &render.TypeAlias{
 			BaseType: render.BaseType{
-				Name:        ctx.GenerateObjName(parameterKey, ""),
-				Description: p.Description,
-				Render:      true,
-				PackageName: ctx.TopPackageName(),
+				Name:         ctx.GenerateObjName(parameterKey, ""),
+				Description:  p.Description,
+				DirectRender: true,
+				PackageName:  ctx.TopPackageName(),
 			},
 			AliasedType: &render.Simple{Name: "string"},
 		}

@@ -31,10 +31,10 @@ func BuildServer(
 		ProtocolVersion: server.ProtocolVersion,
 		Struct: &render.Struct{
 			BaseType: render.BaseType{
-				Name:        ctx.GenerateObjName(serverKey, ""),
-				Description: server.Description,
-				Render:      true,
-				PackageName: ctx.TopPackageName(),
+				Name:         ctx.GenerateObjName(serverKey, ""),
+				Description:  server.Description,
+				DirectRender: true,
+				PackageName:  ctx.TopPackageName(),
 			},
 		},
 	}

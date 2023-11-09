@@ -17,6 +17,9 @@ type FuncSignature struct {
 }
 
 func (f FuncSignature) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("FuncSignature", "", f.Name, "definition", false)
+	defer ctx.LogReturn()
+
 	stmt := jen.Id(f.Name)
 	code := lo.FlatMap(f.Args, func(item FuncParam, index int) []*jen.Statement {
 		return item.renderDefinition(ctx)
@@ -33,7 +36,9 @@ func (f FuncSignature) RenderDefinition(ctx *common.RenderContext) []*jen.Statem
 	return []*jen.Statement{stmt}
 }
 
-func (f FuncSignature) RenderUsage(_ *common.RenderContext) []*jen.Statement {
+func (f FuncSignature) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("FuncSignature", "", f.Name, "usage", false)
+	defer ctx.LogReturn()
 	return []*jen.Statement{jen.Id(f.Name)}
 }
 
@@ -58,6 +63,9 @@ type Func struct {
 }
 
 func (f Func) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("Func", f.PackageName, f.Name, "definition", f.DirectRendering())
+	defer ctx.LogReturn()
+
 	stmt := jen.Func()
 	if f.Receiver != nil {
 		r := jen.Id(f.ReceiverName())
@@ -77,13 +85,16 @@ func (f Func) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 }
 
 func (f Func) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("Func", f.PackageName, f.Name, "usage", f.DirectRendering())
+	defer ctx.LogReturn()
+
 	if f.PackageName != "" && f.PackageName != ctx.CurrentPackage && f.Receiver == nil {
 		return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(f.PackageName), f.Name)}
 	}
 	return []*jen.Statement{jen.Id(f.Name)}
 }
 
-func (f Func) AllowRender() bool {
+func (f Func) DirectRendering() bool {
 	return true
 }
 
@@ -106,6 +117,9 @@ type FuncParam struct {
 }
 
 func (n FuncParam) renderDefinition(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("FuncParam", "", n.Name, "definition", false)
+	defer ctx.LogReturn()
+
 	stmt := &jen.Statement{}
 	if n.Name != "" {
 		stmt = stmt.Id(n.Name)

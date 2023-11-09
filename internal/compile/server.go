@@ -67,9 +67,9 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		ProtoServer: protoServer,
 		BindingsStruct: &render.Struct{
 			BaseType: render.BaseType{
-				Name:        ctx.GenerateObjName(serverKey, "Bindings"),
-				Render:      true,
-				PackageName: ctx.TopPackageName(),
+				Name:         ctx.GenerateObjName(serverKey, "Bindings"),
+				DirectRender: true,
+				PackageName:  ctx.TopPackageName(),
 			},
 			Fields: nil,
 		},

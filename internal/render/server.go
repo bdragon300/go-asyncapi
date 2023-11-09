@@ -12,12 +12,15 @@ type Server struct {
 	BindingsStruct *Struct // nil if no bindings set in spec
 }
 
-func (s Server) AllowRender() bool {
+func (s Server) DirectRendering() bool {
 	return true
 }
 
 func (s Server) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	var res []*jen.Statement
+	ctx.LogRender("Server", "", s.Name, "definition", s.DirectRendering())
+	defer ctx.LogReturn()
+
 	res = append(res, s.BindingsStruct.RenderDefinition(ctx)...)
 	res = append(res, s.ProtoServer.RenderDefinition(ctx)...)
 	return res

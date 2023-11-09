@@ -15,14 +15,11 @@ func RenderPackages(packages map[string]*common.Package, importBase, baseDir str
 	files = make(map[string]*jen.File)
 
 	for pkgName, pkg := range packages {
-		ctx := &common.RenderContext{
-			CurrentPackage: pkgName,
-			ImportBase:     importBase,
-		}
+		ctx := common.NewRenderContext(pkgName, importBase)
 		f := jen.NewFilePathName(baseDir, pkgName)
 		f.Comment(GeneratedCodePreamble).Line()
 		for _, item := range pkg.Items() {
-			if !item.Typ.AllowRender() {
+			if !item.Typ.DirectRendering() {
 				continue
 			}
 			for _, stmt := range item.Typ.RenderDefinition(ctx) {

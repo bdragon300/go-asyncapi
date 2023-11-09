@@ -13,12 +13,15 @@ type Parameter struct {
 	PureString bool
 }
 
-func (p Parameter) AllowRender() bool {
-	return p.Type.AllowRender()
+func (p Parameter) DirectRendering() bool {
+	return p.Type.DirectRendering()
 }
 
 func (p Parameter) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 	var res []*j.Statement
+	ctx.LogRender("Parameter", "", p.Name, "definition", p.DirectRendering())
+	defer ctx.LogReturn()
+
 	res = append(res, p.Type.RenderDefinition(ctx)...)
 	res = append(res, p.renderMethods()...)
 	return res
@@ -52,6 +55,9 @@ func (p Parameter) renderMethods() []*j.Statement {
 }
 
 func (p Parameter) RenderUsage(ctx *common.RenderContext) []*j.Statement {
+	ctx.LogRender("Parameter", "", p.Name, "usage", p.DirectRendering())
+	defer ctx.LogReturn()
+
 	return p.Type.RenderUsage(ctx)
 }
 

@@ -27,11 +27,14 @@ type UtilsSerializer struct {
 	DefaultContentType string
 }
 
-func (u UtilsSerializer) AllowRender() bool {
+func (u UtilsSerializer) DirectRendering() bool {
 	return true
 }
 
-func (u UtilsSerializer) RenderDefinition(_ *common.RenderContext) []*j.Statement {
+func (u UtilsSerializer) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
+	ctx.LogRender("UtilsSerializer", "", "", "definition", u.DirectRendering())
+	defer ctx.LogReturn()
+
 	contentTypes := lo.Uniq(lo.FilterMap(u.AllMessages.Targets(), func(item *Message, index int) (string, bool) {
 		return item.ContentType, item.ContentType != ""
 	}))

@@ -18,7 +18,7 @@ type GolangType interface {
 
 const (
 	nameWordSep         = "_"
-	fallbackContentType = "application/json"
+	fallbackContentType = "application/json" // Default content type if it omitted in spec
 )
 
 type ContextStackItem struct {

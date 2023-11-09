@@ -29,12 +29,14 @@ type Message struct {
 	ContentType                string // Message's content type or default from schema or fallback
 }
 
-func (m Message) AllowRender() bool {
+func (m Message) DirectRendering() bool {
 	return true
 }
 
 func (m Message) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 	var res []*j.Statement
+	ctx.LogRender("Message", "", m.Name, "definition", m.DirectRendering())
+	defer ctx.LogReturn()
 
 	if m.BindingsStruct != nil {
 		res = append(res, m.BindingsStruct.RenderDefinition(ctx)...)

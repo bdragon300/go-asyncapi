@@ -20,6 +20,9 @@ type Struct struct {
 
 func (s Struct) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	var res []*jen.Statement
+	ctx.LogRender("Struct", s.PackageName, s.Name, "definition", s.DirectRendering())
+	defer ctx.LogReturn()
+
 	if s.Description != "" {
 		res = append(res, jen.Comment(s.Name+" -- "+utils.ToLowerFirstLetter(s.Description)))
 	}
@@ -31,7 +34,10 @@ func (s Struct) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 }
 
 func (s Struct) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	if s.AllowRender() {
+	ctx.LogRender("Struct", s.PackageName, s.Name, "usage", s.DirectRendering())
+	defer ctx.LogReturn()
+
+	if s.DirectRendering() {
 		if s.PackageName != "" && s.PackageName != ctx.CurrentPackage {
 			return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(s.PackageName), s.Name)}
 		}
@@ -75,6 +81,9 @@ type StructField struct {
 
 func (f StructField) renderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	var res []*jen.Statement
+	ctx.LogRender("StructField", "", f.Name, "definition", false)
+	defer ctx.LogReturn()
+
 	if f.Description != "" {
 		res = append(res, jen.Comment(f.Name+" -- "+utils.ToLowerFirstLetter(f.Description)))
 	}
@@ -113,6 +122,9 @@ type UnionStruct struct {
 
 func (s UnionStruct) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	var res []*jen.Statement
+	ctx.LogRender("UnionStruct", s.PackageName, s.Name, "definition", s.DirectRendering())
+	defer ctx.LogReturn()
+
 	hasNonStructs := lo.ContainsBy(s.Fields, func(item StructField) bool {
 		return !isTypeStruct(item.Type)
 	})
@@ -178,6 +190,9 @@ type StructInit struct {
 }
 
 func (s StructInit) RenderInit(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("StructInit", "", "", "definition", false)
+	defer ctx.LogReturn()
+
 	stmt := &jen.Statement{}
 	if s.Type != nil {
 		stmt.Add(utils.ToCode(s.Type.RenderUsage(ctx))...)

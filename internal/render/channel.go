@@ -22,12 +22,14 @@ type Channel struct {
 	BindingsStruct   *Struct // nil if bindings are not set
 }
 
-func (c Channel) AllowRender() bool {
+func (c Channel) DirectRendering() bool {
 	return true
 }
 
 func (c Channel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 	var res []*j.Statement
+	ctx.LogRender("Channel", "", c.Name, "definition", c.DirectRendering())
+	defer ctx.LogReturn()
 
 	if c.ParametersStruct != nil {
 		res = append(res, c.ParametersStruct.RenderDefinition(ctx)...)

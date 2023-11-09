@@ -101,7 +101,7 @@ func (r *LinkAsRenderer) RenderUsage(ctx *common.RenderContext) []*jen.Statement
 	return r.target.RenderUsage(ctx)
 }
 
-func (r *LinkAsRenderer) AllowRender() bool {
+func (r *LinkAsRenderer) DirectRendering() bool {
 	return false // Prevent rendering the object we're point to for several times
 }
 
@@ -123,7 +123,7 @@ func (r *LinkAsGolangType) TypeName() string {
 	return r.target.TypeName()
 }
 
-func (r *LinkAsGolangType) AllowRender() bool {
+func (r *LinkAsGolangType) DirectRendering() bool {
 	return false // Prevent rendering the object we're point to for several times
 }
 

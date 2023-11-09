@@ -59,18 +59,18 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		Name: messageKey,
 		OutStruct: &render.Struct{
 			BaseType: render.BaseType{
-				Name:        ctx.GenerateObjName(m.Name, "Out"),
-				Description: utils.JoinNonemptyStrings("\n", m.Summary+" (Outbound Message)", m.Description),
-				Render:      true,
-				PackageName: ctx.TopPackageName(),
+				Name:         ctx.GenerateObjName(m.Name, "Out"),
+				Description:  utils.JoinNonemptyStrings("\n", m.Summary+" (Outbound Message)", m.Description),
+				DirectRender: true,
+				PackageName:  ctx.TopPackageName(),
 			},
 		},
 		InStruct: &render.Struct{
 			BaseType: render.BaseType{
-				Name:        ctx.GenerateObjName(m.Name, "In"),
-				Description: utils.JoinNonemptyStrings("\n", m.Summary+" (Inbound Message)", m.Description),
-				Render:      true,
-				PackageName: ctx.TopPackageName(),
+				Name:         ctx.GenerateObjName(m.Name, "In"),
+				Description:  utils.JoinNonemptyStrings("\n", m.Summary+" (Inbound Message)", m.Description),
+				DirectRender: true,
+				PackageName:  ctx.TopPackageName(),
 			},
 		},
 		PayloadType:         m.getPayloadType(ctx),
@@ -101,9 +101,9 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		ctx.IncrementLogCallLvl()
 		obj.BindingsStruct = &render.Struct{
 			BaseType: render.BaseType{
-				Name:        ctx.GenerateObjName(m.Name, "Bindings"),
-				Render:      true,
-				PackageName: ctx.TopPackageName(),
+				Name:         ctx.GenerateObjName(m.Name, "Bindings"),
+				DirectRender: true,
+				PackageName:  ctx.TopPackageName(),
 			},
 			Fields: nil,
 		}

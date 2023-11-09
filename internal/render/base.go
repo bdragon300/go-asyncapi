@@ -12,14 +12,15 @@ type BaseType struct {
 	Name        string
 	Description string
 
-	// Render denotes if this type must be rendered separately. Otherwise, it will only be inlined in a parent definition
+	// DirectRender is true if the rendering of this type must be invoked directly on rendering phase. Otherwise, the
+	// rendering of this type is invoked indirectly by another type.
 	// Such as inlined `field struct{...}` and separate `field StructName`, or `field []type` and `field ArrayName`
-	Render      bool
-	PackageName string // optional import path from any generated package
+	DirectRender bool
+	PackageName  string // optional import path from any generated package
 }
 
-func (b *BaseType) AllowRender() bool {
-	return b.Render
+func (b *BaseType) DirectRendering() bool {
+	return b.DirectRender
 }
 
 func (b *BaseType) TypeName() string {
@@ -37,6 +38,9 @@ type Array struct {
 }
 
 func (a *Array) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("Array", a.PackageName, a.Name, "definition", a.DirectRendering())
+	defer ctx.LogReturn()
+
 	var res []*jen.Statement
 	if a.Description != "" {
 		res = append(res, jen.Comment(a.Name+" -- "+utils.ToLowerFirstLetter(a.Description)))
@@ -55,7 +59,10 @@ func (a *Array) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 }
 
 func (a *Array) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	if a.Render {
+	ctx.LogRender("Array", a.PackageName, a.Name, "usage", a.DirectRendering())
+	defer ctx.LogReturn()
+
+	if a.DirectRender {
 		if a.PackageName != "" && a.PackageName != ctx.CurrentPackage {
 			return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(a.PackageName), a.Name)}
 		}
@@ -73,6 +80,9 @@ type Map struct {
 }
 
 func (m *Map) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("Map", m.PackageName, m.Name, "definition", m.DirectRendering())
+	defer ctx.LogReturn()
+
 	var res []*jen.Statement
 	if m.Description != "" {
 		res = append(res, jen.Comment(m.Name+" -- "+utils.ToLowerFirstLetter(m.Description)))
@@ -87,7 +97,10 @@ func (m *Map) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 }
 
 func (m *Map) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	if m.Render {
+	ctx.LogRender("Map", m.PackageName, m.Name, "usage", m.DirectRendering())
+	defer ctx.LogReturn()
+
+	if m.DirectRender {
 		if m.PackageName != "" && m.PackageName != ctx.CurrentPackage {
 			return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(m.PackageName), m.Name)}
 		}
@@ -105,6 +118,9 @@ type TypeAlias struct {
 }
 
 func (p *TypeAlias) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("TypeAlias", p.PackageName, p.Name, "definition", p.DirectRendering())
+	defer ctx.LogReturn()
+
 	var res []*jen.Statement
 	if p.Description != "" {
 		res = append(res, jen.Comment(p.Name+" -- "+utils.ToLowerFirstLetter(p.Description)))
@@ -116,7 +132,10 @@ func (p *TypeAlias) RenderDefinition(ctx *common.RenderContext) []*jen.Statement
 }
 
 func (p *TypeAlias) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	if p.Render {
+	ctx.LogRender("TypeAlias", p.PackageName, p.Name, "usage", p.DirectRendering())
+	defer ctx.LogReturn()
+
+	if p.DirectRender {
 		if p.PackageName != "" && p.PackageName != ctx.CurrentPackage {
 			return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(p.PackageName), p.Name)}
 		}
@@ -134,11 +153,14 @@ type Simple struct {
 	TypeParamValues []common.Renderer // optional type parameter types to be filled in definition and usage
 }
 
-func (p Simple) AllowRender() bool {
+func (p Simple) DirectRendering() bool {
 	return false
 }
 
 func (p Simple) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("SimpleType", p.Package, p.Name, "definition", p.DirectRendering())
+	defer ctx.LogReturn()
+
 	stmt := jen.Id(p.Name)
 	if len(p.TypeParamValues) > 0 {
 		typeParams := lo.FlatMap(p.TypeParamValues, func(item common.Renderer, index int) []jen.Code {
@@ -150,6 +172,9 @@ func (p Simple) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 }
 
 func (p Simple) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("SimpleType", p.Package, p.Name, "usage", p.DirectRendering())
+	defer ctx.LogReturn()
+
 	stmt := &jen.Statement{}
 	switch {
 	case p.Package != "" && p.Package != ctx.CurrentPackage:
@@ -181,15 +206,21 @@ type NullableType struct {
 	Render bool
 }
 
-func (n NullableType) AllowRender() bool {
+func (n NullableType) DirectRendering() bool {
 	return n.Render
 }
 
 func (n NullableType) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("NullableType", "", "", "definition", n.DirectRendering())
+	defer ctx.LogReturn()
+
 	return n.Type.RenderDefinition(ctx)
 }
 
 func (n NullableType) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("NullableType", "", "", "usage", n.DirectRendering())
+	defer ctx.LogReturn()
+
 	isPtr := true
 	switch v := n.Type.(type) {
 	case *Interface:

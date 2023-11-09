@@ -24,9 +24,9 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 			}
 			bindingsStruct := &render.Struct{
 				BaseType: render.BaseType{
-					Name:        srvResult.Struct.Name + "Bindings",
-					Render:      true,
-					PackageName: ctx.TopPackageName(),
+					Name:         srvResult.Struct.Name + "Bindings",
+					DirectRender: true,
+					PackageName:  ctx.TopPackageName(),
 				},
 			}
 
@@ -53,7 +53,7 @@ type ProtoServer struct {
 	BindingsMethod *render.Func // nil if no bindings set in spec
 }
 
-func (p ProtoServer) AllowRender() bool {
+func (p ProtoServer) DirectRendering() bool {
 	return true
 }
 

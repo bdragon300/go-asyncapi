@@ -14,6 +14,9 @@ type Interface struct {
 
 func (i Interface) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	var res []*jen.Statement
+	ctx.LogRender("Interface", i.PackageName, i.Name, "definition", i.DirectRendering())
+	defer ctx.LogReturn()
+
 	if i.Description != "" {
 		res = append(res, jen.Comment(i.Name+" -- "+utils.ToLowerFirstLetter(i.Description)))
 	}
@@ -26,7 +29,10 @@ func (i Interface) RenderDefinition(ctx *common.RenderContext) []*jen.Statement 
 }
 
 func (i Interface) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	if i.AllowRender() {
+	ctx.LogRender("Interface", i.PackageName, i.Name, "usage", i.DirectRendering())
+	defer ctx.LogReturn()
+
+	if i.DirectRendering() {
 		if i.PackageName != "" && i.PackageName != ctx.CurrentPackage {
 			return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(i.PackageName), i.Name)}
 		}

@@ -30,9 +30,9 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 			}
 			bindingsStruct := &render.Struct{ // TODO: remove in favor of parent server
 				BaseType: render.BaseType{
-					Name:        ctx.GenerateObjName(serverKey, "Bindings"),
-					Render:      true,
-					PackageName: ctx.TopPackageName(),
+					Name:         ctx.GenerateObjName(serverKey, "Bindings"),
+					DirectRender: true,
+					PackageName:  ctx.TopPackageName(),
 				},
 			}
 
@@ -68,7 +68,7 @@ type ProtoServer struct {
 	BindingsMethod *render.Func // nil if no bindings set in spec
 }
 
-func (p ProtoServer) AllowRender() bool {
+func (p ProtoServer) DirectRendering() bool {
 	return true
 }
 
