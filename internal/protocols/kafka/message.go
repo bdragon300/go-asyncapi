@@ -6,9 +6,9 @@ import (
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/compile"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	j "github.com/dave/jennifer/jen"
 )
@@ -20,7 +20,7 @@ type messageBindings struct {
 	SchemaLookupStrategy    string `json:"schemaLookupStrategy" yaml:"schemaLookupStrategy"`
 }
 
-func BuildMessageBindingsFunc(ctx *common.CompileContext, message *compile.Message, bindingsStruct *assemble.Struct, _ string) (common.Assembler, error) {
+func BuildMessageBindingsFunc(ctx *common.CompileContext, message *compile.Message, bindingsStruct *render.Struct, _ string) (common.Renderer, error) {
 	msgBindings, ok := message.Bindings.Get(ProtoName)
 	if !ok {
 		return nil, common.CompileError{Err: errors.New("expected message bindings for protocol"), Path: ctx.PathRef(), Proto: ProtoName}
@@ -43,24 +43,24 @@ func BuildMessageBindingsFunc(ctx *common.CompileContext, message *compile.Messa
 		jsonValues.Set("Key", string(v))
 	}
 
-	return &assemble.Func{
-		FuncSignature: assemble.FuncSignature{
+	return &render.Func{
+		FuncSignature: render.FuncSignature{
 			Name: protoAbbr,
 			Args: nil,
-			Return: []assemble.FuncParam{
-				{Type: assemble.Simple{Name: "MessageBindings", Package: ctx.RuntimePackage(ProtoName)}},
+			Return: []render.FuncParam{
+				{Type: render.Simple{Name: "MessageBindings", Package: ctx.RuntimePackage(ProtoName)}},
 			},
 		},
-		Receiver:      bindingsStruct,
-		PackageName:   ctx.TopPackageName(),
-		BodyAssembler: protocols.MessageBindingsBody(values, &jsonValues, ProtoName),
+		Receiver:     bindingsStruct,
+		PackageName:  ctx.TopPackageName(),
+		BodyRenderer: protocols.MessageBindingsBody(values, &jsonValues, ProtoName),
 	}, nil
 }
 
-func AssembleMessageMarshalEnvelopeMethod(ctx *common.AssembleContext, message *assemble.Message) []*j.Statement {
-	return protocols.AssembleMessageMarshalEnvelopeMethod(ctx, message, ProtoName, protoAbbr)
+func RenderMessageMarshalEnvelopeMethod(ctx *common.RenderContext, message *render.Message) []*j.Statement {
+	return protocols.RenderMessageMarshalEnvelopeMethod(ctx, message, ProtoName, protoAbbr)
 }
 
-func AssembleMessageUnmarshalEnvelopeMethod(ctx *common.AssembleContext, message *assemble.Message) []*j.Statement {
-	return protocols.AssembleMessageUnmarshalEnvelopeMethod(ctx, message, ProtoName, protoAbbr)
+func RenderMessageUnmarshalEnvelopeMethod(ctx *common.RenderContext, message *render.Message) []*j.Statement {
+	return protocols.RenderMessageUnmarshalEnvelopeMethod(ctx, message, ProtoName, protoAbbr)
 }

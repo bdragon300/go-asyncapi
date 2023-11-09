@@ -1,4 +1,4 @@
-package assemble
+package render
 
 import (
 	"fmt"
@@ -16,14 +16,14 @@ type FuncSignature struct {
 	Return []FuncParam
 }
 
-func (f FuncSignature) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
+func (f FuncSignature) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	stmt := jen.Id(f.Name)
 	code := lo.FlatMap(f.Args, func(item FuncParam, index int) []*jen.Statement {
-		return item.assembleDefinition(ctx)
+		return item.renderDefinition(ctx)
 	})
 	stmt = stmt.Params(utils.ToCode(code)...)
 	code = lo.FlatMap(f.Return, func(item FuncParam, index int) []*jen.Statement {
-		return item.assembleDefinition(ctx)
+		return item.renderDefinition(ctx)
 	})
 	if len(code) > 1 {
 		stmt = stmt.Params(utils.ToCode(code)...)
@@ -33,7 +33,7 @@ func (f FuncSignature) AssembleDefinition(ctx *common.AssembleContext) []*jen.St
 	return []*jen.Statement{stmt}
 }
 
-func (f FuncSignature) AssembleUsage(_ *common.AssembleContext) []*jen.Statement {
+func (f FuncSignature) RenderUsage(_ *common.RenderContext) []*jen.Statement {
 	return []*jen.Statement{jen.Id(f.Name)}
 }
 
@@ -54,29 +54,29 @@ type Func struct {
 	Receiver        common.GolangType
 	PointerReceiver bool
 	PackageName     string // optional import path from any generated package
-	BodyAssembler   func(ctx *common.AssembleContext, f *Func) []*jen.Statement
+	BodyRenderer    func(ctx *common.RenderContext, f *Func) []*jen.Statement
 }
 
-func (f Func) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
+func (f Func) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	stmt := jen.Func()
 	if f.Receiver != nil {
 		r := jen.Id(f.ReceiverName())
 		if f.PointerReceiver {
 			r = r.Op("*")
 		}
-		r = r.Add(utils.ToCode(f.Receiver.AssembleUsage(ctx))...)
+		r = r.Add(utils.ToCode(f.Receiver.RenderUsage(ctx))...)
 		stmt = stmt.Params(r)
 	} else {
 		stmt = stmt.Func()
 	}
-	stmt = stmt.Add(utils.ToCode(f.FuncSignature.AssembleDefinition(ctx))...)
-	if f.BodyAssembler != nil {
-		stmt = stmt.Block(utils.ToCode(f.BodyAssembler(ctx, &f))...)
+	stmt = stmt.Add(utils.ToCode(f.FuncSignature.RenderDefinition(ctx))...)
+	if f.BodyRenderer != nil {
+		stmt = stmt.Block(utils.ToCode(f.BodyRenderer(ctx, &f))...)
 	}
 	return []*jen.Statement{stmt}
 }
 
-func (f Func) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
+func (f Func) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 	if f.PackageName != "" && f.PackageName != ctx.CurrentPackage && f.Receiver == nil {
 		return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(f.PackageName), f.Name)}
 	}
@@ -105,7 +105,7 @@ type FuncParam struct {
 	Variadic bool
 }
 
-func (n FuncParam) assembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
+func (n FuncParam) renderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	stmt := &jen.Statement{}
 	if n.Name != "" {
 		stmt = stmt.Id(n.Name)
@@ -116,7 +116,7 @@ func (n FuncParam) assembleDefinition(ctx *common.AssembleContext) []*jen.Statem
 	if n.Pointer {
 		stmt = stmt.Op("*")
 	}
-	stmt = stmt.Add(utils.ToCode(n.Type.AssembleUsage(ctx))...)
+	stmt = stmt.Add(utils.ToCode(n.Type.RenderUsage(ctx))...)
 	return []*jen.Statement{stmt}
 }
 

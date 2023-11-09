@@ -3,8 +3,8 @@ package compile
 import (
 	"path"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 )
 
 type Parameter struct {
@@ -25,39 +25,39 @@ func (p Parameter) Compile(ctx *common.CompileContext) error {
 	return nil
 }
 
-func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (common.Assembler, error) {
+func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (common.Renderer, error) {
 	if p.Ref != "" {
 		ctx.LogDebug("Ref", "$ref", p.Ref)
-		res := assemble.NewRefLinkAsAssembler(p.Ref, common.LinkOriginUser)
+		res := render.NewRefLinkAsRenderer(p.Ref, common.LinkOriginUser)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
 
-	res := &assemble.Parameter{Name: parameterKey}
+	res := &render.Parameter{Name: parameterKey}
 
 	if p.Schema != nil {
 		ctx.LogDebug("Parameter schema")
-		lnk := assemble.NewRefLinkAsGolangType(path.Join(ctx.PathRef(), "schema"), common.LinkOriginInternal)
+		lnk := render.NewRefLinkAsGolangType(path.Join(ctx.PathRef(), "schema"), common.LinkOriginInternal)
 		ctx.Linker.Add(lnk)
-		res.Type = &assemble.Struct{
-			BaseType: assemble.BaseType{
+		res.Type = &render.Struct{
+			BaseType: render.BaseType{
 				Name:        ctx.GenerateObjName(parameterKey, ""),
 				Description: p.Description,
 				Render:      true,
 				PackageName: ctx.TopPackageName(),
 			},
-			Fields: []assemble.StructField{{Name: "Value", Type: lnk}},
+			Fields: []render.StructField{{Name: "Value", Type: lnk}},
 		}
 	} else {
 		ctx.LogDebug("Parameter has no schema")
-		res.Type = &assemble.TypeAlias{
-			BaseType: assemble.BaseType{
+		res.Type = &render.TypeAlias{
+			BaseType: render.BaseType{
 				Name:        ctx.GenerateObjName(parameterKey, ""),
 				Description: p.Description,
 				Render:      true,
 				PackageName: ctx.TopPackageName(),
 			},
-			AliasedType: &assemble.Simple{Name: "string"},
+			AliasedType: &render.Simple{Name: "string"},
 		}
 		res.PureString = true
 	}

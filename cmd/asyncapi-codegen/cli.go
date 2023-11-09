@@ -17,7 +17,7 @@ import (
 	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols/amqp"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols/kafka"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/writer"
 	"github.com/samber/lo"
 	"golang.org/x/mod/modfile"
 
@@ -135,14 +135,14 @@ func generate(cmd *GenerateCmd) error {
 		return fmt.Errorf("schema linking error: %v", err)
 	}
 
-	// Assembling
-	files, err := render.AssemblePackages(compileCtx.Packages, importBase, cmd.TargetDir)
+	// Rendering
+	files, err := writer.RenderPackages(compileCtx.Packages, importBase, cmd.TargetDir)
 	if err != nil {
-		return fmt.Errorf("schema assemble/render error: %v", err)
+		return fmt.Errorf("schema render error: %v", err)
 	}
 
-	// Rendering
-	if err = render.WriteAssembled(files, cmd.TargetDir); err != nil {
+	// Writing
+	if err = writer.WriteToFiles(files, cmd.TargetDir); err != nil {
 		return fmt.Errorf("error while writing code to files: %v", err)
 	}
 
@@ -159,7 +159,7 @@ func generate(cmd *GenerateCmd) error {
 		if _, ok := implManifest[p][selectedImpls[p]]; !ok {
 			return fmt.Errorf("unknown implementation %s for %s protocol, use list-implementations command to see possible values", selectedImpls[p], p)
 		}
-		if err = render.WriteImplementation(implManifest[p][selectedImpls[p]].Dir, path.Join(implDir, p)); err != nil {
+		if err = writer.WriteImplementation(implManifest[p][selectedImpls[p]].Dir, path.Join(implDir, p)); err != nil {
 			return fmt.Errorf("cannot render implementation for protocol %q: %w", p, err)
 		}
 	}

@@ -1,8 +1,8 @@
 package kafka
 
 import (
-	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/compile"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 )
 
 const (
@@ -14,6 +14,6 @@ func Register() {
 	compile.ProtoServerCompiler[ProtoName] = BuildServer
 	compile.ProtoChannelCompiler[ProtoName] = BuildChannel
 	compile.ProtoMessageBindingsBuilder[ProtoName] = BuildMessageBindingsFunc
-	assemble.ProtoMessageMarshalEnvelopeMethodAssembler[ProtoName] = AssembleMessageMarshalEnvelopeMethod
-	assemble.ProtoMessageUnmarshalEnvelopeMethodAssembler[ProtoName] = AssembleMessageUnmarshalEnvelopeMethod
+	render.ProtoMessageMarshalEnvelopeMethodRenderer[ProtoName] = RenderMessageMarshalEnvelopeMethod
+	render.ProtoMessageUnmarshalEnvelopeMethodRenderer[ProtoName] = RenderMessageUnmarshalEnvelopeMethod
 }

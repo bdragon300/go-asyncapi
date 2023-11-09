@@ -1,4 +1,4 @@
-package assemble
+package render
 
 import (
 	"fmt"
@@ -8,11 +8,11 @@ import (
 	j "github.com/dave/jennifer/jen"
 )
 
-type protoMessageAssemblerFunc func(ctx *common.AssembleContext, message *Message) []*j.Statement
+type protoMessageRendererFunc func(ctx *common.RenderContext, message *Message) []*j.Statement
 
 var (
-	ProtoMessageUnmarshalEnvelopeMethodAssembler = map[string]protoMessageAssemblerFunc{}
-	ProtoMessageMarshalEnvelopeMethodAssembler   = map[string]protoMessageAssemblerFunc{}
+	ProtoMessageUnmarshalEnvelopeMethodRenderer = map[string]protoMessageRendererFunc{}
+	ProtoMessageMarshalEnvelopeMethodRenderer   = map[string]protoMessageRendererFunc{}
 )
 
 type Message struct {
@@ -25,7 +25,7 @@ type Message struct {
 	HeadersTypeLink            *Link[*Struct]
 	AllServers                 *LinkList[*Server] // For extracting all using protocols
 	BindingsStruct             *Struct            // nil if message bindings are not defined
-	BindingsStructProtoMethods []common.Assembler
+	BindingsStructProtoMethods []common.Renderer
 	ContentType                string // Message's content type or default from schema or fallback
 }
 
@@ -33,30 +33,30 @@ func (m Message) AllowRender() bool {
 	return true
 }
 
-func (m Message) AssembleDefinition(ctx *common.AssembleContext) []*j.Statement {
+func (m Message) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 	var res []*j.Statement
 
 	if m.BindingsStruct != nil {
-		res = append(res, m.BindingsStruct.AssembleDefinition(ctx)...)
+		res = append(res, m.BindingsStruct.RenderDefinition(ctx)...)
 		for _, mtd := range m.BindingsStructProtoMethods {
-			res = append(res, mtd.AssembleDefinition(ctx)...)
+			res = append(res, mtd.RenderDefinition(ctx)...)
 		}
 	}
 
 	if m.PayloadHasSchema {
-		res = append(res, m.PayloadType.AssembleDefinition(ctx)...)
+		res = append(res, m.PayloadType.RenderDefinition(ctx)...)
 	}
 	if m.HeadersTypeLink != nil {
-		res = append(res, m.HeadersFallbackType.AssembleDefinition(ctx)...)
+		res = append(res, m.HeadersFallbackType.RenderDefinition(ctx)...)
 	}
 
-	res = append(res, m.assemblePublishMessageStruct(ctx)...)
-	res = append(res, m.assembleSubscribeMessageStruct(ctx)...)
+	res = append(res, m.renderPublishMessageStruct(ctx)...)
+	res = append(res, m.renderSubscribeMessageStruct(ctx)...)
 
 	return res
 }
 
-func (m Message) AssembleUsage(_ *common.AssembleContext) []*j.Statement {
+func (m Message) RenderUsage(_ *common.RenderContext) []*j.Statement {
 	panic("not implemented")
 }
 
@@ -64,29 +64,29 @@ func (m Message) String() string {
 	return "Message " + m.Name
 }
 
-func (m Message) assemblePublishMessageStruct(ctx *common.AssembleContext) []*j.Statement {
+func (m Message) renderPublishMessageStruct(ctx *common.RenderContext) []*j.Statement {
 	var res []*j.Statement
-	res = append(res, j.Func().Id(m.OutStruct.NewFuncName()).Params().Op("*").Add(utils.ToCode(m.OutStruct.AssembleUsage(ctx))...).Block(
-		j.Return(j.Op("&").Add(utils.ToCode(m.OutStruct.AssembleUsage(ctx))...).Values()),
+	res = append(res, j.Func().Id(m.OutStruct.NewFuncName()).Params().Op("*").Add(utils.ToCode(m.OutStruct.RenderUsage(ctx))...).Block(
+		j.Return(j.Op("&").Add(utils.ToCode(m.OutStruct.RenderUsage(ctx))...).Values()),
 	))
-	res = append(res, m.OutStruct.AssembleDefinition(ctx)...)
+	res = append(res, m.OutStruct.RenderDefinition(ctx)...)
 
 	for _, srv := range m.AllServers.Targets() {
-		res = append(res, ProtoMessageMarshalEnvelopeMethodAssembler[srv.Protocol](ctx, &m)...)
+		res = append(res, ProtoMessageMarshalEnvelopeMethodRenderer[srv.Protocol](ctx, &m)...)
 	}
-	res = append(res, m.assemblePublishCommonMethods(ctx)...)
+	res = append(res, m.renderPublishCommonMethods(ctx)...)
 
 	return res
 }
 
-func (m Message) assemblePublishCommonMethods(ctx *common.AssembleContext) []*j.Statement {
+func (m Message) renderPublishCommonMethods(ctx *common.RenderContext) []*j.Statement {
 	structName := m.OutStruct.Name
 	rn := m.OutStruct.ReceiverName()
 	receiver := j.Id(rn).Op("*").Id(structName)
-	payloadFieldType := utils.ToCode(m.PayloadType.AssembleUsage(ctx))
-	headersFieldType := utils.ToCode(m.HeadersFallbackType.AssembleUsage(ctx))
+	payloadFieldType := utils.ToCode(m.PayloadType.RenderUsage(ctx))
+	headersFieldType := utils.ToCode(m.HeadersFallbackType.RenderUsage(ctx))
 	if m.HeadersTypeLink != nil {
-		headersFieldType = utils.ToCode(m.HeadersTypeLink.Target().AssembleUsage(ctx))
+		headersFieldType = utils.ToCode(m.HeadersTypeLink.Target().RenderUsage(ctx))
 	}
 
 	return []*j.Statement{
@@ -120,29 +120,29 @@ func (m Message) assemblePublishCommonMethods(ctx *common.AssembleContext) []*j.
 	}
 }
 
-func (m Message) assembleSubscribeMessageStruct(ctx *common.AssembleContext) []*j.Statement {
+func (m Message) renderSubscribeMessageStruct(ctx *common.RenderContext) []*j.Statement {
 	var res []*j.Statement
-	res = append(res, j.Func().Id(m.InStruct.NewFuncName()).Params().Op("*").Add(utils.ToCode(m.InStruct.AssembleUsage(ctx))...).Block(
-		j.Return(j.Op("&").Add(utils.ToCode(m.InStruct.AssembleUsage(ctx))...).Values()),
+	res = append(res, j.Func().Id(m.InStruct.NewFuncName()).Params().Op("*").Add(utils.ToCode(m.InStruct.RenderUsage(ctx))...).Block(
+		j.Return(j.Op("&").Add(utils.ToCode(m.InStruct.RenderUsage(ctx))...).Values()),
 	))
-	res = append(res, m.InStruct.AssembleDefinition(ctx)...)
+	res = append(res, m.InStruct.RenderDefinition(ctx)...)
 
 	for _, srv := range m.AllServers.Targets() {
-		res = append(res, ProtoMessageUnmarshalEnvelopeMethodAssembler[srv.Protocol](ctx, &m)...)
+		res = append(res, ProtoMessageUnmarshalEnvelopeMethodRenderer[srv.Protocol](ctx, &m)...)
 	}
-	res = append(res, m.assembleSubscribeCommonMethods(ctx)...)
+	res = append(res, m.renderSubscribeCommonMethods(ctx)...)
 
 	return res
 }
 
-func (m Message) assembleSubscribeCommonMethods(ctx *common.AssembleContext) []*j.Statement {
+func (m Message) renderSubscribeCommonMethods(ctx *common.RenderContext) []*j.Statement {
 	structName := m.InStruct.Name
 	rn := m.InStruct.ReceiverName()
 	receiver := j.Id(rn).Op("*").Id(structName)
-	payloadFieldType := utils.ToCode(m.PayloadType.AssembleUsage(ctx))
-	headersFieldType := utils.ToCode(m.HeadersFallbackType.AssembleUsage(ctx))
+	payloadFieldType := utils.ToCode(m.PayloadType.RenderUsage(ctx))
+	headersFieldType := utils.ToCode(m.HeadersFallbackType.RenderUsage(ctx))
 	if m.HeadersTypeLink != nil {
-		headersFieldType = utils.ToCode(m.HeadersTypeLink.Target().AssembleUsage(ctx))
+		headersFieldType = utils.ToCode(m.HeadersTypeLink.Target().RenderUsage(ctx))
 	}
 
 	return []*j.Statement{

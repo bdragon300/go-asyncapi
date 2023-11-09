@@ -1,4 +1,4 @@
-package assemble
+package render
 
 import (
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
@@ -12,20 +12,20 @@ type Interface struct {
 	Methods []FuncSignature
 }
 
-func (i Interface) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
+func (i Interface) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	var res []*jen.Statement
 	if i.Description != "" {
 		res = append(res, jen.Comment(i.Name+" -- "+utils.ToLowerFirstLetter(i.Description)))
 	}
 
 	code := lo.FlatMap(i.Methods, func(item FuncSignature, index int) []*jen.Statement {
-		return item.AssembleDefinition(ctx)
+		return item.RenderDefinition(ctx)
 	})
 	res = append(res, jen.Type().Id(i.Name).Interface(utils.ToCode(code)...))
 	return res
 }
 
-func (i Interface) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
+func (i Interface) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 	if i.AllowRender() {
 		if i.PackageName != "" && i.PackageName != ctx.CurrentPackage {
 			return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(i.PackageName), i.Name)}
@@ -34,7 +34,7 @@ func (i Interface) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	}
 
 	code := lo.FlatMap(i.Methods, func(item FuncSignature, index int) []*jen.Statement {
-		return item.AssembleDefinition(ctx)
+		return item.RenderDefinition(ctx)
 	})
 	return []*jen.Statement{
 		jen.Interface(utils.ToCode(code)...),

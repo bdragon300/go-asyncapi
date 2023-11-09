@@ -26,7 +26,7 @@ type Linker interface {
 type LinkQuerier interface {
 	Assign(obj any)
 	Assigned() bool
-	FindCallback() func(item Assembler, path []string) bool
+	FindCallback() func(item Renderer, path []string) bool
 	Ref() string
 	Origin() LinkOrigin
 }
@@ -34,5 +34,5 @@ type LinkQuerier interface {
 type ListQuerier interface {
 	AssignList(objs []any)
 	Assigned() bool
-	FindCallback() func(item Assembler, path []string) bool
+	FindCallback() func(item Renderer, path []string) bool
 }

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/compile"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	j "github.com/dave/jennifer/jen"
 	"github.com/samber/lo"
@@ -18,8 +18,8 @@ func BuildChannel(
 	channelKey string,
 	protoName, protoAbbr string,
 ) (*BaseProtoChannel, error) {
-	paramsLnk := assemble.NewListCbLink[*assemble.Parameter](func(item common.Assembler, path []string) bool {
-		par, ok := item.(*assemble.Parameter)
+	paramsLnk := render.NewListCbLink[*render.Parameter](func(item common.Renderer, path []string) bool {
+		par, ok := item.(*render.Parameter)
 		if !ok {
 			return false
 		}
@@ -30,26 +30,26 @@ func BuildChannel(
 
 	chanResult := &BaseProtoChannel{
 		Name: channelKey,
-		Struct: &assemble.Struct{
-			BaseType: assemble.BaseType{
+		Struct: &render.Struct{
+			BaseType: render.BaseType{
 				Name:        ctx.GenerateObjName(channelKey, protoAbbr),
 				Description: channel.Description,
 				Render:      true,
 				PackageName: ctx.TopPackageName(),
 			},
-			Fields: []assemble.StructField{
-				{Name: "name", Type: &assemble.Simple{Name: "ParamString", Package: ctx.RuntimePackage("")}},
+			Fields: []render.StructField{
+				{Name: "name", Type: &render.Simple{Name: "ParamString", Package: ctx.RuntimePackage("")}},
 			},
 		},
-		FallbackMessageType: &assemble.Simple{Name: "any", IsIface: true},
+		FallbackMessageType: &render.Simple{Name: "any", IsIface: true},
 	}
 
 	// FIXME: remove in favor of the non-proto channel
 	if channel.Parameters.Len() > 0 {
 		ctx.LogDebug("Channel parameters", "proto", protoName)
 		ctx.IncrementLogCallLvl()
-		chanResult.ParametersStructNoAssemble = &assemble.Struct{
-			BaseType: assemble.BaseType{
+		chanResult.ParametersStructNoRender = &render.Struct{
+			BaseType: render.BaseType{
 				Name:        ctx.GenerateObjName(channelKey, "Parameters"),
 				Render:      true,
 				PackageName: ctx.TopPackageName(),
@@ -59,9 +59,9 @@ func BuildChannel(
 		for _, paramName := range channel.Parameters.Keys() {
 			ctx.LogDebug("Channel parameter", "name", paramName, "proto", protoName)
 			ref := path.Join(ctx.PathRef(), "parameters", paramName)
-			lnk := assemble.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
+			lnk := render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
 			ctx.Linker.Add(lnk)
-			chanResult.ParametersStructNoAssemble.Fields = append(chanResult.ParametersStructNoAssemble.Fields, assemble.StructField{
+			chanResult.ParametersStructNoRender.Fields = append(chanResult.ParametersStructNoRender.Fields, render.StructField{
 				Name: utils.ToGolangName(paramName, true),
 				Type: lnk,
 			})
@@ -70,26 +70,26 @@ func BuildChannel(
 	}
 
 	// Interface to match servers bound with a channel
-	var ifaceFirstMethodParams []assemble.FuncParam
-	if chanResult.ParametersStructNoAssemble != nil {
-		ifaceFirstMethodParams = append(ifaceFirstMethodParams, assemble.FuncParam{
+	var ifaceFirstMethodParams []render.FuncParam
+	if chanResult.ParametersStructNoRender != nil {
+		ifaceFirstMethodParams = append(ifaceFirstMethodParams, render.FuncParam{
 			Name: "params",
-			Type: &assemble.Simple{Name: chanResult.ParametersStructNoAssemble.Name, Package: ctx.TopPackageName()},
+			Type: &render.Simple{Name: chanResult.ParametersStructNoRender.Name, Package: ctx.TopPackageName()},
 		})
 	}
-	chanResult.ServerIface = &assemble.Interface{
-		BaseType: assemble.BaseType{
+	chanResult.ServerIface = &render.Interface{
+		BaseType: render.BaseType{
 			Name:        utils.ToLowerFirstLetter(chanResult.Struct.Name + "Server"),
 			Render:      true,
 			PackageName: ctx.TopPackageName(),
 		},
-		Methods: []assemble.FuncSignature{
+		Methods: []render.FuncSignature{
 			{
 				Name: "Open" + chanResult.Struct.Name,
 				Args: ifaceFirstMethodParams,
-				Return: []assemble.FuncParam{
-					{Type: &assemble.Simple{Name: chanResult.Struct.Name, Package: ctx.TopPackageName()}, Pointer: true},
-					{Type: &assemble.Simple{Name: "error"}},
+				Return: []render.FuncParam{
+					{Type: &render.Simple{Name: chanResult.Struct.Name, Package: ctx.TopPackageName()}, Pointer: true},
+					{Type: &render.Simple{Name: "error"}},
 				},
 			},
 		},
@@ -98,10 +98,10 @@ func BuildChannel(
 	// Publisher stuff
 	if channel.Publish != nil {
 		ctx.LogDebug("Channel publish operation", "proto", protoName)
-		chanResult.Struct.Fields = append(chanResult.Struct.Fields, assemble.StructField{
+		chanResult.Struct.Fields = append(chanResult.Struct.Fields, render.StructField{
 			Name:        "publisher",
 			Description: channel.Publish.Description,
-			Type: &assemble.Simple{
+			Type: &render.Simple{
 				Name:    "Publisher",
 				Package: ctx.RuntimePackage(protoName),
 				IsIface: true,
@@ -111,14 +111,14 @@ func BuildChannel(
 		if channel.Publish.Message != nil {
 			ctx.LogDebug("Channel publish operation message", "proto", protoName)
 			ref := path.Join(ctx.PathRef(), "publish/message")
-			chanResult.PubMessageLink = assemble.NewRefLink[*assemble.Message](ref, common.LinkOriginInternal)
+			chanResult.PubMessageLink = render.NewRefLink[*render.Message](ref, common.LinkOriginInternal)
 			ctx.Linker.Add(chanResult.PubMessageLink)
 		}
-		chanResult.ServerIface.Methods = append(chanResult.ServerIface.Methods, assemble.FuncSignature{
+		chanResult.ServerIface.Methods = append(chanResult.ServerIface.Methods, render.FuncSignature{
 			Name: "Producer",
 			Args: nil,
-			Return: []assemble.FuncParam{
-				{Type: &assemble.Simple{Name: "Producer", Package: ctx.RuntimePackage(protoName), IsIface: true}},
+			Return: []render.FuncParam{
+				{Type: &render.Simple{Name: "Producer", Package: ctx.RuntimePackage(protoName), IsIface: true}},
 			},
 		})
 	}
@@ -126,10 +126,10 @@ func BuildChannel(
 	// Subscriber stuff
 	if channel.Subscribe != nil {
 		ctx.LogDebug("Channel subscribe operation", "proto", protoName)
-		chanResult.Struct.Fields = append(chanResult.Struct.Fields, assemble.StructField{
+		chanResult.Struct.Fields = append(chanResult.Struct.Fields, render.StructField{
 			Name:        "subscriber",
 			Description: channel.Subscribe.Description,
-			Type: &assemble.Simple{
+			Type: &render.Simple{
 				Name:    "Subscriber",
 				Package: ctx.RuntimePackage(protoName),
 				IsIface: true,
@@ -139,14 +139,14 @@ func BuildChannel(
 		if channel.Subscribe.Message != nil {
 			ctx.LogDebug("Channel subscribe operation message", "proto", protoName)
 			ref := path.Join(ctx.PathRef(), "subscribe/message")
-			chanResult.SubMessageLink = assemble.NewRefLink[*assemble.Message](ref, common.LinkOriginInternal)
+			chanResult.SubMessageLink = render.NewRefLink[*render.Message](ref, common.LinkOriginInternal)
 			ctx.Linker.Add(chanResult.SubMessageLink)
 		}
-		chanResult.ServerIface.Methods = append(chanResult.ServerIface.Methods, assemble.FuncSignature{
+		chanResult.ServerIface.Methods = append(chanResult.ServerIface.Methods, render.FuncSignature{
 			Name: "Consumer",
 			Args: nil,
-			Return: []assemble.FuncParam{
-				{Type: &assemble.Simple{Name: "Consumer", Package: ctx.RuntimePackage(protoName), IsIface: true}},
+			Return: []render.FuncParam{
+				{Type: &render.Simple{Name: "Consumer", Package: ctx.RuntimePackage(protoName), IsIface: true}},
 			},
 		})
 	}
@@ -155,30 +155,30 @@ func BuildChannel(
 }
 
 type BaseProtoChannel struct {
-	Name                       string
-	Publisher                  bool
-	Subscriber                 bool
-	Struct                     *assemble.Struct
-	ServerIface                *assemble.Interface
-	ParametersStructNoAssemble *assemble.Struct // nil if parameters not set
+	Name                     string
+	Publisher                bool
+	Subscriber               bool
+	Struct                   *render.Struct
+	ServerIface              *render.Interface
+	ParametersStructNoRender *render.Struct // nil if parameters not set
 
-	PubMessageLink      *assemble.Link[*assemble.Message] // nil when message is not set
-	SubMessageLink      *assemble.Link[*assemble.Message] // nil when message is not set
+	PubMessageLink      *render.Link[*render.Message] // nil when message is not set
+	SubMessageLink      *render.Link[*render.Message] // nil when message is not set
 	FallbackMessageType common.GolangType
 }
 
-func AssembleChannelSubscriberMethods(
-	ctx *common.AssembleContext,
-	channelStruct *assemble.Struct,
-	subMessageLink *assemble.Link[*assemble.Message],
+func RenderChannelSubscriberMethods(
+	ctx *common.RenderContext,
+	channelStruct *render.Struct,
+	subMessageLink *render.Link[*render.Message],
 	fallbackMessageType common.GolangType,
 	protoName, protoAbbr string,
 ) []*j.Statement {
 	rn := channelStruct.ReceiverName()
 	receiver := j.Id(rn).Id(channelStruct.Name)
-	var msgTyp common.GolangType = assemble.NullableType{Type: fallbackMessageType, Render: true}
+	var msgTyp common.GolangType = render.NullableType{Type: fallbackMessageType, Render: true}
 	if subMessageLink != nil {
-		msgTyp = assemble.NullableType{Type: subMessageLink.Target().InStruct, Render: true}
+		msgTyp = render.NullableType{Type: subMessageLink.Target().InStruct, Render: true}
 	}
 
 	return []*j.Statement{
@@ -186,7 +186,7 @@ func AssembleChannelSubscriberMethods(
 		j.Func().Params(receiver.Clone()).Id("ExtractEnvelope").
 			Params(
 				j.Id("envelope").Qual(ctx.RuntimePackage(protoName), "EnvelopeReader"),
-				j.Id("message").Add(utils.ToCode(msgTyp.AssembleUsage(ctx))...),
+				j.Id("message").Add(utils.ToCode(msgTyp.RenderUsage(ctx))...),
 			).
 			Error().
 			BlockFunc(func(bg *j.Group) {
@@ -222,9 +222,9 @@ func AssembleChannelSubscriberMethods(
 	}
 }
 
-func AssembleChannelPublisherMethods(
-	ctx *common.AssembleContext,
-	channelStruct *assemble.Struct,
+func RenderChannelPublisherMethods(
+	ctx *common.RenderContext,
+	channelStruct *render.Struct,
 	protoName string,
 ) []*j.Statement {
 	rn := channelStruct.ReceiverName()
@@ -252,9 +252,9 @@ func AssembleChannelPublisherMethods(
 	}
 }
 
-func AssembleChannelCommonMethods(
-	ctx *common.AssembleContext,
-	channelStruct *assemble.Struct,
+func RenderChannelCommonMethods(
+	ctx *common.RenderContext,
+	channelStruct *render.Struct,
 	publisher, subscriber bool,
 	protoAbbr string,
 ) []*j.Statement {
@@ -294,12 +294,12 @@ func AssembleChannelCommonMethods(
 	}
 }
 
-func AssembleChannelOpenFunc(
-	ctx *common.AssembleContext,
-	channelStruct *assemble.Struct,
+func RenderChannelOpenFunc(
+	ctx *common.RenderContext,
+	channelStruct *render.Struct,
 	channelName string,
-	serverIface *assemble.Interface,
-	parametersStructNoAssemble, bindingsStructNoAssemble *assemble.Struct,
+	serverIface *render.Interface,
+	parametersStructNoRender, bindingsStructNoRender *render.Struct,
 	publisher, subscriber bool,
 	protoName, protoAbbr string,
 ) []*j.Statement {
@@ -307,21 +307,21 @@ func AssembleChannelOpenFunc(
 		// OpenChannel1Proto(params Channel1Parameters, servers ...channel1ProtoServer) (*Channel1Proto, error)
 		j.Func().Id("Open"+channelStruct.Name).
 			ParamsFunc(func(g *j.Group) {
-				if parametersStructNoAssemble != nil {
-					g.Id("params").Add(utils.ToCode(parametersStructNoAssemble.AssembleUsage(ctx))...)
+				if parametersStructNoRender != nil {
+					g.Id("params").Add(utils.ToCode(parametersStructNoRender.RenderUsage(ctx))...)
 				}
-				g.Id("servers").Op("...").Add(utils.ToCode(serverIface.AssembleUsage(ctx))...)
+				g.Id("servers").Op("...").Add(utils.ToCode(serverIface.RenderUsage(ctx))...)
 			}).
-			Params(j.Op("*").Add(utils.ToCode(channelStruct.AssembleUsage(ctx))...), j.Error()).
+			Params(j.Op("*").Add(utils.ToCode(channelStruct.RenderUsage(ctx))...), j.Error()).
 			BlockFunc(func(bg *j.Group) {
 				bg.Op("if len(servers) == 0").Block(j.Op("return nil, ").Qual(ctx.RuntimePackage(""), "ErrEmptyServers"))
 				bg.Id("name").Op(":=").Id(utils.ToGolangName(channelName, true) + "Name").CallFunc(func(g *j.Group) {
-					if parametersStructNoAssemble != nil {
+					if parametersStructNoRender != nil {
 						g.Id("params")
 					}
 				})
-				if bindingsStructNoAssemble != nil {
-					bg.Id("bindings").Op(":=").Id(bindingsStructNoAssemble.Name).Values().Dot(protoAbbr).Call()
+				if bindingsStructNoRender != nil {
+					bg.Id("bindings").Op(":=").Id(bindingsStructNoRender.Name).Values().Dot(protoAbbr).Call()
 				}
 				if publisher {
 					bg.Var().Id("prod").Index().Qual(ctx.RuntimePackage(protoName), "Producer")
@@ -343,7 +343,7 @@ func AssembleChannelOpenFunc(
 						Types(j.Qual(ctx.RuntimePackage(protoName), "EnvelopeWriter"), j.Qual(ctx.RuntimePackage(protoName), "ChannelBindings")).
 						CallFunc(func(g *j.Group) {
 							g.Id("name")
-							g.Id(lo.Ternary(bindingsStructNoAssemble != nil, "&bindings", "nil"))
+							g.Id(lo.Ternary(bindingsStructNoRender != nil, "&bindings", "nil"))
 							g.Id("prod")
 						})
 					bg.Op(`
@@ -360,7 +360,7 @@ func AssembleChannelOpenFunc(
 						Types(j.Qual(ctx.RuntimePackage(protoName), "EnvelopeReader"), j.Qual(ctx.RuntimePackage(protoName), "ChannelBindings")).
 						CallFunc(func(g *j.Group) {
 							g.Id("name")
-							g.Id(lo.Ternary(bindingsStructNoAssemble != nil, "&bindings", "nil"))
+							g.Id(lo.Ternary(bindingsStructNoRender != nil, "&bindings", "nil"))
 							g.Id("cons")
 						})
 					bg.Op("if err != nil").BlockFunc(func(g *j.Group) {
@@ -388,14 +388,14 @@ func AssembleChannelOpenFunc(
 }
 
 func ChannelBindingsMethodBody(
-	values *assemble.StructInit,
+	values *render.StructInit,
 	publisherJSONValues *utils.OrderedMap[string, any],
 	subscriberJSONValues *utils.OrderedMap[string, any],
-) func(ctx *common.AssembleContext, p *assemble.Func) []*j.Statement {
-	return func(ctx *common.AssembleContext, p *assemble.Func) []*j.Statement {
+) func(ctx *common.RenderContext, p *render.Func) []*j.Statement {
+	return func(ctx *common.RenderContext, p *render.Func) []*j.Statement {
 		var res []*j.Statement
 		res = append(res,
-			j.Id("b").Op(":=").Add(utils.ToCode(values.AssembleInit(ctx))...),
+			j.Id("b").Op(":=").Add(utils.ToCode(values.RenderInit(ctx))...),
 		)
 		if publisherJSONValues != nil {
 			for _, e := range subscriberJSONValues.Entries() {

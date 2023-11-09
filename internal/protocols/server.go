@@ -1,9 +1,9 @@
 package protocols
 
 import (
-	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/compile"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	j "github.com/dave/jennifer/jen"
 	"github.com/samber/lo"
@@ -29,8 +29,8 @@ func BuildServer(
 		Name:            serverKey,
 		URL:             server.URL,
 		ProtocolVersion: server.ProtocolVersion,
-		Struct: &assemble.Struct{
-			BaseType: assemble.BaseType{
+		Struct: &render.Struct{
+			BaseType: render.BaseType{
 				Name:        ctx.GenerateObjName(serverKey, ""),
 				Description: server.Description,
 				Render:      true,
@@ -51,8 +51,8 @@ func BuildServer(
 	}
 
 	// Channels which are connected to this server
-	channelsLnks := assemble.NewListCbLink[*assemble.Channel](func(item common.Assembler, path []string) bool {
-		ch, ok := item.(*assemble.Channel)
+	channelsLnks := render.NewListCbLink[*render.Channel](func(item common.Renderer, path []string) bool {
+		ch, ok := item.(*render.Channel)
 		if !ok {
 			return false
 		}
@@ -67,18 +67,18 @@ func BuildServer(
 	// Producer/consumer
 	if buildProducer {
 		ctx.LogDebug("Server producer", "proto", protoName)
-		fld := assemble.StructField{
+		fld := render.StructField{
 			Name: "producer",
-			Type: &assemble.Simple{Name: "Producer", Package: ctx.RuntimePackage(protoName), IsIface: true},
+			Type: &render.Simple{Name: "Producer", Package: ctx.RuntimePackage(protoName), IsIface: true},
 		}
 		srvResult.Struct.Fields = append(srvResult.Struct.Fields, fld)
 		srvResult.Producer = true
 	}
 	if buildConsumer {
 		ctx.LogDebug("Server consumer", "proto", protoName)
-		fld := assemble.StructField{
+		fld := render.StructField{
 			Name: "consumer",
-			Type: &assemble.Simple{Name: "Consumer", Package: ctx.RuntimePackage(protoName), IsIface: true},
+			Type: &render.Simple{Name: "Consumer", Package: ctx.RuntimePackage(protoName), IsIface: true},
 		}
 		srvResult.Struct.Fields = append(srvResult.Struct.Fields, fld)
 		srvResult.Consumer = true
@@ -93,14 +93,14 @@ type BaseProtoServer struct {
 	ProtocolVersion string
 	Producer        bool
 	Consumer        bool
-	Struct          *assemble.Struct
-	ChannelLinkList *assemble.LinkList[*assemble.Channel]
+	Struct          *render.Struct
+	ChannelLinkList *render.LinkList[*render.Channel]
 	Variables       utils.OrderedMap[string, ProtoServerVariable]
 }
 
-func AssembleServerConsumerMethods(
-	ctx *common.AssembleContext,
-	serverStruct *assemble.Struct,
+func RenderServerConsumerMethods(
+	ctx *common.RenderContext,
+	serverStruct *render.Struct,
 	protoName string,
 ) []*j.Statement {
 	rn := serverStruct.ReceiverName()
@@ -116,9 +116,9 @@ func AssembleServerConsumerMethods(
 	}
 }
 
-func AssembleServerProducerMethods(
-	ctx *common.AssembleContext,
-	serverStruct *assemble.Struct,
+func RenderServerProducerMethods(
+	ctx *common.RenderContext,
+	serverStruct *render.Struct,
 	protoName string,
 ) []*j.Statement {
 	rn := serverStruct.ReceiverName()
@@ -134,11 +134,11 @@ func AssembleServerProducerMethods(
 	}
 }
 
-func AssembleServerChannelMethod(
-	ctx *common.AssembleContext,
-	serverStruct, channelStruct *assemble.Struct,
-	channel common.Assembler,
-	channelParametersStructNoAssemble *assemble.Struct,
+func RenderServerChannelMethod(
+	ctx *common.RenderContext,
+	serverStruct, channelStruct *render.Struct,
+	channel common.Renderer,
+	channelParametersStructNoRender *render.Struct,
 ) []*j.Statement {
 	rn := serverStruct.ReceiverName()
 	receiver := j.Id(rn).Id(serverStruct.Name)
@@ -147,14 +147,14 @@ func AssembleServerChannelMethod(
 		// Method OpenChannel1Proto(params Channel1Parameters) (*Channel1Proto, error)
 		j.Func().Params(receiver.Clone()).Id("Open"+channelStruct.Name).
 			ParamsFunc(func(g *j.Group) {
-				if channelParametersStructNoAssemble != nil {
-					g.Id("params").Add(utils.ToCode(channelParametersStructNoAssemble.AssembleUsage(ctx))...)
+				if channelParametersStructNoRender != nil {
+					g.Id("params").Add(utils.ToCode(channelParametersStructNoRender.RenderUsage(ctx))...)
 				}
 			}).
-			Params(j.Op("*").Add(utils.ToCode(channel.AssembleUsage(ctx))...), j.Error()).
+			Params(j.Op("*").Add(utils.ToCode(channel.RenderUsage(ctx))...), j.Error()).
 			Block(
 				j.Return(j.Qual(ctx.GeneratedPackage(channelStruct.PackageName), "Open"+channelStruct.Name).CallFunc(func(g *j.Group) {
-					if channelParametersStructNoAssemble != nil {
+					if channelParametersStructNoRender != nil {
 						g.Id("params")
 					}
 					g.Id(rn)
@@ -163,9 +163,9 @@ func AssembleServerChannelMethod(
 	}
 }
 
-func AssembleServerCommonMethods(
-	ctx *common.AssembleContext,
-	serverStruct *assemble.Struct,
+func RenderServerCommonMethods(
+	ctx *common.RenderContext,
+	serverStruct *render.Struct,
 	serverName string,
 	protoAbbr string,
 ) []*j.Statement {
@@ -190,9 +190,9 @@ func AssembleServerCommonMethods(
 	}
 }
 
-func AssembleServerNewFunc(
-	ctx *common.AssembleContext,
-	serverStruct *assemble.Struct,
+func RenderServerNewFunc(
+	ctx *common.RenderContext,
+	serverStruct *render.Struct,
 	producer, consumer bool,
 	protoName string,
 ) []*j.Statement {
@@ -207,9 +207,9 @@ func AssembleServerNewFunc(
 					g.Id("consumer").Qual(ctx.RuntimePackage(protoName), "Consumer")
 				}
 			}).
-			Op("*").Add(utils.ToCode(serverStruct.AssembleUsage(ctx))...).
+			Op("*").Add(utils.ToCode(serverStruct.RenderUsage(ctx))...).
 			Block(
-				j.Return(j.Op("&").Add(utils.ToCode(serverStruct.AssembleUsage(ctx))...).Values(j.DictFunc(func(d j.Dict) {
+				j.Return(j.Op("&").Add(utils.ToCode(serverStruct.RenderUsage(ctx))...).Values(j.DictFunc(func(d j.Dict) {
 					if producer {
 						d[j.Id("producer")] = j.Id("producer")
 					}
@@ -221,9 +221,9 @@ func AssembleServerNewFunc(
 	}
 }
 
-func AssembleServerURLFunc(
-	ctx *common.AssembleContext,
-	serverStruct *assemble.Struct,
+func RenderServerURLFunc(
+	ctx *common.RenderContext,
+	serverStruct *render.Struct,
 	serverVariables utils.OrderedMap[string, ProtoServerVariable],
 	url string,
 ) []*j.Statement {
@@ -264,17 +264,17 @@ func AssembleServerURLFunc(
 	}
 }
 
-func AssembleServerProtocolVersionConst(serverStruct *assemble.Struct, protocolVersion string) []*j.Statement {
+func RenderServerProtocolVersionConst(serverStruct *render.Struct, protocolVersion string) []*j.Statement {
 	return []*j.Statement{
 		j.Const().Id(serverStruct.Name + "ProtocolVersion").Op("=").Lit(protocolVersion),
 	}
 }
 
-func ServerBindingsMethodBody(values *assemble.StructInit, jsonValues *utils.OrderedMap[string, any]) func(ctx *common.AssembleContext, p *assemble.Func) []*j.Statement {
-	return func(ctx *common.AssembleContext, p *assemble.Func) []*j.Statement {
+func ServerBindingsMethodBody(values *render.StructInit, jsonValues *utils.OrderedMap[string, any]) func(ctx *common.RenderContext, p *render.Func) []*j.Statement {
+	return func(ctx *common.RenderContext, p *render.Func) []*j.Statement {
 		var res []*j.Statement
 		res = append(res,
-			j.Id("b").Op(":=").Add(utils.ToCode(values.AssembleInit(ctx))...),
+			j.Id("b").Op(":=").Add(utils.ToCode(values.RenderInit(ctx))...),
 		)
 		if jsonValues != nil {
 			for _, e := range jsonValues.Entries() {

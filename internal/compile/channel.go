@@ -6,12 +6,12 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 )
 
-type protoChannelCompilerFunc func(ctx *common.CompileContext, channel *Channel, name string) (common.Assembler, error)
+type protoChannelCompilerFunc func(ctx *common.CompileContext, channel *Channel, name string) (common.Renderer, error)
 
 var ProtoChannelCompiler = map[string]protoChannelCompilerFunc{}
 
@@ -36,22 +36,22 @@ func (c Channel) Compile(ctx *common.CompileContext) error {
 	return nil
 }
 
-func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Assembler, error) {
+func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Renderer, error) {
 	if c.Ref != "" {
 		ctx.LogDebug("Ref", "$ref", c.Ref)
-		res := assemble.NewRefLinkAsAssembler(c.Ref, common.LinkOriginUser)
+		res := render.NewRefLinkAsRenderer(c.Ref, common.LinkOriginUser)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
 
-	res := &assemble.Channel{Name: channelKey, AllProtocols: make(map[string]common.Assembler)}
+	res := &render.Channel{Name: channelKey, AllProtocols: make(map[string]common.Renderer)}
 
 	// Channel parameters
 	if c.Parameters.Len() > 0 {
 		ctx.LogDebug("Channel parameters")
 		ctx.IncrementLogCallLvl()
-		res.ParametersStruct = &assemble.Struct{
-			BaseType: assemble.BaseType{
+		res.ParametersStruct = &render.Struct{
+			BaseType: render.BaseType{
 				Name:        ctx.GenerateObjName(channelKey, "Parameters"),
 				Render:      true,
 				PackageName: ctx.TopPackageName(),
@@ -60,9 +60,9 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.As
 		for _, paramName := range c.Parameters.Keys() {
 			ctx.LogDebug("Channel parameter", "name", paramName)
 			ref := path.Join(ctx.PathRef(), "parameters", paramName)
-			lnk := assemble.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
+			lnk := render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
 			ctx.Linker.Add(lnk)
-			res.ParametersStruct.Fields = append(res.ParametersStruct.Fields, assemble.StructField{
+			res.ParametersStruct.Fields = append(res.ParametersStruct.Fields, render.StructField{
 				Name: utils.ToGolangName(paramName, true),
 				Type: lnk,
 			})
@@ -77,7 +77,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.As
 		ctx.IncrementLogCallLvl()
 		for _, srv := range *c.Servers {
 			ctx.LogDebug("Server", "name", srv)
-			lnk := assemble.NewRefLink[*assemble.Server]("#/servers/"+srv, common.LinkOriginInternal)
+			lnk := render.NewRefLink[*render.Server]("#/servers/"+srv, common.LinkOriginInternal)
 			ctx.Linker.Add(lnk)
 			res.AppliedServerLinks = append(res.AppliedServerLinks, lnk)
 			res.AppliedServers = append(res.AppliedServers, srv)
@@ -85,8 +85,8 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.As
 		ctx.DecrementLogCallLvl()
 	} else {
 		ctx.LogDebug("Channel applied to all servers")
-		lnk := assemble.NewListCbLink[*assemble.Server](func(item common.Assembler, path []string) bool {
-			_, ok := item.(*assemble.Server)
+		lnk := render.NewListCbLink[*render.Server](func(item common.Renderer, path []string) bool {
+			_, ok := item.(*render.Server)
 			return ok && len(path) > 0 && path[0] == "servers" // Pick only servers from `servers:` section, skip ones from `components:`
 		})
 		ctx.Linker.AddMany(lnk)
@@ -108,8 +108,8 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.As
 		hasBindings = true
 	}
 	if hasBindings {
-		res.BindingsStruct = &assemble.Struct{
-			BaseType: assemble.BaseType{
+		res.BindingsStruct = &render.Struct{
+			BaseType: render.BaseType{
 				Name:        ctx.GenerateObjName(channelKey, "Bindings"),
 				Render:      true,
 				PackageName: ctx.TopPackageName(),

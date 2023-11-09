@@ -1,4 +1,4 @@
-package assemble
+package render
 
 import (
 	"fmt"
@@ -18,19 +18,19 @@ type Struct struct {
 	Fields []StructField
 }
 
-func (s Struct) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
+func (s Struct) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	var res []*jen.Statement
 	if s.Description != "" {
 		res = append(res, jen.Comment(s.Name+" -- "+utils.ToLowerFirstLetter(s.Description)))
 	}
 	code := lo.FlatMap(s.Fields, func(item StructField, index int) []*jen.Statement {
-		return item.assembleDefinition(ctx)
+		return item.renderDefinition(ctx)
 	})
 	res = append(res, jen.Type().Id(s.Name).Struct(utils.ToCode(code)...))
 	return res
 }
 
-func (s Struct) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
+func (s Struct) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 	if s.AllowRender() {
 		if s.PackageName != "" && s.PackageName != ctx.CurrentPackage {
 			return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(s.PackageName), s.Name)}
@@ -39,7 +39,7 @@ func (s Struct) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
 	}
 
 	code := lo.FlatMap(s.Fields, func(item StructField, index int) []*jen.Statement {
-		return item.assembleDefinition(ctx)
+		return item.renderDefinition(ctx)
 	})
 
 	return []*jen.Statement{jen.Struct(utils.ToCode(code)...)}
@@ -73,7 +73,7 @@ type StructField struct {
 	TagsSource   *LinkList[*Message]
 }
 
-func (f StructField) assembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
+func (f StructField) renderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	var res []*jen.Statement
 	if f.Description != "" {
 		res = append(res, jen.Comment(f.Name+" -- "+utils.ToLowerFirstLetter(f.Description)))
@@ -88,7 +88,7 @@ func (f StructField) assembleDefinition(ctx *common.AssembleContext) []*jen.Stat
 	if drawPtr {
 		stmt = stmt.Op("*")
 	}
-	items := utils.ToCode(f.Type.AssembleUsage(ctx))
+	items := utils.ToCode(f.Type.RenderUsage(ctx))
 	stmt = stmt.Add(items...)
 
 	if f.TagsSource != nil {
@@ -111,7 +111,7 @@ type UnionStruct struct {
 	Struct
 }
 
-func (s UnionStruct) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
+func (s UnionStruct) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	var res []*jen.Statement
 	hasNonStructs := lo.ContainsBy(s.Fields, func(item StructField) bool {
 		return !isTypeStruct(item.Type)
@@ -125,15 +125,15 @@ func (s UnionStruct) AssembleDefinition(ctx *common.AssembleContext) []*jen.Stat
 		if reflect.DeepEqual(strct.Fields, s.Fields) { // TODO: move this check to unit tests
 			panic("Must not happen")
 		}
-		res = strct.AssembleDefinition(ctx)
-		res = append(res, s.assembleMethods(ctx)...)
+		res = strct.RenderDefinition(ctx)
+		res = append(res, s.renderMethods(ctx)...)
 	} else { // Draw simplified union with embedded fields
-		res = s.Struct.AssembleDefinition(ctx)
+		res = s.Struct.RenderDefinition(ctx)
 	}
 	return res
 }
 
-func (s UnionStruct) assembleMethods(_ *common.AssembleContext) []*jen.Statement {
+func (s UnionStruct) renderMethods(_ *common.RenderContext) []*jen.Statement {
 	var res []*jen.Statement
 	receiverName := strings.ToLower(string(s.Struct.Name[0]))
 
@@ -168,8 +168,8 @@ func (s UnionStruct) assembleMethods(_ *common.AssembleContext) []*jen.Statement
 	return res
 }
 
-type structInitAssembler interface {
-	AssembleInit(ctx *common.AssembleContext) []*jen.Statement
+type structInitRenderer interface {
+	RenderInit(ctx *common.RenderContext) []*jen.Statement
 }
 
 type StructInit struct {
@@ -177,19 +177,19 @@ type StructInit struct {
 	Values utils.OrderedMap[string, any]
 }
 
-func (s StructInit) AssembleInit(ctx *common.AssembleContext) []*jen.Statement {
+func (s StructInit) RenderInit(ctx *common.RenderContext) []*jen.Statement {
 	stmt := &jen.Statement{}
 	if s.Type != nil {
-		stmt.Add(utils.ToCode(s.Type.AssembleUsage(ctx))...)
+		stmt.Add(utils.ToCode(s.Type.RenderUsage(ctx))...)
 	}
 
 	dict := make(jen.Dict)
 	for _, e := range s.Values.Entries() {
 		switch v := e.Value.(type) {
-		case common.Assembler:
-			dict[jen.Id(e.Key)] = jen.Add(utils.ToCode(v.AssembleUsage(ctx))...)
-		case structInitAssembler:
-			dict[jen.Id(e.Key)] = jen.Add(utils.ToCode(v.AssembleInit(ctx))...)
+		case common.Renderer:
+			dict[jen.Id(e.Key)] = jen.Add(utils.ToCode(v.RenderUsage(ctx))...)
+		case structInitRenderer:
+			dict[jen.Id(e.Key)] = jen.Add(utils.ToCode(v.RenderInit(ctx))...)
 		default:
 			dict[jen.Id(e.Key)] = jen.Lit(v)
 		}

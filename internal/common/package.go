@@ -1,7 +1,7 @@
 package common
 
 type PackageItem struct {
-	Typ  Assembler
+	Typ  Renderer
 	Path []string
 }
 
@@ -9,7 +9,7 @@ type Package struct {
 	items []PackageItem
 }
 
-func (m *Package) Put(obj Assembler, pathStack []string) {
+func (m *Package) Put(obj Renderer, pathStack []string) {
 	m.items = append(m.items, PackageItem{
 		Typ:  obj,
 		Path: pathStack,

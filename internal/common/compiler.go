@@ -12,7 +12,7 @@ import (
 )
 
 type GolangType interface {
-	Assembler
+	Renderer
 	TypeName() string
 }
 
@@ -48,7 +48,7 @@ type CompileContext struct {
 	logCallLvl         int
 }
 
-func (c *CompileContext) PutToCurrentPkg(obj Assembler) {
+func (c *CompileContext) PutToCurrentPkg(obj Renderer) {
 	pkgName := c.Stack.Top().PackageName
 	if pkgName == "" {
 		panic("Package name has not been set")

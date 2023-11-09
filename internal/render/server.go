@@ -1,4 +1,4 @@
-package assemble
+package render
 
 import (
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
@@ -8,7 +8,7 @@ import (
 type Server struct {
 	Name           string
 	Protocol       string
-	ProtoServer    common.Assembler
+	ProtoServer    common.Renderer
 	BindingsStruct *Struct // nil if no bindings set in spec
 }
 
@@ -16,14 +16,14 @@ func (s Server) AllowRender() bool {
 	return true
 }
 
-func (s Server) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
+func (s Server) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	var res []*jen.Statement
-	res = append(res, s.BindingsStruct.AssembleDefinition(ctx)...)
-	res = append(res, s.ProtoServer.AssembleDefinition(ctx)...)
+	res = append(res, s.BindingsStruct.RenderDefinition(ctx)...)
+	res = append(res, s.ProtoServer.RenderDefinition(ctx)...)
 	return res
 }
 
-func (s Server) AssembleUsage(_ *common.AssembleContext) []*jen.Statement {
+func (s Server) RenderUsage(_ *common.RenderContext) []*jen.Statement {
 	panic("not implemented")
 }
 

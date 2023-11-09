@@ -73,7 +73,7 @@ func (l *LocalLinker) Process(ctx *common.CompileContext) error {
 		for _, query := range l.listQueries {
 			if res, ok := resolveListLink(query, objects); ok {
 				targets := strings.Join(
-					lo.Map(lo.Slice(res, 0, 2), func(item common.Assembler, _ int) string { return item.String() }),
+					lo.Map(lo.Slice(res, 0, 2), func(item common.Renderer, _ int) string { return item.String() }),
 					", ",
 				)
 				if len(res) > 2 {
@@ -115,9 +115,9 @@ func isLinker(obj any) bool {
 }
 
 // TODO: detect ref loops to avoid infinite recursion
-func resolveLink(q common.LinkQuerier, objects []common.PackageItem) (common.Assembler, bool) {
+func resolveLink(q common.LinkQuerier, objects []common.PackageItem) (common.Renderer, bool) {
 	refPath := getPathByRef(q.Ref())
-	cb := func(_ common.Assembler, path []string) bool { return utils.SlicesEqual(path, refPath) }
+	cb := func(_ common.Renderer, path []string) bool { return utils.SlicesEqual(path, refPath) }
 	if qcb := q.FindCallback(); qcb != nil {
 		cb = qcb
 	}
@@ -137,7 +137,7 @@ func resolveLink(q common.LinkQuerier, objects []common.PackageItem) (common.Ass
 		return resolveLink(v, objects)
 	case common.ListQuerier:
 		panic(fmt.Sprintf("Ref %q must point to one object, but points to a nested list link", q.Ref()))
-	case common.Assembler:
+	case common.Renderer:
 		return v, true
 	default:
 		panic(fmt.Sprintf("Ref %q points to an object of unexpected type %T", q.Ref(), v))
@@ -145,9 +145,9 @@ func resolveLink(q common.LinkQuerier, objects []common.PackageItem) (common.Ass
 }
 
 // TODO: detect ref loops to avoid infinite recursion
-func resolveListLink(q common.ListQuerier, objects []common.PackageItem) ([]common.Assembler, bool) {
+func resolveListLink(q common.ListQuerier, objects []common.PackageItem) ([]common.Renderer, bool) {
 	// Exclude links from selection in order to avoid duplicates in list
-	cb := func(obj common.Assembler, _ []string) bool { return !isLinker(obj) }
+	cb := func(obj common.Renderer, _ []string) bool { return !isLinker(obj) }
 	if qcb := q.FindCallback(); qcb != nil {
 		cb = qcb
 	}
@@ -155,7 +155,7 @@ func resolveListLink(q common.ListQuerier, objects []common.PackageItem) ([]comm
 		return cb(obj.Typ, obj.Path)
 	})
 
-	var results []common.Assembler
+	var results []common.Renderer
 	for _, obj := range found {
 		switch v := obj.Typ.(type) {
 		case common.LinkQuerier:
@@ -176,7 +176,7 @@ func resolveListLink(q common.ListQuerier, objects []common.PackageItem) ([]comm
 				return results, false
 			}
 			results = append(results, resolved...)
-		case common.Assembler:
+		case common.Renderer:
 			results = append(results, v)
 		default:
 			panic(fmt.Sprintf("Found an object of unexpected type %T", v))

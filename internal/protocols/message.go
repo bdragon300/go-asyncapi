@@ -3,13 +3,13 @@ package protocols
 import (
 	"fmt"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	j "github.com/dave/jennifer/jen"
 )
 
-func AssembleMessageUnmarshalEnvelopeMethod(ctx *common.AssembleContext, message *assemble.Message, protoName, protoAbbr string) []*j.Statement {
+func RenderMessageUnmarshalEnvelopeMethod(ctx *common.RenderContext, message *render.Message, protoName, protoAbbr string) []*j.Statement {
 	rn := message.InStruct.ReceiverName()
 	receiver := j.Id(rn).Op("*").Id(message.InStruct.Name)
 
@@ -26,19 +26,19 @@ func AssembleMessageUnmarshalEnvelopeMethod(ctx *common.AssembleContext, message
 					}`, rn))
 				if message.HeadersTypeLink != nil {
 					for _, f := range message.HeadersTypeLink.Target().Fields {
-						fType := j.Add(utils.ToCode(f.Type.AssembleUsage(ctx))...)
+						fType := j.Add(utils.ToCode(f.Type.RenderUsage(ctx))...)
 						bg.If(j.Op("v, ok := headers").Index(j.Lit(f.Name)), j.Id("ok")).
 							Block(j.Id(rn).Dot("Headers").Id(f.Name).Op("=").Id("v").Assert(fType))
 					}
 				} else {
-					bg.Id(rn).Dot("Headers").Op("=").Add(utils.ToCode(message.HeadersFallbackType.AssembleUsage(ctx))...).Call(j.Op("envelope.Headers()"))
+					bg.Id(rn).Dot("Headers").Op("=").Add(utils.ToCode(message.HeadersFallbackType.RenderUsage(ctx))...).Call(j.Op("envelope.Headers()"))
 				}
 				bg.Return(j.Nil())
 			}),
 	}
 }
 
-func AssembleMessageMarshalEnvelopeMethod(ctx *common.AssembleContext, message *assemble.Message, protoName, protoAbbr string) []*j.Statement {
+func RenderMessageMarshalEnvelopeMethod(ctx *common.RenderContext, message *render.Message, protoName, protoAbbr string) []*j.Statement {
 	rn := message.OutStruct.ReceiverName()
 	receiver := j.Id(rn).Op("*").Id(message.OutStruct.Name)
 
@@ -71,8 +71,8 @@ func AssembleMessageMarshalEnvelopeMethod(ctx *common.AssembleContext, message *
 	}
 }
 
-func MessageBindingsBody(values utils.OrderedMap[string, any], jsonValues *utils.OrderedMap[string, string], protoName string) func(ctx *common.AssembleContext, p *assemble.Func) []*j.Statement {
-	return func(ctx *common.AssembleContext, p *assemble.Func) []*j.Statement {
+func MessageBindingsBody(values utils.OrderedMap[string, any], jsonValues *utils.OrderedMap[string, string], protoName string) func(ctx *common.RenderContext, p *render.Func) []*j.Statement {
+	return func(ctx *common.RenderContext, p *render.Func) []*j.Statement {
 		var res []*j.Statement
 		res = append(res,
 			j.Id("b").Op(":=").Qual(ctx.RuntimePackage(protoName), "MessageBindings").Values(j.DictFunc(func(d j.Dict) {

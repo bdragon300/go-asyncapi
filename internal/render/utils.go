@@ -1,4 +1,4 @@
-package assemble
+package render
 
 import (
 	"strings"
@@ -31,7 +31,7 @@ func (u UtilsSerializer) AllowRender() bool {
 	return true
 }
 
-func (u UtilsSerializer) AssembleDefinition(_ *common.AssembleContext) []*j.Statement {
+func (u UtilsSerializer) RenderDefinition(_ *common.RenderContext) []*j.Statement {
 	contentTypes := lo.Uniq(lo.FilterMap(u.AllMessages.Targets(), func(item *Message, index int) (string, bool) {
 		return item.ContentType, item.ContentType != ""
 	}))
@@ -88,7 +88,7 @@ func (u UtilsSerializer) AssembleDefinition(_ *common.AssembleContext) []*j.Stat
 	}
 }
 
-func (u UtilsSerializer) AssembleUsage(_ *common.AssembleContext) []*j.Statement {
+func (u UtilsSerializer) RenderUsage(_ *common.RenderContext) []*j.Statement {
 	panic("not implemented")
 }
 

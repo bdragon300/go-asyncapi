@@ -8,12 +8,12 @@ import (
 
 	"github.com/samber/lo"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 )
 
-type protoMessageBindingsBuilderFunc func(ctx *common.CompileContext, message *Message, bindingsStruct *assemble.Struct, name string) (common.Assembler, error)
+type protoMessageBindingsBuilderFunc func(ctx *common.CompileContext, message *Message, bindingsStruct *render.Struct, name string) (common.Renderer, error)
 
 var ProtoMessageBindingsBuilder = map[string]protoMessageBindingsBuilderFunc{}
 
@@ -47,26 +47,26 @@ func (m Message) Compile(ctx *common.CompileContext) error {
 	return nil
 }
 
-func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Assembler, error) {
+func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Renderer, error) {
 	if m.Ref != "" {
 		ctx.LogDebug("Ref", "$ref", m.Ref)
-		res := assemble.NewRefLinkAsAssembler(m.Ref, common.LinkOriginUser)
+		res := render.NewRefLinkAsRenderer(m.Ref, common.LinkOriginUser)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
 
-	obj := assemble.Message{
+	obj := render.Message{
 		Name: messageKey,
-		OutStruct: &assemble.Struct{
-			BaseType: assemble.BaseType{
+		OutStruct: &render.Struct{
+			BaseType: render.BaseType{
 				Name:        ctx.GenerateObjName(m.Name, "Out"),
 				Description: utils.JoinNonemptyStrings("\n", m.Summary+" (Outbound Message)", m.Description),
 				Render:      true,
 				PackageName: ctx.TopPackageName(),
 			},
 		},
-		InStruct: &assemble.Struct{
-			BaseType: assemble.BaseType{
+		InStruct: &render.Struct{
+			BaseType: render.BaseType{
 				Name:        ctx.GenerateObjName(m.Name, "In"),
 				Description: utils.JoinNonemptyStrings("\n", m.Summary+" (Inbound Message)", m.Description),
 				Render:      true,
@@ -75,12 +75,12 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.As
 		},
 		PayloadType:         m.getPayloadType(ctx),
 		PayloadHasSchema:    m.Payload != nil && m.Payload.Ref == "",
-		HeadersFallbackType: &assemble.Map{KeyType: &assemble.Simple{Name: "string"}, ValueType: &assemble.Simple{Name: "any", IsIface: true}},
+		HeadersFallbackType: &render.Map{KeyType: &render.Simple{Name: "string"}, ValueType: &render.Simple{Name: "any", IsIface: true}},
 	}
 	obj.ContentType, _ = lo.Coalesce(m.ContentType, ctx.DefaultContentType)
 	ctx.LogDebug(fmt.Sprintf("Message content type is %q", obj.ContentType))
-	allServersLnk := assemble.NewListCbLink[*assemble.Server](func(item common.Assembler, path []string) bool {
-		_, ok := item.(*assemble.Server)
+	allServersLnk := render.NewListCbLink[*render.Server](func(item common.Renderer, path []string) bool {
+		_, ok := item.(*render.Server)
 		return ok
 	})
 	ctx.Linker.AddMany(allServersLnk)
@@ -90,7 +90,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.As
 	if m.Headers != nil {
 		ctx.LogDebug("Message headers")
 		ref := ctx.PathRef() + "/headers"
-		obj.HeadersTypeLink = assemble.NewRefLink[*assemble.Struct](ref, common.LinkOriginInternal)
+		obj.HeadersTypeLink = render.NewRefLink[*render.Struct](ref, common.LinkOriginInternal)
 		ctx.Linker.Add(obj.HeadersTypeLink)
 	}
 	m.setStructFields(ctx, &obj)
@@ -99,8 +99,8 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.As
 	if m.Bindings.Len() > 0 {
 		ctx.LogDebug("Message bindings")
 		ctx.IncrementLogCallLvl()
-		obj.BindingsStruct = &assemble.Struct{
-			BaseType: assemble.BaseType{
+		obj.BindingsStruct = &render.Struct{
+			BaseType: render.BaseType{
 				Name:        ctx.GenerateObjName(m.Name, "Bindings"),
 				Render:      true,
 				PackageName: ctx.TopPackageName(),
@@ -127,23 +127,23 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.As
 	return &obj, nil
 }
 
-func (m Message) setStructFields(ctx *common.CompileContext, langMessage *assemble.Message) {
-	fields := []assemble.StructField{
+func (m Message) setStructFields(ctx *common.CompileContext, langMessage *render.Message) {
+	fields := []render.StructField{
 		{
 			Name:        "ID",
 			Description: "ID is unique string used to identify the message. Case-sensitive.",
-			Type:        &assemble.Simple{Name: "string"},
+			Type:        &render.Simple{Name: "string"},
 		},
 		{Name: "Payload", Type: langMessage.PayloadType},
 	}
 	if langMessage.HeadersTypeLink != nil {
 		ctx.LogDebug("Message headers has a concrete type")
-		lnk := assemble.NewRefLinkAsGolangType(langMessage.HeadersTypeLink.Ref(), common.LinkOriginInternal)
+		lnk := render.NewRefLinkAsGolangType(langMessage.HeadersTypeLink.Ref(), common.LinkOriginInternal)
 		ctx.Linker.Add(lnk)
-		fields = append(fields, assemble.StructField{Name: "Headers", Type: lnk})
+		fields = append(fields, render.StructField{Name: "Headers", Type: lnk})
 	} else {
 		ctx.LogDebug("Message headers has `any` type")
-		fields = append(fields, assemble.StructField{Name: "Headers", Type: langMessage.HeadersFallbackType})
+		fields = append(fields, render.StructField{Name: "Headers", Type: langMessage.HeadersFallbackType})
 	}
 
 	langMessage.OutStruct.Fields = fields
@@ -154,13 +154,13 @@ func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 	if m.Payload != nil {
 		ctx.LogDebug("Message payload has a concrete type")
 		ref := ctx.PathRef() + "/payload"
-		lnk := assemble.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
+		lnk := render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
 		ctx.Linker.Add(lnk)
 		return lnk
 	}
 
 	ctx.LogDebug("Message payload has `any` type")
-	return &assemble.Simple{Name: "any", IsIface: true}
+	return &render.Simple{Name: "any", IsIface: true}
 }
 
 type CorrelationID struct {

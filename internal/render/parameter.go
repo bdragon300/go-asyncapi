@@ -1,4 +1,4 @@
-package assemble
+package render
 
 import (
 	"strings"
@@ -17,10 +17,10 @@ func (p Parameter) AllowRender() bool {
 	return p.Type.AllowRender()
 }
 
-func (p Parameter) AssembleDefinition(ctx *common.AssembleContext) []*j.Statement {
+func (p Parameter) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 	var res []*j.Statement
-	res = append(res, p.Type.AssembleDefinition(ctx)...)
-	res = append(res, p.assembleMethods()...)
+	res = append(res, p.Type.RenderDefinition(ctx)...)
+	res = append(res, p.renderMethods()...)
 	return res
 }
 
@@ -28,7 +28,7 @@ func (p Parameter) String() string {
 	return "Parameter " + p.Name
 }
 
-func (p Parameter) assembleMethods() []*j.Statement {
+func (p Parameter) renderMethods() []*j.Statement {
 	rn := strings.ToLower(string(p.Type.TypeName()[0]))
 	receiver := j.Id(rn).Id(p.Type.TypeName())
 
@@ -51,8 +51,8 @@ func (p Parameter) assembleMethods() []*j.Statement {
 	}
 }
 
-func (p Parameter) AssembleUsage(ctx *common.AssembleContext) []*j.Statement {
-	return p.Type.AssembleUsage(ctx)
+func (p Parameter) RenderUsage(ctx *common.RenderContext) []*j.Statement {
+	return p.Type.RenderUsage(ctx)
 }
 
 func (p Parameter) TypeName() string {

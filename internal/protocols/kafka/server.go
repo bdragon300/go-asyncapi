@@ -1,10 +1,10 @@
 package kafka
 
 import (
-	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/compile"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	j "github.com/dave/jennifer/jen"
 )
@@ -14,7 +14,7 @@ type serverBindings struct {
 	SchemaRegistryVendor *string `json:"schemaRegistryVendor" yaml:"schemaRegistryVendor"`
 }
 
-func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey string) (common.Assembler, error) {
+func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey string) (common.Renderer, error) {
 	baseServer, err := protocols.BuildServer(ctx, server, serverKey, ProtoName)
 	if err != nil {
 		return nil, err
@@ -25,11 +25,11 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 	if server.Bindings.Len() > 0 {
 		ctx.LogDebug("Server bindings", "proto", ProtoName)
 		if b, ok := server.Bindings.Get(ProtoName); ok {
-			vals := &assemble.StructInit{
-				Type: &assemble.Simple{Name: "ServerBindings", Package: ctx.RuntimePackage(ProtoName)},
+			vals := &render.StructInit{
+				Type: &render.Simple{Name: "ServerBindings", Package: ctx.RuntimePackage(ProtoName)},
 			}
-			bindingsStruct := &assemble.Struct{ // TODO: remove in favor of parent server
-				BaseType: assemble.BaseType{
+			bindingsStruct := &render.Struct{ // TODO: remove in favor of parent server
+				BaseType: render.BaseType{
 					Name:        ctx.GenerateObjName(serverKey, "Bindings"),
 					Render:      true,
 					PackageName: ctx.TopPackageName(),
@@ -45,17 +45,17 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 				return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
 			}
 
-			srvResult.BindingsMethod = &assemble.Func{
-				FuncSignature: assemble.FuncSignature{
+			srvResult.BindingsMethod = &render.Func{
+				FuncSignature: render.FuncSignature{
 					Name: protoAbbr,
 					Args: nil,
-					Return: []assemble.FuncParam{
-						{Type: assemble.Simple{Name: "ServerBindings", Package: ctx.RuntimePackage(ProtoName)}},
+					Return: []render.FuncParam{
+						{Type: render.Simple{Name: "ServerBindings", Package: ctx.RuntimePackage(ProtoName)}},
 					},
 				},
-				Receiver:      bindingsStruct,
-				PackageName:   ctx.TopPackageName(),
-				BodyAssembler: protocols.ServerBindingsMethodBody(vals, nil),
+				Receiver:     bindingsStruct,
+				PackageName:  ctx.TopPackageName(),
+				BodyRenderer: protocols.ServerBindingsMethodBody(vals, nil),
 			}
 		}
 	}
@@ -65,50 +65,50 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 
 type ProtoServer struct {
 	protocols.BaseProtoServer
-	BindingsMethod *assemble.Func // nil if no bindings set in spec
+	BindingsMethod *render.Func // nil if no bindings set in spec
 }
 
 func (p ProtoServer) AllowRender() bool {
 	return true
 }
 
-func (p ProtoServer) AssembleDefinition(ctx *common.AssembleContext) []*j.Statement {
+func (p ProtoServer) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 	var res []*j.Statement
 	if p.BindingsMethod != nil {
-		res = append(res, p.BindingsMethod.AssembleDefinition(ctx)...)
+		res = append(res, p.BindingsMethod.RenderDefinition(ctx)...)
 	}
 	if p.ProtocolVersion != "" {
-		res = append(res, protocols.AssembleServerProtocolVersionConst(p.Struct, p.ProtocolVersion)...)
+		res = append(res, protocols.RenderServerProtocolVersionConst(p.Struct, p.ProtocolVersion)...)
 	}
-	res = append(res, protocols.AssembleServerURLFunc(ctx, p.Struct, p.Variables, p.URL)...)
-	res = append(res, protocols.AssembleServerNewFunc(ctx, p.Struct, p.Producer, p.Consumer, ProtoName)...)
-	res = append(res, p.Struct.AssembleDefinition(ctx)...)
-	res = append(res, protocols.AssembleServerCommonMethods(ctx, p.Struct, p.Name, protoAbbr)...)
-	res = append(res, p.assembleChannelMethods(ctx)...)
+	res = append(res, protocols.RenderServerURLFunc(ctx, p.Struct, p.Variables, p.URL)...)
+	res = append(res, protocols.RenderServerNewFunc(ctx, p.Struct, p.Producer, p.Consumer, ProtoName)...)
+	res = append(res, p.Struct.RenderDefinition(ctx)...)
+	res = append(res, protocols.RenderServerCommonMethods(ctx, p.Struct, p.Name, protoAbbr)...)
+	res = append(res, p.renderChannelMethods(ctx)...)
 	if p.Producer {
-		res = append(res, protocols.AssembleServerProducerMethods(ctx, p.Struct, ProtoName)...)
+		res = append(res, protocols.RenderServerProducerMethods(ctx, p.Struct, ProtoName)...)
 	}
 	if p.Consumer {
-		res = append(res, protocols.AssembleServerConsumerMethods(ctx, p.Struct, ProtoName)...)
+		res = append(res, protocols.RenderServerConsumerMethods(ctx, p.Struct, ProtoName)...)
 	}
 	return res
 }
 
-func (p ProtoServer) AssembleUsage(ctx *common.AssembleContext) []*j.Statement {
-	return p.Struct.AssembleUsage(ctx)
+func (p ProtoServer) RenderUsage(ctx *common.RenderContext) []*j.Statement {
+	return p.Struct.RenderUsage(ctx)
 }
 
 func (p ProtoServer) String() string {
 	return "Kafka server " + p.BaseProtoServer.Name
 }
 
-func (p ProtoServer) assembleChannelMethods(ctx *common.AssembleContext) []*j.Statement {
+func (p ProtoServer) renderChannelMethods(ctx *common.RenderContext) []*j.Statement {
 	var res []*j.Statement
 
 	for _, ch := range p.ChannelLinkList.Targets() {
 		protoChan := ch.AllProtocols[ProtoName].(*ProtoChannel)
 		res = append(res,
-			protocols.AssembleServerChannelMethod(ctx, p.Struct, protoChan.Struct, protoChan, protoChan.ParametersStructNoAssemble)...,
+			protocols.RenderServerChannelMethod(ctx, p.Struct, protoChan.Struct, protoChan, protoChan.ParametersStructNoRender)...,
 		)
 	}
 	return res

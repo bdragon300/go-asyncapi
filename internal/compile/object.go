@@ -9,8 +9,8 @@ import (
 
 	yaml "gopkg.in/yaml.v3"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	"github.com/samber/lo"
@@ -75,7 +75,7 @@ func (m Object) Compile(ctx *common.CompileContext) error {
 func buildGolangType(ctx *common.CompileContext, schema Object, flags map[common.SchemaTag]string) (common.GolangType, error) {
 	if schema.Ref != "" {
 		ctx.LogDebug("Ref", "$ref", schema.Ref)
-		res := assemble.NewRefLinkAsGolangType(schema.Ref, common.LinkOriginUser)
+		res := render.NewRefLinkAsGolangType(schema.Ref, common.LinkOriginUser)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
@@ -118,8 +118,8 @@ func buildGolangType(ctx *common.CompileContext, schema Object, flags map[common
 		return res, err
 	case "null", "":
 		ctx.LogDebug("Object is nullable any")
-		res := &assemble.NullableType{
-			Type:   &assemble.Simple{Name: "any", IsIface: true},
+		res := &render.NullableType{
+			Type:   &render.Simple{Name: "any", IsIface: true},
 			Render: noInline,
 		}
 		return res, nil
@@ -141,14 +141,14 @@ func buildGolangType(ctx *common.CompileContext, schema Object, flags map[common
 		return nil, common.CompileError{Err: fmt.Errorf("unknown jsonschema type %q", typ), Path: ctx.PathRef()}
 	}
 
-	return &assemble.TypeAlias{
-		BaseType: assemble.BaseType{
+	return &render.TypeAlias{
+		BaseType: render.BaseType{
 			Name:        ctx.GenerateObjName(schema.Title, ""),
 			Description: schema.Description,
 			Render:      noInline,
 			PackageName: ctx.TopPackageName(),
 		},
-		AliasedType: &assemble.Simple{Name: langTyp},
+		AliasedType: &render.Simple{Name: langTyp},
 	}, nil
 }
 
@@ -187,10 +187,10 @@ func simplifyMultiType(schemaType []string) (string, error) {
 	}
 }
 
-func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common.SchemaTag]string) (*assemble.Struct, error) {
+func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common.SchemaTag]string) (*render.Struct, error) {
 	_, noInline := flags[common.SchemaTagNoInline]
-	res := assemble.Struct{
-		BaseType: assemble.BaseType{
+	res := render.Struct{
+		BaseType: render.BaseType{
 			Name:        ctx.GenerateObjName(schema.Title, ""),
 			Description: schema.Description,
 			Render:      noInline,
@@ -199,11 +199,11 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 	}
 	// TODO: cache the object name in case any sub-schemas recursively reference it
 
-	var msgLinks *assemble.LinkList[*assemble.Message]
+	var msgLinks *render.LinkList[*render.Message]
 	// Collect all messages to retrieve struct field tags
 	if ctx.TopPackageName() == "models" {
-		msgLinks = assemble.NewListCbLink[*assemble.Message](func(item common.Assembler, _ []string) bool {
-			_, ok := item.(*assemble.Message)
+		msgLinks = render.NewListCbLink[*render.Message](func(item common.Renderer, _ []string) bool {
+			_, ok := item.(*render.Message)
 			return ok
 		})
 		ctx.Linker.AddMany(msgLinks)
@@ -213,9 +213,9 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 	for _, entry := range schema.Properties.Entries() {
 		ctx.LogDebug("Object property", "name", entry.Key)
 		ref := path.Join(ctx.PathRef(), "properties", entry.Key)
-		langObj := assemble.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
+		langObj := render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
 		ctx.Linker.Add(langObj)
-		f := assemble.StructField{
+		f := render.StructField{
 			Name:         utils.ToGolangName(entry.Key, true),
 			MarshalName:  entry.Key,
 			Type:         langObj,
@@ -232,17 +232,17 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 		case 0: // "additionalProperties:" is an object
 			ctx.LogDebug("Object additional properties as an object")
 			ref := path.Join(ctx.PathRef(), "additionalProperties")
-			langObj := assemble.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
-			f := assemble.StructField{
+			langObj := render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
+			f := render.StructField{
 				Name: "AdditionalProperties",
-				Type: &assemble.Map{
-					BaseType: assemble.BaseType{
+				Type: &render.Map{
+					BaseType: render.BaseType{
 						Name:        ctx.GenerateObjName(schema.Title, "AdditionalProperties"),
 						Description: schema.AdditionalProperties.V0.Description,
 						Render:      false,
 						PackageName: ctx.TopPackageName(),
 					},
-					KeyType:   &assemble.Simple{Name: "string"},
+					KeyType:   &render.Simple{Name: "string"},
 					ValueType: langObj,
 				},
 				Description: schema.AdditionalProperties.V0.Description,
@@ -251,25 +251,25 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 		case 1:
 			ctx.LogDebug("Object additional properties as boolean flag")
 			if schema.AdditionalProperties.V1 { // "additionalProperties: true" -- allow any additional properties
-				valTyp := assemble.TypeAlias{
-					BaseType: assemble.BaseType{
+				valTyp := render.TypeAlias{
+					BaseType: render.BaseType{
 						Name:        ctx.GenerateObjName(schema.Title, "AdditionalPropertiesValue"),
 						Description: "",
 						Render:      false,
 						PackageName: ctx.TopPackageName(),
 					},
-					AliasedType: &assemble.Simple{Name: "any", IsIface: true},
+					AliasedType: &render.Simple{Name: "any", IsIface: true},
 				}
-				f := assemble.StructField{
+				f := render.StructField{
 					Name: "AdditionalProperties",
-					Type: &assemble.Map{
-						BaseType: assemble.BaseType{
+					Type: &render.Map{
+						BaseType: render.BaseType{
 							Name:        ctx.GenerateObjName(schema.Title, "AdditionalProperties"),
 							Description: "",
 							Render:      false,
 							PackageName: ctx.TopPackageName(),
 						},
-						KeyType:   &assemble.Simple{Name: "string"},
+						KeyType:   &render.Simple{Name: "string"},
 						ValueType: &valTyp,
 					},
 					TagsSource: msgLinks,
@@ -282,10 +282,10 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 	return &res, nil
 }
 
-func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.SchemaTag]string) (*assemble.Array, error) {
+func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.SchemaTag]string) (*render.Array, error) {
 	_, noInline := flags[common.SchemaTagNoInline]
-	res := assemble.Array{
-		BaseType: assemble.BaseType{
+	res := render.Array{
+		BaseType: render.BaseType{
 			Name:        ctx.GenerateObjName(schema.Title, ""),
 			Description: schema.Description,
 			Render:      noInline,
@@ -298,26 +298,26 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 	case schema.Items != nil && schema.Items.Selector == 0: // Only one "type:" of items
 		ctx.LogDebug("Object items (single type)")
 		ref := path.Join(ctx.PathRef(), "items")
-		res.ItemsType = assemble.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
+		res.ItemsType = render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
 	case schema.Items == nil || schema.Items.Selector == 1: // No items or Several types for each item sequentially
 		ctx.LogDebug("Object items (zero or several types)")
-		valTyp := assemble.TypeAlias{
-			BaseType: assemble.BaseType{
+		valTyp := render.TypeAlias{
+			BaseType: render.BaseType{
 				Name:        ctx.GenerateObjName(schema.Title, "ItemsItemValue"),
 				Description: "",
 				Render:      false,
 				PackageName: ctx.TopPackageName(),
 			},
-			AliasedType: &assemble.Simple{Name: "any", IsIface: true},
+			AliasedType: &render.Simple{Name: "any", IsIface: true},
 		}
-		res.ItemsType = &assemble.Map{
-			BaseType: assemble.BaseType{
+		res.ItemsType = &render.Map{
+			BaseType: render.BaseType{
 				Name:        ctx.GenerateObjName(schema.Title, "ItemsItem"),
 				Description: "",
 				Render:      false,
 				PackageName: ctx.TopPackageName(),
 			},
-			KeyType:   &assemble.Simple{Name: "string"},
+			KeyType:   &render.Simple{Name: "string"},
 			ValueType: &valTyp,
 		}
 	}
@@ -325,10 +325,10 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 	return &res, nil
 }
 
-func buildUnionStruct(ctx *common.CompileContext, schema Object) (*assemble.UnionStruct, error) {
-	res := assemble.UnionStruct{
-		Struct: assemble.Struct{
-			BaseType: assemble.BaseType{
+func buildUnionStruct(ctx *common.CompileContext, schema Object) (*render.UnionStruct, error) {
+	res := render.UnionStruct{
+		Struct: render.Struct{
+			BaseType: render.BaseType{
 				Name:        ctx.GenerateObjName(schema.Title, ""),
 				Description: schema.Description,
 				Render:      true, // Always render unions as separate types
@@ -338,29 +338,29 @@ func buildUnionStruct(ctx *common.CompileContext, schema Object) (*assemble.Unio
 	}
 
 	// Collect all messages to retrieve struct field tags
-	msgLinks := assemble.NewListCbLink[*assemble.Message](func(item common.Assembler, _ []string) bool {
-		_, ok := item.(*assemble.Message)
+	msgLinks := render.NewListCbLink[*render.Message](func(item common.Renderer, _ []string) bool {
+		_, ok := item.(*render.Message)
 		return ok
 	})
 	ctx.Linker.AddMany(msgLinks)
 
-	res.Fields = lo.Times(len(schema.OneOf), func(index int) assemble.StructField {
+	res.Fields = lo.Times(len(schema.OneOf), func(index int) render.StructField {
 		ref := path.Join(ctx.PathRef(), "oneOf", strconv.Itoa(index))
-		langTyp := assemble.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
+		langTyp := render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
 		ctx.Linker.Add(langTyp)
-		return assemble.StructField{Type: langTyp, ForcePointer: true}
+		return render.StructField{Type: langTyp, ForcePointer: true}
 	})
-	res.Fields = append(res.Fields, lo.Times(len(schema.AnyOf), func(index int) assemble.StructField {
+	res.Fields = append(res.Fields, lo.Times(len(schema.AnyOf), func(index int) render.StructField {
 		ref := path.Join(ctx.PathRef(), "anyOf", strconv.Itoa(index))
-		langTyp := assemble.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
+		langTyp := render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
 		ctx.Linker.Add(langTyp)
-		return assemble.StructField{Type: langTyp, ForcePointer: true}
+		return render.StructField{Type: langTyp, ForcePointer: true}
 	})...)
-	res.Fields = append(res.Fields, lo.Times(len(schema.AllOf), func(index int) assemble.StructField {
+	res.Fields = append(res.Fields, lo.Times(len(schema.AllOf), func(index int) render.StructField {
 		ref := path.Join(ctx.PathRef(), "allOf", strconv.Itoa(index))
-		langTyp := assemble.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
+		langTyp := render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
 		ctx.Linker.Add(langTyp)
-		return assemble.StructField{Type: langTyp}
+		return render.StructField{Type: langTyp}
 	})...)
 
 	return &res, nil

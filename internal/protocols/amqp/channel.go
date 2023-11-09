@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/compile"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	j "github.com/dave/jennifer/jen"
 )
@@ -57,19 +57,19 @@ type subscribeOperationBindings struct {
 	Ack          bool          `json:"ack" yaml:"ack"`
 }
 
-func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelKey string) (common.Assembler, error) {
+func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelKey string) (common.Renderer, error) {
 	baseChan, err := protocols.BuildChannel(ctx, channel, channelKey, ProtoName, protoAbbr)
 	if err != nil {
 		return nil, err
 	}
 
-	baseChan.Struct.Fields = append(baseChan.Struct.Fields, assemble.StructField{Name: "topic", Type: &assemble.Simple{Name: "string"}})
+	baseChan.Struct.Fields = append(baseChan.Struct.Fields, render.StructField{Name: "topic", Type: &render.Simple{Name: "string"}})
 
 	chanResult := &ProtoChannel{BaseProtoChannel: *baseChan}
 
 	// Channel bindings
-	bindingsStruct := &assemble.Struct{ // TODO: remove in favor of parent channel
-		BaseType: assemble.BaseType{
+	bindingsStruct := &render.Struct{ // TODO: remove in favor of parent channel
+		BaseType: render.BaseType{
 			Name:        ctx.GenerateObjName(channelKey, "Bindings"),
 			Render:      true,
 			PackageName: ctx.TopPackageName(),
@@ -81,15 +81,15 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 	}
 	if method != nil {
 		chanResult.BindingsMethod = method
-		chanResult.BindingsStructNoAssemble = bindingsStruct
+		chanResult.BindingsStructNoRender = bindingsStruct
 		chanResult.BindingsChannelType = chanType
 	}
 
 	return chanResult, nil
 }
 
-func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, bindingsStruct *assemble.Struct) (*assemble.Func, string, error) {
-	structValues := &assemble.StructInit{Type: &assemble.Simple{Name: "ChannelBindings", Package: ctx.RuntimePackage(ProtoName)}}
+func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, bindingsStruct *render.Struct) (*render.Func, string, error) {
+	structValues := &render.StructInit{Type: &render.Simple{Name: "ChannelBindings", Package: ctx.RuntimePackage(ProtoName)}}
 	var hasBindings bool
 	var chanType string
 
@@ -102,9 +102,9 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 		}
 		switch bindings.Is {
 		case "routingKey":
-			structValues.Values.Set("ChannelType", &assemble.Simple{Name: "ChannelTypeRoutingKey", Package: ctx.RuntimePackage(ProtoName)})
+			structValues.Values.Set("ChannelType", &render.Simple{Name: "ChannelTypeRoutingKey", Package: ctx.RuntimePackage(ProtoName)})
 		case "queue":
-			structValues.Values.Set("ChannelType", &assemble.Simple{Name: "ChannelTypeQueue", Package: ctx.RuntimePackage(ProtoName)})
+			structValues.Values.Set("ChannelType", &render.Simple{Name: "ChannelTypeQueue", Package: ctx.RuntimePackage(ProtoName)})
 		case "":
 		default:
 			return nil, "", common.CompileError{Err: fmt.Errorf("unknown channel type %q", bindings.Is), Path: ctx.PathRef(), Proto: ProtoName}
@@ -112,8 +112,8 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 		chanType = bindings.Is
 
 		if bindings.Exchange != nil {
-			ex := &assemble.StructInit{
-				Type: &assemble.Simple{Name: "ExchangeConfiguration", Package: ctx.RuntimePackage(ProtoName)},
+			ex := &render.StructInit{
+				Type: &render.Simple{Name: "ExchangeConfiguration", Package: ctx.RuntimePackage(ProtoName)},
 			}
 			marshalFields := []string{"Name", "Durable", "AutoDelete", "VHost"}
 			if err := utils.StructToOrderedMap(*bindings.Exchange, &ex.Values, marshalFields); err != nil {
@@ -121,15 +121,15 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 			}
 			switch bindings.Exchange.Type {
 			case "default":
-				ex.Values.Set("Type", &assemble.Simple{Name: "ExchangeTypeDefault", Package: ctx.RuntimePackage(ProtoName)})
+				ex.Values.Set("Type", &render.Simple{Name: "ExchangeTypeDefault", Package: ctx.RuntimePackage(ProtoName)})
 			case "topic":
-				ex.Values.Set("Type", &assemble.Simple{Name: "ExchangeTypeTopic", Package: ctx.RuntimePackage(ProtoName)})
+				ex.Values.Set("Type", &render.Simple{Name: "ExchangeTypeTopic", Package: ctx.RuntimePackage(ProtoName)})
 			case "direct":
-				ex.Values.Set("Type", &assemble.Simple{Name: "ExchangeTypeDirect", Package: ctx.RuntimePackage(ProtoName)})
+				ex.Values.Set("Type", &render.Simple{Name: "ExchangeTypeDirect", Package: ctx.RuntimePackage(ProtoName)})
 			case "fanout":
-				ex.Values.Set("Type", &assemble.Simple{Name: "ExchangeTypeFanout", Package: ctx.RuntimePackage(ProtoName)})
+				ex.Values.Set("Type", &render.Simple{Name: "ExchangeTypeFanout", Package: ctx.RuntimePackage(ProtoName)})
 			case "headers":
-				ex.Values.Set("Type", &assemble.Simple{Name: "ExchangeTypeHeaders", Package: ctx.RuntimePackage(ProtoName)})
+				ex.Values.Set("Type", &render.Simple{Name: "ExchangeTypeHeaders", Package: ctx.RuntimePackage(ProtoName)})
 			case "":
 			default:
 				return nil, "", common.CompileError{
@@ -141,8 +141,8 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 			structValues.Values.Set("ExchangeConfiguration", ex)
 		}
 		if bindings.Queue != nil {
-			ex := &assemble.StructInit{
-				Type: &assemble.Simple{Name: "QueueConfiguration", Package: ctx.RuntimePackage(ProtoName)},
+			ex := &render.StructInit{
+				Type: &render.Simple{Name: "QueueConfiguration", Package: ctx.RuntimePackage(ProtoName)},
 			}
 			marshalFields := []string{"Name", "Durable", "Exclusive", "AutoDelete", "VHost"}
 			if err := utils.StructToOrderedMap(*bindings.Exchange, &ex.Values, marshalFields); err != nil {
@@ -156,8 +156,8 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 	if channel.Publish != nil {
 		if b, ok := channel.Publish.Bindings.Get(ProtoName); ok {
 			ctx.LogDebug("Channel publish operation bindings", "proto", ProtoName)
-			pob := &assemble.StructInit{
-				Type: &assemble.Simple{Name: "PublishOperationBindings", Package: ctx.RuntimePackage(ProtoName)},
+			pob := &render.StructInit{
+				Type: &render.Simple{Name: "PublishOperationBindings", Package: ctx.RuntimePackage(ProtoName)},
 			}
 			hasBindings = true
 			var bindings publishOperationBindings
@@ -170,9 +170,9 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 			}
 			switch bindings.DeliveryMode {
 			case 1:
-				pob.Values.Set("DeliveryMode", &assemble.Simple{Name: "DeliveryModeTransient", Package: ctx.RuntimePackage(ProtoName)})
+				pob.Values.Set("DeliveryMode", &render.Simple{Name: "DeliveryModeTransient", Package: ctx.RuntimePackage(ProtoName)})
 			case 2:
-				pob.Values.Set("DeliveryMode", &assemble.Simple{Name: "DeliveryModePersistent", Package: ctx.RuntimePackage(ProtoName)})
+				pob.Values.Set("DeliveryMode", &render.Simple{Name: "DeliveryModePersistent", Package: ctx.RuntimePackage(ProtoName)})
 			case 0:
 			default:
 				return nil, "", common.CompileError{
@@ -190,8 +190,8 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 	if channel.Subscribe != nil {
 		if b, ok := channel.Subscribe.Bindings.Get(ProtoName); ok {
 			ctx.LogDebug("Channel subscribe operation bindings", "proto", ProtoName)
-			sob := &assemble.StructInit{
-				Type: &assemble.Simple{Name: "SubscribeOperationBindings", Package: ctx.RuntimePackage(ProtoName)},
+			sob := &render.StructInit{
+				Type: &render.Simple{Name: "SubscribeOperationBindings", Package: ctx.RuntimePackage(ProtoName)},
 			}
 			hasBindings = true
 			var bindings subscribeOperationBindings
@@ -204,9 +204,9 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 			}
 			switch bindings.DeliveryMode {
 			case 1:
-				sob.Values.Set("DeliveryMode", &assemble.Simple{Name: "DeliveryModeTransient", Package: ctx.RuntimePackage(ProtoName)})
+				sob.Values.Set("DeliveryMode", &render.Simple{Name: "DeliveryModeTransient", Package: ctx.RuntimePackage(ProtoName)})
 			case 2:
-				sob.Values.Set("DeliveryMode", &assemble.Simple{Name: "DeliveryModePersistent", Package: ctx.RuntimePackage(ProtoName)})
+				sob.Values.Set("DeliveryMode", &render.Simple{Name: "DeliveryModePersistent", Package: ctx.RuntimePackage(ProtoName)})
 			case 0:
 			default:
 				return nil, "", common.CompileError{
@@ -225,17 +225,17 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 	}
 
 	// Method Proto() proto.ChannelBindings
-	res := &assemble.Func{
-		FuncSignature: assemble.FuncSignature{
+	res := &render.Func{
+		FuncSignature: render.FuncSignature{
 			Name: protoAbbr,
 			Args: nil,
-			Return: []assemble.FuncParam{
-				{Type: assemble.Simple{Name: "ChannelBindings", Package: ctx.RuntimePackage(ProtoName)}},
+			Return: []render.FuncParam{
+				{Type: render.Simple{Name: "ChannelBindings", Package: ctx.RuntimePackage(ProtoName)}},
 			},
 		},
-		Receiver:      bindingsStruct,
-		PackageName:   ctx.TopPackageName(),
-		BodyAssembler: protocols.ChannelBindingsMethodBody(structValues, nil, nil),
+		Receiver:     bindingsStruct,
+		PackageName:  ctx.TopPackageName(),
+		BodyRenderer: protocols.ChannelBindingsMethodBody(structValues, nil, nil),
 	}
 
 	return res, chanType, nil
@@ -243,56 +243,56 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 
 type ProtoChannel struct {
 	protocols.BaseProtoChannel
-	BindingsStructNoAssemble *assemble.Struct // nil if bindings not set FIXME: remove in favor of struct in parent channel
-	BindingsMethod           *assemble.Func
-	BindingsChannelType      string
+	BindingsStructNoRender *render.Struct // nil if bindings not set FIXME: remove in favor of struct in parent channel
+	BindingsMethod         *render.Func
+	BindingsChannelType    string
 }
 
 func (p ProtoChannel) AllowRender() bool {
 	return true
 }
 
-func (p ProtoChannel) AssembleDefinition(ctx *common.AssembleContext) []*j.Statement {
+func (p ProtoChannel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 	var res []*j.Statement
 	if p.BindingsMethod != nil {
-		res = append(res, p.BindingsMethod.AssembleDefinition(ctx)...)
+		res = append(res, p.BindingsMethod.RenderDefinition(ctx)...)
 	}
-	res = append(res, p.ServerIface.AssembleDefinition(ctx)...)
-	res = append(res, protocols.AssembleChannelOpenFunc(
-		ctx, p.Struct, p.Name, p.ServerIface, p.ParametersStructNoAssemble, p.BindingsStructNoAssemble,
+	res = append(res, p.ServerIface.RenderDefinition(ctx)...)
+	res = append(res, protocols.RenderChannelOpenFunc(
+		ctx, p.Struct, p.Name, p.ServerIface, p.ParametersStructNoRender, p.BindingsStructNoRender,
 		p.Publisher, p.Subscriber, ProtoName, protoAbbr,
 	)...)
-	res = append(res, p.assembleNewFunc(ctx)...)
-	res = append(res, p.Struct.AssembleDefinition(ctx)...)
-	res = append(res, protocols.AssembleChannelCommonMethods(ctx, p.Struct, p.Publisher, p.Subscriber, protoAbbr)...)
-	res = append(res, p.assembleCommonMethods(ctx)...)
+	res = append(res, p.renderNewFunc(ctx)...)
+	res = append(res, p.Struct.RenderDefinition(ctx)...)
+	res = append(res, protocols.RenderChannelCommonMethods(ctx, p.Struct, p.Publisher, p.Subscriber, protoAbbr)...)
+	res = append(res, p.renderCommonMethods(ctx)...)
 	if p.Publisher {
-		res = append(res, protocols.AssembleChannelPublisherMethods(ctx, p.Struct, ProtoName)...)
-		res = append(res, p.assemblePublisherMethods(ctx)...)
+		res = append(res, protocols.RenderChannelPublisherMethods(ctx, p.Struct, ProtoName)...)
+		res = append(res, p.renderPublisherMethods(ctx)...)
 	}
 	if p.Subscriber {
-		res = append(res, protocols.AssembleChannelSubscriberMethods(
+		res = append(res, protocols.RenderChannelSubscriberMethods(
 			ctx, p.Struct, p.SubMessageLink, p.FallbackMessageType, ProtoName, protoAbbr,
 		)...)
 	}
 	return res
 }
 
-func (p ProtoChannel) AssembleUsage(ctx *common.AssembleContext) []*j.Statement {
-	return p.Struct.AssembleUsage(ctx)
+func (p ProtoChannel) RenderUsage(ctx *common.RenderContext) []*j.Statement {
+	return p.Struct.RenderUsage(ctx)
 }
 
 func (p ProtoChannel) String() string {
 	return "AMQP channel " + p.BaseProtoChannel.Name
 }
 
-func (p ProtoChannel) assembleNewFunc(ctx *common.AssembleContext) []*j.Statement {
+func (p ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {
 	return []*j.Statement{
 		// NewChannel1Proto(params Channel1Parameters, publisher proto.Publisher, subscriber proto.Subscriber) *Channel1Proto
 		j.Func().Id(p.Struct.NewFuncName()).
 			ParamsFunc(func(g *j.Group) {
-				if p.ParametersStructNoAssemble != nil {
-					g.Id("params").Add(utils.ToCode(p.ParametersStructNoAssemble.AssembleUsage(ctx))...)
+				if p.ParametersStructNoRender != nil {
+					g.Id("params").Add(utils.ToCode(p.ParametersStructNoRender.RenderUsage(ctx))...)
 				}
 				if p.Publisher {
 					g.Id("publisher").Qual(ctx.RuntimePackage(ProtoName), "Publisher")
@@ -301,11 +301,11 @@ func (p ProtoChannel) assembleNewFunc(ctx *common.AssembleContext) []*j.Statemen
 					g.Id("subscriber").Qual(ctx.RuntimePackage(ProtoName), "Subscriber")
 				}
 			}).
-			Op("*").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...).
+			Op("*").Add(utils.ToCode(p.Struct.RenderUsage(ctx))...).
 			BlockFunc(func(bg *j.Group) {
-				bg.Op("res := ").Add(utils.ToCode(p.Struct.AssembleUsage(ctx))...).Values(j.DictFunc(func(d j.Dict) {
+				bg.Op("res := ").Add(utils.ToCode(p.Struct.RenderUsage(ctx))...).Values(j.DictFunc(func(d j.Dict) {
 					d[j.Id("name")] = j.Id(utils.ToGolangName(p.Name, true) + "Name").CallFunc(func(g *j.Group) {
-						if p.ParametersStructNoAssemble != nil {
+						if p.ParametersStructNoRender != nil {
 							g.Id("params")
 						}
 					})
@@ -320,8 +320,8 @@ func (p ProtoChannel) assembleNewFunc(ctx *common.AssembleContext) []*j.Statemen
 				switch p.BindingsChannelType {
 				case "routingKey", "":
 					bg.Op("res.exchange = res.name.String()")
-					if p.BindingsStructNoAssemble != nil {
-						bg.Id("bindings").Op(":=").Add(utils.ToCode(p.BindingsStructNoAssemble.AssembleUsage(ctx))...).Values().Dot(protoAbbr).Call()
+					if p.BindingsStructNoRender != nil {
+						bg.Id("bindings").Op(":=").Add(utils.ToCode(p.BindingsStructNoRender.RenderUsage(ctx))...).Values().Dot(protoAbbr).Call()
 						bg.Op(`
 							if bindings.ExchangeConfiguration.Name != "" {
 								res.exchange = bindings.ExchangeConfiguration.Name
@@ -330,8 +330,8 @@ func (p ProtoChannel) assembleNewFunc(ctx *common.AssembleContext) []*j.Statemen
 					}
 				case "queue":
 					bg.Op("res.queue = res.name.String()")
-					if p.BindingsStructNoAssemble != nil {
-						bg.Id("bindings").Op(":=").Add(utils.ToCode(p.BindingsStructNoAssemble.AssembleUsage(ctx))...).Values().Dot(protoAbbr).Call()
+					if p.BindingsStructNoRender != nil {
+						bg.Id("bindings").Op(":=").Add(utils.ToCode(p.BindingsStructNoRender.RenderUsage(ctx))...).Values().Dot(protoAbbr).Call()
 						bg.Op(`
 							if bindings.QueueConfiguration.Name != "" {
 								res.queue = bindings.QueueConfiguration.Name
@@ -346,7 +346,7 @@ func (p ProtoChannel) assembleNewFunc(ctx *common.AssembleContext) []*j.Statemen
 	}
 }
 
-func (p ProtoChannel) assembleCommonMethods(_ *common.AssembleContext) []*j.Statement {
+func (p ProtoChannel) renderCommonMethods(_ *common.RenderContext) []*j.Statement {
 	rn := p.Struct.ReceiverName()
 	receiver := j.Id(rn).Id(p.Struct.Name)
 
@@ -369,16 +369,16 @@ func (p ProtoChannel) assembleCommonMethods(_ *common.AssembleContext) []*j.Stat
 	}
 }
 
-func (p ProtoChannel) assemblePublisherMethods(ctx *common.AssembleContext) []*j.Statement {
+func (p ProtoChannel) renderPublisherMethods(ctx *common.RenderContext) []*j.Statement {
 	rn := p.Struct.ReceiverName()
 	receiver := j.Id(rn).Id(p.Struct.Name)
 
-	var msgTyp common.GolangType = assemble.NullableType{Type: p.FallbackMessageType, Render: true}
+	var msgTyp common.GolangType = render.NullableType{Type: p.FallbackMessageType, Render: true}
 	if p.PubMessageLink != nil {
-		msgTyp = assemble.NullableType{Type: p.PubMessageLink.Target().OutStruct, Render: true}
+		msgTyp = render.NullableType{Type: p.PubMessageLink.Target().OutStruct, Render: true}
 	}
 
-	var msgBindings *assemble.Struct
+	var msgBindings *render.Struct
 	if p.PubMessageLink != nil && p.PubMessageLink.Target().BindingsStruct != nil {
 		msgBindings = p.PubMessageLink.Target().BindingsStruct
 	}
@@ -388,7 +388,7 @@ func (p ProtoChannel) assemblePublisherMethods(ctx *common.AssembleContext) []*j
 		j.Func().Params(receiver.Clone()).Id("MakeEnvelope").
 			ParamsFunc(func(g *j.Group) {
 				g.Id("envelope").Qual(ctx.RuntimePackage(ProtoName), "EnvelopeWriter")
-				g.Id("message").Add(utils.ToCode(msgTyp.AssembleUsage(ctx))...)
+				g.Id("message").Add(utils.ToCode(msgTyp.RenderUsage(ctx))...)
 			}).
 			Error().
 			BlockFunc(func(bg *j.Group) {
@@ -409,7 +409,7 @@ func (p ProtoChannel) assemblePublisherMethods(ctx *common.AssembleContext) []*j
 				bg.Op("envelope.SetQueue").Call(j.Id(rn).Dot("queue"))
 				if msgBindings != nil {
 					bg.Op("envelope.SetBindings").Call(
-						j.Add(utils.ToCode(msgBindings.AssembleUsage(ctx))...).Values().Dot("AMQP()"),
+						j.Add(utils.ToCode(msgBindings.RenderUsage(ctx))...).Values().Dot("AMQP()"),
 					)
 				}
 				bg.Return(j.Nil())

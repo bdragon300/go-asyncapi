@@ -1,4 +1,4 @@
-package assemble
+package render
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ type Channel struct {
 	AppliedServers           []string
 	AppliedServerLinks       []*Link[*Server] // Avoid using a map to keep definition order in generated code
 	AppliedToAllServersLinks *LinkList[*Server]
-	AllProtocols             map[string]common.Assembler
+	AllProtocols             map[string]common.Renderer
 
 	ParametersStruct *Struct // nil if no parameters
 	BindingsStruct   *Struct // nil if bindings are not set
@@ -26,16 +26,16 @@ func (c Channel) AllowRender() bool {
 	return true
 }
 
-func (c Channel) AssembleDefinition(ctx *common.AssembleContext) []*j.Statement {
+func (c Channel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 	var res []*j.Statement
 
 	if c.ParametersStruct != nil {
-		res = append(res, c.ParametersStruct.AssembleDefinition(ctx)...)
+		res = append(res, c.ParametersStruct.RenderDefinition(ctx)...)
 	}
 	if c.BindingsStruct != nil {
-		res = append(res, c.BindingsStruct.AssembleDefinition(ctx)...)
+		res = append(res, c.BindingsStruct.RenderDefinition(ctx)...)
 	}
-	res = append(res, c.assembleChannelNameFunc(ctx)...)
+	res = append(res, c.renderChannelNameFunc(ctx)...)
 
 	protocols := lo.Uniq(lo.Map(c.AppliedServerLinks, func(item *Link[*Server], index int) string {
 		return item.Target().Protocol
@@ -50,12 +50,12 @@ func (c Channel) AssembleDefinition(ctx *common.AssembleContext) []*j.Statement 
 		if !ok {
 			panic(fmt.Sprintf("%q protocol is not supported", p))
 		}
-		res = append(res, r.AssembleDefinition(ctx)...)
+		res = append(res, r.RenderDefinition(ctx)...)
 	}
 	return res
 }
 
-func (c Channel) AssembleUsage(_ *common.AssembleContext) []*j.Statement {
+func (c Channel) RenderUsage(_ *common.RenderContext) []*j.Statement {
 	panic("not implemented")
 }
 
@@ -63,13 +63,13 @@ func (c Channel) String() string {
 	return "Channel " + c.Name
 }
 
-func (c Channel) assembleChannelNameFunc(ctx *common.AssembleContext) []*j.Statement {
+func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement {
 	// Channel1Name(params Chan1Parameters) runtime.ParamString
 	return []*j.Statement{
 		j.Func().Id(utils.ToGolangName(c.Name, true)+"Name").
 			ParamsFunc(func(g *j.Group) {
 				if c.ParametersStruct != nil {
-					g.Id("params").Add(utils.ToCode(c.ParametersStruct.AssembleUsage(ctx))...)
+					g.Id("params").Add(utils.ToCode(c.ParametersStruct.RenderUsage(ctx))...)
 				}
 			}).
 			Qual(ctx.RuntimePackage(""), "ParamString").

@@ -1,4 +1,4 @@
-package assemble
+package render
 
 import (
 	"fmt"
@@ -12,14 +12,14 @@ func NewRefLink[T any](ref string, origin common.LinkOrigin) *Link[T] {
 	return &Link[T]{ref: ref, origin: origin}
 }
 
-func NewCbLink[T any](findCb func(item common.Assembler, path []string) bool, origin common.LinkOrigin) *Link[T] {
+func NewCbLink[T any](findCb func(item common.Renderer, path []string) bool, origin common.LinkOrigin) *Link[T] {
 	return &Link[T]{findCb: findCb, origin: origin}
 }
 
 type Link[T any] struct {
 	ref    string
 	origin common.LinkOrigin
-	findCb func(item common.Assembler, path []string) bool
+	findCb func(item common.Renderer, path []string) bool
 
 	target   T
 	assigned bool
@@ -34,7 +34,7 @@ func (r *Link[T]) Assigned() bool {
 	return r.assigned
 }
 
-func (r *Link[T]) FindCallback() func(item common.Assembler, path []string) bool {
+func (r *Link[T]) FindCallback() func(item common.Renderer, path []string) bool {
 	return r.findCb
 }
 
@@ -51,12 +51,12 @@ func (r *Link[T]) Origin() common.LinkOrigin {
 }
 
 // List links can only be LinkOriginInternal, no way to set a callback in spec
-func NewListCbLink[T any](findCb func(item common.Assembler, path []string) bool) *LinkList[T] {
+func NewListCbLink[T any](findCb func(item common.Renderer, path []string) bool) *LinkList[T] {
 	return &LinkList[T]{findCb: findCb}
 }
 
 type LinkList[T any] struct {
-	findCb func(item common.Assembler, path []string) bool
+	findCb func(item common.Renderer, path []string) bool
 
 	targets  []T
 	assigned bool
@@ -75,7 +75,7 @@ func (r *LinkList[T]) Assigned() bool {
 	return r.assigned
 }
 
-func (r *LinkList[T]) FindCallback() func(item common.Assembler, path []string) bool {
+func (r *LinkList[T]) FindCallback() func(item common.Renderer, path []string) bool {
 	return r.findCb
 }
 
@@ -83,29 +83,29 @@ func (r *LinkList[T]) Targets() []T {
 	return r.targets
 }
 
-func NewRefLinkAsAssembler(ref string, origin common.LinkOrigin) *LinkAsAssembler {
-	return &LinkAsAssembler{
-		Link: *NewRefLink[common.Assembler](ref, origin),
+func NewRefLinkAsRenderer(ref string, origin common.LinkOrigin) *LinkAsRenderer {
+	return &LinkAsRenderer{
+		Link: *NewRefLink[common.Renderer](ref, origin),
 	}
 }
 
-type LinkAsAssembler struct {
-	Link[common.Assembler]
+type LinkAsRenderer struct {
+	Link[common.Renderer]
 }
 
-func (r *LinkAsAssembler) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
-	return r.target.AssembleDefinition(ctx)
+func (r *LinkAsRenderer) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
+	return r.target.RenderDefinition(ctx)
 }
 
-func (r *LinkAsAssembler) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
-	return r.target.AssembleUsage(ctx)
+func (r *LinkAsRenderer) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
+	return r.target.RenderUsage(ctx)
 }
 
-func (r *LinkAsAssembler) AllowRender() bool {
+func (r *LinkAsRenderer) AllowRender() bool {
 	return false // Prevent rendering the object we're point to for several times
 }
 
-func (r *LinkAsAssembler) String() string {
+func (r *LinkAsRenderer) String() string {
 	return "Ref to " + r.ref
 }
 
@@ -127,12 +127,12 @@ func (r *LinkAsGolangType) AllowRender() bool {
 	return false // Prevent rendering the object we're point to for several times
 }
 
-func (r *LinkAsGolangType) AssembleDefinition(ctx *common.AssembleContext) []*jen.Statement {
-	return r.target.AssembleDefinition(ctx)
+func (r *LinkAsGolangType) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
+	return r.target.RenderDefinition(ctx)
 }
 
-func (r *LinkAsGolangType) AssembleUsage(ctx *common.AssembleContext) []*jen.Statement {
-	return r.target.AssembleUsage(ctx)
+func (r *LinkAsGolangType) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
+	return r.target.RenderUsage(ctx)
 }
 
 func (r *LinkAsGolangType) String() string {

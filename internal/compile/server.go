@@ -5,12 +5,12 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/assemble"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 )
 
-type protoServerCompilerFunc func(ctx *common.CompileContext, server *Server, name string) (common.Assembler, error)
+type protoServerCompilerFunc func(ctx *common.CompileContext, server *Server, name string) (common.Renderer, error)
 
 var ProtoServerCompiler = map[string]protoServerCompilerFunc{}
 
@@ -43,10 +43,10 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 	return nil
 }
 
-func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Assembler, error) {
+func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Renderer, error) {
 	if s.Ref != "" {
 		ctx.LogDebug("Ref", "$ref", s.Ref)
-		res := assemble.NewRefLinkAsAssembler(s.Ref, common.LinkOriginUser)
+		res := render.NewRefLinkAsRenderer(s.Ref, common.LinkOriginUser)
 		ctx.Linker.Add(res)
 		return res, nil
 	}
@@ -61,12 +61,12 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Asse
 		return nil, err
 	}
 
-	return &assemble.Server{
+	return &render.Server{
 		Name:        serverKey,
 		Protocol:    s.Protocol,
 		ProtoServer: protoServer,
-		BindingsStruct: &assemble.Struct{
-			BaseType: assemble.BaseType{
+		BindingsStruct: &render.Struct{
+			BaseType: render.BaseType{
 				Name:        ctx.GenerateObjName(serverKey, "Bindings"),
 				Render:      true,
 				PackageName: ctx.TopPackageName(),
