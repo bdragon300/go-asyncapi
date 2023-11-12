@@ -25,7 +25,7 @@ type Message struct {
 	HeadersTypeLink            *Link[*Struct]
 	AllServers                 *LinkList[*Server] // For extracting all using protocols
 	BindingsStruct             *Struct            // nil if message bindings are not defined
-	BindingsStructProtoMethods []common.Renderer
+	BindingsStructProtoMethods utils.OrderedMap[string, common.Renderer]
 	ContentType                string // Message's content type or default from schema or fallback
 }
 
@@ -40,8 +40,8 @@ func (m Message) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 
 	if m.BindingsStruct != nil {
 		res = append(res, m.BindingsStruct.RenderDefinition(ctx)...)
-		for _, mtd := range m.BindingsStructProtoMethods {
-			res = append(res, mtd.RenderDefinition(ctx)...)
+		for _, e := range m.BindingsStructProtoMethods.Entries() {
+			res = append(res, e.Value.RenderDefinition(ctx)...)
 		}
 	}
 

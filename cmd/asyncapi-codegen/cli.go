@@ -40,7 +40,8 @@ type GenerateCmd struct {
 }
 
 type ImplementationsOpts struct {
-	Kafka string `arg:"--kafka-impl" default:"franz-go" help:"Implementation for kafka protocol or 'no' to disable implementation" placeholder:"NAME"`
+	Kafka string `arg:"--kafka-impl" default:"franz-go" help:"Implementation for Kafka protocol or 'no' to disable implementation" placeholder:"NAME"`
+	AMQP  string `arg:"--amqp-impl" default:"" help:"Implementation for AMQP protocol or 'no' to disable implementation" placeholder:"NAME"`
 }
 
 type cli struct {
@@ -156,11 +157,11 @@ func generate(cmd *GenerateCmd) error {
 	}
 	selectedImpls := getSelectedImplementations(cmd.ImplementationsOpts)
 	for p := range compileCtx.Protocols {
-		if selectedImpls[p] == "no" {
+		if selectedImpls[p] == "no" || selectedImpls[p] == "" {
 			continue
 		}
 		if _, ok := implManifest[p][selectedImpls[p]]; !ok {
-			return fmt.Errorf("unknown implementation %s for %s protocol, use list-implementations command to see possible values", selectedImpls[p], p)
+			return fmt.Errorf("unknown implementation %q for %q protocol, use list-implementations command to see possible values", selectedImpls[p], p)
 		}
 		if err = writer.WriteImplementation(implManifest[p][selectedImpls[p]].Dir, path.Join(implDir, p)); err != nil {
 			return fmt.Errorf("cannot render implementation for protocol %q: %w", p, err)
@@ -216,6 +217,7 @@ func getImportBase() (string, error) {
 func getSelectedImplementations(opts ImplementationsOpts) map[string]string {
 	return map[string]string{
 		kafka.ProtoName: opts.Kafka,
+		amqp.ProtoName:  opts.AMQP,
 	}
 }
 

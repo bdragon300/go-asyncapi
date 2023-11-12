@@ -289,8 +289,10 @@ func (p ProtoChannel) renderPublisherMethods(ctx *common.RenderContext) []*j.Sta
 	}
 
 	var msgBindings *render.Struct
-	if p.PubMessageLink != nil && p.PubMessageLink.Target().BindingsStruct != nil {
-		msgBindings = p.PubMessageLink.Target().BindingsStruct
+	if p.PubMessageLink != nil {
+		if _, ok := p.PubMessageLink.Target().BindingsStructProtoMethods.Get(ProtoName); ok {
+			msgBindings = p.PubMessageLink.Target().BindingsStruct
+		}
 	}
 
 	return []*j.Statement{

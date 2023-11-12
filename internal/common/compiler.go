@@ -96,10 +96,7 @@ func (c *CompileContext) GenerateObjName(name, suffix string) string {
 		}
 		name = strings.Join(items, nameWordSep)
 	}
-	if suffix != "" {
-		name += nameWordSep + suffix
-	}
-	return utils.ToGolangName(name, true)
+	return utils.ToGolangName(name, true) + suffix
 }
 
 func (c *CompileContext) AddProtocol(protoName string) {

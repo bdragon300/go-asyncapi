@@ -63,7 +63,11 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 		return nil, err
 	}
 
-	baseChan.Struct.Fields = append(baseChan.Struct.Fields, render.StructField{Name: "topic", Type: &render.Simple{Name: "string"}})
+	baseChan.Struct.Fields = append(
+		baseChan.Struct.Fields,
+		render.StructField{Name: "exchange", Type: &render.Simple{Name: "string"}},
+		render.StructField{Name: "queue", Type: &render.Simple{Name: "string"}},
+	)
 
 	chanResult := &ProtoChannel{BaseProtoChannel: *baseChan}
 
@@ -379,12 +383,14 @@ func (p ProtoChannel) renderPublisherMethods(ctx *common.RenderContext) []*j.Sta
 	}
 
 	var msgBindings *render.Struct
-	if p.PubMessageLink != nil && p.PubMessageLink.Target().BindingsStruct != nil {
-		msgBindings = p.PubMessageLink.Target().BindingsStruct
+	if p.PubMessageLink != nil {
+		if _, ok := p.PubMessageLink.Target().BindingsStructProtoMethods.Get(ProtoName); ok {
+			msgBindings = p.PubMessageLink.Target().BindingsStruct
+		}
 	}
 
 	return []*j.Statement{
-		// Method MakeEnvelope(envelope kafka.EnvelopeWriter, message *Message1Out) error
+		// Method MakeEnvelope(envelope proto.EnvelopeWriter, message *Message1Out) error
 		j.Func().Params(receiver.Clone()).Id("MakeEnvelope").
 			ParamsFunc(func(g *j.Group) {
 				g.Id("envelope").Qual(ctx.RuntimePackage(ProtoName), "EnvelopeWriter")

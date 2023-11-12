@@ -120,7 +120,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 			if err != nil {
 				return nil, err
 			}
-			obj.BindingsStructProtoMethods = append(obj.BindingsStructProtoMethods, protoMethod)
+			obj.BindingsStructProtoMethods.Set(e.Key, protoMethod)
 		}
 		ctx.Logger.PrevCallLevel()
 	}
