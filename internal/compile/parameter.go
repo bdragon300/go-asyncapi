@@ -27,7 +27,7 @@ func (p Parameter) Compile(ctx *common.CompileContext) error {
 
 func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (common.Renderer, error) {
 	if p.Ref != "" {
-		ctx.LogDebug("Ref", "$ref", p.Ref)
+		ctx.Logger.Trace("Ref", "$ref", p.Ref)
 		res := render.NewRefLinkAsRenderer(p.Ref, common.LinkOriginUser)
 		ctx.Linker.Add(res)
 		return res, nil
@@ -36,7 +36,7 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 	res := &render.Parameter{Name: parameterKey}
 
 	if p.Schema != nil {
-		ctx.LogDebug("Parameter schema")
+		ctx.Logger.Trace("Parameter schema")
 		lnk := render.NewRefLinkAsGolangType(path.Join(ctx.PathRef(), "schema"), common.LinkOriginInternal)
 		ctx.Linker.Add(lnk)
 		res.Type = &render.Struct{
@@ -49,7 +49,7 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 			Fields: []render.StructField{{Name: "Value", Type: lnk}},
 		}
 	} else {
-		ctx.LogDebug("Parameter has no schema")
+		ctx.Logger.Trace("Parameter has no schema")
 		res.Type = &render.TypeAlias{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(parameterKey, ""),

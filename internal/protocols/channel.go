@@ -46,8 +46,8 @@ func BuildChannel(
 
 	// FIXME: remove in favor of the non-proto channel
 	if channel.Parameters.Len() > 0 {
-		ctx.LogDebug("Channel parameters", "proto", protoName)
-		ctx.IncrementLogCallLvl()
+		ctx.Logger.Trace("Channel parameters", "proto", protoName)
+		ctx.Logger.NextCallLevel()
 		chanResult.ParametersStructNoRender = &render.Struct{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(channelKey, "Parameters"),
@@ -57,7 +57,7 @@ func BuildChannel(
 			Fields: nil,
 		}
 		for _, paramName := range channel.Parameters.Keys() {
-			ctx.LogDebug("Channel parameter", "name", paramName, "proto", protoName)
+			ctx.Logger.Trace("Channel parameter", "name", paramName, "proto", protoName)
 			ref := path.Join(ctx.PathRef(), "parameters", paramName)
 			lnk := render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
 			ctx.Linker.Add(lnk)
@@ -66,7 +66,7 @@ func BuildChannel(
 				Type: lnk,
 			})
 		}
-		ctx.DecrementLogCallLvl()
+		ctx.Logger.PrevCallLevel()
 	}
 
 	// Interface to match servers bound with a channel
@@ -97,7 +97,7 @@ func BuildChannel(
 
 	// Publisher stuff
 	if channel.Publish != nil {
-		ctx.LogDebug("Channel publish operation", "proto", protoName)
+		ctx.Logger.Trace("Channel publish operation", "proto", protoName)
 		chanResult.Struct.Fields = append(chanResult.Struct.Fields, render.StructField{
 			Name:        "publisher",
 			Description: channel.Publish.Description,
@@ -109,7 +109,7 @@ func BuildChannel(
 		})
 		chanResult.Publisher = true
 		if channel.Publish.Message != nil {
-			ctx.LogDebug("Channel publish operation message", "proto", protoName)
+			ctx.Logger.Trace("Channel publish operation message", "proto", protoName)
 			ref := path.Join(ctx.PathRef(), "publish/message")
 			chanResult.PubMessageLink = render.NewRefLink[*render.Message](ref, common.LinkOriginInternal)
 			ctx.Linker.Add(chanResult.PubMessageLink)
@@ -125,7 +125,7 @@ func BuildChannel(
 
 	// Subscriber stuff
 	if channel.Subscribe != nil {
-		ctx.LogDebug("Channel subscribe operation", "proto", protoName)
+		ctx.Logger.Trace("Channel subscribe operation", "proto", protoName)
 		chanResult.Struct.Fields = append(chanResult.Struct.Fields, render.StructField{
 			Name:        "subscriber",
 			Description: channel.Subscribe.Description,
@@ -137,7 +137,7 @@ func BuildChannel(
 		})
 		chanResult.Subscriber = true
 		if channel.Subscribe.Message != nil {
-			ctx.LogDebug("Channel subscribe operation message", "proto", protoName)
+			ctx.Logger.Trace("Channel subscribe operation message", "proto", protoName)
 			ref := path.Join(ctx.PathRef(), "subscribe/message")
 			chanResult.SubMessageLink = render.NewRefLink[*render.Message](ref, common.LinkOriginInternal)
 			ctx.Linker.Add(chanResult.SubMessageLink)

@@ -5,8 +5,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/charmbracelet/log"
-
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	"github.com/samber/lo"
 )
@@ -29,13 +27,17 @@ type ContextStackItem struct {
 }
 
 func NewCompileContext(linker Linker) *CompileContext {
-	return &CompileContext{
+	res := CompileContext{
 		Packages:           make(map[string]*Package),
 		Linker:             linker,
 		Protocols:          make(map[string]int),
 		DefaultContentType: fallbackContentType,
-		logger:             log.Default().WithPrefix("Compilation 🔨"),
 	}
+	res.Logger = &CompilerLogger{
+		ctx:    &res,
+		logger: NewLogger("Compilation 🔨"),
+	}
+	return &res
 }
 
 type CompileContext struct {
@@ -44,8 +46,7 @@ type CompileContext struct {
 	Linker             Linker
 	Protocols          map[string]int
 	DefaultContentType string
-	logger             *log.Logger
-	logCallLvl         int
+	Logger             *CompilerLogger
 }
 
 func (c *CompileContext) PutToCurrentPkg(obj Renderer) {
@@ -108,46 +109,53 @@ func (c *CompileContext) AddProtocol(protoName string) {
 	c.Protocols[protoName]++
 }
 
-func (c *CompileContext) LogFatal(msg string, err error) {
+type CompilerLogger struct {
+	ctx       *CompileContext
+	logger    *Logger
+	callLevel int
+}
+
+func (c *CompilerLogger) Fatal(msg string, err error) {
 	if err != nil {
-		c.logger.Error(msg, "err", err, "path", c.PathRef())
+		c.logger.Error(msg, "err", err, "path", c.ctx.PathRef())
 	}
-	c.logger.Error(msg, "path", c.PathRef())
+	c.logger.Error(msg, "path", c.ctx.PathRef())
 }
 
-func (c *CompileContext) LogWarn(msg string, args ...any) {
-	l := c.logger
-	if c.logCallLvl > 0 {
-		msg = fmt.Sprintf("%s> %s", strings.Repeat("-", c.logCallLvl), msg) // Ex: prefix: --> Message...
-	}
-	args = append(args, "path", c.PathRef())
-	l.Warn(msg, args...)
+func (c *CompilerLogger) Warn(msg string, args ...any) {
+	args = append(args, "path", c.ctx.PathRef())
+	c.logger.Warn(msg, args...)
 }
 
-func (c *CompileContext) LogInfo(msg string, args ...any) {
-	l := c.logger
-	if c.logCallLvl > 0 {
-		msg = fmt.Sprintf("%s> %s", strings.Repeat("-", c.logCallLvl), msg) // Ex: prefix: --> Message...
-	}
-	args = append(args, "path", c.PathRef())
-	l.Info(msg, args...)
+func (c *CompilerLogger) Info(msg string, args ...any) {
+	args = append(args, "path", c.ctx.PathRef())
+	c.logger.Info(msg, args...)
 }
 
-func (c *CompileContext) LogDebug(msg string, args ...any) {
+func (c *CompilerLogger) Debug(msg string, args ...any) {
 	l := c.logger
-	if c.logCallLvl > 0 {
-		msg = fmt.Sprintf("%s> %s", strings.Repeat("-", c.logCallLvl), msg) // Ex: prefix: --> Message...
+	if c.callLevel > 0 {
+		msg = fmt.Sprintf("%s> %s", strings.Repeat("-", c.callLevel), msg) // Ex: prefix: --> Message...
 	}
-	args = append(args, "path", c.PathRef())
+	args = append(args, "path", c.ctx.PathRef())
 	l.Debug(msg, args...)
 }
 
-func (c *CompileContext) IncrementLogCallLvl() {
-	c.logCallLvl++
+func (c *CompilerLogger) Trace(msg string, args ...any) {
+	l := c.logger
+	if c.callLevel > 0 {
+		msg = fmt.Sprintf("%s> %s", strings.Repeat("-", c.callLevel), msg) // Ex: prefix: --> Message...
+	}
+	args = append(args, "path", c.ctx.PathRef())
+	l.Trace(msg, args...)
 }
 
-func (c *CompileContext) DecrementLogCallLvl() {
-	if c.logCallLvl > 0 {
-		c.logCallLvl--
+func (c *CompilerLogger) NextCallLevel() {
+	c.callLevel++
+}
+
+func (c *CompilerLogger) PrevCallLevel() {
+	if c.callLevel > 0 {
+		c.callLevel--
 	}
 }

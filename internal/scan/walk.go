@@ -72,13 +72,13 @@ func traverse(ctx *common.CompileContext, object reflect.Value) error {
 		if (object.Kind() == reflect.Pointer || object.Kind() == reflect.Interface) && object.IsNil() {
 			return nil
 		}
-		ctx.LogInfo(reflect.Indirect(object).Type().Name())
-		ctx.IncrementLogCallLvl()
+		ctx.Logger.Debug(reflect.Indirect(object).Type().Name())
+		ctx.Logger.NextCallLevel()
 		if e := v.Compile(ctx); e != nil {
-			ctx.LogFatal("Compilation error", e)
+			ctx.Logger.Fatal("Compilation error", e)
 			return e
 		}
-		ctx.DecrementLogCallLvl()
+		ctx.Logger.PrevCallLevel()
 	}
 	return CompileSchema(ctx, object)
 }

@@ -8,7 +8,7 @@ import (
 const utilsPackageName = "utils"
 
 func UtilsCompile(ctx *common.CompileContext) error {
-	ctx.LogInfo("Utils package")
+	ctx.Logger.Trace("Utils package")
 	pkg := common.Package{}
 	if _, ok := ctx.Packages[utilsPackageName]; !ok {
 		ctx.Packages[utilsPackageName] = &pkg

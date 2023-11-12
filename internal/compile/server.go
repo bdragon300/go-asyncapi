@@ -45,7 +45,7 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 
 func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Renderer, error) {
 	if s.Ref != "" {
-		ctx.LogDebug("Ref", "$ref", s.Ref)
+		ctx.Logger.Trace("Ref", "$ref", s.Ref)
 		res := render.NewRefLinkAsRenderer(s.Ref, common.LinkOriginUser)
 		ctx.Linker.Add(res)
 		return res, nil
@@ -53,7 +53,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 
 	protoBuilder, ok := ProtoServerCompiler[s.Protocol]
 	if !ok {
-		ctx.LogWarn("Skip unsupported server protocol", "proto", s.Protocol)
+		ctx.Logger.Warn("Skip unsupported server protocol", "proto", s.Protocol)
 		return nil, nil
 	}
 	protoServer, err := protoBuilder(ctx, &s, serverKey)

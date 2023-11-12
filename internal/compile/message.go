@@ -49,7 +49,7 @@ func (m Message) Compile(ctx *common.CompileContext) error {
 
 func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Renderer, error) {
 	if m.Ref != "" {
-		ctx.LogDebug("Ref", "$ref", m.Ref)
+		ctx.Logger.Trace("Ref", "$ref", m.Ref)
 		res := render.NewRefLinkAsRenderer(m.Ref, common.LinkOriginUser)
 		ctx.Linker.Add(res)
 		return res, nil
@@ -78,7 +78,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		HeadersFallbackType: &render.Map{KeyType: &render.Simple{Name: "string"}, ValueType: &render.Simple{Name: "any", IsIface: true}},
 	}
 	obj.ContentType, _ = lo.Coalesce(m.ContentType, ctx.DefaultContentType)
-	ctx.LogDebug(fmt.Sprintf("Message content type is %q", obj.ContentType))
+	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", obj.ContentType))
 	allServersLnk := render.NewListCbLink[*render.Server](func(item common.Renderer, path []string) bool {
 		_, ok := item.(*render.Server)
 		return ok
@@ -88,7 +88,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 
 	// Link to Headers struct if any
 	if m.Headers != nil {
-		ctx.LogDebug("Message headers")
+		ctx.Logger.Trace("Message headers")
 		ref := ctx.PathRef() + "/headers"
 		obj.HeadersTypeLink = render.NewRefLink[*render.Struct](ref, common.LinkOriginInternal)
 		ctx.Linker.Add(obj.HeadersTypeLink)
@@ -97,8 +97,8 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 
 	// Bindings
 	if m.Bindings.Len() > 0 {
-		ctx.LogDebug("Message bindings")
-		ctx.IncrementLogCallLvl()
+		ctx.Logger.Trace("Message bindings")
+		ctx.Logger.NextCallLevel()
 		obj.BindingsStruct = &render.Struct{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(m.Name, "Bindings"),
@@ -108,21 +108,21 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 			Fields: nil,
 		}
 		for _, e := range m.Bindings.Entries() {
-			ctx.LogDebug("Message bindings", "proto", e.Key)
+			ctx.Logger.Trace("Message bindings", "proto", e.Key)
 			f, ok := ProtoMessageBindingsBuilder[e.Key]
 			if !ok {
-				ctx.LogWarn(fmt.Sprintf("Skip unsupported bindings protocol %q", e.Key))
+				ctx.Logger.Warn(fmt.Sprintf("Skip unsupported bindings protocol %q", e.Key))
 				continue
 			}
-			ctx.IncrementLogCallLvl()
+			ctx.Logger.NextCallLevel()
 			protoMethod, err := f(ctx, &m, obj.BindingsStruct, messageKey)
-			ctx.DecrementLogCallLvl()
+			ctx.Logger.PrevCallLevel()
 			if err != nil {
 				return nil, err
 			}
 			obj.BindingsStructProtoMethods = append(obj.BindingsStructProtoMethods, protoMethod)
 		}
-		ctx.DecrementLogCallLvl()
+		ctx.Logger.PrevCallLevel()
 	}
 	return &obj, nil
 }
@@ -137,12 +137,12 @@ func (m Message) setStructFields(ctx *common.CompileContext, langMessage *render
 		{Name: "Payload", Type: langMessage.PayloadType},
 	}
 	if langMessage.HeadersTypeLink != nil {
-		ctx.LogDebug("Message headers has a concrete type")
+		ctx.Logger.Trace("Message headers has a concrete type")
 		lnk := render.NewRefLinkAsGolangType(langMessage.HeadersTypeLink.Ref(), common.LinkOriginInternal)
 		ctx.Linker.Add(lnk)
 		fields = append(fields, render.StructField{Name: "Headers", Type: lnk})
 	} else {
-		ctx.LogDebug("Message headers has `any` type")
+		ctx.Logger.Trace("Message headers has `any` type")
 		fields = append(fields, render.StructField{Name: "Headers", Type: langMessage.HeadersFallbackType})
 	}
 
@@ -152,14 +152,14 @@ func (m Message) setStructFields(ctx *common.CompileContext, langMessage *render
 
 func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 	if m.Payload != nil {
-		ctx.LogDebug("Message payload has a concrete type")
+		ctx.Logger.Trace("Message payload has a concrete type")
 		ref := ctx.PathRef() + "/payload"
 		lnk := render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
 		ctx.Linker.Add(lnk)
 		return lnk
 	}
 
-	ctx.LogDebug("Message payload has `any` type")
+	ctx.Logger.Trace("Message payload has `any` type")
 	return &render.Simple{Name: "any", IsIface: true}
 }
 

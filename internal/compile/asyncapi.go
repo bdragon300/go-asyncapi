@@ -23,7 +23,7 @@ func (a AsyncAPI) Compile(ctx *common.CompileContext) error {
 	if a.DefaultContentType != "" {
 		ctx.DefaultContentType = a.DefaultContentType
 	}
-	ctx.LogDebug(fmt.Sprintf("Default content type set to %s", ctx.DefaultContentType))
+	ctx.Logger.Trace(fmt.Sprintf("Default content type set to %s", ctx.DefaultContentType))
 	return nil
 }
 

@@ -38,7 +38,7 @@ func (c Channel) Compile(ctx *common.CompileContext) error {
 
 func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Renderer, error) {
 	if c.Ref != "" {
-		ctx.LogDebug("Ref", "$ref", c.Ref)
+		ctx.Logger.Trace("Ref", "$ref", c.Ref)
 		res := render.NewRefLinkAsRenderer(c.Ref, common.LinkOriginUser)
 		ctx.Linker.Add(res)
 		return res, nil
@@ -48,8 +48,8 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 
 	// Channel parameters
 	if c.Parameters.Len() > 0 {
-		ctx.LogDebug("Channel parameters")
-		ctx.IncrementLogCallLvl()
+		ctx.Logger.Trace("Channel parameters")
+		ctx.Logger.NextCallLevel()
 		res.ParametersStruct = &render.Struct{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(channelKey, "Parameters"),
@@ -58,7 +58,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 			},
 		}
 		for _, paramName := range c.Parameters.Keys() {
-			ctx.LogDebug("Channel parameter", "name", paramName)
+			ctx.Logger.Trace("Channel parameter", "name", paramName)
 			ref := path.Join(ctx.PathRef(), "parameters", paramName)
 			lnk := render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
 			ctx.Linker.Add(lnk)
@@ -67,24 +67,24 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 				Type: lnk,
 			})
 		}
-		ctx.DecrementLogCallLvl()
+		ctx.Logger.PrevCallLevel()
 	}
 
 	// Servers which this channel is connected to
 	// Empty servers field means "no servers", omitted servers field means "all servers"
 	if c.Servers != nil {
-		ctx.LogDebug("Servers applied to channel")
-		ctx.IncrementLogCallLvl()
+		ctx.Logger.Trace("Servers applied to channel")
+		ctx.Logger.NextCallLevel()
 		for _, srv := range *c.Servers {
-			ctx.LogDebug("Server", "name", srv)
+			ctx.Logger.Trace("Server", "name", srv)
 			lnk := render.NewRefLink[*render.Server]("#/servers/"+srv, common.LinkOriginInternal)
 			ctx.Linker.Add(lnk)
 			res.AppliedServerLinks = append(res.AppliedServerLinks, lnk)
 			res.AppliedServers = append(res.AppliedServers, srv)
 		}
-		ctx.DecrementLogCallLvl()
+		ctx.Logger.PrevCallLevel()
 	} else {
-		ctx.LogDebug("Channel applied to all servers")
+		ctx.Logger.Trace("Channel applied to all servers")
 		lnk := render.NewListCbLink[*render.Server](func(item common.Renderer, path []string) bool {
 			_, ok := item.(*render.Server)
 			return ok && len(path) > 0 && path[0] == "servers" // Pick only servers from `servers:` section, skip ones from `components:`
@@ -96,15 +96,15 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 	// Channel/operation bindings
 	hasBindings := false
 	if c.Bindings.Len() > 0 {
-		ctx.LogDebug("Found channel bindings")
+		ctx.Logger.Trace("Found channel bindings")
 		hasBindings = true
 	}
 	if c.Publish != nil && c.Publish.Bindings.Len() > 0 {
-		ctx.LogDebug("Found publish operation bindings")
+		ctx.Logger.Trace("Found publish operation bindings")
 		hasBindings = true
 	}
 	if c.Subscribe != nil && c.Subscribe.Bindings.Len() > 0 {
-		ctx.LogDebug("Found subscribe operation bindings")
+		ctx.Logger.Trace("Found subscribe operation bindings")
 		hasBindings = true
 	}
 	if hasBindings {
@@ -119,10 +119,10 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 
 	// Build protocol-specific channels
 	for proto, f := range ProtoChannelCompiler {
-		ctx.LogDebug("Channel", "proto", proto)
-		ctx.IncrementLogCallLvl()
+		ctx.Logger.Trace("Channel", "proto", proto)
+		ctx.Logger.NextCallLevel()
 		obj, err := f(ctx, &c, channelKey)
-		ctx.DecrementLogCallLvl()
+		ctx.Logger.PrevCallLevel()
 		if err != nil {
 			return nil, err
 		}

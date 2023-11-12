@@ -5,7 +5,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/charmbracelet/log"
 	"github.com/dave/jennifer/jen"
 )
 
@@ -16,18 +15,10 @@ type Renderer interface {
 	String() string
 }
 
-func NewRenderContext(currentPackage, importBase string) *RenderContext {
-	return &RenderContext{
-		CurrentPackage: currentPackage,
-		ImportBase:     importBase,
-		logger:         log.Default().WithPrefix("Rendering 🎨"),
-	}
-}
-
 type RenderContext struct {
 	CurrentPackage string
 	ImportBase     string
-	logger         *log.Logger
+	Logger         *Logger
 	logCallLvl     int
 }
 
@@ -39,8 +30,8 @@ func (c *RenderContext) GeneratedPackage(subPackage string) string {
 	return path.Join(c.ImportBase, subPackage)
 }
 
-func (c *RenderContext) LogRender(kind, pkg, name, mode string, direct bool, args ...any) {
-	l := c.logger
+func (c *RenderContext) LogRender(kind, pkg, name, mode string, directRendering bool, args ...any) {
+	l := c.Logger
 	args = append(args, "pkg", c.CurrentPackage, "mode", mode)
 	if pkg != "" {
 		name = pkg + "." + name
@@ -49,10 +40,10 @@ func (c *RenderContext) LogRender(kind, pkg, name, mode string, direct bool, arg
 	if c.logCallLvl > 0 {
 		name = fmt.Sprintf("%s> %s", strings.Repeat("-", c.logCallLvl), name) // Ex: prefix: --> Message...
 	}
-	if direct {
-		l.Info(name, args...)
-	} else {
+	if directRendering && mode == "definition" {
 		l.Debug(name, args...)
+	} else {
+		l.Trace(name, args...)
 	}
 	c.logCallLvl++
 }

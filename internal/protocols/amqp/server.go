@@ -18,7 +18,7 @@ func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey s
 	// Server bindings (protocol has no server bindings)
 	if server.Bindings.Len() > 0 {
 		if _, ok := server.Bindings.Get(ProtoName); ok {
-			ctx.LogDebug("Server bindings", "proto", ProtoName)
+			ctx.Logger.Trace("Server bindings", "proto", ProtoName)
 			vals := &render.StructInit{
 				Type: &render.Simple{Name: "ServerBindings", Package: ctx.RuntimePackage(ProtoName)},
 			}

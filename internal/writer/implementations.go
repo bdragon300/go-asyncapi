@@ -22,7 +22,7 @@ func WriteImplementation(implDir, baseDir string) error {
 		return err
 	}
 
-	insertGeneratedPreambule := func(w io.Writer, r io.Reader) (n int64, err error) {
+	insertGeneratedPreamble := func(w io.Writer, r io.Reader) (n int64, err error) {
 		rd := bufio.NewReader(r)
 		line1, err := rd.ReadString('\n')
 		if err != nil {
@@ -49,5 +49,5 @@ func WriteImplementation(implDir, baseDir string) error {
 		return n, nil
 	}
 
-	return utils.CopyRecursive(subDir, baseDir, insertGeneratedPreambule)
+	return utils.CopyRecursive(subDir, baseDir, insertGeneratedPreamble)
 }

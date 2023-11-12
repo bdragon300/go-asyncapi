@@ -45,8 +45,8 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 	chanResult := &ProtoChannel{BaseProtoChannel: *baseChan}
 
 	// Channel bindings
-	ctx.LogDebug("Channel bindings")
-	ctx.IncrementLogCallLvl()
+	ctx.Logger.Trace("Channel bindings")
+	ctx.Logger.NextCallLevel()
 	bindingsStruct := &render.Struct{ // TODO: remove in favor of parent channel
 		BaseType: render.BaseType{
 			Name:         ctx.GenerateObjName(channelKey, "Bindings"),
@@ -55,7 +55,7 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 		},
 	}
 	method, err := buildChannelBindingsMethod(ctx, channel, bindingsStruct)
-	ctx.DecrementLogCallLvl()
+	ctx.Logger.PrevCallLevel()
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 	var hasBindings bool
 
 	if chBindings, ok := channel.Bindings.Get(ProtoName); ok {
-		ctx.LogDebug("Channel bindings", "proto", ProtoName)
+		ctx.Logger.Trace("Channel bindings", "proto", ProtoName)
 		hasBindings = true
 		var bindings channelBindings
 		if err := utils.UnmarshalRawsUnion2(chBindings, &bindings); err != nil {
@@ -112,7 +112,7 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 	// Publish channel bindings
 	var publisherJSON utils.OrderedMap[string, any]
 	if channel.Publish != nil {
-		ctx.LogDebug("Channel publish operation bindings")
+		ctx.Logger.Trace("Channel publish operation bindings")
 		if b, ok := channel.Publish.Bindings.Get(ProtoName); ok {
 			hasBindings = true
 			var err error
@@ -125,7 +125,7 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 	// Subscribe channel bindings
 	var subscriberJSON utils.OrderedMap[string, any]
 	if channel.Subscribe != nil {
-		ctx.LogDebug("Channel subscribe operation bindings")
+		ctx.Logger.Trace("Channel subscribe operation bindings")
 		if b, ok := channel.Subscribe.Bindings.Get(ProtoName); ok {
 			hasBindings = true
 			var err error

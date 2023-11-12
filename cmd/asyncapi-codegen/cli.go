@@ -46,7 +46,8 @@ type ImplementationsOpts struct {
 type cli struct {
 	GenerateCmd         *GenerateCmd `arg:"subcommand:generate" help:"Generate the code based on AsyncAPI specification"`
 	ListImplementations *struct{}    `arg:"subcommand:list-implementations" help:"Show all available protocol implementations"`
-	Verbose             bool         `arg:"-v" help:"Verbose output in debug log level"`
+	Verbose             bool         `arg:"-v" help:"Verbose output"`
+	Trace               bool         `arg:"--trace" help:"Trace output"` // TODO: --quiet
 }
 
 func main() {
@@ -67,6 +68,9 @@ func main() {
 	log.SetLevel(log.InfoLevel)
 	if cliArgs.Verbose {
 		log.SetLevel(log.DebugLevel)
+	}
+	if cliArgs.Trace {
+		log.SetLevel(common.TraceLevel)
 	}
 	log.SetReportTimestamp(false)
 
@@ -116,17 +120,10 @@ func generate(cmd *GenerateCmd) error {
 	}
 
 	localLinker := linker.NewLocalLinker()
-	compileCtx := common.NewCompileContext(localLinker)
 
 	// Compilation
-	compileCtx.LogInfo("AsyncAPI")
-	if err = spec.Compile(compileCtx); err != nil {
-		return fmt.Errorf("schema compile error: %w", err)
-	}
-	if err = scan.CompileSchema(compileCtx, reflect.ValueOf(spec)); err != nil {
-		return fmt.Errorf("schema compile error: %v", err)
-	}
-	if err = compile.UtilsCompile(compileCtx); err != nil {
+	compileCtx, err := compileSpec(spec, localLinker)
+	if err != nil {
 		return fmt.Errorf("schema compile error: %v", err)
 	}
 
@@ -228,4 +225,32 @@ func getImplementationsManifest() (implementations.ImplManifest, error) {
 	}
 
 	return meta, nil
+}
+
+func compileSpec(spec *compile.AsyncAPI, localLinker *linker.LocalLinker) (*common.CompileContext, error) {
+	compileCtx := common.NewCompileContext(localLinker)
+
+	compileCtx.Logger.Debug("AsyncAPI")
+	if err := spec.Compile(compileCtx); err != nil {
+		return compileCtx, fmt.Errorf("AsyncAPI root component: %w", err)
+	}
+	if err := scan.CompileSchema(compileCtx, reflect.ValueOf(spec)); err != nil {
+		return compileCtx, fmt.Errorf("spec: %w", err)
+	}
+	if err := compile.UtilsCompile(compileCtx); err != nil {
+		return compileCtx, fmt.Errorf("utils package: %w", err)
+	}
+	compileCtx.Logger.Info(
+		"Finished",
+		"packages", len(compileCtx.Packages),
+		"objects", lo.SumBy(lo.Values(compileCtx.Packages), func(item *common.Package) int {
+			if item == nil {
+				return 0
+			}
+			return len(item.Items())
+		}),
+		"refs", localLinker.UserQueriesCount(),
+	)
+
+	return compileCtx, nil
 }

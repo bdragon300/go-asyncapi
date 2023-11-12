@@ -94,7 +94,7 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 	var chanType string
 
 	if chBindings, ok := channel.Bindings.Get(ProtoName); ok {
-		ctx.LogDebug("Channel bindings", "proto", ProtoName)
+		ctx.Logger.Trace("Channel bindings", "proto", ProtoName)
 		hasBindings = true
 		var bindings channelBindings
 		if err := utils.UnmarshalRawsUnion2(chBindings, &bindings); err != nil {
@@ -155,7 +155,7 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 	// Publish channel bindings
 	if channel.Publish != nil {
 		if b, ok := channel.Publish.Bindings.Get(ProtoName); ok {
-			ctx.LogDebug("Channel publish operation bindings", "proto", ProtoName)
+			ctx.Logger.Trace("Channel publish operation bindings", "proto", ProtoName)
 			pob := &render.StructInit{
 				Type: &render.Simple{Name: "PublishOperationBindings", Package: ctx.RuntimePackage(ProtoName)},
 			}
@@ -189,7 +189,7 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 	// Subscribe channel bindings
 	if channel.Subscribe != nil {
 		if b, ok := channel.Subscribe.Bindings.Get(ProtoName); ok {
-			ctx.LogDebug("Channel subscribe operation bindings", "proto", ProtoName)
+			ctx.Logger.Trace("Channel subscribe operation bindings", "proto", ProtoName)
 			sob := &render.StructInit{
 				Type: &render.Simple{Name: "SubscribeOperationBindings", Package: ctx.RuntimePackage(ProtoName)},
 			}
