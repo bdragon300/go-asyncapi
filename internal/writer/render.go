@@ -8,6 +8,8 @@ import (
 	"path"
 	"strings"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
+
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/dave/jennifer/jen"
 )
@@ -57,10 +59,13 @@ func RenderPackages(packages map[string]*common.Package, importBase, baseDir str
 			ImportBase:     importBase,
 			Logger:         logger,
 		}
-		f := jen.NewFilePathName(baseDir, pkgName)
-		f.HeaderComment(GeneratedCodePreamble)
 		ctx.Logger.Debug("Package", "pkg", pkgName, "items", len(pkg.Items()))
 		for _, item := range pkg.Items() {
+			fileName := utils.ToFileName(item.Typ.String()) + ".go"
+
+			f := jen.NewFilePathName(baseDir, pkgName)
+			f.HeaderComment(GeneratedCodePreamble)
+
 			counter++
 			if !item.Typ.DirectRendering() {
 				continue
@@ -68,20 +73,18 @@ func RenderPackages(packages map[string]*common.Package, importBase, baseDir str
 			for _, stmt := range item.Typ.RenderDefinition(ctx) {
 				f.Add(stmt)
 			}
-			f.Add(jen.Line())
-		}
 
-		buf := &bytes.Buffer{}
-		if err = f.Render(buf); err != nil {
-			if strings.ContainsRune(err.Error(), '\n') {
-				return files, MultilineError{err}
+			buf := &bytes.Buffer{}
+			if err = f.Render(buf); err != nil {
+				if strings.ContainsRune(err.Error(), '\n') {
+					return files, MultilineError{err}
+				}
+				return files, err
 			}
-			return files, err
-		}
 
-		fileName := pkgName + ".go"
-		ctx.Logger.Debug("Package rendered as file", "pkg", pkgName, "file", fileName, "bytes", buf.Len())
-		files[path.Join(pkgName, fileName)] = buf
+			ctx.Logger.Debug("Object rendered", "pkg", pkgName, "object", item.Typ.String(), "file", fileName, "bytes", buf.Len())
+			files[path.Join(pkgName, fileName)] = buf
+		}
 	}
 	logger.Info("Finished", "packages", len(packages), "objects", counter)
 	return

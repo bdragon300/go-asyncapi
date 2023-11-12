@@ -99,7 +99,7 @@ func (f Func) DirectRendering() bool {
 }
 
 func (f Func) String() string {
-	return fmt.Sprintf("(%s) %s", f.Receiver.String(), f.FuncSignature.String())
+	return f.FuncSignature.String()
 }
 
 func (f Func) ReceiverName() string {

@@ -136,5 +136,5 @@ func (r *LinkAsGolangType) RenderUsage(ctx *common.RenderContext) []*jen.Stateme
 }
 
 func (r *LinkAsGolangType) String() string {
-	return "Ref to " + r.ref
+	return r.ref
 }

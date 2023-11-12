@@ -287,7 +287,7 @@ func (p ProtoChannel) RenderUsage(ctx *common.RenderContext) []*j.Statement {
 }
 
 func (p ProtoChannel) String() string {
-	return "AMQP channel " + p.BaseProtoChannel.Name
+	return p.BaseProtoChannel.Name
 }
 
 func (p ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {

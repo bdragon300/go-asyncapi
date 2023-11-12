@@ -28,7 +28,7 @@ func (p Parameter) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 }
 
 func (p Parameter) String() string {
-	return "Parameter " + p.Name
+	return p.Name
 }
 
 func (p Parameter) renderMethods() []*j.Statement {

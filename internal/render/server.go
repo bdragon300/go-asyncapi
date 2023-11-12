@@ -31,5 +31,5 @@ func (s Server) RenderUsage(_ *common.RenderContext) []*jen.Statement {
 }
 
 func (s Server) String() string {
-	return "Server " + s.Name
+	return s.Name
 }

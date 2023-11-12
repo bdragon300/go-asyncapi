@@ -99,7 +99,7 @@ func (p ProtoServer) RenderUsage(ctx *common.RenderContext) []*j.Statement {
 }
 
 func (p ProtoServer) String() string {
-	return "Kafka server " + p.BaseProtoServer.Name
+	return p.BaseProtoServer.Name
 }
 
 func (p ProtoServer) renderChannelMethods(ctx *common.RenderContext) []*j.Statement {

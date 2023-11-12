@@ -63,7 +63,7 @@ func (m Message) RenderUsage(_ *common.RenderContext) []*j.Statement {
 }
 
 func (m Message) String() string {
-	return "Message " + m.Name
+	return m.Name
 }
 
 func (m Message) renderPublishMessageStruct(ctx *common.RenderContext) []*j.Statement {

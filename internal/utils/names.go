@@ -9,27 +9,31 @@ import (
 	"github.com/stoewer/go-strcase"
 )
 
-func ToGolangName(srcName string, exported bool) string {
-	if srcName == "" {
+var (
+	golangTypeReplaceRe = regexp.MustCompile("[^a-zA-Z0-9_]+")
+	fileNameReplaceRe   = regexp.MustCompile("[^a-zA-Z0-9_-]+")
+)
+
+func ToGolangName(rawString string, exported bool) string {
+	if rawString == "" {
 		return ""
 	}
 
 	// Remove everything except alphanumerics and '_'
-	re := regexp.MustCompile("[^a-zA-Z0-9_]+")
-	srcName = string(re.ReplaceAll([]byte(srcName), []byte("_")))
+	rawString = string(golangTypeReplaceRe.ReplaceAll([]byte(rawString), []byte("_")))
 
 	// Cut extra "_" that may appear at string endings
-	srcName = strings.Trim(srcName, "_")
+	rawString = strings.Trim(rawString, "_")
 
 	// Cut numbers from string start
-	srcName = strings.TrimLeft(srcName, "1234567890")
+	rawString = strings.TrimLeft(rawString, "1234567890")
 
 	// TODO: detect Go builtin words and replace them
 	// TODO: transform words such as ID, URL, etc., to upper case
 	if exported {
-		return strcase.UpperCamelCase(srcName)
+		return strcase.UpperCamelCase(rawString)
 	}
-	return strcase.LowerCamelCase(srcName)
+	return strcase.LowerCamelCase(rawString)
 }
 
 func ToLowerFirstLetter(s string) string {
@@ -42,4 +46,22 @@ func ToLowerFirstLetter(s string) string {
 func JoinNonemptyStrings(sep string, s ...string) string {
 	s = lo.Filter(s, func(item string, _ int) bool { return item != "" })
 	return strings.Join(s, sep)
+}
+
+func ToFileName(rawString string) string {
+	if rawString == "" {
+		return ""
+	}
+
+	// Remove everything except alphanumerics and '/'
+	rawString = string(fileNameReplaceRe.ReplaceAll([]byte(rawString), []byte("_")))
+
+	// Cut extra "/" that may appear at string endings
+	rawString = strings.Trim(rawString, "_")
+
+
+	return strcase.SnakeCase(rawString)
+	// return strings.Join(lo.Map(parts, func(item string, index int) string {
+	//	return strings.ToLower(item)
+	//}), "_")
 }

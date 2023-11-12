@@ -61,7 +61,7 @@ func (c Channel) RenderUsage(_ *common.RenderContext) []*j.Statement {
 }
 
 func (c Channel) String() string {
-	return "Channel " + c.Name
+	return c.Name
 }
 
 func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement {

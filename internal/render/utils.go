@@ -96,7 +96,7 @@ func (u UtilsSerializer) RenderUsage(_ *common.RenderContext) []*j.Statement {
 }
 
 func (u UtilsSerializer) String() string {
-	return "UtilsSerializer"
+	return "Serializer"
 }
 
 func getFormatByContentType(contentType string) string {
