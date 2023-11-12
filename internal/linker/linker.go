@@ -132,7 +132,7 @@ func resolveLink(q common.LinkQuerier, objects []common.PackageItem) (common.Ren
 		return cb(obj.Typ, obj.Path)
 	})
 	if len(found) != 1 {
-		panic(fmt.Sprintf("Ref %q points to %d objects", q.Ref(), len(found)))
+		panic(fmt.Sprintf("Ref %q must point to one object, got %d objects", q.Ref(), len(found)))
 	}
 
 	obj := found[0]

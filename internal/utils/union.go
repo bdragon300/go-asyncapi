@@ -68,7 +68,7 @@ func ToUnion2[T0, T1 any](v any) *Union2[T0, T1] {
 	if val.CanConvert(reflect.TypeOf(zero1).Elem()) {
 		return &Union2[T0, T1]{V0: *zero0, V1: v.(T1), Selector: 1}
 	}
-	panic(fmt.Sprintf("v is not convertable neither to %T nor to %T", zero0, zero1))
+	panic(fmt.Sprintf("v is not convertable neither to type %T nor to type %T", zero0, zero1))
 }
 
 func UnmarshalRawsUnion2(union Union2[json.RawMessage, yaml.Node], target any) error {

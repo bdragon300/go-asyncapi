@@ -1,8 +1,6 @@
 package render
 
 import (
-	"fmt"
-
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
@@ -50,7 +48,8 @@ func (c Channel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 	for _, p := range protocols {
 		r, ok := c.AllProtocols[p]
 		if !ok {
-			panic(fmt.Sprintf("%q protocol is not supported", p))
+			ctx.Logger.Warnf("Skip protocol %q since it is not supported", p)
+			continue
 		}
 		res = append(res, r.RenderDefinition(ctx)...)
 	}

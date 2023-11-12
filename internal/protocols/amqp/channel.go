@@ -339,7 +339,7 @@ func (p ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {
 							res.exchange = bindings.ExchangeConfiguration.Name`)
 					}
 				default:
-					panic(fmt.Sprintf("Unknown channel type: %q", p.BindingsChannelType))
+					ctx.Logger.Fatalf("Unknown channel type: %q", p.BindingsChannelType)
 				}
 				bg.Op(`return &res`)
 			}),

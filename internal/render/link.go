@@ -66,7 +66,7 @@ func (r *LinkList[T]) AssignList(objs []any) {
 	var ok bool
 	r.targets, ok = lo.FromAnySlice[T](objs)
 	if !ok {
-		panic(fmt.Sprintf("Cannot assign slice of %+v to %T", objs, r.targets))
+		panic(fmt.Sprintf("Cannot assign slice of %+v to type %T", objs, r.targets))
 	}
 	r.assigned = true
 }

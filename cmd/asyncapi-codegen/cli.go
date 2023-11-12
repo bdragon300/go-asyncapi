@@ -46,7 +46,7 @@ type ImplementationsOpts struct {
 type cli struct {
 	GenerateCmd         *GenerateCmd `arg:"subcommand:generate" help:"Generate the code based on AsyncAPI specification"`
 	ListImplementations *struct{}    `arg:"subcommand:list-implementations" help:"Show all available protocol implementations"`
-	Verbose             bool         `arg:"-v" help:"Verbose output"`
+	Verbose             bool         `arg:"-v,--verbose" help:"Verbose output"`
 	Trace               bool         `arg:"--trace" help:"Trace output"` // TODO: --quiet
 }
 
@@ -78,7 +78,13 @@ func main() {
 
 	cmd := cliArgs.GenerateCmd
 	if err := generate(cmd); err != nil {
-		cliParser.Fail(err.Error())
+		var multilineErr writer.MultilineError
+		if log.GetLevel() == common.TraceLevel && errors.As(err, &multilineErr) {
+			log.Error(err.Error(), "details", multilineErr.RestLines())
+		}
+
+		log.Error(err.Error())
+		log.Fatal("Cannot finish the generation. Use --verbose or --trace flag to get more info")
 	}
 }
 
@@ -116,7 +122,7 @@ func generate(cmd *GenerateCmd) error {
 
 	spec, err := unmarshalSpecFile(cmd.Spec)
 	if err != nil {
-		return fmt.Errorf("error while reading spec file: %v", err)
+		return fmt.Errorf("error while reading spec file: %w", err)
 	}
 
 	localLinker := linker.NewLocalLinker()
@@ -124,23 +130,23 @@ func generate(cmd *GenerateCmd) error {
 	// Compilation
 	compileCtx, err := compileSpec(spec, localLinker)
 	if err != nil {
-		return fmt.Errorf("schema compile error: %v", err)
+		return fmt.Errorf("schema compile error: %w", err)
 	}
 
 	// Linking
 	if err = localLinker.Process(compileCtx); err != nil {
-		return fmt.Errorf("schema linking error: %v", err)
+		return fmt.Errorf("schema linking error: %w", err)
 	}
 
 	// Rendering
 	files, err := writer.RenderPackages(compileCtx.Packages, importBase, cmd.TargetDir)
 	if err != nil {
-		return fmt.Errorf("schema render error: %v", err)
+		return fmt.Errorf("schema render error: %w", err)
 	}
 
 	// Writing
 	if err = writer.WriteToFiles(files, cmd.TargetDir); err != nil {
-		return fmt.Errorf("error while writing code to files: %v", err)
+		return fmt.Errorf("error while writing code to files: %w", err)
 	}
 
 	// Rendering implementations
