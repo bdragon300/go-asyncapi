@@ -19,6 +19,7 @@ type EnvelopeWriter interface {
 	io.Writer
 	ResetPayload()
 	SetHeaders(headers Headers)
+	SetContentType(contentType string)
 	Protocol() Protocol
 }
 

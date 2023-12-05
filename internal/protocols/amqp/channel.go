@@ -19,18 +19,18 @@ type channelBindings struct {
 }
 
 type exchangeParams struct {
-	Name       string `json:"name" yaml:"name"`
+	Name       *string `json:"name" yaml:"name"`  // Empty string means "default exchange"
 	Type       string `json:"type" yaml:"type"`
-	Durable    bool   `json:"durable" yaml:"durable"`
-	AutoDelete bool   `json:"autoDelete" yaml:"autoDelete"`
+	Durable    *bool   `json:"durable" yaml:"durable"`
+	AutoDelete *bool   `json:"autoDelete" yaml:"autoDelete"`
 	VHost      string `json:"vhost" yaml:"vhost"`
 }
 
 type queueParams struct {
 	Name       string `json:"name" yaml:"name"`
-	Durable    bool   `json:"durable" yaml:"durable"`
-	Exclusive  bool   `json:"exclusive" yaml:"exclusive"`
-	AutoDelete bool   `json:"autoDelete" yaml:"autoDelete"`
+	Durable    *bool   `json:"durable" yaml:"durable"`
+	Exclusive  *bool   `json:"exclusive" yaml:"exclusive"`
+	AutoDelete *bool   `json:"autoDelete" yaml:"autoDelete"`
 	VHost      string `json:"vhost" yaml:"vhost"`
 }
 
@@ -104,43 +104,16 @@ func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, 
 		if err := utils.UnmarshalRawsUnion2(chBindings, &bindings); err != nil {
 			return nil, "", common.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
 		}
-		switch bindings.Is {
-		case "routingKey":
-			structValues.Values.Set("ChannelType", &render.Simple{Name: "ChannelTypeRoutingKey", Package: ctx.RuntimePackage(ProtoName)})
-		case "queue":
-			structValues.Values.Set("ChannelType", &render.Simple{Name: "ChannelTypeQueue", Package: ctx.RuntimePackage(ProtoName)})
-		case "":
-		default:
-			return nil, "", common.CompileError{Err: fmt.Errorf("unknown channel type %q", bindings.Is), Path: ctx.PathRef(), Proto: ProtoName}
-		}
 		chanType = bindings.Is
+		structValues.Values.Set("ChannelType", chanType)
 
 		if bindings.Exchange != nil {
 			ex := &render.StructInit{
 				Type: &render.Simple{Name: "ExchangeConfiguration", Package: ctx.RuntimePackage(ProtoName)},
 			}
-			marshalFields := []string{"Name", "Durable", "AutoDelete", "VHost"}
+			marshalFields := []string{"Name", "Durable", "AutoDelete", "VHost", "Type"}
 			if err := utils.StructToOrderedMap(*bindings.Exchange, &ex.Values, marshalFields); err != nil {
 				return nil, "", common.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
-			}
-			switch bindings.Exchange.Type {
-			case "default":
-				ex.Values.Set("Type", &render.Simple{Name: "ExchangeTypeDefault", Package: ctx.RuntimePackage(ProtoName)})
-			case "topic":
-				ex.Values.Set("Type", &render.Simple{Name: "ExchangeTypeTopic", Package: ctx.RuntimePackage(ProtoName)})
-			case "direct":
-				ex.Values.Set("Type", &render.Simple{Name: "ExchangeTypeDirect", Package: ctx.RuntimePackage(ProtoName)})
-			case "fanout":
-				ex.Values.Set("Type", &render.Simple{Name: "ExchangeTypeFanout", Package: ctx.RuntimePackage(ProtoName)})
-			case "headers":
-				ex.Values.Set("Type", &render.Simple{Name: "ExchangeTypeHeaders", Package: ctx.RuntimePackage(ProtoName)})
-			case "":
-			default:
-				return nil, "", common.CompileError{
-					Err:   fmt.Errorf("unknown exchange type %q", bindings.Exchange.Type),
-					Path:  ctx.PathRef(),
-					Proto: ProtoName,
-				}
 			}
 			structValues.Values.Set("ExchangeConfiguration", ex)
 		}
@@ -321,29 +294,23 @@ func (p ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {
 					}
 				}))
 
-				switch p.BindingsChannelType {
-				case "routingKey", "":
-					bg.Op("res.exchange = res.name.String()")
-					if p.BindingsStructNoRender != nil {
-						bg.Id("bindings").Op(":=").Add(utils.ToCode(p.BindingsStructNoRender.RenderUsage(ctx))...).Values().Dot(protoAbbr).Call()
-						bg.Op(`
-							if bindings.ExchangeConfiguration.Name != "" {
-								res.exchange = bindings.ExchangeConfiguration.Name
-							}
-							res.queue = bindings.QueueConfiguration.Name`)
+				if p.BindingsStructNoRender != nil {
+					bg.Id("bindings").Op(":=").Add(utils.ToCode(p.BindingsStructNoRender.RenderUsage(ctx))...).Values().Dot(protoAbbr).Call()
+					switch p.BindingsChannelType {
+					case "routingKey", "":
+						bg.Op("res.exchange = res.name.String()")
+					case "queue":
+						bg.Op("res.queue = res.name.String()")
+					default:
+						ctx.Logger.Fatalf("Unknown channel type: %q", p.BindingsChannelType)
 					}
-				case "queue":
-					bg.Op("res.queue = res.name.String()")
-					if p.BindingsStructNoRender != nil {
-						bg.Id("bindings").Op(":=").Add(utils.ToCode(p.BindingsStructNoRender.RenderUsage(ctx))...).Values().Dot(protoAbbr).Call()
-						bg.Op(`
-							if bindings.QueueConfiguration.Name != "" {
-								res.queue = bindings.QueueConfiguration.Name
-							}
-							res.exchange = bindings.ExchangeConfiguration.Name`)
-					}
-				default:
-					ctx.Logger.Fatalf("Unknown channel type: %q", p.BindingsChannelType)
+					bg.Op(`
+						if bindings.ExchangeConfiguration.Name != nil {
+							res.exchange = *bindings.ExchangeConfiguration.Name
+						}
+						if bindings.QueueConfiguration.Name != "" {
+							res.queue = bindings.QueueConfiguration.Name
+						}`)
 				}
 				bg.Op(`return &res`)
 			}),
@@ -390,29 +357,29 @@ func (p ProtoChannel) renderPublisherMethods(ctx *common.RenderContext) []*j.Sta
 	}
 
 	return []*j.Statement{
-		// Method MakeEnvelope(envelope proto.EnvelopeWriter, message *Message1Out) error
+		// Method MakeEnvelope(envelope proto.EnvelopeWriter, message *Message1Out, deliveryTag string) error
 		j.Func().Params(receiver.Clone()).Id("MakeEnvelope").
 			ParamsFunc(func(g *j.Group) {
 				g.Id("envelope").Qual(ctx.RuntimePackage(ProtoName), "EnvelopeWriter")
 				g.Id("message").Add(utils.ToCode(msgTyp.RenderUsage(ctx))...)
+				g.Id("deliveryTag").String()
 			}).
 			Error().
 			BlockFunc(func(bg *j.Group) {
 				bg.Op("envelope.ResetPayload()")
-				if p.PubMessageLink == nil {
+				if p.PubMessageLink == nil {  // No Message set for Channel in spec
 					bg.Empty().Add(utils.QualSprintf(`
 						enc := %Q(encoding/json,NewEncoder)(envelope)
 						if err := enc.Encode(message); err != nil {
 							return err
 						}`))
-				} else {
+				} else {  // Message is set for Channel in spec
 					bg.Op(`
 						if err := message.MarshalAMQPEnvelope(envelope); err != nil {
 							return err
 						}`)
 				}
-				bg.Op("envelope.SetExchange").Call(j.Id(rn).Dot("exchange"))
-				bg.Op("envelope.SetQueue").Call(j.Id(rn).Dot("queue"))
+				bg.Op("envelope.SetDeliveryTag(deliveryTag)")
 				if msgBindings != nil {
 					bg.Op("envelope.SetBindings").Call(
 						j.Add(utils.ToCode(msgBindings.RenderUsage(ctx))...).Values().Dot("AMQP()"),

@@ -8,9 +8,8 @@ type (
 	Publisher      = run.Publisher[EnvelopeWriter]
 	EnvelopeWriter interface {
 		run.EnvelopeWriter
-		SetBindings(provider MessageBindings)
-		SetExchange(exchange string)
-		SetQueue(queue string)
+		SetBindings(bindings MessageBindings)
+		SetDeliveryTag(tag string)
 	}
 )
 
@@ -24,8 +23,9 @@ type (
 	Subscriber     = run.Subscriber[EnvelopeReader]
 	EnvelopeReader interface {
 		run.EnvelopeReader
-		Ack()
-		Nack()
+		Ack() error
+		Nack(requeue bool) error
+		Reject(requeue bool) error
 	}
 )
 

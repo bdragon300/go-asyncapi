@@ -1,6 +1,8 @@
 package implementations
 
-import "embed"
+import (
+	"embed"
+)
 
 //go:embed *
 var Implementations embed.FS
