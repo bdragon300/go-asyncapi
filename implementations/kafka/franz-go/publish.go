@@ -12,10 +12,10 @@ import (
 	"github.com/twmb/franz-go/pkg/kversion"
 )
 
-func NewProducer(url string, bindings *kafka.ServerBindings) (*Producer, error) {
+func NewProducer(serverURL string, bindings *kafka.ServerBindings) (*Producer, error) {
 	return &Producer{
-		URL:       url,
-		Bindings:  bindings,
+		URL:      serverURL,
+		Bindings: bindings,
 	}, nil
 }
 

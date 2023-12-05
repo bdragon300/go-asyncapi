@@ -1,10 +1,11 @@
 package amqp091go
 
 import (
+	"io"
+
 	"github.com/bdragon300/asyncapi-codegen-go/pkg/run"
 	"github.com/bdragon300/asyncapi-codegen-go/pkg/run/amqp"
 	amqp091 "github.com/rabbitmq/amqp091-go"
-	"io"
 )
 
 func NewEnvelopeOut() *EnvelopeOut {

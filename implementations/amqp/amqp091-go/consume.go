@@ -5,10 +5,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/bdragon300/asyncapi-codegen-go/pkg/run"
 	"github.com/bdragon300/asyncapi-codegen-go/pkg/run/amqp"
 	amqp091 "github.com/rabbitmq/amqp091-go"
-	"time"
 )
 
 func NewConsumer(url string, bindings *amqp.ServerBindings) (*Consumer, error) {
@@ -71,7 +72,7 @@ func (c Consumer) Subscriber(channelName string, bindings *amqp.ChannelBindings)
 type Subscriber struct {
 	*amqp091.Channel
 	queueName string
-	bindings *amqp.ChannelBindings
+	bindings  *amqp.ChannelBindings
 }
 
 func (s Subscriber) Receive(ctx context.Context, cb func(envelope *EnvelopeIn) error) (err error) {

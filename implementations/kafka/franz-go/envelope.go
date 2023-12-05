@@ -35,7 +35,7 @@ func (e *EnvelopeOut) SetHeaders(headers run.Headers) {
 }
 
 func (e *EnvelopeOut) SetContentType(contentType string) {
-	// Not implemented
+	e.Record.Headers = append(e.Record.Headers, kgo.RecordHeader{Key: "Content-Type", Value: []byte(contentType)})
 }
 
 func (e *EnvelopeOut) Protocol() run.Protocol {

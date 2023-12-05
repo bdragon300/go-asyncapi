@@ -4,5 +4,17 @@
       "url": "https://github.com/twmb/franz-go",
       "dir": "kafka/franz-go"
     }
+  },
+  "amqp": {
+    "amqp091-go": {
+      "url": "https://github.com/rabbitmq/amqp091-go",
+      "dir": "amqp/amqp091-go"
+    }
+  },
+  "http": {
+    "stdlib": {
+      "url": "https://pkg.go.dev/net/http",
+      "dir": "http/stdlib"
+    }
   }
 }

@@ -14,8 +14,8 @@ import (
 
 func NewConsumer(url string, bindings *kafka.ServerBindings) (*Consumer, error) {
 	return &Consumer{
-		URL:       url,
-		Bindings:  bindings,
+		URL:      url,
+		Bindings: bindings,
 	}, nil
 }
 

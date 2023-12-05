@@ -59,9 +59,8 @@ func ToFileName(rawString string) string {
 	// Cut extra "/" that may appear at string endings
 	rawString = strings.Trim(rawString, "_")
 
-
 	return strcase.SnakeCase(rawString)
 	// return strings.Join(lo.Map(parts, func(item string, index int) string {
 	//	return strings.ToLower(item)
-	//}), "_")
+	// }), "_")
 }

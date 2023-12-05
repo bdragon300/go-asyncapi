@@ -10,6 +10,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols/http"
+
 	"github.com/charmbracelet/log"
 
 	"github.com/bdragon300/asyncapi-codegen-go/implementations"
@@ -41,7 +43,8 @@ type GenerateCmd struct {
 
 type ImplementationsOpts struct {
 	Kafka string `arg:"--kafka-impl" default:"franz-go" help:"Implementation for Kafka protocol or 'no' to disable implementation" placeholder:"NAME"`
-	AMQP  string `arg:"--amqp-impl" default:"" help:"Implementation for AMQP protocol or 'no' to disable implementation" placeholder:"NAME"`
+	AMQP  string `arg:"--amqp-impl" default:"amqp091-go" help:"Implementation for AMQP protocol or 'no' to disable implementation" placeholder:"NAME"`
+	HTTP  string `arg:"--http-impl" default:"stdlib" help:"Implementation for HTTP protocol or 'no' to disable implementation" placeholder:"NAME"`
 }
 
 type cli struct {
@@ -50,6 +53,8 @@ type cli struct {
 	Verbose             bool         `arg:"-v,--verbose" help:"Verbose output"`
 	Trace               bool         `arg:"--trace" help:"Trace output"` // TODO: --quiet
 }
+
+var logger = common.NewLogger("")
 
 func main() {
 	cliArgs := cli{}
@@ -74,6 +79,7 @@ func main() {
 		log.SetLevel(common.TraceLevel)
 	}
 	log.SetReportTimestamp(false)
+	logger.SetReportTimestamp(false)
 
 	registerProtocols()
 
@@ -114,12 +120,15 @@ func generate(cmd *GenerateCmd) error {
 	importBase := cmd.ProjectModule
 	if importBase == "" {
 		if importBase, err = getImportBase(); err != nil {
-			return fmt.Errorf("cannot extract module name from go.mod (you can specify it by -M argument): %w", err)
+			return fmt.Errorf("extraction module name from go.mod (you can specify it by -M argument): %w", err)
 		}
 	}
 	targetPkg, _ := lo.Coalesce(cmd.TargetPackage, cmd.TargetDir)
+	logger.Debugf("Target package name is %s", targetPkg)
 	importBase = path.Join(importBase, targetPkg)
+	logger.Debugf("Target import base is %s", importBase)
 	implDir, _ := lo.Coalesce(cmd.ImplDir, path.Join(cmd.TargetDir, "impl"))
+	logger.Debugf("Target implementations directory is %s", implDir)
 
 	spec, err := unmarshalSpecFile(cmd.Spec)
 	if err != nil {
@@ -129,44 +138,53 @@ func generate(cmd *GenerateCmd) error {
 	localLinker := linker.NewLocalLinker()
 
 	// Compilation
+	logger.Info("Run compilation")
 	compileCtx, err := compileSpec(spec, localLinker)
 	if err != nil {
 		return fmt.Errorf("schema compile error: %w", err)
 	}
 
 	// Linking
+	logger.Info("Run linking")
 	if err = localLinker.Process(compileCtx); err != nil {
 		return fmt.Errorf("schema linking error: %w", err)
 	}
 
 	// Rendering
+	logger.Info("Run rendering")
 	files, err := writer.RenderPackages(compileCtx.Packages, importBase, cmd.TargetDir)
 	if err != nil {
 		return fmt.Errorf("schema render error: %w", err)
 	}
 
 	// Writing
+	logger.Info("Run writing")
 	if err = writer.WriteToFiles(files, cmd.TargetDir); err != nil {
 		return fmt.Errorf("error while writing code to files: %w", err)
 	}
 
 	// Rendering implementations
+	logger.Info("Run writing selected implementations")
 	implManifest, err := getImplementationsManifest()
 	if err != nil {
 		panic(err.Error())
 	}
 	selectedImpls := getSelectedImplementations(cmd.ImplementationsOpts)
 	for p := range compileCtx.Protocols {
-		if selectedImpls[p] == "no" || selectedImpls[p] == "" {
+		implName := selectedImpls[p]
+		if implName == "no" || implName == "" {
+			logger.Debug("Implementation has been unselected", "protocol", p)
 			continue
 		}
-		if _, ok := implManifest[p][selectedImpls[p]]; !ok {
-			return fmt.Errorf("unknown implementation %q for %q protocol, use list-implementations command to see possible values", selectedImpls[p], p)
+		if _, ok := implManifest[p][implName]; !ok {
+			return fmt.Errorf("unknown implementation %q for %q protocol, use list-implementations command to see possible values", implName, p)
 		}
-		if err = writer.WriteImplementation(implManifest[p][selectedImpls[p]].Dir, path.Join(implDir, p)); err != nil {
+		logger.Debug("Writing implementation", "protocol", p, "name", implName)
+		if err = writer.WriteImplementation(implManifest[p][implName].Dir, path.Join(implDir, p)); err != nil {
 			return fmt.Errorf("cannot render implementation for protocol %q: %w", p, err)
 		}
 	}
+	logger.WithPrefix("Writing 📝").Info("Finished", "protocols", lo.Keys(compileCtx.Protocols))
 
 	return nil
 }
@@ -182,9 +200,11 @@ func unmarshalSpecFile(fileName string) (*compile.AsyncAPI, error) {
 
 	switch {
 	case strings.HasSuffix(fileName, ".yaml") || strings.HasSuffix(fileName, ".yml"):
+		logger.Debug("Found YAML spec file", "filename", fileName)
 		dec := yaml.NewDecoder(f)
 		err = dec.Decode(&res)
 	case strings.HasSuffix(fileName, ".json"):
+		logger.Debug("Found JSON spec file", "filename", fileName)
 		dec := json.NewDecoder(f)
 		err = dec.Decode(&res)
 	default:
@@ -218,6 +238,7 @@ func getSelectedImplementations(opts ImplementationsOpts) map[string]string {
 	return map[string]string{
 		kafka.ProtoName: opts.Kafka,
 		amqp.ProtoName:  opts.AMQP,
+		http.ProtoName:  opts.HTTP,
 	}
 }
 

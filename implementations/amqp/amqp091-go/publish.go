@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/bdragon300/asyncapi-codegen-go/pkg/run"
 	"github.com/bdragon300/asyncapi-codegen-go/pkg/run/amqp"
 	amqp091 "github.com/rabbitmq/amqp091-go"
-	"time"
 )
 
-func NewProducer(url string, bindings *amqp.ServerBindings) (*Producer, error) {
-	conn, err := amqp091.Dial(url)
+func NewProducer(serverURL string, bindings *amqp.ServerBindings) (*Producer, error) {
+	conn, err := amqp091.Dial(serverURL)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +35,7 @@ func (p Producer) Publisher(channelName string, bindings *amqp.ChannelBindings) 
 
 	ec := bindings.ExchangeConfiguration
 	declare := ec.Type != "" || ec.Durable != nil || ec.AutoDelete != nil || ec.VHost != ""
-	var exchangeName string  // By default, publish to the default exchange with empty name
+	var exchangeName string // By default, publish to the default exchange with empty name
 	if bindings.ChannelType == amqp.ChannelTypeRoutingKey {
 		exchangeName = channelName
 	}
@@ -66,12 +67,12 @@ func (p Producer) Publisher(channelName string, bindings *amqp.ChannelBindings) 
 
 type Publisher struct {
 	*amqp091.Channel
-	routingKey string
+	routingKey   string
 	exchangeName string
-	bindings *amqp.ChannelBindings
+	bindings     *amqp.ChannelBindings
 }
 
-func (p Publisher) Send(ctx context.Context, envelopes... *EnvelopeOut) error {
+func (p Publisher) Send(ctx context.Context, envelopes ...*EnvelopeOut) error {
 	var err error
 	for _, e := range envelopes {
 		e.DeliveryMode = uint8(p.bindings.PublisherBindings.DeliveryMode)

@@ -1,4 +1,4 @@
-package kafka
+package http
 
 import (
 	"encoding/json"
@@ -11,27 +11,12 @@ import (
 	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	j "github.com/dave/jennifer/jen"
-	"github.com/samber/lo"
 )
 
-type channelBindings struct {
-	Topic              *string             `json:"topic" yaml:"topic"`
-	Partitions         *int                `json:"partitions" yaml:"partitions"`
-	Replicas           *int                `json:"replicas" yaml:"replicas"`
-	TopicConfiguration *topicConfiguration `json:"topicConfiguration" yaml:"topicConfiguration"`
-}
-
-type topicConfiguration struct {
-	CleanupPolicy     []string `json:"cleanup.policy" yaml:"cleanup.policy"`
-	RetentionMs       *int     `json:"retention.ms" yaml:"retention.ms"`
-	RetentionBytes    *int     `json:"retention.bytes" yaml:"retention.bytes"`
-	DeleteRetentionMs *int     `json:"delete.retention.ms" yaml:"delete.retention.ms"`
-	MaxMessageBytes   *int     `json:"max.message.bytes" yaml:"max.message.bytes"`
-}
-
 type operationBindings struct {
-	GroupID  any `json:"groupId" yaml:"groupId"`   // jsonschema object
-	ClientID any `json:"clientId" yaml:"clientId"` // jsonschema object
+	Type   string `json:"type" yaml:"type"`
+	Method string `json:"method" yaml:"method"`
+	Query  any    `json:"query" yaml:"query"` // jsonschema object
 }
 
 func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelKey string) (common.Renderer, error) {
@@ -71,44 +56,6 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 	structValues := &render.StructInit{Type: &render.Simple{Name: "ChannelBindings", Package: ctx.RuntimePackage(ProtoName)}}
 	var hasBindings bool
 
-	if chBindings, ok := channel.Bindings.Get(ProtoName); ok {
-		ctx.Logger.Trace("Channel bindings", "proto", ProtoName)
-		hasBindings = true
-		var bindings channelBindings
-		if err := utils.UnmarshalRawsUnion2(chBindings, &bindings); err != nil {
-			return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
-		}
-		marshalFields := []string{"Topic", "Partitions", "Replicas"}
-		if err := utils.StructToOrderedMap(bindings, &structValues.Values, marshalFields); err != nil {
-			return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
-		}
-
-		if bindings.TopicConfiguration != nil {
-			tc := &render.StructInit{
-				Type: &render.Simple{Name: "TopicConfiguration", Package: ctx.RuntimePackage(ProtoName)},
-			}
-			marshalFields = []string{"RetentionMs", "RetentionBytes", "DeleteRetentionMs", "MaxMessageBytes"}
-			if err := utils.StructToOrderedMap(*bindings.TopicConfiguration, &tc.Values, marshalFields); err != nil {
-				return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
-			}
-
-			if len(bindings.TopicConfiguration.CleanupPolicy) > 0 {
-				tcp := &render.StructInit{
-					Type: &render.Simple{Name: "TopicCleanupPolicy", Package: ctx.RuntimePackage(ProtoName)},
-				}
-				if lo.Contains(bindings.TopicConfiguration.CleanupPolicy, "delete") {
-					tcp.Values.Set("Delete", true)
-				}
-				if lo.Contains(bindings.TopicConfiguration.CleanupPolicy, "compact") {
-					tcp.Values.Set("Compact", true)
-				}
-				tc.Values.Set("CleanupPolicy", tcp)
-			}
-
-			structValues.Values.Set("TopicConfiguration", tc)
-		}
-	}
-
 	// Publish channel bindings
 	var publisherJSON utils.OrderedMap[string, any]
 	if channel.Publish != nil {
@@ -116,7 +63,7 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 		if b, ok := channel.Publish.Bindings.Get(ProtoName); ok {
 			hasBindings = true
 			var err error
-			if publisherJSON, err = buildOperationBindings(b); err != nil {
+			if publisherJSON, err = buildOperationBindings(ctx, b); err != nil {
 				return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
 			}
 		}
@@ -129,7 +76,7 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 		if b, ok := channel.Subscribe.Bindings.Get(ProtoName); ok {
 			hasBindings = true
 			var err error
-			if subscriberJSON, err = buildOperationBindings(b); err != nil {
+			if subscriberJSON, err = buildOperationBindings(ctx, b); err != nil {
 				return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
 			}
 		}
@@ -139,7 +86,7 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 		return nil, nil
 	}
 
-	// Method Proto() proto.ChannelBindings
+	// Method HTTP() http.ChannelBindings
 	return &render.Func{
 		FuncSignature: render.FuncSignature{
 			Name: protoAbbr,
@@ -154,24 +101,17 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Cha
 	}, nil
 }
 
-func buildOperationBindings(opBindings utils.Union2[json.RawMessage, yaml.Node]) (res utils.OrderedMap[string, any], err error) {
+func buildOperationBindings(ctx *common.CompileContext, opBindings utils.Union2[json.RawMessage, yaml.Node]) (res utils.OrderedMap[string, any], err error) {
 	var bindings operationBindings
 	if err = utils.UnmarshalRawsUnion2(opBindings, &bindings); err != nil {
-		return
+		return res, common.CompileError{Err: err, Path: ctx.PathRef()}
 	}
-	if bindings.GroupID != nil {
-		v, err := json.Marshal(bindings.GroupID)
+	if bindings.Query != nil {
+		v, err := json.Marshal(bindings.Query)
 		if err != nil {
 			return res, err
 		}
-		res.Set("GroupID", string(v))
-	}
-	if bindings.ClientID != nil {
-		v, err := json.Marshal(bindings.ClientID)
-		if err != nil {
-			return res, err
-		}
-		res.Set("ClientID", string(v))
+		res.Set("Query", string(v))
 	}
 
 	return
@@ -251,14 +191,7 @@ func (p ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {
 						d[j.Id("subscriber")] = j.Id("subscriber")
 					}
 				}))
-				bg.Op("res.topic = res.name.String()")
-				if p.BindingsStructNoRender != nil {
-					bg.Id("bindings").Op(":=").Add(utils.ToCode(p.BindingsStructNoRender.RenderUsage(ctx))...).Values().Dot(protoAbbr).Call()
-					bg.Op(`
-						if bindings.Topic != "" {
-							res.topic = bindings.Topic
-						}`)
-				}
+				bg.Op("res.path = res.name.String()")
 				bg.Op(`return &res`)
 			}),
 	}
@@ -269,12 +202,12 @@ func (p ProtoChannel) renderCommonMethods(_ *common.RenderContext) []*j.Statemen
 	receiver := j.Id(rn).Id(p.Struct.Name)
 
 	return []*j.Statement{
-		// Method Topic() string
-		j.Func().Params(receiver.Clone()).Id("Topic").
+		// Method Path() string
+		j.Func().Params(receiver.Clone()).Id("Path").
 			Params().
 			String().
 			Block(
-				j.Return(j.Id(rn).Dot("topic")),
+				j.Return(j.Id(rn).Dot("path")),
 			),
 	}
 }
@@ -296,7 +229,7 @@ func (p ProtoChannel) renderPublisherMethods(ctx *common.RenderContext) []*j.Sta
 	}
 
 	return []*j.Statement{
-		// Method MakeEnvelope(envelope kafka.EnvelopeWriter, message *Message1Out) error
+		// Method MakeEnvelope(envelope http.EnvelopeWriter, message *Message1Out) error
 		j.Func().Params(receiver.Clone()).Id("MakeEnvelope").
 			ParamsFunc(func(g *j.Group) {
 				g.Id("envelope").Qual(ctx.RuntimePackage(ProtoName), "EnvelopeWriter")
@@ -313,14 +246,14 @@ func (p ProtoChannel) renderPublisherMethods(ctx *common.RenderContext) []*j.Sta
 						}`))
 				} else { // Message is set for Channel in spec
 					bg.Op(`
-						if err := message.MarshalKafkaEnvelope(envelope); err != nil {
+						if err := message.MarshalHTTPEnvelope(envelope); err != nil {
 							return err
 						}`)
 				}
-				bg.Op("envelope.SetTopic").Call(j.Id(rn).Dot("topic"))
+				bg.Op("envelope.SetPath").Call(j.Id(rn).Dot("path"))
 				if msgBindings != nil {
 					bg.Op("envelope.SetBindings").Call(
-						j.Add(utils.ToCode(msgBindings.RenderUsage(ctx))...).Values().Dot("Kafka()"),
+						j.Add(utils.ToCode(msgBindings.RenderUsage(ctx))...).Values().Dot("HTTP()"),
 					)
 				}
 				bg.Return(j.Nil())

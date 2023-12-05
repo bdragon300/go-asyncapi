@@ -19,18 +19,18 @@ type channelBindings struct {
 }
 
 type exchangeParams struct {
-	Name       *string `json:"name" yaml:"name"`  // Empty string means "default exchange"
-	Type       string `json:"type" yaml:"type"`
+	Name       *string `json:"name" yaml:"name"` // Empty string means "default exchange"
+	Type       string  `json:"type" yaml:"type"`
 	Durable    *bool   `json:"durable" yaml:"durable"`
 	AutoDelete *bool   `json:"autoDelete" yaml:"autoDelete"`
-	VHost      string `json:"vhost" yaml:"vhost"`
+	VHost      string  `json:"vhost" yaml:"vhost"`
 }
 
 type queueParams struct {
 	Name       string `json:"name" yaml:"name"`
-	Durable    *bool   `json:"durable" yaml:"durable"`
-	Exclusive  *bool   `json:"exclusive" yaml:"exclusive"`
-	AutoDelete *bool   `json:"autoDelete" yaml:"autoDelete"`
+	Durable    *bool  `json:"durable" yaml:"durable"`
+	Exclusive  *bool  `json:"exclusive" yaml:"exclusive"`
+	AutoDelete *bool  `json:"autoDelete" yaml:"autoDelete"`
 	VHost      string `json:"vhost" yaml:"vhost"`
 }
 
@@ -367,13 +367,13 @@ func (p ProtoChannel) renderPublisherMethods(ctx *common.RenderContext) []*j.Sta
 			Error().
 			BlockFunc(func(bg *j.Group) {
 				bg.Op("envelope.ResetPayload()")
-				if p.PubMessageLink == nil {  // No Message set for Channel in spec
+				if p.PubMessageLink == nil { // No Message set for Channel in spec
 					bg.Empty().Add(utils.QualSprintf(`
 						enc := %Q(encoding/json,NewEncoder)(envelope)
 						if err := enc.Encode(message); err != nil {
 							return err
 						}`))
-				} else {  // Message is set for Channel in spec
+				} else { // Message is set for Channel in spec
 					bg.Op(`
 						if err := message.MarshalAMQPEnvelope(envelope); err != nil {
 							return err
