@@ -10,7 +10,7 @@ type (
 	Publisher      = run.Publisher[EnvelopeWriter]
 	EnvelopeWriter interface {
 		run.EnvelopeWriter
-		SetBindings(provider MessageBindings)
+		SetBindings(bindings MessageBindings)
 		SetTopic(topic string)
 	}
 )

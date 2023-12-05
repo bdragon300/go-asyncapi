@@ -12,6 +12,13 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
+func NewConsumer(url string, bindings *kafka.ServerBindings) (*Consumer, error) {
+	return &Consumer{
+		URL:       url,
+		Bindings:  bindings,
+	}, nil
+}
+
 type Consumer struct {
 	URL       string
 	Bindings  *kafka.ServerBindings

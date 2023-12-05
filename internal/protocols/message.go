@@ -53,6 +53,7 @@ func RenderMessageMarshalEnvelopeMethod(ctx *common.RenderContext, message *rend
 					if err := enc.Encode(%[1]s.Payload); err != nil {
 						return err
 					}`, rn))
+				bg.Op("envelope.SetContentType").Call(j.Lit(message.ContentType))
 				if message.HeadersTypeLink != nil {
 					bg.Id("envelope").Dot("SetHeaders").Call(
 						j.Qual(ctx.RuntimePackage(""), "Header").Values(j.DictFunc(func(d j.Dict) {

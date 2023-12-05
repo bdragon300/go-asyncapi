@@ -10,28 +10,32 @@ import (
 
 func NewEnvelopeOut() *EnvelopeOut {
 	return &EnvelopeOut{
-		payload: bytes.NewBuffer(make([]byte, 0)),
+		Record: &kgo.Record{},
 	}
 }
 
 type EnvelopeOut struct {
 	*kgo.Record
-	payload         *bytes.Buffer
 	messageBindings kafka.MessageBindings
 }
 
 func (e *EnvelopeOut) Write(p []byte) (n int, err error) {
-	return e.payload.Write(p)
+	e.Value = append(e.Value, p...)
+	return len(p), nil
 }
 
 func (e *EnvelopeOut) ResetPayload() {
-	e.payload.Reset()
+	e.Value = e.Value[:0]
 }
 
 func (e *EnvelopeOut) SetHeaders(headers run.Headers) {
 	for k, v := range headers.ToByteValues() {
 		e.Record.Headers = append(e.Record.Headers, kgo.RecordHeader{Key: k, Value: v})
 	}
+}
+
+func (e *EnvelopeOut) SetContentType(contentType string) {
+	// Not implemented
 }
 
 func (e *EnvelopeOut) Protocol() run.Protocol {

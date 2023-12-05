@@ -305,13 +305,13 @@ func (p ProtoChannel) renderPublisherMethods(ctx *common.RenderContext) []*j.Sta
 			Error().
 			BlockFunc(func(bg *j.Group) {
 				bg.Op("envelope.ResetPayload()")
-				if p.PubMessageLink == nil {
+				if p.PubMessageLink == nil {  // No Message set for Channel in spec
 					bg.Empty().Add(utils.QualSprintf(`
 						enc := %Q(encoding/json,NewEncoder)(envelope)
 						if err := enc.Encode(message); err != nil {
 							return err
 						}`))
-				} else {
+				} else {  // Message is set for Channel in spec
 					bg.Op(`
 						if err := message.MarshalKafkaEnvelope(envelope); err != nil {
 							return err

@@ -12,6 +12,13 @@ import (
 	"github.com/twmb/franz-go/pkg/kversion"
 )
 
+func NewProducer(url string, bindings *kafka.ServerBindings) (*Producer, error) {
+	return &Producer{
+		URL:       url,
+		Bindings:  bindings,
+	}, nil
+}
+
 type Producer struct {
 	URL       string
 	Bindings  *kafka.ServerBindings
@@ -42,7 +49,7 @@ func (p Producer) Publisher(channelName string, bindings *kafka.ChannelBindings)
 		return nil, err
 	}
 
-	return Publisher{
+	return &Publisher{
 		Client:   cl,
 		Topic:    topic,
 		bindings: bindings,
@@ -50,7 +57,7 @@ func (p Producer) Publisher(channelName string, bindings *kafka.ChannelBindings)
 }
 
 type Publisher struct {
-	Client   *kgo.Client
+	*kgo.Client
 	Topic    string
 	bindings *kafka.ChannelBindings
 }
