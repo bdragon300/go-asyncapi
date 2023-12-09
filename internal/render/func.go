@@ -54,6 +54,14 @@ func (f FuncSignature) String() string {
 	return fmt.Sprintf("%s(%s)%s", f.Name, args, ret)
 }
 
+func (f FuncSignature) DirectRendering() bool {
+	return false
+}
+
+func (f FuncSignature) TypeName() string {
+	return f.Name
+}
+
 type Func struct {
 	FuncSignature
 	Receiver        common.GolangType

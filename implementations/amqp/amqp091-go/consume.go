@@ -12,23 +12,23 @@ import (
 	amqp091 "github.com/rabbitmq/amqp091-go"
 )
 
-func NewConsumer(url string, bindings *amqp.ServerBindings) (*Consumer, error) {
+func NewConsumer(url string, bindings *amqp.ServerBindings) (*ConsumeClient, error) {
 	conn, err := amqp091.Dial(url)
 	if err != nil {
 		return nil, err
 	}
-	return &Consumer{
+	return &ConsumeClient{
 		Connection: conn,
 		Bindings:   bindings,
 	}, nil
 }
 
-type Consumer struct {
+type ConsumeClient struct {
 	*amqp091.Connection
 	Bindings *amqp.ServerBindings
 }
 
-func (c Consumer) Subscriber(channelName string, bindings *amqp.ChannelBindings) (run.Subscriber[*EnvelopeIn], error) {
+func (c ConsumeClient) Subscriber(channelName string, bindings *amqp.ChannelBindings) (amqp.Subscriber, error) {
 	ch, err := c.Channel()
 	if err != nil {
 		return nil, err
@@ -62,20 +62,20 @@ func (c Consumer) Subscriber(channelName string, bindings *amqp.ChannelBindings)
 		return nil, errors.Join(fmt.Errorf("queue bind: %w", err), ch.Close())
 	}
 
-	return &Subscriber{
+	return &SubscribeClient{
 		Channel:   ch,
 		queueName: queueName,
 		bindings:  bindings,
 	}, nil
 }
 
-type Subscriber struct {
+type SubscribeClient struct {
 	*amqp091.Channel
 	queueName string
 	bindings  *amqp.ChannelBindings
 }
 
-func (s Subscriber) Receive(ctx context.Context, cb func(envelope *EnvelopeIn) error) (err error) {
+func (s SubscribeClient) Receive(ctx context.Context, cb func(envelope amqp.EnvelopeReader) error) (err error) {
 	// TODO: consumer tag in x- schema argument
 	consumerTag := fmt.Sprintf("consumer-%s", time.Now().Format(time.RFC3339))
 	deliveries, err := s.ConsumeWithContext(

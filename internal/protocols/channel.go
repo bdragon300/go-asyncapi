@@ -340,7 +340,11 @@ func RenderChannelOpenFunc(
 				if publisher {
 					bg.Op("pubs, err := ").
 						Qual(ctx.RuntimePackage(""), "GatherPublishers").
-						Types(j.Qual(ctx.RuntimePackage(protoName), "EnvelopeWriter"), j.Qual(ctx.RuntimePackage(protoName), "ChannelBindings")).
+						Types(
+							j.Qual(ctx.RuntimePackage(protoName), "EnvelopeWriter"),
+							j.Qual(ctx.RuntimePackage(protoName), "Publisher"),
+							j.Qual(ctx.RuntimePackage(protoName), "ChannelBindings"),
+						).
 						CallFunc(func(g *j.Group) {
 							g.Id("name")
 							g.Id(lo.Ternary(bindingsStructNoRender != nil, "&bindings", "nil"))
@@ -351,13 +355,17 @@ func RenderChannelOpenFunc(
 							return nil, err
 						}`)
 					bg.Op("pub := ").Qual(ctx.RuntimePackage(""), "PublisherFanOut").
-						Types(j.Qual(ctx.RuntimePackage(protoName), "EnvelopeWriter")).
+						Types(j.Qual(ctx.RuntimePackage(protoName), "EnvelopeWriter"), j.Qual(ctx.RuntimePackage(protoName), "Publisher")).
 						Op("{Publishers: pubs}")
 				}
 				if subscriber {
 					bg.Op("subs, err := ").
 						Qual(ctx.RuntimePackage(""), "GatherSubscribers").
-						Types(j.Qual(ctx.RuntimePackage(protoName), "EnvelopeReader"), j.Qual(ctx.RuntimePackage(protoName), "ChannelBindings")).
+						Types(
+							j.Qual(ctx.RuntimePackage(protoName), "EnvelopeReader"),
+							j.Qual(ctx.RuntimePackage(protoName), "Subscriber"),
+							j.Qual(ctx.RuntimePackage(protoName), "ChannelBindings"),
+						).
 						CallFunc(func(g *j.Group) {
 							g.Id("name")
 							g.Id(lo.Ternary(bindingsStructNoRender != nil, "&bindings", "nil"))
@@ -370,7 +378,7 @@ func RenderChannelOpenFunc(
 						g.Op("return nil, err")
 					})
 					bg.Op("sub := ").Qual(ctx.RuntimePackage(""), "SubscriberFanIn").
-						Types(j.Qual(ctx.RuntimePackage(protoName), "EnvelopeReader")).
+						Types(j.Qual(ctx.RuntimePackage(protoName), "EnvelopeReader"), j.Qual(ctx.RuntimePackage(protoName), "Subscriber")).
 						Op("{Subscribers: subs}")
 				}
 				bg.Op("ch := ").Id(channelStruct.NewFuncName()).CallFunc(func(g *j.Group) {

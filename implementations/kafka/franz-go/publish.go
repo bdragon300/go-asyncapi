@@ -6,26 +6,25 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/bdragon300/asyncapi-codegen-go/pkg/run"
 	"github.com/bdragon300/asyncapi-codegen-go/pkg/run/kafka"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kversion"
 )
 
-func NewProducer(serverURL string, bindings *kafka.ServerBindings) (*Producer, error) {
-	return &Producer{
+func NewProducer(serverURL string, bindings *kafka.ServerBindings) (*ProduceClient, error) {
+	return &ProduceClient{
 		URL:      serverURL,
 		Bindings: bindings,
 	}, nil
 }
 
-type Producer struct {
+type ProduceClient struct {
 	URL       string
 	Bindings  *kafka.ServerBindings
 	ExtraOpts []kgo.Opt
 }
 
-func (p Producer) Publisher(channelName string, bindings *kafka.ChannelBindings) (run.Publisher[*EnvelopeOut], error) {
+func (p ProduceClient) Publisher(channelName string, bindings *kafka.ChannelBindings) (kafka.Publisher, error) {
 	// TODO: schema registry https://github.com/twmb/franz-go/blob/master/examples/schema_registry/schema_registry.go
 	var opts []kgo.Opt
 
@@ -49,28 +48,28 @@ func (p Producer) Publisher(channelName string, bindings *kafka.ChannelBindings)
 		return nil, err
 	}
 
-	return &Publisher{
+	return &PublishClient{
 		Client:   cl,
 		Topic:    topic,
 		bindings: bindings,
 	}, nil
 }
 
-type Publisher struct {
+type PublishClient struct {
 	*kgo.Client
 	Topic    string
 	bindings *kafka.ChannelBindings
 }
 
-func (p Publisher) Send(ctx context.Context, envelopes ...*EnvelopeOut) error {
+func (p PublishClient) Send(ctx context.Context, envelopes ...kafka.EnvelopeWriter) error {
 	rs := make([]*kgo.Record, 0, len(envelopes))
 	for _, e := range envelopes {
-		rs = append(rs, e.Record)
+		rs = append(rs, e.(*EnvelopeOut).Record)
 	}
 	return p.Client.ProduceSync(ctx, rs...).FirstErr()
 }
 
-func (p Publisher) Close() error {
+func (p PublishClient) Close() error {
 	p.Client.Close()
 	return nil
 }
@@ -133,9 +132,8 @@ func ParseProtocolVersion(protocolVersion string) (*kversion.Versions, error) {
 	case "3.5.0":
 		ver = kversion.V3_5_0()
 	default:
-		return nil, fmt.Errorf("")
+		return nil, fmt.Errorf("unknown protocol version: %s", protocolVersion)
 	}
 
 	return ver, nil
 }
-

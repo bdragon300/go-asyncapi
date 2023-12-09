@@ -98,6 +98,7 @@ func main() {
 func registerProtocols() {
 	kafka.Register()
 	amqp.Register()
+	http.Register()
 }
 
 func listImplementations() {

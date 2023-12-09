@@ -3,13 +3,42 @@ package run
 import (
 	"context"
 	"errors"
+	"io"
 )
 
-type PublisherFanOut[E EnvelopeWriter] struct {
-	Publishers []Publisher[E]
+type AbstractProducer[B any, W AbstractEnvelopeWriter, P AbstractPublisher[W]] interface {
+	Publisher(channelName string, bindings *B) (P, error)
+}
+type AbstractPublisher[W AbstractEnvelopeWriter] interface {
+	Send(ctx context.Context, envelopes ...W) error
+	Close() error
+}
+type AbstractEnvelopeWriter interface {
+	io.Writer
+	ResetPayload()
+	SetHeaders(headers Headers)
+	SetContentType(contentType string)
+	Protocol() Protocol
 }
 
-func (p PublisherFanOut[E]) Send(ctx context.Context, envelopes ...E) error {
+type AbstractConsumer[B any, R AbstractEnvelopeReader, S AbstractSubscriber[R]] interface {
+	Subscriber(channelName string, bindings *B) (S, error)
+}
+type AbstractSubscriber[R AbstractEnvelopeReader] interface {
+	Receive(ctx context.Context, cb func(envelope R) error) error
+	Close() error
+}
+type AbstractEnvelopeReader interface {
+	io.Reader
+	Headers() Headers
+	Protocol() Protocol
+}
+
+type PublisherFanOut[W AbstractEnvelopeWriter, P AbstractPublisher[W]] struct {
+	Publishers []P
+}
+
+func (p PublisherFanOut[W, P]) Send(ctx context.Context, envelopes ...W) error {
 	if len(p.Publishers) == 1 {
 		return p.Publishers[0].Send(ctx, envelopes...)
 	}
@@ -25,21 +54,19 @@ func (p PublisherFanOut[E]) Send(ctx context.Context, envelopes ...E) error {
 	return pool.Wait()
 }
 
-func (p PublisherFanOut[E]) Close() (err error) {
+func (p PublisherFanOut[W, P]) Close() (err error) {
 	for _, pub := range p.Publishers {
-		if pub != nil {
-			err = errors.Join(pub.Close())
-		}
+		err = errors.Join(pub.Close())
 	}
 	return
 }
 
-type SubscriberFanIn[E EnvelopeReader] struct {
-	Subscribers      []Subscriber[E]
+type SubscriberFanIn[R AbstractEnvelopeReader, S AbstractSubscriber[R]] struct {
+	Subscribers      []S
 	StopOnFirstError bool
 }
 
-func (s SubscriberFanIn[E]) Receive(ctx context.Context, cb func(envelope E) error) error {
+func (s SubscriberFanIn[R, S]) Receive(ctx context.Context, cb func(envelope R) error) error {
 	if len(s.Subscribers) == 1 {
 		return s.Subscribers[0].Receive(ctx, cb)
 	}
@@ -51,7 +78,7 @@ func (s SubscriberFanIn[E]) Receive(ctx context.Context, cb func(envelope E) err
 	for i := 0; i < len(s.Subscribers); i++ {
 		i := i
 		pool.Go(func() error {
-			return s.Subscribers[i].Receive(poolCtx, func(envelope E) error {
+			return s.Subscribers[i].Receive(poolCtx, func(envelope R) error {
 				err := cb(envelope)
 				if err != nil && s.StopOnFirstError {
 					cancel()
@@ -63,55 +90,65 @@ func (s SubscriberFanIn[E]) Receive(ctx context.Context, cb func(envelope E) err
 	return pool.Wait()
 }
 
-func (s SubscriberFanIn[E]) Close() (err error) {
+func (s SubscriberFanIn[R, S]) Close() (err error) {
 	for _, sub := range s.Subscribers {
-		if sub != nil {
-			err = errors.Join(sub.Close())
-		}
+		err = errors.Join(sub.Close())
 	}
 	return
 }
 
-func GatherPublishers[E EnvelopeWriter, B any, P Producer[B, E]](chName ParamString, channelBindings *B, producers []P) ([]Publisher[E], error) {
-	pubs := make([]Publisher[E], len(producers))
+func GatherPublishers[W AbstractEnvelopeWriter, PUB AbstractPublisher[W], B any, PRD AbstractProducer[B, W, PUB]](
+	chName ParamString,
+	channelBindings *B,
+	producers []PRD,
+) ([]PUB, error) {
+	pubsCh := make(chan PUB, len(producers))
 	pool := NewErrorPool()
-	for ind, prod := range producers {
+	for _, prod := range producers {
 		prod := prod
-		ind := ind
 		pool.Go(func() error {
-			var e error
-			pubs[ind], e = prod.Publisher(chName.String(), channelBindings)
+			p, e := prod.Publisher(chName.String(), channelBindings)
+			pubsCh <- p
 			return e
 		})
 	}
-	if err := pool.Wait(); err != nil {
-		for _, pub := range pubs {
+	err := pool.Wait()
+	close(pubsCh)
+
+	pubs := make([]PUB, 0, len(producers))
+	for pub := range pubsCh {
+		pubs = append(pubs, pub)
+		if err != nil {
 			err = errors.Join(err, pub.Close())
 		}
-		return nil, err
 	}
-
 	return pubs, nil
 }
 
-func GatherSubscribers[E EnvelopeReader, B any, C Consumer[B, E]](chName ParamString, channelBindings *B, consumers []C) ([]Subscriber[E], error) {
-	subs := make([]Subscriber[E], len(consumers))
+func GatherSubscribers[R AbstractEnvelopeReader, S AbstractSubscriber[R], B any, C AbstractConsumer[B, R, S]](
+	chName ParamString,
+	channelBindings *B,
+	consumers []C,
+) ([]S, error) {
+	subsCh := make(chan S, len(consumers))
 	pool := NewErrorPool()
-	for ind, cons := range consumers {
+	for _, cons := range consumers {
 		cons := cons
-		ind := ind
 		pool.Go(func() error {
-			var e error
-			subs[ind], e = cons.Subscriber(chName.String(), channelBindings)
+			s, e := cons.Subscriber(chName.String(), channelBindings)
+			subsCh <- s
 			return e
 		})
 	}
-	if err := pool.Wait(); err != nil {
-		for _, sub := range subs {
+	err := pool.Wait()
+	close(subsCh)
+
+	subs := make([]S, 0, len(consumers))
+	for sub := range subsCh {
+		subs = append(subs, sub)
+		if err != nil {
 			err = errors.Join(err, sub.Close())
 		}
-		return nil, err
 	}
-
 	return subs, nil
 }

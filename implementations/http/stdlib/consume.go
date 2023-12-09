@@ -13,8 +13,8 @@ import (
 	runHttp "github.com/bdragon300/asyncapi-codegen-go/pkg/run/http"
 )
 
-func NewConsumer(bindings *runHttp.ServerBindings) (consumer *Consumer, err error) {
-	return &Consumer{
+func NewConsumer(bindings *runHttp.ServerBindings) (consumer *ConsumeClient, err error) {
+	return &ConsumeClient{
 		Bindings:    bindings,
 		subscribers: make(map[string]*list.List),
 		mu:          &sync.RWMutex{},
@@ -23,7 +23,7 @@ func NewConsumer(bindings *runHttp.ServerBindings) (consumer *Consumer, err erro
 
 type HandlerWithErr func(w http.ResponseWriter, r *http.Request, err error)
 
-type Consumer struct {
+type ConsumeClient struct {
 	http.ServeMux
 	Bindings    *runHttp.ServerBindings
 	HandleError HandlerWithErr
@@ -32,7 +32,7 @@ type Consumer struct {
 	mu          *sync.RWMutex
 }
 
-func (c *Consumer) Subscriber(channelName string, bindings *runHttp.ChannelBindings) (run.Subscriber[*EnvelopeIn], error) {
+func (c *ConsumeClient) Subscriber(channelName string, bindings *runHttp.ChannelBindings) (runHttp.Subscriber, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -60,7 +60,7 @@ func (c *Consumer) Subscriber(channelName string, bindings *runHttp.ChannelBindi
 				item := item
 				p.Go(func() error {
 					envelope := NewEnvelopeIn(req, bytes.NewReader(body))
-					return item.Value.(*Subscriber).receiveEnvelope(envelope)
+					return item.Value.(*SubscribeClient).receiveEnvelope(envelope)
 				})
 			}
 			maybeWriteError(w, req, p.Wait(), c.HandleError)
@@ -68,7 +68,7 @@ func (c *Consumer) Subscriber(channelName string, bindings *runHttp.ChannelBindi
 	}
 
 	subCtx, subCtxCancel := context.WithCancel(context.Background())
-	sub := Subscriber{
+	sub := SubscribeClient{
 		bindings:  bindings,
 		callbacks: list.New(),
 		ctx:       subCtx,
@@ -87,7 +87,7 @@ func (c *Consumer) Subscriber(channelName string, bindings *runHttp.ChannelBindi
 	return &sub, nil
 }
 
-type Subscriber struct {
+type SubscribeClient struct {
 	HandleError HandlerWithErr
 
 	bindings  *runHttp.ChannelBindings
@@ -97,7 +97,7 @@ type Subscriber struct {
 	mu        *sync.RWMutex
 }
 
-func (s *Subscriber) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+func (s *SubscribeClient) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	body, err := io.ReadAll(request.Body)
 	if maybeWriteError(writer, request, err, s.HandleError) {
 		return
@@ -108,7 +108,7 @@ func (s *Subscriber) ServeHTTP(writer http.ResponseWriter, request *http.Request
 	maybeWriteError(writer, request, err, s.HandleError)
 }
 
-func (s *Subscriber) Receive(ctx context.Context, cb func(envelope *EnvelopeIn) error) error {
+func (s *SubscribeClient) Receive(ctx context.Context, cb func(envelope runHttp.EnvelopeReader) error) error {
 	var el *list.Element
 	func() {
 		s.mu.Lock()
@@ -129,12 +129,12 @@ func (s *Subscriber) Receive(ctx context.Context, cb func(envelope *EnvelopeIn) 
 	}
 }
 
-func (s *Subscriber) Close() error {
+func (s *SubscribeClient) Close() error {
 	s.ctxCancel()
 	return nil
 }
 
-func (s *Subscriber) receiveEnvelope(envelope *EnvelopeIn) error {
+func (s *SubscribeClient) receiveEnvelope(envelope *EnvelopeIn) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 

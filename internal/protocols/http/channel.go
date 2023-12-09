@@ -25,7 +25,7 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 		return nil, err
 	}
 
-	baseChan.Struct.Fields = append(baseChan.Struct.Fields, render.StructField{Name: "topic", Type: &render.Simple{Name: "string"}})
+	baseChan.Struct.Fields = append(baseChan.Struct.Fields, render.StructField{Name: "path", Type: &render.Simple{Name: "string"}})
 
 	chanResult := &ProtoChannel{BaseProtoChannel: *baseChan}
 

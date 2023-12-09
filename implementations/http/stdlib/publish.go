@@ -9,24 +9,24 @@ import (
 	runHttp "github.com/bdragon300/asyncapi-codegen-go/pkg/run/http"
 )
 
-func NewProducer(serverURL string, bindings *runHttp.ServerBindings) (*Producer, error) {
+func NewProducer(serverURL string, bindings *runHttp.ServerBindings) (*ProduceClient, error) {
 	u, err := url.Parse(serverURL)
 	if err != nil {
 		return nil, err
 	}
-	return &Producer{
+	return &ProduceClient{
 		URL:      u,
 		Bindings: bindings,
 	}, nil
 }
 
-type Producer struct {
+type ProduceClient struct {
 	URL      *url.URL
 	Bindings *runHttp.ServerBindings
 }
 
-func (p Producer) Publisher(channelName string, bindings *runHttp.ChannelBindings) (run.Publisher[*EnvelopeOut], error) {
-	return &Publisher{
+func (p ProduceClient) Publisher(channelName string, bindings *runHttp.ChannelBindings) (runHttp.Publisher, error) {
+	return &PublishClient{
 		channelName:    channelName,
 		url:            p.URL,
 		bindings:       bindings,
@@ -35,7 +35,7 @@ func (p Producer) Publisher(channelName string, bindings *runHttp.ChannelBinding
 	}, nil
 }
 
-type Publisher struct {
+type PublishClient struct {
 	channelName    string
 	url            *url.URL
 	bindings       *runHttp.ChannelBindings
@@ -43,15 +43,15 @@ type Publisher struct {
 	HandleResponse func(r *http.Response) error
 }
 
-func (p Publisher) Send(ctx context.Context, envelopes ...*EnvelopeOut) error {
+func (p PublishClient) Send(ctx context.Context, envelopes ...runHttp.EnvelopeWriter) error {
 	pool := run.NewErrorPool()
 	method := p.bindings.PublisherBindings.Method
 	if method == "" {
 		method = "GET"
 	}
 
-	for _, e := range envelopes {
-		e := e
+	for _, envelope := range envelopes {
+		e := envelope.(*EnvelopeOut)
 		u := e.URL.JoinPath(p.channelName, e.path)
 		pool.Go(func() error {
 			req, err := p.NewRequest(ctx, method, u.String(), e)
@@ -69,6 +69,10 @@ func (p Publisher) Send(ctx context.Context, envelopes ...*EnvelopeOut) error {
 		})
 	}
 	return pool.Wait()
+}
+
+func (p PublishClient) Close() error {
+	return nil
 }
 
 func NewRequest(ctx context.Context, method, url string, e *EnvelopeOut) (*http.Request, error) {
@@ -106,8 +110,4 @@ func NewRequest(ctx context.Context, method, url string, e *EnvelopeOut) (*http.
 	req.Response = e.Response
 
 	return req, nil
-}
-
-func (p Publisher) Close() error {
-	return nil
 }

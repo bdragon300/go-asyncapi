@@ -11,23 +11,23 @@ import (
 	amqp091 "github.com/rabbitmq/amqp091-go"
 )
 
-func NewProducer(serverURL string, bindings *amqp.ServerBindings) (*Producer, error) {
+func NewProducer(serverURL string, bindings *amqp.ServerBindings) (*ProduceClient, error) {
 	conn, err := amqp091.Dial(serverURL)
 	if err != nil {
 		return nil, err
 	}
-	return &Producer{
+	return &ProduceClient{
 		Connection: conn,
 		Bindings:   bindings,
 	}, nil
 }
 
-type Producer struct {
+type ProduceClient struct {
 	*amqp091.Connection
 	Bindings *amqp.ServerBindings
 }
 
-func (p Producer) Publisher(channelName string, bindings *amqp.ChannelBindings) (run.Publisher[*EnvelopeOut], error) {
+func (p ProduceClient) Publisher(channelName string, bindings *amqp.ChannelBindings) (amqp.Publisher, error) {
 	ch, err := p.Channel()
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (p Producer) Publisher(channelName string, bindings *amqp.ChannelBindings) 
 			return nil, fmt.Errorf("exchange declare: %w", err)
 		}
 	}
-	return &Publisher{
+	return &PublishClient{
 		Channel:      ch,
 		routingKey:   channelName,
 		exchangeName: exchangeName,
@@ -65,16 +65,17 @@ func (p Producer) Publisher(channelName string, bindings *amqp.ChannelBindings) 
 	}, nil
 }
 
-type Publisher struct {
+type PublishClient struct {
 	*amqp091.Channel
 	routingKey   string
 	exchangeName string
 	bindings     *amqp.ChannelBindings
 }
 
-func (p Publisher) Send(ctx context.Context, envelopes ...*EnvelopeOut) error {
+func (p PublishClient) Send(ctx context.Context, envelopes ...amqp.EnvelopeWriter) error {
 	var err error
-	for _, e := range envelopes {
+	for _, envelope := range envelopes {
+		e := envelope.(*EnvelopeOut)
 		e.DeliveryMode = uint8(p.bindings.PublisherBindings.DeliveryMode)
 		e.Priority = uint8(p.bindings.PublisherBindings.Priority)
 		e.Timestamp = time.Time{}

@@ -7,25 +7,24 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/bdragon300/asyncapi-codegen-go/pkg/run"
 	"github.com/bdragon300/asyncapi-codegen-go/pkg/run/kafka"
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
-func NewConsumer(url string, bindings *kafka.ServerBindings) (*Consumer, error) {
-	return &Consumer{
+func NewConsumer(url string, bindings *kafka.ServerBindings) (*ConsumeClient, error) {
+	return &ConsumeClient{
 		URL:      url,
 		Bindings: bindings,
 	}, nil
 }
 
-type Consumer struct {
+type ConsumeClient struct {
 	URL       string
 	Bindings  *kafka.ServerBindings
 	ExtraOpts []kgo.Opt
 }
 
-func (c Consumer) Subscriber(channelName string, bindings *kafka.ChannelBindings) (run.Subscriber[*EnvelopeIn], error) {
+func (c ConsumeClient) Subscriber(channelName string, bindings *kafka.ChannelBindings) (kafka.Subscriber, error) {
 	// TODO: schema registry https://github.com/twmb/franz-go/blob/master/examples/schema_registry/schema_registry.go
 	// TODO: bindings.ClientID, bindings.GroupID
 	var opts []kgo.Opt
@@ -50,21 +49,21 @@ func (c Consumer) Subscriber(channelName string, bindings *kafka.ChannelBindings
 		return nil, err
 	}
 
-	return Subscriber{
+	return &SubscribeClient{
 		Client:   cl,
 		Topic:    topic,
 		bindings: bindings,
 	}, nil
 }
 
-type Subscriber struct {
+type SubscribeClient struct {
 	Client            *kgo.Client
 	Topic             string
 	IgnoreFetchErrors bool // TODO: add opts for Subscriber/Publisher interfaces
 	bindings          *kafka.ChannelBindings
 }
 
-func (s Subscriber) Receive(ctx context.Context, cb func(envelope *EnvelopeIn) error) error {
+func (s SubscribeClient) Receive(ctx context.Context, cb func(envelope kafka.EnvelopeReader) error) error {
 	for {
 		fetches := s.Client.PollFetches(ctx)
 		if fetches.Err0() != nil {
@@ -91,7 +90,7 @@ func (s Subscriber) Receive(ctx context.Context, cb func(envelope *EnvelopeIn) e
 	}
 }
 
-func (s Subscriber) Close() error {
+func (s SubscribeClient) Close() error {
 	s.Client.Close()
 	return nil
 }

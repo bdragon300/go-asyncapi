@@ -147,9 +147,9 @@ func (p *TypeAlias) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 }
 
 type Simple struct {
-	Name            string // type name with or without package name, such as "json.Marshal" or "string"
+	Name            string // type name
 	IsIface         bool
-	Package         string            // optional import path from any generated package
+	Package         string            // optional import path from any package
 	TypeParamValues []common.Renderer // optional type parameter types to be filled in definition and usage
 }
 
