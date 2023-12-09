@@ -12,7 +12,7 @@
     }
   },
   "http": {
-    "stdlib": {
+    "stdhttp": {
       "url": "https://pkg.go.dev/net/http",
       "dir": "http/stdlib"
     }

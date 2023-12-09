@@ -1,4 +1,4 @@
-package stdlib
+package stdhttp
 
 import (
 	"bytes"

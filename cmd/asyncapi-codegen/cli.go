@@ -44,7 +44,7 @@ type GenerateCmd struct {
 type ImplementationsOpts struct {
 	Kafka string `arg:"--kafka-impl" default:"franz-go" help:"Implementation for Kafka protocol or 'no' to disable implementation" placeholder:"NAME"`
 	AMQP  string `arg:"--amqp-impl" default:"amqp091-go" help:"Implementation for AMQP protocol or 'no' to disable implementation" placeholder:"NAME"`
-	HTTP  string `arg:"--http-impl" default:"stdlib" help:"Implementation for HTTP protocol or 'no' to disable implementation" placeholder:"NAME"`
+	HTTP  string `arg:"--http-impl" default:"stdhttp" help:"Implementation for HTTP protocol or 'no' to disable implementation" placeholder:"NAME"`
 }
 
 type cli struct {

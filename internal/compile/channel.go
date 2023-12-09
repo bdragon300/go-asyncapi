@@ -141,7 +141,8 @@ type Operation struct {
 	ExternalDocs *ExternalDocumentation                                             `json:"externalDocs" yaml:"externalDocs"`
 	Bindings     utils.OrderedMap[string, utils.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
 	Traits       []OperationTrait                                                   `json:"traits" yaml:"traits"`
-	Message      *Message                                                           `json:"message" yaml:"message"`
+	// FIXME: can be either a message or map of messages?
+	Message *Message `json:"message" yaml:"message"`
 }
 
 type OperationTrait struct {
