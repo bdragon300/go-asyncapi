@@ -14,7 +14,7 @@
   "http": {
     "stdhttp": {
       "url": "https://pkg.go.dev/net/http",
-      "dir": "http/stdlib"
+      "dir": "http/stdhttp"
     }
   }
 }
