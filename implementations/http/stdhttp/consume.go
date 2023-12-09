@@ -1,7 +1,6 @@
 package stdhttp
 
 import (
-	"bytes"
 	"container/list"
 	"context"
 	"errors"
@@ -21,12 +20,9 @@ func NewConsumer(bindings *runHttp.ServerBindings) (consumer *ConsumeClient, err
 	}, nil
 }
 
-type HandlerWithErr func(w http.ResponseWriter, r *http.Request, err error)
-
 type ConsumeClient struct {
 	http.ServeMux
-	Bindings    *runHttp.ServerBindings
-	HandleError HandlerWithErr
+	Bindings *runHttp.ServerBindings
 
 	subscribers map[string]*list.List // Subscribers by channel name
 	mu          *sync.RWMutex
@@ -42,16 +38,11 @@ func (c *ConsumeClient) Subscriber(channelName string, bindings *runHttp.Channel
 		c.HandleFunc(channelName, func(w http.ResponseWriter, req *http.Request) {
 			c.mu.RLock()
 			defer c.mu.RUnlock()
-			defer req.Body.Close()
 
 			if l.Len() == 0 {
-				_, err := io.Copy(io.Discard, req.Body)
-				maybeWriteError(w, req, err, c.HandleError)
-				return
-			}
-
-			body, err := io.ReadAll(req.Body)
-			if maybeWriteError(w, req, err, c.HandleError) {
+				// No readers, drain out the body
+				defer req.Body.Close()
+				_, _ = io.Copy(io.Discard, req.Body)
 				return
 			}
 
@@ -59,11 +50,11 @@ func (c *ConsumeClient) Subscriber(channelName string, bindings *runHttp.Channel
 			for item := l.Front(); item != nil; item = item.Next() {
 				item := item
 				p.Go(func() error {
-					envelope := NewEnvelopeIn(req, bytes.NewReader(body))
+					envelope := NewEnvelopeIn(req, w)
 					return item.Value.(*SubscribeClient).receiveEnvelope(envelope)
 				})
 			}
-			maybeWriteError(w, req, p.Wait(), c.HandleError)
+			_ = p.Wait() // TODO: do smth with error?
 		})
 	}
 
@@ -88,8 +79,6 @@ func (c *ConsumeClient) Subscriber(channelName string, bindings *runHttp.Channel
 }
 
 type SubscribeClient struct {
-	HandleError HandlerWithErr
-
 	bindings  *runHttp.ChannelBindings
 	callbacks *list.List
 	ctx       context.Context
@@ -98,14 +87,8 @@ type SubscribeClient struct {
 }
 
 func (s *SubscribeClient) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	body, err := io.ReadAll(request.Body)
-	if maybeWriteError(writer, request, err, s.HandleError) {
-		return
-	}
-	defer request.Body.Close()
-	envelope := NewEnvelopeIn(request, bytes.NewReader(body))
-	err = s.receiveEnvelope(envelope)
-	maybeWriteError(writer, request, err, s.HandleError)
+	envelope := NewEnvelopeIn(request, writer)
+	_ = s.receiveEnvelope(envelope) // TODO: to smth with error?
 }
 
 func (s *SubscribeClient) Receive(ctx context.Context, cb func(envelope runHttp.EnvelopeReader) error) error {
@@ -145,15 +128,4 @@ func (s *SubscribeClient) receiveEnvelope(envelope *EnvelopeIn) error {
 		})
 	}
 	return p.Wait()
-}
-
-func maybeWriteError(w http.ResponseWriter, r *http.Request, err error, errHandler HandlerWithErr) bool {
-	if err != nil {
-		if errHandler != nil {
-			errHandler(w, r, err)
-		} else {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-		}
-	}
-	return err != nil
 }

@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"io"
+	"net/http"
 
 	"github.com/bdragon300/asyncapi-codegen-go/pkg/run"
 )
@@ -45,6 +46,9 @@ type (
 		io.Reader
 		Headers() run.Headers
 		Protocol() run.Protocol
+
+		ResponseWriter() http.ResponseWriter
+		RespondError(code int, error string)
 	}
 )
 

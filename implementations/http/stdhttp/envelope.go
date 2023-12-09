@@ -3,7 +3,6 @@ package stdhttp
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/bdragon300/asyncapi-codegen-go/pkg/run"
@@ -67,20 +66,20 @@ func (e *EnvelopeOut) SetPath(path string) {
 	e.path = path
 }
 
-func NewEnvelopeIn(req *http.Request, body io.Reader) *EnvelopeIn {
+func NewEnvelopeIn(req *http.Request, w http.ResponseWriter) *EnvelopeIn {
 	return &EnvelopeIn{
-		Request: req,
-		Body:    body,
+		Request:        req,
+		responseWriter: w,
 	}
 }
 
 type EnvelopeIn struct {
-	*http.Request // Server request
-	Body          io.Reader
+	*http.Request
+	responseWriter http.ResponseWriter
 }
 
 func (e *EnvelopeIn) Read(p []byte) (n int, err error) {
-	return e.Body.Read(p)
+	return e.Request.Body.Read(p)
 }
 
 func (e *EnvelopeIn) Headers() run.Headers {
@@ -93,4 +92,12 @@ func (e *EnvelopeIn) Headers() run.Headers {
 
 func (e *EnvelopeIn) Protocol() run.Protocol {
 	return run.ProtocolHTTP
+}
+
+func (e *EnvelopeIn) ResponseWriter() http.ResponseWriter {
+	return e.responseWriter
+}
+
+func (e *EnvelopeIn) RespondError(code int, error string) {
+	http.Error(e.responseWriter, error, code)
 }
