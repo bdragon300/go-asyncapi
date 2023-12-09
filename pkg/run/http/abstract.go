@@ -22,7 +22,6 @@ type (
 		ResetPayload()
 		SetHeaders(headers run.Headers)
 		SetContentType(contentType string)
-		Protocol() run.Protocol
 		SetBindings(bindings MessageBindings)
 
 		SetPath(path string)
@@ -45,7 +44,6 @@ type (
 	EnvelopeReader interface {
 		io.Reader
 		Headers() run.Headers
-		Protocol() run.Protocol
 
 		ResponseWriter() http.ResponseWriter
 		RespondError(code int, error string)

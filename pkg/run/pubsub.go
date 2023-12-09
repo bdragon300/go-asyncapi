@@ -18,7 +18,6 @@ type AbstractEnvelopeWriter interface {
 	ResetPayload()
 	SetHeaders(headers Headers)
 	SetContentType(contentType string)
-	Protocol() Protocol
 }
 
 type AbstractConsumer[B any, R AbstractEnvelopeReader, S AbstractSubscriber[R]] interface {
@@ -31,7 +30,6 @@ type AbstractSubscriber[R AbstractEnvelopeReader] interface {
 type AbstractEnvelopeReader interface {
 	io.Reader
 	Headers() Headers
-	Protocol() Protocol
 }
 
 type PublisherFanOut[W AbstractEnvelopeWriter, P AbstractPublisher[W]] struct {

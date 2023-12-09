@@ -252,12 +252,7 @@ func RenderChannelPublisherMethods(
 	}
 }
 
-func RenderChannelCommonMethods(
-	ctx *common.RenderContext,
-	channelStruct *render.Struct,
-	publisher, subscriber bool,
-	protoAbbr string,
-) []*j.Statement {
+func RenderChannelCommonMethods(ctx *common.RenderContext, channelStruct *render.Struct, publisher, subscriber bool) []*j.Statement {
 	rn := channelStruct.ReceiverName()
 	receiver := j.Id(rn).Id(channelStruct.Name)
 
@@ -268,14 +263,6 @@ func RenderChannelCommonMethods(
 			Qual(ctx.RuntimePackage(""), "ParamString").
 			Block(
 				j.Return(j.Id(rn).Dot("name")),
-			),
-
-		// Protocol() run.Protocol
-		j.Func().Params(receiver.Clone()).Id("Protocol").
-			Params().
-			Qual(ctx.RuntimePackage(""), "Protocol").
-			Block(
-				j.Return(j.Qual(ctx.RuntimePackage(""), "Protocol"+protoAbbr)),
 			),
 
 		// Method Close() (err error)

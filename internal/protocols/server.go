@@ -163,12 +163,7 @@ func RenderServerChannelMethod(
 	}
 }
 
-func RenderServerCommonMethods(
-	ctx *common.RenderContext,
-	serverStruct *render.Struct,
-	serverName string,
-	protoAbbr string,
-) []*j.Statement {
+func RenderServerCommonMethods(_ *common.RenderContext, serverStruct *render.Struct, serverName string) []*j.Statement {
 	receiver := j.Id(serverStruct.ReceiverName()).Id(serverStruct.Name)
 
 	return []*j.Statement{
@@ -178,14 +173,6 @@ func RenderServerCommonMethods(
 			String().
 			Block(
 				j.Return(j.Lit(serverName)),
-			),
-
-		// Protocol() run.Protocol
-		j.Func().Params(receiver.Clone()).Id("Protocol").
-			Params().
-			Qual(ctx.RuntimePackage(""), "Protocol").
-			Block(
-				j.Return(j.Qual(ctx.RuntimePackage(""), "Protocol"+protoAbbr)),
 			),
 	}
 }

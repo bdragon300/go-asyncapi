@@ -33,7 +33,7 @@ func (p ProtoServer) RenderDefinition(ctx *common.RenderContext) []*j.Statement 
 	res = append(res, protocols.RenderServerURLFunc(ctx, p.Struct, p.Variables, p.URL)...)
 	res = append(res, protocols.RenderServerNewFunc(ctx, p.Struct, p.Producer, p.Consumer, ProtoName)...)
 	res = append(res, p.Struct.RenderDefinition(ctx)...)
-	res = append(res, protocols.RenderServerCommonMethods(ctx, p.Struct, p.Name, protoAbbr)...)
+	res = append(res, protocols.RenderServerCommonMethods(ctx, p.Struct, p.Name)...)
 	res = append(res, p.renderChannelMethods(ctx)...)
 	if p.Producer {
 		res = append(res, protocols.RenderServerProducerMethods(ctx, p.Struct, ProtoName)...)

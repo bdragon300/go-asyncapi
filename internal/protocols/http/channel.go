@@ -139,7 +139,7 @@ func (p ProtoChannel) RenderDefinition(ctx *common.RenderContext) []*j.Statement
 	)...)
 	res = append(res, p.renderNewFunc(ctx)...)
 	res = append(res, p.Struct.RenderDefinition(ctx)...)
-	res = append(res, protocols.RenderChannelCommonMethods(ctx, p.Struct, p.Publisher, p.Subscriber, protoAbbr)...)
+	res = append(res, protocols.RenderChannelCommonMethods(ctx, p.Struct, p.Publisher, p.Subscriber)...)
 	res = append(res, p.renderCommonMethods(ctx)...)
 	if p.Publisher {
 		res = append(res, protocols.RenderChannelPublisherMethods(ctx, p.Struct, ProtoName)...)

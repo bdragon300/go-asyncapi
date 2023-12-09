@@ -36,10 +36,6 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.ContentType = contentType
 }
 
-func (e *EnvelopeOut) Protocol() run.Protocol {
-	return run.ProtocolAMQP
-}
-
 func (e *EnvelopeOut) SetBindings(bindings amqp.MessageBindings) {
 	e.Publishing.ContentEncoding = bindings.ContentEncoding
 	e.Type = bindings.MessageType
@@ -60,10 +56,6 @@ func (e EnvelopeIn) Read(p []byte) (n int, err error) {
 
 func (e EnvelopeIn) Headers() run.Headers {
 	return map[string]any(e.Delivery.Headers)
-}
-
-func (e EnvelopeIn) Protocol() run.Protocol {
-	return run.ProtocolAMQP
 }
 
 func (e EnvelopeIn) Ack() error {

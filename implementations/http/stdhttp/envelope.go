@@ -54,10 +54,6 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.Header.Set("Content-Type", contentType)
 }
 
-func (e *EnvelopeOut) Protocol() run.Protocol {
-	return run.ProtocolHTTP
-}
-
 func (e *EnvelopeOut) SetBindings(bindings runHttp.MessageBindings) {
 	e.messageBindings = bindings
 }
@@ -88,10 +84,6 @@ func (e *EnvelopeIn) Headers() run.Headers {
 		res[name] = val
 	}
 	return res
-}
-
-func (e *EnvelopeIn) Protocol() run.Protocol {
-	return run.ProtocolHTTP
 }
 
 func (e *EnvelopeIn) ResponseWriter() http.ResponseWriter {

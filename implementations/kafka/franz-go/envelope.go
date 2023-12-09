@@ -38,10 +38,6 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.Record.Headers = append(e.Record.Headers, kgo.RecordHeader{Key: "Content-Type", Value: []byte(contentType)})
 }
 
-func (e *EnvelopeOut) Protocol() run.Protocol {
-	return run.ProtocolKafka
-}
-
 func (e *EnvelopeOut) SetBindings(bindings kafka.MessageBindings) {
 	e.messageBindings = bindings
 }
@@ -72,8 +68,4 @@ func (e EnvelopeIn) Headers() run.Headers {
 		res[h.Key] = h.Value
 	}
 	return res
-}
-
-func (e EnvelopeIn) Protocol() run.Protocol {
-	return run.ProtocolKafka
 }

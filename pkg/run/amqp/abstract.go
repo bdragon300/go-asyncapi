@@ -21,7 +21,6 @@ type (
 		ResetPayload()
 		SetHeaders(headers run.Headers)
 		SetContentType(contentType string)
-		Protocol() run.Protocol
 		SetBindings(bindings MessageBindings)
 
 		SetDeliveryTag(tag string)
@@ -44,7 +43,6 @@ type (
 	EnvelopeReader interface {
 		io.Reader
 		Headers() run.Headers
-		Protocol() run.Protocol
 
 		Ack() error
 		Nack(requeue bool) error
