@@ -26,8 +26,8 @@ import (
 	"github.com/bdragon300/asyncapi-codegen-go/internal/linker"
 
 	"github.com/alexflint/go-arg"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/compile"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/scan"
 	"gopkg.in/yaml.v3"
 )
@@ -190,8 +190,8 @@ func generate(cmd *GenerateCmd) error {
 	return nil
 }
 
-func unmarshalSpecFile(fileName string) (*compile.AsyncAPI, error) {
-	res := compile.AsyncAPI{}
+func unmarshalSpecFile(fileName string) (*asyncapi.AsyncAPI, error) {
+	res := asyncapi.AsyncAPI{}
 
 	f, err := os.Open(fileName)
 	if err != nil {
@@ -257,7 +257,7 @@ func getImplementationsManifest() (implementations.ImplManifest, error) {
 	return meta, nil
 }
 
-func compileSpec(spec *compile.AsyncAPI, localLinker *linker.LocalLinker) (*common.CompileContext, error) {
+func compileSpec(spec *asyncapi.AsyncAPI, localLinker *linker.LocalLinker) (*common.CompileContext, error) {
 	compileCtx := common.NewCompileContext(localLinker)
 
 	compileCtx.Logger.Debug("AsyncAPI")
@@ -267,7 +267,7 @@ func compileSpec(spec *compile.AsyncAPI, localLinker *linker.LocalLinker) (*comm
 	if err := scan.CompileSchema(compileCtx, reflect.ValueOf(spec)); err != nil {
 		return compileCtx, fmt.Errorf("spec: %w", err)
 	}
-	if err := compile.UtilsCompile(compileCtx); err != nil {
+	if err := asyncapi.UtilsCompile(compileCtx); err != nil {
 		return compileCtx, fmt.Errorf("utils package: %w", err)
 	}
 	compileCtx.Logger.Info(

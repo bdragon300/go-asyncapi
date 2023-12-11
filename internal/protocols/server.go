@@ -1,8 +1,8 @@
 package protocols
 
 import (
+	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/compile"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	j "github.com/dave/jennifer/jen"
@@ -18,7 +18,7 @@ type ProtoServerVariable struct {
 
 func BuildServer(
 	ctx *common.CompileContext,
-	server *compile.Server,
+	server *asyncapi.Server,
 	serverKey string,
 	protoName string,
 ) (*BaseProtoServer, error) {

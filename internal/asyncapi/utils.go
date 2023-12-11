@@ -1,4 +1,4 @@
-package compile
+package asyncapi
 
 import (
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"

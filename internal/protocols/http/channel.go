@@ -5,8 +5,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/compile"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
@@ -19,7 +19,7 @@ type operationBindings struct {
 	Query  any    `json:"query" yaml:"query"` // jsonschema object
 }
 
-func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelKey string) (common.Renderer, error) {
+func BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, channelKey string) (common.Renderer, error) {
 	baseChan, err := protocols.BuildChannel(ctx, channel, channelKey, ProtoName, protoAbbr)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 	return chanResult, nil
 }
 
-func buildChannelBindingsMethod(ctx *common.CompileContext, channel *compile.Channel, bindingsStruct *render.Struct) (*render.Func, error) {
+func buildChannelBindingsMethod(ctx *common.CompileContext, channel *asyncapi.Channel, bindingsStruct *render.Struct) (*render.Func, error) {
 	structValues := &render.StructInit{Type: &render.Simple{Name: "ChannelBindings", Package: ctx.RuntimePackage(ProtoName)}}
 	var hasBindings bool
 

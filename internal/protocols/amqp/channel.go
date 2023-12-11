@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/compile"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
@@ -57,7 +57,7 @@ type subscribeOperationBindings struct {
 	Ack          bool          `json:"ack" yaml:"ack"`
 }
 
-func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelKey string) (common.Renderer, error) {
+func BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, channelKey string) (common.Renderer, error) {
 	baseChan, err := protocols.BuildChannel(ctx, channel, channelKey, ProtoName, protoAbbr)
 	if err != nil {
 		return nil, err
@@ -92,7 +92,7 @@ func BuildChannel(ctx *common.CompileContext, channel *compile.Channel, channelK
 	return chanResult, nil
 }
 
-func buildChannelBindings(ctx *common.CompileContext, channel *compile.Channel, bindingsStruct *render.Struct) (*render.Func, string, error) {
+func buildChannelBindings(ctx *common.CompileContext, channel *asyncapi.Channel, bindingsStruct *render.Struct) (*render.Func, string, error) {
 	structValues := &render.StructInit{Type: &render.Simple{Name: "ChannelBindings", Package: ctx.RuntimePackage(ProtoName)}}
 	var hasBindings bool
 	var chanType string

@@ -3,8 +3,8 @@ package amqp
 import (
 	"errors"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/compile"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
@@ -16,7 +16,7 @@ type messageBindings struct {
 	MessageType     string `json:"messageType" yaml:"messageType"`
 }
 
-func BuildMessageBindingsFunc(ctx *common.CompileContext, message *compile.Message, bindingsStruct *render.Struct, _ string) (common.Renderer, error) {
+func BuildMessageBindingsFunc(ctx *common.CompileContext, message *asyncapi.Message, bindingsStruct *render.Struct, _ string) (common.Renderer, error) {
 	msgBindings, ok := message.Bindings.Get(ProtoName)
 	if !ok {
 		return nil, common.CompileError{Err: errors.New("expected message bindings for protocol"), Path: ctx.PathRef(), Proto: ProtoName}

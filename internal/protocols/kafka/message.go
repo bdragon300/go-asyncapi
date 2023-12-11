@@ -6,8 +6,8 @@ import (
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/compile"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	j "github.com/dave/jennifer/jen"
@@ -20,7 +20,7 @@ type messageBindings struct {
 	SchemaLookupStrategy    string `json:"schemaLookupStrategy" yaml:"schemaLookupStrategy"`
 }
 
-func BuildMessageBindingsFunc(ctx *common.CompileContext, message *compile.Message, bindingsStruct *render.Struct, _ string) (common.Renderer, error) {
+func BuildMessageBindingsFunc(ctx *common.CompileContext, message *asyncapi.Message, bindingsStruct *render.Struct, _ string) (common.Renderer, error) {
 	msgBindings, ok := message.Bindings.Get(ProtoName)
 	if !ok {
 		return nil, common.CompileError{Err: errors.New("expected message bindings for protocol"), Path: ctx.PathRef(), Proto: ProtoName}

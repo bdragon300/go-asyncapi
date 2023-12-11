@@ -1,4 +1,4 @@
-package compile
+package asyncapi
 
 import (
 	"path"

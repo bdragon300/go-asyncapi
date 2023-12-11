@@ -1,8 +1,8 @@
 package kafka
 
 import (
+	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/compile"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
@@ -14,7 +14,7 @@ type serverBindings struct {
 	SchemaRegistryVendor *string `json:"schemaRegistryVendor" yaml:"schemaRegistryVendor"`
 }
 
-func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey string) (common.Renderer, error) {
+func BuildServer(ctx *common.CompileContext, server *asyncapi.Server, serverKey string) (common.Renderer, error) {
 	baseServer, err := protocols.BuildServer(ctx, server, serverKey, ProtoName)
 	if err != nil {
 		return nil, err

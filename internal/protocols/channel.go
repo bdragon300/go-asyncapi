@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/compile"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	j "github.com/dave/jennifer/jen"
@@ -14,7 +14,7 @@ import (
 
 func BuildChannel(
 	ctx *common.CompileContext,
-	channel *compile.Channel,
+	channel *asyncapi.Channel,
 	channelKey string,
 	protoName, protoAbbr string,
 ) (*BaseProtoChannel, error) {
@@ -268,15 +268,16 @@ func RenderChannelCommonMethods(ctx *common.RenderContext, channelStruct *render
 		// Method Close() (err error)
 		j.Func().Params(receiver.Clone()).Id("Close").
 			Params().
-			Params(j.Err().Error()).
+			Params(j.Error()).
 			BlockFunc(func(g *j.Group) {
+				var args []j.Code
 				if publisher {
-					g.Add(utils.QualSprintf("err = %Q(errors,Join)(err, %[1]s.publisher.Close())", rn))
+					args = append(args, j.Id(rn).Dot("publisher").Dot("Close").Call())
 				}
 				if subscriber {
-					g.Add(utils.QualSprintf("err = %Q(errors,Join)(err, %[1]s.subscriber.Close())", rn))
+					args = append(args, j.Id(rn).Dot("subscriber").Dot("Close").Call())
 				}
-				g.Return()
+				g.Return(j.Qual("errors", "Join").Call(args...))
 			}),
 	}
 }

@@ -1,13 +1,13 @@
 package http
 
 import (
+	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/compile"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols"
 	j "github.com/dave/jennifer/jen"
 )
 
-func BuildServer(ctx *common.CompileContext, server *compile.Server, serverKey string) (common.Renderer, error) {
+func BuildServer(ctx *common.CompileContext, server *asyncapi.Server, serverKey string) (common.Renderer, error) {
 	baseServer, err := protocols.BuildServer(ctx, server, serverKey, ProtoName)
 	if err != nil {
 		return nil, err
