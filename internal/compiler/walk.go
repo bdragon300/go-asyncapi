@@ -1,4 +1,4 @@
-package scan
+package compiler
 
 import (
 	"reflect"
@@ -8,7 +8,7 @@ import (
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 )
 
-type compiler interface {
+type compiledObject interface {
 	Compile(ctx *common.CompileContext) error
 }
 
@@ -16,7 +16,7 @@ type orderedMap interface {
 	OrderedMap()
 }
 
-func CompileSchema(ctx *common.CompileContext, object reflect.Value) error {
+func WalkAndCompile(ctx *common.CompileContext, object reflect.Value) error {
 	if _, ok := object.Interface().(orderedMap); ok {
 		mEntries := object.MethodByName("Entries")
 		entries := mEntries.Call(nil)[0]
@@ -68,7 +68,7 @@ func CompileSchema(ctx *common.CompileContext, object reflect.Value) error {
 
 func traverse(ctx *common.CompileContext, object reflect.Value) error {
 	// BFS tree traversal
-	if v, ok := object.Interface().(compiler); ok {
+	if v, ok := object.Interface().(compiledObject); ok {
 		if (object.Kind() == reflect.Pointer || object.Kind() == reflect.Interface) && object.IsNil() {
 			return nil
 		}
@@ -80,7 +80,7 @@ func traverse(ctx *common.CompileContext, object reflect.Value) error {
 		}
 		ctx.Logger.PrevCallLevel()
 	}
-	return CompileSchema(ctx, object)
+	return WalkAndCompile(ctx, object)
 }
 
 func parseTags(field reflect.StructField) (tags map[common.SchemaTag]string) {

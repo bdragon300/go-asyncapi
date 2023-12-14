@@ -158,5 +158,5 @@ type OperationTrait struct {
 }
 
 type SecurityRequirement struct {
-	utils.OrderedMap[string, []string]
+	utils.OrderedMap[string, []string] // FIXME: orderedmap must be in fields as utils.OrderedMap[SecurityRequirement, []SecurityRequirement]
 }

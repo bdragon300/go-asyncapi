@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/compiler"
+
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 
 	"github.com/samber/lo"
@@ -11,28 +13,31 @@ import (
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 )
 
-func NewLocalLinker() *LocalLinker {
-	return &LocalLinker{logger: common.NewLogger("Linking 🔗")}
+func NewSpecLinker() *SpecLinker {
+	return &SpecLinker{logger: common.NewLogger("Linking 🔗")}
 }
 
-type LocalLinker struct {
-	queries     []common.LinkQuerier
-	listQueries []common.ListQuerier
-	logger      *common.Logger
+type SpecLinker struct {
+	externalQueriesQueue []common.LinkQuerier
+	queries              []common.LinkQuerier
+	listQueries          []common.ListQuerier
+	logger               *common.Logger
 }
 
-func (l *LocalLinker) Add(query common.LinkQuerier) {
+func (l *SpecLinker) Add(query common.LinkQuerier) {
 	l.queries = append(l.queries, query)
 }
 
-func (l *LocalLinker) AddMany(query common.ListQuerier) {
+func (l *SpecLinker) AddMany(query common.ListQuerier) {
 	l.listQueries = append(l.listQueries, query)
 }
 
-func (l *LocalLinker) Process(ctx *common.CompileContext) error {
-	objects := lo.Flatten(lo.MapToSlice(ctx.Packages, func(k string, v *common.Package) []common.PackageItem {
-		return v.Items()
-	}))
+type linkerSource interface {
+	AllItems() []compiler.PackageItem
+}
+
+func (l *SpecLinker) Process(source linkerSource) error {
+	objects := source.AllItems()
 
 	assigned := 0
 	prevAssigned := 0
@@ -45,7 +50,7 @@ func (l *LocalLinker) Process(ctx *common.CompileContext) error {
 				case common.LinkOriginUser:
 					l.logger.Debug("Ref resolved", "$ref", query.Ref(), "target", res)
 				default:
-					panic(fmt.Sprintf("Unknown link origin: %v", query.Origin()))
+					panic(fmt.Sprintf("Unknown link origin, this must not happen: %v", query.Origin()))
 				}
 
 				query.Assign(res)
@@ -53,14 +58,8 @@ func (l *LocalLinker) Process(ctx *common.CompileContext) error {
 			}
 		}
 		if assigned == prevAssigned {
-			notAssigned := lo.FilterMap(l.queries, func(item common.LinkQuerier, index int) (string, bool) {
-				return item.Ref(), !item.Assigned()
-			})
-			// FIXME: here can be also internal refs, not only those from spec. It's better not to show them to user
-			return fmt.Errorf(
-				"orphan $refs (target not found, reference recursion, etc.): %s",
-				strings.Join(notAssigned, "; "),
-			)
+			l.logger.Trace("no more ref links to assign on this iteration, leave it and go ahead")
+			break
 		}
 		prevAssigned = assigned
 	}
@@ -84,27 +83,55 @@ func (l *LocalLinker) Process(ctx *common.CompileContext) error {
 			}
 		}
 		if assigned == prevAssigned {
-			notAssigned := lo.FilterMap(l.queries, func(item common.LinkQuerier, index int) (string, bool) {
-				return item.Ref(), !item.Assigned()
-			})
-			// FIXME: here can be also internal refs, not only those from spec. It's better not to show them to user
-			return fmt.Errorf(
-				"orphan $refs (target not found, reference recursion, etc.): %s",
-				strings.Join(notAssigned, "; "),
-			)
+			l.logger.Trace("no more list links to assign on this iteration, leave it and go ahead")
+			break
 		}
 		prevAssigned = assigned
 	}
 
-	l.logger.Info("Finished", "refs", l.UserQueriesCount())
+	l.logger.Trace("iteration completed")
 
 	return nil
 }
 
-func (l *LocalLinker) UserQueriesCount() int {
+func (l *SpecLinker) UserQueriesCount() int {
 	return lo.CountBy(l.queries, func(item common.LinkQuerier) bool {
 		return item.Origin() == common.LinkOriginUser
 	})
+}
+
+func (l *SpecLinker) PopExternalQuery() (common.LinkQuerier, bool) {
+	if len(l.externalQueriesQueue) == 0 {
+		return nil, false
+	}
+
+	res := l.externalQueriesQueue[len(l.externalQueriesQueue)-1]
+	l.externalQueriesQueue = l.externalQueriesQueue[:len(l.externalQueriesQueue)-1]
+	return res, true
+}
+
+func (l *SpecLinker) DanglingQueries() []string {
+	return lo.Flatten([][]string{
+		lo.FilterMap(l.queries, func(item common.LinkQuerier, index int) (string, bool) {
+			return item.Ref(), !item.Assigned()
+		}),
+		lo.FilterMap(l.listQueries, func(item common.ListQuerier, index int) (string, bool) {
+			return "<internal list query>", !item.Assigned()
+		}),
+	})
+}
+
+func (l *SpecLinker) Stats() string {
+	return fmt.Sprintf(
+		"Linker: %d refs (%d user (%d dangling), %d internal (%d dangling)), %d internal list queries (%d dangling)",
+		len(l.queries),
+		lo.CountBy(l.queries, func(l common.LinkQuerier) bool { return l.Origin() == common.LinkOriginUser }),
+		lo.CountBy(l.queries, func(l common.LinkQuerier) bool { return l.Origin() == common.LinkOriginUser && !l.Assigned() }),
+		lo.CountBy(l.queries, func(l common.LinkQuerier) bool { return l.Origin() == common.LinkOriginInternal }),
+		lo.CountBy(l.queries, func(l common.LinkQuerier) bool { return l.Origin() == common.LinkOriginInternal && !l.Assigned() }),
+		len(l.listQueries),
+		lo.CountBy(l.listQueries, func(l common.ListQuerier) bool { return !l.Assigned() }),
+	)
 }
 
 func getPathByRef(ref string) []string {
@@ -122,13 +149,14 @@ func isLinker(obj any) bool {
 }
 
 // TODO: detect ref loops to avoid infinite recursion
-func resolveLink(q common.LinkQuerier, objects []common.PackageItem) (common.Renderer, bool) {
+// TODO: external refs can not be resolved at first time -- leave them unresolved
+func resolveLink(q common.LinkQuerier, objects []compiler.PackageItem) (common.Renderer, bool) {
 	refPath := getPathByRef(q.Ref())
 	cb := func(_ common.Renderer, path []string) bool { return utils.SlicesEqual(path, refPath) }
 	if qcb := q.FindCallback(); qcb != nil {
 		cb = qcb
 	}
-	found := lo.Filter(objects, func(obj common.PackageItem, _ int) bool {
+	found := lo.Filter(objects, func(obj compiler.PackageItem, _ int) bool {
 		return cb(obj.Typ, obj.Path)
 	})
 	if len(found) != 1 {
@@ -152,13 +180,13 @@ func resolveLink(q common.LinkQuerier, objects []common.PackageItem) (common.Ren
 }
 
 // TODO: detect ref loops to avoid infinite recursion
-func resolveListLink(q common.ListQuerier, objects []common.PackageItem) ([]common.Renderer, bool) {
+func resolveListLink(q common.ListQuerier, objects []compiler.PackageItem) ([]common.Renderer, bool) {
 	// Exclude links from selection in order to avoid duplicates in list
 	cb := func(obj common.Renderer, _ []string) bool { return !isLinker(obj) }
 	if qcb := q.FindCallback(); qcb != nil {
 		cb = qcb
 	}
-	found := lo.Filter(objects, func(obj common.PackageItem, _ int) bool {
+	found := lo.Filter(objects, func(obj compiler.PackageItem, _ int) bool {
 		return cb(obj.Typ, obj.Path)
 	})
 

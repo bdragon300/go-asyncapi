@@ -8,6 +8,8 @@ import (
 	"path"
 	"strings"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/compiler"
+
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
@@ -48,19 +50,25 @@ func (e MultilineError) RestLines() string {
 	return bld.String()
 }
 
-func RenderPackages(packages map[string]*common.Package, importBase, baseDir string) (files map[string]*bytes.Buffer, err error) {
+type renderSource interface {
+	DirectRenderItems(pkgName string) []compiler.PackageItem
+	Packages() []string
+}
+
+func RenderPackages(source renderSource, importBase, baseDir string) (files map[string]*bytes.Buffer, err error) {
 	files = make(map[string]*bytes.Buffer)
 	logger := common.NewLogger("Rendering 🎨")
 	counter := 0
 
-	for pkgName, pkg := range packages {
+	for _, pkgName := range source.Packages() {
 		ctx := &common.RenderContext{
 			CurrentPackage: pkgName,
 			ImportBase:     importBase,
 			Logger:         logger,
 		}
-		ctx.Logger.Debug("Package", "pkg", pkgName, "items", len(pkg.Items()))
-		for _, item := range pkg.Items() {
+		items := source.DirectRenderItems(pkgName)
+		ctx.Logger.Debug("Package", "pkg", pkgName, "items", len(items))
+		for _, item := range items {
 			fileName := utils.ToFileName(item.Typ.String()) + ".go"
 
 			f := jen.NewFilePathName(baseDir, pkgName)
@@ -86,7 +94,7 @@ func RenderPackages(packages map[string]*common.Package, importBase, baseDir str
 			files[path.Join(pkgName, fileName)] = buf
 		}
 	}
-	logger.Info("Finished", "packages", len(packages), "objects", counter)
+	logger.Debugf("Render stats: packages %d, objects rendered directly: %d", len(source.Packages()), counter)
 	return
 }
 
@@ -110,7 +118,7 @@ func WriteToFiles(files map[string]*bytes.Buffer, baseDir string) error {
 		l.Debug("File wrote", "name", fullPath, "bytes", buf.Len())
 		totalBytes += buf.Len()
 	}
-	l.Info("Finished", "files", len(files), "total_bytes", totalBytes)
+	l.Debugf("Writer stats: files: %d, total bytes: %d", len(files), totalBytes)
 	return nil
 }
 

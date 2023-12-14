@@ -18,11 +18,6 @@ const (
 
 const TagName = "cgen"
 
-type Linker interface {
-	Add(query LinkQuerier)
-	AddMany(query ListQuerier)
-}
-
 type LinkQuerier interface {
 	Assign(obj any)
 	Assigned() bool

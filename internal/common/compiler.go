@@ -14,10 +14,20 @@ type GolangType interface {
 	TypeName() string
 }
 
-const (
-	nameWordSep         = "_"
-	fallbackContentType = "application/json" // Default content type if it omitted in spec
-)
+const nameWordSep = "_"
+
+type CompilationResultsStore interface {
+	Add(pkgName string, stack []string, obj Renderer)
+	AddProtocol(protoName string)
+
+	SetDefaultContentType(contentType string)
+	DefaultContentType() string
+}
+
+type Linker interface {
+	Add(query LinkQuerier)
+	AddMany(query ListQuerier)
+}
 
 type ContextStackItem struct {
 	Path        string
@@ -28,10 +38,7 @@ type ContextStackItem struct {
 
 func NewCompileContext(linker Linker) *CompileContext {
 	res := CompileContext{
-		Packages:           make(map[string]*Package),
-		Linker:             linker,
-		Protocols:          make(map[string]int),
-		DefaultContentType: fallbackContentType,
+		Linker: linker,
 	}
 	res.Logger = &CompilerLogger{
 		ctx:    &res,
@@ -41,12 +48,10 @@ func NewCompileContext(linker Linker) *CompileContext {
 }
 
 type CompileContext struct {
-	Packages           map[string]*Package
-	Stack              SimpleStack[ContextStackItem]
-	Linker             Linker
-	Protocols          map[string]int
-	DefaultContentType string
-	Logger             *CompilerLogger
+	ResultsStore CompilationResultsStore
+	Stack        SimpleStack[ContextStackItem]
+	Linker       Linker
+	Logger       *CompilerLogger
 }
 
 func (c *CompileContext) PutToCurrentPkg(obj Renderer) {
@@ -54,12 +59,7 @@ func (c *CompileContext) PutToCurrentPkg(obj Renderer) {
 	if pkgName == "" {
 		panic("Package name has not been set")
 	}
-	pkg, ok := c.Packages[pkgName]
-	if !ok {
-		pkg = &Package{}
-		c.Packages[c.Stack.Top().PackageName] = pkg
-	}
-	pkg.Put(obj, c.PathStack())
+	c.ResultsStore.Add(pkgName, c.PathStack(), obj)
 }
 
 func (c *CompileContext) PathRef() string {
@@ -99,11 +99,13 @@ func (c *CompileContext) GenerateObjName(name, suffix string) string {
 	return utils.ToGolangName(name, true) + suffix
 }
 
-func (c *CompileContext) AddProtocol(protoName string) {
-	if _, ok := c.Protocols[protoName]; !ok {
-		c.Protocols[protoName] = 0
+func (c *CompileContext) WithResultsStore(store CompilationResultsStore) *CompileContext {
+	return &CompileContext{
+		ResultsStore: store,
+		Stack:        SimpleStack[ContextStackItem]{},
+		Linker:       c.Linker,
+		Logger:       c.Logger,
 	}
-	c.Protocols[protoName]++
 }
 
 type CompilerLogger struct {

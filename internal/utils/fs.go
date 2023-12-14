@@ -8,10 +8,11 @@ import (
 	"path"
 )
 
-func CopyRecursive(srcFS fs.FS, dstBase string, copyCb func(w io.Writer, r io.Reader) (int64, error)) error {
+func CopyRecursive(srcFS fs.FS, dstBase string, copyCb func(w io.Writer, r io.Reader) (int64, error)) (int, error) {
+	var totalBytes int
 	entries, err := fs.ReadDir(srcFS, ".")
 	if err != nil {
-		return fmt.Errorf("cannot get dir entries: %w", err)
+		return totalBytes, fmt.Errorf("list dir entries: %w", err)
 	}
 	for _, entry := range entries {
 		dst := path.Join(dstBase, entry.Name())
@@ -19,35 +20,39 @@ func CopyRecursive(srcFS fs.FS, dstBase string, copyCb func(w io.Writer, r io.Re
 		if entry.IsDir() {
 			src, err := fs.Sub(srcFS, entry.Name())
 			if err != nil {
-				return fmt.Errorf("cannot read src dir %q: %w", entry.Name(), err)
+				return totalBytes, fmt.Errorf("read src dir %q: %w", entry.Name(), err)
 			}
-			if err := os.MkdirAll(dst, os.ModePerm); err != nil {
-				return fmt.Errorf("cannot create a dst directory %q: %w", dst, err)
+			if err = os.MkdirAll(dst, os.ModePerm); err != nil {
+				return totalBytes, fmt.Errorf("create a dst directory %q: %w", dst, err)
 			}
-			if err := CopyRecursive(src, dst, copyCb); err != nil {
-				return fmt.Errorf("error while copy dir %q: %w", entry.Name(), err)
+			n, err := CopyRecursive(src, dst, copyCb)
+			if err != nil {
+				return totalBytes, fmt.Errorf("copy directory %q: %w", entry.Name(), err)
 			}
+			totalBytes += n
 		} else {
 			doCopy := func() error {
 				srcFile, err := srcFS.Open(entry.Name())
 				if err != nil {
-					return fmt.Errorf("cannot open src file for reading %q: %w", entry.Name(), err)
+					return fmt.Errorf("open src file for reading %q: %w", entry.Name(), err)
 				}
 				defer srcFile.Close()
 				dstFile, err := os.Create(dst)
 				if err != nil {
-					return fmt.Errorf("cannot craate/truncate dst file %q: %w", dst, err)
+					return fmt.Errorf("create/truncate dst file %q: %w", dst, err)
 				}
 				defer dstFile.Close()
-				if _, err = copyCb(dstFile, srcFile); err != nil {
-					return fmt.Errorf("cannot copy contents from %q to %q: %w", entry.Name(), dst, err)
+				n, err := copyCb(dstFile, srcFile)
+				if err != nil {
+					return fmt.Errorf("copy contents from %q to %q: %w", entry.Name(), dst, err)
 				}
+				totalBytes += int(n)
 				return nil
 			}
 			if err := doCopy(); err != nil {
-				return err
+				return totalBytes, err
 			}
 		}
 	}
-	return nil
+	return totalBytes, nil
 }

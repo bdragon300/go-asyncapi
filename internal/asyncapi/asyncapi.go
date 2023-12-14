@@ -21,9 +21,9 @@ type AsyncAPI struct {
 
 func (a AsyncAPI) Compile(ctx *common.CompileContext) error {
 	if a.DefaultContentType != "" {
-		ctx.DefaultContentType = a.DefaultContentType
+		ctx.ResultsStore.SetDefaultContentType(a.DefaultContentType)
 	}
-	ctx.Logger.Trace(fmt.Sprintf("Default content type set to %s", ctx.DefaultContentType))
+	ctx.Logger.Trace(fmt.Sprintf("Default content type set to %s", ctx.ResultsStore.DefaultContentType()))
 	return nil
 }
 

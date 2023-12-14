@@ -1,4 +1,4 @@
-package asyncapi
+package compiler
 
 import (
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
@@ -9,13 +9,7 @@ const utilsPackageName = "utils"
 
 func UtilsCompile(ctx *common.CompileContext) error {
 	ctx.Logger.Trace("Utils package")
-	pkg := common.Package{}
-	if _, ok := ctx.Packages[utilsPackageName]; !ok {
-		ctx.Packages[utilsPackageName] = &pkg
-	}
-
-	ctx.Packages[utilsPackageName].Put(buildSerializer(ctx), nil)
-
+	ctx.ResultsStore.Add(utilsPackageName, ctx.PathStack(), buildSerializer(ctx))
 	return nil
 }
 
@@ -28,6 +22,6 @@ func buildSerializer(ctx *common.CompileContext) *render.UtilsSerializer {
 
 	return &render.UtilsSerializer{
 		AllMessages:        lnk,
-		DefaultContentType: ctx.DefaultContentType,
+		DefaultContentType: ctx.ResultsStore.DefaultContentType(),
 	}
 }

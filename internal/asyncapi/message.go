@@ -77,7 +77,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		PayloadHasSchema:    m.Payload != nil && m.Payload.Ref == "",
 		HeadersFallbackType: &render.Map{KeyType: &render.Simple{Name: "string"}, ValueType: &render.Simple{Name: "any", IsIface: true}},
 	}
-	obj.ContentType, _ = lo.Coalesce(m.ContentType, ctx.DefaultContentType)
+	obj.ContentType, _ = lo.Coalesce(m.ContentType, ctx.ResultsStore.DefaultContentType())
 	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", obj.ContentType))
 	allServersLnk := render.NewListCbLink[*render.Server](func(item common.Renderer, path []string) bool {
 		_, ok := item.(*render.Server)

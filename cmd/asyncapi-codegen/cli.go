@@ -7,9 +7,9 @@ import (
 	"io"
 	"os"
 	"path"
-	"reflect"
 	"strings"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/factory"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols/http"
 
 	"github.com/charmbracelet/log"
@@ -26,14 +26,11 @@ import (
 	"github.com/bdragon300/asyncapi-codegen-go/internal/linker"
 
 	"github.com/alexflint/go-arg"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/scan"
-	"gopkg.in/yaml.v3"
 )
 
 type GenerateCmd struct {
-	Spec          string `arg:"required,positional" help:"AsyncAPI specification file, yaml or json" placeholder:"FILE"`
+	Spec          string `arg:"required,positional" help:"AsyncAPI specification file path or url" placeholder:"PATH"`
 	TargetDir     string `arg:"-t,--target-dir" default:"./asyncapi" help:"Directory to save the generated code" placeholder:"DIR"`
 	ImplDir       string `arg:"--impl-dir" help:"Directory where protocol implementations will be placed. By default it is {target-dir}/impl" placeholder:"DIR"`
 	ProjectModule string `arg:"-M,--project-module" help:"Project module name to use. By default it is extracted from go.mod file in the current working directory" placeholder:"MODULE"`
@@ -131,37 +128,59 @@ func generate(cmd *GenerateCmd) error {
 	implDir, _ := lo.Coalesce(cmd.ImplDir, path.Join(cmd.TargetDir, "impl"))
 	logger.Debugf("Target implementations directory is %s", implDir)
 
-	spec, err := unmarshalSpecFile(cmd.Spec)
-	if err != nil {
-		return fmt.Errorf("error while reading spec file: %w", err)
-	}
+	// Compilation queue
+	// Compilation spec -> linking -> push external refs to queue -> compilation next spec -> etc.
+	specPath := cmd.Spec
+	specLinker := linker.NewSpecLinker()
+	var compilers []factory.Compiler
+	for {
+		logger.Info("Run compilation", "path", specPath)
+		comp, err := factory.MakeCompiler(specPath)
+		if err != nil {
+			return fmt.Errorf("make a compiler: %w", err)
+		}
+		compilers = append(compilers, comp)
+		logger.Debug("Loading spec path", "path", specPath)
+		if err := comp.Load(); err != nil {
+			return fmt.Errorf("load the spec: %w", err)
+		}
+		logger.Debug("Compilation a loaded file", "path", specPath)
+		if err := comp.Compile(specLinker); err != nil {
+			return fmt.Errorf("compilation the spec: %w", err)
+		}
+		logger.Debugf("Compiler stats: %s", comp.Stats())
 
-	localLinker := linker.NewLocalLinker()
-
-	// Compilation
-	logger.Info("Run compilation")
-	compileCtx, err := compileSpec(spec, localLinker)
-	if err != nil {
-		return fmt.Errorf("schema compile error: %w", err)
+		// Linking
+		logger.Info("Run linking", "path", specPath)
+		if err = specLinker.Process(comp); err != nil {
+			return fmt.Errorf("schema linking error: %w", err)
+		}
+		ref, ok := specLinker.PopExternalQuery()
+		if !ok {
+			break // Queue is empty
+		}
+		specPath = ref.Ref()
 	}
-
-	// Linking
-	logger.Info("Run linking")
-	if err = localLinker.Process(compileCtx); err != nil {
-		return fmt.Errorf("schema linking error: %w", err)
+	logger.Debugf("Linker stats: %s", specLinker.Stats())
+	danglingQueries := specLinker.DanglingQueries()
+	if len(danglingQueries) > 0 {
+		logger.Error("Cannot assign some refs", "links", danglingQueries)
 	}
+	logger.Info("Compilation/linking completed", "files", len(compilers))
+
+	firstComp := compilers[0]
 
 	// Rendering
 	logger.Info("Run rendering")
-	files, err := writer.RenderPackages(compileCtx.Packages, importBase, cmd.TargetDir)
+	files, err := writer.RenderPackages(firstComp, importBase, cmd.TargetDir)
 	if err != nil {
-		return fmt.Errorf("schema render error: %w", err)
+		return fmt.Errorf("schema render: %w", err)
 	}
 
 	// Writing
 	logger.Info("Run writing")
 	if err = writer.WriteToFiles(files, cmd.TargetDir); err != nil {
-		return fmt.Errorf("error while writing code to files: %w", err)
+		return fmt.Errorf("writing code to files: %w", err)
 	}
 
 	// Rendering implementations
@@ -171,7 +190,8 @@ func generate(cmd *GenerateCmd) error {
 		panic(err.Error())
 	}
 	selectedImpls := getSelectedImplementations(cmd.ImplementationsOpts)
-	for p := range compileCtx.Protocols {
+	var total int
+	for _, p := range firstComp.Protocols() {
 		implName := selectedImpls[p]
 		if implName == "no" || implName == "" {
 			logger.Debug("Implementation has been unselected", "protocol", p)
@@ -181,37 +201,19 @@ func generate(cmd *GenerateCmd) error {
 			return fmt.Errorf("unknown implementation %q for %q protocol, use list-implementations command to see possible values", implName, p)
 		}
 		logger.Debug("Writing implementation", "protocol", p, "name", implName)
-		if err = writer.WriteImplementation(implManifest[p][implName].Dir, path.Join(implDir, p)); err != nil {
-			return fmt.Errorf("cannot render implementation for protocol %q: %w", p, err)
+		n, err := writer.WriteImplementation(implManifest[p][implName].Dir, path.Join(implDir, p))
+		if err != nil {
+			return fmt.Errorf("implementation rendering for protocol %q: %w", p, err)
 		}
+		total += n
 	}
-	logger.WithPrefix("Writing 📝").Info("Finished", "protocols", lo.Keys(compileCtx.Protocols))
+	logger.WithPrefix("Writing 📝").Debugf(
+		"Implementations writer stats: total bytes: %d, protocols: %q",
+		total, strings.Join(firstComp.Protocols(), ","),
+	)
 
+	logger.Info("Finished")
 	return nil
-}
-
-func unmarshalSpecFile(fileName string) (*asyncapi.AsyncAPI, error) {
-	res := asyncapi.AsyncAPI{}
-
-	f, err := os.Open(fileName)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = f.Close() }()
-
-	switch {
-	case strings.HasSuffix(fileName, ".yaml") || strings.HasSuffix(fileName, ".yml"):
-		logger.Debug("Found YAML spec file", "filename", fileName)
-		dec := yaml.NewDecoder(f)
-		err = dec.Decode(&res)
-	case strings.HasSuffix(fileName, ".json"):
-		logger.Debug("Found JSON spec file", "filename", fileName)
-		dec := json.NewDecoder(f)
-		err = dec.Decode(&res)
-	default:
-		err = errors.New("cannot determine format of a spec file: unknown filename extension")
-	}
-	return &res, err
 }
 
 func getImportBase() (string, error) {
@@ -255,32 +257,4 @@ func getImplementationsManifest() (implementations.ImplManifest, error) {
 	}
 
 	return meta, nil
-}
-
-func compileSpec(spec *asyncapi.AsyncAPI, localLinker *linker.LocalLinker) (*common.CompileContext, error) {
-	compileCtx := common.NewCompileContext(localLinker)
-
-	compileCtx.Logger.Debug("AsyncAPI")
-	if err := spec.Compile(compileCtx); err != nil {
-		return compileCtx, fmt.Errorf("AsyncAPI root component: %w", err)
-	}
-	if err := scan.CompileSchema(compileCtx, reflect.ValueOf(spec)); err != nil {
-		return compileCtx, fmt.Errorf("spec: %w", err)
-	}
-	if err := asyncapi.UtilsCompile(compileCtx); err != nil {
-		return compileCtx, fmt.Errorf("utils package: %w", err)
-	}
-	compileCtx.Logger.Info(
-		"Finished",
-		"packages", len(compileCtx.Packages),
-		"objects", lo.SumBy(lo.Values(compileCtx.Packages), func(item *common.Package) int {
-			if item == nil {
-				return 0
-			}
-			return len(item.Items())
-		}),
-		"refs", localLinker.UserQueriesCount(),
-	)
-
-	return compileCtx, nil
 }

@@ -12,14 +12,14 @@ import (
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 )
 
-func WriteImplementation(implDir, baseDir string) error {
+func WriteImplementation(implDir, baseDir string) (int, error) {
 	if err := os.MkdirAll(baseDir, 0o750); err != nil {
-		return fmt.Errorf("cannot create directory %q: %w", baseDir, err)
+		return 0, fmt.Errorf("create directory %q: %w", baseDir, err)
 	}
 
 	subDir, err := fs.Sub(implementations.Implementations, implDir)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	insertGeneratedPreamble := func(w io.Writer, r io.Reader) (n int64, err error) {
