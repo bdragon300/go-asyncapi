@@ -29,7 +29,7 @@ type (
 )
 
 type EnvelopeMarshaler interface {
-	MarshalKafkaEnvelope(envelope EnvelopeWriter) error
+	MarshalHTTPEnvelope(envelope EnvelopeWriter) error
 }
 
 // Sub
@@ -51,5 +51,5 @@ type (
 )
 
 type EnvelopeUnmarshaler interface {
-	UnmarshalKafkaEnvelope(envelope EnvelopeReader) error
+	UnmarshalHTTPEnvelope(envelope EnvelopeReader) error
 }
