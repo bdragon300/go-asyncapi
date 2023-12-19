@@ -50,8 +50,7 @@ type ImplementationsOpts struct {
 type cli struct {
 	GenerateCmd         *GenerateCmd `arg:"subcommand:generate" help:"Generate the code based on AsyncAPI specification"`
 	ListImplementations *struct{}    `arg:"subcommand:list-implementations" help:"Show all available protocol implementations"`
-	Verbose             bool         `arg:"-v,--verbose" help:"Verbose output"`
-	Trace               bool         `arg:"--trace" help:"Trace output"` // TODO: --quiet
+	Verbose             int          `arg:"-v" help:"Logging verbosity: 0 default, 1 debug output, 2 more debug output" placeholder:"LEVEL"` // TODO: --quiet
 }
 
 var logger *types.Logger
@@ -71,11 +70,12 @@ func main() {
 	}
 
 	// Setting up the logger
-	log.SetLevel(log.InfoLevel)
-	if cliArgs.Verbose {
+	switch cliArgs.Verbose {
+	case 0:
+		log.SetLevel(log.InfoLevel)
+	case 1:
 		log.SetLevel(log.DebugLevel)
-	}
-	if cliArgs.Trace {
+	default:
 		log.SetLevel(types.TraceLevel)
 	}
 	log.SetReportTimestamp(false)
