@@ -131,11 +131,6 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 
 func (m Message) setStructFields(ctx *common.CompileContext, langMessage *render.Message) {
 	fields := []render.StructField{
-		{
-			Name:        "ID",
-			Description: "ID is unique string used to identify the message. Case-sensitive.",
-			Type:        &render.Simple{Name: "string"},
-		},
 		{Name: "Payload", Type: langMessage.PayloadType},
 	}
 	if langMessage.HeadersTypeLink != nil {

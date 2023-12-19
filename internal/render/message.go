@@ -94,15 +94,6 @@ func (m Message) renderPublishCommonMethods(ctx *common.RenderContext) []*j.Stat
 	}
 
 	return []*j.Statement{
-		// Method WithID(ID string) *Message2Out
-		j.Func().Params(receiver.Clone()).Id("WithID").
-			Params(j.Id("id").String()).
-			Params(j.Op("*").Id(structName)).
-			Block(
-				j.Op(fmt.Sprintf(`
-					%[1]s.ID = id
-					return %[1]s`, rn)),
-			),
 		// Method WithPayload(payload Model2) *Message2Out
 		j.Func().Params(receiver.Clone()).Id("WithPayload").
 			Params(j.Id("payload").Add(payloadFieldType...)).
@@ -150,13 +141,6 @@ func (m Message) renderSubscribeCommonMethods(ctx *common.RenderContext) []*j.St
 	}
 
 	return []*j.Statement{
-		// Method MessageID() string
-		j.Func().Params(receiver.Clone()).Id("MessageID").
-			Params().
-			String().
-			Block(
-				j.Return(j.Id(rn).Dot("ID")),
-			),
 		// Method MessagePayload() Model2
 		j.Func().Params(receiver.Clone()).Id("MessagePayload").
 			Params().
