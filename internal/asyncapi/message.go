@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+
 	yaml "gopkg.in/yaml.v3"
 
 	"github.com/samber/lo"
@@ -30,7 +32,7 @@ type Message struct {
 	Description   string                                                             `json:"description" yaml:"description"`
 	Tags          []Tag                                                              `json:"tags" yaml:"tags"`
 	ExternalDocs  *ExternalDocumentation                                             `json:"externalDocs" yaml:"externalDocs"`
-	Bindings      utils.OrderedMap[string, utils.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
+	Bindings      types.OrderedMap[string, types.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
 	Examples      []MessageExample                                                   `json:"examples" yaml:"examples"`
 	Traits        []MessageTrait                                                     `json:"traits" yaml:"traits"`
 
@@ -43,15 +45,15 @@ func (m Message) Compile(ctx *common.CompileContext) error {
 	if err != nil {
 		return err
 	}
-	ctx.PutToCurrentPkg(obj)
+	ctx.PutObject(obj)
 	return nil
 }
 
 func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Renderer, error) {
 	if m.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", m.Ref)
-		res := render.NewRefLinkAsRenderer(m.Ref, common.LinkOriginUser)
-		ctx.Linker.Add(res)
+		res := render.NewRendererPromise(m.Ref, common.PromiseOriginUser)
+		ctx.PutPromise(res)
 		return res, nil
 	}
 
@@ -77,21 +79,21 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		PayloadHasSchema:    m.Payload != nil && m.Payload.Ref == "",
 		HeadersFallbackType: &render.Map{KeyType: &render.Simple{Name: "string"}, ValueType: &render.Simple{Name: "any", IsIface: true}},
 	}
-	obj.ContentType, _ = lo.Coalesce(m.ContentType, ctx.ResultsStore.DefaultContentType())
+	obj.ContentType, _ = lo.Coalesce(m.ContentType, ctx.ObjectsStore.DefaultContentType())
 	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", obj.ContentType))
-	allServersLnk := render.NewListCbLink[*render.Server](func(item common.Renderer, path []string) bool {
+	allServersLnk := render.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
 		_, ok := item.(*render.Server)
 		return ok
 	})
-	ctx.Linker.AddMany(allServersLnk)
+	ctx.PutListPromise(allServersLnk)
 	obj.AllServers = allServersLnk
 
 	// Link to Headers struct if any
 	if m.Headers != nil {
 		ctx.Logger.Trace("Message headers")
 		ref := ctx.PathRef() + "/headers"
-		obj.HeadersTypeLink = render.NewRefLink[*render.Struct](ref, common.LinkOriginInternal)
-		ctx.Linker.Add(obj.HeadersTypeLink)
+		obj.HeadersTypeLink = render.NewPromise[*render.Struct](ref, common.PromiseOriginInternal)
+		ctx.PutPromise(obj.HeadersTypeLink)
 	}
 	m.setStructFields(ctx, &obj)
 
@@ -138,8 +140,8 @@ func (m Message) setStructFields(ctx *common.CompileContext, langMessage *render
 	}
 	if langMessage.HeadersTypeLink != nil {
 		ctx.Logger.Trace("Message headers has a concrete type")
-		lnk := render.NewRefLinkAsGolangType(langMessage.HeadersTypeLink.Ref(), common.LinkOriginInternal)
-		ctx.Linker.Add(lnk)
+		lnk := render.NewGolangTypePromise(langMessage.HeadersTypeLink.Ref(), common.PromiseOriginInternal)
+		ctx.PutPromise(lnk)
 		fields = append(fields, render.StructField{Name: "Headers", Type: lnk})
 	} else {
 		ctx.Logger.Trace("Message headers has `any` type")
@@ -154,8 +156,8 @@ func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 	if m.Payload != nil {
 		ctx.Logger.Trace("Message payload has a concrete type")
 		ref := ctx.PathRef() + "/payload"
-		lnk := render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
-		ctx.Linker.Add(lnk)
+		lnk := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+		ctx.PutPromise(lnk)
 		return lnk
 	}
 
@@ -177,8 +179,8 @@ type Tag struct {
 }
 
 type MessageExample struct {
-	Headers utils.OrderedMap[string, utils.Union2[json.RawMessage, yaml.Node]] `json:"headers" yaml:"headers"`
-	Payload *utils.Union2[json.RawMessage, yaml.Node]                          `json:"payload" yaml:"payload"`
+	Headers types.OrderedMap[string, types.Union2[json.RawMessage, yaml.Node]] `json:"headers" yaml:"headers"`
+	Payload *types.Union2[json.RawMessage, yaml.Node]                          `json:"payload" yaml:"payload"`
 	Name    string                                                             `json:"name" yaml:"name"`
 	Summary string                                                             `json:"summary" yaml:"summary"`
 }
@@ -195,7 +197,7 @@ type MessageTrait struct {
 	Description   string                                                             `json:"description" yaml:"description"`
 	Tags          []Tag                                                              `json:"tags" yaml:"tags"`
 	ExternalDocs  *ExternalDocumentation                                             `json:"externalDocs" yaml:"externalDocs"`
-	Bindings      utils.OrderedMap[string, utils.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
+	Bindings      types.OrderedMap[string, types.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
 	Examples      []MessageExample                                                   `json:"examples" yaml:"examples"`
 
 	Ref string `json:"$ref" yaml:"$ref"`

@@ -8,17 +8,17 @@ import (
 	"github.com/samber/lo"
 )
 
-func NewRefLink[T any](ref string, origin common.LinkOrigin) *Link[T] {
+func NewPromise[T any](ref string, origin common.PromiseOrigin) *Link[T] {
 	return &Link[T]{ref: ref, origin: origin}
 }
 
-func NewCbLink[T any](findCb func(item common.Renderer, path []string) bool, origin common.LinkOrigin) *Link[T] {
+func NewCbPromise[T any](findCb func(item common.Renderer, path []string) bool, origin common.PromiseOrigin) *Link[T] {
 	return &Link[T]{findCb: findCb, origin: origin}
 }
 
 type Link[T any] struct {
 	ref    string
-	origin common.LinkOrigin
+	origin common.PromiseOrigin
 	findCb func(item common.Renderer, path []string) bool
 
 	target   T
@@ -46,12 +46,12 @@ func (r *Link[T]) Ref() string {
 	return r.ref
 }
 
-func (r *Link[T]) Origin() common.LinkOrigin {
+func (r *Link[T]) Origin() common.PromiseOrigin {
 	return r.origin
 }
 
-// List links can only be LinkOriginInternal, no way to set a callback in spec
-func NewListCbLink[T any](findCb func(item common.Renderer, path []string) bool) *LinkList[T] {
+// List links can only be PromiseOriginInternal, no way to set a callback in spec
+func NewListCbPromise[T any](findCb func(item common.Renderer, path []string) bool) *LinkList[T] {
 	return &LinkList[T]{findCb: findCb}
 }
 
@@ -83,9 +83,9 @@ func (r *LinkList[T]) Targets() []T {
 	return r.targets
 }
 
-func NewRefLinkAsRenderer(ref string, origin common.LinkOrigin) *LinkAsRenderer {
+func NewRendererPromise(ref string, origin common.PromiseOrigin) *LinkAsRenderer {
 	return &LinkAsRenderer{
-		Link: *NewRefLink[common.Renderer](ref, origin),
+		Link: *NewPromise[common.Renderer](ref, origin),
 	}
 }
 
@@ -109,9 +109,9 @@ func (r *LinkAsRenderer) String() string {
 	return "Ref to " + r.ref
 }
 
-func NewRefLinkAsGolangType(ref string, origin common.LinkOrigin) *LinkAsGolangType {
+func NewGolangTypePromise(ref string, origin common.PromiseOrigin) *LinkAsGolangType {
 	return &LinkAsGolangType{
-		Link: *NewRefLink[common.GolangType](ref, origin),
+		Link: *NewPromise[common.GolangType](ref, origin),
 	}
 }
 

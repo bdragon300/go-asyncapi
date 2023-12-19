@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+
 	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	j "github.com/dave/jennifer/jen"
 )
 
@@ -20,18 +21,18 @@ type messageBindings struct {
 func BuildMessageBindingsFunc(ctx *common.CompileContext, message *asyncapi.Message, bindingsStruct *render.Struct, _ string) (common.Renderer, error) {
 	msgBindings, ok := message.Bindings.Get(ProtoName)
 	if !ok {
-		return nil, common.CompileError{Err: errors.New("expected message bindings for protocol"), Path: ctx.PathRef(), Proto: ProtoName}
+		return nil, types.CompileError{Err: errors.New("expected message bindings for protocol"), Path: ctx.PathRef(), Proto: ProtoName}
 	}
 	var bindings messageBindings
-	if err := utils.UnmarshalRawsUnion2(msgBindings, &bindings); err != nil {
-		return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
+	if err := types.UnmarshalRawsUnion2(msgBindings, &bindings); err != nil {
+		return nil, types.CompileError{Err: err, Path: ctx.PathRef()}
 	}
-	var values utils.OrderedMap[string, any]
-	var jsonValues utils.OrderedMap[string, string]
+	var values types.OrderedMap[string, any]
+	var jsonValues types.OrderedMap[string, string]
 	if bindings.Headers != nil {
 		v, err := json.Marshal(bindings.Headers)
 		if err != nil {
-			return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
+			return nil, types.CompileError{Err: err, Path: ctx.PathRef()}
 		}
 		jsonValues.Set("Headers", string(v))
 	}

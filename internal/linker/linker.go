@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+
 	"github.com/bdragon300/asyncapi-codegen-go/internal/compiler"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
@@ -14,199 +16,194 @@ import (
 )
 
 func NewSpecLinker() *SpecLinker {
-	return &SpecLinker{logger: common.NewLogger("Linking 🔗")}
+	return &SpecLinker{
+		objPromises:     make(map[string][]common.ObjectPromise),
+		objListPromises: make(map[string][]common.ObjectListPromise),
+		logger:          types.NewLogger("Linking 🔗"),
+	}
 }
 
 type SpecLinker struct {
-	externalQueriesQueue []common.LinkQuerier
-	queries              []common.LinkQuerier
-	listQueries          []common.ListQuerier
-	logger               *common.Logger
+	objPromises     map[string][]common.ObjectPromise     // Promises by source spec ID
+	objListPromises map[string][]common.ObjectListPromise // Promises by source spec ID
+	logger          *types.Logger
 }
 
-func (l *SpecLinker) Add(query common.LinkQuerier) {
-	l.queries = append(l.queries, query)
+func (l *SpecLinker) AddPromise(p common.ObjectPromise, sourceSpecID string) {
+	l.objPromises[sourceSpecID] = append(l.objPromises[sourceSpecID], p)
 }
 
-func (l *SpecLinker) AddMany(query common.ListQuerier) {
-	l.listQueries = append(l.listQueries, query)
+func (l *SpecLinker) AddListPromise(p common.ObjectListPromise, sourceSpecID string) {
+	l.objListPromises[sourceSpecID] = append(l.objListPromises[sourceSpecID], p)
 }
 
-type linkerSource interface {
-	AllItems() []compiler.PackageItem
+type ObjectSource interface {
+	AllObjects() []compiler.Object // TODO: make this as interface and move link.go to linker
 }
 
-func (l *SpecLinker) Process(source linkerSource) error {
-	objects := source.AllItems()
-
+func (l *SpecLinker) ProcessRefs(sources map[string]ObjectSource) {
 	assigned := 0
 	prevAssigned := 0
-	for assigned < len(l.queries) {
-		for _, query := range l.queries {
-			if res, ok := resolveLink(query, objects); ok {
-				switch query.Origin() {
-				case common.LinkOriginInternal:
-					l.logger.Trace("Internal ref resolved", "$ref", query.Ref(), "target", res)
-				case common.LinkOriginUser:
-					l.logger.Debug("Ref resolved", "$ref", query.Ref(), "target", res)
-				default:
-					panic(fmt.Sprintf("Unknown link origin, this must not happen: %v", query.Origin()))
+	promisesCount := len(lo.Flatten(lo.Values(l.objPromises)))
+	for assigned < promisesCount {
+		for srcSpecID, promises := range l.objPromises {
+			for _, p := range promises {
+				if p.Assigned() {
+					continue // Assigned on previous iterations
 				}
 
-				query.Assign(res)
-				assigned++
+				if res, ok := resolvePromise(p, srcSpecID, sources); ok {
+					switch p.Origin() {
+					case common.PromiseOriginInternal:
+						l.logger.Trace("Internal ref resolved", "$ref", p.Ref(), "target", res)
+					case common.PromiseOriginUser:
+						l.logger.Debug("Ref resolved", "$ref", p.Ref(), "target", res)
+					default:
+						panic(fmt.Sprintf("Unknown link origin %v, this must not happen", p.Origin()))
+					}
+
+					p.Assign(res)
+					assigned++
+				}
 			}
 		}
 		if assigned == prevAssigned {
-			l.logger.Trace("no more ref links to assign on this iteration, leave it and go ahead")
+			l.logger.Trace("no more refs to resolve on this iteration, leave it and go ahead")
 			break
 		}
 		prevAssigned = assigned
 	}
-
-	assigned = 0
-	prevAssigned = 0
-	for assigned < len(l.listQueries) {
-		for _, query := range l.listQueries {
-			if res, ok := resolveListLink(query, objects); ok {
-				targets := strings.Join(
-					lo.Map(lo.Slice(res, 0, 2), func(item common.Renderer, _ int) string { return item.String() }),
-					", ",
-				)
-				if len(res) > 2 {
-					targets += ", ..."
-				}
-				l.logger.Trace("Internal list link resolved", "count", len(res), "targets", targets)
-
-				query.AssignList(lo.ToAnySlice(res))
-				assigned++
-			}
-		}
-		if assigned == prevAssigned {
-			l.logger.Trace("no more list links to assign on this iteration, leave it and go ahead")
-			break
-		}
-		prevAssigned = assigned
-	}
-
-	l.logger.Trace("iteration completed")
-
-	return nil
 }
 
-func (l *SpecLinker) UserQueriesCount() int {
-	return lo.CountBy(l.queries, func(item common.LinkQuerier) bool {
-		return item.Origin() == common.LinkOriginUser
+func (l *SpecLinker) ProcessListPromises(sources map[string]ObjectSource) {
+	assigned := 0
+	prevAssigned := 0
+	promisesCount := len(lo.Flatten(lo.Values(l.objListPromises)))
+	for assigned < promisesCount {
+		for srcSpecID, promises := range l.objListPromises {
+			for _, p := range promises {
+				if p.Assigned() {
+					continue // Assigned on previous iterations
+				}
+				if res, ok := resolveListPromise(p, srcSpecID, sources); ok {
+					targets := strings.Join(
+						lo.Map(lo.Slice(res, 0, 2), func(item common.Renderer, _ int) string { return item.String() }),
+						", ",
+					)
+					if len(res) > 2 {
+						targets += ", ..."
+					}
+					l.logger.Trace("Internal list link resolved", "count", len(res), "targets", targets)
+
+					p.AssignList(lo.ToAnySlice(res))
+					assigned++
+				}
+			}
+		}
+		if assigned == prevAssigned {
+			l.logger.Debug("some internal list promises has not been resolved")
+			break
+		}
+		prevAssigned = assigned
+	}
+}
+
+func (l *SpecLinker) DanglingPromisesCount() int {
+	return lo.CountBy(lo.Flatten(lo.Values(l.objPromises)), func(item common.ObjectPromise) bool {
+		return !item.Assigned()
+	}) + lo.CountBy(lo.Flatten(lo.Values(l.objListPromises)), func(item common.ObjectListPromise) bool {
+		return !item.Assigned()
 	})
 }
 
-func (l *SpecLinker) PopExternalQuery() (common.LinkQuerier, bool) {
-	if len(l.externalQueriesQueue) == 0 {
-		return nil, false
-	}
-
-	res := l.externalQueriesQueue[len(l.externalQueriesQueue)-1]
-	l.externalQueriesQueue = l.externalQueriesQueue[:len(l.externalQueriesQueue)-1]
-	return res, true
-}
-
-func (l *SpecLinker) DanglingQueries() []string {
-	return lo.Flatten([][]string{
-		lo.FilterMap(l.queries, func(item common.LinkQuerier, index int) (string, bool) {
-			return item.Ref(), !item.Assigned()
-		}),
-		lo.FilterMap(l.listQueries, func(item common.ListQuerier, index int) (string, bool) {
-			return "<internal list query>", !item.Assigned()
-		}),
+func (l *SpecLinker) DanglingRefs() []string {
+	return lo.FilterMap(lo.Flatten(lo.Values(l.objPromises)), func(item common.ObjectPromise, index int) (string, bool) {
+		return item.Ref(), !item.Assigned()
 	})
 }
 
 func (l *SpecLinker) Stats() string {
+	promises := lo.Flatten(lo.Values(l.objPromises))
+	listPromises := lo.Flatten(lo.Values(l.objListPromises))
 	return fmt.Sprintf(
-		"Linker: %d refs (%d user (%d dangling), %d internal (%d dangling)), %d internal list queries (%d dangling)",
-		len(l.queries),
-		lo.CountBy(l.queries, func(l common.LinkQuerier) bool { return l.Origin() == common.LinkOriginUser }),
-		lo.CountBy(l.queries, func(l common.LinkQuerier) bool { return l.Origin() == common.LinkOriginUser && !l.Assigned() }),
-		lo.CountBy(l.queries, func(l common.LinkQuerier) bool { return l.Origin() == common.LinkOriginInternal }),
-		lo.CountBy(l.queries, func(l common.LinkQuerier) bool { return l.Origin() == common.LinkOriginInternal && !l.Assigned() }),
-		len(l.listQueries),
-		lo.CountBy(l.listQueries, func(l common.ListQuerier) bool { return !l.Assigned() }),
+		"Linker: %d refs (%d user (%d dangling), %d internal (%d dangling)), %d internal list promises (%d dangling)",
+		len(promises),
+		lo.CountBy(promises, func(l common.ObjectPromise) bool { return l.Origin() == common.PromiseOriginUser }),
+		lo.CountBy(promises, func(l common.ObjectPromise) bool { return l.Origin() == common.PromiseOriginUser && !l.Assigned() }),
+		lo.CountBy(promises, func(l common.ObjectPromise) bool { return l.Origin() == common.PromiseOriginInternal }),
+		lo.CountBy(promises, func(l common.ObjectPromise) bool { return l.Origin() == common.PromiseOriginInternal && !l.Assigned() }),
+		len(listPromises),
+		lo.CountBy(listPromises, func(l common.ObjectListPromise) bool { return !l.Assigned() }),
 	)
-}
-
-func getPathByRef(ref string) []string {
-	if !strings.HasPrefix(ref, "#/") {
-		panic("We don't support external refs yet")
-	}
-	path, _ := strings.CutPrefix(ref, "#/")
-	return strings.Split(path, "/")
-}
-
-func isLinker(obj any) bool {
-	_, ok1 := obj.(common.LinkQuerier)
-	_, ok2 := obj.(common.ListQuerier)
-	return ok1 || ok2
 }
 
 // TODO: detect ref loops to avoid infinite recursion
 // TODO: external refs can not be resolved at first time -- leave them unresolved
-func resolveLink(q common.LinkQuerier, objects []compiler.PackageItem) (common.Renderer, bool) {
-	refPath := getPathByRef(q.Ref())
+func resolvePromise(p common.ObjectPromise, srcSpecID string, sources map[string]ObjectSource) (common.Renderer, bool) {
+	tgtSpecID, refPointer := utils.SplitSpecPath(p.Ref())
+	if tgtSpecID == "" {
+		tgtSpecID = srcSpecID // `#/ref` references
+	}
+	if _, ok := sources[tgtSpecID]; !ok {
+		return nil, false
+	}
+
+	srcObjects := sources[tgtSpecID].AllObjects()
+	refPath := splitRefPointer(refPointer)
 	cb := func(_ common.Renderer, path []string) bool { return utils.SlicesEqual(path, refPath) }
-	if qcb := q.FindCallback(); qcb != nil {
+	if qcb := p.FindCallback(); qcb != nil {
 		cb = qcb
 	}
-	found := lo.Filter(objects, func(obj compiler.PackageItem, _ int) bool {
-		return cb(obj.Typ, obj.Path)
-	})
+	found := lo.Filter(srcObjects, func(obj compiler.Object, _ int) bool { return cb(obj.Object, obj.Path) })
 	if len(found) != 1 {
-		panic(fmt.Sprintf("Ref %q must point to one object, got %d objects", q.Ref(), len(found)))
+		panic(fmt.Sprintf("Ref %q must point to one object, got %d objects", p.Ref(), len(found)))
 	}
 
 	obj := found[0]
-	switch v := obj.Typ.(type) {
-	case common.LinkQuerier:
+	switch v := obj.Object.(type) {
+	case common.ObjectPromise:
 		if !v.Assigned() {
 			return nil, false
 		}
-		return resolveLink(v, objects)
-	case common.ListQuerier:
-		panic(fmt.Sprintf("Ref %q must point to one object, but points to a nested list link", q.Ref()))
+		return resolvePromise(v, tgtSpecID, sources)
+	case common.ObjectListPromise:
+		panic(fmt.Sprintf("Ref %q must point to one object, but points to a nested list link", p.Ref()))
 	case common.Renderer:
 		return v, true
 	default:
-		panic(fmt.Sprintf("Ref %q points to an object of unexpected type %T", q.Ref(), v))
+		panic(fmt.Sprintf("Ref %q points to an object of unexpected type %T", p.Ref(), v))
 	}
 }
 
 // TODO: detect ref loops to avoid infinite recursion
-func resolveListLink(q common.ListQuerier, objects []compiler.PackageItem) ([]common.Renderer, bool) {
+func resolveListPromise(p common.ObjectListPromise, srcSpecID string, sources map[string]ObjectSource) ([]common.Renderer, bool) {
 	// Exclude links from selection in order to avoid duplicates in list
-	cb := func(obj common.Renderer, _ []string) bool { return !isLinker(obj) }
-	if qcb := q.FindCallback(); qcb != nil {
+	cb := func(obj common.Renderer, _ []string) bool { return !isPromise(obj) }
+	if qcb := p.FindCallback(); qcb != nil {
 		cb = qcb
 	}
-	found := lo.Filter(objects, func(obj compiler.PackageItem, _ int) bool {
-		return cb(obj.Typ, obj.Path)
+	srcObjects := sources[srcSpecID].AllObjects()
+	found := lo.Filter(srcObjects, func(obj compiler.Object, _ int) bool {
+		return cb(obj.Object, obj.Path)
 	})
 
 	var results []common.Renderer
 	for _, obj := range found {
-		switch v := obj.Typ.(type) {
-		case common.LinkQuerier:
+		switch v := obj.Object.(type) {
+		case common.ObjectPromise:
 			if !v.Assigned() {
 				return results, false
 			}
-			resolved, ok := resolveLink(v, objects)
+			resolved, ok := resolvePromise(v, srcSpecID, sources)
 			if !ok {
 				return results, false
 			}
 			results = append(results, resolved)
-		case common.ListQuerier:
+		case common.ObjectListPromise:
 			if !v.Assigned() {
 				return results, false
 			}
-			resolved, ok := resolveListLink(v, objects)
+			resolved, ok := resolveListPromise(v, srcSpecID, sources)
 			if !ok {
 				return results, false
 			}
@@ -218,4 +215,18 @@ func resolveListLink(q common.ListQuerier, objects []compiler.PackageItem) ([]co
 		}
 	}
 	return results, true
+}
+
+func splitRefPointer(refPointer string) []string {
+	parts := strings.Split(refPointer, "/")
+	if len(parts) > 0 && parts[0] == "" {
+		parts = parts[1:]
+	}
+	return parts
+}
+
+func isPromise(obj any) bool {
+	_, ok1 := obj.(common.ObjectPromise)
+	_, ok2 := obj.(common.ObjectListPromise)
+	return ok1 || ok2
 }

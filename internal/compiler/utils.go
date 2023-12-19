@@ -9,19 +9,19 @@ const utilsPackageName = "utils"
 
 func UtilsCompile(ctx *common.CompileContext) error {
 	ctx.Logger.Trace("Utils package")
-	ctx.ResultsStore.Add(utilsPackageName, ctx.PathStack(), buildSerializer(ctx))
+	ctx.ObjectsStore.Add(utilsPackageName, ctx.PathStack(), buildSerializer(ctx))
 	return nil
 }
 
 func buildSerializer(ctx *common.CompileContext) *render.UtilsSerializer {
-	lnk := render.NewListCbLink[*render.Message](func(item common.Renderer, path []string) bool {
+	lnk := render.NewListCbPromise[*render.Message](func(item common.Renderer, path []string) bool {
 		_, ok := item.(*render.Message)
 		return ok
 	})
-	ctx.Linker.AddMany(lnk)
+	ctx.PutListPromise(lnk)
 
 	return &render.UtilsSerializer{
 		AllMessages:        lnk,
-		DefaultContentType: ctx.ResultsStore.DefaultContentType(),
+		DefaultContentType: ctx.ObjectsStore.DefaultContentType(),
 	}
 }

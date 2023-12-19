@@ -5,6 +5,8 @@ import (
 	"path"
 	"strings"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+
 	"github.com/dave/jennifer/jen"
 )
 
@@ -18,7 +20,7 @@ type Renderer interface {
 type RenderContext struct {
 	CurrentPackage string
 	ImportBase     string
-	Logger         *Logger
+	Logger         *types.Logger
 	logCallLvl     int
 }
 

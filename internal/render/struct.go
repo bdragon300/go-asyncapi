@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+
 	"github.com/samber/lo"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
@@ -186,7 +188,7 @@ type structInitRenderer interface {
 
 type StructInit struct {
 	Type   common.GolangType
-	Values utils.OrderedMap[string, any]
+	Values types.OrderedMap[string, any]
 }
 
 func (s StructInit) RenderInit(ctx *common.RenderContext) []*jen.Statement {

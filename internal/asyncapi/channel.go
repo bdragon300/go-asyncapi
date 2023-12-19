@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"path"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+
 	"gopkg.in/yaml.v3"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
@@ -20,8 +22,8 @@ type Channel struct {
 	Servers     *[]string                                                          `json:"servers" yaml:"servers"`
 	Subscribe   *Operation                                                         `json:"subscribe" yaml:"subscribe"`
 	Publish     *Operation                                                         `json:"publish" yaml:"publish"`
-	Parameters  utils.OrderedMap[string, Parameter]                                `json:"parameters" yaml:"parameters"`
-	Bindings    utils.OrderedMap[string, utils.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
+	Parameters  types.OrderedMap[string, Parameter]                                `json:"parameters" yaml:"parameters"`
+	Bindings    types.OrderedMap[string, types.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }
@@ -32,15 +34,15 @@ func (c Channel) Compile(ctx *common.CompileContext) error {
 	if err != nil {
 		return err
 	}
-	ctx.PutToCurrentPkg(obj)
+	ctx.PutObject(obj)
 	return nil
 }
 
 func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Renderer, error) {
 	if c.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", c.Ref)
-		res := render.NewRefLinkAsRenderer(c.Ref, common.LinkOriginUser)
-		ctx.Linker.Add(res)
+		res := render.NewRendererPromise(c.Ref, common.PromiseOriginUser)
+		ctx.PutPromise(res)
 		return res, nil
 	}
 
@@ -60,8 +62,8 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 		for _, paramName := range c.Parameters.Keys() {
 			ctx.Logger.Trace("Channel parameter", "name", paramName)
 			ref := path.Join(ctx.PathRef(), "parameters", paramName)
-			lnk := render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
-			ctx.Linker.Add(lnk)
+			lnk := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+			ctx.PutPromise(lnk)
 			res.ParametersStruct.Fields = append(res.ParametersStruct.Fields, render.StructField{
 				Name: utils.ToGolangName(paramName, true),
 				Type: lnk,
@@ -77,19 +79,19 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 		ctx.Logger.NextCallLevel()
 		for _, srv := range *c.Servers {
 			ctx.Logger.Trace("Server", "name", srv)
-			lnk := render.NewRefLink[*render.Server]("#/servers/"+srv, common.LinkOriginInternal)
-			ctx.Linker.Add(lnk)
+			lnk := render.NewPromise[*render.Server]("#/servers/"+srv, common.PromiseOriginInternal)
+			ctx.PutPromise(lnk)
 			res.AppliedServerLinks = append(res.AppliedServerLinks, lnk)
 			res.AppliedServers = append(res.AppliedServers, srv)
 		}
 		ctx.Logger.PrevCallLevel()
 	} else {
 		ctx.Logger.Trace("Channel applied to all servers")
-		lnk := render.NewListCbLink[*render.Server](func(item common.Renderer, path []string) bool {
+		lnk := render.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
 			_, ok := item.(*render.Server)
 			return ok && len(path) > 0 && path[0] == "servers" // Pick only servers from `servers:` section, skip ones from `components:`
 		})
-		ctx.Linker.AddMany(lnk)
+		ctx.PutListPromise(lnk)
 		res.AppliedToAllServersLinks = lnk
 	}
 
@@ -139,7 +141,7 @@ type Operation struct {
 	Security     []SecurityRequirement                                              `json:"security" yaml:"security"`
 	Tags         []Tag                                                              `json:"tags" yaml:"tags"`
 	ExternalDocs *ExternalDocumentation                                             `json:"externalDocs" yaml:"externalDocs"`
-	Bindings     utils.OrderedMap[string, utils.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
+	Bindings     types.OrderedMap[string, types.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
 	Traits       []OperationTrait                                                   `json:"traits" yaml:"traits"`
 	// FIXME: can be either a message or map of messages?
 	Message *Message `json:"message" yaml:"message"`
@@ -152,11 +154,11 @@ type OperationTrait struct {
 	Security     []SecurityRequirement                                              `json:"security" yaml:"security"`
 	Tags         []Tag                                                              `json:"tags" yaml:"tags"`
 	ExternalDocs *ExternalDocumentation                                             `json:"externalDocs" yaml:"externalDocs"`
-	Bindings     utils.OrderedMap[string, utils.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
+	Bindings     types.OrderedMap[string, types.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
 type SecurityRequirement struct {
-	utils.OrderedMap[string, []string] // FIXME: orderedmap must be in fields as utils.OrderedMap[SecurityRequirement, []SecurityRequirement]
+	types.OrderedMap[string, []string] // FIXME: orderedmap must be in fields as utils.OrderedMap[SecurityRequirement, []SecurityRequirement]
 }

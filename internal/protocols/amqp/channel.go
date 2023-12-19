@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+
 	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols"
@@ -101,8 +103,8 @@ func buildChannelBindings(ctx *common.CompileContext, channel *asyncapi.Channel,
 		ctx.Logger.Trace("Channel bindings", "proto", ProtoName)
 		hasBindings = true
 		var bindings channelBindings
-		if err := utils.UnmarshalRawsUnion2(chBindings, &bindings); err != nil {
-			return nil, "", common.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
+		if err := types.UnmarshalRawsUnion2(chBindings, &bindings); err != nil {
+			return nil, "", types.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
 		}
 		chanType = bindings.Is
 		structValues.Values.Set("ChannelType", chanType)
@@ -113,7 +115,7 @@ func buildChannelBindings(ctx *common.CompileContext, channel *asyncapi.Channel,
 			}
 			marshalFields := []string{"Name", "Durable", "AutoDelete", "VHost", "Type"}
 			if err := utils.StructToOrderedMap(*bindings.Exchange, &ex.Values, marshalFields); err != nil {
-				return nil, "", common.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
+				return nil, "", types.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
 			}
 			structValues.Values.Set("ExchangeConfiguration", ex)
 		}
@@ -123,7 +125,7 @@ func buildChannelBindings(ctx *common.CompileContext, channel *asyncapi.Channel,
 			}
 			marshalFields := []string{"Name", "Durable", "Exclusive", "AutoDelete", "VHost"}
 			if err := utils.StructToOrderedMap(*bindings.Exchange, &ex.Values, marshalFields); err != nil {
-				return nil, "", common.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
+				return nil, "", types.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
 			}
 			structValues.Values.Set("QueueConfiguration", ex)
 		}
@@ -138,12 +140,12 @@ func buildChannelBindings(ctx *common.CompileContext, channel *asyncapi.Channel,
 			}
 			hasBindings = true
 			var bindings publishOperationBindings
-			if err := utils.UnmarshalRawsUnion2(b, &bindings); err != nil {
-				return nil, "", common.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
+			if err := types.UnmarshalRawsUnion2(b, &bindings); err != nil {
+				return nil, "", types.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
 			}
 			marshalFields := []string{"Expiration", "UserID", "CC", "Priority", "Mandatory", "BCC", "ReplyTo", "Timestamp"}
 			if err := utils.StructToOrderedMap(bindings, &pob.Values, marshalFields); err != nil {
-				return nil, "", common.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
+				return nil, "", types.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
 			}
 			switch bindings.DeliveryMode {
 			case 1:
@@ -152,7 +154,7 @@ func buildChannelBindings(ctx *common.CompileContext, channel *asyncapi.Channel,
 				pob.Values.Set("DeliveryMode", &render.Simple{Name: "DeliveryModePersistent", Package: ctx.RuntimePackage(ProtoName)})
 			case 0:
 			default:
-				return nil, "", common.CompileError{
+				return nil, "", types.CompileError{
 					Err:   fmt.Errorf("unknown delivery mode %v", bindings.DeliveryMode),
 					Path:  ctx.PathRef(),
 					Proto: ProtoName,
@@ -172,12 +174,12 @@ func buildChannelBindings(ctx *common.CompileContext, channel *asyncapi.Channel,
 			}
 			hasBindings = true
 			var bindings subscribeOperationBindings
-			if err := utils.UnmarshalRawsUnion2(b, &bindings); err != nil {
-				return nil, "", common.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
+			if err := types.UnmarshalRawsUnion2(b, &bindings); err != nil {
+				return nil, "", types.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
 			}
 			marshalFields := []string{"Expiration", "UserID", "CC", "Priority", "ReplyTo", "Timestamp", "Ack"}
 			if err := utils.StructToOrderedMap(bindings, &sob.Values, marshalFields); err != nil {
-				return nil, "", common.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
+				return nil, "", types.CompileError{Err: err, Path: ctx.PathRef(), Proto: ProtoName}
 			}
 			switch bindings.DeliveryMode {
 			case 1:
@@ -186,7 +188,7 @@ func buildChannelBindings(ctx *common.CompileContext, channel *asyncapi.Channel,
 				sob.Values.Set("DeliveryMode", &render.Simple{Name: "DeliveryModePersistent", Package: ctx.RuntimePackage(ProtoName)})
 			case 0:
 			default:
-				return nil, "", common.CompileError{
+				return nil, "", types.CompileError{
 					Err:   fmt.Errorf("unknown delivery mode %v", bindings.DeliveryMode),
 					Path:  ctx.PathRef(),
 					Proto: ProtoName,

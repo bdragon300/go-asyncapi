@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+
 	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
@@ -18,7 +20,7 @@ func BuildChannel(
 	channelKey string,
 	protoName, protoAbbr string,
 ) (*BaseProtoChannel, error) {
-	paramsLnk := render.NewListCbLink[*render.Parameter](func(item common.Renderer, path []string) bool {
+	paramsLnk := render.NewListCbPromise[*render.Parameter](func(item common.Renderer, path []string) bool {
 		par, ok := item.(*render.Parameter)
 		if !ok {
 			return false
@@ -26,7 +28,7 @@ func BuildChannel(
 		_, ok = channel.Parameters.Get(par.Name)
 		return ok
 	})
-	ctx.Linker.AddMany(paramsLnk)
+	ctx.PutListPromise(paramsLnk)
 
 	chanResult := &BaseProtoChannel{
 		Name: channelKey,
@@ -59,8 +61,8 @@ func BuildChannel(
 		for _, paramName := range channel.Parameters.Keys() {
 			ctx.Logger.Trace("Channel parameter", "name", paramName, "proto", protoName)
 			ref := path.Join(ctx.PathRef(), "parameters", paramName)
-			lnk := render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
-			ctx.Linker.Add(lnk)
+			lnk := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+			ctx.PutPromise(lnk)
 			chanResult.ParametersStructNoRender.Fields = append(chanResult.ParametersStructNoRender.Fields, render.StructField{
 				Name: utils.ToGolangName(paramName, true),
 				Type: lnk,
@@ -111,8 +113,8 @@ func BuildChannel(
 		if channel.Publish.Message != nil {
 			ctx.Logger.Trace("Channel publish operation message", "proto", protoName)
 			ref := path.Join(ctx.PathRef(), "publish/message")
-			chanResult.PubMessageLink = render.NewRefLink[*render.Message](ref, common.LinkOriginInternal)
-			ctx.Linker.Add(chanResult.PubMessageLink)
+			chanResult.PubMessageLink = render.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
+			ctx.PutPromise(chanResult.PubMessageLink)
 		}
 		chanResult.ServerIface.Methods = append(chanResult.ServerIface.Methods, render.FuncSignature{
 			Name: "Producer",
@@ -139,8 +141,8 @@ func BuildChannel(
 		if channel.Subscribe.Message != nil {
 			ctx.Logger.Trace("Channel subscribe operation message", "proto", protoName)
 			ref := path.Join(ctx.PathRef(), "subscribe/message")
-			chanResult.SubMessageLink = render.NewRefLink[*render.Message](ref, common.LinkOriginInternal)
-			ctx.Linker.Add(chanResult.SubMessageLink)
+			chanResult.SubMessageLink = render.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
+			ctx.PutPromise(chanResult.SubMessageLink)
 		}
 		chanResult.ServerIface.Methods = append(chanResult.ServerIface.Methods, render.FuncSignature{
 			Name: "Consumer",
@@ -385,8 +387,8 @@ func RenderChannelOpenFunc(
 
 func ChannelBindingsMethodBody(
 	values *render.StructInit,
-	publisherJSONValues *utils.OrderedMap[string, any],
-	subscriberJSONValues *utils.OrderedMap[string, any],
+	publisherJSONValues *types.OrderedMap[string, any],
+	subscriberJSONValues *types.OrderedMap[string, any],
 ) func(ctx *common.RenderContext, p *render.Func) []*j.Statement {
 	return func(ctx *common.RenderContext, p *render.Func) []*j.Statement {
 		var res []*j.Statement

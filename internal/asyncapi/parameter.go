@@ -21,15 +21,15 @@ func (p Parameter) Compile(ctx *common.CompileContext) error {
 	if err != nil {
 		return err
 	}
-	ctx.PutToCurrentPkg(obj)
+	ctx.PutObject(obj)
 	return nil
 }
 
 func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (common.Renderer, error) {
 	if p.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", p.Ref)
-		res := render.NewRefLinkAsRenderer(p.Ref, common.LinkOriginUser)
-		ctx.Linker.Add(res)
+		res := render.NewRendererPromise(p.Ref, common.PromiseOriginUser)
+		ctx.PutPromise(res)
 		return res, nil
 	}
 
@@ -37,8 +37,8 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 
 	if p.Schema != nil {
 		ctx.Logger.Trace("Parameter schema")
-		lnk := render.NewRefLinkAsGolangType(path.Join(ctx.PathRef(), "schema"), common.LinkOriginInternal)
-		ctx.Linker.Add(lnk)
+		lnk := render.NewGolangTypePromise(path.Join(ctx.PathRef(), "schema"), common.PromiseOriginInternal)
+		ctx.PutPromise(lnk)
 		res.Type = &render.Struct{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(parameterKey, ""),

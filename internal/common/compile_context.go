@@ -1,9 +1,10 @@
 package common
 
 import (
-	"fmt"
 	"path"
 	"strings"
+
+	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	"github.com/samber/lo"
@@ -16,17 +17,18 @@ type GolangType interface {
 
 const nameWordSep = "_"
 
-type CompilationResultsStore interface {
+type CompilationObjectsStore interface {
 	Add(pkgName string, stack []string, obj Renderer)
 	AddProtocol(protoName string)
+	AddRemoteSpecID(specID string)
 
 	SetDefaultContentType(contentType string)
 	DefaultContentType() string
 }
 
 type Linker interface {
-	Add(query LinkQuerier)
-	AddMany(query ListQuerier)
+	AddPromise(p ObjectPromise, specID string)
+	AddListPromise(p ObjectListPromise, specID string)
 }
 
 type ContextStackItem struct {
@@ -36,30 +38,44 @@ type ContextStackItem struct {
 	ObjName     string
 }
 
-func NewCompileContext(linker Linker) *CompileContext {
+func NewCompileContext(linker Linker, specID string) *CompileContext {
 	res := CompileContext{
-		Linker: linker,
+		specID: specID,
+		linker: linker,
 	}
 	res.Logger = &CompilerLogger{
 		ctx:    &res,
-		logger: NewLogger("Compilation 🔨"),
+		logger: types.NewLogger("Compilation 🔨"),
 	}
 	return &res
 }
 
 type CompileContext struct {
-	ResultsStore CompilationResultsStore
-	Stack        SimpleStack[ContextStackItem]
-	Linker       Linker
+	ObjectsStore CompilationObjectsStore
+	Stack        types.SimpleStack[ContextStackItem]
 	Logger       *CompilerLogger
+	specID       string
+	linker       Linker
 }
 
-func (c *CompileContext) PutToCurrentPkg(obj Renderer) {
+func (c *CompileContext) PutPromise(p ObjectPromise) {
+	refSpecID, _ := utils.SplitSpecPath(p.Ref())
+	if utils.IsRemoteSpecID(refSpecID) {
+		c.ObjectsStore.AddRemoteSpecID(refSpecID)
+	}
+	c.linker.AddPromise(p, c.specID)
+}
+
+func (c *CompileContext) PutListPromise(p ObjectListPromise) {
+	c.linker.AddListPromise(p, c.specID)
+}
+
+func (c *CompileContext) PutObject(obj Renderer) {
 	pkgName := c.Stack.Top().PackageName
 	if pkgName == "" {
 		panic("Package name has not been set")
 	}
-	c.ResultsStore.Add(pkgName, c.PathStack(), obj)
+	c.ObjectsStore.Add(pkgName, c.PathStack(), obj)
 }
 
 func (c *CompileContext) PathRef() string {
@@ -73,7 +89,7 @@ func (c *CompileContext) PathStack() []string {
 func (c *CompileContext) SetTopObjName(n string) {
 	t := c.Stack.Top()
 	t.ObjName = n
-	c.Stack.replaceTop(t)
+	c.Stack.ReplaceTop(t)
 }
 
 func (c *CompileContext) TopPackageName() string {
@@ -99,62 +115,12 @@ func (c *CompileContext) GenerateObjName(name, suffix string) string {
 	return utils.ToGolangName(name, true) + suffix
 }
 
-func (c *CompileContext) WithResultsStore(store CompilationResultsStore) *CompileContext {
+func (c *CompileContext) WithResultsStore(store CompilationObjectsStore) *CompileContext {
 	return &CompileContext{
-		ResultsStore: store,
-		Stack:        SimpleStack[ContextStackItem]{},
-		Linker:       c.Linker,
+		ObjectsStore: store,
+		Stack:        types.SimpleStack[ContextStackItem]{},
+		specID:       c.specID,
+		linker:       c.linker,
 		Logger:       c.Logger,
-	}
-}
-
-type CompilerLogger struct {
-	ctx       *CompileContext
-	logger    *Logger
-	callLevel int
-}
-
-func (c *CompilerLogger) Fatal(msg string, err error) {
-	if err != nil {
-		c.logger.Error(msg, "err", err, "path", c.ctx.PathRef())
-	}
-	c.logger.Error(msg, "path", c.ctx.PathRef())
-}
-
-func (c *CompilerLogger) Warn(msg string, args ...any) {
-	args = append(args, "path", c.ctx.PathRef())
-	c.logger.Warn(msg, args...)
-}
-
-func (c *CompilerLogger) Info(msg string, args ...any) {
-	args = append(args, "path", c.ctx.PathRef())
-	c.logger.Info(msg, args...)
-}
-
-func (c *CompilerLogger) Debug(msg string, args ...any) {
-	l := c.logger
-	if c.callLevel > 0 {
-		msg = fmt.Sprintf("%s> %s", strings.Repeat("-", c.callLevel), msg) // Ex: prefix: --> Message...
-	}
-	args = append(args, "path", c.ctx.PathRef())
-	l.Debug(msg, args...)
-}
-
-func (c *CompilerLogger) Trace(msg string, args ...any) {
-	l := c.logger
-	if c.callLevel > 0 {
-		msg = fmt.Sprintf("%s> %s", strings.Repeat("-", c.callLevel), msg) // Ex: prefix: --> Message...
-	}
-	args = append(args, "path", c.ctx.PathRef())
-	l.Trace(msg, args...)
-}
-
-func (c *CompilerLogger) NextCallLevel() {
-	c.callLevel++
-}
-
-func (c *CompilerLogger) PrevCallLevel() {
-	if c.callLevel > 0 {
-		c.callLevel--
 	}
 }

@@ -2,31 +2,22 @@ package common
 
 const RunPackagePath = "github.com/bdragon300/asyncapi-codegen-go/pkg/run"
 
-type SchemaTag string
+type PromiseOrigin int
 
 const (
-	SchemaTagNoInline    SchemaTag = "noinline"
-	SchemaTagPackageDown SchemaTag = "packageDown"
+	PromiseOriginUser PromiseOrigin = iota
+	PromiseOriginInternal
 )
 
-type LinkOrigin int
-
-const (
-	LinkOriginUser LinkOrigin = iota
-	LinkOriginInternal
-)
-
-const TagName = "cgen"
-
-type LinkQuerier interface {
+type ObjectPromise interface {
 	Assign(obj any)
 	Assigned() bool
 	FindCallback() func(item Renderer, path []string) bool
 	Ref() string
-	Origin() LinkOrigin
+	Origin() PromiseOrigin
 }
 
-type ListQuerier interface {
+type ObjectListPromise interface {
 	AssignList(objs []any)
 	Assigned() bool
 	FindCallback() func(item Renderer, path []string) bool

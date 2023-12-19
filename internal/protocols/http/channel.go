@@ -3,6 +3,8 @@ package http
 import (
 	"encoding/json"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+
 	"gopkg.in/yaml.v3"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
@@ -57,27 +59,27 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *asyncapi.Ch
 	var hasBindings bool
 
 	// Publish channel bindings
-	var publisherJSON utils.OrderedMap[string, any]
+	var publisherJSON types.OrderedMap[string, any]
 	if channel.Publish != nil {
 		ctx.Logger.Trace("Channel publish operation bindings")
 		if b, ok := channel.Publish.Bindings.Get(ProtoName); ok {
 			hasBindings = true
 			var err error
 			if publisherJSON, err = buildOperationBindings(ctx, b); err != nil {
-				return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
+				return nil, types.CompileError{Err: err, Path: ctx.PathRef()}
 			}
 		}
 	}
 
 	// Subscribe channel bindings
-	var subscriberJSON utils.OrderedMap[string, any]
+	var subscriberJSON types.OrderedMap[string, any]
 	if channel.Subscribe != nil {
 		ctx.Logger.Trace("Channel subscribe operation bindings")
 		if b, ok := channel.Subscribe.Bindings.Get(ProtoName); ok {
 			hasBindings = true
 			var err error
 			if subscriberJSON, err = buildOperationBindings(ctx, b); err != nil {
-				return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
+				return nil, types.CompileError{Err: err, Path: ctx.PathRef()}
 			}
 		}
 	}
@@ -101,10 +103,10 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *asyncapi.Ch
 	}, nil
 }
 
-func buildOperationBindings(ctx *common.CompileContext, opBindings utils.Union2[json.RawMessage, yaml.Node]) (res utils.OrderedMap[string, any], err error) {
+func buildOperationBindings(ctx *common.CompileContext, opBindings types.Union2[json.RawMessage, yaml.Node]) (res types.OrderedMap[string, any], err error) {
 	var bindings operationBindings
-	if err = utils.UnmarshalRawsUnion2(opBindings, &bindings); err != nil {
-		return res, common.CompileError{Err: err, Path: ctx.PathRef()}
+	if err = types.UnmarshalRawsUnion2(opBindings, &bindings); err != nil {
+		return res, types.CompileError{Err: err, Path: ctx.PathRef()}
 	}
 	if bindings.Query != nil {
 		v, err := json.Marshal(bindings.Query)

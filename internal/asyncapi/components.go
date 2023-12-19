@@ -1,13 +1,15 @@
 package asyncapi
 
-import "github.com/bdragon300/asyncapi-codegen-go/internal/utils"
+import (
+	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+)
 
 type ComponentsItem struct {
-	Schemas  utils.OrderedMap[string, Object]  `json:"schemas" yaml:"schemas" cgen:"noinline,packageDown=models"`
-	Messages utils.OrderedMap[string, Message] `json:"messages" yaml:"messages" cgen:"noinline,packageDown=messages"`
+	Schemas  types.OrderedMap[string, Object]  `json:"schemas" yaml:"schemas" cgen:"noinline,packageDown=models"`
+	Messages types.OrderedMap[string, Message] `json:"messages" yaml:"messages" cgen:"noinline,packageDown=messages"`
 	// TODO: maybe it's needed to make a difference between channels/servers in components and root of schema?
-	Channels utils.OrderedMap[string, Channel] `json:"channels" yaml:"channels" cgen:"noinline,packageDown=channels"`
+	Channels types.OrderedMap[string, Channel] `json:"channels" yaml:"channels" cgen:"noinline,packageDown=channels"`
 	// TODO: Channels are also known as "topics", "routing keys", "event types" or "paths".
-	Servers    utils.OrderedMap[string, Server]    `json:"servers" yaml:"servers" cgen:"noinline,packageDown=servers"`
-	Parameters utils.OrderedMap[string, Parameter] `json:"parameters" yaml:"parameters" cgen:"noinline,packageDown=parameters"`
+	Servers    types.OrderedMap[string, Server]    `json:"servers" yaml:"servers" cgen:"noinline,packageDown=servers"`
+	Parameters types.OrderedMap[string, Parameter] `json:"parameters" yaml:"parameters" cgen:"noinline,packageDown=parameters"`
 }

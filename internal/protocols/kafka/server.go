@@ -5,6 +5,7 @@ import (
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	j "github.com/dave/jennifer/jen"
 )
@@ -37,12 +38,12 @@ func BuildServer(ctx *common.CompileContext, server *asyncapi.Server, serverKey 
 			}
 
 			var bindings serverBindings
-			if err := utils.UnmarshalRawsUnion2(b, &bindings); err != nil { // TODO: implement $ref
-				return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
+			if err := types.UnmarshalRawsUnion2(b, &bindings); err != nil { // TODO: implement $ref
+				return nil, types.CompileError{Err: err, Path: ctx.PathRef()}
 			}
 			marshalFields := []string{"SchemaRegistryURL", "SchemaRegistryVendor"}
 			if err := utils.StructToOrderedMap(bindings, &vals.Values, marshalFields); err != nil {
-				return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
+				return nil, types.CompileError{Err: err, Path: ctx.PathRef()}
 			}
 
 			srvResult.BindingsMethod = &render.Func{

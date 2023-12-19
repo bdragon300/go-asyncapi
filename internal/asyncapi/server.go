@@ -3,11 +3,12 @@ package asyncapi
 import (
 	"encoding/json"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+
 	"gopkg.in/yaml.v3"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 )
 
 type protoServerCompilerFunc func(ctx *common.CompileContext, server *Server, name string) (common.Renderer, error)
@@ -19,10 +20,10 @@ type Server struct {
 	Protocol        string                                                             `json:"protocol" yaml:"protocol"`
 	ProtocolVersion string                                                             `json:"protocolVersion" yaml:"protocolVersion"`
 	Description     string                                                             `json:"description" yaml:"description"`
-	Variables       utils.OrderedMap[string, ServerVariable]                           `json:"variables" yaml:"variables"`
+	Variables       types.OrderedMap[string, ServerVariable]                           `json:"variables" yaml:"variables"`
 	Security        []SecurityRequirement                                              `json:"security" yaml:"security"`
 	Tags            []Tag                                                              `json:"tags" yaml:"tags"`
-	Bindings        utils.OrderedMap[string, utils.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
+	Bindings        types.OrderedMap[string, types.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }
@@ -36,9 +37,9 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 	if obj == nil {
 		return nil
 	}
-	ctx.PutToCurrentPkg(obj)
+	ctx.PutObject(obj)
 	if ctx.TopPackageName() == "servers" {
-		ctx.ResultsStore.AddProtocol(s.Protocol)
+		ctx.ObjectsStore.AddProtocol(s.Protocol)
 	}
 	return nil
 }
@@ -46,8 +47,8 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Renderer, error) {
 	if s.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", s.Ref)
-		res := render.NewRefLinkAsRenderer(s.Ref, common.LinkOriginUser)
-		ctx.Linker.Add(res)
+		res := render.NewRendererPromise(s.Ref, common.PromiseOriginUser)
+		ctx.PutPromise(res)
 		return res, nil
 	}
 

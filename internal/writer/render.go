@@ -8,6 +8,8 @@ import (
 	"path"
 	"strings"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+
 	"github.com/bdragon300/asyncapi-codegen-go/internal/compiler"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
@@ -51,14 +53,15 @@ func (e MultilineError) RestLines() string {
 }
 
 type renderSource interface {
-	DirectRenderItems(pkgName string) []compiler.PackageItem
+	PackageObjects(pkgName string) []compiler.Object
 	Packages() []string
 }
 
 func RenderPackages(source renderSource, importBase, baseDir string) (files map[string]*bytes.Buffer, err error) {
 	files = make(map[string]*bytes.Buffer)
-	logger := common.NewLogger("Rendering 🎨")
-	counter := 0
+	logger := types.NewLogger("Rendering 🎨")
+	rendered := 0
+	totalObjects := 0
 
 	for _, pkgName := range source.Packages() {
 		ctx := &common.RenderContext{
@@ -66,19 +69,20 @@ func RenderPackages(source renderSource, importBase, baseDir string) (files map[
 			ImportBase:     importBase,
 			Logger:         logger,
 		}
-		items := source.DirectRenderItems(pkgName)
+		items := source.PackageObjects(pkgName)
 		ctx.Logger.Debug("Package", "pkg", pkgName, "items", len(items))
+		totalObjects += len(items)
 		for _, item := range items {
-			fileName := utils.ToFileName(item.Typ.String()) + ".go"
+			fileName := utils.ToFileName(item.Object.String()) + ".go"
 
 			f := jen.NewFilePathName(baseDir, pkgName)
 			f.HeaderComment(GeneratedCodePreamble)
 
-			counter++
-			if !item.Typ.DirectRendering() {
+			if !item.Object.DirectRendering() {
 				continue
 			}
-			for _, stmt := range item.Typ.RenderDefinition(ctx) {
+			rendered++
+			for _, stmt := range item.Object.RenderDefinition(ctx) {
 				f.Add(stmt)
 			}
 
@@ -90,16 +94,16 @@ func RenderPackages(source renderSource, importBase, baseDir string) (files map[
 				return files, err
 			}
 
-			ctx.Logger.Debug("Object rendered", "pkg", pkgName, "object", item.Typ.String(), "file", fileName, "bytes", buf.Len())
+			ctx.Logger.Debug("Object rendered", "pkg", pkgName, "object", item.Object.String(), "file", fileName, "bytes", buf.Len())
 			files[path.Join(pkgName, fileName)] = buf
 		}
 	}
-	logger.Debugf("Render stats: packages %d, objects rendered directly: %d", len(source.Packages()), counter)
+	logger.Debugf("Render stats: packages %d, objects: %d (rendered directly: %d)", len(source.Packages()), totalObjects, rendered)
 	return
 }
 
 func WriteToFiles(files map[string]*bytes.Buffer, baseDir string) error {
-	l := common.NewLogger("Writing 📝")
+	l := types.NewLogger("Writing 📝")
 
 	if err := ensureDir(baseDir); err != nil {
 		return err

@@ -3,6 +3,8 @@ package protocols
 import (
 	"fmt"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
@@ -72,7 +74,7 @@ func RenderMessageMarshalEnvelopeMethod(ctx *common.RenderContext, message *rend
 	}
 }
 
-func MessageBindingsBody(values utils.OrderedMap[string, any], jsonValues *utils.OrderedMap[string, string], protoName string) func(ctx *common.RenderContext, p *render.Func) []*j.Statement {
+func MessageBindingsBody(values types.OrderedMap[string, any], jsonValues *types.OrderedMap[string, string], protoName string) func(ctx *common.RenderContext, p *render.Func) []*j.Statement {
 	return func(ctx *common.RenderContext, p *render.Func) []*j.Statement {
 		var res []*j.Statement
 		res = append(res,

@@ -9,7 +9,11 @@ import (
 	"path"
 	"strings"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/factory"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/compiler"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
+
 	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols/http"
 
 	"github.com/charmbracelet/log"
@@ -26,7 +30,6 @@ import (
 	"github.com/bdragon300/asyncapi-codegen-go/internal/linker"
 
 	"github.com/alexflint/go-arg"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 )
 
 type GenerateCmd struct {
@@ -51,7 +54,7 @@ type cli struct {
 	Trace               bool         `arg:"--trace" help:"Trace output"` // TODO: --quiet
 }
 
-var logger = common.NewLogger("")
+var logger *types.Logger
 
 func main() {
 	cliArgs := cli{}
@@ -73,17 +76,17 @@ func main() {
 		log.SetLevel(log.DebugLevel)
 	}
 	if cliArgs.Trace {
-		log.SetLevel(common.TraceLevel)
+		log.SetLevel(types.TraceLevel)
 	}
 	log.SetReportTimestamp(false)
-	logger.SetReportTimestamp(false)
+	logger = types.NewLogger("")
 
 	registerProtocols()
 
 	cmd := cliArgs.GenerateCmd
 	if err := generate(cmd); err != nil {
 		var multilineErr writer.MultilineError
-		if log.GetLevel() == common.TraceLevel && errors.As(err, &multilineErr) {
+		if log.GetLevel() == types.TraceLevel && errors.As(err, &multilineErr) {
 			log.Error(err.Error(), "details", multilineErr.RestLines())
 		}
 
@@ -113,13 +116,13 @@ func listImplementations() {
 }
 
 func generate(cmd *GenerateCmd) error {
-	var err error
-
 	importBase := cmd.ProjectModule
 	if importBase == "" {
-		if importBase, err = getImportBase(); err != nil {
+		b, err := getImportBase()
+		if err != nil {
 			return fmt.Errorf("extraction module name from go.mod (you can specify it by -M argument): %w", err)
 		}
+		importBase = b
 	}
 	targetPkg, _ := lo.Coalesce(cmd.TargetPackage, cmd.TargetDir)
 	logger.Debugf("Target package name is %s", targetPkg)
@@ -128,47 +131,60 @@ func generate(cmd *GenerateCmd) error {
 	implDir, _ := lo.Coalesce(cmd.ImplDir, path.Join(cmd.TargetDir, "impl"))
 	logger.Debugf("Target implementations directory is %s", implDir)
 
-	// Compilation queue
-	// Compilation spec -> linking -> push external refs to queue -> compilation next spec -> etc.
-	specPath := cmd.Spec
+	// Compilation
+	specID, _ := utils.SplitSpecPath(cmd.Spec)
+	firstSpecID := specID
 	specLinker := linker.NewSpecLinker()
-	var compilers []factory.Compiler
-	for {
-		logger.Info("Run compilation", "path", specPath)
-		comp, err := factory.MakeCompiler(specPath)
-		if err != nil {
-			return fmt.Errorf("make a compiler: %w", err)
+	compileQueue := []string{specID}                // Queue of specIDs to compile
+	compiled := make(map[string]*compiler.Compiler) // Compilers by spec id
+	for len(compileQueue) > 0 {
+		specID = compileQueue[0]           // Pop from the queue
+		compileQueue = compileQueue[1:]    //
+		if _, ok := compiled[specID]; ok { // Skip if specID has been already compiled
+			continue
 		}
-		compilers = append(compilers, comp)
-		logger.Debug("Loading spec path", "path", specPath)
+
+		logger.Info("Run compilation", "path", specID)
+		comp := compiler.NewCompiler(specID)
+		compiled[specID] = comp
+
+		logger.Debug("Loading spec path", "path", specID)
 		if err := comp.Load(); err != nil {
 			return fmt.Errorf("load the spec: %w", err)
 		}
-		logger.Debug("Compilation a loaded file", "path", specPath)
-		if err := comp.Compile(specLinker); err != nil {
+		logger.Debug("Compilation a loaded file", "path", specID)
+		if err := comp.Compile(common.NewCompileContext(specLinker, specID)); err != nil {
 			return fmt.Errorf("compilation the spec: %w", err)
 		}
 		logger.Debugf("Compiler stats: %s", comp.Stats())
-
-		// Linking
-		logger.Info("Run linking", "path", specPath)
-		if err = specLinker.Process(comp); err != nil {
-			return fmt.Errorf("schema linking error: %w", err)
-		}
-		ref, ok := specLinker.PopExternalQuery()
-		if !ok {
-			break // Queue is empty
-		}
-		specPath = ref.Ref()
+		compileQueue = lo.Flatten([][]string{compileQueue, comp.RemoteSpecIDs()}) // Extend queue with remote specIDs
 	}
+	logger.Info("Compilation completed", "files", len(compiled))
+
+	comps := lo.MapValues(compiled, func(value *compiler.Compiler, _ string) linker.ObjectSource { return value })
+
+	// Linking: refs
+	logger.Info("Run linking", "path", specID)
+	specLinker.ProcessRefs(comps)
+	danglingRefs := specLinker.DanglingRefs()
 	logger.Debugf("Linker stats: %s", specLinker.Stats())
-	danglingQueries := specLinker.DanglingQueries()
-	if len(danglingQueries) > 0 {
-		logger.Error("Cannot assign some refs", "links", danglingQueries)
+	if len(danglingRefs) > 0 {
+		logger.Error("Some refs remain dangling", "refs", danglingRefs)
+		return fmt.Errorf("cannot finish linking")
 	}
-	logger.Info("Compilation/linking completed", "files", len(compilers))
 
-	firstComp := compilers[0]
+	// Linking: list promises
+	logger.Debug("Run linking the list promises")
+	specLinker.ProcessListPromises(comps)
+	danglingPromises := specLinker.DanglingPromisesCount()
+	logger.Debugf("Linker stats: %s", specLinker.Stats())
+	if danglingPromises > 0 {
+		logger.Error("Cannot assign internal list promises", "promises", danglingPromises)
+		return fmt.Errorf("cannot finish linking")
+	}
+	logger.Info("Linking completed", "files", len(compiled))
+
+	firstComp := compiled[firstSpecID]
 
 	// Rendering
 	logger.Info("Run rendering")
@@ -208,7 +224,7 @@ func generate(cmd *GenerateCmd) error {
 		total += n
 	}
 	logger.WithPrefix("Writing 📝").Debugf(
-		"Implementations writer stats: total bytes: %d, protocols: %q",
+		"Implementations writer stats: total bytes: %d, protocols: %s",
 		total, strings.Join(firstComp.Protocols(), ","),
 	)
 

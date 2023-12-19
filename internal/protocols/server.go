@@ -4,6 +4,7 @@ import (
 	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	j "github.com/dave/jennifer/jen"
 	"github.com/samber/lo"
@@ -51,7 +52,7 @@ func BuildServer(
 	}
 
 	// Channels which are connected to this server
-	channelsLnks := render.NewListCbLink[*render.Channel](func(item common.Renderer, path []string) bool {
+	channelsLnks := render.NewListCbPromise[*render.Channel](func(item common.Renderer, path []string) bool {
 		ch, ok := item.(*render.Channel)
 		if !ok {
 			return false
@@ -62,7 +63,7 @@ func BuildServer(
 		return ch.AppliedToAllServersLinks != nil
 	})
 	srvResult.ChannelLinkList = channelsLnks
-	ctx.Linker.AddMany(channelsLnks)
+	ctx.PutListPromise(channelsLnks)
 
 	// Producer/consumer
 	if buildProducer {
@@ -95,7 +96,7 @@ type BaseProtoServer struct {
 	Consumer        bool
 	Struct          *render.Struct
 	ChannelLinkList *render.LinkList[*render.Channel]
-	Variables       utils.OrderedMap[string, ProtoServerVariable]
+	Variables       types.OrderedMap[string, ProtoServerVariable]
 }
 
 func RenderServerConsumerMethods(
@@ -211,7 +212,7 @@ func RenderServerNewFunc(
 func RenderServerURLFunc(
 	ctx *common.RenderContext,
 	serverStruct *render.Struct,
-	serverVariables utils.OrderedMap[string, ProtoServerVariable],
+	serverVariables types.OrderedMap[string, ProtoServerVariable],
 	url string,
 ) []*j.Statement {
 	// Server1URL(param1 string, param2 string) run.ParamString
@@ -257,7 +258,7 @@ func RenderServerProtocolVersionConst(serverStruct *render.Struct, protocolVersi
 	}
 }
 
-func ServerBindingsMethodBody(values *render.StructInit, jsonValues *utils.OrderedMap[string, any]) func(ctx *common.RenderContext, p *render.Func) []*j.Statement {
+func ServerBindingsMethodBody(values *render.StructInit, jsonValues *types.OrderedMap[string, any]) func(ctx *common.RenderContext, p *render.Func) []*j.Statement {
 	return func(ctx *common.RenderContext, p *render.Func) []*j.Statement {
 		var res []*j.Statement
 		res = append(res,

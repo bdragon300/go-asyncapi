@@ -7,6 +7,8 @@ import (
 	"path"
 	"strconv"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+
 	yaml "gopkg.in/yaml.v3"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
@@ -17,27 +19,27 @@ import (
 )
 
 type Object struct {
-	Type                 *utils.Union2[string, []string]            `json:"type" yaml:"type"`
-	AdditionalItems      *utils.Union2[Object, bool]                `json:"additionalItems" yaml:"additionalItems"`
-	AdditionalProperties *utils.Union2[Object, bool]                `json:"additionalProperties" yaml:"additionalProperties"`
+	Type                 *types.Union2[string, []string]            `json:"type" yaml:"type"`
+	AdditionalItems      *types.Union2[Object, bool]                `json:"additionalItems" yaml:"additionalItems"`
+	AdditionalProperties *types.Union2[Object, bool]                `json:"additionalProperties" yaml:"additionalProperties"`
 	AllOf                []Object                                   `json:"allOf" yaml:"allOf" cgen:"noinline"`
 	AnyOf                []Object                                   `json:"anyOf" yaml:"anyOf" cgen:"noinline"`
-	Const                *utils.Union2[json.RawMessage, yaml.Node]  `json:"const" yaml:"const"`
+	Const                *types.Union2[json.RawMessage, yaml.Node]  `json:"const" yaml:"const"`
 	Contains             *Object                                    `json:"contains" yaml:"contains"`
-	Default              *utils.Union2[json.RawMessage, yaml.Node]  `json:"default" yaml:"default"`
-	Definitions          utils.OrderedMap[string, Object]           `json:"definitions" yaml:"definitions"`
+	Default              *types.Union2[json.RawMessage, yaml.Node]  `json:"default" yaml:"default"`
+	Definitions          types.OrderedMap[string, Object]           `json:"definitions" yaml:"definitions"`
 	Deprecated           *bool                                      `json:"deprecated" yaml:"deprecated"`
 	Description          string                                     `json:"description" yaml:"description"`
 	Discriminator        string                                     `json:"discriminator" yaml:"discriminator"`
 	Else                 *Object                                    `json:"else" yaml:"else"`
-	Enum                 []utils.Union2[json.RawMessage, yaml.Node] `json:"enum" yaml:"enum"`
-	Examples             []utils.Union2[json.RawMessage, yaml.Node] `json:"examples" yaml:"examples"`
-	ExclusiveMaximum     *utils.Union2[bool, json.Number]           `json:"exclusiveMaximum" yaml:"exclusiveMaximum"`
-	ExclusiveMinimum     *utils.Union2[bool, json.Number]           `json:"exclusiveMinimum" yaml:"exclusiveMinimum"`
+	Enum                 []types.Union2[json.RawMessage, yaml.Node] `json:"enum" yaml:"enum"`
+	Examples             []types.Union2[json.RawMessage, yaml.Node] `json:"examples" yaml:"examples"`
+	ExclusiveMaximum     *types.Union2[bool, json.Number]           `json:"exclusiveMaximum" yaml:"exclusiveMaximum"`
+	ExclusiveMinimum     *types.Union2[bool, json.Number]           `json:"exclusiveMinimum" yaml:"exclusiveMinimum"`
 	ExternalDocs         *ExternalDocumentation                     `json:"externalDocs" yaml:"externalDocs"`
 	Format               string                                     `json:"format" yaml:"format"`
 	If                   *Object                                    `json:"if" yaml:"if"`
-	Items                *utils.Union2[Object, []Object]            `json:"items" yaml:"items"`
+	Items                *types.Union2[Object, []Object]            `json:"items" yaml:"items"`
 	MaxItems             *int                                       `json:"maxItems" yaml:"maxItems"`
 	MaxLength            *int                                       `json:"maxLength" yaml:"maxLength"`
 	MaxProperties        *int                                       `json:"maxProperties" yaml:"maxProperties"`
@@ -50,8 +52,8 @@ type Object struct {
 	Not                  *Object                                    `json:"not" yaml:"not"`
 	OneOf                []Object                                   `json:"oneOf" yaml:"oneOf" cgen:"noinline"`
 	Pattern              string                                     `json:"pattern" yaml:"pattern"`
-	PatternProperties    utils.OrderedMap[string, Object]           `json:"patternProperties" yaml:"patternProperties"` // Mapping regex->schema
-	Properties           utils.OrderedMap[string, Object]           `json:"properties" yaml:"properties"`
+	PatternProperties    types.OrderedMap[string, Object]           `json:"patternProperties" yaml:"patternProperties"` // Mapping regex->schema
+	Properties           types.OrderedMap[string, Object]           `json:"properties" yaml:"properties"`
 	PropertyNames        *Object                                    `json:"propertyNames" yaml:"propertyNames"`
 	ReadOnly             *bool                                      `json:"readOnly" yaml:"readOnly"`
 	Required             []string                                   `json:"required" yaml:"required"`
@@ -68,15 +70,15 @@ func (m Object) Compile(ctx *common.CompileContext) error {
 	if err != nil {
 		return err
 	}
-	ctx.PutToCurrentPkg(obj)
+	ctx.PutObject(obj)
 	return nil
 }
 
 func buildGolangType(ctx *common.CompileContext, schema Object, flags map[common.SchemaTag]string) (common.GolangType, error) {
 	if schema.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", schema.Ref)
-		res := render.NewRefLinkAsGolangType(schema.Ref, common.LinkOriginUser)
-		ctx.Linker.Add(res)
+		res := render.NewGolangTypePromise(schema.Ref, common.PromiseOriginUser)
+		ctx.PutPromise(res)
 		return res, nil
 	}
 
@@ -93,7 +95,7 @@ func buildGolangType(ctx *common.CompileContext, schema Object, flags map[common
 	if schemaType.Selector == 1 { // Multiple types, e.g. { "type": [ "object", "array", "null" ] }
 		t, err := simplifyMultiType(schemaType.V1)
 		if err != nil {
-			return nil, common.CompileError{Err: err, Path: ctx.PathRef()}
+			return nil, types.CompileError{Err: err, Path: ctx.PathRef()}
 		}
 		typ = t
 		ctx.Logger.Trace(fmt.Sprintf("Multitype object type inferred as %q", typ))
@@ -138,7 +140,7 @@ func buildGolangType(ctx *common.CompileContext, schema Object, flags map[common
 		ctx.Logger.Trace("Object is string")
 		langTyp = "string"
 	default:
-		return nil, common.CompileError{Err: fmt.Errorf("unknown jsonschema type %q", typ), Path: ctx.PathRef()}
+		return nil, types.CompileError{Err: fmt.Errorf("unknown jsonschema type %q", typ), Path: ctx.PathRef()}
 	}
 
 	return &render.TypeAlias{
@@ -157,18 +159,18 @@ func fixMissingTypeValue(ctx *common.CompileContext, s *Object) {
 	if s.Type == nil {
 		if s.Ref == "" && s.Properties.Len() > 0 {
 			ctx.Logger.Trace("Object type is empty, determined `object` because of `properties` presence")
-			s.Type = utils.ToUnion2[string, []string]("object")
+			s.Type = types.ToUnion2[string, []string]("object")
 			return
 		}
 		// TODO: fix type when AllOf, AnyOf, OneOf
 		if s.Items != nil {
 			ctx.Logger.Trace("Object type is empty, determined `array` because of `items` presence")
-			s.Type = utils.ToUnion2[string, []string]("array")
+			s.Type = types.ToUnion2[string, []string]("array")
 			return
 		}
 
 		ctx.Logger.Trace("Object type is empty, guessing it `object` by default")
-		s.Type = utils.ToUnion2[string, []string]("object")
+		s.Type = types.ToUnion2[string, []string]("object")
 	}
 }
 
@@ -202,19 +204,19 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 	var msgLinks *render.LinkList[*render.Message]
 	// Collect all messages to retrieve struct field tags
 	if ctx.TopPackageName() == "models" {
-		msgLinks = render.NewListCbLink[*render.Message](func(item common.Renderer, _ []string) bool {
+		msgLinks = render.NewListCbPromise[*render.Message](func(item common.Renderer, _ []string) bool {
 			_, ok := item.(*render.Message)
 			return ok
 		})
-		ctx.Linker.AddMany(msgLinks)
+		ctx.PutListPromise(msgLinks)
 	}
 
 	// regular properties
 	for _, entry := range schema.Properties.Entries() {
 		ctx.Logger.Trace("Object property", "name", entry.Key)
 		ref := path.Join(ctx.PathRef(), "properties", entry.Key)
-		langObj := render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
-		ctx.Linker.Add(langObj)
+		langObj := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+		ctx.PutPromise(langObj)
 		f := render.StructField{
 			Name:         utils.ToGolangName(entry.Key, true),
 			MarshalName:  entry.Key,
@@ -232,7 +234,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 		case 0: // "additionalProperties:" is an object
 			ctx.Logger.Trace("Object additional properties as an object")
 			ref := path.Join(ctx.PathRef(), "additionalProperties")
-			langObj := render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
+			langObj := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 			f := render.StructField{
 				Name: "AdditionalProperties",
 				Type: &render.Map{
@@ -298,7 +300,7 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 	case schema.Items != nil && schema.Items.Selector == 0: // Only one "type:" of items
 		ctx.Logger.Trace("Object items (single type)")
 		ref := path.Join(ctx.PathRef(), "items")
-		res.ItemsType = render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
+		res.ItemsType = render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 	case schema.Items == nil || schema.Items.Selector == 1: // No items or Several types for each item sequentially
 		ctx.Logger.Trace("Object items (zero or several types)")
 		valTyp := render.TypeAlias{
@@ -338,28 +340,28 @@ func buildUnionStruct(ctx *common.CompileContext, schema Object) (*render.UnionS
 	}
 
 	// Collect all messages to retrieve struct field tags
-	msgLinks := render.NewListCbLink[*render.Message](func(item common.Renderer, _ []string) bool {
+	msgLinks := render.NewListCbPromise[*render.Message](func(item common.Renderer, _ []string) bool {
 		_, ok := item.(*render.Message)
 		return ok
 	})
-	ctx.Linker.AddMany(msgLinks)
+	ctx.PutListPromise(msgLinks)
 
 	res.Fields = lo.Times(len(schema.OneOf), func(index int) render.StructField {
 		ref := path.Join(ctx.PathRef(), "oneOf", strconv.Itoa(index))
-		langTyp := render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
-		ctx.Linker.Add(langTyp)
+		langTyp := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+		ctx.PutPromise(langTyp)
 		return render.StructField{Type: langTyp, ForcePointer: true}
 	})
 	res.Fields = append(res.Fields, lo.Times(len(schema.AnyOf), func(index int) render.StructField {
 		ref := path.Join(ctx.PathRef(), "anyOf", strconv.Itoa(index))
-		langTyp := render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
-		ctx.Linker.Add(langTyp)
+		langTyp := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+		ctx.PutPromise(langTyp)
 		return render.StructField{Type: langTyp, ForcePointer: true}
 	})...)
 	res.Fields = append(res.Fields, lo.Times(len(schema.AllOf), func(index int) render.StructField {
 		ref := path.Join(ctx.PathRef(), "allOf", strconv.Itoa(index))
-		langTyp := render.NewRefLinkAsGolangType(ref, common.LinkOriginInternal)
-		ctx.Linker.Add(langTyp)
+		langTyp := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+		ctx.PutPromise(langTyp)
 		return render.StructField{Type: langTyp}
 	})...)
 

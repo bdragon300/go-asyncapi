@@ -1,4 +1,4 @@
-package common
+package types
 
 type SimpleStack[T any] struct {
 	stack []T
@@ -25,7 +25,7 @@ func (s *SimpleStack[T]) Items() []T {
 	return s.stack
 }
 
-func (s *SimpleStack[T]) replaceTop(v T) {
+func (s *SimpleStack[T]) ReplaceTop(v T) {
 	if len(s.stack) == 0 {
 		panic("Stack is empty")
 	}

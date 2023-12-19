@@ -3,7 +3,12 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"net/url"
+	"path/filepath"
 	"reflect"
+	"strings"
+
+	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
 
 	"github.com/samber/lo"
 )
@@ -28,7 +33,7 @@ func SlicesEqual[T comparable](a, b []T) bool {
 	return ok
 }
 
-func StructToOrderedMap(value any, target *OrderedMap[string, any], marshalFields []string) error {
+func StructToOrderedMap(value any, target *types.OrderedMap[string, any], marshalFields []string) error {
 	if target == nil {
 		return errors.New("target is nil")
 	}
@@ -52,4 +57,31 @@ func StructToOrderedMap(value any, target *OrderedMap[string, any], marshalField
 	}
 
 	return nil
+}
+
+func SplitSpecPath(path string) (specID, pointer string) {
+	path = strings.TrimSpace(path)
+	if strings.HasPrefix(path, "#/") {
+		return "", path[1:]
+	}
+
+	specID = path
+	if u, err := url.Parse(path); err == nil {
+		pointer = u.Fragment
+		u.Fragment = ""
+
+		switch {
+		case u.Scheme == "file" || u.Host == "" && u.User == nil && u.Scheme == "": // Ref to a file on the local machine
+			// Cut out the optional scheme, assuming that the rest is a filename
+			u.Scheme = ""
+			specID, _ = filepath.Abs(u.String())
+		default: // Ref to a remote file
+			specID = u.String()
+		}
+	}
+	return
+}
+
+func IsRemoteSpecID(specID string) bool {
+	return strings.HasPrefix(specID, "http://") || strings.HasPrefix(specID, "https://")
 }
