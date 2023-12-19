@@ -116,11 +116,16 @@ func (c *CompileContext) GenerateObjName(name, suffix string) string {
 }
 
 func (c *CompileContext) WithResultsStore(store CompilationObjectsStore) *CompileContext {
-	return &CompileContext{
+	res := CompileContext{
 		ObjectsStore: store,
 		Stack:        types.SimpleStack[ContextStackItem]{},
 		specID:       c.specID,
 		linker:       c.linker,
 		Logger:       c.Logger,
 	}
+	res.Logger = &CompilerLogger{
+		ctx:    &res,
+		logger: types.NewLogger("Compilation 🔨"),
+	}
+	return &res
 }
