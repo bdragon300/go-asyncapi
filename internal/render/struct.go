@@ -77,7 +77,7 @@ type StructField struct {
 	MarshalName  string
 	Description  string
 	Type         common.GolangType
-	ForcePointer bool
+	ForcePointer bool // TODO: remove in favor of NullableType
 	TagsSource   *LinkList[*Message]
 }
 

@@ -50,6 +50,14 @@ func (r *Link[T]) Origin() common.PromiseOrigin {
 	return r.origin
 }
 
+func (r *Link[T]) TargetAsGolangType() (common.GolangType, bool) {
+	if !r.assigned {
+		return nil, false
+	}
+	v, ok := any(r.target).(common.GolangType)
+	return v, ok
+}
+
 // List links can only be PromiseOriginInternal, no way to set a callback in spec
 func NewListCbPromise[T any](findCb func(item common.Renderer, path []string) bool) *LinkList[T] {
 	return &LinkList[T]{findCb: findCb}

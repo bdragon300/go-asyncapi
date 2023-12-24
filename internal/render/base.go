@@ -194,7 +194,7 @@ func (p Simple) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 }
 
 func (p Simple) TypeName() string {
-	return ""
+	return p.Name
 }
 
 func (p Simple) String() string {

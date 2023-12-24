@@ -126,6 +126,14 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		}
 		ctx.Logger.PrevCallLevel()
 	}
+
+	// Link to CorrelationID if any
+	if m.CorrelationID != nil {
+		ctx.Logger.Trace("Message correlationId")
+		ref := ctx.PathRef() + "/correlationId"
+		obj.CorrelationIDLink = render.NewPromise[*render.CorrelationID](ref, common.PromiseOriginInternal)
+		ctx.PutPromise(obj.CorrelationIDLink)
+	}
 	return &obj, nil
 }
 
@@ -158,13 +166,6 @@ func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 
 	ctx.Logger.Trace("Message payload has `any` type")
 	return &render.Simple{Name: "any", IsIface: true}
-}
-
-type CorrelationID struct {
-	Description string `json:"description" yaml:"description"`
-	Location    string `json:"location" yaml:"location"`
-
-	Ref string `json:"$ref" yaml:"$ref"`
 }
 
 type Tag struct {

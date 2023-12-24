@@ -21,14 +21,15 @@ type Message struct {
 	Name                       string
 	OutStruct                  *Struct
 	InStruct                   *Struct
-	PayloadType                common.GolangType
+	PayloadType                common.GolangType // `any` or a particular type
 	PayloadHasSchema           bool
 	HeadersFallbackType        *Map
 	HeadersTypeLink            *Link[*Struct]
 	AllServers                 *LinkList[*Server] // For extracting all using protocols
-	BindingsStruct             *Struct            // nil if message bindings are not defined
+	BindingsStruct             *Struct            // nil if message bindings are not defined for message
 	BindingsStructProtoMethods types.OrderedMap[string, common.Renderer]
-	ContentType                string // Message's content type or default from schema or fallback
+	ContentType                string                // Message's content type or default from schema or fallback
+	CorrelationIDLink          *Link[*CorrelationID] // nil if correlationID is not defined for message
 }
 
 func (m Message) DirectRendering() bool {
@@ -61,7 +62,7 @@ func (m Message) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 }
 
 func (m Message) RenderUsage(_ *common.RenderContext) []*j.Statement {
-	panic("not implemented")
+	panic("not implemented") // TODO: separate Renderer interface instead of panic in RenderUsage?
 }
 
 func (m Message) String() string {
@@ -93,7 +94,7 @@ func (m Message) renderPublishCommonMethods(ctx *common.RenderContext) []*j.Stat
 		headersFieldType = utils.ToCode(m.HeadersTypeLink.Target().RenderUsage(ctx))
 	}
 
-	return []*j.Statement{
+	res := []*j.Statement{
 		// Method WithPayload(payload Model2) *Message2Out
 		j.Func().Params(receiver.Clone()).Id("WithPayload").
 			Params(j.Id("payload").Add(payloadFieldType...)).
@@ -113,6 +114,11 @@ func (m Message) renderPublishCommonMethods(ctx *common.RenderContext) []*j.Stat
 					return %[1]s`, rn)),
 			),
 	}
+	if m.CorrelationIDLink != nil {
+		// Method SetCorrelationID(value any)
+		res = append(res, m.CorrelationIDLink.Target().RenderSetterDefinition(ctx, &m)...)
+	}
+	return res
 }
 
 func (m Message) renderSubscribeMessageStruct(ctx *common.RenderContext) []*j.Statement {
@@ -140,7 +146,7 @@ func (m Message) renderSubscribeCommonMethods(ctx *common.RenderContext) []*j.St
 		headersFieldType = utils.ToCode(m.HeadersTypeLink.Target().RenderUsage(ctx))
 	}
 
-	return []*j.Statement{
+	res := []*j.Statement{
 		// Method MessagePayload() Model2
 		j.Func().Params(receiver.Clone()).Id("MessagePayload").
 			Params().
@@ -156,4 +162,9 @@ func (m Message) renderSubscribeCommonMethods(ctx *common.RenderContext) []*j.St
 				j.Return(j.Id(rn).Dot("Headers")),
 			),
 	}
+	if m.CorrelationIDLink != nil {
+		// Method CorrelationID(value any)
+		res = append(res, m.CorrelationIDLink.Target().RenderGetterDefinition(ctx, &m)...)
+	}
+	return res
 }

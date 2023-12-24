@@ -32,7 +32,7 @@ type Linker interface {
 }
 
 type ContextStackItem struct {
-	Path        string
+	Path        string // TODO: rename to Key or smth. This is a path item actually
 	Flags       map[SchemaTag]string
 	PackageName string
 	ObjName     string

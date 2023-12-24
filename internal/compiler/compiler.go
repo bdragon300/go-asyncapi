@@ -34,7 +34,7 @@ func NewCompiler(specID string) *Compiler {
 	}
 }
 
-type Compiler struct {
+type Compiler struct { // TODO: rename to Module or smth
 	specID        string
 	logger        *types.Logger
 	remoteSpecIDs []string

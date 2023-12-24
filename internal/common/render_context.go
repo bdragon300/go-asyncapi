@@ -14,7 +14,7 @@ type Renderer interface {
 	DirectRendering() bool
 	RenderDefinition(ctx *RenderContext) []*jen.Statement
 	RenderUsage(ctx *RenderContext) []*jen.Statement
-	String() string
+	String() string // Human-readable object identifier (name) as string, for logging purposes
 }
 
 type RenderContext struct {
