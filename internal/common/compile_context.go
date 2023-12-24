@@ -17,18 +17,15 @@ type GolangType interface {
 
 const nameWordSep = "_"
 
-type CompilationObjectsStore interface {
-	Add(pkgName string, stack []string, obj Renderer)
+type CompilationStorage interface {
+	AddObject(pkgName string, stack []string, obj Renderer)
 	AddProtocol(protoName string)
 	AddRemoteSpecID(specID string)
+	AddPromise(p ObjectPromise)
+	AddListPromise(p ObjectListPromise)
 
 	SetDefaultContentType(contentType string)
 	DefaultContentType() string
-}
-
-type Linker interface {
-	AddPromise(p ObjectPromise, specID string)
-	AddListPromise(p ObjectListPromise, specID string)
 }
 
 type ContextStackItem struct {
@@ -38,11 +35,8 @@ type ContextStackItem struct {
 	ObjName     string
 }
 
-func NewCompileContext(linker Linker, specID string) *CompileContext {
-	res := CompileContext{
-		specID: specID,
-		linker: linker,
-	}
+func NewCompileContext(specID string) *CompileContext {
+	res := CompileContext{specID: specID}
 	res.Logger = &CompilerLogger{
 		ctx:    &res,
 		logger: types.NewLogger("Compilation 🔨"),
@@ -51,23 +45,10 @@ func NewCompileContext(linker Linker, specID string) *CompileContext {
 }
 
 type CompileContext struct {
-	ObjectsStore CompilationObjectsStore
-	Stack        types.SimpleStack[ContextStackItem]
-	Logger       *CompilerLogger
-	specID       string
-	linker       Linker
-}
-
-func (c *CompileContext) PutPromise(p ObjectPromise) {
-	refSpecID, _ := utils.SplitSpecPath(p.Ref())
-	if utils.IsRemoteSpecID(refSpecID) {
-		c.ObjectsStore.AddRemoteSpecID(refSpecID)
-	}
-	c.linker.AddPromise(p, c.specID)
-}
-
-func (c *CompileContext) PutListPromise(p ObjectListPromise) {
-	c.linker.AddListPromise(p, c.specID)
+	Storage CompilationStorage
+	Stack   types.SimpleStack[ContextStackItem]
+	Logger  *CompilerLogger
+	specID  string
 }
 
 func (c *CompileContext) PutObject(obj Renderer) {
@@ -75,7 +56,19 @@ func (c *CompileContext) PutObject(obj Renderer) {
 	if pkgName == "" {
 		panic("Package name has not been set")
 	}
-	c.ObjectsStore.Add(pkgName, c.PathStack(), obj)
+	c.Storage.AddObject(pkgName, c.PathStack(), obj)
+}
+
+func (c *CompileContext) PutPromise(p ObjectPromise) {
+	refSpecID, _ := utils.SplitSpecPath(p.Ref())
+	if utils.IsRemoteSpecID(refSpecID) {
+		c.Storage.AddRemoteSpecID(refSpecID)
+	}
+	c.Storage.AddPromise(p)
+}
+
+func (c *CompileContext) PutListPromise(p ObjectListPromise) {
+	c.Storage.AddListPromise(p)
 }
 
 func (c *CompileContext) PathRef() string {
@@ -115,13 +108,12 @@ func (c *CompileContext) GenerateObjName(name, suffix string) string {
 	return utils.ToGolangName(name, true) + suffix
 }
 
-func (c *CompileContext) WithResultsStore(store CompilationObjectsStore) *CompileContext {
+func (c *CompileContext) WithResultsStore(store CompilationStorage) *CompileContext {
 	res := CompileContext{
-		ObjectsStore: store,
-		Stack:        types.SimpleStack[ContextStackItem]{},
-		specID:       c.specID,
-		linker:       c.linker,
-		Logger:       c.Logger,
+		Storage: store,
+		Stack:   types.SimpleStack[ContextStackItem]{},
+		specID:  c.specID,
+		Logger:  c.Logger,
 	}
 	res.Logger = &CompilerLogger{
 		ctx:    &res,

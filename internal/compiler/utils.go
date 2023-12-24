@@ -9,7 +9,7 @@ const utilsPackageName = "utils"
 
 func UtilsCompile(ctx *common.CompileContext) error {
 	ctx.Logger.Trace("Utils package")
-	ctx.ObjectsStore.Add(utilsPackageName, ctx.PathStack(), buildSerializer(ctx))
+	ctx.Storage.AddObject(utilsPackageName, ctx.PathStack(), buildSerializer(ctx))
 	return nil
 }
 
@@ -22,6 +22,6 @@ func buildSerializer(ctx *common.CompileContext) *render.UtilsSerializer {
 
 	return &render.UtilsSerializer{
 		AllMessages:        lnk,
-		DefaultContentType: ctx.ObjectsStore.DefaultContentType(),
+		DefaultContentType: ctx.Storage.DefaultContentType(),
 	}
 }

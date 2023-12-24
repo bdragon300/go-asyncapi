@@ -22,9 +22,9 @@ type AsyncAPI struct {
 
 func (a AsyncAPI) Compile(ctx *common.CompileContext) error {
 	if a.DefaultContentType != "" {
-		ctx.ObjectsStore.SetDefaultContentType(a.DefaultContentType)
+		ctx.Storage.SetDefaultContentType(a.DefaultContentType)
 	}
-	ctx.Logger.Trace(fmt.Sprintf("Default content type set to %s", ctx.ObjectsStore.DefaultContentType()))
+	ctx.Logger.Trace(fmt.Sprintf("Default content type set to %s", ctx.Storage.DefaultContentType()))
 	return nil
 }
 

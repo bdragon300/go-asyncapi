@@ -138,40 +138,39 @@ func generate(cmd *GenerateCmd) error {
 	// Compilation
 	specID, _ := utils.SplitSpecPath(cmd.Spec)
 	firstSpecID := specID
-	specLinker := linker.NewSpecLinker()
-	compileQueue := []string{specID}                // Queue of specIDs to compile
-	compiled := make(map[string]*compiler.Compiler) // Compilers by spec id
+	compileQueue := []string{specID}             // Queue of specIDs to compile
+	modules := make(map[string]*compiler.Module) // Compilers by spec id
 	for len(compileQueue) > 0 {
-		specID = compileQueue[0]           // Pop from the queue
-		compileQueue = compileQueue[1:]    //
-		if _, ok := compiled[specID]; ok { // Skip if specID has been already compiled
+		specID = compileQueue[0]          // Pop from the queue
+		compileQueue = compileQueue[1:]   //
+		if _, ok := modules[specID]; ok { // Skip if specID has been already modules
 			continue
 		}
 
 		logger.Info("Run compilation", "path", specID)
-		comp := compiler.NewCompiler(specID)
-		compiled[specID] = comp
+		module := compiler.NewModule(specID)
+		modules[specID] = module
 
 		logger.Debug("Loading spec path", "path", specID)
-		if err := comp.Load(); err != nil {
+		if err := module.Load(); err != nil {
 			return fmt.Errorf("load the spec: %w", err)
 		}
 		logger.Debug("Compilation a loaded file", "path", specID)
-		if err := comp.Compile(common.NewCompileContext(specLinker, specID)); err != nil {
+		if err := module.Compile(common.NewCompileContext(specID)); err != nil {
 			return fmt.Errorf("compilation the spec: %w", err)
 		}
-		logger.Debugf("Compiler stats: %s", comp.Stats())
-		compileQueue = lo.Flatten([][]string{compileQueue, comp.RemoteSpecIDs()}) // Extend queue with remote specIDs
+		logger.Debugf("Compiler stats: %s", module.Stats())
+		compileQueue = lo.Flatten([][]string{compileQueue, module.RemoteSpecIDs()}) // Extend queue with remote specIDs
 	}
-	logger.Info("Compilation completed", "files", len(compiled))
+	logger.Info("Compilation completed", "files", len(modules))
 
-	comps := lo.MapValues(compiled, func(value *compiler.Compiler, _ string) linker.ObjectSource { return value })
+	comps := lo.MapValues(modules, func(value *compiler.Module, _ string) linker.ObjectSource { return value })
 
 	// Linking: refs
 	logger.Info("Run linking", "path", specID)
-	specLinker.ProcessRefs(comps)
-	danglingRefs := specLinker.DanglingRefs()
-	logger.Debugf("Linker stats: %s", specLinker.Stats())
+	linker.AssignRefs(comps)
+	danglingRefs := linker.DanglingRefs(comps)
+	logger.Debugf("Linker stats: %s", linker.Stats(comps))
 	if len(danglingRefs) > 0 {
 		logger.Error("Some refs remain dangling", "refs", danglingRefs)
 		return fmt.Errorf("cannot finish linking")
@@ -179,16 +178,16 @@ func generate(cmd *GenerateCmd) error {
 
 	// Linking: list promises
 	logger.Debug("Run linking the list promises")
-	specLinker.ProcessListPromises(comps)
-	danglingPromises := specLinker.DanglingPromisesCount()
-	logger.Debugf("Linker stats: %s", specLinker.Stats())
+	linker.AssignListPromises(comps)
+	danglingPromises := linker.DanglingPromisesCount(comps)
+	logger.Debugf("Linker stats: %s", linker.Stats(comps))
 	if danglingPromises > 0 {
 		logger.Error("Cannot assign internal list promises", "promises", danglingPromises)
 		return fmt.Errorf("cannot finish linking")
 	}
-	logger.Info("Linking completed", "files", len(compiled))
+	logger.Info("Linking completed", "files", len(modules))
 
-	firstComp := compiled[firstSpecID]
+	firstComp := modules[firstSpecID]
 
 	// Rendering
 	logger.Info("Run rendering")

@@ -24,17 +24,17 @@ type Object struct {
 	Path   []string
 }
 
-func NewCompiler(specID string) *Compiler {
-	return &Compiler{
+func NewModule(specID string) *Module {
+	return &Module{
 		logger:             types.NewLogger("Compilation 🔨"),
 		specID:             specID,
-		packagesContents:   make(map[string][]Object),
+		objects:            make(map[string][]Object), // Object by rendered code package
 		defaultContentType: fallbackContentType,
 		protocols:          make(map[string]int),
 	}
 }
 
-type Compiler struct { // TODO: rename to Module or smth
+type Module struct {
 	specID        string
 	logger        *types.Logger
 	remoteSpecIDs []string
@@ -44,48 +44,66 @@ type Compiler struct { // TODO: rename to Module or smth
 	parsedSpec     compiledObject
 
 	// Set during compilation
-	packagesContents   map[string][]Object // Objects by package
+	objects            map[string][]Object // Objects by package
 	defaultContentType string
 	protocols          map[string]int
+	promises           []common.ObjectPromise
+	listPromises       []common.ObjectListPromise
 }
 
-func (c *Compiler) Add(pkgName string, stack []string, obj common.Renderer) {
-	c.packagesContents[pkgName] = append(c.packagesContents[pkgName], Object{Object: obj, Path: stack})
+func (c *Module) AddObject(pkgName string, stack []string, obj common.Renderer) {
+	c.objects[pkgName] = append(c.objects[pkgName], Object{Object: obj, Path: stack})
 }
 
-func (c *Compiler) AddProtocol(protoName string) {
+func (c *Module) AddProtocol(protoName string) {
 	c.protocols[protoName]++
 }
 
-func (c *Compiler) AddRemoteSpecID(specID string) {
+func (c *Module) AddRemoteSpecID(specID string) {
 	c.remoteSpecIDs = append(c.remoteSpecIDs, specID)
 }
 
-func (c *Compiler) Protocols() []string {
+func (c *Module) AddPromise(p common.ObjectPromise) {
+	c.promises = append(c.promises, p)
+}
+
+func (c *Module) AddListPromise(p common.ObjectListPromise) {
+	c.listPromises = append(c.listPromises, p)
+}
+
+func (c *Module) Protocols() []string {
 	return lo.Keys(c.protocols)
 }
 
-func (c *Compiler) SetDefaultContentType(contentType string) {
+func (c *Module) SetDefaultContentType(contentType string) {
 	c.defaultContentType = contentType
 }
 
-func (c *Compiler) DefaultContentType() string {
+func (c *Module) DefaultContentType() string {
 	return c.defaultContentType
 }
 
-func (c *Compiler) PackageObjects(pkgName string) []Object {
-	return c.packagesContents[pkgName]
+func (c *Module) PackageObjects(pkgName string) []Object {
+	return c.objects[pkgName]
 }
 
-func (c *Compiler) Packages() []string {
-	return lo.Keys(c.packagesContents)
+func (c *Module) Packages() []string {
+	return lo.Keys(c.objects)
 }
 
-func (c *Compiler) AllObjects() []Object {
-	return lo.Flatten(lo.Values(c.packagesContents))
+func (c *Module) AllObjects() []Object {
+	return lo.Flatten(lo.Values(c.objects))
 }
 
-func (c *Compiler) Load() error {
+func (c *Module) Promises() []common.ObjectPromise {
+	return c.promises
+}
+
+func (c *Module) ListPromises() []common.ObjectListPromise {
+	return c.listPromises
+}
+
+func (c *Module) Load() error {
 	var f *os.File
 	var err error
 
@@ -123,7 +141,7 @@ func (c *Compiler) Load() error {
 	return nil
 }
 
-func (c *Compiler) Compile(ctx *common.CompileContext) error {
+func (c *Module) Compile(ctx *common.CompileContext) error {
 	ctx = ctx.WithResultsStore(c)
 	c.logger.Debug("Compile a spec", "specID", c.specID, "kind", c.parsedSpecKind)
 	c.logger.Trace("Compile the root component", "specID", c.specID)
@@ -141,18 +159,18 @@ func (c *Compiler) Compile(ctx *common.CompileContext) error {
 	return nil
 }
 
-func (c *Compiler) RemoteSpecIDs() []string {
+func (c *Module) RemoteSpecIDs() []string {
 	return c.remoteSpecIDs
 }
 
-func (c *Compiler) Stats() string {
+func (c *Module) Stats() string {
 	return fmt.Sprintf(
 		"%s(%s): %d objects in %d packages, known protocols: %s",
 		c.specID, c.parsedSpecKind, len(c.AllObjects()), len(c.Packages()), strings.Join(lo.Keys(c.protocols), ","),
 	)
 }
 
-func (c *Compiler) parseSpecFile(specID string, f *os.File) (SpecKind, compiledObject, error) {
+func (c *Module) parseSpecFile(specID string, f *os.File) (SpecKind, compiledObject, error) {
 	switch {
 	case strings.HasSuffix(specID, ".yaml") || strings.HasSuffix(specID, ".yml"):
 		c.logger.Debug("Found YAML spec file", "specID", specID, "file", f.Name())

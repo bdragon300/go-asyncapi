@@ -39,7 +39,7 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 	}
 	ctx.PutObject(obj)
 	if ctx.TopPackageName() == "servers" {
-		ctx.ObjectsStore.AddProtocol(s.Protocol)
+		ctx.Storage.AddProtocol(s.Protocol)
 	}
 	return nil
 }

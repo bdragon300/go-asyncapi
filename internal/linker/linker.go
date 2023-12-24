@@ -15,49 +15,30 @@ import (
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 )
 
-func NewSpecLinker() *SpecLinker {
-	return &SpecLinker{
-		objPromises:     make(map[string][]common.ObjectPromise),
-		objListPromises: make(map[string][]common.ObjectListPromise),
-		logger:          types.NewLogger("Linking 🔗"),
-	}
-}
-
-type SpecLinker struct {
-	objPromises     map[string][]common.ObjectPromise     // Promises by source spec ID
-	objListPromises map[string][]common.ObjectListPromise // Promises by source spec ID
-	logger          *types.Logger
-}
-
-func (l *SpecLinker) AddPromise(p common.ObjectPromise, sourceSpecID string) {
-	l.objPromises[sourceSpecID] = append(l.objPromises[sourceSpecID], p)
-}
-
-func (l *SpecLinker) AddListPromise(p common.ObjectListPromise, sourceSpecID string) {
-	l.objListPromises[sourceSpecID] = append(l.objListPromises[sourceSpecID], p)
-}
-
 type ObjectSource interface {
 	AllObjects() []compiler.Object // TODO: make this as interface and move link.go to linker
+	Promises() []common.ObjectPromise
+	ListPromises() []common.ObjectListPromise
 }
 
-func (l *SpecLinker) ProcessRefs(sources map[string]ObjectSource) {
-	assigned := 0
-	prevAssigned := 0
-	promisesCount := len(lo.Flatten(lo.Values(l.objPromises)))
-	for assigned < promisesCount {
-		for srcSpecID, promises := range l.objPromises {
-			for _, p := range promises {
+func AssignRefs(sources map[string]ObjectSource) {
+	logger := types.NewLogger("Linking 🔗")
+	assigned := 1
+
+	for assigned > 0 {
+		assigned = 0
+		for srcSpecID, source := range sources {
+			for _, p := range source.Promises() {
 				if p.Assigned() {
-					continue // Assigned on previous iterations
+					continue // Assigned previously
 				}
 
 				if res, ok := resolvePromise(p, srcSpecID, sources); ok {
 					switch p.Origin() {
 					case common.PromiseOriginInternal:
-						l.logger.Trace("Internal ref resolved", "$ref", p.Ref(), "target", res)
+						logger.Trace("Internal ref resolved", "$ref", p.Ref(), "target", res)
 					case common.PromiseOriginUser:
-						l.logger.Debug("Ref resolved", "$ref", p.Ref(), "target", res)
+						logger.Debug("Ref resolved", "$ref", p.Ref(), "target", res)
 					default:
 						panic(fmt.Sprintf("Unknown link origin %v, this must not happen", p.Origin()))
 					}
@@ -67,21 +48,20 @@ func (l *SpecLinker) ProcessRefs(sources map[string]ObjectSource) {
 				}
 			}
 		}
-		if assigned == prevAssigned {
-			l.logger.Trace("no more refs to resolve on this iteration, leave it and go ahead")
-			break
-		}
-		prevAssigned = assigned
 	}
+	logger.Trace("no more refs left to resolve on this iteration, leave it and go ahead")
 }
 
-func (l *SpecLinker) ProcessListPromises(sources map[string]ObjectSource) {
-	assigned := 0
-	prevAssigned := 0
-	promisesCount := len(lo.Flatten(lo.Values(l.objListPromises)))
-	for assigned < promisesCount {
-		for srcSpecID, promises := range l.objListPromises {
-			for _, p := range promises {
+func AssignListPromises(sources map[string]ObjectSource) {
+	logger := types.NewLogger("Linking 🔗")
+	totalAssigned := 0
+	assigned := 1
+	promisesCount := lo.SumBy(lo.Values(sources), func(item ObjectSource) int { return len(item.ListPromises()) })
+
+	for assigned > 0 {
+		assigned = 0
+		for srcSpecID, source := range sources {
+			for _, p := range source.ListPromises() {
 				if p.Assigned() {
 					continue // Assigned on previous iterations
 				}
@@ -93,40 +73,40 @@ func (l *SpecLinker) ProcessListPromises(sources map[string]ObjectSource) {
 					if len(res) > 2 {
 						targets += ", ..."
 					}
-					l.logger.Trace("Internal list link resolved", "count", len(res), "targets", targets)
+					logger.Trace("Internal list link resolved", "count", len(res), "targets", targets)
 
 					p.AssignList(lo.ToAnySlice(res))
 					assigned++
 				}
 			}
 		}
-		if assigned == prevAssigned {
-			l.logger.Debug("some internal list promises has not been resolved")
-			break
-		}
-		prevAssigned = assigned
+		totalAssigned += assigned
+	}
+	if totalAssigned < promisesCount {
+		logger.Debug("some internal list promises has not been resolved")
 	}
 }
 
-func (l *SpecLinker) DanglingPromisesCount() int {
-	return lo.CountBy(lo.Flatten(lo.Values(l.objPromises)), func(item common.ObjectPromise) bool {
-		return !item.Assigned()
-	}) + lo.CountBy(lo.Flatten(lo.Values(l.objListPromises)), func(item common.ObjectListPromise) bool {
-		return !item.Assigned()
+func DanglingPromisesCount(sources map[string]ObjectSource) int {
+	c := lo.SumBy(lo.Values(sources), func(item ObjectSource) int {
+		return lo.CountBy(item.ListPromises(), func(p common.ObjectListPromise) bool { return !p.Assigned() })
+	})
+	return c + len(DanglingRefs(sources))
+}
+
+func DanglingRefs(sources map[string]ObjectSource) []string {
+	return lo.FlatMap(lo.Values(sources), func(src ObjectSource, _ int) []string {
+		return lo.FilterMap(src.Promises(), func(p common.ObjectPromise, _ int) (string, bool) {
+			return p.Ref(), !p.Assigned()
+		})
 	})
 }
 
-func (l *SpecLinker) DanglingRefs() []string {
-	return lo.FilterMap(lo.Flatten(lo.Values(l.objPromises)), func(item common.ObjectPromise, index int) (string, bool) {
-		return item.Ref(), !item.Assigned()
-	})
-}
-
-func (l *SpecLinker) Stats() string {
-	promises := lo.Flatten(lo.Values(l.objPromises))
-	listPromises := lo.Flatten(lo.Values(l.objListPromises))
+func Stats(sources map[string]ObjectSource) string {
+	promises := lo.FlatMap(lo.Values(sources), func(item ObjectSource, _ int) []common.ObjectPromise { return item.Promises() })
+	listPromises := lo.FlatMap(lo.Values(sources), func(item ObjectSource, _ int) []common.ObjectListPromise { return item.ListPromises() })
 	return fmt.Sprintf(
-		"Linker: %d refs (%d user (%d dangling), %d internal (%d dangling)), %d internal list promises (%d dangling)",
+		"Linker: %d refs (%d user-defined (%d dangling), %d internal (%d dangling)), %d internal list promises (%d dangling)",
 		len(promises),
 		lo.CountBy(promises, func(l common.ObjectPromise) bool { return l.Origin() == common.PromiseOriginUser }),
 		lo.CountBy(promises, func(l common.ObjectPromise) bool { return l.Origin() == common.PromiseOriginUser && !l.Assigned() }),
