@@ -70,9 +70,9 @@ type Object struct {
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
-func (m Object) Compile(ctx *common.CompileContext) error {
+func (o Object) Compile(ctx *common.CompileContext) error {
 	ctx.SetTopObjName(ctx.Stack.Top().Path)
-	obj, err := buildGolangType(ctx, m, ctx.Stack.Top().Flags)
+	obj, err := o.build(ctx, ctx.Stack.Top().Flags)
 	if err != nil {
 		return err
 	}
@@ -80,59 +80,92 @@ func (m Object) Compile(ctx *common.CompileContext) error {
 	return nil
 }
 
-func buildGolangType(ctx *common.CompileContext, schema Object, flags map[common.SchemaTag]string) (common.GolangType, error) {
-	var err error
-	if schema.Ref != "" {
-		ctx.Logger.Trace("Ref", "$ref", schema.Ref)
-		res := render.NewGolangTypePromise(schema.Ref, common.PromiseOriginUser)
+func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]string) (common.GolangType, error) {
+	if o.Ref != "" {
+		ctx.Logger.Trace("Ref", "$ref", o.Ref)
+		res := render.NewGolangTypePromise(o.Ref, common.PromiseOriginUser)
 		ctx.PutPromise(res)
 		return res, nil
 	}
 
-	if len(schema.OneOf)+len(schema.AnyOf)+len(schema.AllOf) > 0 {
+	if len(o.OneOf)+len(o.AnyOf)+len(o.AllOf) > 0 {
 		ctx.Logger.Trace("Object is union struct")
-		return buildUnionStruct(ctx, schema) // TODO: process other items that can be set along with oneof/anyof/allof
+		return o.buildUnionStruct(ctx) // TODO: process other items that can be set along with oneof/anyof/allof
 	}
 
-	fixMissingTypeValue(ctx, &schema)
+	if o.Type == nil {
+		o = o.fixMissingObjectType(ctx)
+	}
 
-	schemaType := schema.Type
-	typeName := schemaType.V0
-	nullable := false
+	typeName, nullable, err := o.getTypeName(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	nullable = nullable || lo.FromPtr(o.XNullable)
+
+	// TODO: "type": { "enum": [ "residential", "business" ] }
+	// One type: { "type": "object" }
+	golangType, err := o.buildGolangType(ctx, flags, typeName)
+	if err != nil {
+		return nil, err
+	}
+
+	if nullable {
+		ctx.Logger.Trace("Object is nullable, make it pointer")
+		_, directRender := flags[common.SchemaTagDirectRender]
+		golangType = &render.Pointer{Type: golangType, DirectRender: directRender}
+	}
+	return golangType, nil
+}
+
+func (o Object) getTypeName(ctx *common.CompileContext) (typeName string, nullable bool, err error) {
+	schemaType := o.Type
+	typeName = schemaType.V0
+
 	if schemaType.Selector == 1 { // Multiple types, e.g. { "type": [ "object", "array", "null" ] }
-		typeName, nullable, err = simplifyMultiType(schemaType.V1)
-		if err != nil {
-			return nil, types.CompileError{Err: err, Path: ctx.PathRef()}
+		nullable = lo.Contains(schemaType.V1, "null")
+		typs := lo.Reject(schemaType.V1, func(item string, _ int) bool { return item == "null" }) // Throw out null (if any)
+
+		switch {
+		case len(typs) > 1: // More than one type along with null -> 'any'
+			typeName = ""
+		case len(typs) == 1: // One type along with null -> pointer to this type
+			typeName = typs[0]
+		case nullable: // Null only -> 'any', that can be only nil
+			typeName = "null"
+		default:
+			err = types.CompileError{Err: errors.New("empty object type"), Path: ctx.PathRef()}
+			return
 		}
 		ctx.Logger.Trace(fmt.Sprintf("Multitype object type inferred as %q", typeName))
 	}
+	return
+}
 
-	nullable = nullable || lo.FromPtr(schema.XNullable)
-
-	_, directRender := flags[common.SchemaTagDirectRender]
-	// TODO: "type": { "enum": [ "residential", "business" ] }
-	// One type: { "type": "object" }
-	var builtType common.GolangType
+func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.SchemaTag]string, typeName string) (golangType common.GolangType, err error) {
 	var aliasedType *render.Simple
 
 	switch typeName {
 	case "object":
 		ctx.Logger.Trace("Object is struct")
 		ctx.Logger.NextCallLevel()
-		if builtType, err = buildLangStruct(ctx, schema, flags); err != nil {
+		golangType, err = o.buildLangStruct(ctx, flags)
+		ctx.Logger.PrevCallLevel()
+		if err != nil {
 			return nil, err
 		}
-		ctx.Logger.PrevCallLevel()
 	case "array":
 		ctx.Logger.Trace("Object is array")
 		ctx.Logger.NextCallLevel()
-		if builtType, err = buildLangArray(ctx, schema, flags); err != nil {
+		golangType, err = o.buildLangArray(ctx, flags)
+		ctx.Logger.PrevCallLevel()
+		if err != nil {
 			return nil, err
 		}
-		ctx.Logger.PrevCallLevel()
 	case "null", "":
 		ctx.Logger.Trace("Object is any")
-		builtType = &render.Simple{Name: "any", IsIface: true}
+		golangType = &render.Simple{Name: "any", IsIface: true}
 	case "boolean":
 		ctx.Logger.Trace("Object is bool")
 		aliasedType = &render.Simple{Name: "bool"}
@@ -152,65 +185,42 @@ func buildGolangType(ctx *common.CompileContext, schema Object, flags map[common
 	}
 
 	if aliasedType != nil {
-		builtType = &render.TypeAlias{
+		_, directRender := flags[common.SchemaTagDirectRender]
+		golangType = &render.TypeAlias{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(schema.Title, ""),
-				Description:  schema.Description,
+				Name:         ctx.GenerateObjName(o.Title, ""),
+				Description:  o.Description,
 				DirectRender: directRender,
 				PackageName:  ctx.TopPackageName(),
 			},
 			AliasedType: aliasedType,
 		}
 	}
-
-	if nullable {
-		ctx.Logger.Trace("Object is nullable, make it pointer")
-		builtType = &render.Pointer{Type: builtType, DirectRender: directRender}
-	}
-	return builtType, nil
+	return golangType, nil
 }
 
-// fixMissingTypeValue is backwards compatible, guessing the users intention when they didn't specify a type.
-func fixMissingTypeValue(ctx *common.CompileContext, s *Object) {
-	if s.Type == nil {
-		if s.Ref == "" && s.Properties.Len() > 0 {
-			ctx.Logger.Trace("Object type is empty, determined `object` because of `properties` presence")
-			s.Type = types.ToUnion2[string, []string]("object")
-			return
-		}
-		// TODO: fix type when AllOf, AnyOf, OneOf
-		if s.Items != nil {
-			ctx.Logger.Trace("Object type is empty, determined `array` because of `items` presence")
-			s.Type = types.ToUnion2[string, []string]("array")
-			return
-		}
-
-		ctx.Logger.Trace("Object type is empty, guessing it `object` by default")
-		s.Type = types.ToUnion2[string, []string]("object")
-	}
-}
-
-func simplifyMultiType(schemaType []string) (string, bool, error) {
-	nullable := lo.Contains(schemaType, "null")
-	typs := lo.Reject(schemaType, func(item string, _ int) bool { return item == "null" }) // Throw out null (if any)
+// fixMissingObjectType is backwards compatible, guessing the users intention when they didn't specify a type.
+func (o Object) fixMissingObjectType(ctx *common.CompileContext) Object {
 	switch {
-	case len(typs) > 1: // More than one type along with null -> 'any'
-		return "", nullable, nil
-	case len(typs) == 1: // One type along with null -> pointer to this type
-		return typs[0], nullable, nil
-	case nullable: // Null only -> 'any', that can be only nil
-		return "null", nullable, nil
+	case o.Ref == "" && o.Properties.Len() > 0:
+		ctx.Logger.Trace("Object type is empty, determined `object` because of `properties` presence")
+		o.Type = types.ToUnion2[string, []string]("object")
+	case o.Items != nil: // TODO: fix type when AllOf, AnyOf, OneOf
+		ctx.Logger.Trace("Object type is empty, determined `array` because of `items` presence")
+		o.Type = types.ToUnion2[string, []string]("array")
 	default:
-		return "", nullable, errors.New("empty object type")
+		ctx.Logger.Trace("Object type is empty, guessing it `object` by default")
+		o.Type = types.ToUnion2[string, []string]("object")
 	}
+	return o
 }
 
-func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common.SchemaTag]string) (*render.Struct, error) {
+func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.SchemaTag]string) (*render.Struct, error) {
 	_, noInline := flags[common.SchemaTagDirectRender]
 	res := render.Struct{
 		BaseType: render.BaseType{
-			Name:         ctx.GenerateObjName(schema.Title, ""),
-			Description:  schema.Description,
+			Name:         ctx.GenerateObjName(o.Title, ""),
+			Description:  o.Description,
 			DirectRender: noInline,
 			PackageName:  ctx.TopPackageName(),
 		},
@@ -228,14 +238,14 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 	}
 
 	// regular properties
-	for _, entry := range schema.Properties.Entries() {
+	for _, entry := range o.Properties.Entries() {
 		ctx.Logger.Trace("Object property", "name", entry.Key)
 		ref := path.Join(ctx.PathRef(), "properties", entry.Key)
 		prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
 
 		var langObj common.GolangType = prm
-		if lo.Contains(schema.Required, entry.Key) {
+		if lo.Contains(o.Required, entry.Key) {
 			langObj = &render.Pointer{Type: langObj}
 		}
 
@@ -250,8 +260,8 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 	}
 
 	// additionalProperties with typed sub-schema
-	if schema.AdditionalProperties != nil {
-		switch schema.AdditionalProperties.Selector {
+	if o.AdditionalProperties != nil {
+		switch o.AdditionalProperties.Selector {
 		case 0: // "additionalProperties:" is an object
 			ctx.Logger.Trace("Object additional properties as an object")
 			ref := path.Join(ctx.PathRef(), "additionalProperties")
@@ -260,23 +270,23 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 				Name: "AdditionalProperties",
 				Type: &render.Map{
 					BaseType: render.BaseType{
-						Name:         ctx.GenerateObjName(schema.Title, "AdditionalProperties"),
-						Description:  schema.AdditionalProperties.V0.Description,
+						Name:         ctx.GenerateObjName(o.Title, "AdditionalProperties"),
+						Description:  o.AdditionalProperties.V0.Description,
 						DirectRender: false,
 						PackageName:  ctx.TopPackageName(),
 					},
 					KeyType:   &render.Simple{Name: "string"},
 					ValueType: langObj,
 				},
-				Description: schema.AdditionalProperties.V0.Description,
+				Description: o.AdditionalProperties.V0.Description,
 			}
 			res.Fields = append(res.Fields, f)
 		case 1:
 			ctx.Logger.Trace("Object additional properties as boolean flag")
-			if schema.AdditionalProperties.V1 { // "additionalProperties: true" -- allow any additional properties
+			if o.AdditionalProperties.V1 { // "additionalProperties: true" -- allow any additional properties
 				valTyp := render.TypeAlias{
 					BaseType: render.BaseType{
-						Name:         ctx.GenerateObjName(schema.Title, "AdditionalPropertiesValue"),
+						Name:         ctx.GenerateObjName(o.Title, "AdditionalPropertiesValue"),
 						Description:  "",
 						DirectRender: false,
 						PackageName:  ctx.TopPackageName(),
@@ -287,7 +297,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 					Name: "AdditionalProperties",
 					Type: &render.Map{
 						BaseType: render.BaseType{
-							Name:         ctx.GenerateObjName(schema.Title, "AdditionalProperties"),
+							Name:         ctx.GenerateObjName(o.Title, "AdditionalProperties"),
 							Description:  "",
 							DirectRender: false,
 							PackageName:  ctx.TopPackageName(),
@@ -305,12 +315,12 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 	return &res, nil
 }
 
-func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.SchemaTag]string) (*render.Array, error) {
+func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.SchemaTag]string) (*render.Array, error) {
 	_, noInline := flags[common.SchemaTagDirectRender]
 	res := render.Array{
 		BaseType: render.BaseType{
-			Name:         ctx.GenerateObjName(schema.Title, ""),
-			Description:  schema.Description,
+			Name:         ctx.GenerateObjName(o.Title, ""),
+			Description:  o.Description,
 			DirectRender: noInline,
 			PackageName:  ctx.TopPackageName(),
 		},
@@ -318,15 +328,15 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 	}
 
 	switch {
-	case schema.Items != nil && schema.Items.Selector == 0: // Only one "type:" of items
+	case o.Items != nil && o.Items.Selector == 0: // Only one "type:" of items
 		ctx.Logger.Trace("Object items (single type)")
 		ref := path.Join(ctx.PathRef(), "items")
 		res.ItemsType = render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
-	case schema.Items == nil || schema.Items.Selector == 1: // No items or Several types for each item sequentially
+	case o.Items == nil || o.Items.Selector == 1: // No items or Several types for each item sequentially
 		ctx.Logger.Trace("Object items (zero or several types)")
 		valTyp := render.TypeAlias{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(schema.Title, "ItemsItemValue"),
+				Name:         ctx.GenerateObjName(o.Title, "ItemsItemValue"),
 				Description:  "",
 				DirectRender: false,
 				PackageName:  ctx.TopPackageName(),
@@ -335,7 +345,7 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 		}
 		res.ItemsType = &render.Map{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(schema.Title, "ItemsItem"),
+				Name:         ctx.GenerateObjName(o.Title, "ItemsItem"),
 				Description:  "",
 				DirectRender: false,
 				PackageName:  ctx.TopPackageName(),
@@ -348,12 +358,12 @@ func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.
 	return &res, nil
 }
 
-func buildUnionStruct(ctx *common.CompileContext, schema Object) (*render.UnionStruct, error) {
+func (o Object) buildUnionStruct(ctx *common.CompileContext) (*render.UnionStruct, error) {
 	res := render.UnionStruct{
 		Struct: render.Struct{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(schema.Title, ""),
-				Description:  schema.Description,
+				Name:         ctx.GenerateObjName(o.Title, ""),
+				Description:  o.Description,
 				DirectRender: true, // Always render unions as separate types
 				PackageName:  ctx.TopPackageName(),
 			},
@@ -367,19 +377,19 @@ func buildUnionStruct(ctx *common.CompileContext, schema Object) (*render.UnionS
 	})
 	ctx.PutListPromise(messagesPrm)
 
-	res.Fields = lo.Times(len(schema.OneOf), func(index int) render.StructField {
+	res.Fields = lo.Times(len(o.OneOf), func(index int) render.StructField {
 		ref := path.Join(ctx.PathRef(), "oneOf", strconv.Itoa(index))
 		prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
 		return render.StructField{Type: &render.Pointer{Type: prm}}
 	})
-	res.Fields = append(res.Fields, lo.Times(len(schema.AnyOf), func(index int) render.StructField {
+	res.Fields = append(res.Fields, lo.Times(len(o.AnyOf), func(index int) render.StructField {
 		ref := path.Join(ctx.PathRef(), "anyOf", strconv.Itoa(index))
 		prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
 		return render.StructField{Type: &render.Pointer{Type: prm}}
 	})...)
-	res.Fields = append(res.Fields, lo.Times(len(schema.AllOf), func(index int) render.StructField {
+	res.Fields = append(res.Fields, lo.Times(len(o.AllOf), func(index int) render.StructField {
 		ref := path.Join(ctx.PathRef(), "allOf", strconv.Itoa(index))
 		prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
