@@ -285,9 +285,9 @@ func (p ProtoChannel) renderPublisherMethods(ctx *common.RenderContext) []*j.Sta
 	rn := p.Struct.ReceiverName()
 	receiver := j.Id(rn).Id(p.Struct.Name)
 
-	var msgTyp common.GolangType = render.NullableType{Type: p.FallbackMessageType, Render: true}
+	var msgTyp common.GolangType = render.Pointer{Type: p.FallbackMessageType, DirectRender: true}
 	if p.PubMessageLink != nil {
-		msgTyp = render.NullableType{Type: p.PubMessageLink.Target().OutStruct, Render: true}
+		msgTyp = render.Pointer{Type: p.PubMessageLink.Target().OutStruct, DirectRender: true}
 	}
 
 	var msgBindings *render.Struct

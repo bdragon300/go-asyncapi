@@ -48,6 +48,13 @@ func (ju *Union2[T0, T1]) UnmarshalJSON(bytes []byte) error {
 }
 
 func (ju *Union2[T0, T1]) UnmarshalYAML(value *yaml.Node) error {
+	// Treat nulls as "null" string
+	for _, n := range value.Content {
+		if n.ShortTag() == "!!null" {
+			n.SetString("null")
+		}
+	}
+
 	if err := value.Decode(&ju.V0); err == nil {
 		ju.Selector = 0
 	} else if err = value.Decode(&ju.V1); err == nil {
@@ -132,6 +139,13 @@ func (ju *Union3[T0, T1, T2]) UnmarshalJSON(bytes []byte) error {
 }
 
 func (ju *Union3[T0, T1, T2]) UnmarshalYAML(value *yaml.Node) error {
+	// Treat nulls as "null" string
+	for _, n := range value.Content {
+		if n.ShortTag() == "!!null" {
+			n.SetString("null")
+		}
+	}
+
 	if err := value.Decode(&ju.V0); err == nil {
 		ju.Selector = 0
 	} else if err = value.Decode(&ju.V1); err == nil {

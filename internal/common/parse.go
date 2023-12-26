@@ -5,6 +5,6 @@ const TagName = "cgen"
 type SchemaTag string
 
 const (
-	SchemaTagNoInline    SchemaTag = "noinline"
-	SchemaTagPackageDown SchemaTag = "packageDown"
+	SchemaTagDirectRender SchemaTag = "directRender"
+	SchemaTagPackageDown  SchemaTag = "packageDown"
 )

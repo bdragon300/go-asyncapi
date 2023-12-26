@@ -114,12 +114,6 @@ func (c CorrelationID) RenderGetterDefinition(ctx *common.RenderContext, message
 	}
 }
 
-type golangTypePromise interface {
-	TargetAsGolangType() (common.GolangType, bool)
-	Ref() string
-	String() string
-}
-
 type correlationIDBodyItem struct {
 	body            []*j.Statement
 	varName         string
@@ -163,8 +157,9 @@ func (c CorrelationID) renderMemberExtractionCode(
 			varValueStmts = j.Id(anchor).Index(j.Lit(memberName))
 			baseType = typ.ValueType
 			varExpr := j.Var().Id(nextAnchor).Add(utils.ToCode(typ.ValueType.RenderUsage(ctx))...)
-			if t, ok := typ.ValueType.(*NullableType); ok {
-				varExpr = varExpr.Op("=").New(j.Add(utils.ToCode(t.Type.RenderUsage(ctx))...))
+			if t, ok := typ.ValueType.(pointerGolangType); ok && t.IsPointer() {
+				// Append ` = new(TYPE)` to initialize a pointer
+				varExpr = varExpr.Op("=").New(j.Add(utils.ToCode(typ.ValueType.RenderUsage(ctx))...))
 			}
 
 			ifExpr := j.If(j.Op("v, ok :=").Add(varValueStmts), j.Id("ok")).Block(
@@ -212,22 +207,21 @@ func (c CorrelationID) renderMemberExtractionCode(
 				return
 			}
 			baseType = typ
-		case *TypeAlias:
-			ctx.Logger.Trace("In TypeAlias", "path", path[:pathIdx], "name", typ.String(), "member", memberName)
-			baseType = typ.AliasedType
-			continue
-		case golangTypePromise:
-			ctx.Logger.Trace("In Promise", "path", path[:pathIdx], "name", typ.String(), "member", memberName)
-			tgt, ok := typ.TargetAsGolangType()
+		case golangWrapperType:
+			ctx.Logger.Trace(
+				"In wrapper type",
+				"path", path[:pathIdx], "name", typ.String(), "type", fmt.Sprintf("%T", typ), "member", memberName,
+			)
+			t, ok := typ.WrappedGolangType()
 			if !ok {
 				err = fmt.Errorf(
-					"type with ref %s is not addressable, path: /%s",
-					typ.Ref(),
+					"wrapped type %T does not contain a wrapped GolangType, path: /%s",
+					typ,
 					strings.Join(path[:pathIdx], "/"),
 				)
 				return
 			}
-			baseType = tgt
+			baseType = t
 			continue
 		default:
 			ctx.Logger.Trace("Unknown type", "path", path[:pathIdx], "name", typ.String(), "type", fmt.Sprintf("%T", typ))

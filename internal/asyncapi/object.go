@@ -22,8 +22,8 @@ type Object struct {
 	Type                 *types.Union2[string, []string]            `json:"type" yaml:"type"`
 	AdditionalItems      *types.Union2[Object, bool]                `json:"additionalItems" yaml:"additionalItems"`
 	AdditionalProperties *types.Union2[Object, bool]                `json:"additionalProperties" yaml:"additionalProperties"`
-	AllOf                []Object                                   `json:"allOf" yaml:"allOf" cgen:"noinline"`
-	AnyOf                []Object                                   `json:"anyOf" yaml:"anyOf" cgen:"noinline"`
+	AllOf                []Object                                   `json:"allOf" yaml:"allOf" cgen:"directRender"`
+	AnyOf                []Object                                   `json:"anyOf" yaml:"anyOf" cgen:"directRender"`
 	Const                *types.Union2[json.RawMessage, yaml.Node]  `json:"const" yaml:"const"`
 	Contains             *Object                                    `json:"contains" yaml:"contains"`
 	Default              *types.Union2[json.RawMessage, yaml.Node]  `json:"default" yaml:"default"`
@@ -50,7 +50,7 @@ type Object struct {
 	Minimum              *json.Number                               `json:"minimum" yaml:"minimum"`
 	MultipleOf           *json.Number                               `json:"multipleOf" yaml:"multipleOf"`
 	Not                  *Object                                    `json:"not" yaml:"not"`
-	OneOf                []Object                                   `json:"oneOf" yaml:"oneOf" cgen:"noinline"`
+	OneOf                []Object                                   `json:"oneOf" yaml:"oneOf" cgen:"directRender"`
 	Pattern              string                                     `json:"pattern" yaml:"pattern"`
 	PatternProperties    types.OrderedMap[string, Object]           `json:"patternProperties" yaml:"patternProperties"` // Mapping regex->schema
 	Properties           types.OrderedMap[string, Object]           `json:"properties" yaml:"properties"`
@@ -60,6 +60,12 @@ type Object struct {
 	Then                 *Object                                    `json:"then" yaml:"then"`
 	Title                string                                     `json:"title" yaml:"title"`
 	UniqueItems          *bool                                      `json:"uniqueItems" yaml:"uniqueItems"`
+
+	XNullable         *bool                                     `json:"x-nullable" yaml:"x-nullable"`
+	XGoType           *types.Union3[string, []xGoType, xGoType] `json:"x-go-type" yaml:"x-go-type"`
+	XGoName           string                                    `json:"x-go-name" yaml:"x-go-name"`
+	XGoExtraTags      types.OrderedMap[string, string]          `json:"x-go-extra-tags" yaml:"x-go-extra-tags"`
+	XGoTagExtraValues []string                                  `json:"x-go-tag-extra-values" yaml:"x-go-tag-extra-values"`
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }
@@ -75,6 +81,7 @@ func (m Object) Compile(ctx *common.CompileContext) error {
 }
 
 func buildGolangType(ctx *common.CompileContext, schema Object, flags map[common.SchemaTag]string) (common.GolangType, error) {
+	var err error
 	if schema.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", schema.Ref)
 		res := render.NewGolangTypePromise(schema.Ref, common.PromiseOriginUser)
@@ -90,68 +97,77 @@ func buildGolangType(ctx *common.CompileContext, schema Object, flags map[common
 	fixMissingTypeValue(ctx, &schema)
 
 	schemaType := schema.Type
-	typ := schemaType.V0
-	// TODO: x-nullable
+	typeName := schemaType.V0
+	nullable := false
 	if schemaType.Selector == 1 { // Multiple types, e.g. { "type": [ "object", "array", "null" ] }
-		t, err := simplifyMultiType(schemaType.V1)
+		typeName, nullable, err = simplifyMultiType(schemaType.V1)
 		if err != nil {
 			return nil, types.CompileError{Err: err, Path: ctx.PathRef()}
 		}
-		typ = t
-		ctx.Logger.Trace(fmt.Sprintf("Multitype object type inferred as %q", typ))
+		ctx.Logger.Trace(fmt.Sprintf("Multitype object type inferred as %q", typeName))
 	}
 
-	_, noInline := flags[common.SchemaTagNoInline]
+	nullable = nullable || lo.FromPtr(schema.XNullable)
+
+	_, directRender := flags[common.SchemaTagDirectRender]
 	// TODO: "type": { "enum": [ "residential", "business" ] }
 	// One type: { "type": "object" }
-	langTyp := ""
-	switch typ {
+	var builtType common.GolangType
+	var aliasedType *render.Simple
+
+	switch typeName {
 	case "object":
 		ctx.Logger.Trace("Object is struct")
 		ctx.Logger.NextCallLevel()
-		res, err := buildLangStruct(ctx, schema, flags)
+		if builtType, err = buildLangStruct(ctx, schema, flags); err != nil {
+			return nil, err
+		}
 		ctx.Logger.PrevCallLevel()
-		return res, err
 	case "array":
 		ctx.Logger.Trace("Object is array")
 		ctx.Logger.NextCallLevel()
-		res, err := buildLangArray(ctx, schema, flags)
-		ctx.Logger.PrevCallLevel()
-		return res, err
-	case "null", "":
-		ctx.Logger.Trace("Object is nullable any")
-		res := &render.NullableType{
-			Type:   &render.Simple{Name: "any", IsIface: true},
-			Render: noInline,
+		if builtType, err = buildLangArray(ctx, schema, flags); err != nil {
+			return nil, err
 		}
-		return res, nil
+		ctx.Logger.PrevCallLevel()
+	case "null", "":
+		ctx.Logger.Trace("Object is any")
+		builtType = &render.Simple{Name: "any", IsIface: true}
 	case "boolean":
 		ctx.Logger.Trace("Object is bool")
-		langTyp = "bool"
+		aliasedType = &render.Simple{Name: "bool"}
 	case "integer":
 		// TODO: "format:"
 		ctx.Logger.Trace("Object is int")
-		langTyp = "int"
+		aliasedType = &render.Simple{Name: "int"}
 	case "number":
 		// TODO: "format:"
 		ctx.Logger.Trace("Object is float64")
-		langTyp = "float64"
+		aliasedType = &render.Simple{Name: "float64"}
 	case "string":
 		ctx.Logger.Trace("Object is string")
-		langTyp = "string"
+		aliasedType = &render.Simple{Name: "string"}
 	default:
-		return nil, types.CompileError{Err: fmt.Errorf("unknown jsonschema type %q", typ), Path: ctx.PathRef()}
+		return nil, types.CompileError{Err: fmt.Errorf("unknown jsonschema type %q", typeName), Path: ctx.PathRef()}
 	}
 
-	return &render.TypeAlias{
-		BaseType: render.BaseType{
-			Name:         ctx.GenerateObjName(schema.Title, ""),
-			Description:  schema.Description,
-			DirectRender: noInline,
-			PackageName:  ctx.TopPackageName(),
-		},
-		AliasedType: &render.Simple{Name: langTyp},
-	}, nil
+	if aliasedType != nil {
+		builtType = &render.TypeAlias{
+			BaseType: render.BaseType{
+				Name:         ctx.GenerateObjName(schema.Title, ""),
+				Description:  schema.Description,
+				DirectRender: directRender,
+				PackageName:  ctx.TopPackageName(),
+			},
+			AliasedType: aliasedType,
+		}
+	}
+
+	if nullable {
+		ctx.Logger.Trace("Object is nullable, make it pointer")
+		builtType = &render.Pointer{Type: builtType, DirectRender: directRender}
+	}
+	return builtType, nil
 }
 
 // fixMissingTypeValue is backwards compatible, guessing the users intention when they didn't specify a type.
@@ -174,23 +190,23 @@ func fixMissingTypeValue(ctx *common.CompileContext, s *Object) {
 	}
 }
 
-func simplifyMultiType(schemaType []string) (string, error) {
+func simplifyMultiType(schemaType []string) (string, bool, error) {
 	nullable := lo.Contains(schemaType, "null")
 	typs := lo.Reject(schemaType, func(item string, _ int) bool { return item == "null" }) // Throw out null (if any)
 	switch {
 	case len(typs) > 1: // More than one type along with null -> 'any'
-		return "", nil
-	case len(typs) > 0: // One type along with null -> pointer to this type
-		return typs[0], nil
+		return "", nullable, nil
+	case len(typs) == 1: // One type along with null -> pointer to this type
+		return typs[0], nullable, nil
 	case nullable: // Null only -> 'any', that can be only nil
-		return "null", nil
+		return "null", nullable, nil
 	default:
-		return "", errors.New("empty object type")
+		return "", nullable, errors.New("empty object type")
 	}
 }
 
 func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common.SchemaTag]string) (*render.Struct, error) {
-	_, noInline := flags[common.SchemaTagNoInline]
+	_, noInline := flags[common.SchemaTagDirectRender]
 	res := render.Struct{
 		BaseType: render.BaseType{
 			Name:         ctx.GenerateObjName(schema.Title, ""),
@@ -203,7 +219,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 
 	var msgLinks *render.LinkList[*render.Message]
 	// Collect all messages to retrieve struct field tags
-	if ctx.TopPackageName() == "models" {
+	if ctx.TopPackageName() == "models" { // TODO: fix hardcode
 		msgLinks = render.NewListCbPromise[*render.Message](func(item common.Renderer, _ []string) bool {
 			_, ok := item.(*render.Message)
 			return ok
@@ -215,15 +231,20 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 	for _, entry := range schema.Properties.Entries() {
 		ctx.Logger.Trace("Object property", "name", entry.Key)
 		ref := path.Join(ctx.PathRef(), "properties", entry.Key)
-		langObj := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
-		ctx.PutPromise(langObj)
+		prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+		ctx.PutPromise(prm)
+
+		var langObj common.GolangType = prm
+		if lo.Contains(schema.Required, entry.Key) {
+			langObj = &render.Pointer{Type: langObj}
+		}
+
 		f := render.StructField{
-			Name:         utils.ToGolangName(entry.Key, true),
-			MarshalName:  entry.Key,
-			Type:         langObj,
-			ForcePointer: lo.Contains(schema.Required, entry.Key),
-			Description:  entry.Value.Description,
-			TagsSource:   msgLinks,
+			Name:        utils.ToGolangName(entry.Key, true),
+			MarshalName: entry.Key,
+			Type:        langObj,
+			Description: entry.Value.Description,
+			TagsSource:  msgLinks,
 		}
 		res.Fields = append(res.Fields, f)
 	}
@@ -285,7 +306,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 }
 
 func buildLangArray(ctx *common.CompileContext, schema Object, flags map[common.SchemaTag]string) (*render.Array, error) {
-	_, noInline := flags[common.SchemaTagNoInline]
+	_, noInline := flags[common.SchemaTagDirectRender]
 	res := render.Array{
 		BaseType: render.BaseType{
 			Name:         ctx.GenerateObjName(schema.Title, ""),
@@ -350,13 +371,13 @@ func buildUnionStruct(ctx *common.CompileContext, schema Object) (*render.UnionS
 		ref := path.Join(ctx.PathRef(), "oneOf", strconv.Itoa(index))
 		langTyp := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 		ctx.PutPromise(langTyp)
-		return render.StructField{Type: langTyp, ForcePointer: true}
+		return render.StructField{Type: &render.Pointer{Type: langTyp}}
 	})
 	res.Fields = append(res.Fields, lo.Times(len(schema.AnyOf), func(index int) render.StructField {
 		ref := path.Join(ctx.PathRef(), "anyOf", strconv.Itoa(index))
 		langTyp := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 		ctx.PutPromise(langTyp)
-		return render.StructField{Type: langTyp, ForcePointer: true}
+		return render.StructField{Type: &render.Pointer{Type: langTyp}}
 	})...)
 	res.Fields = append(res.Fields, lo.Times(len(schema.AllOf), func(index int) render.StructField {
 		ref := path.Join(ctx.PathRef(), "allOf", strconv.Itoa(index))

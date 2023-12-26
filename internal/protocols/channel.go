@@ -178,9 +178,9 @@ func RenderChannelSubscriberMethods(
 ) []*j.Statement {
 	rn := channelStruct.ReceiverName()
 	receiver := j.Id(rn).Id(channelStruct.Name)
-	var msgTyp common.GolangType = render.NullableType{Type: fallbackMessageType, Render: true}
+	var msgTyp common.GolangType = render.Pointer{Type: fallbackMessageType, DirectRender: true}
 	if subMessageLink != nil {
-		msgTyp = render.NullableType{Type: subMessageLink.Target().InStruct, Render: true}
+		msgTyp = render.Pointer{Type: subMessageLink.Target().InStruct, DirectRender: true}
 	}
 
 	return []*j.Statement{

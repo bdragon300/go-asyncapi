@@ -50,12 +50,32 @@ func (r *Link[T]) Origin() common.PromiseOrigin {
 	return r.origin
 }
 
-func (r *Link[T]) TargetAsGolangType() (common.GolangType, bool) {
+func (r *Link[T]) WrappedGolangType() (common.GolangType, bool) {
 	if !r.assigned {
 		return nil, false
 	}
 	v, ok := any(r.target).(common.GolangType)
 	return v, ok
+}
+
+func (r *Link[T]) IsPointer() bool {
+	if !r.assigned {
+		return false
+	}
+	if v, ok := any(r.target).(pointerGolangType); ok {
+		return v.IsPointer()
+	}
+	return false
+}
+
+func (r *Link[T]) IsStruct() bool {
+	if !r.assigned {
+		return false
+	}
+	if v, ok := any(r.target).(structGolangType); ok {
+		return v.IsStruct()
+	}
+	return false
 }
 
 // List links can only be PromiseOriginInternal, no way to set a callback in spec
