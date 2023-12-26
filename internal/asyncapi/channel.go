@@ -62,11 +62,11 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 		for _, paramName := range c.Parameters.Keys() {
 			ctx.Logger.Trace("Channel parameter", "name", paramName)
 			ref := path.Join(ctx.PathRef(), "parameters", paramName)
-			lnk := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
-			ctx.PutPromise(lnk)
+			prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+			ctx.PutPromise(prm)
 			res.ParametersStruct.Fields = append(res.ParametersStruct.Fields, render.StructField{
 				Name: utils.ToGolangName(paramName, true),
-				Type: lnk,
+				Type: prm,
 			})
 		}
 		ctx.Logger.PrevCallLevel()
@@ -79,20 +79,20 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 		ctx.Logger.NextCallLevel()
 		for _, srv := range *c.Servers {
 			ctx.Logger.Trace("Server", "name", srv)
-			lnk := render.NewPromise[*render.Server]("#/servers/"+srv, common.PromiseOriginInternal)
-			ctx.PutPromise(lnk)
-			res.AppliedServerLinks = append(res.AppliedServerLinks, lnk)
+			prm := render.NewPromise[*render.Server]("#/servers/"+srv, common.PromiseOriginInternal)
+			ctx.PutPromise(prm)
+			res.AppliedServerPromises = append(res.AppliedServerPromises, prm)
 			res.AppliedServers = append(res.AppliedServers, srv)
 		}
 		ctx.Logger.PrevCallLevel()
 	} else {
 		ctx.Logger.Trace("Channel applied to all servers")
-		lnk := render.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
+		allServersPrm := render.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
 			_, ok := item.(*render.Server)
 			return ok && len(path) > 0 && path[0] == "servers" // Pick only servers from `servers:` section, skip ones from `components:`
 		})
-		ctx.PutListPromise(lnk)
-		res.AppliedToAllServersLinks = lnk
+		ctx.PutListPromise(allServersPrm)
+		res.AppliedToAllServersPromises = allServersPrm
 	}
 
 	// Channel/operation bindings

@@ -16,7 +16,7 @@ import (
 )
 
 type ObjectSource interface {
-	AllObjects() []compiler.Object // TODO: make this as interface and move link.go to linker
+	AllObjects() []compiler.Object // TODO: make this as interface and move promise.go to linker
 	Promises() []common.ObjectPromise
 	ListPromises() []common.ObjectListPromise
 }

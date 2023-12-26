@@ -76,7 +76,7 @@ type StructField struct {
 	MarshalName string
 	Description string
 	Type        common.GolangType
-	TagsSource  *LinkList[*Message]
+	TagsSource  *ListPromise[*Message]
 }
 
 func (f StructField) renderDefinition(ctx *common.RenderContext) []*jen.Statement {

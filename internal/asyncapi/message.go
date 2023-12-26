@@ -81,19 +81,19 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	}
 	obj.ContentType, _ = lo.Coalesce(m.ContentType, ctx.Storage.DefaultContentType())
 	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", obj.ContentType))
-	allServersLnk := render.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
+	allServersPrm := render.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
 		_, ok := item.(*render.Server)
 		return ok
 	})
-	ctx.PutListPromise(allServersLnk)
-	obj.AllServers = allServersLnk
+	ctx.PutListPromise(allServersPrm)
+	obj.AllServers = allServersPrm
 
 	// Link to Headers struct if any
 	if m.Headers != nil {
 		ctx.Logger.Trace("Message headers")
 		ref := ctx.PathRef() + "/headers"
-		obj.HeadersTypeLink = render.NewPromise[*render.Struct](ref, common.PromiseOriginInternal)
-		ctx.PutPromise(obj.HeadersTypeLink)
+		obj.HeadersTypePromise = render.NewPromise[*render.Struct](ref, common.PromiseOriginInternal)
+		ctx.PutPromise(obj.HeadersTypePromise)
 	}
 	m.setStructFields(ctx, &obj)
 
@@ -131,8 +131,8 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	if m.CorrelationID != nil {
 		ctx.Logger.Trace("Message correlationId")
 		ref := ctx.PathRef() + "/correlationId"
-		obj.CorrelationIDLink = render.NewPromise[*render.CorrelationID](ref, common.PromiseOriginInternal)
-		ctx.PutPromise(obj.CorrelationIDLink)
+		obj.CorrelationIDPromise = render.NewPromise[*render.CorrelationID](ref, common.PromiseOriginInternal)
+		ctx.PutPromise(obj.CorrelationIDPromise)
 	}
 	return &obj, nil
 }
@@ -141,11 +141,11 @@ func (m Message) setStructFields(ctx *common.CompileContext, langMessage *render
 	fields := []render.StructField{
 		{Name: "Payload", Type: langMessage.PayloadType},
 	}
-	if langMessage.HeadersTypeLink != nil {
+	if langMessage.HeadersTypePromise != nil {
 		ctx.Logger.Trace("Message headers has a concrete type")
-		lnk := render.NewGolangTypePromise(langMessage.HeadersTypeLink.Ref(), common.PromiseOriginInternal)
-		ctx.PutPromise(lnk)
-		fields = append(fields, render.StructField{Name: "Headers", Type: lnk})
+		prm := render.NewGolangTypePromise(langMessage.HeadersTypePromise.Ref(), common.PromiseOriginInternal)
+		ctx.PutPromise(prm)
+		fields = append(fields, render.StructField{Name: "Headers", Type: prm})
 	} else {
 		ctx.Logger.Trace("Message headers has `any` type")
 		fields = append(fields, render.StructField{Name: "Headers", Type: langMessage.HeadersFallbackType})
@@ -159,9 +159,9 @@ func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 	if m.Payload != nil {
 		ctx.Logger.Trace("Message payload has a concrete type")
 		ref := ctx.PathRef() + "/payload"
-		lnk := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
-		ctx.PutPromise(lnk)
-		return lnk
+		prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+		ctx.PutPromise(prm)
+		return prm
 	}
 
 	ctx.Logger.Trace("Message payload has `any` type")

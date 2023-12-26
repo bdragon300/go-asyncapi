@@ -24,12 +24,12 @@ type Message struct {
 	PayloadType                common.GolangType // `any` or a particular type
 	PayloadHasSchema           bool
 	HeadersFallbackType        *Map
-	HeadersTypeLink            *Link[*Struct]
-	AllServers                 *LinkList[*Server] // For extracting all using protocols
-	BindingsStruct             *Struct            // nil if message bindings are not defined for message
+	HeadersTypePromise         *Promise[*Struct]
+	AllServers                 *ListPromise[*Server] // For extracting all using protocols
+	BindingsStruct             *Struct               // nil if message bindings are not defined for message
 	BindingsStructProtoMethods types.OrderedMap[string, common.Renderer]
-	ContentType                string                // Message's content type or default from schema or fallback
-	CorrelationIDLink          *Link[*CorrelationID] // nil if correlationID is not defined for message
+	ContentType                string                   // Message's content type or default from schema or fallback
+	CorrelationIDPromise       *Promise[*CorrelationID] // nil if correlationID is not defined for message
 }
 
 func (m Message) DirectRendering() bool {
@@ -51,7 +51,7 @@ func (m Message) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 	if m.PayloadHasSchema {
 		res = append(res, m.PayloadType.RenderDefinition(ctx)...)
 	}
-	if m.HeadersTypeLink != nil {
+	if m.HeadersTypePromise != nil {
 		res = append(res, m.HeadersFallbackType.RenderDefinition(ctx)...)
 	}
 
@@ -90,8 +90,8 @@ func (m Message) renderPublishCommonMethods(ctx *common.RenderContext) []*j.Stat
 	receiver := j.Id(rn).Op("*").Id(structName)
 	payloadFieldType := utils.ToCode(m.PayloadType.RenderUsage(ctx))
 	headersFieldType := utils.ToCode(m.HeadersFallbackType.RenderUsage(ctx))
-	if m.HeadersTypeLink != nil {
-		headersFieldType = utils.ToCode(m.HeadersTypeLink.Target().RenderUsage(ctx))
+	if m.HeadersTypePromise != nil {
+		headersFieldType = utils.ToCode(m.HeadersTypePromise.Target().RenderUsage(ctx))
 	}
 
 	res := []*j.Statement{
@@ -114,9 +114,9 @@ func (m Message) renderPublishCommonMethods(ctx *common.RenderContext) []*j.Stat
 					return %[1]s`, rn)),
 			),
 	}
-	if m.CorrelationIDLink != nil {
+	if m.CorrelationIDPromise != nil {
 		// Method SetCorrelationID(value any)
-		res = append(res, m.CorrelationIDLink.Target().RenderSetterDefinition(ctx, &m)...)
+		res = append(res, m.CorrelationIDPromise.Target().RenderSetterDefinition(ctx, &m)...)
 	}
 	return res
 }
@@ -142,8 +142,8 @@ func (m Message) renderSubscribeCommonMethods(ctx *common.RenderContext) []*j.St
 	receiver := j.Id(rn).Op("*").Id(structName)
 	payloadFieldType := utils.ToCode(m.PayloadType.RenderUsage(ctx))
 	headersFieldType := utils.ToCode(m.HeadersFallbackType.RenderUsage(ctx))
-	if m.HeadersTypeLink != nil {
-		headersFieldType = utils.ToCode(m.HeadersTypeLink.Target().RenderUsage(ctx))
+	if m.HeadersTypePromise != nil {
+		headersFieldType = utils.ToCode(m.HeadersTypePromise.Target().RenderUsage(ctx))
 	}
 
 	res := []*j.Statement{
@@ -162,9 +162,9 @@ func (m Message) renderSubscribeCommonMethods(ctx *common.RenderContext) []*j.St
 				j.Return(j.Id(rn).Dot("Headers")),
 			),
 	}
-	if m.CorrelationIDLink != nil {
+	if m.CorrelationIDPromise != nil {
 		// Method CorrelationID(value any)
-		res = append(res, m.CorrelationIDLink.Target().RenderGetterDefinition(ctx, &m)...)
+		res = append(res, m.CorrelationIDPromise.Target().RenderGetterDefinition(ctx, &m)...)
 	}
 	return res
 }

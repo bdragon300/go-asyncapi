@@ -23,7 +23,7 @@ var serializerDecoders = map[string]j.Code{
 }
 
 type UtilsSerializer struct {
-	AllMessages        *LinkList[*Message]
+	AllMessages        *ListPromise[*Message]
 	DefaultContentType string
 }
 

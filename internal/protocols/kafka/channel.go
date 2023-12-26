@@ -209,7 +209,7 @@ func (p ProtoChannel) RenderDefinition(ctx *common.RenderContext) []*j.Statement
 	}
 	if p.Subscriber {
 		res = append(res, protocols.RenderChannelSubscriberMethods(
-			ctx, p.Struct, p.SubMessageLink, p.FallbackMessageType, ProtoName, protoAbbr,
+			ctx, p.Struct, p.SubMessagePromise, p.FallbackMessageType, ProtoName, protoAbbr,
 		)...)
 	}
 	return res
@@ -286,14 +286,14 @@ func (p ProtoChannel) renderPublisherMethods(ctx *common.RenderContext) []*j.Sta
 	receiver := j.Id(rn).Id(p.Struct.Name)
 
 	var msgTyp common.GolangType = render.Pointer{Type: p.FallbackMessageType, DirectRender: true}
-	if p.PubMessageLink != nil {
-		msgTyp = render.Pointer{Type: p.PubMessageLink.Target().OutStruct, DirectRender: true}
+	if p.PubMessagePromise != nil {
+		msgTyp = render.Pointer{Type: p.PubMessagePromise.Target().OutStruct, DirectRender: true}
 	}
 
 	var msgBindings *render.Struct
-	if p.PubMessageLink != nil {
-		if _, ok := p.PubMessageLink.Target().BindingsStructProtoMethods.Get(ProtoName); ok {
-			msgBindings = p.PubMessageLink.Target().BindingsStruct
+	if p.PubMessagePromise != nil {
+		if _, ok := p.PubMessagePromise.Target().BindingsStructProtoMethods.Get(ProtoName); ok {
+			msgBindings = p.PubMessagePromise.Target().BindingsStruct
 		}
 	}
 
@@ -307,7 +307,7 @@ func (p ProtoChannel) renderPublisherMethods(ctx *common.RenderContext) []*j.Sta
 			Error().
 			BlockFunc(func(bg *j.Group) {
 				bg.Op("envelope.ResetPayload()")
-				if p.PubMessageLink == nil { // No Message set for Channel in spec
+				if p.PubMessagePromise == nil { // No Message set for Channel in spec
 					bg.Empty().Add(utils.QualSprintf(`
 						enc := %Q(encoding/json,NewEncoder)(envelope)
 						if err := enc.Encode(message); err != nil {

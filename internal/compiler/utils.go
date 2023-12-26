@@ -14,14 +14,14 @@ func UtilsCompile(ctx *common.CompileContext) error {
 }
 
 func buildSerializer(ctx *common.CompileContext) *render.UtilsSerializer {
-	lnk := render.NewListCbPromise[*render.Message](func(item common.Renderer, path []string) bool {
+	allMessagesPrm := render.NewListCbPromise[*render.Message](func(item common.Renderer, path []string) bool {
 		_, ok := item.(*render.Message)
 		return ok
 	})
-	ctx.PutListPromise(lnk)
+	ctx.PutListPromise(allMessagesPrm)
 
 	return &render.UtilsSerializer{
-		AllMessages:        lnk,
+		AllMessages:        allMessagesPrm,
 		DefaultContentType: ctx.Storage.DefaultContentType(),
 	}
 }

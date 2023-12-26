@@ -20,7 +20,7 @@ func BuildChannel(
 	channelKey string,
 	protoName, protoAbbr string,
 ) (*BaseProtoChannel, error) {
-	paramsLnk := render.NewListCbPromise[*render.Parameter](func(item common.Renderer, path []string) bool {
+	paramsPrm := render.NewListCbPromise[*render.Parameter](func(item common.Renderer, path []string) bool {
 		par, ok := item.(*render.Parameter)
 		if !ok {
 			return false
@@ -28,7 +28,7 @@ func BuildChannel(
 		_, ok = channel.Parameters.Get(par.Name)
 		return ok
 	})
-	ctx.PutListPromise(paramsLnk)
+	ctx.PutListPromise(paramsPrm)
 
 	chanResult := &BaseProtoChannel{
 		Name: channelKey,
@@ -61,11 +61,11 @@ func BuildChannel(
 		for _, paramName := range channel.Parameters.Keys() {
 			ctx.Logger.Trace("Channel parameter", "name", paramName, "proto", protoName)
 			ref := path.Join(ctx.PathRef(), "parameters", paramName)
-			lnk := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
-			ctx.PutPromise(lnk)
+			prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+			ctx.PutPromise(prm)
 			chanResult.ParametersStructNoRender.Fields = append(chanResult.ParametersStructNoRender.Fields, render.StructField{
 				Name: utils.ToGolangName(paramName, true),
-				Type: lnk,
+				Type: prm,
 			})
 		}
 		ctx.Logger.PrevCallLevel()
@@ -113,8 +113,8 @@ func BuildChannel(
 		if channel.Publish.Message != nil {
 			ctx.Logger.Trace("Channel publish operation message", "proto", protoName)
 			ref := path.Join(ctx.PathRef(), "publish/message")
-			chanResult.PubMessageLink = render.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
-			ctx.PutPromise(chanResult.PubMessageLink)
+			chanResult.PubMessagePromise = render.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
+			ctx.PutPromise(chanResult.PubMessagePromise)
 		}
 		chanResult.ServerIface.Methods = append(chanResult.ServerIface.Methods, render.FuncSignature{
 			Name: "Producer",
@@ -141,8 +141,8 @@ func BuildChannel(
 		if channel.Subscribe.Message != nil {
 			ctx.Logger.Trace("Channel subscribe operation message", "proto", protoName)
 			ref := path.Join(ctx.PathRef(), "subscribe/message")
-			chanResult.SubMessageLink = render.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
-			ctx.PutPromise(chanResult.SubMessageLink)
+			chanResult.SubMessagePromise = render.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
+			ctx.PutPromise(chanResult.SubMessagePromise)
 		}
 		chanResult.ServerIface.Methods = append(chanResult.ServerIface.Methods, render.FuncSignature{
 			Name: "Consumer",
@@ -164,23 +164,23 @@ type BaseProtoChannel struct {
 	ServerIface              *render.Interface
 	ParametersStructNoRender *render.Struct // nil if parameters not set
 
-	PubMessageLink      *render.Link[*render.Message] // nil when message is not set
-	SubMessageLink      *render.Link[*render.Message] // nil when message is not set
+	PubMessagePromise   *render.Promise[*render.Message] // nil when message is not set
+	SubMessagePromise   *render.Promise[*render.Message] // nil when message is not set
 	FallbackMessageType common.GolangType
 }
 
 func RenderChannelSubscriberMethods(
 	ctx *common.RenderContext,
 	channelStruct *render.Struct,
-	subMessageLink *render.Link[*render.Message],
+	subMessagePromise *render.Promise[*render.Message],
 	fallbackMessageType common.GolangType,
 	protoName, protoAbbr string,
 ) []*j.Statement {
 	rn := channelStruct.ReceiverName()
 	receiver := j.Id(rn).Id(channelStruct.Name)
 	var msgTyp common.GolangType = render.Pointer{Type: fallbackMessageType, DirectRender: true}
-	if subMessageLink != nil {
-		msgTyp = render.Pointer{Type: subMessageLink.Target().InStruct, DirectRender: true}
+	if subMessagePromise != nil {
+		msgTyp = render.Pointer{Type: subMessagePromise.Target().InStruct, DirectRender: true}
 	}
 
 	return []*j.Statement{
@@ -192,7 +192,7 @@ func RenderChannelSubscriberMethods(
 			).
 			Error().
 			BlockFunc(func(bg *j.Group) {
-				if subMessageLink == nil {
+				if subMessagePromise == nil {
 					bg.Empty().Add(utils.QualSprintf(`
 						enc := %Q(encoding/json,NewDecoder)(envelope)
 						if err := enc.Decode(message); err != nil {

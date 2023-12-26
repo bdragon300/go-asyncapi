@@ -26,8 +26,8 @@ func RenderMessageUnmarshalEnvelopeMethod(ctx *common.RenderContext, message *re
 					if err := dec.Decode(&%[1]s.Payload); err != nil {
 						return err
 					}`, rn))
-				if message.HeadersTypeLink != nil {
-					for _, f := range message.HeadersTypeLink.Target().Fields {
+				if message.HeadersTypePromise != nil {
+					for _, f := range message.HeadersTypePromise.Target().Fields {
 						fType := j.Add(utils.ToCode(f.Type.RenderUsage(ctx))...)
 						bg.If(j.Op("v, ok := headers").Index(j.Lit(f.Name)), j.Id("ok")).
 							Block(j.Id(rn).Dot("Headers").Id(f.Name).Op("=").Id("v").Assert(fType))
@@ -56,10 +56,10 @@ func RenderMessageMarshalEnvelopeMethod(ctx *common.RenderContext, message *rend
 						return err
 					}`, rn))
 				bg.Op("envelope.SetContentType").Call(j.Lit(message.ContentType))
-				if message.HeadersTypeLink != nil {
+				if message.HeadersTypePromise != nil {
 					bg.Id("envelope").Dot("SetHeaders").Call(
 						j.Qual(ctx.RuntimePackage(""), "Header").Values(j.DictFunc(func(d j.Dict) {
-							for _, f := range message.HeadersTypeLink.Target().Fields {
+							for _, f := range message.HeadersTypePromise.Target().Fields {
 								d[j.Lit(f.Name)] = j.Id(rn).Dot("Headers").Dot(f.Name)
 							}
 						})),

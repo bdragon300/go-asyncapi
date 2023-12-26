@@ -217,14 +217,14 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 	}
 	// TODO: cache the object name in case any sub-schemas recursively reference it
 
-	var msgLinks *render.LinkList[*render.Message]
+	var messagesPrm *render.ListPromise[*render.Message]
 	// Collect all messages to retrieve struct field tags
 	if ctx.TopPackageName() == "models" { // TODO: fix hardcode
-		msgLinks = render.NewListCbPromise[*render.Message](func(item common.Renderer, _ []string) bool {
+		messagesPrm = render.NewListCbPromise[*render.Message](func(item common.Renderer, _ []string) bool {
 			_, ok := item.(*render.Message)
 			return ok
 		})
-		ctx.PutListPromise(msgLinks)
+		ctx.PutListPromise(messagesPrm)
 	}
 
 	// regular properties
@@ -244,7 +244,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 			MarshalName: entry.Key,
 			Type:        langObj,
 			Description: entry.Value.Description,
-			TagsSource:  msgLinks,
+			TagsSource:  messagesPrm,
 		}
 		res.Fields = append(res.Fields, f)
 	}
@@ -295,7 +295,7 @@ func buildLangStruct(ctx *common.CompileContext, schema Object, flags map[common
 						KeyType:   &render.Simple{Name: "string"},
 						ValueType: &valTyp,
 					},
-					TagsSource: msgLinks,
+					TagsSource: messagesPrm,
 				}
 				res.Fields = append(res.Fields, f)
 			}
@@ -361,29 +361,29 @@ func buildUnionStruct(ctx *common.CompileContext, schema Object) (*render.UnionS
 	}
 
 	// Collect all messages to retrieve struct field tags
-	msgLinks := render.NewListCbPromise[*render.Message](func(item common.Renderer, _ []string) bool {
+	messagesPrm := render.NewListCbPromise[*render.Message](func(item common.Renderer, _ []string) bool {
 		_, ok := item.(*render.Message)
 		return ok
 	})
-	ctx.PutListPromise(msgLinks)
+	ctx.PutListPromise(messagesPrm)
 
 	res.Fields = lo.Times(len(schema.OneOf), func(index int) render.StructField {
 		ref := path.Join(ctx.PathRef(), "oneOf", strconv.Itoa(index))
-		langTyp := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
-		ctx.PutPromise(langTyp)
-		return render.StructField{Type: &render.Pointer{Type: langTyp}}
+		prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+		ctx.PutPromise(prm)
+		return render.StructField{Type: &render.Pointer{Type: prm}}
 	})
 	res.Fields = append(res.Fields, lo.Times(len(schema.AnyOf), func(index int) render.StructField {
 		ref := path.Join(ctx.PathRef(), "anyOf", strconv.Itoa(index))
-		langTyp := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
-		ctx.PutPromise(langTyp)
-		return render.StructField{Type: &render.Pointer{Type: langTyp}}
+		prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+		ctx.PutPromise(prm)
+		return render.StructField{Type: &render.Pointer{Type: prm}}
 	})...)
 	res.Fields = append(res.Fields, lo.Times(len(schema.AllOf), func(index int) render.StructField {
 		ref := path.Join(ctx.PathRef(), "allOf", strconv.Itoa(index))
-		langTyp := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
-		ctx.PutPromise(langTyp)
-		return render.StructField{Type: langTyp}
+		prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+		ctx.PutPromise(prm)
+		return render.StructField{Type: prm}
 	})...)
 
 	return &res, nil

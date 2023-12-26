@@ -52,7 +52,7 @@ func BuildServer(
 	}
 
 	// Channels which are connected to this server
-	channelsLnks := render.NewListCbPromise[*render.Channel](func(item common.Renderer, path []string) bool {
+	channelsPrm := render.NewListCbPromise[*render.Channel](func(item common.Renderer, path []string) bool {
 		ch, ok := item.(*render.Channel)
 		if !ok {
 			return false
@@ -60,10 +60,10 @@ func BuildServer(
 		if len(ch.AppliedServers) > 0 {
 			return lo.Contains(ch.AppliedServers, serverKey)
 		}
-		return ch.AppliedToAllServersLinks != nil
+		return ch.AppliedToAllServersPromises != nil
 	})
-	srvResult.ChannelLinkList = channelsLnks
-	ctx.PutListPromise(channelsLnks)
+	srvResult.ChannelsPromise = channelsPrm
+	ctx.PutListPromise(channelsPrm)
 
 	// Producer/consumer
 	if buildProducer {
@@ -95,7 +95,7 @@ type BaseProtoServer struct {
 	Producer        bool
 	Consumer        bool
 	Struct          *render.Struct
-	ChannelLinkList *render.LinkList[*render.Channel]
+	ChannelsPromise *render.ListPromise[*render.Channel]
 	Variables       types.OrderedMap[string, ProtoServerVariable]
 }
 

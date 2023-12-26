@@ -55,7 +55,7 @@ func (p ProtoServer) String() string {
 func (p ProtoServer) renderChannelMethods(ctx *common.RenderContext) []*j.Statement {
 	var res []*j.Statement
 
-	for _, ch := range p.ChannelLinkList.Targets() {
+	for _, ch := range p.ChannelsPromise.Targets() {
 		protoChan := ch.AllProtocols[ProtoName].(*ProtoChannel)
 		res = append(res,
 			protocols.RenderServerChannelMethod(ctx, p.Struct, protoChan.Struct, protoChan, protoChan.ParametersStructNoRender)...,

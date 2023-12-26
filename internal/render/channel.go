@@ -10,11 +10,11 @@ import (
 )
 
 type Channel struct {
-	Name                     string
-	AppliedServers           []string
-	AppliedServerLinks       []*Link[*Server] // Avoid using a map to keep definition order in generated code
-	AppliedToAllServersLinks *LinkList[*Server]
-	AllProtocols             map[string]common.Renderer
+	Name                        string
+	AppliedServers              []string
+	AppliedServerPromises       []*Promise[*Server] // Avoid using a map to keep definition order in generated code
+	AppliedToAllServersPromises *ListPromise[*Server]
+	AllProtocols                map[string]common.Renderer
 
 	ParametersStruct *Struct // nil if no parameters
 	BindingsStruct   *Struct // nil if bindings are not set
@@ -37,11 +37,11 @@ func (c Channel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 	}
 	res = append(res, c.renderChannelNameFunc(ctx)...)
 
-	protocols := lo.Uniq(lo.Map(c.AppliedServerLinks, func(item *Link[*Server], index int) string {
+	protocols := lo.Uniq(lo.Map(c.AppliedServerPromises, func(item *Promise[*Server], index int) string {
 		return item.Target().Protocol
 	}))
-	if c.AppliedToAllServersLinks != nil {
-		protocols = lo.Uniq(lo.Map(c.AppliedToAllServersLinks.Targets(), func(item *Server, index int) string {
+	if c.AppliedToAllServersPromises != nil {
+		protocols = lo.Uniq(lo.Map(c.AppliedToAllServersPromises.Targets(), func(item *Server, index int) string {
 			return item.Protocol
 		}))
 	}
