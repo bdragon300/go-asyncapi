@@ -61,11 +61,12 @@ type Object struct {
 	Title                string                                     `json:"title" yaml:"title"`
 	UniqueItems          *bool                                      `json:"uniqueItems" yaml:"uniqueItems"`
 
-	XNullable         *bool                                     `json:"x-nullable" yaml:"x-nullable"`
-	XGoType           *types.Union3[string, []xGoType, xGoType] `json:"x-go-type" yaml:"x-go-type"`
-	XGoName           string                                    `json:"x-go-name" yaml:"x-go-name"`
-	XGoExtraTags      types.OrderedMap[string, string]          `json:"x-go-extra-tags" yaml:"x-go-extra-tags"`
-	XGoTagExtraValues []string                                  `json:"x-go-tag-extra-values" yaml:"x-go-tag-extra-values"`
+	XNullable     *bool                                                     `json:"x-nullable" yaml:"x-nullable"`
+	XGoType       *types.Union2[string, xGoType]                            `json:"x-go-type" yaml:"x-go-type"`
+	XGoName       string                                                    `json:"x-go-name" yaml:"x-go-name"`
+	XGoTags       *types.Union2[[]string, types.OrderedMap[string, string]] `json:"x-go-tags" yaml:"x-go-tags"`
+	XGoTagsValues []string                                                  `json:"x-go-tags-values" yaml:"x-go-tags-values"`
+	XIgnore       bool                                                      `json:"x-ignore" yaml:"x-ignore"`
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }
@@ -81,6 +82,10 @@ func (o Object) Compile(ctx *common.CompileContext) error {
 }
 
 func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]string) (common.GolangType, error) {
+	if o.XIgnore {
+		ctx.Logger.Debug("Object denoted to be ignored")
+		return &render.Simple{Name: "any", IsIface: true}, nil
+	}
 	if o.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", o.Ref)
 		res := render.NewGolangTypePromise(o.Ref, common.PromiseOriginUser)
@@ -88,21 +93,19 @@ func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]str
 		return res, nil
 	}
 
+	if o.Type == nil {
+		o.Type = o.getDefaultObjectType(ctx)
+	}
+
 	if len(o.OneOf)+len(o.AnyOf)+len(o.AllOf) > 0 {
 		ctx.Logger.Trace("Object is union struct")
 		return o.buildUnionStruct(ctx) // TODO: process other items that can be set along with oneof/anyof/allof
-	}
-
-	if o.Type == nil {
-		o = o.fixMissingObjectType(ctx)
 	}
 
 	typeName, nullable, err := o.getTypeName(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	nullable = nullable || lo.FromPtr(o.XNullable)
 
 	// TODO: "type": { "enum": [ "residential", "business" ] }
 	// One type: { "type": "object" }
@@ -111,6 +114,7 @@ func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]str
 		return nil, err
 	}
 
+	nullable = nullable || lo.FromPtr(o.XNullable)
 	if nullable {
 		ctx.Logger.Trace("Object is nullable, make it pointer")
 		_, directRender := flags[common.SchemaTagDirectRender]
@@ -146,8 +150,13 @@ func (o Object) getTypeName(ctx *common.CompileContext) (typeName string, nullab
 func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.SchemaTag]string, typeName string) (golangType common.GolangType, err error) {
 	var aliasedType *render.Simple
 
-	switch typeName {
-	case "object":
+	if typeName == "object" {
+		if o.XGoType != nil && !o.XGoType.V1.Embedded {
+			f := buildXGoType(o.XGoType)
+			ctx.Logger.Trace("Object is custom type", "type", f.String())
+			return f, nil
+		}
+
 		ctx.Logger.Trace("Object is struct")
 		ctx.Logger.NextCallLevel()
 		golangType, err = o.buildLangStruct(ctx, flags)
@@ -155,6 +164,16 @@ func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.Sch
 		if err != nil {
 			return nil, err
 		}
+		return
+	}
+
+	if o.XGoType != nil {
+		f := buildXGoType(o.XGoType)
+		ctx.Logger.Trace("Object is a custom type", "type", f.String())
+		return f, nil
+	}
+
+	switch typeName {
 	case "array":
 		ctx.Logger.Trace("Object is array")
 		ctx.Logger.NextCallLevel()
@@ -196,30 +215,31 @@ func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.Sch
 			AliasedType: aliasedType,
 		}
 	}
+
 	return golangType, nil
 }
 
-// fixMissingObjectType is backwards compatible, guessing the users intention when they didn't specify a type.
-func (o Object) fixMissingObjectType(ctx *common.CompileContext) Object {
+// getDefaultObjectType is backwards compatible, guessing the user intention when they didn't specify a type.
+func (o Object) getDefaultObjectType(ctx *common.CompileContext) *types.Union2[string, []string] {
 	switch {
 	case o.Ref == "" && o.Properties.Len() > 0:
 		ctx.Logger.Trace("Object type is empty, determined `object` because of `properties` presence")
-		o.Type = types.ToUnion2[string, []string]("object")
+		return types.ToUnion2[string, []string]("object")
 	case o.Items != nil: // TODO: fix type when AllOf, AnyOf, OneOf
 		ctx.Logger.Trace("Object type is empty, determined `array` because of `items` presence")
-		o.Type = types.ToUnion2[string, []string]("array")
+		return types.ToUnion2[string, []string]("array")
 	default:
 		ctx.Logger.Trace("Object type is empty, guessing it `object` by default")
-		o.Type = types.ToUnion2[string, []string]("object")
+		return types.ToUnion2[string, []string]("object")
 	}
-	return o
 }
 
 func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.SchemaTag]string) (*render.Struct, error) {
 	_, noInline := flags[common.SchemaTagDirectRender]
+	objName, _ := lo.Coalesce(o.XGoName, o.Title)
 	res := render.Struct{
 		BaseType: render.BaseType{
-			Name:         ctx.GenerateObjName(o.Title, ""),
+			Name:         ctx.GenerateObjName(objName, ""),
 			Description:  o.Description,
 			DirectRender: noInline,
 			PackageName:  ctx.TopPackageName(),
@@ -237,6 +257,13 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 		ctx.PutListPromise(messagesPrm)
 	}
 
+	// Embed external type into the current one, if x-go-type->embedded == true
+	if o.XGoType != nil && o.XGoType.V1.Embedded {
+		f := buildXGoType(o.XGoType)
+		ctx.Logger.Trace("Object struct embedded custom type", "type", f.String())
+		res.Fields = append(res.Fields, render.StructField{Type: f})
+	}
+
 	// regular properties
 	for _, entry := range o.Properties.Entries() {
 		ctx.Logger.Trace("Object property", "name", entry.Key)
@@ -249,28 +276,37 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 			langObj = &render.Pointer{Type: langObj}
 		}
 
+		propName, _ := lo.Coalesce(entry.Value.XGoName, entry.Key)
+		xTags, xTagNames, xTagVals := entry.Value.xGoTagsInfo(ctx)
 		f := render.StructField{
-			Name:        utils.ToGolangName(entry.Key, true),
-			MarshalName: entry.Key,
-			Type:        langObj,
-			Description: entry.Value.Description,
-			TagsSource:  messagesPrm,
+			Name:           utils.ToGolangName(propName, true),
+			MarshalName:    entry.Key,
+			Description:    entry.Value.Description,
+			Type:           langObj,
+			TagsSource:     messagesPrm,
+			ExtraTags:      xTags,
+			ExtraTagNames:  xTagNames,
+			ExtraTagValues: xTagVals,
 		}
 		res.Fields = append(res.Fields, f)
 	}
 
 	// additionalProperties with typed sub-schema
+	// TODO: unmarshal extra fields somehow somewhere to AdditionalProperties field
 	if o.AdditionalProperties != nil {
+		propName, _ := lo.Coalesce(o.AdditionalProperties.V0.XGoName, o.Title)
 		switch o.AdditionalProperties.Selector {
 		case 0: // "additionalProperties:" is an object
 			ctx.Logger.Trace("Object additional properties as an object")
 			ref := path.Join(ctx.PathRef(), "additionalProperties")
 			langObj := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+			xTags, xTagNames, xTagVals := o.AdditionalProperties.V0.xGoTagsInfo(ctx)
 			f := render.StructField{
-				Name: "AdditionalProperties",
+				Name:        "AdditionalProperties",
+				Description: o.AdditionalProperties.V0.Description,
 				Type: &render.Map{
 					BaseType: render.BaseType{
-						Name:         ctx.GenerateObjName(o.Title, "AdditionalProperties"),
+						Name:         ctx.GenerateObjName(propName, "AdditionalProperties"),
 						Description:  o.AdditionalProperties.V0.Description,
 						DirectRender: false,
 						PackageName:  ctx.TopPackageName(),
@@ -278,7 +314,9 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 					KeyType:   &render.Simple{Name: "string"},
 					ValueType: langObj,
 				},
-				Description: o.AdditionalProperties.V0.Description,
+				ExtraTags:      xTags,
+				ExtraTagNames:  xTagNames,
+				ExtraTagValues: xTagVals,
 			}
 			res.Fields = append(res.Fields, f)
 		case 1:
@@ -286,7 +324,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 			if o.AdditionalProperties.V1 { // "additionalProperties: true" -- allow any additional properties
 				valTyp := render.TypeAlias{
 					BaseType: render.BaseType{
-						Name:         ctx.GenerateObjName(o.Title, "AdditionalPropertiesValue"),
+						Name:         ctx.GenerateObjName(propName, "AdditionalPropertiesValue"),
 						Description:  "",
 						DirectRender: false,
 						PackageName:  ctx.TopPackageName(),
@@ -297,7 +335,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 					Name: "AdditionalProperties",
 					Type: &render.Map{
 						BaseType: render.BaseType{
-							Name:         ctx.GenerateObjName(o.Title, "AdditionalProperties"),
+							Name:         ctx.GenerateObjName(propName, "AdditionalProperties"),
 							Description:  "",
 							DirectRender: false,
 							PackageName:  ctx.TopPackageName(),
@@ -317,9 +355,10 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 
 func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.SchemaTag]string) (*render.Array, error) {
 	_, noInline := flags[common.SchemaTagDirectRender]
+	objName, _ := lo.Coalesce(o.XGoName, o.Title)
 	res := render.Array{
 		BaseType: render.BaseType{
-			Name:         ctx.GenerateObjName(o.Title, ""),
+			Name:         ctx.GenerateObjName(objName, ""),
 			Description:  o.Description,
 			DirectRender: noInline,
 			PackageName:  ctx.TopPackageName(),
@@ -336,7 +375,7 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 		ctx.Logger.Trace("Object items (zero or several types)")
 		valTyp := render.TypeAlias{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(o.Title, "ItemsItemValue"),
+				Name:         ctx.GenerateObjName(objName, "ItemsItemValue"),
 				Description:  "",
 				DirectRender: false,
 				PackageName:  ctx.TopPackageName(),
@@ -345,7 +384,7 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 		}
 		res.ItemsType = &render.Map{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(o.Title, "ItemsItem"),
+				Name:         ctx.GenerateObjName(objName, "ItemsItem"),
 				Description:  "",
 				DirectRender: false,
 				PackageName:  ctx.TopPackageName(),
@@ -359,10 +398,11 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 }
 
 func (o Object) buildUnionStruct(ctx *common.CompileContext) (*render.UnionStruct, error) {
+	objName, _ := lo.Coalesce(o.XGoName, o.Title)
 	res := render.UnionStruct{
 		Struct: render.Struct{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(o.Title, ""),
+				Name:         ctx.GenerateObjName(objName, ""),
 				Description:  o.Description,
 				DirectRender: true, // Always render unions as separate types
 				PackageName:  ctx.TopPackageName(),
@@ -397,4 +437,21 @@ func (o Object) buildUnionStruct(ctx *common.CompileContext) (*render.UnionStruc
 	})...)
 
 	return &res, nil
+}
+
+func (o Object) xGoTagsInfo(ctx *common.CompileContext) (xTags types.OrderedMap[string, string], xTagNames []string, xTagValues []string) {
+	if o.XGoTags != nil {
+		switch o.XGoTags.Selector {
+		case 0:
+			xTagNames = o.XGoTags.V0
+			ctx.Logger.Trace("Extra tags", "names", xTagNames)
+		case 1:
+			xTags = o.XGoTags.V1
+			ctx.Logger.Trace("Extra tags", "tags", lo.FromEntries(xTags.Entries()))
+		}
+	}
+	if xTagValues = o.XGoTagsValues; len(xTagValues) > 0 {
+		ctx.Logger.Trace("Extra tags values", "values", xTagValues)
+	}
+	return
 }

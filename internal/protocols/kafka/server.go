@@ -8,6 +8,7 @@ import (
 	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 	j "github.com/dave/jennifer/jen"
+	"github.com/samber/lo"
 )
 
 type serverBindings struct {
@@ -23,6 +24,7 @@ func BuildServer(ctx *common.CompileContext, server *asyncapi.Server, serverKey 
 	srvResult := ProtoServer{BaseProtoServer: *baseServer}
 
 	// Server bindings
+	srvName, _ := lo.Coalesce(server.XGoName, serverKey)
 	if server.Bindings.Len() > 0 {
 		ctx.Logger.Trace("Server bindings", "proto", ProtoName)
 		if b, ok := server.Bindings.Get(ProtoName); ok {
@@ -31,7 +33,7 @@ func BuildServer(ctx *common.CompileContext, server *asyncapi.Server, serverKey 
 			}
 			bindingsStruct := &render.Struct{ // TODO: remove in favor of parent server
 				BaseType: render.BaseType{
-					Name:         ctx.GenerateObjName(serverKey, "Bindings"),
+					Name:         ctx.GenerateObjName(srvName, "Bindings"),
 					DirectRender: true,
 					PackageName:  ctx.TopPackageName(),
 				},

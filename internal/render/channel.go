@@ -10,11 +10,10 @@ import (
 )
 
 type Channel struct {
-	Name                        string
-	AppliedServers              []string
-	AppliedServerPromises       []*Promise[*Server] // Avoid using a map to keep definition order in generated code
-	AppliedToAllServersPromises *ListPromise[*Server]
-	AllProtocols                map[string]common.Renderer
+	Name                  string
+	AppliedServers        []string // Servers spec names this channel is applied to, empty list means "all servers"
+	AppliedServersPromise *ListPromise[*Server]
+	AllProtocols          map[string]common.Renderer
 
 	ParametersStruct *Struct // nil if no parameters
 	BindingsStruct   *Struct // nil if bindings are not set
@@ -37,14 +36,9 @@ func (c Channel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 	}
 	res = append(res, c.renderChannelNameFunc(ctx)...)
 
-	protocols := lo.Uniq(lo.Map(c.AppliedServerPromises, func(item *Promise[*Server], index int) string {
-		return item.Target().Protocol
+	protocols := lo.Uniq(lo.Map(c.AppliedServersPromise.Targets(), func(item *Server, index int) string {
+		return item.Protocol
 	}))
-	if c.AppliedToAllServersPromises != nil {
-		protocols = lo.Uniq(lo.Map(c.AppliedToAllServersPromises.Targets(), func(item *Server, index int) string {
-			return item.Protocol
-		}))
-	}
 	for _, p := range protocols {
 		r, ok := c.AllProtocols[p]
 		if !ok {

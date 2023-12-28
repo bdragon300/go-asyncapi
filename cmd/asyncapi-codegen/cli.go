@@ -90,12 +90,12 @@ func main() {
 	cmd := cliArgs.GenerateCmd
 	if err := generate(cmd); err != nil {
 		var multilineErr writer.MultilineError
-		if log.GetLevel() == types.TraceLevel && errors.As(err, &multilineErr) {
+		if log.GetLevel() <= log.DebugLevel && errors.As(err, &multilineErr) {
 			log.Error(err.Error(), "details", multilineErr.RestLines())
 		}
 
 		log.Error(err.Error())
-		log.Fatal("Cannot finish the generation. Use --verbose or --trace flag to get more info")
+		log.Fatal("Cannot finish the generation. Use -v=1 flag to enable debug output")
 	}
 }
 

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/samber/lo"
+
 	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
@@ -74,9 +76,10 @@ func BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, channel
 	chanResult := &ProtoChannel{BaseProtoChannel: *baseChan}
 
 	// Channel bindings
+	chName, _ := lo.Coalesce(channel.XGoName, channelKey)
 	bindingsStruct := &render.Struct{ // TODO: remove in favor of parent channel
 		BaseType: render.BaseType{
-			Name:         ctx.GenerateObjName(channelKey, "Bindings"),
+			Name:         ctx.GenerateObjName(chName, "Bindings"),
 			DirectRender: true,
 			PackageName:  ctx.TopPackageName(),
 		},
@@ -132,7 +135,7 @@ func buildChannelBindings(ctx *common.CompileContext, channel *asyncapi.Channel,
 	}
 
 	// Publish channel bindings
-	if channel.Publish != nil {
+	if channel.Publish != nil && !channel.Publish.XIgnore {
 		if b, ok := channel.Publish.Bindings.Get(ProtoName); ok {
 			ctx.Logger.Trace("Channel publish operation bindings", "proto", ProtoName)
 			pob := &render.StructInit{
@@ -166,7 +169,7 @@ func buildChannelBindings(ctx *common.CompileContext, channel *asyncapi.Channel,
 	}
 
 	// Subscribe channel bindings
-	if channel.Subscribe != nil {
+	if channel.Subscribe != nil && !channel.Subscribe.XIgnore {
 		if b, ok := channel.Subscribe.Bindings.Get(ProtoName); ok {
 			ctx.Logger.Trace("Channel subscribe operation bindings", "proto", ProtoName)
 			sob := &render.StructInit{
@@ -237,10 +240,12 @@ func (p ProtoChannel) RenderDefinition(ctx *common.RenderContext) []*j.Statement
 		res = append(res, p.BindingsMethod.RenderDefinition(ctx)...)
 	}
 	res = append(res, p.ServerIface.RenderDefinition(ctx)...)
-	res = append(res, protocols.RenderChannelOpenFunc(
-		ctx, p.Struct, p.Name, p.ServerIface, p.ParametersStructNoRender, p.BindingsStructNoRender,
-		p.Publisher, p.Subscriber, ProtoName, protoAbbr,
-	)...)
+	if !p.IsEmpty {
+		res = append(res, protocols.RenderChannelOpenFunc(
+			ctx, p.Struct, p.Name, p.ServerIface, p.ParametersStructNoRender, p.BindingsStructNoRender,
+			p.Publisher, p.Subscriber, ProtoName, protoAbbr,
+		)...)
+	}
 	res = append(res, p.renderNewFunc(ctx)...)
 	res = append(res, p.Struct.RenderDefinition(ctx)...)
 	res = append(res, protocols.RenderChannelCommonMethods(ctx, p.Struct, p.Publisher, p.Subscriber)...)

@@ -30,11 +30,12 @@ func BuildChannel(
 	})
 	ctx.PutListPromise(paramsPrm)
 
+	chName, _ := lo.Coalesce(channel.XGoName, channelKey)
 	chanResult := &BaseProtoChannel{
-		Name: channelKey,
+		Name: chName,
 		Struct: &render.Struct{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(channelKey, protoAbbr),
+				Name:         ctx.GenerateObjName(chName, protoAbbr),
 				Description:  channel.Description,
 				DirectRender: true,
 				PackageName:  ctx.TopPackageName(),
@@ -44,6 +45,7 @@ func BuildChannel(
 			},
 		},
 		FallbackMessageType: &render.Simple{Name: "any", IsIface: true},
+		IsEmpty:             (channel.Publish == nil || channel.Publish.XIgnore) && (channel.Subscribe == nil || channel.Subscribe.XIgnore),
 	}
 
 	// FIXME: remove in favor of the non-proto channel
@@ -52,7 +54,7 @@ func BuildChannel(
 		ctx.Logger.NextCallLevel()
 		chanResult.ParametersStructNoRender = &render.Struct{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(channelKey, "Parameters"),
+				Name:         ctx.GenerateObjName(chName, "Parameters"),
 				DirectRender: true,
 				PackageName:  ctx.TopPackageName(),
 			},
@@ -98,7 +100,7 @@ func BuildChannel(
 	}
 
 	// Publisher stuff
-	if channel.Publish != nil {
+	if channel.Publish != nil && !channel.Publish.XIgnore {
 		ctx.Logger.Trace("Channel publish operation", "proto", protoName)
 		chanResult.Struct.Fields = append(chanResult.Struct.Fields, render.StructField{
 			Name:        "publisher",
@@ -126,7 +128,7 @@ func BuildChannel(
 	}
 
 	// Subscriber stuff
-	if channel.Subscribe != nil {
+	if channel.Subscribe != nil && !channel.Subscribe.XIgnore {
 		ctx.Logger.Trace("Channel subscribe operation", "proto", protoName)
 		chanResult.Struct.Fields = append(chanResult.Struct.Fields, render.StructField{
 			Name:        "subscriber",
@@ -167,6 +169,7 @@ type BaseProtoChannel struct {
 	PubMessagePromise   *render.Promise[*render.Message] // nil when message is not set
 	SubMessagePromise   *render.Promise[*render.Message] // nil when message is not set
 	FallbackMessageType common.GolangType
+	IsEmpty             bool
 }
 
 func RenderChannelSubscriberMethods(

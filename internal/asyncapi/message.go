@@ -36,6 +36,10 @@ type Message struct {
 	Examples      []MessageExample                                                   `json:"examples" yaml:"examples"`
 	Traits        []MessageTrait                                                     `json:"traits" yaml:"traits"`
 
+	XGoType *types.Union2[string, xGoType] `json:"x-go-type" yaml:"x-go-type"`
+	XGoName string                         `json:"x-go-name" yaml:"x-go-name"`
+	XIgnore bool                           `json:"x-ignore" yaml:"x-ignore"`
+
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
@@ -50,6 +54,10 @@ func (m Message) Compile(ctx *common.CompileContext) error {
 }
 
 func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Renderer, error) {
+	if m.XIgnore {
+		ctx.Logger.Debug("Message denoted to be ignored")
+		return &render.Simple{Name: "any", IsIface: true}, nil
+	}
 	if m.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", m.Ref)
 		res := render.NewRendererPromise(m.Ref, common.PromiseOriginUser)
@@ -57,8 +65,15 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		return res, nil
 	}
 
+	if m.XGoType != nil {
+		t := buildXGoType(m.XGoType)
+		ctx.Logger.Trace("Message is a custom type", "type", t.String())
+		return t, nil
+	}
+
+	objName, _ := lo.Coalesce(m.XGoName, messageKey)
 	obj := render.Message{
-		Name: messageKey,
+		Name: objName,
 		OutStruct: &render.Struct{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(m.Name, "Out"),
@@ -109,11 +124,11 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 			},
 			Fields: nil,
 		}
-		for _, e := range m.Bindings.Entries() {
-			ctx.Logger.Trace("Message bindings", "proto", e.Key)
-			f, ok := ProtoMessageBindingsBuilder[e.Key]
+		for _, k := range m.Bindings.Keys() {
+			ctx.Logger.Trace("Message bindings", "proto", k)
+			f, ok := ProtoMessageBindingsBuilder[k]
 			if !ok {
-				ctx.Logger.Warn(fmt.Sprintf("Skip unsupported bindings protocol %q", e.Key))
+				ctx.Logger.Warn(fmt.Sprintf("Skip unsupported bindings protocol %q", k))
 				continue
 			}
 			ctx.Logger.NextCallLevel()
@@ -122,7 +137,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 			if err != nil {
 				return nil, err
 			}
-			obj.BindingsStructProtoMethods.Set(e.Key, protoMethod)
+			obj.BindingsStructProtoMethods.Set(k, protoMethod)
 		}
 		ctx.Logger.PrevCallLevel()
 	}

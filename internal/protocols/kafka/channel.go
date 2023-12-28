@@ -47,11 +47,12 @@ func BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, channel
 	chanResult := &ProtoChannel{BaseProtoChannel: *baseChan}
 
 	// Channel bindings
+	chName, _ := lo.Coalesce(channel.XGoName, channelKey)
 	ctx.Logger.Trace("Channel bindings")
 	ctx.Logger.NextCallLevel()
 	bindingsStruct := &render.Struct{ // TODO: remove in favor of parent channel
 		BaseType: render.BaseType{
-			Name:         ctx.GenerateObjName(channelKey, "Bindings"),
+			Name:         ctx.GenerateObjName(chName, "Bindings"),
 			DirectRender: true,
 			PackageName:  ctx.TopPackageName(),
 		},
@@ -113,7 +114,7 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *asyncapi.Ch
 
 	// Publish channel bindings
 	var publisherJSON types.OrderedMap[string, any]
-	if channel.Publish != nil {
+	if channel.Publish != nil && !channel.Publish.XIgnore {
 		ctx.Logger.Trace("Channel publish operation bindings")
 		if b, ok := channel.Publish.Bindings.Get(ProtoName); ok {
 			hasBindings = true
@@ -126,7 +127,7 @@ func buildChannelBindingsMethod(ctx *common.CompileContext, channel *asyncapi.Ch
 
 	// Subscribe channel bindings
 	var subscriberJSON types.OrderedMap[string, any]
-	if channel.Subscribe != nil {
+	if channel.Subscribe != nil && !channel.Subscribe.XIgnore {
 		ctx.Logger.Trace("Channel subscribe operation bindings")
 		if b, ok := channel.Subscribe.Bindings.Get(ProtoName); ok {
 			hasBindings = true
@@ -195,10 +196,12 @@ func (p ProtoChannel) RenderDefinition(ctx *common.RenderContext) []*j.Statement
 		res = append(res, p.BindingsMethod.RenderDefinition(ctx)...)
 	}
 	res = append(res, p.ServerIface.RenderDefinition(ctx)...)
-	res = append(res, protocols.RenderChannelOpenFunc(
-		ctx, p.Struct, p.Name, p.ServerIface, p.ParametersStructNoRender, p.BindingsStructNoRender,
-		p.Publisher, p.Subscriber, ProtoName, protoAbbr,
-	)...)
+	if !p.IsEmpty {
+		res = append(res, protocols.RenderChannelOpenFunc(
+			ctx, p.Struct, p.Name, p.ServerIface, p.ParametersStructNoRender, p.BindingsStructNoRender,
+			p.Publisher, p.Subscriber, ProtoName, protoAbbr,
+		)...)
+	}
 	res = append(res, p.renderNewFunc(ctx)...)
 	res = append(res, p.Struct.RenderDefinition(ctx)...)
 	res = append(res, protocols.RenderChannelCommonMethods(ctx, p.Struct, p.Publisher, p.Subscriber)...)

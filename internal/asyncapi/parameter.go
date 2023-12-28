@@ -3,6 +3,9 @@ package asyncapi
 import (
 	"path"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+	"github.com/samber/lo"
+
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 )
@@ -11,6 +14,9 @@ type Parameter struct {
 	Description string  `json:"description" yaml:"description"`
 	Schema      *Object `json:"schema" yaml:"schema"`     // TODO: implement
 	Location    string  `json:"location" yaml:"location"` // TODO: implement
+
+	XGoType *types.Union2[string, xGoType] `json:"x-go-type" yaml:"x-go-type"`
+	XGoName string                         `json:"x-go-name" yaml:"x-go-name"`
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }
@@ -33,7 +39,14 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 		return res, nil
 	}
 
-	res := &render.Parameter{Name: parameterKey}
+	if p.XGoType != nil {
+		t := buildXGoType(p.XGoType)
+		ctx.Logger.Trace("Parameter is a custom type", "type", t.String())
+		return t, nil
+	}
+
+	parName, _ := lo.Coalesce(p.XGoName, parameterKey)
+	res := &render.Parameter{Name: parName}
 
 	if p.Schema != nil {
 		ctx.Logger.Trace("Parameter schema")
@@ -41,7 +54,7 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 		ctx.PutPromise(prm)
 		res.Type = &render.Struct{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(parameterKey, ""),
+				Name:         ctx.GenerateObjName(parName, ""),
 				Description:  p.Description,
 				DirectRender: true,
 				PackageName:  ctx.TopPackageName(),
@@ -52,7 +65,7 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 		ctx.Logger.Trace("Parameter has no schema")
 		res.Type = &render.TypeAlias{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(parameterKey, ""),
+				Name:         ctx.GenerateObjName(parName, ""),
 				Description:  p.Description,
 				DirectRender: true,
 				PackageName:  ctx.TopPackageName(),

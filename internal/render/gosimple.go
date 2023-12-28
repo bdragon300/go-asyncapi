@@ -60,5 +60,8 @@ func (p Simple) TypeName() string {
 }
 
 func (p Simple) String() string {
+	if p.Package != "" {
+		return p.Package + "." + p.Name
+	}
 	return p.Name
 }

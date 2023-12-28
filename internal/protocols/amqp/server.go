@@ -6,6 +6,7 @@ import (
 	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	j "github.com/dave/jennifer/jen"
+	"github.com/samber/lo"
 )
 
 func BuildServer(ctx *common.CompileContext, server *asyncapi.Server, serverKey string) (common.Renderer, error) {
@@ -16,6 +17,7 @@ func BuildServer(ctx *common.CompileContext, server *asyncapi.Server, serverKey 
 	srvResult := ProtoServer{BaseProtoServer: *baseServer}
 
 	// Server bindings (protocol has no server bindings)
+	srvName, _ := lo.Coalesce(server.XGoName, serverKey)
 	if server.Bindings.Len() > 0 {
 		if _, ok := server.Bindings.Get(ProtoName); ok {
 			ctx.Logger.Trace("Server bindings", "proto", ProtoName)
@@ -24,7 +26,7 @@ func BuildServer(ctx *common.CompileContext, server *asyncapi.Server, serverKey 
 			}
 			bindingsStruct := &render.Struct{
 				BaseType: render.BaseType{
-					Name:         srvResult.Struct.Name + "Bindings",
+					Name:         ctx.GenerateObjName(srvName, "Bindings"),
 					DirectRender: true,
 					PackageName:  ctx.TopPackageName(),
 				},

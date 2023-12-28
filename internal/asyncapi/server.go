@@ -3,6 +3,8 @@ package asyncapi
 import (
 	"encoding/json"
 
+	"github.com/samber/lo"
+
 	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
 
 	"gopkg.in/yaml.v3"
@@ -25,6 +27,9 @@ type Server struct {
 	Tags            []Tag                                                              `json:"tags" yaml:"tags"`
 	Bindings        types.OrderedMap[string, types.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
 
+	XGoName string `json:"x-go-name" yaml:"x-go-name"`
+	XIgnore bool   `json:"x-ignore" yaml:"x-ignore"`
+
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
@@ -45,6 +50,10 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 }
 
 func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Renderer, error) {
+	if s.XIgnore {
+		ctx.Logger.Debug("Server denoted to be ignored")
+		return &render.Simple{Name: "any", IsIface: true}, nil
+	}
 	if s.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", s.Ref)
 		res := render.NewRendererPromise(s.Ref, common.PromiseOriginUser)
@@ -62,13 +71,14 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		return nil, err
 	}
 
+	srvName, _ := lo.Coalesce(s.XGoName, serverKey)
 	return &render.Server{
-		Name:        serverKey,
+		Name:        srvName,
 		Protocol:    s.Protocol,
 		ProtoServer: protoServer,
 		BindingsStruct: &render.Struct{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(serverKey, "Bindings"),
+				Name:         ctx.GenerateObjName(srvName, "Bindings"),
 				DirectRender: true,
 				PackageName:  ctx.TopPackageName(),
 			},

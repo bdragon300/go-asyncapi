@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"path"
 
+	"github.com/samber/lo"
+
 	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
 
 	"gopkg.in/yaml.v3"
@@ -25,6 +27,9 @@ type Channel struct {
 	Parameters  types.OrderedMap[string, Parameter]                                `json:"parameters" yaml:"parameters"`
 	Bindings    types.OrderedMap[string, types.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
 
+	XGoName string `json:"x-go-name" yaml:"x-go-name"`
+	XIgnore bool   `json:"x-ignore" yaml:"x-ignore"`
+
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
@@ -39,6 +44,10 @@ func (c Channel) Compile(ctx *common.CompileContext) error {
 }
 
 func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Renderer, error) {
+	if c.XIgnore {
+		ctx.Logger.Debug("Channel denoted to be ignored")
+		return &render.Simple{Name: "any", IsIface: true}, nil
+	}
 	if c.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", c.Ref)
 		res := render.NewRendererPromise(c.Ref, common.PromiseOriginUser)
@@ -46,7 +55,8 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 		return res, nil
 	}
 
-	res := &render.Channel{Name: channelKey, AllProtocols: make(map[string]common.Renderer)}
+	chName, _ := lo.Coalesce(c.XGoName, channelKey)
+	res := &render.Channel{Name: chName, AllProtocols: make(map[string]common.Renderer)}
 
 	// Channel parameters
 	if c.Parameters.Len() > 0 {
@@ -54,7 +64,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 		ctx.Logger.NextCallLevel()
 		res.ParametersStruct = &render.Struct{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(channelKey, "Parameters"),
+				Name:         ctx.GenerateObjName(chName, "Parameters"),
 				DirectRender: true,
 				PackageName:  ctx.TopPackageName(),
 			},
@@ -75,44 +85,43 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 	// Servers which this channel is connected to
 	// Empty servers field means "no servers", omitted servers field means "all servers"
 	if c.Servers != nil {
-		ctx.Logger.Trace("Servers applied to channel")
-		ctx.Logger.NextCallLevel()
-		for _, srv := range *c.Servers {
-			ctx.Logger.Trace("Server", "name", srv)
-			prm := render.NewPromise[*render.Server]("#/servers/"+srv, common.PromiseOriginInternal)
-			ctx.PutPromise(prm)
-			res.AppliedServerPromises = append(res.AppliedServerPromises, prm)
-			res.AppliedServers = append(res.AppliedServers, srv)
-		}
-		ctx.Logger.PrevCallLevel()
+		ctx.Logger.Trace("Channel applied to particular servers", "names", *c.Servers)
+		res.AppliedServers = *c.Servers
+		prm := render.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
+			_, ok := item.(*render.Server)
+			// Pick only servers from `servers:` section, skip ones from `components:`
+			return ok && len(path) == 2 && path[0] == "servers" && lo.Contains(*c.Servers, path[1])
+		})
+		ctx.PutListPromise(prm)
+		res.AppliedServersPromise = prm
 	} else {
 		ctx.Logger.Trace("Channel applied to all servers")
-		allServersPrm := render.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
+		prm := render.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
 			_, ok := item.(*render.Server)
 			return ok && len(path) > 0 && path[0] == "servers" // Pick only servers from `servers:` section, skip ones from `components:`
 		})
-		ctx.PutListPromise(allServersPrm)
-		res.AppliedToAllServersPromises = allServersPrm
+		ctx.PutListPromise(prm)
+		res.AppliedServersPromise = prm
 	}
 
 	// Channel/operation bindings
-	hasBindings := false
+	var hasBindings bool
 	if c.Bindings.Len() > 0 {
 		ctx.Logger.Trace("Found channel bindings")
 		hasBindings = true
 	}
-	if c.Publish != nil && c.Publish.Bindings.Len() > 0 {
+	if c.Publish != nil && !c.Publish.XIgnore && c.Publish.Bindings.Len() > 0 {
 		ctx.Logger.Trace("Found publish operation bindings")
 		hasBindings = true
 	}
-	if c.Subscribe != nil && c.Subscribe.Bindings.Len() > 0 {
+	if c.Subscribe != nil && !c.Subscribe.XIgnore && c.Subscribe.Bindings.Len() > 0 {
 		ctx.Logger.Trace("Found subscribe operation bindings")
 		hasBindings = true
 	}
 	if hasBindings {
 		res.BindingsStruct = &render.Struct{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(channelKey, "Bindings"),
+				Name:         ctx.GenerateObjName(chName, "Bindings"),
 				DirectRender: true,
 				PackageName:  ctx.TopPackageName(),
 			},
@@ -145,6 +154,8 @@ type Operation struct {
 	Traits       []OperationTrait                                                   `json:"traits" yaml:"traits"`
 	// FIXME: can be either a message or map of messages?
 	Message *Message `json:"message" yaml:"message"`
+
+	XIgnore bool `json:"x-ignore" yaml:"x-ignore"`
 }
 
 type OperationTrait struct {

@@ -72,11 +72,14 @@ func (s Struct) MustGetField(name string) StructField {
 
 // StructField defines the data required to generate a field in Go.
 type StructField struct {
-	Name        string
-	MarshalName string
-	Description string
-	Type        common.GolangType
-	TagsSource  *ListPromise[*Message]
+	Name           string
+	MarshalName    string
+	Description    string
+	Type           common.GolangType
+	TagsSource     *ListPromise[*Message]
+	ExtraTags      types.OrderedMap[string, string] // Just append these tags as constant, overwrite other tags on overlap
+	ExtraTagNames  []string                         // Append these tags and fill them the same value as others
+	ExtraTagValues []string                         // Add these comma-separated values to all tags (excluding ExtraTags)
 }
 
 func (f StructField) renderDefinition(ctx *common.RenderContext) []*jen.Statement {
@@ -94,14 +97,18 @@ func (f StructField) renderDefinition(ctx *common.RenderContext) []*jen.Statemen
 	stmt = stmt.Add(items...)
 
 	if f.TagsSource != nil {
+		tagValues := append([]string{f.MarshalName}, f.ExtraTagValues...)
 		tagNames := lo.Uniq(lo.FilterMap(f.TagsSource.Targets(), func(item *Message, index int) (string, bool) {
 			format := getFormatByContentType(item.ContentType)
 			return format, format != ""
 		}))
+		tagNames = append(tagNames, f.ExtraTagNames...)
+
 		tags := lo.SliceToMap(tagNames, func(item string) (string, string) {
-			return item, f.MarshalName
+			return item, strings.Join(tagValues, ",")
 		})
-		stmt.Tag(tags)
+		tags = lo.Assign(tags, lo.FromEntries(f.ExtraTags.Entries()))
+		stmt = stmt.Tag(tags)
 	}
 
 	res = append(res, stmt)

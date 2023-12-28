@@ -26,13 +26,14 @@ func BuildServer(
 	const buildProducer = true
 	const buildConsumer = true
 
+	srvName, _ := lo.Coalesce(server.XGoName, serverKey)
 	srvResult := &BaseProtoServer{
-		Name:            serverKey,
+		Name:            srvName,
 		URL:             server.URL,
 		ProtocolVersion: server.ProtocolVersion,
 		Struct: &render.Struct{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(serverKey, ""),
+				Name:         ctx.GenerateObjName(srvName, ""),
 				Description:  server.Description,
 				DirectRender: true,
 				PackageName:  ctx.TopPackageName(),
@@ -60,7 +61,7 @@ func BuildServer(
 		if len(ch.AppliedServers) > 0 {
 			return lo.Contains(ch.AppliedServers, serverKey)
 		}
-		return ch.AppliedToAllServersPromises != nil
+		return len(ch.AppliedServers) == 0 // Empty servers list means "all servers", see spec
 	})
 	srvResult.ChannelsPromise = channelsPrm
 	ctx.PutListPromise(channelsPrm)
