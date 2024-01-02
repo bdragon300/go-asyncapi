@@ -6,13 +6,13 @@ import (
 	"github.com/dave/jennifer/jen"
 )
 
-type TypeAlias struct {
+type GoTypeAlias struct {
 	BaseType
 	AliasedType common.GolangType
 }
 
-func (p *TypeAlias) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("TypeAlias", p.PackageName, p.Name, "definition", p.DirectRendering())
+func (p GoTypeAlias) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("GoTypeAlias", p.PackageName, p.Name, "definition", p.DirectRendering())
 	defer ctx.LogReturn()
 
 	var res []*jen.Statement
@@ -25,8 +25,8 @@ func (p *TypeAlias) RenderDefinition(ctx *common.RenderContext) []*jen.Statement
 	return res
 }
 
-func (p *TypeAlias) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("TypeAlias", p.PackageName, p.Name, "usage", p.DirectRendering())
+func (p GoTypeAlias) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("GoTypeAlias", p.PackageName, p.Name, "usage", p.DirectRendering())
 	defer ctx.LogReturn()
 
 	if p.DirectRender {
@@ -36,31 +36,31 @@ func (p *TypeAlias) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 		return []*jen.Statement{jen.Id(p.Name)}
 	}
 
-	// This TypeAlias definition is not directly rendered anywhere, so it's name is unknown for the calling code.
+	// This GoTypeAlias definition is not directly rendered anywhere, so it's name is unknown for the calling code.
 	// Just use the underlying type then
 	aliasedStmt := utils.ToCode(p.AliasedType.RenderUsage(ctx))
 	return []*jen.Statement{jen.Add(aliasedStmt...)}
 }
 
-func (p *TypeAlias) WrappedGolangType() (common.GolangType, bool) {
+func (p GoTypeAlias) WrappedGolangType() (common.GolangType, bool) {
 	return p.AliasedType, p.AliasedType != nil
 }
 
-func (p *TypeAlias) IsPointer() bool {
+func (p GoTypeAlias) IsPointer() bool {
 	if v, ok := any(p.AliasedType).(golangPointerType); ok {
 		return v.IsPointer()
 	}
 	return false
 }
 
-func (p *TypeAlias) IsStruct() bool {
+func (p GoTypeAlias) IsStruct() bool {
 	if v, ok := any(p.AliasedType).(golangStructType); ok {
 		return v.IsStruct()
 	}
 	return false
 }
 
-func (p *TypeAlias) IsCollection() bool {
+func (p GoTypeAlias) IsCollection() bool {
 	if v, ok := any(p.AliasedType).(golangCollectionType); ok {
 		return v.IsCollection()
 	}

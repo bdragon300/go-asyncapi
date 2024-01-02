@@ -6,33 +6,33 @@ import (
 	"github.com/dave/jennifer/jen"
 )
 
-type Pointer struct {
+type GoPointer struct {
 	Type         common.GolangType
 	DirectRender bool
 }
 
-func (p Pointer) DirectRendering() bool {
+func (p GoPointer) DirectRendering() bool {
 	return p.DirectRender
 }
 
-func (p Pointer) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("Pointer", "", "", "definition", p.DirectRendering())
+func (p GoPointer) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("GoPointer", "", "", "definition", p.DirectRendering())
 	defer ctx.LogReturn()
 
 	return p.Type.RenderDefinition(ctx)
 }
 
-func (p Pointer) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("Pointer", "", "", "usage", p.DirectRendering())
+func (p GoPointer) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("GoPointer", "", "", "usage", p.DirectRendering())
 	defer ctx.LogReturn()
 
 	isPtr := true
 	switch v := p.Type.(type) {
-	case *Interface: // Prevent pointer to interface
+	case *GoInterface: // Prevent pointer to interface
 		isPtr = false
 	case golangPointerType:
 		isPtr = !v.IsPointer() // Prevent appearing pointer to pointer
-	case *Simple:
+	case *GoSimple:
 		isPtr = !v.IsIface
 	}
 	if isPtr {
@@ -41,18 +41,18 @@ func (p Pointer) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 	return p.Type.RenderUsage(ctx)
 }
 
-func (p Pointer) TypeName() string {
+func (p GoPointer) TypeName() string {
 	return p.Type.TypeName()
 }
 
-func (p Pointer) String() string {
+func (p GoPointer) String() string {
 	return p.Type.String()
 }
 
-func (p Pointer) WrappedGolangType() (common.GolangType, bool) {
+func (p GoPointer) WrappedGolangType() (common.GolangType, bool) {
 	return p.Type, p.Type != nil
 }
 
-func (p Pointer) IsPointer() bool {
+func (p GoPointer) IsPointer() bool {
 	return true
 }

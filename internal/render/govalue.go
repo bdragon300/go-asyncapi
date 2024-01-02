@@ -173,9 +173,9 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 			elemSize = rtyp.Len()
 		}
 		if res.Type == nil {
-			res.Type = &Array{
+			res.Type = &GoArray{
 				BaseType: BaseType{Name: rtyp.Name(), PackageName: rtyp.PkgPath()},
-				ItemsType: &Simple{
+				ItemsType: &GoSimple{
 					Name:    elemType.Name(),
 					IsIface: elemType.Kind() == reflect.Interface,
 					Package: elemType.PkgPath(),
@@ -193,14 +193,14 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 		keyType := rtyp.Key()
 		elemType := rtyp.Elem()
 		if res.Type == nil {
-			res.Type = &Map{
+			res.Type = &GoMap{
 				BaseType: BaseType{Name: rtyp.Name(), PackageName: rtyp.PkgPath()},
-				KeyType: &Simple{
+				KeyType: &GoSimple{
 					Name:    keyType.Name(),
 					IsIface: keyType.Kind() == reflect.Interface,
 					Package: keyType.PkgPath(),
 				},
-				ValueType: &Simple{
+				ValueType: &GoSimple{
 					Name:    elemType.Name(),
 					IsIface: elemType.Kind() == reflect.Interface,
 					Package: elemType.PkgPath(),
@@ -215,7 +215,7 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 		return &res
 	case reflect.Struct:
 		if res.Type == nil {
-			res.Type = &Struct{
+			res.Type = &GoStruct{
 				BaseType: BaseType{Name: rtyp.Name(), PackageName: rtyp.PkgPath()},
 			}
 		}
@@ -233,7 +233,7 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 	case reflect.Pointer, reflect.Interface:
 		pval := reflect.Indirect(rval)
 		val := ConstructGoValue(pval.Interface(), excludeFields, nil)
-		return &GoValue{Literal: val, Type: &Pointer{Type: overrideType}}
+		return &GoValue{Literal: val, Type: &GoPointer{Type: overrideType}}
 	case reflect.String, reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Float32, reflect.Float64:
 		return &GoValue{Literal: rval.Interface(), Type: overrideType}

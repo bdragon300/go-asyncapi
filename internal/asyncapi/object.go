@@ -84,7 +84,7 @@ func (o Object) Compile(ctx *common.CompileContext) error {
 func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]string) (common.GolangType, error) {
 	if o.XIgnore {
 		ctx.Logger.Debug("Object denoted to be ignored")
-		return &render.Simple{Name: "any", IsIface: true}, nil
+		return &render.GoSimple{Name: "any", IsIface: true}, nil
 	}
 	if o.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", o.Ref)
@@ -118,7 +118,7 @@ func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]str
 	if nullable {
 		ctx.Logger.Trace("Object is nullable, make it pointer")
 		_, directRender := flags[common.SchemaTagDirectRender]
-		golangType = &render.Pointer{Type: golangType, DirectRender: directRender}
+		golangType = &render.GoPointer{Type: golangType, DirectRender: directRender}
 	}
 	return golangType, nil
 }
@@ -148,7 +148,7 @@ func (o Object) getTypeName(ctx *common.CompileContext) (typeName string, nullab
 }
 
 func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.SchemaTag]string, typeName string) (golangType common.GolangType, err error) {
-	var aliasedType *render.Simple
+	var aliasedType *render.GoSimple
 
 	if typeName == "object" {
 		if o.XGoType != nil && !o.XGoType.V1.Embedded {
@@ -184,28 +184,28 @@ func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.Sch
 		}
 	case "null", "":
 		ctx.Logger.Trace("Object is any")
-		golangType = &render.Simple{Name: "any", IsIface: true}
+		golangType = &render.GoSimple{Name: "any", IsIface: true}
 	case "boolean":
 		ctx.Logger.Trace("Object is bool")
-		aliasedType = &render.Simple{Name: "bool"}
+		aliasedType = &render.GoSimple{Name: "bool"}
 	case "integer":
 		// TODO: "format:"
 		ctx.Logger.Trace("Object is int")
-		aliasedType = &render.Simple{Name: "int"}
+		aliasedType = &render.GoSimple{Name: "int"}
 	case "number":
 		// TODO: "format:"
 		ctx.Logger.Trace("Object is float64")
-		aliasedType = &render.Simple{Name: "float64"}
+		aliasedType = &render.GoSimple{Name: "float64"}
 	case "string":
 		ctx.Logger.Trace("Object is string")
-		aliasedType = &render.Simple{Name: "string"}
+		aliasedType = &render.GoSimple{Name: "string"}
 	default:
 		return nil, types.CompileError{Err: fmt.Errorf("unknown jsonschema type %q", typeName), Path: ctx.PathRef()}
 	}
 
 	if aliasedType != nil {
 		_, directRender := flags[common.SchemaTagDirectRender]
-		golangType = &render.TypeAlias{
+		golangType = &render.GoTypeAlias{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(o.Title, ""),
 				Description:  o.Description,
@@ -234,10 +234,10 @@ func (o Object) getDefaultObjectType(ctx *common.CompileContext) *types.Union2[s
 	}
 }
 
-func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.SchemaTag]string) (*render.Struct, error) {
+func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.SchemaTag]string) (*render.GoStruct, error) {
 	_, noInline := flags[common.SchemaTagDirectRender]
 	objName, _ := lo.Coalesce(o.XGoName, o.Title)
-	res := render.Struct{
+	res := render.GoStruct{
 		BaseType: render.BaseType{
 			Name:         ctx.GenerateObjName(objName, ""),
 			Description:  o.Description,
@@ -261,7 +261,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 	if o.XGoType != nil && o.XGoType.V1.Embedded {
 		f := buildXGoType(o.XGoType)
 		ctx.Logger.Trace("Object struct embedded custom type", "type", f.String())
-		res.Fields = append(res.Fields, render.StructField{Type: f})
+		res.Fields = append(res.Fields, render.GoStructField{Type: f})
 	}
 
 	// regular properties
@@ -273,12 +273,12 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 
 		var langObj common.GolangType = prm
 		if lo.Contains(o.Required, entry.Key) {
-			langObj = &render.Pointer{Type: langObj}
+			langObj = &render.GoPointer{Type: langObj}
 		}
 
 		propName, _ := lo.Coalesce(entry.Value.XGoName, entry.Key)
 		xTags, xTagNames, xTagVals := entry.Value.xGoTagsInfo(ctx)
-		f := render.StructField{
+		f := render.GoStructField{
 			Name:           utils.ToGolangName(propName, true),
 			MarshalName:    entry.Key,
 			Description:    entry.Value.Description,
@@ -301,17 +301,17 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 			ref := path.Join(ctx.PathRef(), "additionalProperties")
 			langObj := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 			xTags, xTagNames, xTagVals := o.AdditionalProperties.V0.xGoTagsInfo(ctx)
-			f := render.StructField{
+			f := render.GoStructField{
 				Name:        "AdditionalProperties",
 				Description: o.AdditionalProperties.V0.Description,
-				Type: &render.Map{
+				Type: &render.GoMap{
 					BaseType: render.BaseType{
 						Name:         ctx.GenerateObjName(propName, "AdditionalProperties"),
 						Description:  o.AdditionalProperties.V0.Description,
 						DirectRender: false,
 						PackageName:  ctx.TopPackageName(),
 					},
-					KeyType:   &render.Simple{Name: "string"},
+					KeyType:   &render.GoSimple{Name: "string"},
 					ValueType: langObj,
 				},
 				ExtraTags:      xTags,
@@ -322,25 +322,25 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 		case 1:
 			ctx.Logger.Trace("Object additional properties as boolean flag")
 			if o.AdditionalProperties.V1 { // "additionalProperties: true" -- allow any additional properties
-				valTyp := render.TypeAlias{
+				valTyp := render.GoTypeAlias{
 					BaseType: render.BaseType{
 						Name:         ctx.GenerateObjName(propName, "AdditionalPropertiesValue"),
 						Description:  "",
 						DirectRender: false,
 						PackageName:  ctx.TopPackageName(),
 					},
-					AliasedType: &render.Simple{Name: "any", IsIface: true},
+					AliasedType: &render.GoSimple{Name: "any", IsIface: true},
 				}
-				f := render.StructField{
+				f := render.GoStructField{
 					Name: "AdditionalProperties",
-					Type: &render.Map{
+					Type: &render.GoMap{
 						BaseType: render.BaseType{
 							Name:         ctx.GenerateObjName(propName, "AdditionalProperties"),
 							Description:  "",
 							DirectRender: false,
 							PackageName:  ctx.TopPackageName(),
 						},
-						KeyType:   &render.Simple{Name: "string"},
+						KeyType:   &render.GoSimple{Name: "string"},
 						ValueType: &valTyp,
 					},
 					TagsSource: messagesPrm,
@@ -353,10 +353,10 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 	return &res, nil
 }
 
-func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.SchemaTag]string) (*render.Array, error) {
+func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.SchemaTag]string) (*render.GoArray, error) {
 	_, noInline := flags[common.SchemaTagDirectRender]
 	objName, _ := lo.Coalesce(o.XGoName, o.Title)
-	res := render.Array{
+	res := render.GoArray{
 		BaseType: render.BaseType{
 			Name:         ctx.GenerateObjName(objName, ""),
 			Description:  o.Description,
@@ -373,23 +373,23 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 		res.ItemsType = render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 	case o.Items == nil || o.Items.Selector == 1: // No items or Several types for each item sequentially
 		ctx.Logger.Trace("Object items (zero or several types)")
-		valTyp := render.TypeAlias{
+		valTyp := render.GoTypeAlias{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(objName, "ItemsItemValue"),
 				Description:  "",
 				DirectRender: false,
 				PackageName:  ctx.TopPackageName(),
 			},
-			AliasedType: &render.Simple{Name: "any", IsIface: true},
+			AliasedType: &render.GoSimple{Name: "any", IsIface: true},
 		}
-		res.ItemsType = &render.Map{
+		res.ItemsType = &render.GoMap{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(objName, "ItemsItem"),
 				Description:  "",
 				DirectRender: false,
 				PackageName:  ctx.TopPackageName(),
 			},
-			KeyType:   &render.Simple{Name: "string"},
+			KeyType:   &render.GoSimple{Name: "string"},
 			ValueType: &valTyp,
 		}
 	}
@@ -400,7 +400,7 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 func (o Object) buildUnionStruct(ctx *common.CompileContext) (*render.UnionStruct, error) {
 	objName, _ := lo.Coalesce(o.XGoName, o.Title)
 	res := render.UnionStruct{
-		Struct: render.Struct{
+		GoStruct: render.GoStruct{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(objName, ""),
 				Description:  o.Description,
@@ -417,23 +417,23 @@ func (o Object) buildUnionStruct(ctx *common.CompileContext) (*render.UnionStruc
 	})
 	ctx.PutListPromise(messagesPrm)
 
-	res.Fields = lo.Times(len(o.OneOf), func(index int) render.StructField {
+	res.Fields = lo.Times(len(o.OneOf), func(index int) render.GoStructField {
 		ref := path.Join(ctx.PathRef(), "oneOf", strconv.Itoa(index))
 		prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
-		return render.StructField{Type: &render.Pointer{Type: prm}}
+		return render.GoStructField{Type: &render.GoPointer{Type: prm}}
 	})
-	res.Fields = append(res.Fields, lo.Times(len(o.AnyOf), func(index int) render.StructField {
+	res.Fields = append(res.Fields, lo.Times(len(o.AnyOf), func(index int) render.GoStructField {
 		ref := path.Join(ctx.PathRef(), "anyOf", strconv.Itoa(index))
 		prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
-		return render.StructField{Type: &render.Pointer{Type: prm}}
+		return render.GoStructField{Type: &render.GoPointer{Type: prm}}
 	})...)
-	res.Fields = append(res.Fields, lo.Times(len(o.AllOf), func(index int) render.StructField {
+	res.Fields = append(res.Fields, lo.Times(len(o.AllOf), func(index int) render.GoStructField {
 		ref := path.Join(ctx.PathRef(), "allOf", strconv.Itoa(index))
 		prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
-		return render.StructField{Type: prm}
+		return render.GoStructField{Type: prm}
 	})...)
 
 	return &res, nil

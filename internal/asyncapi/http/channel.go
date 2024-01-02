@@ -23,7 +23,7 @@ func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncap
 		return nil, err
 	}
 
-	baseChan.Struct.Fields = append(baseChan.Struct.Fields, render.StructField{Name: "path", Type: &render.Simple{Name: "string"}})
+	baseChan.Struct.Fields = append(baseChan.Struct.Fields, render.GoStructField{Name: "path", Type: &render.GoSimple{Name: "string"}})
 
 	return &renderHttp.ProtoChannel{BaseProtoChannel: *baseChan}, nil
 }
@@ -40,7 +40,7 @@ func (pb ProtoBuilder) BuildOperationBindings(ctx *common.CompileContext, rawDat
 	}
 
 	vals = render.ConstructGoValue(
-		bindings, []string{"Query"}, &render.Simple{Name: "OperationBindings", Package: ctx.RuntimePackage(pb.ProtoName)},
+		bindings, []string{"Query"}, &render.GoSimple{Name: "OperationBindings", Package: ctx.RuntimePackage(pb.ProtoName)},
 	)
 	if bindings.Query != nil {
 		v, err2 := json.Marshal(bindings.Query)

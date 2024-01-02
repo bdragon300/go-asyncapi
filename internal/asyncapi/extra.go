@@ -23,7 +23,7 @@ type xGoType struct {
 }
 
 func buildXGoType(xGoTypeValue *types.Union2[string, xGoType]) (golangType common.GolangType) {
-	t := &render.Simple{}
+	t := &render.GoSimple{}
 
 	switch xGoTypeValue.Selector {
 	case 0:
@@ -34,7 +34,7 @@ func buildXGoType(xGoTypeValue *types.Union2[string, xGoType]) (golangType commo
 		t.IsIface = xGoTypeValue.V1.Hint.Kind == "interface"
 
 		if xGoTypeValue.V1.Hint.Pointer {
-			return &render.Pointer{Type: t}
+			return &render.GoPointer{Type: t}
 		}
 	}
 

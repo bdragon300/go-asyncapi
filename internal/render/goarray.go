@@ -6,14 +6,14 @@ import (
 	"github.com/dave/jennifer/jen"
 )
 
-type Array struct {
+type GoArray struct {
 	BaseType
 	ItemsType common.GolangType
 	Size      int
 }
 
-func (a *Array) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("Array", a.PackageName, a.Name, "definition", a.DirectRendering())
+func (a GoArray) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("GoArray", a.PackageName, a.Name, "definition", a.DirectRendering())
 	defer ctx.LogReturn()
 
 	var res []*jen.Statement
@@ -33,8 +33,8 @@ func (a *Array) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	return res
 }
 
-func (a *Array) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("Array", a.PackageName, a.Name, "usage", a.DirectRendering())
+func (a GoArray) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("GoArray", a.PackageName, a.Name, "usage", a.DirectRendering())
 	defer ctx.LogReturn()
 
 	if a.DirectRender {
@@ -52,6 +52,6 @@ func (a *Array) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 	return []*jen.Statement{jen.Index().Add(items...)}
 }
 
-func (a *Array) IsCollection() bool {
+func (a GoArray) IsCollection() bool {
 	return true
 }

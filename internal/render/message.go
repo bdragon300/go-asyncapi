@@ -12,14 +12,14 @@ import (
 
 type Message struct {
 	Name                 string
-	OutStruct            *Struct
-	InStruct             *Struct
+	OutStruct            *GoStruct
+	InStruct             *GoStruct
 	PayloadType          common.GolangType // `any` or a particular type
 	PayloadHasSchema     bool
-	HeadersFallbackType  *Map
-	HeadersTypePromise   *Promise[*Struct]
+	HeadersFallbackType  *GoMap
+	HeadersTypePromise   *Promise[*GoStruct]
 	AllServers           *ListPromise[*Server]    // For extracting all using protocols
-	BindingsStruct       *Struct                  // nil if message bindings are not defined for message
+	BindingsStruct       *GoStruct                // nil if message bindings are not defined for message
 	BindingsPromise      *Promise[*Bindings]      // nil if message bindings are not defined for message as well
 	ContentType          string                   // Message's content type or default from schema or fallback
 	CorrelationIDPromise *Promise[*CorrelationID] // nil if correlationID is not defined for message

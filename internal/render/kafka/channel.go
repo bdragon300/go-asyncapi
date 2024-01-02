@@ -119,9 +119,9 @@ func (pc ProtoChannel) renderKafkaPublisherMethods(ctx *common.RenderContext) []
 	rn := pc.Struct.ReceiverName()
 	receiver := j.Id(rn).Id(pc.Struct.Name)
 
-	var msgTyp common.GolangType = render.Pointer{Type: pc.FallbackMessageType, DirectRender: true}
+	var msgTyp common.GolangType = render.GoPointer{Type: pc.FallbackMessageType, DirectRender: true}
 	if pc.PubMessagePromise != nil {
-		msgTyp = render.Pointer{Type: pc.PubMessagePromise.Target().OutStruct, DirectRender: true}
+		msgTyp = render.GoPointer{Type: pc.PubMessagePromise.Target().OutStruct, DirectRender: true}
 	}
 
 	return []*j.Statement{

@@ -7,29 +7,29 @@ import (
 	"github.com/samber/lo"
 )
 
-type Interface struct {
+type GoInterface struct {
 	BaseType
-	Methods []FuncSignature
+	Methods []GoFuncSignature
 }
 
-func (i Interface) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
+func (i GoInterface) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	var res []*jen.Statement
-	ctx.LogRender("Interface", i.PackageName, i.Name, "definition", i.DirectRendering())
+	ctx.LogRender("GoInterface", i.PackageName, i.Name, "definition", i.DirectRendering())
 	defer ctx.LogReturn()
 
 	if i.Description != "" {
 		res = append(res, jen.Comment(i.Name+" -- "+utils.ToLowerFirstLetter(i.Description)))
 	}
 
-	code := lo.FlatMap(i.Methods, func(item FuncSignature, index int) []*jen.Statement {
+	code := lo.FlatMap(i.Methods, func(item GoFuncSignature, index int) []*jen.Statement {
 		return item.RenderDefinition(ctx)
 	})
 	res = append(res, jen.Type().Id(i.Name).Interface(utils.ToCode(code)...))
 	return res
 }
 
-func (i Interface) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("Interface", i.PackageName, i.Name, "usage", i.DirectRendering())
+func (i GoInterface) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("GoInterface", i.PackageName, i.Name, "usage", i.DirectRendering())
 	defer ctx.LogReturn()
 
 	if i.DirectRendering() {
@@ -39,7 +39,7 @@ func (i Interface) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 		return []*jen.Statement{jen.Id(i.Name)}
 	}
 
-	code := lo.FlatMap(i.Methods, func(item FuncSignature, index int) []*jen.Statement {
+	code := lo.FlatMap(i.Methods, func(item GoFuncSignature, index int) []*jen.Statement {
 		return item.RenderDefinition(ctx)
 	})
 	return []*jen.Statement{

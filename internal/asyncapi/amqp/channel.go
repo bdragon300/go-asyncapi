@@ -55,8 +55,8 @@ func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncap
 
 	baseChan.Struct.Fields = append(
 		baseChan.Struct.Fields,
-		render.StructField{Name: "exchange", Type: &render.Simple{Name: "string"}},
-		render.StructField{Name: "queue", Type: &render.Simple{Name: "string"}},
+		render.GoStructField{Name: "exchange", Type: &render.GoSimple{Name: "string"}},
+		render.GoStructField{Name: "queue", Type: &render.GoSimple{Name: "string"}},
 	)
 
 	return &renderAmqp.ProtoChannel{BaseProtoChannel: *baseChan}, nil
@@ -69,33 +69,33 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 		return
 	}
 
-	vals = &render.GoValue{Type: &render.Simple{Name: "ChannelBindings", Package: ctx.RuntimePackage(pb.ProtoName)}, NilCurlyBrakets: true}
+	vals = &render.GoValue{Type: &render.GoSimple{Name: "ChannelBindings", Package: ctx.RuntimePackage(pb.ProtoName)}, NilCurlyBrakets: true}
 	switch bindings.Is {
 	case "queue":
-		vals.StructVals.Set("ChannelType", &render.Simple{Name: "ChannelTypeQueue", Package: ctx.RuntimePackage(pb.ProtoName)})
+		vals.StructVals.Set("ChannelType", &render.GoSimple{Name: "ChannelTypeQueue", Package: ctx.RuntimePackage(pb.ProtoName)})
 	default: // routingKey and any other value
-		vals.StructVals.Set("ChannelType", &render.Simple{Name: "ChannelTypeRoutingKey", Package: ctx.RuntimePackage(pb.ProtoName)})
+		vals.StructVals.Set("ChannelType", &render.GoSimple{Name: "ChannelTypeRoutingKey", Package: ctx.RuntimePackage(pb.ProtoName)})
 	}
 	if bindings.Exchange != nil {
 		ecVals := render.ConstructGoValue(
-			bindings.Exchange, []string{"Type"}, &render.Simple{Name: "ExchangeConfiguration", Package: ctx.RuntimePackage(pb.ProtoName)},
+			bindings.Exchange, []string{"Type"}, &render.GoSimple{Name: "ExchangeConfiguration", Package: ctx.RuntimePackage(pb.ProtoName)},
 		)
 		switch bindings.Exchange.Type {
 		case "default":
-			ecVals.StructVals.Set("Type", &render.Simple{Name: "ExchangeTypeDefault", Package: ctx.RuntimePackage(pb.ProtoName)})
+			ecVals.StructVals.Set("Type", &render.GoSimple{Name: "ExchangeTypeDefault", Package: ctx.RuntimePackage(pb.ProtoName)})
 		case "topic":
-			ecVals.StructVals.Set("Type", &render.Simple{Name: "ExchangeTypeTopic", Package: ctx.RuntimePackage(pb.ProtoName)})
+			ecVals.StructVals.Set("Type", &render.GoSimple{Name: "ExchangeTypeTopic", Package: ctx.RuntimePackage(pb.ProtoName)})
 		case "direct":
-			ecVals.StructVals.Set("Type", &render.Simple{Name: "ExchangeTypeDirect", Package: ctx.RuntimePackage(pb.ProtoName)})
+			ecVals.StructVals.Set("Type", &render.GoSimple{Name: "ExchangeTypeDirect", Package: ctx.RuntimePackage(pb.ProtoName)})
 		case "fanout":
-			ecVals.StructVals.Set("Type", &render.Simple{Name: "ExchangeTypeFanout", Package: ctx.RuntimePackage(pb.ProtoName)})
+			ecVals.StructVals.Set("Type", &render.GoSimple{Name: "ExchangeTypeFanout", Package: ctx.RuntimePackage(pb.ProtoName)})
 		case "headers":
-			ecVals.StructVals.Set("Type", &render.Simple{Name: "ExchangeTypeHeaders", Package: ctx.RuntimePackage(pb.ProtoName)})
+			ecVals.StructVals.Set("Type", &render.GoSimple{Name: "ExchangeTypeHeaders", Package: ctx.RuntimePackage(pb.ProtoName)})
 		}
 		vals.StructVals.Set("ExchangeConfiguration", ecVals)
 	}
 	qVals := render.ConstructGoValue(
-		bindings.Queue, nil, &render.Simple{Name: "QueueConfiguration", Package: ctx.RuntimePackage(pb.ProtoName)},
+		bindings.Queue, nil, &render.GoSimple{Name: "QueueConfiguration", Package: ctx.RuntimePackage(pb.ProtoName)},
 	)
 	vals.StructVals.Set("QueueConfiguration", &qVals)
 
@@ -110,19 +110,19 @@ func (pb ProtoBuilder) BuildOperationBindings(ctx *common.CompileContext, rawDat
 	}
 
 	vals = render.ConstructGoValue(
-		bindings, []string{"Expiration", "DeliveryMode"}, &render.Simple{Name: "OperationBindings", Package: ctx.RuntimePackage(pb.ProtoName)},
+		bindings, []string{"Expiration", "DeliveryMode"}, &render.GoSimple{Name: "OperationBindings", Package: ctx.RuntimePackage(pb.ProtoName)},
 	)
 	if bindings.Expiration > 0 {
 		v := render.ConstructGoValue(
-			bindings.Expiration*int(time.Millisecond), nil, &render.Simple{Name: "Duration", Package: "time"},
+			bindings.Expiration*int(time.Millisecond), nil, &render.GoSimple{Name: "Duration", Package: "time"},
 		)
 		vals.StructVals.Set("Expiration", v)
 	}
 	switch bindings.DeliveryMode {
 	case 1:
-		vals.StructVals.Set("DeliveryMode", &render.Simple{Name: "DeliveryModeTransient", Package: ctx.RuntimePackage(pb.ProtoName)})
+		vals.StructVals.Set("DeliveryMode", &render.GoSimple{Name: "DeliveryModeTransient", Package: ctx.RuntimePackage(pb.ProtoName)})
 	case 2:
-		vals.StructVals.Set("DeliveryMode", &render.Simple{Name: "DeliveryModePersistent", Package: ctx.RuntimePackage(pb.ProtoName)})
+		vals.StructVals.Set("DeliveryMode", &render.GoSimple{Name: "DeliveryModePersistent", Package: ctx.RuntimePackage(pb.ProtoName)})
 	}
 
 	return

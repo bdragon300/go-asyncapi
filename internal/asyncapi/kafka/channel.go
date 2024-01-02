@@ -39,7 +39,7 @@ func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncap
 		return nil, err
 	}
 
-	baseChan.Struct.Fields = append(baseChan.Struct.Fields, render.StructField{Name: "topic", Type: &render.Simple{Name: "string"}})
+	baseChan.Struct.Fields = append(baseChan.Struct.Fields, render.GoStructField{Name: "topic", Type: &render.GoSimple{Name: "string"}})
 
 	return &renderKafka.ProtoChannel{BaseProtoChannel: *baseChan}, nil
 }
@@ -52,7 +52,7 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 	}
 
 	vals = render.ConstructGoValue(
-		bindings, []string{"Partitions", "Replicas", "TopicConfiguration"}, &render.Simple{Name: "ChannelBindings", Package: ctx.RuntimePackage(pb.ProtoName)},
+		bindings, []string{"Partitions", "Replicas", "TopicConfiguration"}, &render.GoSimple{Name: "ChannelBindings", Package: ctx.RuntimePackage(pb.ProtoName)},
 	)
 	if bindings.Partitions != nil {
 		vals.StructVals.Set("Partitions", *bindings.Partitions)
@@ -64,12 +64,12 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 		tcVals := render.ConstructGoValue(
 			*bindings.TopicConfiguration,
 			[]string{"CleanupPolicy", "RetentionMs", "DeleteRetentionMs"},
-			&render.Simple{Name: "TopicConfiguration", Package: ctx.RuntimePackage(pb.ProtoName)},
+			&render.GoSimple{Name: "TopicConfiguration", Package: ctx.RuntimePackage(pb.ProtoName)},
 		)
 
 		// TopicConfiguration->CleanupPolicy
 		if len(bindings.TopicConfiguration.CleanupPolicy) > 0 {
-			cpVal := &render.GoValue{Type: &render.Simple{Name: "TopicCleanupPolicy", Package: ctx.RuntimePackage(pb.ProtoName)}, NilCurlyBrakets: true}
+			cpVal := &render.GoValue{Type: &render.GoSimple{Name: "TopicCleanupPolicy", Package: ctx.RuntimePackage(pb.ProtoName)}, NilCurlyBrakets: true}
 			switch {
 			case lo.Contains(bindings.TopicConfiguration.CleanupPolicy, "delete"):
 				cpVal.StructVals.Set("Delete", true)
@@ -85,7 +85,7 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 			v := render.ConstructGoValue(
 				bindings.TopicConfiguration.RetentionMs*int(time.Millisecond),
 				nil,
-				&render.Simple{Name: "Duration", Package: "time"},
+				&render.GoSimple{Name: "Duration", Package: "time"},
 			)
 			tcVals.StructVals.Set("RetentionMs", v)
 		}
@@ -94,7 +94,7 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 			v := render.ConstructGoValue(
 				bindings.TopicConfiguration.DeleteRetentionMs*int(time.Millisecond),
 				nil,
-				&render.Simple{Name: "Duration", Package: "time"},
+				&render.GoSimple{Name: "Duration", Package: "time"},
 			)
 			tcVals.StructVals.Set("DeleteRetentionMs", v)
 		}

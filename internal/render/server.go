@@ -9,7 +9,7 @@ type Server struct {
 	Name            string
 	Protocol        string
 	ProtoServer     common.Renderer
-	BindingsStruct  *Struct             // nil if bindings are not defined for server
+	BindingsStruct  *GoStruct           // nil if bindings are not defined for server
 	BindingsPromise *Promise[*Bindings] // nil if bindings are not defined for server as well
 }
 

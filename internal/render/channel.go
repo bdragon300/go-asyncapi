@@ -17,9 +17,9 @@ type Channel struct {
 	ServersPromise      *ListPromise[*Server]      // Servers list this channel is applied to, either explicitly marked or "all servers"
 	AllProtoChannels    map[string]common.Renderer // Proto channels for all supported protocols
 
-	ParametersStruct *Struct // nil if no parameters
+	ParametersStruct *GoStruct // nil if no parameters
 
-	BindingsStruct           *Struct             // nil if no bindings are set for channel at all
+	BindingsStruct           *GoStruct           // nil if no bindings are set for channel at all
 	BindingsChannelPromise   *Promise[*Bindings] // nil if channel bindings are not set
 	BindingsSubscribePromise *Promise[*Bindings] // nil if subscribe operation bindings are not set
 	BindingsPublishPromise   *Promise[*Bindings] // nil if publish operation bindings are not set

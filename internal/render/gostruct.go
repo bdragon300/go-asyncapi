@@ -13,29 +13,29 @@ import (
 	"github.com/dave/jennifer/jen"
 )
 
-// Struct defines the data required to generate a struct in Go.
-type Struct struct {
+// GoStruct defines the data required to generate a struct in Go.
+type GoStruct struct {
 	BaseType
-	Fields []StructField
+	Fields []GoStructField
 }
 
-func (s Struct) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
+func (s GoStruct) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	var res []*jen.Statement
-	ctx.LogRender("Struct", s.PackageName, s.Name, "definition", s.DirectRendering())
+	ctx.LogRender("GoStruct", s.PackageName, s.Name, "definition", s.DirectRendering())
 	defer ctx.LogReturn()
 
 	if s.Description != "" {
 		res = append(res, jen.Comment(s.Name+" -- "+utils.ToLowerFirstLetter(s.Description)))
 	}
-	code := lo.FlatMap(s.Fields, func(item StructField, index int) []*jen.Statement {
+	code := lo.FlatMap(s.Fields, func(item GoStructField, index int) []*jen.Statement {
 		return item.renderDefinition(ctx)
 	})
 	res = append(res, jen.Type().Id(s.Name).Struct(utils.ToCode(code)...))
 	return res
 }
 
-func (s Struct) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("Struct", s.PackageName, s.Name, "usage", s.DirectRendering())
+func (s GoStruct) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("GoStruct", s.PackageName, s.Name, "usage", s.DirectRendering())
 	defer ctx.LogReturn()
 
 	if s.DirectRendering() {
@@ -45,23 +45,23 @@ func (s Struct) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 		return []*jen.Statement{jen.Id(s.Name)}
 	}
 
-	code := lo.FlatMap(s.Fields, func(item StructField, index int) []*jen.Statement {
+	code := lo.FlatMap(s.Fields, func(item GoStructField, index int) []*jen.Statement {
 		return item.renderDefinition(ctx)
 	})
 
 	return []*jen.Statement{jen.Struct(utils.ToCode(code)...)}
 }
 
-func (s Struct) NewFuncName() string {
+func (s GoStruct) NewFuncName() string {
 	return "New" + s.Name
 }
 
-func (s Struct) ReceiverName() string {
+func (s GoStruct) ReceiverName() string {
 	return strings.ToLower(string(s.Name[0]))
 }
 
-func (s Struct) MustGetField(name string) StructField {
-	f, ok := lo.Find(s.Fields, func(item StructField) bool {
+func (s GoStruct) MustGetField(name string) GoStructField {
+	f, ok := lo.Find(s.Fields, func(item GoStructField) bool {
 		return item.Name == name
 	})
 	if !ok {
@@ -70,12 +70,12 @@ func (s Struct) MustGetField(name string) StructField {
 	return f
 }
 
-func (s Struct) IsStruct() bool {
+func (s GoStruct) IsStruct() bool {
 	return true
 }
 
-// StructField defines the data required to generate a field in Go.
-type StructField struct {
+// GoStructField defines the data required to generate a field in Go.
+type GoStructField struct {
 	Name           string
 	MarshalName    string
 	Description    string
@@ -86,9 +86,9 @@ type StructField struct {
 	ExtraTagValues []string                         // Add these comma-separated values to all tags (excluding ExtraTags)
 }
 
-func (f StructField) renderDefinition(ctx *common.RenderContext) []*jen.Statement {
+func (f GoStructField) renderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	var res []*jen.Statement
-	ctx.LogRender("StructField", "", f.Name, "definition", false)
+	ctx.LogRender("GoStructField", "", f.Name, "definition", false)
 	defer ctx.LogReturn()
 
 	if f.Description != "" {

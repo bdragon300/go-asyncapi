@@ -39,7 +39,7 @@ func (c Channel) Compile(ctx *common.CompileContext) error {
 func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Renderer, error) {
 	if c.XIgnore {
 		ctx.Logger.Debug("Channel denoted to be ignored")
-		return &render.Simple{Name: "any", IsIface: true}, nil
+		return &render.GoSimple{Name: "any", IsIface: true}, nil
 	}
 	if c.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", c.Ref)
@@ -55,7 +55,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 	if c.Parameters.Len() > 0 {
 		ctx.Logger.Trace("Channel parameters")
 		ctx.Logger.NextCallLevel()
-		res.ParametersStruct = &render.Struct{
+		res.ParametersStruct = &render.GoStruct{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(chName, "Parameters"),
 				DirectRender: true,
@@ -67,7 +67,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 			ref := path.Join(ctx.PathRef(), "parameters", paramName)
 			prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 			ctx.PutPromise(prm)
-			res.ParametersStruct.Fields = append(res.ParametersStruct.Fields, render.StructField{
+			res.ParametersStruct.Fields = append(res.ParametersStruct.Fields, render.GoStructField{
 				Name: utils.ToGolangName(paramName, true),
 				Type: prm,
 			})
@@ -124,7 +124,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 		ctx.PutPromise(res.BindingsSubscribePromise)
 	}
 	if hasBindings {
-		res.BindingsStruct = &render.Struct{
+		res.BindingsStruct = &render.GoStruct{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(chName, "Bindings"),
 				DirectRender: true,

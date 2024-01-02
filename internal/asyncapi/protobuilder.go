@@ -41,44 +41,44 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 	chName, _ := lo.Coalesce(channel.XGoName, channelKey)
 	chanResult := &renderProto.BaseProtoChannel{
 		Name: chName,
-		Struct: &render.Struct{
+		Struct: &render.GoStruct{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(chName, pb.ProtoAbbr),
 				Description:  channel.Description,
 				DirectRender: true,
 				PackageName:  ctx.TopPackageName(),
 			},
-			Fields: []render.StructField{
-				{Name: "name", Type: &render.Simple{Name: "ParamString", Package: ctx.RuntimePackage("")}},
+			Fields: []render.GoStructField{
+				{Name: "name", Type: &render.GoSimple{Name: "ParamString", Package: ctx.RuntimePackage("")}},
 			},
 		},
 		AbstractChannel:     abstractChannel,
-		FallbackMessageType: &render.Simple{Name: "any", IsIface: true},
+		FallbackMessageType: &render.GoSimple{Name: "any", IsIface: true},
 		ProtoName:           pb.ProtoName,
 		ProtoAbbr:           pb.ProtoAbbr,
 	}
 
 	// Interface to match servers bound with a channel (type chan1KafkaServer interface)
-	var openChannelServerIfaceArgs []render.FuncParam
+	var openChannelServerIfaceArgs []render.GoFuncParam
 	if chanResult.AbstractChannel.ParametersStruct != nil {
-		openChannelServerIfaceArgs = append(openChannelServerIfaceArgs, render.FuncParam{
+		openChannelServerIfaceArgs = append(openChannelServerIfaceArgs, render.GoFuncParam{
 			Name: "params",
-			Type: &render.Simple{Name: chanResult.AbstractChannel.ParametersStruct.Name, Package: ctx.TopPackageName()},
+			Type: &render.GoSimple{Name: chanResult.AbstractChannel.ParametersStruct.Name, Package: ctx.TopPackageName()},
 		})
 	}
-	chanResult.ServerIface = &render.Interface{
+	chanResult.ServerIface = &render.GoInterface{
 		BaseType: render.BaseType{
 			Name:         utils.ToLowerFirstLetter(chanResult.Struct.Name + "Server"),
 			DirectRender: true,
 			PackageName:  ctx.TopPackageName(),
 		},
-		Methods: []render.FuncSignature{
+		Methods: []render.GoFuncSignature{
 			{
 				Name: "Open" + chanResult.Struct.Name,
 				Args: openChannelServerIfaceArgs,
-				Return: []render.FuncParam{
-					{Type: &render.Simple{Name: chanResult.Struct.Name, Package: ctx.TopPackageName()}, Pointer: true},
-					{Type: &render.Simple{Name: "error"}},
+				Return: []render.GoFuncParam{
+					{Type: &render.GoSimple{Name: chanResult.Struct.Name, Package: ctx.TopPackageName()}, Pointer: true},
+					{Type: &render.GoSimple{Name: "error"}},
 				},
 			},
 		},
@@ -87,10 +87,10 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 	// Publisher stuff
 	if channel.Publish != nil && !channel.Publish.XIgnore {
 		ctx.Logger.Trace("Channel publish operation", "proto", pb.ProtoName)
-		chanResult.Struct.Fields = append(chanResult.Struct.Fields, render.StructField{
+		chanResult.Struct.Fields = append(chanResult.Struct.Fields, render.GoStructField{
 			Name:        "publisher",
 			Description: channel.Publish.Description,
-			Type: &render.Simple{
+			Type: &render.GoSimple{
 				Name:    "Publisher",
 				Package: ctx.RuntimePackage(pb.ProtoName),
 				IsIface: true,
@@ -103,11 +103,11 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 			chanResult.PubMessagePromise = render.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
 			ctx.PutPromise(chanResult.PubMessagePromise)
 		}
-		chanResult.ServerIface.Methods = append(chanResult.ServerIface.Methods, render.FuncSignature{
+		chanResult.ServerIface.Methods = append(chanResult.ServerIface.Methods, render.GoFuncSignature{
 			Name: "Producer",
 			Args: nil,
-			Return: []render.FuncParam{
-				{Type: &render.Simple{Name: "Producer", Package: ctx.RuntimePackage(pb.ProtoName), IsIface: true}},
+			Return: []render.GoFuncParam{
+				{Type: &render.GoSimple{Name: "Producer", Package: ctx.RuntimePackage(pb.ProtoName), IsIface: true}},
 			},
 		})
 	}
@@ -115,10 +115,10 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 	// Subscriber stuff
 	if channel.Subscribe != nil && !channel.Subscribe.XIgnore {
 		ctx.Logger.Trace("Channel subscribe operation", "proto", pb.ProtoName)
-		chanResult.Struct.Fields = append(chanResult.Struct.Fields, render.StructField{
+		chanResult.Struct.Fields = append(chanResult.Struct.Fields, render.GoStructField{
 			Name:        "subscriber",
 			Description: channel.Subscribe.Description,
-			Type: &render.Simple{
+			Type: &render.GoSimple{
 				Name:    "Subscriber",
 				Package: ctx.RuntimePackage(pb.ProtoName),
 				IsIface: true,
@@ -131,11 +131,11 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 			chanResult.SubMessagePromise = render.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
 			ctx.PutPromise(chanResult.SubMessagePromise)
 		}
-		chanResult.ServerIface.Methods = append(chanResult.ServerIface.Methods, render.FuncSignature{
+		chanResult.ServerIface.Methods = append(chanResult.ServerIface.Methods, render.GoFuncSignature{
 			Name: "Consumer",
 			Args: nil,
-			Return: []render.FuncParam{
-				{Type: &render.Simple{Name: "Consumer", Package: ctx.RuntimePackage(pb.ProtoName), IsIface: true}},
+			Return: []render.GoFuncParam{
+				{Type: &render.GoSimple{Name: "Consumer", Package: ctx.RuntimePackage(pb.ProtoName), IsIface: true}},
 			},
 		})
 	}
@@ -153,7 +153,7 @@ func (pb BaseProtoBuilder) BuildBaseProtoServer(
 		Name:            srvName,
 		URL:             server.URL,
 		ProtocolVersion: server.ProtocolVersion,
-		Struct: &render.Struct{
+		Struct: &render.GoStruct{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(srvName, ""),
 				Description:  server.Description,
@@ -192,16 +192,16 @@ func (pb BaseProtoBuilder) BuildBaseProtoServer(
 
 	// Producer/consumer
 	ctx.Logger.Trace("Server producer", "proto", pb.ProtoName)
-	fld := render.StructField{
+	fld := render.GoStructField{
 		Name: "producer",
-		Type: &render.Simple{Name: "Producer", Package: ctx.RuntimePackage(pb.ProtoName), IsIface: true},
+		Type: &render.GoSimple{Name: "Producer", Package: ctx.RuntimePackage(pb.ProtoName), IsIface: true},
 	}
 	srvResult.Struct.Fields = append(srvResult.Struct.Fields, fld)
 
 	ctx.Logger.Trace("Server consumer", "proto", pb.ProtoName)
-	fld = render.StructField{
+	fld = render.GoStructField{
 		Name: "consumer",
-		Type: &render.Simple{Name: "Consumer", Package: ctx.RuntimePackage(pb.ProtoName), IsIface: true},
+		Type: &render.GoSimple{Name: "Consumer", Package: ctx.RuntimePackage(pb.ProtoName), IsIface: true},
 	}
 	srvResult.Struct.Fields = append(srvResult.Struct.Fields, fld)
 

@@ -6,14 +6,14 @@ import (
 	"github.com/dave/jennifer/jen"
 )
 
-type Map struct {
+type GoMap struct {
 	BaseType
 	KeyType   common.GolangType
 	ValueType common.GolangType
 }
 
-func (m *Map) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("Map", m.PackageName, m.Name, "definition", m.DirectRendering())
+func (m GoMap) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("GoMap", m.PackageName, m.Name, "definition", m.DirectRendering())
 	defer ctx.LogReturn()
 
 	var res []*jen.Statement
@@ -29,8 +29,8 @@ func (m *Map) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	return res
 }
 
-func (m *Map) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("Map", m.PackageName, m.Name, "usage", m.DirectRendering())
+func (m GoMap) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("GoMap", m.PackageName, m.Name, "usage", m.DirectRendering())
 	defer ctx.LogReturn()
 
 	if m.DirectRender {
@@ -45,6 +45,6 @@ func (m *Map) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 	return []*jen.Statement{jen.Map((&jen.Statement{}).Add(keyType...)).Add(valueType...)}
 }
 
-func (m *Map) IsCollection() bool {
+func (m GoMap) IsCollection() bool {
 	return true
 }

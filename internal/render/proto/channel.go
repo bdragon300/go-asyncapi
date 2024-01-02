@@ -14,8 +14,8 @@ type BaseProtoChannel struct {
 	Name            string // TODO: move fields to abstract channel
 	Publisher       bool
 	Subscriber      bool
-	Struct          *render.Struct
-	ServerIface     *render.Interface
+	Struct          *render.GoStruct
+	ServerIface     *render.GoInterface
 	AbstractChannel *render.Channel
 
 	PubMessagePromise   *render.Promise[*render.Message] // nil when message is not set
@@ -27,7 +27,7 @@ type BaseProtoChannel struct {
 
 func (pc BaseProtoChannel) RenderCommonSubscriberMethods(
 	ctx *common.RenderContext,
-	channelStruct *render.Struct,
+	channelStruct *render.GoStruct,
 	subMessagePromise *render.Promise[*render.Message],
 	fallbackMessageType common.GolangType,
 ) []*j.Statement {
@@ -35,9 +35,9 @@ func (pc BaseProtoChannel) RenderCommonSubscriberMethods(
 
 	rn := channelStruct.ReceiverName()
 	receiver := j.Id(rn).Id(channelStruct.Name)
-	var msgTyp common.GolangType = render.Pointer{Type: fallbackMessageType, DirectRender: true}
+	var msgTyp common.GolangType = render.GoPointer{Type: fallbackMessageType, DirectRender: true}
 	if subMessagePromise != nil {
-		msgTyp = render.Pointer{Type: subMessagePromise.Target().InStruct, DirectRender: true}
+		msgTyp = render.GoPointer{Type: subMessagePromise.Target().InStruct, DirectRender: true}
 	}
 
 	return []*j.Statement{
@@ -83,7 +83,7 @@ func (pc BaseProtoChannel) RenderCommonSubscriberMethods(
 
 func (pc BaseProtoChannel) RenderCommonPublisherMethods(
 	ctx *common.RenderContext,
-	channelStruct *render.Struct,
+	channelStruct *render.GoStruct,
 ) []*j.Statement {
 	ctx.Logger.Trace("RenderCommonPublisherMethods", "proto", pc.ProtoName)
 
@@ -114,7 +114,7 @@ func (pc BaseProtoChannel) RenderCommonPublisherMethods(
 
 func (pc BaseProtoChannel) RenderCommonMethods(
 	ctx *common.RenderContext,
-	channelStruct *render.Struct,
+	channelStruct *render.GoStruct,
 	publisher, subscriber bool,
 ) []*j.Statement {
 	ctx.Logger.Trace("RenderCommonMethods", "proto", pc.ProtoName)
@@ -150,10 +150,10 @@ func (pc BaseProtoChannel) RenderCommonMethods(
 
 func (pc BaseProtoChannel) RenderOpenFunc(
 	ctx *common.RenderContext,
-	channelStruct *render.Struct,
+	channelStruct *render.GoStruct,
 	channelName string,
-	serverIface *render.Interface,
-	parametersStruct, bindingsStruct *render.Struct,
+	serverIface *render.GoInterface,
+	parametersStruct, bindingsStruct *render.GoStruct,
 	publisher, subscriber bool,
 ) []*j.Statement {
 	ctx.Logger.Trace("RenderOpenFunc", "proto", pc.ProtoName)

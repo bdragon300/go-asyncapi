@@ -33,7 +33,7 @@ func (b *Bindings) String() string {
 
 func (b *Bindings) RenderBindingsMethod(
 	ctx *common.RenderContext,
-	bindingsStruct *Struct,
+	bindingsStruct *GoStruct,
 	protoName, protoAbbr string,
 ) []*j.Statement {
 	ctx.LogRender("Bindings.RenderBindingsMethod", "", bindingsStruct.Name, "definition", false)
@@ -64,7 +64,7 @@ func (b *Bindings) RenderBindingsMethod(
 
 func renderChannelAndOperationBindingsMethod(
 	ctx *common.RenderContext,
-	bindingsStruct *Struct,
+	bindingsStruct *GoStruct,
 	channelBindings, publishBindings, subscribeBindings *Bindings,
 	protoName, protoAbbr string,
 ) []*j.Statement {
@@ -78,7 +78,7 @@ func renderChannelAndOperationBindingsMethod(
 			Params().
 			Qual(ctx.RuntimePackage(protoName), "ChannelBindings").
 			BlockFunc(func(bg *j.Group) {
-				cb := &GoValue{Type: &Simple{Name: "ChannelBindings", Package: ctx.RuntimePackage(protoName)}, NilCurlyBrakets: true}
+				cb := &GoValue{Type: &GoSimple{Name: "ChannelBindings", Package: ctx.RuntimePackage(protoName)}, NilCurlyBrakets: true}
 				if channelBindings != nil {
 					if b, ok := channelBindings.Values.Get(protoName); ok {
 						ctx.Logger.Debug("Channel bindings", "proto", protoName)

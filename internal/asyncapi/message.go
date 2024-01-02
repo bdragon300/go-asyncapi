@@ -52,7 +52,7 @@ func (m Message) Compile(ctx *common.CompileContext) error {
 func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Renderer, error) {
 	if m.XIgnore {
 		ctx.Logger.Debug("Message denoted to be ignored")
-		return &render.Simple{Name: "any", IsIface: true}, nil
+		return &render.GoSimple{Name: "any", IsIface: true}, nil
 	}
 	if m.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", m.Ref)
@@ -70,7 +70,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	objName, _ := lo.Coalesce(m.XGoName, messageKey)
 	obj := render.Message{
 		Name: objName,
-		OutStruct: &render.Struct{
+		OutStruct: &render.GoStruct{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(m.Name, "Out"),
 				Description:  utils.JoinNonemptyStrings("\n", m.Summary+" (Outbound Message)", m.Description),
@@ -78,7 +78,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 				PackageName:  ctx.TopPackageName(),
 			},
 		},
-		InStruct: &render.Struct{
+		InStruct: &render.GoStruct{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(m.Name, "In"),
 				Description:  utils.JoinNonemptyStrings("\n", m.Summary+" (Inbound Message)", m.Description),
@@ -88,7 +88,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		},
 		PayloadType:         m.getPayloadType(ctx),
 		PayloadHasSchema:    m.Payload != nil && m.Payload.Ref == "",
-		HeadersFallbackType: &render.Map{KeyType: &render.Simple{Name: "string"}, ValueType: &render.Simple{Name: "any", IsIface: true}},
+		HeadersFallbackType: &render.GoMap{KeyType: &render.GoSimple{Name: "string"}, ValueType: &render.GoSimple{Name: "any", IsIface: true}},
 	}
 	obj.ContentType, _ = lo.Coalesce(m.ContentType, ctx.Storage.DefaultContentType())
 	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", obj.ContentType))
@@ -105,7 +105,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	if m.Headers != nil {
 		ctx.Logger.Trace("Message headers")
 		ref := ctx.PathRef() + "/headers"
-		obj.HeadersTypePromise = render.NewPromise[*render.Struct](ref, common.PromiseOriginInternal)
+		obj.HeadersTypePromise = render.NewPromise[*render.GoStruct](ref, common.PromiseOriginInternal)
 		ctx.PutPromise(obj.HeadersTypePromise)
 	}
 	m.setStructFields(ctx, &obj)
@@ -113,7 +113,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	// Bindings
 	if m.Bindings != nil {
 		ctx.Logger.Trace("Message bindings")
-		obj.BindingsStruct = &render.Struct{
+		obj.BindingsStruct = &render.GoStruct{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(m.Name, "Bindings"),
 				DirectRender: true,
@@ -138,17 +138,17 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 }
 
 func (m Message) setStructFields(ctx *common.CompileContext, langMessage *render.Message) {
-	fields := []render.StructField{
+	fields := []render.GoStructField{
 		{Name: "Payload", Type: langMessage.PayloadType},
 	}
 	if langMessage.HeadersTypePromise != nil {
 		ctx.Logger.Trace("Message headers has a concrete type")
 		prm := render.NewGolangTypePromise(langMessage.HeadersTypePromise.Ref(), common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
-		fields = append(fields, render.StructField{Name: "Headers", Type: prm})
+		fields = append(fields, render.GoStructField{Name: "Headers", Type: prm})
 	} else {
 		ctx.Logger.Trace("Message headers has `any` type")
-		fields = append(fields, render.StructField{Name: "Headers", Type: langMessage.HeadersFallbackType})
+		fields = append(fields, render.GoStructField{Name: "Headers", Type: langMessage.HeadersFallbackType})
 	}
 
 	langMessage.OutStruct.Fields = fields
@@ -165,7 +165,7 @@ func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 	}
 
 	ctx.Logger.Trace("Message payload has `any` type")
-	return &render.Simple{Name: "any", IsIface: true}
+	return &render.GoSimple{Name: "any", IsIface: true}
 }
 
 type Tag struct {

@@ -52,25 +52,25 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 		ctx.Logger.Trace("Parameter schema")
 		prm := render.NewGolangTypePromise(path.Join(ctx.PathRef(), "schema"), common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
-		res.Type = &render.Struct{
+		res.Type = &render.GoStruct{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(parName, ""),
 				Description:  p.Description,
 				DirectRender: true,
 				PackageName:  ctx.TopPackageName(),
 			},
-			Fields: []render.StructField{{Name: "Value", Type: prm}},
+			Fields: []render.GoStructField{{Name: "Value", Type: prm}},
 		}
 	} else {
 		ctx.Logger.Trace("Parameter has no schema")
-		res.Type = &render.TypeAlias{
+		res.Type = &render.GoTypeAlias{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(parName, ""),
 				Description:  p.Description,
 				DirectRender: true,
 				PackageName:  ctx.TopPackageName(),
 			},
-			AliasedType: &render.Simple{Name: "string"},
+			AliasedType: &render.GoSimple{Name: "string"},
 		}
 		res.PureString = true
 	}

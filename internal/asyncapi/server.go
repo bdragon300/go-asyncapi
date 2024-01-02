@@ -44,7 +44,7 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Renderer, error) {
 	if s.XIgnore {
 		ctx.Logger.Debug("Server denoted to be ignored")
-		return &render.Simple{Name: "any", IsIface: true}, nil
+		return &render.GoSimple{Name: "any", IsIface: true}, nil
 	}
 	if s.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", s.Ref)
@@ -63,7 +63,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 
 	if s.Bindings != nil {
 		ctx.Logger.Trace("Server bindings")
-		res.BindingsStruct = &render.Struct{
+		res.BindingsStruct = &render.GoStruct{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(srvName, "Bindings"),
 				DirectRender: true,

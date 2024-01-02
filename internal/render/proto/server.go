@@ -19,7 +19,7 @@ type BaseProtoServer struct {
 	Name            string // TODO: move fields to abstract server
 	URL             string
 	ProtocolVersion string
-	Struct          *render.Struct
+	Struct          *render.GoStruct
 	ChannelsPromise *render.ListPromise[*render.Channel]
 	Variables       types.OrderedMap[string, ServerVariable]
 
@@ -58,7 +58,7 @@ func (ps BaseProtoServer) RenderProducerMethods(ctx *common.RenderContext) []*j.
 	}
 }
 
-func (ps BaseProtoServer) RenderOpenChannelMethod(ctx *common.RenderContext, channelStruct *render.Struct, channel common.Renderer, channelParametersStructNoRender *render.Struct) []*j.Statement {
+func (ps BaseProtoServer) RenderOpenChannelMethod(ctx *common.RenderContext, channelStruct *render.GoStruct, channel common.Renderer, channelParametersStructNoRender *render.GoStruct) []*j.Statement {
 	ctx.Logger.Trace("RenderOpenChannelMethod", "proto", ps.ProtoName)
 
 	rn := ps.Struct.ReceiverName()

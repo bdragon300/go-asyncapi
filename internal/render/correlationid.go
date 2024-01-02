@@ -38,7 +38,7 @@ func (c CorrelationID) RenderSetterDefinition(ctx *common.RenderContext, message
 	ctx.LogRender("CorrelationID.RenderSetterDefinition", "", c.Name, "definition", false)
 	defer ctx.LogReturn()
 
-	f, ok := lo.Find(message.OutStruct.Fields, func(item StructField) bool { return item.Name == c.StructField })
+	f, ok := lo.Find(message.OutStruct.Fields, func(item GoStructField) bool { return item.Name == c.StructField })
 	if !ok {
 		// FIXME: output error without panic
 		panic(fmt.Sprintf("Field %s not found in OutStruct", c.StructField))
@@ -79,7 +79,7 @@ func (c CorrelationID) RenderGetterDefinition(ctx *common.RenderContext, message
 	ctx.LogRender("CorrelationID.RenderGetterDefinition", "", c.Name, "definition", false)
 	defer ctx.LogReturn()
 
-	f, ok := lo.Find(message.InStruct.Fields, func(item StructField) bool { return item.Name == c.StructField })
+	f, ok := lo.Find(message.InStruct.Fields, func(item GoStructField) bool { return item.Name == c.StructField })
 	if !ok {
 		// FIXME: output error without panic
 		panic(fmt.Sprintf("Field %s not found in InStruct", c.StructField))
@@ -141,9 +141,9 @@ func (c CorrelationID) renderMemberExtractionCode(
 		memberName := path[pathIdx]
 
 		switch typ := baseType.(type) {
-		case *Struct:
-			ctx.Logger.Trace("In Struct", "path", path[:pathIdx], "name", typ.String(), "member", memberName)
-			fld, ok := lo.Find(typ.Fields, func(item StructField) bool { return item.MarshalName == memberName })
+		case *GoStruct:
+			ctx.Logger.Trace("In GoStruct", "path", path[:pathIdx], "name", typ.String(), "member", memberName)
+			fld, ok := lo.Find(typ.Fields, func(item GoStructField) bool { return item.MarshalName == memberName })
 			if !ok {
 				err = fmt.Errorf("field %q not found, path: /%s", memberName, strings.Join(path[:pathIdx], "/"))
 				return
@@ -151,9 +151,9 @@ func (c CorrelationID) renderMemberExtractionCode(
 			varValueStmts = j.Id(anchor).Dot(fld.Name)
 			baseType = fld.Type
 			body = []*j.Statement{j.Id(nextAnchor).Op(":=").Add(varValueStmts)}
-		case *Map:
+		case *GoMap:
 			// TODO: x-parameter in correlationIDs spec section to set numbers as "0" for string keys or 0 for int keys
-			ctx.Logger.Trace("In Map", "path", path[:pathIdx], "name", typ.String(), "member", memberName)
+			ctx.Logger.Trace("In GoMap", "path", path[:pathIdx], "name", typ.String(), "member", memberName)
 			varValueStmts = j.Id(anchor).Index(j.Lit(memberName))
 			baseType = typ.ValueType
 			varExpr := j.Var().Id(nextAnchor).Add(utils.ToCode(typ.ValueType.RenderUsage(ctx))...)
@@ -181,8 +181,8 @@ func (c CorrelationID) renderMemberExtractionCode(
 				varExpr,
 				ifExpr,
 			}
-		case *Array:
-			ctx.Logger.Trace("In Array", "path", path[:pathIdx], "name", typ.String(), "member", memberName)
+		case *GoArray:
+			ctx.Logger.Trace("In GoArray", "path", path[:pathIdx], "name", typ.String(), "member", memberName)
 			varValueStmts = j.Id(anchor).Index(j.Lit(memberName))
 			baseType = typ.ItemsType
 			body = []*j.Statement{j.Id(nextAnchor).Op(":=").Add(varValueStmts)}
@@ -196,8 +196,8 @@ func (c CorrelationID) renderMemberExtractionCode(
 					j.Return(),
 				))
 			}
-		case *Simple: // Should be a terminal type in chain, raise error otherwise (if any path parts left to resolve)
-			ctx.Logger.Trace("In Simple", "path", path[:pathIdx], "name", typ.String(), "member", memberName)
+		case *GoSimple: // Should be a terminal type in chain, raise error otherwise (if any path parts left to resolve)
+			ctx.Logger.Trace("In GoSimple", "path", path[:pathIdx], "name", typ.String(), "member", memberName)
 			if pathIdx >= len(path)-1 { // Primitive types should get addressed by the last path item
 				err = fmt.Errorf(
 					"type %q doesn't contain addressable elements, path: /%s",

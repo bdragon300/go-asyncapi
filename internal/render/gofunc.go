@@ -10,22 +10,22 @@ import (
 	"github.com/samber/lo"
 )
 
-type FuncSignature struct {
+type GoFuncSignature struct {
 	Name   string
-	Args   []FuncParam
-	Return []FuncParam
+	Args   []GoFuncParam
+	Return []GoFuncParam
 }
 
-func (f FuncSignature) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("FuncSignature", "", f.Name, "definition", false)
+func (f GoFuncSignature) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("GoFuncSignature", "", f.Name, "definition", false)
 	defer ctx.LogReturn()
 
 	stmt := jen.Id(f.Name)
-	code := lo.FlatMap(f.Args, func(item FuncParam, index int) []*jen.Statement {
+	code := lo.FlatMap(f.Args, func(item GoFuncParam, index int) []*jen.Statement {
 		return item.renderDefinition(ctx)
 	})
 	stmt = stmt.Params(utils.ToCode(code)...)
-	code = lo.FlatMap(f.Return, func(item FuncParam, index int) []*jen.Statement {
+	code = lo.FlatMap(f.Return, func(item GoFuncParam, index int) []*jen.Statement {
 		return item.renderDefinition(ctx)
 	})
 	if len(code) > 1 {
@@ -36,41 +36,41 @@ func (f FuncSignature) RenderDefinition(ctx *common.RenderContext) []*jen.Statem
 	return []*jen.Statement{stmt}
 }
 
-func (f FuncSignature) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("FuncSignature", "", f.Name, "usage", false)
+func (f GoFuncSignature) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("GoFuncSignature", "", f.Name, "usage", false)
 	defer ctx.LogReturn()
 	return []*jen.Statement{jen.Id(f.Name)}
 }
 
-func (f FuncSignature) String() string {
+func (f GoFuncSignature) String() string {
 	ret := ""
 	switch {
 	case len(f.Return) == 1:
 		ret = f.Return[0].String()
 	case len(f.Return) > 1:
-		ret = strings.Join(lo.Map(f.Return, func(item FuncParam, _ int) string { return item.String() }), ", ")
+		ret = strings.Join(lo.Map(f.Return, func(item GoFuncParam, _ int) string { return item.String() }), ", ")
 	}
-	args := strings.Join(lo.Map(f.Return, func(item FuncParam, _ int) string { return item.String() }), ", ")
+	args := strings.Join(lo.Map(f.Return, func(item GoFuncParam, _ int) string { return item.String() }), ", ")
 	return fmt.Sprintf("%s(%s)%s", f.Name, args, ret)
 }
 
-func (f FuncSignature) DirectRendering() bool {
+func (f GoFuncSignature) DirectRendering() bool {
 	return false
 }
 
-func (f FuncSignature) TypeName() string {
+func (f GoFuncSignature) TypeName() string {
 	return f.Name
 }
 
-type FuncParam struct {
+type GoFuncParam struct {
 	Name     string
 	Type     common.GolangType
 	Pointer  bool
 	Variadic bool
 }
 
-func (n FuncParam) renderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("FuncParam", "", n.Name, "definition", false)
+func (n GoFuncParam) renderDefinition(ctx *common.RenderContext) []*jen.Statement {
+	ctx.LogRender("GoFuncParam", "", n.Name, "definition", false)
 	defer ctx.LogReturn()
 
 	stmt := &jen.Statement{}
@@ -87,6 +87,6 @@ func (n FuncParam) renderDefinition(ctx *common.RenderContext) []*jen.Statement 
 	return []*jen.Statement{stmt}
 }
 
-func (n FuncParam) String() string {
+func (n GoFuncParam) String() string {
 	return n.Type.String() + " " + n.Type.String()
 }
