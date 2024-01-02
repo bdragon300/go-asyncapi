@@ -1,11 +1,10 @@
-package http
+package amqp
 
 import (
 	"context"
 	"io"
-	"net/http"
 
-	"github.com/bdragon300/asyncapi-codegen-go/pkg/run"
+	"github.com/bdragon300/asyncapi-codegen-go/run"
 )
 
 // Pub
@@ -24,12 +23,12 @@ type (
 		SetContentType(contentType string)
 		SetBindings(bindings MessageBindings)
 
-		SetPath(path string)
+		SetDeliveryTag(tag string)
 	}
 )
 
 type EnvelopeMarshaler interface {
-	MarshalHTTPEnvelope(envelope EnvelopeWriter) error
+	MarshalAMQPEnvelope(envelope EnvelopeWriter) error
 }
 
 // Sub
@@ -45,11 +44,12 @@ type (
 		io.Reader
 		Headers() run.Headers
 
-		ResponseWriter() http.ResponseWriter
-		RespondError(code int, error string)
+		Ack() error
+		Nack(requeue bool) error
+		Reject(requeue bool) error
 	}
 )
 
 type EnvelopeUnmarshaler interface {
-	UnmarshalHTTPEnvelope(envelope EnvelopeReader) error
+	UnmarshalAMQPEnvelope(envelope EnvelopeReader) error
 }

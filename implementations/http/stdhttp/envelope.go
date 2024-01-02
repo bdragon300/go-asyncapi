@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/bdragon300/asyncapi-codegen-go/pkg/run"
-	runHttp "github.com/bdragon300/asyncapi-codegen-go/pkg/run/http"
+	"github.com/bdragon300/asyncapi-codegen-go/run"
+	runHttp "github.com/bdragon300/asyncapi-codegen-go/run/http"
 )
 
 func NewEnvelopeOut() *EnvelopeOut {

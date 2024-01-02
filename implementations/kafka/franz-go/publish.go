@@ -6,12 +6,13 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/bdragon300/asyncapi-codegen-go/pkg/run/kafka"
+	runKafka "github.com/bdragon300/asyncapi-codegen-go/run/kafka"
+
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kversion"
 )
 
-func NewProducer(serverURL string, bindings *kafka.ServerBindings) (*ProduceClient, error) {
+func NewProducer(serverURL string, bindings *runKafka.ServerBindings) (*ProduceClient, error) {
 	return &ProduceClient{
 		URL:      serverURL,
 		Bindings: bindings,
@@ -20,11 +21,11 @@ func NewProducer(serverURL string, bindings *kafka.ServerBindings) (*ProduceClie
 
 type ProduceClient struct {
 	URL       string
-	Bindings  *kafka.ServerBindings
+	Bindings  *runKafka.ServerBindings
 	ExtraOpts []kgo.Opt
 }
 
-func (p ProduceClient) Publisher(channelName string, bindings *kafka.ChannelBindings) (kafka.Publisher, error) {
+func (p ProduceClient) Publisher(channelName string, bindings *runKafka.ChannelBindings) (runKafka.Publisher, error) {
 	// TODO: schema registry https://github.com/twmb/franz-go/blob/master/examples/schema_registry/schema_registry.go
 	var opts []kgo.Opt
 
@@ -58,10 +59,10 @@ func (p ProduceClient) Publisher(channelName string, bindings *kafka.ChannelBind
 type PublishClient struct {
 	*kgo.Client
 	Topic    string
-	bindings *kafka.ChannelBindings
+	bindings *runKafka.ChannelBindings
 }
 
-func (p PublishClient) Send(ctx context.Context, envelopes ...kafka.EnvelopeWriter) error {
+func (p PublishClient) Send(ctx context.Context, envelopes ...runKafka.EnvelopeWriter) error {
 	rs := make([]*kgo.Record, 0, len(envelopes))
 	for _, e := range envelopes {
 		rs = append(rs, e.(*EnvelopeOut).Record)

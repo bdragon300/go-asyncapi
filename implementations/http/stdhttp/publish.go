@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/bdragon300/asyncapi-codegen-go/pkg/run"
-	runHttp "github.com/bdragon300/asyncapi-codegen-go/pkg/run/http"
+	"github.com/bdragon300/asyncapi-codegen-go/run"
+	runHttp "github.com/bdragon300/asyncapi-codegen-go/run/http"
 )
 
 func NewProducer(serverURL string, bindings *runHttp.ServerBindings) (*ProduceClient, error) {

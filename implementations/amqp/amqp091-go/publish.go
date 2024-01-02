@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bdragon300/asyncapi-codegen-go/pkg/run"
-	"github.com/bdragon300/asyncapi-codegen-go/pkg/run/amqp"
+	"github.com/bdragon300/asyncapi-codegen-go/run"
+	runAmqp "github.com/bdragon300/asyncapi-codegen-go/run/amqp"
+
 	amqp091 "github.com/rabbitmq/amqp091-go"
 )
 
-func NewProducer(serverURL string, bindings *amqp.ServerBindings) (*ProduceClient, error) {
+func NewProducer(serverURL string, bindings *runAmqp.ServerBindings) (*ProduceClient, error) {
 	conn, err := amqp091.Dial(serverURL)
 	if err != nil {
 		return nil, err
@@ -24,10 +25,10 @@ func NewProducer(serverURL string, bindings *amqp.ServerBindings) (*ProduceClien
 
 type ProduceClient struct {
 	*amqp091.Connection
-	Bindings *amqp.ServerBindings
+	Bindings *runAmqp.ServerBindings
 }
 
-func (p ProduceClient) Publisher(channelName string, bindings *amqp.ChannelBindings) (amqp.Publisher, error) {
+func (p ProduceClient) Publisher(channelName string, bindings *runAmqp.ChannelBindings) (runAmqp.Publisher, error) {
 	ch, err := p.Channel()
 	if err != nil {
 		return nil, err
@@ -36,7 +37,7 @@ func (p ProduceClient) Publisher(channelName string, bindings *amqp.ChannelBindi
 	ec := bindings.ExchangeConfiguration
 	declare := ec.Type != "" || ec.Durable != nil || ec.AutoDelete != nil || ec.VHost != ""
 	var exchangeName string // By default, publish to the default exchange with empty name
-	if bindings.ChannelType == amqp.ChannelTypeRoutingKey {
+	if bindings.ChannelType == runAmqp.ChannelTypeRoutingKey {
 		exchangeName = channelName
 	}
 	if ec.Name != nil {
@@ -69,10 +70,10 @@ type PublishClient struct {
 	*amqp091.Channel
 	routingKey   string
 	exchangeName string
-	bindings     *amqp.ChannelBindings
+	bindings     *runAmqp.ChannelBindings
 }
 
-func (p PublishClient) Send(ctx context.Context, envelopes ...amqp.EnvelopeWriter) error {
+func (p PublishClient) Send(ctx context.Context, envelopes ...runAmqp.EnvelopeWriter) error {
 	var err error
 	for _, envelope := range envelopes {
 		e := envelope.(*EnvelopeOut)

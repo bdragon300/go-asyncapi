@@ -1,6 +1,6 @@
 package common
 
-const RunPackagePath = "github.com/bdragon300/asyncapi-codegen-go/pkg/run"
+const RunPackagePath = "github.com/bdragon300/asyncapi-codegen-go/run"
 
 type PromiseOrigin int
 

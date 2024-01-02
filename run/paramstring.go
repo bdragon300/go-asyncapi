@@ -1,6 +1,8 @@
 package run
 
-import "github.com/bdragon300/asyncapi-codegen-go/pkg/run/3rdparty/uritemplates"
+import (
+	"github.com/bdragon300/asyncapi-codegen-go/run/3rdparty/uritemplates"
+)
 
 type ParamString struct {
 	Expr       string

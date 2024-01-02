@@ -7,7 +7,7 @@ run:
   timeout: 5m
   modules-download-mode: readonly
   skip-dirs:
-    - pkg/run/3rdparty
+    - run/3rdparty
 
 linters:
   enable:

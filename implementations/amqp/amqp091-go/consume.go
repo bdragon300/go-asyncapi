@@ -7,12 +7,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bdragon300/asyncapi-codegen-go/pkg/run"
-	"github.com/bdragon300/asyncapi-codegen-go/pkg/run/amqp"
+	"github.com/bdragon300/asyncapi-codegen-go/run"
+	runAmqp "github.com/bdragon300/asyncapi-codegen-go/run/amqp"
+
 	amqp091 "github.com/rabbitmq/amqp091-go"
 )
 
-func NewConsumer(url string, bindings *amqp.ServerBindings) (*ConsumeClient, error) {
+func NewConsumer(url string, bindings *runAmqp.ServerBindings) (*ConsumeClient, error) {
 	conn, err := amqp091.Dial(url)
 	if err != nil {
 		return nil, err
@@ -25,10 +26,10 @@ func NewConsumer(url string, bindings *amqp.ServerBindings) (*ConsumeClient, err
 
 type ConsumeClient struct {
 	*amqp091.Connection
-	Bindings *amqp.ServerBindings
+	Bindings *runAmqp.ServerBindings
 }
 
-func (c ConsumeClient) Subscriber(channelName string, bindings *amqp.ChannelBindings) (amqp.Subscriber, error) {
+func (c ConsumeClient) Subscriber(channelName string, bindings *runAmqp.ChannelBindings) (runAmqp.Subscriber, error) {
 	ch, err := c.Channel()
 	if err != nil {
 		return nil, err
@@ -37,7 +38,7 @@ func (c ConsumeClient) Subscriber(channelName string, bindings *amqp.ChannelBind
 	qc := bindings.QueueConfiguration
 	declare := qc.Durable != nil || qc.Exclusive != nil || qc.AutoDelete != nil || qc.VHost != ""
 	var queueName string
-	if bindings.ChannelType == amqp.ChannelTypeQueue {
+	if bindings.ChannelType == runAmqp.ChannelTypeQueue {
 		queueName = channelName
 	}
 	if qc.Name != "" {
@@ -72,10 +73,10 @@ func (c ConsumeClient) Subscriber(channelName string, bindings *amqp.ChannelBind
 type SubscribeClient struct {
 	*amqp091.Channel
 	queueName string
-	bindings  *amqp.ChannelBindings
+	bindings  *runAmqp.ChannelBindings
 }
 
-func (s SubscribeClient) Receive(ctx context.Context, cb func(envelope amqp.EnvelopeReader) error) (err error) {
+func (s SubscribeClient) Receive(ctx context.Context, cb func(envelope runAmqp.EnvelopeReader) error) (err error) {
 	// TODO: consumer tag in x- schema argument
 	consumerTag := fmt.Sprintf("consumer-%s", time.Now().Format(time.RFC3339))
 	deliveries, err := s.ConsumeWithContext(

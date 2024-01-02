@@ -3,8 +3,9 @@ package amqp091go
 import (
 	"io"
 
-	"github.com/bdragon300/asyncapi-codegen-go/pkg/run"
-	"github.com/bdragon300/asyncapi-codegen-go/pkg/run/amqp"
+	"github.com/bdragon300/asyncapi-codegen-go/run"
+	runAmqp "github.com/bdragon300/asyncapi-codegen-go/run/amqp"
+
 	amqp091 "github.com/rabbitmq/amqp091-go"
 )
 
@@ -36,7 +37,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.ContentType = contentType
 }
 
-func (e *EnvelopeOut) SetBindings(bindings amqp.MessageBindings) {
+func (e *EnvelopeOut) SetBindings(bindings runAmqp.MessageBindings) {
 	e.Publishing.ContentEncoding = bindings.ContentEncoding
 	e.Type = bindings.MessageType
 }
