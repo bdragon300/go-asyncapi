@@ -35,7 +35,7 @@ func (c CorrelationID) String() string {
 }
 
 func (c CorrelationID) RenderSetterDefinition(ctx *common.RenderContext, message *Message) []*j.Statement {
-	ctx.LogRender("CorrelationID_Setter", "", c.Name, "definition", false)
+	ctx.LogRender("CorrelationID.RenderSetterDefinition", "", c.Name, "definition", false)
 	defer ctx.LogReturn()
 
 	f, ok := lo.Find(message.OutStruct.Fields, func(item StructField) bool { return item.Name == c.StructField })
@@ -76,7 +76,7 @@ func (c CorrelationID) RenderSetterDefinition(ctx *common.RenderContext, message
 }
 
 func (c CorrelationID) RenderGetterDefinition(ctx *common.RenderContext, message *Message) []*j.Statement {
-	ctx.LogRender("CorrelationID_Getter", "", c.Name, "definition", false)
+	ctx.LogRender("CorrelationID.RenderGetterDefinition", "", c.Name, "definition", false)
 	defer ctx.LogReturn()
 
 	f, ok := lo.Find(message.InStruct.Fields, func(item StructField) bool { return item.Name == c.StructField })

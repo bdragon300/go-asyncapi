@@ -40,7 +40,9 @@ func (m Message) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 
 		if m.BindingsPromise != nil {
 			tgt := m.BindingsPromise.Target()
-			for _, p := range m.getServerProtocols(ctx) {
+			protocols := m.getServerProtocols(ctx)
+			ctx.Logger.Debug("Message protocols", "protocols", protocols)
+			for _, p := range protocols {
 				protoAbbr := ctx.ProtoRenderers[p].ProtocolAbbreviation()
 				res = append(res, tgt.RenderBindingsMethod(ctx, m.BindingsStruct, p, protoAbbr)...)
 			}
@@ -69,6 +71,8 @@ func (m Message) String() string {
 }
 
 func (m Message) renderPublishMessageStruct(ctx *common.RenderContext) []*j.Statement {
+	ctx.Logger.Trace("renderPublishMessageStruct")
+
 	var res []*j.Statement
 	res = append(res, j.Func().Id(m.OutStruct.NewFuncName()).Params().Op("*").Add(utils.ToCode(m.OutStruct.RenderUsage(ctx))...).Block(
 		j.Return(j.Op("&").Add(utils.ToCode(m.OutStruct.RenderUsage(ctx))...).Values()),
@@ -84,6 +88,8 @@ func (m Message) renderPublishMessageStruct(ctx *common.RenderContext) []*j.Stat
 }
 
 func (m Message) renderPublishCommonMethods(ctx *common.RenderContext) []*j.Statement {
+	ctx.Logger.Trace("renderPublishCommonMethods")
+
 	structName := m.OutStruct.Name
 	rn := m.OutStruct.ReceiverName()
 	receiver := j.Id(rn).Op("*").Id(structName)
@@ -121,6 +127,8 @@ func (m Message) renderPublishCommonMethods(ctx *common.RenderContext) []*j.Stat
 }
 
 func (m Message) renderMarshalEnvelopeMethod(ctx *common.RenderContext, protoName, protoAbbr string) []*j.Statement {
+	ctx.Logger.Trace("renderMarshalEnvelopeMethod")
+
 	rn := m.OutStruct.ReceiverName()
 	receiver := j.Id(rn).Op("*").Id(m.OutStruct.Name)
 
@@ -158,6 +166,8 @@ func (m Message) renderMarshalEnvelopeMethod(ctx *common.RenderContext, protoNam
 }
 
 func (m Message) renderSubscribeMessageStruct(ctx *common.RenderContext) []*j.Statement {
+	ctx.Logger.Trace("renderSubscribeMessageStruct")
+
 	var res []*j.Statement
 	res = append(res, j.Func().Id(m.InStruct.NewFuncName()).Params().Op("*").Add(utils.ToCode(m.InStruct.RenderUsage(ctx))...).Block(
 		j.Return(j.Op("&").Add(utils.ToCode(m.InStruct.RenderUsage(ctx))...).Values()),
@@ -173,6 +183,8 @@ func (m Message) renderSubscribeMessageStruct(ctx *common.RenderContext) []*j.St
 }
 
 func (m Message) renderSubscribeCommonMethods(ctx *common.RenderContext) []*j.Statement {
+	ctx.Logger.Trace("renderSubscribeCommonMethods")
+
 	structName := m.InStruct.Name
 	rn := m.InStruct.ReceiverName()
 	receiver := j.Id(rn).Op("*").Id(structName)
@@ -206,6 +218,8 @@ func (m Message) renderSubscribeCommonMethods(ctx *common.RenderContext) []*j.St
 }
 
 func (m Message) renderUnmarshalEnvelopeMethod(ctx *common.RenderContext, protoName, protoAbbr string) []*j.Statement {
+	ctx.Logger.Trace("renderUnmarshalEnvelopeMethod")
+
 	rn := m.InStruct.ReceiverName()
 	receiver := j.Id(rn).Op("*").Id(m.InStruct.Name)
 

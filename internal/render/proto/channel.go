@@ -31,6 +31,8 @@ func (pc BaseProtoChannel) RenderCommonSubscriberMethods(
 	subMessagePromise *render.Promise[*render.Message],
 	fallbackMessageType common.GolangType,
 ) []*j.Statement {
+	ctx.Logger.Trace("RenderCommonSubscriberMethods", "proto", pc.ProtoName)
+
 	rn := channelStruct.ReceiverName()
 	receiver := j.Id(rn).Id(channelStruct.Name)
 	var msgTyp common.GolangType = render.Pointer{Type: fallbackMessageType, DirectRender: true}
@@ -83,6 +85,8 @@ func (pc BaseProtoChannel) RenderCommonPublisherMethods(
 	ctx *common.RenderContext,
 	channelStruct *render.Struct,
 ) []*j.Statement {
+	ctx.Logger.Trace("RenderCommonPublisherMethods", "proto", pc.ProtoName)
+
 	rn := channelStruct.ReceiverName()
 	receiver := j.Id(rn).Id(channelStruct.Name)
 
@@ -113,6 +117,8 @@ func (pc BaseProtoChannel) RenderCommonMethods(
 	channelStruct *render.Struct,
 	publisher, subscriber bool,
 ) []*j.Statement {
+	ctx.Logger.Trace("RenderCommonMethods", "proto", pc.ProtoName)
+
 	rn := channelStruct.ReceiverName()
 	receiver := j.Id(rn).Id(channelStruct.Name)
 
@@ -150,6 +156,8 @@ func (pc BaseProtoChannel) RenderOpenFunc(
 	parametersStruct, bindingsStruct *render.Struct,
 	publisher, subscriber bool,
 ) []*j.Statement {
+	ctx.Logger.Trace("RenderOpenFunc", "proto", pc.ProtoName)
+
 	return []*j.Statement{
 		// OpenChannel1Proto(params Channel1Parameters, servers ...channel1ProtoServer) (*Channel1Proto, error)
 		j.Func().Id("Open"+channelStruct.Name).

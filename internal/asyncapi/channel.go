@@ -78,7 +78,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 	// Servers which this channel is connected to
 	// Empty servers field means "no servers", omitted servers field means "all servers"
 	if c.Servers != nil {
-		ctx.Logger.Trace("Channel applied to particular servers", "names", *c.Servers)
+		ctx.Logger.Trace("Channel servers", "names", *c.Servers)
 		res.ExplicitServerNames = *c.Servers
 		prm := render.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
 			_, ok := item.(*render.Server)
@@ -88,7 +88,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 		ctx.PutListPromise(prm)
 		res.ServersPromise = prm
 	} else {
-		ctx.Logger.Trace("Channel applied to all servers")
+		ctx.Logger.Trace("Channel for all servers")
 		prm := render.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
 			_, ok := item.(*render.Server)
 			return ok && len(path) > 0 && path[0] == "servers" // Pick only servers from `servers:` section, skip ones from `components:`

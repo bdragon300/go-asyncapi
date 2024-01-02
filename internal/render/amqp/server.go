@@ -15,9 +15,12 @@ func (ps ProtoServer) DirectRendering() bool {
 }
 
 func (ps ProtoServer) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
+	ctx.LogRender("Server", "", ps.Name, "definition", ps.DirectRendering(), "proto", ps.ProtoName)
+	defer ctx.LogReturn()
+
 	var res []*j.Statement
 	if ps.ProtocolVersion != "" {
-		res = append(res, ps.RenderProtocolVersionConst()...)
+		res = append(res, ps.RenderProtocolVersionConst(ctx)...)
 	}
 	res = append(res, ps.RenderURLFunc(ctx)...)
 	res = append(res, ps.RenderNewFunc(ctx)...)
@@ -30,6 +33,8 @@ func (ps ProtoServer) RenderDefinition(ctx *common.RenderContext) []*j.Statement
 }
 
 func (ps ProtoServer) RenderUsage(ctx *common.RenderContext) []*j.Statement {
+	ctx.LogRender("Server", "", ps.Name, "usage", ps.DirectRendering(), "proto", ps.ProtoName)
+	defer ctx.LogReturn()
 	return ps.Struct.RenderUsage(ctx)
 }
 
@@ -38,6 +43,8 @@ func (ps ProtoServer) String() string {
 }
 
 func (ps ProtoServer) renderChannelMethods(ctx *common.RenderContext) []*j.Statement {
+	ctx.Logger.Trace("renderChannelMethods", "proto", ps.ProtoName)
+
 	var res []*j.Statement
 
 	for _, ch := range ps.ChannelsPromise.Targets() {

@@ -38,7 +38,9 @@ func (s UnionStruct) RenderDefinition(ctx *common.RenderContext) []*jen.Statemen
 	return res
 }
 
-func (s UnionStruct) renderMethods(_ *common.RenderContext) []*jen.Statement {
+func (s UnionStruct) renderMethods(ctx *common.RenderContext) []*jen.Statement {
+	ctx.Logger.Trace("renderMethods")
+
 	var res []*jen.Statement
 	receiverName := strings.ToLower(string(s.Struct.Name[0]))
 

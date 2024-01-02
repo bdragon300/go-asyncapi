@@ -34,15 +34,19 @@ func (gv GoValue) RenderDefinition(_ *common.RenderContext) []*j.Statement {
 }
 
 func (gv GoValue) RenderUsage(ctx *common.RenderContext) []*j.Statement {
-	// TODO: logs
+	ctx.LogRender("GoValue", "", "", "usage", gv.DirectRendering(), "type", gv.Type)
+	defer ctx.LogReturn()
+
 	var valueStmt *j.Statement
 	switch {
 	case gv.Literal != nil:
+		ctx.Logger.Trace("Literal", "value", gv.Literal)
 		valueStmt = j.Lit(gv.Literal)
 		if v, ok := gv.Literal.(common.Renderer); ok {
 			valueStmt = j.Add(utils.ToCode(v.RenderUsage(ctx))...)
 		}
 	case gv.DictVals.Len() > 0:
+		ctx.Logger.Trace("DictVals", "value", gv.DictVals)
 		valueStmt = j.Values(j.DictFunc(func(d j.Dict) {
 			for _, e := range gv.DictVals.Entries() {
 				l := []j.Code{j.Lit(e.Value)}
@@ -53,6 +57,7 @@ func (gv GoValue) RenderUsage(ctx *common.RenderContext) []*j.Statement {
 			}
 		}))
 	case gv.StructVals.Len() > 0:
+		ctx.Logger.Trace("StructVals", "value", gv.StructVals)
 		valueStmt = j.Values(j.DictFunc(func(d j.Dict) {
 			for _, e := range gv.StructVals.Entries() {
 				l := []j.Code{j.Lit(e.Value)}
@@ -63,6 +68,7 @@ func (gv GoValue) RenderUsage(ctx *common.RenderContext) []*j.Statement {
 			}
 		}))
 	case gv.ArrayVals != nil:
+		ctx.Logger.Trace("ArrayVals", "value", gv.ArrayVals)
 		valueStmt = j.ValuesFunc(func(g *j.Group) {
 			for _, v := range gv.ArrayVals {
 				l := []j.Code{j.Lit(v)}
@@ -73,6 +79,7 @@ func (gv GoValue) RenderUsage(ctx *common.RenderContext) []*j.Statement {
 			}
 		})
 	default:
+		ctx.Logger.Trace("Empty", "value", lo.Ternary(gv.NilCurlyBrakets, "{}", "nil"))
 		valueStmt = lo.Ternary(gv.NilCurlyBrakets, j.Values(), j.Nil())
 	}
 
@@ -82,6 +89,7 @@ func (gv GoValue) RenderUsage(ctx *common.RenderContext) []*j.Statement {
 
 	stmt := &j.Statement{}
 	if v, ok := gv.Type.(golangPointerWrapperType); ok && v.IsPointer() {
+		ctx.Logger.Trace("pointer")
 		if gv.Empty() {
 			if gv.NilCurlyBrakets {
 				// &{} -> ToPtr({})

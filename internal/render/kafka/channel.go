@@ -17,6 +17,8 @@ func (pc ProtoChannel) DirectRendering() bool {
 }
 
 func (pc ProtoChannel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
+	ctx.LogRender("Channel", "", pc.Name, "definition", pc.DirectRendering(), "proto", pc.ProtoName)
+	defer ctx.LogReturn()
 	var res []*j.Statement
 	res = append(res, pc.ServerIface.RenderDefinition(ctx)...)
 	res = append(res, pc.RenderOpenFunc(
@@ -40,6 +42,8 @@ func (pc ProtoChannel) RenderDefinition(ctx *common.RenderContext) []*j.Statemen
 }
 
 func (pc ProtoChannel) RenderUsage(ctx *common.RenderContext) []*j.Statement {
+	ctx.LogRender("Channel", "", pc.Name, "usage", pc.DirectRendering(), "proto", pc.ProtoName)
+	defer ctx.LogReturn()
 	return pc.Struct.RenderUsage(ctx)
 }
 
@@ -48,6 +52,8 @@ func (pc ProtoChannel) String() string {
 }
 
 func (pc ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {
+	ctx.Logger.Trace("renderNewFunc", "proto", pc.ProtoName)
+
 	return []*j.Statement{
 		// NewChannel1Proto(params Channel1Parameters, publisher proto.Publisher, subscriber proto.Subscriber) *Channel1Proto
 		j.Func().Id(pc.Struct.NewFuncName()).
@@ -90,7 +96,9 @@ func (pc ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {
 	}
 }
 
-func (pc ProtoChannel) renderKafkaMethods(_ *common.RenderContext) []*j.Statement {
+func (pc ProtoChannel) renderKafkaMethods(ctx *common.RenderContext) []*j.Statement {
+	ctx.Logger.Trace("renderKafkaMethods", "proto", pc.ProtoName)
+
 	rn := pc.Struct.ReceiverName()
 	receiver := j.Id(rn).Id(pc.Struct.Name)
 
@@ -106,6 +114,8 @@ func (pc ProtoChannel) renderKafkaMethods(_ *common.RenderContext) []*j.Statemen
 }
 
 func (pc ProtoChannel) renderKafkaPublisherMethods(ctx *common.RenderContext) []*j.Statement {
+	ctx.Logger.Trace("renderKafkaPublisherMethods", "proto", pc.ProtoName)
+
 	rn := pc.Struct.ReceiverName()
 	receiver := j.Id(rn).Id(pc.Struct.Name)
 

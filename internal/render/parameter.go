@@ -23,7 +23,7 @@ func (p Parameter) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 	defer ctx.LogReturn()
 
 	res = append(res, p.Type.RenderDefinition(ctx)...)
-	res = append(res, p.renderMethods()...)
+	res = append(res, p.renderMethods(ctx)...)
 	return res
 }
 
@@ -31,7 +31,9 @@ func (p Parameter) String() string {
 	return p.Name
 }
 
-func (p Parameter) renderMethods() []*j.Statement {
+func (p Parameter) renderMethods(ctx *common.RenderContext) []*j.Statement {
+	ctx.Logger.Trace("renderMethods")
+
 	rn := strings.ToLower(string(p.Type.TypeName()[0]))
 	receiver := j.Id(rn).Id(p.Type.TypeName())
 

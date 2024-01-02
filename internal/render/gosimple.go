@@ -20,7 +20,7 @@ func (p Simple) DirectRendering() bool {
 }
 
 func (p Simple) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("SimpleType", p.Package, p.Name, "definition", p.DirectRendering())
+	ctx.LogRender("Simple", p.Package, p.Name, "definition", p.DirectRendering())
 	defer ctx.LogReturn()
 
 	stmt := jen.Id(p.Name)
@@ -34,7 +34,7 @@ func (p Simple) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 }
 
 func (p Simple) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("SimpleType", p.Package, p.Name, "usage", p.DirectRendering())
+	ctx.LogRender("Simple", p.Package, p.Name, "usage", p.DirectRendering())
 	defer ctx.LogReturn()
 
 	stmt := &jen.Statement{}

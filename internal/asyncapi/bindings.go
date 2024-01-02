@@ -47,21 +47,27 @@ func (b *Bindings) build(
 
 		switch bindingsKind {
 		case bindingsKindMessage:
+			ctx.Logger.Trace("Message bindings", "proto", builder.ProtocolName())
 			vals, jsonVals, err = builder.BuildMessageBindings(ctx, e.Value)
 		case bindingsKindOperation:
+			ctx.Logger.Trace("Operation bindings", "proto", builder.ProtocolName())
 			vals, jsonVals, err = builder.BuildOperationBindings(ctx, e.Value)
 		case bindingsKindChannel:
+			ctx.Logger.Trace("Channel bindings", "proto", builder.ProtocolName())
 			vals, jsonVals, err = builder.BuildChannelBindings(ctx, e.Value)
 		case bindingsKindServer:
+			ctx.Logger.Trace("Server bindings", "proto", builder.ProtocolName())
 			vals, jsonVals, err = builder.BuildServerBindings(ctx, e.Value)
 		}
 		if err != nil {
-			return nil, types.CompileError{Err: fmt.Errorf("bindings parse: %w", err), Path: ctx.PathRef(), Proto: e.Key}
+			return nil, types.CompileError{Err: fmt.Errorf("bindings build: %w", err), Path: ctx.PathRef(), Proto: e.Key}
 		}
 		if vals != nil {
+			ctx.Logger.Trace("Have bindings values", "proto", builder.ProtocolName(), "value", vals)
 			res.Values.Set(e.Key, vals)
 		}
 		if jsonVals.Len() > 0 {
+			ctx.Logger.Trace("Have bindings jsonschema values", "proto", builder.ProtocolName(), "keys", jsonVals.Keys())
 			res.JSONValues.Set(e.Key, jsonVals)
 		}
 	}

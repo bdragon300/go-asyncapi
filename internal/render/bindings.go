@@ -31,16 +31,18 @@ func (b *Bindings) String() string {
 	return b.Path
 }
 
-// TODO: logs
 func (b *Bindings) RenderBindingsMethod(
 	ctx *common.RenderContext,
 	bindingsStruct *Struct,
 	protoName, protoAbbr string,
 ) []*j.Statement {
+	ctx.LogRender("Bindings.RenderBindingsMethod", "", bindingsStruct.Name, "definition", false)
+	defer ctx.LogReturn()
+
 	receiver := j.Id(bindingsStruct.ReceiverName()).Add(utils.ToCode(bindingsStruct.RenderUsage(ctx))...)
 	pv, ok := b.Values.Get(protoName)
 	if !ok {
-		// TODO: log
+		ctx.Logger.Debug("Skip render bindings method", "name", bindingsStruct.Name, "proto", protoName)
 		return nil
 	}
 
@@ -66,6 +68,9 @@ func renderChannelAndOperationBindingsMethod(
 	channelBindings, publishBindings, subscribeBindings *Bindings,
 	protoName, protoAbbr string,
 ) []*j.Statement {
+	ctx.LogRender("renderChannelAndOperationBindingsMethod", "", bindingsStruct.Name, "definition", false)
+	defer ctx.LogReturn()
+
 	receiver := j.Id(bindingsStruct.ReceiverName()).Add(utils.ToCode(bindingsStruct.RenderUsage(ctx))...)
 
 	return []*j.Statement{
@@ -76,22 +81,26 @@ func renderChannelAndOperationBindingsMethod(
 				cb := &GoValue{Type: &Simple{Name: "ChannelBindings", Package: ctx.RuntimePackage(protoName)}, NilCurlyBrakets: true}
 				if channelBindings != nil {
 					if b, ok := channelBindings.Values.Get(protoName); ok {
+						ctx.Logger.Debug("Channel bindings", "proto", protoName)
 						cb = b
 					}
 				}
 				if publishBindings != nil {
 					if v, ok := publishBindings.Values.Get(protoName); ok {
+						ctx.Logger.Debug("Publish operation bindings", "proto", protoName)
 						cb.StructVals.Set("PublisherBindings", v)
 					}
 				}
 				if subscribeBindings != nil {
 					if v, ok := subscribeBindings.Values.Get(protoName); ok {
+						ctx.Logger.Debug("Subscribe operation bindings", "proto", protoName)
 						cb.StructVals.Set("SubscriberBindings", v)
 					}
 				}
 				bg.Id("b").Op(":=").Add(utils.ToCode(cb.RenderUsage(ctx))...)
 
 				if channelBindings != nil {
+					ctx.Logger.Debug("Channel jsonschema bindings", "proto", protoName)
 					for _, e := range channelBindings.JSONValues.GetOr(protoName, types.OrderedMap[string, string]{}).Entries() {
 						n := utils.ToLowerFirstLetter(e.Key)
 						bg.Id(n).Op(":=").Lit(e.Value)
@@ -99,6 +108,7 @@ func renderChannelAndOperationBindingsMethod(
 					}
 				}
 				if publishBindings != nil {
+					ctx.Logger.Debug("Publish operation jsonschema bindings", "proto", protoName)
 					for _, e := range publishBindings.JSONValues.GetOr(protoName, types.OrderedMap[string, string]{}).Entries() {
 						n := utils.ToLowerFirstLetter(e.Key)
 						bg.Id(n).Op(":=").Lit(e.Value)
@@ -106,6 +116,7 @@ func renderChannelAndOperationBindingsMethod(
 					}
 				}
 				if subscribeBindings != nil {
+					ctx.Logger.Debug("Subscribe operation jsonschema bindings", "proto", protoName)
 					for _, e := range subscribeBindings.JSONValues.GetOr(protoName, types.OrderedMap[string, string]{}).Entries() {
 						n := utils.ToLowerFirstLetter(e.Key)
 						bg.Id(n).Op(":=").Lit(e.Value)

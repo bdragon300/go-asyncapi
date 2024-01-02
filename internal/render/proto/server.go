@@ -27,6 +27,8 @@ type BaseProtoServer struct {
 }
 
 func (ps BaseProtoServer) RenderConsumerMethods(ctx *common.RenderContext) []*j.Statement {
+	ctx.Logger.Trace("RenderConsumerMethods", "proto", ps.ProtoName)
+
 	rn := ps.Struct.ReceiverName()
 	receiver := j.Id(rn).Id(ps.Struct.Name)
 
@@ -41,6 +43,8 @@ func (ps BaseProtoServer) RenderConsumerMethods(ctx *common.RenderContext) []*j.
 }
 
 func (ps BaseProtoServer) RenderProducerMethods(ctx *common.RenderContext) []*j.Statement {
+	ctx.Logger.Trace("RenderProducerMethods", "proto", ps.ProtoName)
+
 	rn := ps.Struct.ReceiverName()
 	receiver := j.Id(rn).Id(ps.Struct.Name)
 
@@ -55,6 +59,8 @@ func (ps BaseProtoServer) RenderProducerMethods(ctx *common.RenderContext) []*j.
 }
 
 func (ps BaseProtoServer) RenderOpenChannelMethod(ctx *common.RenderContext, channelStruct *render.Struct, channel common.Renderer, channelParametersStructNoRender *render.Struct) []*j.Statement {
+	ctx.Logger.Trace("RenderOpenChannelMethod", "proto", ps.ProtoName)
+
 	rn := ps.Struct.ReceiverName()
 	receiver := j.Id(rn).Id(ps.Struct.Name)
 
@@ -78,7 +84,9 @@ func (ps BaseProtoServer) RenderOpenChannelMethod(ctx *common.RenderContext, cha
 	}
 }
 
-func (ps BaseProtoServer) RenderCommonMethods(_ *common.RenderContext) []*j.Statement {
+func (ps BaseProtoServer) RenderCommonMethods(ctx *common.RenderContext) []*j.Statement {
+	ctx.Logger.Trace("RenderCommonMethods", "proto", ps.ProtoName)
+
 	receiver := j.Id(ps.Struct.ReceiverName()).Id(ps.Struct.Name)
 
 	return []*j.Statement{
@@ -93,6 +101,8 @@ func (ps BaseProtoServer) RenderCommonMethods(_ *common.RenderContext) []*j.Stat
 }
 
 func (ps BaseProtoServer) RenderNewFunc(ctx *common.RenderContext) []*j.Statement {
+	ctx.Logger.Trace("RenderNewFunc", "proto", ps.ProtoName)
+
 	return []*j.Statement{
 		// NewServer1(producer proto.Producer, consumer proto.Consumer) *Server1
 		j.Func().Id(ps.Struct.NewFuncName()).
@@ -111,6 +121,8 @@ func (ps BaseProtoServer) RenderNewFunc(ctx *common.RenderContext) []*j.Statemen
 }
 
 func (ps BaseProtoServer) RenderURLFunc(ctx *common.RenderContext) []*j.Statement {
+	ctx.Logger.Trace("RenderURLFunc", "proto", ps.ProtoName)
+
 	// Server1URL(param1 string, param2 string) run.ParamString
 	return []*j.Statement{
 		j.Func().Id(ps.Struct.Name+"URL").
@@ -148,7 +160,9 @@ func (ps BaseProtoServer) RenderURLFunc(ctx *common.RenderContext) []*j.Statemen
 	}
 }
 
-func (ps BaseProtoServer) RenderProtocolVersionConst() []*j.Statement {
+func (ps BaseProtoServer) RenderProtocolVersionConst(ctx *common.RenderContext) []*j.Statement {
+	ctx.Logger.Trace("RenderProtocolVersionConst", "proto", ps.ProtoName)
+
 	return []*j.Statement{
 		j.Const().Id(ps.Struct.Name + "ProtocolVersion").Op("=").Lit(ps.ProtocolVersion),
 	}

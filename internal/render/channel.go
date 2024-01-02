@@ -40,9 +40,11 @@ func (c Channel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 	}
 
 	protocols := c.getServerProtocols(ctx)
+	ctx.Logger.Debug("Channel protocols", "protocols", protocols)
 
 	// Bindings
 	if c.BindingsStruct != nil {
+		ctx.Logger.Trace("Channel bindings")
 		res = append(res, c.BindingsStruct.RenderDefinition(ctx)...)
 
 		var chanBindings, pubBindings, subBindings *Bindings
@@ -86,6 +88,8 @@ func (c Channel) String() string {
 }
 
 func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement {
+	ctx.Logger.Trace("renderChannelNameFunc")
+
 	// Channel1Name(params Chan1Parameters) runtime.ParamString
 	return []*j.Statement{
 		j.Func().Id(utils.ToGolangName(c.Name, true)+"Name").

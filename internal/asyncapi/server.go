@@ -78,6 +78,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	}
 
 	var err error
+	ctx.Logger.Trace("Server", "proto", protoBuilder.ProtocolName())
 	res.ProtoServer, err = protoBuilder.BuildServer(ctx, &s, serverKey)
 	if err != nil {
 		return nil, err
