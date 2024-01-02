@@ -45,5 +45,13 @@ func (a *Array) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 	}
 
 	items := utils.ToCode(a.ItemsType.RenderUsage(ctx))
+	if a.Size > 0 {
+		return []*jen.Statement{jen.Index(jen.Lit(a.Size)).Add(items...)}
+	}
+
 	return []*jen.Statement{jen.Index().Add(items...)}
+}
+
+func (a *Array) IsCollection() bool {
+	return true
 }

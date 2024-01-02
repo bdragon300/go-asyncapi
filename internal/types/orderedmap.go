@@ -57,6 +57,18 @@ func (o *OrderedMap[K, V]) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
+func (o OrderedMap[K, V]) Get(key K) (V, bool) {
+	v, ok := o.data[key]
+	return v, ok
+}
+
+func (o OrderedMap[K, V]) GetOr(key K, defaultValue V) V {
+	if v, ok := o.Get(key); ok {
+		return v
+	}
+	return defaultValue
+}
+
 func (o *OrderedMap[K, V]) Set(key K, value V) {
 	if o.data == nil {
 		o.data = make(map[K]V)
@@ -68,13 +80,21 @@ func (o *OrderedMap[K, V]) Set(key K, value V) {
 	o.keys = append(o.keys, key)
 }
 
-func (o OrderedMap[K, V]) Keys() []K {
-	return o.keys
+func (o *OrderedMap[K, V]) Delete(key K) bool {
+	if o.data == nil {
+		return false
+	}
+	if _, ok := o.data[key]; !ok {
+		return false
+	}
+
+	o.keys = lo.DropWhile(o.keys, func(item K) bool { return item == key })
+	delete(o.data, key)
+	return true
 }
 
-func (o OrderedMap[K, V]) Get(key K) (V, bool) {
-	v, ok := o.data[key]
-	return v, ok
+func (o OrderedMap[K, V]) Keys() []K {
+	return o.keys
 }
 
 func (o OrderedMap[K, V]) Entries() []lo.Entry[K, V] {

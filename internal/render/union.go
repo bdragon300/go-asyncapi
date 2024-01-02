@@ -47,7 +47,7 @@ func (s UnionStruct) renderMethods(_ *common.RenderContext) []*jen.Statement {
 	stmt := &jen.Statement{}
 	for _, f := range s.Struct.Fields {
 		op := ""
-		if v, ok := f.Type.(pointerGolangType); !ok || !v.IsPointer() { // No need to take address for a pointer
+		if v, ok := f.Type.(golangPointerType); !ok || !v.IsPointer() { // No need to take address for a pointer
 			op = "&"
 		}
 		stmt = stmt.If(
@@ -75,9 +75,9 @@ func (s UnionStruct) renderMethods(_ *common.RenderContext) []*jen.Statement {
 
 func isTypeStruct(typ common.GolangType) bool {
 	switch v := typ.(type) {
-	case structGolangType:
+	case golangStructType:
 		return v.IsStruct()
-	case golangWrapperType:
+	case golangTypeWrapperType:
 		t, ok := v.WrappedGolangType()
 		return !ok || isTypeStruct(t)
 	}

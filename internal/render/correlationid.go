@@ -157,7 +157,7 @@ func (c CorrelationID) renderMemberExtractionCode(
 			varValueStmts = j.Id(anchor).Index(j.Lit(memberName))
 			baseType = typ.ValueType
 			varExpr := j.Var().Id(nextAnchor).Add(utils.ToCode(typ.ValueType.RenderUsage(ctx))...)
-			if t, ok := typ.ValueType.(pointerGolangType); ok && t.IsPointer() {
+			if t, ok := typ.ValueType.(golangPointerType); ok && t.IsPointer() {
 				// Append ` = new(TYPE)` to initialize a pointer
 				varExpr = varExpr.Op("=").New(j.Add(utils.ToCode(typ.ValueType.RenderUsage(ctx))...))
 			}
@@ -207,7 +207,7 @@ func (c CorrelationID) renderMemberExtractionCode(
 				return
 			}
 			baseType = typ
-		case golangWrapperType:
+		case golangTypeWrapperType:
 			ctx.Logger.Trace(
 				"In wrapper type",
 				"path", path[:pathIdx], "name", typ.String(), "type", fmt.Sprintf("%T", typ), "member", memberName,

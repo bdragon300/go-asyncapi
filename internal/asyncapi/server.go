@@ -1,31 +1,23 @@
 package asyncapi
 
 import (
-	"encoding/json"
-
 	"github.com/samber/lo"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
-
-	"gopkg.in/yaml.v3"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 )
 
-type protoServerCompilerFunc func(ctx *common.CompileContext, server *Server, name string) (common.Renderer, error)
-
-var ProtoServerCompiler = map[string]protoServerCompilerFunc{}
-
 type Server struct {
-	URL             string                                                             `json:"url" yaml:"url"`
-	Protocol        string                                                             `json:"protocol" yaml:"protocol"`
-	ProtocolVersion string                                                             `json:"protocolVersion" yaml:"protocolVersion"`
-	Description     string                                                             `json:"description" yaml:"description"`
-	Variables       types.OrderedMap[string, ServerVariable]                           `json:"variables" yaml:"variables"`
-	Security        []SecurityRequirement                                              `json:"security" yaml:"security"`
-	Tags            []Tag                                                              `json:"tags" yaml:"tags"`
-	Bindings        types.OrderedMap[string, types.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
+	URL             string                                   `json:"url" yaml:"url"`
+	Protocol        string                                   `json:"protocol" yaml:"protocol"`
+	ProtocolVersion string                                   `json:"protocolVersion" yaml:"protocolVersion"`
+	Description     string                                   `json:"description" yaml:"description"`
+	Variables       types.OrderedMap[string, ServerVariable] `json:"variables" yaml:"variables"`
+	Security        []SecurityRequirement                    `json:"security" yaml:"security"`
+	Tags            []Tag                                    `json:"tags" yaml:"tags"`
+	Bindings        *ServerBindings                          `json:"bindings" yaml:"bindings"`
 
 	XGoName string `json:"x-go-name" yaml:"x-go-name"`
 	XIgnore bool   `json:"x-ignore" yaml:"x-ignore"`
@@ -43,7 +35,7 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 		return nil
 	}
 	ctx.PutObject(obj)
-	if ctx.TopPackageName() == "servers" {
+	if ctx.TopPackageName() == "servers" { // FIXME: optimize somehow
 		ctx.Storage.AddProtocol(s.Protocol)
 	}
 	return nil
@@ -61,30 +53,37 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		return res, nil
 	}
 
-	protoBuilder, ok := ProtoServerCompiler[s.Protocol]
+	protoBuilder, ok := ProtocolBuilders[s.Protocol]
 	if !ok {
 		ctx.Logger.Warn("Skip unsupported server protocol", "proto", s.Protocol)
 		return nil, nil
 	}
-	protoServer, err := protoBuilder(ctx, &s, serverKey)
-	if err != nil {
-		return nil, err
-	}
-
 	srvName, _ := lo.Coalesce(s.XGoName, serverKey)
-	return &render.Server{
-		Name:        srvName,
-		Protocol:    s.Protocol,
-		ProtoServer: protoServer,
-		BindingsStruct: &render.Struct{
+	res := render.Server{Name: srvName, Protocol: s.Protocol}
+
+	if s.Bindings != nil {
+		ctx.Logger.Trace("Server bindings")
+		res.BindingsStruct = &render.Struct{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(srvName, "Bindings"),
 				DirectRender: true,
 				PackageName:  ctx.TopPackageName(),
 			},
 			Fields: nil,
-		},
-	}, nil
+		}
+
+		ref := ctx.PathRef() + "/bindings"
+		res.BindingsPromise = render.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
+		ctx.PutPromise(res.BindingsPromise)
+	}
+
+	var err error
+	res.ProtoServer, err = protoBuilder.BuildServer(ctx, &s, serverKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return &res, nil
 }
 
 // TODO: This object MAY be extended with Specification Extensions.

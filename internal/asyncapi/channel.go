@@ -1,31 +1,24 @@
 package asyncapi
 
 import (
-	"encoding/json"
 	"path"
 
 	"github.com/samber/lo"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
 
-	"gopkg.in/yaml.v3"
-
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 )
 
-type protoChannelCompilerFunc func(ctx *common.CompileContext, channel *Channel, name string) (common.Renderer, error)
-
-var ProtoChannelCompiler = map[string]protoChannelCompilerFunc{}
-
 type Channel struct {
-	Description string                                                             `json:"description" yaml:"description"`
-	Servers     *[]string                                                          `json:"servers" yaml:"servers"`
-	Subscribe   *Operation                                                         `json:"subscribe" yaml:"subscribe"`
-	Publish     *Operation                                                         `json:"publish" yaml:"publish"`
-	Parameters  types.OrderedMap[string, Parameter]                                `json:"parameters" yaml:"parameters"`
-	Bindings    types.OrderedMap[string, types.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
+	Description string                              `json:"description" yaml:"description"`
+	Servers     *[]string                           `json:"servers" yaml:"servers"`
+	Subscribe   *Operation                          `json:"subscribe" yaml:"subscribe"`
+	Publish     *Operation                          `json:"publish" yaml:"publish"`
+	Parameters  types.OrderedMap[string, Parameter] `json:"parameters" yaml:"parameters"`
+	Bindings    *ChannelBindings                    `json:"bindings" yaml:"bindings"`
 
 	XGoName string `json:"x-go-name" yaml:"x-go-name"`
 	XIgnore bool   `json:"x-ignore" yaml:"x-ignore"`
@@ -56,7 +49,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 	}
 
 	chName, _ := lo.Coalesce(c.XGoName, channelKey)
-	res := &render.Channel{Name: chName, AllProtocols: make(map[string]common.Renderer)}
+	res := &render.Channel{Name: chName, ChannelKey: channelKey, AllProtoChannels: make(map[string]common.Renderer)}
 
 	// Channel parameters
 	if c.Parameters.Len() > 0 {
@@ -86,14 +79,14 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 	// Empty servers field means "no servers", omitted servers field means "all servers"
 	if c.Servers != nil {
 		ctx.Logger.Trace("Channel applied to particular servers", "names", *c.Servers)
-		res.AppliedServers = *c.Servers
+		res.ExplicitServerNames = *c.Servers
 		prm := render.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
 			_, ok := item.(*render.Server)
 			// Pick only servers from `servers:` section, skip ones from `components:`
 			return ok && len(path) == 2 && path[0] == "servers" && lo.Contains(*c.Servers, path[1])
 		})
 		ctx.PutListPromise(prm)
-		res.AppliedServersPromise = prm
+		res.ServersPromise = prm
 	} else {
 		ctx.Logger.Trace("Channel applied to all servers")
 		prm := render.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
@@ -101,22 +94,34 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 			return ok && len(path) > 0 && path[0] == "servers" // Pick only servers from `servers:` section, skip ones from `components:`
 		})
 		ctx.PutListPromise(prm)
-		res.AppliedServersPromise = prm
+		res.ServersPromise = prm
 	}
 
 	// Channel/operation bindings
 	var hasBindings bool
-	if c.Bindings.Len() > 0 {
+	if c.Bindings != nil {
 		ctx.Logger.Trace("Found channel bindings")
 		hasBindings = true
+
+		ref := ctx.PathRef() + "/bindings"
+		res.BindingsChannelPromise = render.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
+		ctx.PutPromise(res.BindingsChannelPromise)
 	}
-	if c.Publish != nil && !c.Publish.XIgnore && c.Publish.Bindings.Len() > 0 {
+	if c.Publish != nil && !c.Publish.XIgnore && c.Publish.Bindings != nil {
 		ctx.Logger.Trace("Found publish operation bindings")
 		hasBindings = true
+
+		ref := ctx.PathRef() + "/publish/bindings"
+		res.BindingsPublishPromise = render.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
+		ctx.PutPromise(res.BindingsPublishPromise)
 	}
-	if c.Subscribe != nil && !c.Subscribe.XIgnore && c.Subscribe.Bindings.Len() > 0 {
+	if c.Subscribe != nil && !c.Subscribe.XIgnore && c.Subscribe.Bindings != nil {
 		ctx.Logger.Trace("Found subscribe operation bindings")
 		hasBindings = true
+
+		ref := ctx.PathRef() + "/subscribe/bindings"
+		res.BindingsSubscribePromise = render.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
+		ctx.PutPromise(res.BindingsSubscribePromise)
 	}
 	if hasBindings {
 		res.BindingsStruct = &render.Struct{
@@ -128,30 +133,34 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 		}
 	}
 
-	// Build protocol-specific channels
-	for proto, f := range ProtoChannelCompiler {
+	// Build protocol-specific channels for all supported protocols
+	// Here we don't know yet which servers this channel is applied to, so we don't have the protocols list to compile.
+	// Servers will be known on rendering stage (after linking), but there we will already need to have proto
+	// channels to be compiled for certain protocols we want to render.
+	// As a solution, here we just build the proto channels for all supported protocols
+	for proto, b := range ProtocolBuilders {
 		ctx.Logger.Trace("Channel", "proto", proto)
 		ctx.Logger.NextCallLevel()
-		obj, err := f(ctx, &c, channelKey)
+		obj, err := b.BuildChannel(ctx, &c, channelKey, res)
 		ctx.Logger.PrevCallLevel()
 		if err != nil {
 			return nil, err
 		}
-		res.AllProtocols[proto] = obj
+		res.AllProtoChannels[proto] = obj
 	}
 
 	return res, nil
 }
 
 type Operation struct {
-	OperationID  string                                                             `json:"operationId" yaml:"operationId"`
-	Summary      string                                                             `json:"summary" yaml:"summary"`
-	Description  string                                                             `json:"description" yaml:"description"`
-	Security     []SecurityRequirement                                              `json:"security" yaml:"security"`
-	Tags         []Tag                                                              `json:"tags" yaml:"tags"`
-	ExternalDocs *ExternalDocumentation                                             `json:"externalDocs" yaml:"externalDocs"`
-	Bindings     types.OrderedMap[string, types.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
-	Traits       []OperationTrait                                                   `json:"traits" yaml:"traits"`
+	OperationID  string                 `json:"operationId" yaml:"operationId"`
+	Summary      string                 `json:"summary" yaml:"summary"`
+	Description  string                 `json:"description" yaml:"description"`
+	Security     []SecurityRequirement  `json:"security" yaml:"security"`
+	Tags         []Tag                  `json:"tags" yaml:"tags"`
+	ExternalDocs *ExternalDocumentation `json:"externalDocs" yaml:"externalDocs"`
+	Bindings     *OperationBinding      `json:"bindings" yaml:"bindings"`
+	Traits       []OperationTrait       `json:"traits" yaml:"traits"`
 	// FIXME: can be either a message or map of messages?
 	Message *Message `json:"message" yaml:"message"`
 
@@ -159,13 +168,13 @@ type Operation struct {
 }
 
 type OperationTrait struct {
-	OperationID  string                                                             `json:"operationId" yaml:"operationId"`
-	Summary      string                                                             `json:"summary" yaml:"summary"`
-	Description  string                                                             `json:"description" yaml:"description"`
-	Security     []SecurityRequirement                                              `json:"security" yaml:"security"`
-	Tags         []Tag                                                              `json:"tags" yaml:"tags"`
-	ExternalDocs *ExternalDocumentation                                             `json:"externalDocs" yaml:"externalDocs"`
-	Bindings     types.OrderedMap[string, types.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
+	OperationID  string                 `json:"operationId" yaml:"operationId"`
+	Summary      string                 `json:"summary" yaml:"summary"`
+	Description  string                 `json:"description" yaml:"description"`
+	Security     []SecurityRequirement  `json:"security" yaml:"security"`
+	Tags         []Tag                  `json:"tags" yaml:"tags"`
+	ExternalDocs *ExternalDocumentation `json:"externalDocs" yaml:"externalDocs"`
+	Bindings     *OperationBinding      `json:"bindings" yaml:"bindings"`
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }

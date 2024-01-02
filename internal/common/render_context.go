@@ -17,7 +17,13 @@ type Renderer interface {
 	String() string // Human-readable object identifier (name) as string, for logging purposes
 }
 
+type ProtocolRenderer interface {
+	ProtocolName() string
+	ProtocolAbbreviation() string
+}
+
 type RenderContext struct {
+	ProtoRenderers map[string]ProtocolRenderer
 	CurrentPackage string
 	ImportBase     string
 	Logger         *types.Logger

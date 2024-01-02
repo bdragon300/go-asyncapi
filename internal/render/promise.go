@@ -62,7 +62,7 @@ func (r *Promise[T]) IsPointer() bool {
 	if !r.assigned {
 		return false
 	}
-	if v, ok := any(r.target).(pointerGolangType); ok {
+	if v, ok := any(r.target).(golangPointerType); ok {
 		return v.IsPointer()
 	}
 	return false
@@ -72,8 +72,18 @@ func (r *Promise[T]) IsStruct() bool {
 	if !r.assigned {
 		return false
 	}
-	if v, ok := any(r.target).(structGolangType); ok {
+	if v, ok := any(r.target).(golangStructType); ok {
 		return v.IsStruct()
+	}
+	return false
+}
+
+func (r *Promise[T]) IsCollection() bool {
+	if !r.assigned {
+		return false
+	}
+	if v, ok := any(r.target).(golangCollectionType); ok {
+		return v.IsCollection()
 	}
 	return false
 }

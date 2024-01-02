@@ -57,7 +57,7 @@ type renderSource interface {
 	Packages() []string
 }
 
-func RenderPackages(source renderSource, importBase, baseDir string) (files map[string]*bytes.Buffer, err error) {
+func RenderPackages(source renderSource, protoRenderers map[string]common.ProtocolRenderer, importBase, baseDir string) (files map[string]*bytes.Buffer, err error) {
 	files = make(map[string]*bytes.Buffer)
 	logger := types.NewLogger("Rendering 🎨")
 	rendered := 0
@@ -65,6 +65,7 @@ func RenderPackages(source renderSource, importBase, baseDir string) (files map[
 
 	for _, pkgName := range source.Packages() {
 		ctx := &common.RenderContext{
+			ProtoRenderers: protoRenderers,
 			CurrentPackage: pkgName,
 			ImportBase:     importBase,
 			Logger:         logger,

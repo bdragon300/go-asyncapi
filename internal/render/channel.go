@@ -1,22 +1,28 @@
 package render
 
 import (
-	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
+	"sort"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 
 	j "github.com/dave/jennifer/jen"
 	"github.com/samber/lo"
 )
 
 type Channel struct {
-	Name                  string
-	AppliedServers        []string // Servers spec names this channel is applied to, empty list means "all servers"
-	AppliedServersPromise *ListPromise[*Server]
-	AllProtocols          map[string]common.Renderer
+	Name                string                     // Channel name, typically equals to Channel key, can get overridden in x-go-name
+	ChannelKey          string                     // Channel key
+	ExplicitServerNames []string                   // List of servers the channel is linked with. Empty means "all servers"
+	ServersPromise      *ListPromise[*Server]      // Servers list this channel is applied to, either explicitly marked or "all servers"
+	AllProtoChannels    map[string]common.Renderer // Proto channels for all supported protocols
 
 	ParametersStruct *Struct // nil if no parameters
-	BindingsStruct   *Struct // nil if bindings are not set
+
+	BindingsStruct           *Struct             // nil if no bindings are set for channel at all
+	BindingsChannelPromise   *Promise[*Bindings] // nil if channel bindings are not set
+	BindingsSubscribePromise *Promise[*Bindings] // nil if subscribe operation bindings are not set
+	BindingsPublishPromise   *Promise[*Bindings] // nil if publish operation bindings are not set
 }
 
 func (c Channel) DirectRendering() bool {
@@ -28,19 +34,40 @@ func (c Channel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 	ctx.LogRender("Channel", "", c.Name, "definition", c.DirectRendering())
 	defer ctx.LogReturn()
 
+	// Parameters
 	if c.ParametersStruct != nil {
 		res = append(res, c.ParametersStruct.RenderDefinition(ctx)...)
 	}
+
+	protocols := c.getServerProtocols(ctx)
+
+	// Bindings
 	if c.BindingsStruct != nil {
 		res = append(res, c.BindingsStruct.RenderDefinition(ctx)...)
+
+		var chanBindings, pubBindings, subBindings *Bindings
+		if c.BindingsChannelPromise != nil {
+			chanBindings = c.BindingsChannelPromise.Target()
+		}
+		if c.BindingsPublishPromise != nil {
+			pubBindings = c.BindingsPublishPromise.Target()
+		}
+		if c.BindingsSubscribePromise != nil {
+			subBindings = c.BindingsSubscribePromise.Target()
+		}
+		for _, p := range protocols {
+			protoAbbr := ctx.ProtoRenderers[p].ProtocolAbbreviation()
+			res = append(res, renderChannelAndOperationBindingsMethod(
+				ctx, c.BindingsStruct, chanBindings, pubBindings, subBindings, p, protoAbbr,
+			)...)
+		}
 	}
+
 	res = append(res, c.renderChannelNameFunc(ctx)...)
 
-	protocols := lo.Uniq(lo.Map(c.AppliedServersPromise.Targets(), func(item *Server, index int) string {
-		return item.Protocol
-	}))
+	// Proto channels
 	for _, p := range protocols {
-		r, ok := c.AllProtocols[p]
+		r, ok := c.AllProtoChannels[p]
 		if !ok {
 			ctx.Logger.Warnf("Skip protocol %q since it is not supported", p)
 			continue
@@ -71,7 +98,7 @@ func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement
 			BlockFunc(func(bg *j.Group) {
 				if c.ParametersStruct == nil {
 					bg.Return(j.Qual(ctx.RuntimePackage(""), "ParamString").Values(j.Dict{
-						j.Id("Expr"): j.Lit(c.Name),
+						j.Id("Expr"): j.Lit(c.ChannelKey),
 					}))
 				} else {
 					bg.Op("paramMap := map[string]string").Values(j.DictFunc(func(d j.Dict) {
@@ -80,10 +107,22 @@ func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement
 						}
 					}))
 					bg.Return(j.Qual(ctx.RuntimePackage(""), "ParamString").Values(j.Dict{
-						j.Id("Expr"):       j.Lit(c.Name),
+						j.Id("Expr"):       j.Lit(c.ChannelKey),
 						j.Id("Parameters"): j.Id("paramMap"),
 					}))
 				}
 			}),
 	}
+}
+
+func (c Channel) getServerProtocols(ctx *common.RenderContext) []string {
+	res := lo.FilterMap(c.ServersPromise.Targets(), func(item *Server, index int) (string, bool) {
+		_, ok := ctx.ProtoRenderers[item.Protocol]
+		if !ok {
+			ctx.Logger.Warnf("Skip protocol %q since it is not supported", item.Protocol)
+		}
+		return item.Protocol, ok
+	})
+	sort.Strings(res)
+	return res
 }

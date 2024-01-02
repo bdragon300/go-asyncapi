@@ -15,26 +15,22 @@ import (
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 )
 
-type protoMessageBindingsBuilderFunc func(ctx *common.CompileContext, message *Message, bindingsStruct *render.Struct, name string) (common.Renderer, error)
-
-var ProtoMessageBindingsBuilder = map[string]protoMessageBindingsBuilderFunc{}
-
 type Message struct {
-	MessageID     string                                                             `json:"messageId" yaml:"messageId"`
-	Headers       *Object                                                            `json:"headers" yaml:"headers"`
-	Payload       *Object                                                            `json:"payload" yaml:"payload"` // TODO: other formats
-	CorrelationID *CorrelationID                                                     `json:"correlationId" yaml:"correlationId"`
-	SchemaFormat  string                                                             `json:"schemaFormat" yaml:"schemaFormat"`
-	ContentType   string                                                             `json:"contentType" yaml:"contentType"`
-	Name          string                                                             `json:"name" yaml:"name"`
-	Title         string                                                             `json:"title" yaml:"title"`
-	Summary       string                                                             `json:"summary" yaml:"summary"`
-	Description   string                                                             `json:"description" yaml:"description"`
-	Tags          []Tag                                                              `json:"tags" yaml:"tags"`
-	ExternalDocs  *ExternalDocumentation                                             `json:"externalDocs" yaml:"externalDocs"`
-	Bindings      types.OrderedMap[string, types.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
-	Examples      []MessageExample                                                   `json:"examples" yaml:"examples"`
-	Traits        []MessageTrait                                                     `json:"traits" yaml:"traits"`
+	MessageID     string                 `json:"messageId" yaml:"messageId"`
+	Headers       *Object                `json:"headers" yaml:"headers"`
+	Payload       *Object                `json:"payload" yaml:"payload"` // TODO: other formats
+	CorrelationID *CorrelationID         `json:"correlationId" yaml:"correlationId"`
+	SchemaFormat  string                 `json:"schemaFormat" yaml:"schemaFormat"`
+	ContentType   string                 `json:"contentType" yaml:"contentType"`
+	Name          string                 `json:"name" yaml:"name"`
+	Title         string                 `json:"title" yaml:"title"`
+	Summary       string                 `json:"summary" yaml:"summary"`
+	Description   string                 `json:"description" yaml:"description"`
+	Tags          []Tag                  `json:"tags" yaml:"tags"`
+	ExternalDocs  *ExternalDocumentation `json:"externalDocs" yaml:"externalDocs"`
+	Bindings      *MessageBindings       `json:"bindings" yaml:"bindings"`
+	Examples      []MessageExample       `json:"examples" yaml:"examples"`
+	Traits        []MessageTrait         `json:"traits" yaml:"traits"`
 
 	XGoType *types.Union2[string, xGoType] `json:"x-go-type" yaml:"x-go-type"`
 	XGoName string                         `json:"x-go-name" yaml:"x-go-name"`
@@ -96,6 +92,8 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	}
 	obj.ContentType, _ = lo.Coalesce(m.ContentType, ctx.Storage.DefaultContentType())
 	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", obj.ContentType))
+
+	// Lookup servers after linking to figure out all protocols the message is used in
 	allServersPrm := render.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
 		_, ok := item.(*render.Server)
 		return ok
@@ -113,9 +111,8 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	m.setStructFields(ctx, &obj)
 
 	// Bindings
-	if m.Bindings.Len() > 0 {
+	if m.Bindings != nil {
 		ctx.Logger.Trace("Message bindings")
-		ctx.Logger.NextCallLevel()
 		obj.BindingsStruct = &render.Struct{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(m.Name, "Bindings"),
@@ -124,22 +121,10 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 			},
 			Fields: nil,
 		}
-		for _, k := range m.Bindings.Keys() {
-			ctx.Logger.Trace("Message bindings", "proto", k)
-			f, ok := ProtoMessageBindingsBuilder[k]
-			if !ok {
-				ctx.Logger.Warn(fmt.Sprintf("Skip unsupported bindings protocol %q", k))
-				continue
-			}
-			ctx.Logger.NextCallLevel()
-			protoMethod, err := f(ctx, &m, obj.BindingsStruct, messageKey)
-			ctx.Logger.PrevCallLevel()
-			if err != nil {
-				return nil, err
-			}
-			obj.BindingsStructProtoMethods.Set(k, protoMethod)
-		}
-		ctx.Logger.PrevCallLevel()
+
+		ref := ctx.PathRef() + "/bindings"
+		obj.BindingsPromise = render.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
+		ctx.PutPromise(obj.BindingsPromise)
 	}
 
 	// Link to CorrelationID if any
@@ -197,19 +182,19 @@ type MessageExample struct {
 }
 
 type MessageTrait struct {
-	MessageID     string                                                             `json:"messageId" yaml:"messageId"`
-	Headers       *Object                                                            `json:"headers" yaml:"headers"`
-	CorrelationID *CorrelationID                                                     `json:"correlationId" yaml:"correlationId"`
-	SchemaFormat  string                                                             `json:"schemaFormat" yaml:"schemaFormat"`
-	ContentType   string                                                             `json:"contentType" yaml:"contentType"`
-	Name          string                                                             `json:"name" yaml:"name"`
-	Title         string                                                             `json:"title" yaml:"title"`
-	Summary       string                                                             `json:"summary" yaml:"summary"`
-	Description   string                                                             `json:"description" yaml:"description"`
-	Tags          []Tag                                                              `json:"tags" yaml:"tags"`
-	ExternalDocs  *ExternalDocumentation                                             `json:"externalDocs" yaml:"externalDocs"`
-	Bindings      types.OrderedMap[string, types.Union2[json.RawMessage, yaml.Node]] `json:"bindings" yaml:"bindings"`
-	Examples      []MessageExample                                                   `json:"examples" yaml:"examples"`
+	MessageID     string                 `json:"messageId" yaml:"messageId"`
+	Headers       *Object                `json:"headers" yaml:"headers"`
+	CorrelationID *CorrelationID         `json:"correlationId" yaml:"correlationId"`
+	SchemaFormat  string                 `json:"schemaFormat" yaml:"schemaFormat"`
+	ContentType   string                 `json:"contentType" yaml:"contentType"`
+	Name          string                 `json:"name" yaml:"name"`
+	Title         string                 `json:"title" yaml:"title"`
+	Summary       string                 `json:"summary" yaml:"summary"`
+	Description   string                 `json:"description" yaml:"description"`
+	Tags          []Tag                  `json:"tags" yaml:"tags"`
+	ExternalDocs  *ExternalDocumentation `json:"externalDocs" yaml:"externalDocs"`
+	Bindings      *MessageBindings       `json:"bindings" yaml:"bindings"`
+	Examples      []MessageExample       `json:"examples" yaml:"examples"`
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }

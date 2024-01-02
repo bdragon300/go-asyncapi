@@ -30,7 +30,7 @@ func (p Pointer) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 	switch v := p.Type.(type) {
 	case *Interface: // Prevent pointer to interface
 		isPtr = false
-	case pointerGolangType:
+	case golangPointerType:
 		isPtr = !v.IsPointer() // Prevent appearing pointer to pointer
 	case *Simple:
 		isPtr = !v.IsIface

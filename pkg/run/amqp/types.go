@@ -36,11 +36,11 @@ type (
 		ExchangeConfiguration ExchangeConfiguration
 		QueueConfiguration    QueueConfiguration
 
-		PublisherBindings  PublishOperationBindings
-		SubscriberBindings SubscribeOperationBindings
+		PublisherBindings  OperationBindings
+		SubscriberBindings OperationBindings
 	}
 
-	PublishOperationBindings struct {
+	OperationBindings struct {
 		Expiration   time.Duration
 		UserID       string
 		CC           []string
@@ -48,16 +48,6 @@ type (
 		DeliveryMode DeliveryMode
 		Mandatory    bool
 		BCC          []string
-		ReplyTo      string
-		Timestamp    bool
-	}
-
-	SubscribeOperationBindings struct {
-		Expiration   time.Duration
-		UserID       string
-		CC           []string
-		Priority     int
-		DeliveryMode DeliveryMode
 		ReplyTo      string
 		Timestamp    bool
 		Ack          bool

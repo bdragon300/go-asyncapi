@@ -8,7 +8,7 @@ import (
 type CompileError struct {
 	Err   error
 	Path  string
-	Proto string
+	Proto string // TODO: check everywhere if this field is set where needed
 }
 
 func (c CompileError) Error() string {

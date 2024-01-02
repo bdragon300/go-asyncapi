@@ -44,3 +44,7 @@ func (m *Map) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 	valueType := utils.ToCode(m.ValueType.RenderUsage(ctx))
 	return []*jen.Statement{jen.Map((&jen.Statement{}).Add(keyType...)).Add(valueType...)}
 }
+
+func (m *Map) IsCollection() bool {
+	return true
+}

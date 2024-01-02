@@ -1,16 +1,9 @@
 package utils
 
 import (
-	"errors"
-	"fmt"
 	"net/url"
 	"path/filepath"
-	"reflect"
 	"strings"
-
-	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
-
-	"github.com/samber/lo"
 )
 
 func IsSubsequence[T comparable](subseq, iterable []T, searchIndex int) (int, bool) {
@@ -31,32 +24,6 @@ func SlicesEqual[T comparable](a, b []T) bool {
 	}
 	_, ok := IsSubsequence(a, b, 0)
 	return ok
-}
-
-func StructToOrderedMap(value any, target *types.OrderedMap[string, any], marshalFields []string) error {
-	if target == nil {
-		return errors.New("target is nil")
-	}
-	rval := reflect.ValueOf(value)
-	if rval.Kind() != reflect.Struct {
-		return fmt.Errorf("expected %v (Struct), got %v", reflect.Struct, rval.Kind())
-	}
-
-	rtyp := rval.Type()
-	for i := 0; i < rval.NumField(); i++ {
-		fld := rtyp.Field(i)
-		if lo.Contains(marshalFields, fld.Name) {
-			fldVal := rval.Field(i)
-			if fldVal.IsValid() && !fldVal.IsZero() {
-				if fldVal.Kind() == reflect.Pointer {
-					fldVal = reflect.Indirect(fldVal)
-				}
-				target.Set(fld.Name, fldVal.Interface())
-			}
-		}
-	}
-
-	return nil
 }
 
 func SplitSpecPath(path string) (specID, pointer string) {

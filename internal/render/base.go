@@ -25,15 +25,19 @@ func (b *BaseType) String() string {
 	return b.Name
 }
 
-type golangWrapperType interface {
+type golangTypeWrapperType interface {
 	WrappedGolangType() (common.GolangType, bool)
 	String() string
 }
 
-type pointerGolangType interface {
+type golangPointerType interface {
 	IsPointer() bool
 }
 
-type structGolangType interface {
+type golangStructType interface {
 	IsStruct() bool
+}
+
+type golangCollectionType interface {
+	IsCollection() bool
 }

@@ -70,6 +70,10 @@ func (s Struct) MustGetField(name string) StructField {
 	return f
 }
 
+func (s Struct) IsStruct() bool {
+	return true
+}
+
 // StructField defines the data required to generate a field in Go.
 type StructField struct {
 	Name           string
@@ -116,39 +120,3 @@ func (f StructField) renderDefinition(ctx *common.RenderContext) []*jen.Statemen
 	return res
 }
 
-type structInitRenderer interface {
-	RenderInit(ctx *common.RenderContext) []*jen.Statement
-}
-
-type StructInit struct {
-	Type   common.GolangType
-	Values types.OrderedMap[string, any]
-}
-
-func (s StructInit) RenderInit(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("StructInit", "", "", "definition", false)
-	defer ctx.LogReturn()
-
-	stmt := &jen.Statement{}
-	if s.Type != nil {
-		stmt.Add(utils.ToCode(s.Type.RenderUsage(ctx))...)
-	}
-
-	dict := make(jen.Dict)
-	for _, e := range s.Values.Entries() {
-		switch v := e.Value.(type) {
-		case common.Renderer:
-			dict[jen.Id(e.Key)] = jen.Add(utils.ToCode(v.RenderUsage(ctx))...)
-		case structInitRenderer:
-			dict[jen.Id(e.Key)] = jen.Add(utils.ToCode(v.RenderInit(ctx))...)
-		default:
-			dict[jen.Id(e.Key)] = jen.Lit(v)
-		}
-	}
-
-	return []*jen.Statement{stmt.Values(dict)}
-}
-
-func (s Struct) IsStruct() bool {
-	return true
-}

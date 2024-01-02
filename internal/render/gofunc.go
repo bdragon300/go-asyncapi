@@ -62,61 +62,6 @@ func (f FuncSignature) TypeName() string {
 	return f.Name
 }
 
-type Func struct {
-	FuncSignature
-	Receiver        common.GolangType
-	PointerReceiver bool
-	PackageName     string // optional import path from any generated package
-	BodyRenderer    func(ctx *common.RenderContext, f *Func) []*jen.Statement
-}
-
-func (f Func) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("Func", f.PackageName, f.Name, "definition", f.DirectRendering())
-	defer ctx.LogReturn()
-
-	stmt := jen.Func()
-	if f.Receiver != nil {
-		r := jen.Id(f.ReceiverName())
-		if f.PointerReceiver {
-			r = r.Op("*")
-		}
-		r = r.Add(utils.ToCode(f.Receiver.RenderUsage(ctx))...)
-		stmt = stmt.Params(r)
-	} else {
-		stmt = stmt.Func()
-	}
-	stmt = stmt.Add(utils.ToCode(f.FuncSignature.RenderDefinition(ctx))...)
-	if f.BodyRenderer != nil {
-		stmt = stmt.Block(utils.ToCode(f.BodyRenderer(ctx, &f))...)
-	}
-	return []*jen.Statement{stmt}
-}
-
-func (f Func) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("Func", f.PackageName, f.Name, "usage", f.DirectRendering())
-	defer ctx.LogReturn()
-
-	if f.PackageName != "" && f.PackageName != ctx.CurrentPackage && f.Receiver == nil {
-		return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(f.PackageName), f.Name)}
-	}
-	return []*jen.Statement{jen.Id(f.Name)}
-}
-
-func (f Func) DirectRendering() bool {
-	return true
-}
-
-func (f Func) String() string {
-	return f.FuncSignature.String()
-}
-
-func (f Func) ReceiverName() string {
-	if f.Receiver == nil {
-		panic("receiver has not set")
-	}
-	return strings.ToLower(string(f.Receiver.TypeName()[0]))
-}
-
 type FuncParam struct {
 	Name     string
 	Type     common.GolangType

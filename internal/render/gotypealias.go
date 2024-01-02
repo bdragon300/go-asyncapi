@@ -45,3 +45,24 @@ func (p *TypeAlias) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 func (p *TypeAlias) WrappedGolangType() (common.GolangType, bool) {
 	return p.AliasedType, p.AliasedType != nil
 }
+
+func (p *TypeAlias) IsPointer() bool {
+	if v, ok := any(p.AliasedType).(golangPointerType); ok {
+		return v.IsPointer()
+	}
+	return false
+}
+
+func (p *TypeAlias) IsStruct() bool {
+	if v, ok := any(p.AliasedType).(golangStructType); ok {
+		return v.IsStruct()
+	}
+	return false
+}
+
+func (p *TypeAlias) IsCollection() bool {
+	if v, ok := any(p.AliasedType).(golangCollectionType); ok {
+		return v.IsCollection()
+	}
+	return false
+}

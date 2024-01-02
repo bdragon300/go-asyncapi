@@ -6,3 +6,7 @@ func DerefOrZero[T any](x *T) T {
 	}
 	return *new(T)
 }
+
+func ToPtr[T any](x T) *T {
+	return &x
+}

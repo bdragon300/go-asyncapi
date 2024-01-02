@@ -105,7 +105,7 @@ func pushStack(ctx *common.CompileContext, pathItem string, flags map[common.Sch
 	if flags == nil {
 		flags = make(map[common.SchemaTag]string)
 	}
-	var pkgName string
+	pkgName := common.DefaultPackage
 	if len(ctx.Stack.Items()) > 0 {
 		pkgName = ctx.TopPackageName()
 	}

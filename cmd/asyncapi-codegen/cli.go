@@ -9,20 +9,20 @@ import (
 	"path"
 	"strings"
 
+	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi/amqp"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi/http"
+	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi/kafka"
+
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/compiler"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols/http"
-
 	"github.com/charmbracelet/log"
 
 	"github.com/bdragon300/asyncapi-codegen-go/implementations"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols/amqp"
-
-	"github.com/bdragon300/asyncapi-codegen-go/internal/protocols/kafka"
 	"github.com/bdragon300/asyncapi-codegen-go/internal/writer"
 	"github.com/samber/lo"
 	"golang.org/x/mod/modfile"
@@ -85,8 +85,6 @@ func main() {
 	log.SetReportTimestamp(false)
 	logger = types.NewLogger("")
 
-	registerProtocols()
-
 	cmd := cliArgs.GenerateCmd
 	if err := generate(cmd); err != nil {
 		var multilineErr writer.MultilineError
@@ -97,12 +95,6 @@ func main() {
 		log.Error(err.Error())
 		log.Fatal("Cannot finish the generation. Use -v=1 flag to enable debug output")
 	}
-}
-
-func registerProtocols() {
-	kafka.Register()
-	amqp.Register()
-	http.Register()
 }
 
 func listImplementations() {
@@ -136,6 +128,7 @@ func generate(cmd *GenerateCmd) error {
 	logger.Debugf("Target implementations directory is %s", implDir)
 
 	// Compilation
+	asyncapi.ProtocolBuilders = protocolBuilders()
 	specID, _ := utils.SplitSpecPath(cmd.Spec)
 	firstSpecID := specID
 	compileQueue := []string{specID}             // Queue of specIDs to compile
@@ -191,7 +184,8 @@ func generate(cmd *GenerateCmd) error {
 
 	// Rendering
 	logger.Info("Run rendering")
-	files, err := writer.RenderPackages(firstComp, importBase, cmd.TargetDir)
+	protoRenderers := lo.MapValues(protocolBuilders(), func(value asyncapi.ProtocolBuilder, _ string) common.ProtocolRenderer { return value })
+	files, err := writer.RenderPackages(firstComp, protoRenderers, importBase, cmd.TargetDir)
 	if err != nil {
 		return fmt.Errorf("schema render: %w", err)
 	}
@@ -258,9 +252,17 @@ func getImportBase() (string, error) {
 
 func getSelectedImplementations(opts ImplementationsOpts) map[string]string {
 	return map[string]string{
-		kafka.ProtoName: opts.Kafka,
-		amqp.ProtoName:  opts.AMQP,
-		http.ProtoName:  opts.HTTP,
+		amqp.Builder.ProtocolName():  opts.AMQP,
+		http.Builder.ProtocolName():  opts.HTTP,
+		kafka.Builder.ProtocolName(): opts.Kafka,
+	}
+}
+
+func protocolBuilders() map[string]asyncapi.ProtocolBuilder {
+	return map[string]asyncapi.ProtocolBuilder{
+		amqp.Builder.ProtocolName():  amqp.Builder,
+		http.Builder.ProtocolName():  http.Builder,
+		kafka.Builder.ProtocolName(): kafka.Builder,
 	}
 }
 
