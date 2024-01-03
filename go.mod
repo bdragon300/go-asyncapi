@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/alexflint/go-arg v1.4.3
+	github.com/bdragon300/asyncapi-codegen-go/run v0.0.0-20240102155327-e9eb793122ec
 	github.com/buger/jsonparser v1.1.1
 	github.com/charmbracelet/log v0.3.1
 	github.com/dave/jennifer v1.7.0
