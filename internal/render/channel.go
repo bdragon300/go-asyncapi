@@ -58,9 +58,9 @@ func (c Channel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 			subBindings = c.BindingsSubscribePromise.Target()
 		}
 		for _, p := range protocols {
-			protoAbbr := ctx.ProtoRenderers[p].ProtocolAbbreviation()
+			protoTitle := ctx.ProtoRenderers[p].ProtocolTitle()
 			res = append(res, renderChannelAndOperationBindingsMethod(
-				ctx, c.BindingsStruct, chanBindings, pubBindings, subBindings, p, protoAbbr,
+				ctx, c.BindingsStruct, chanBindings, pubBindings, subBindings, p, protoTitle,
 			)...)
 		}
 	}

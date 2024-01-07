@@ -43,8 +43,8 @@ func (m Message) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 			protocols := m.getServerProtocols(ctx)
 			ctx.Logger.Debug("Message protocols", "protocols", protocols)
 			for _, p := range protocols {
-				protoAbbr := ctx.ProtoRenderers[p].ProtocolAbbreviation()
-				res = append(res, tgt.RenderBindingsMethod(ctx, m.BindingsStruct, p, protoAbbr)...)
+				protoTitle := ctx.ProtoRenderers[p].ProtocolTitle()
+				res = append(res, tgt.RenderBindingsMethod(ctx, m.BindingsStruct, p, protoTitle)...)
 			}
 		}
 	}
@@ -84,7 +84,7 @@ func (m Message) renderPublishMessageStruct(ctx *common.RenderContext) []*j.Stat
 	res = append(res, m.OutStruct.RenderDefinition(ctx)...)
 
 	for _, p := range m.getServerProtocols(ctx) {
-		res = append(res, m.renderMarshalEnvelopeMethod(ctx, p, ctx.ProtoRenderers[p].ProtocolAbbreviation())...)
+		res = append(res, m.renderMarshalEnvelopeMethod(ctx, p, ctx.ProtoRenderers[p].ProtocolTitle())...)
 	}
 	res = append(res, m.renderPublishCommonMethods(ctx)...)
 
@@ -130,7 +130,7 @@ func (m Message) renderPublishCommonMethods(ctx *common.RenderContext) []*j.Stat
 	return res
 }
 
-func (m Message) renderMarshalEnvelopeMethod(ctx *common.RenderContext, protoName, protoAbbr string) []*j.Statement {
+func (m Message) renderMarshalEnvelopeMethod(ctx *common.RenderContext, protoName, protoTitle string) []*j.Statement {
 	ctx.Logger.Trace("renderMarshalEnvelopeMethod")
 
 	rn := m.OutStruct.ReceiverName()
@@ -138,7 +138,7 @@ func (m Message) renderMarshalEnvelopeMethod(ctx *common.RenderContext, protoNam
 
 	return []*j.Statement{
 		// Method MarshalProtoEnvelope(envelope proto.EnvelopeWriter) error
-		j.Func().Params(receiver.Clone()).Id("Marshal" + protoAbbr + "Envelope").
+		j.Func().Params(receiver.Clone()).Id("Marshal" + protoTitle + "Envelope").
 			Params(j.Id("envelope").Qual(ctx.RuntimeModule(protoName), "EnvelopeWriter")).
 			Error().
 			BlockFunc(func(bg *j.Group) {
@@ -179,7 +179,7 @@ func (m Message) renderSubscribeMessageStruct(ctx *common.RenderContext) []*j.St
 	res = append(res, m.InStruct.RenderDefinition(ctx)...)
 
 	for _, p := range m.getServerProtocols(ctx) {
-		res = append(res, m.renderUnmarshalEnvelopeMethod(ctx, p, ctx.ProtoRenderers[p].ProtocolAbbreviation())...)
+		res = append(res, m.renderUnmarshalEnvelopeMethod(ctx, p, ctx.ProtoRenderers[p].ProtocolTitle())...)
 	}
 	res = append(res, m.renderSubscribeCommonMethods(ctx)...)
 
@@ -221,7 +221,7 @@ func (m Message) renderSubscribeCommonMethods(ctx *common.RenderContext) []*j.St
 	return res
 }
 
-func (m Message) renderUnmarshalEnvelopeMethod(ctx *common.RenderContext, protoName, protoAbbr string) []*j.Statement {
+func (m Message) renderUnmarshalEnvelopeMethod(ctx *common.RenderContext, protoName, protoTitle string) []*j.Statement {
 	ctx.Logger.Trace("renderUnmarshalEnvelopeMethod")
 
 	rn := m.InStruct.ReceiverName()
@@ -229,7 +229,7 @@ func (m Message) renderUnmarshalEnvelopeMethod(ctx *common.RenderContext, protoN
 
 	return []*j.Statement{
 		// Method UnmarshalProtoEnvelope(envelope proto.EnvelopeReader) error
-		j.Func().Params(receiver.Clone()).Id("Unmarshal" + protoAbbr + "Envelope").
+		j.Func().Params(receiver.Clone()).Id("Unmarshal" + protoTitle + "Envelope").
 			Params(j.Id("envelope").Qual(ctx.RuntimeModule(protoName), "EnvelopeReader")).
 			Error().
 			BlockFunc(func(bg *j.Group) {

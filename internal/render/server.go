@@ -29,7 +29,7 @@ func (s Server) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 		if s.BindingsPromise != nil {
 			tgt := s.BindingsPromise.Target()
 			if r, ok := ctx.ProtoRenderers[s.Protocol]; ok {
-				res = append(res, tgt.RenderBindingsMethod(ctx, s.BindingsStruct, s.Protocol, r.ProtocolAbbreviation())...)
+				res = append(res, tgt.RenderBindingsMethod(ctx, s.BindingsStruct, s.Protocol, r.ProtocolTitle())...)
 			} else {
 				ctx.Logger.Warnf("Skip protocol %q, since it is not supported", s.Protocol)
 			}

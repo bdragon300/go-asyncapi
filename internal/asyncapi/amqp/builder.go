@@ -10,7 +10,7 @@ type ProtoBuilder struct {
 
 var Builder = ProtoBuilder{
 	BaseProtoBuilder: asyncapi.BaseProtoBuilder{
-		ProtoName: "amqp",
-		ProtoAbbr: "AMQP",
+		ProtoName:  "amqp",
+		ProtoTitle: "AMQP",
 	},
 }

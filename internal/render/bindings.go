@@ -38,7 +38,7 @@ func (b *Bindings) String() string {
 func (b *Bindings) RenderBindingsMethod(
 	ctx *common.RenderContext,
 	bindingsStruct *GoStruct,
-	protoName, protoAbbr string,
+	protoName, protoTitle string,
 ) []*j.Statement {
 	ctx.LogRender("Bindings.RenderBindingsMethod", "", bindingsStruct.Name, "definition", false)
 	defer ctx.LogReturn()
@@ -51,7 +51,7 @@ func (b *Bindings) RenderBindingsMethod(
 	}
 
 	return []*j.Statement{
-		j.Func().Params(receiver.Clone()).Id(protoAbbr).
+		j.Func().Params(receiver.Clone()).Id(protoTitle).
 			Params().
 			Add(utils.ToCode(pv.Type.RenderUsage(ctx))...).
 			BlockFunc(func(bg *j.Group) {
@@ -70,7 +70,7 @@ func renderChannelAndOperationBindingsMethod(
 	ctx *common.RenderContext,
 	bindingsStruct *GoStruct,
 	channelBindings, publishBindings, subscribeBindings *Bindings,
-	protoName, protoAbbr string,
+	protoName, protoTitle string,
 ) []*j.Statement {
 	ctx.LogRender("renderChannelAndOperationBindingsMethod", "", bindingsStruct.Name, "definition", false)
 	defer ctx.LogReturn()
@@ -78,7 +78,7 @@ func renderChannelAndOperationBindingsMethod(
 	receiver := j.Id(bindingsStruct.ReceiverName()).Add(utils.ToCode(bindingsStruct.RenderUsage(ctx))...)
 
 	return []*j.Statement{
-		j.Func().Params(receiver.Clone()).Id(protoAbbr).
+		j.Func().Params(receiver.Clone()).Id(protoTitle).
 			Params().
 			Qual(ctx.RuntimeModule(protoName), "ChannelBindings").
 			BlockFunc(func(bg *j.Group) {

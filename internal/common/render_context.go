@@ -20,7 +20,7 @@ type Renderer interface {
 
 type ProtocolRenderer interface {
 	ProtocolName() string
-	ProtocolAbbreviation() string
+	ProtocolTitle() string
 }
 
 type PackageScope int

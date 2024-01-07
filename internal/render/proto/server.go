@@ -23,7 +23,7 @@ type BaseProtoServer struct {
 	ChannelsPromise *render.ListPromise[*render.Channel]
 	Variables       types.OrderedMap[string, ServerVariable]
 
-	ProtoName, ProtoAbbr string
+	ProtoName, ProtoTitle string
 }
 
 func (ps BaseProtoServer) RenderConsumerMethods(ctx *common.RenderContext) []*j.Statement {

@@ -88,7 +88,7 @@ func (pc ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {
 
 				if pc.AbstractChannel.BindingsStruct != nil {
 					bg.Id("bindings").Op(":=").Add(
-						utils.ToCode(pc.AbstractChannel.BindingsStruct.RenderUsage(ctx))...).Values().Dot(pc.ProtoAbbr).Call()
+						utils.ToCode(pc.AbstractChannel.BindingsStruct.RenderUsage(ctx))...).Values().Dot(pc.ProtoTitle).Call()
 					bg.Op(`
 						switch bindings.ChannelType {
 						case "queue":

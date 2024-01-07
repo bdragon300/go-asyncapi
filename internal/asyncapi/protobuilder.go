@@ -23,13 +23,13 @@ type ProtocolBuilder interface {
 	BuildServerBindings(ctx *common.CompileContext, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *render.GoValue, jsonVals types.OrderedMap[string, string], err error)
 
 	ProtocolName() string
-	ProtocolAbbreviation() string
+	ProtocolTitle() string
 }
 
 var ProtocolBuilders map[string]ProtocolBuilder // TODO: replace the global variableon smth better
 
 type BaseProtoBuilder struct {
-	ProtoName, ProtoAbbr string
+	ProtoName, ProtoTitle string
 }
 
 func (pb BaseProtoBuilder) BuildBaseProtoChannel(
@@ -43,7 +43,7 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 		Name: chName,
 		Struct: &render.GoStruct{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(chName, pb.ProtoAbbr),
+				Name:         ctx.GenerateObjName(chName, pb.ProtoTitle),
 				Description:  channel.Description,
 				DirectRender: true,
 				Import:       ctx.CurrentPackage(),
@@ -55,7 +55,7 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 		AbstractChannel:     abstractChannel,
 		FallbackMessageType: &render.GoSimple{Name: "any", IsIface: true},
 		ProtoName:           pb.ProtoName,
-		ProtoAbbr:           pb.ProtoAbbr,
+		ProtoTitle:          pb.ProtoTitle,
 	}
 
 	// Interface to match servers bound with a channel (type chan1KafkaServer interface)
@@ -161,8 +161,8 @@ func (pb BaseProtoBuilder) BuildBaseProtoServer(
 				Import:       ctx.CurrentPackage(),
 			},
 		},
-		ProtoName: pb.ProtoName,
-		ProtoAbbr: pb.ProtoAbbr,
+		ProtoName:  pb.ProtoName,
+		ProtoTitle: pb.ProtoTitle,
 	}
 
 	// Server variables
@@ -212,7 +212,7 @@ func (pb BaseProtoBuilder) ProtocolName() string {
 	return pb.ProtoName
 }
 
-func (pb BaseProtoBuilder) ProtocolAbbreviation() string {
-	return pb.ProtoAbbr
+func (pb BaseProtoBuilder) ProtocolTitle() string {
+	return pb.ProtoTitle
 }
 

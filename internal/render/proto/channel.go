@@ -22,7 +22,7 @@ type BaseProtoChannel struct {
 	SubMessagePromise   *render.Promise[*render.Message] // nil when message is not set
 	FallbackMessageType common.GolangType
 
-	ProtoName, ProtoAbbr string
+	ProtoName, ProtoTitle string
 }
 
 func (pc BaseProtoChannel) RenderCommonSubscriberMethods(
@@ -56,7 +56,7 @@ func (pc BaseProtoChannel) RenderCommonSubscriberMethods(
 							return err
 						}`))
 				} else {
-					bg.Op(fmt.Sprintf(`return message.Unmarshal%sEnvelope(envelope)`, pc.ProtoAbbr))
+					bg.Op(fmt.Sprintf(`return message.Unmarshal%sEnvelope(envelope)`, pc.ProtoTitle))
 				}
 			}),
 
@@ -177,7 +177,7 @@ func (pc BaseProtoChannel) RenderOpenFunc(
 						}
 					})
 					if bindingsStruct != nil {
-						bg.Id("bindings").Op(":=").Id(bindingsStruct.Name).Values().Dot(pc.ProtoAbbr).Call()
+						bg.Id("bindings").Op(":=").Id(bindingsStruct.Name).Values().Dot(pc.ProtoTitle).Call()
 					}
 					if publisher {
 						bg.Var().Id("prod").Index().Qual(ctx.RuntimeModule(pc.ProtoName), "Producer")
