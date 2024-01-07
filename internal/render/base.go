@@ -10,7 +10,7 @@ type BaseType struct {
 	// rendering of this type is invoked indirectly by another type.
 	// Such as inlined `field struct{...}` and separate `field StructName`, or `field []type` and `field ArrayName`
 	DirectRender bool
-	PackageName  string // optional import path from any generated package
+	PackageName  string // optional generated package name or module to import a type from
 }
 
 func (b *BaseType) DirectRendering() bool {
@@ -21,8 +21,15 @@ func (b *BaseType) TypeName() string {
 	return b.Name
 }
 
-func (b *BaseType) String() string {
+func (b *BaseType) ID() string {
 	return b.Name
+}
+
+func (b *BaseType) String() string {
+	if b.PackageName != "" {
+		return "GoType ." + b.PackageName + "." + b.Name
+	}
+	return "GoType " + b.Name
 }
 
 type golangTypeWrapperType interface {
@@ -36,8 +43,4 @@ type golangPointerType interface {
 
 type golangStructType interface {
 	IsStruct() bool
-}
-
-type golangCollectionType interface {
-	IsCollection() bool
 }

@@ -57,61 +57,91 @@ type renderSource interface {
 	Packages() []string
 }
 
-func RenderPackages(source renderSource, protoRenderers map[string]common.ProtocolRenderer, importBase, baseDir string) (files map[string]*bytes.Buffer, err error) {
-	files = make(map[string]*bytes.Buffer)
+func RenderPackages(source renderSource, protoRenderers map[string]common.ProtocolRenderer, opts common.RenderOpts) (fileContents map[string]*bytes.Buffer, err error) {
+	fileContents = make(map[string]*bytes.Buffer)
 	logger := types.NewLogger("Rendering 🎨")
 	rendered := 0
 	totalObjects := 0
 
+	logger.Info("Run rendering")
+
+	files := make(map[string]*jen.File)
 	for _, pkgName := range source.Packages() {
 		ctx := &common.RenderContext{
 			ProtoRenderers: protoRenderers,
 			CurrentPackage: pkgName,
-			ImportBase:     importBase,
 			Logger:         logger,
+			RenderOpts:     opts,
 		}
 		items := source.PackageObjects(pkgName)
-		ctx.Logger.Debug("Package", "pkg", pkgName, "items", len(items))
+		targetPkg := pkgName
+		if opts.PackageScope == common.PackageScopeAll {
+			targetPkg = opts.TargetPackage
+		}
+		ctx.Logger.Debug("Package", "pkg", targetPkg, "items", len(items))
 		totalObjects += len(items)
 		for _, item := range items {
-			fileName := utils.ToFileName(item.Object.String()) + ".go"
-
-			f := jen.NewFilePathName(baseDir, pkgName)
-			f.HeaderComment(GeneratedCodePreamble)
-
 			if !item.Object.DirectRendering() {
 				continue
 			}
+
+			fileName := pkgName + ".go" // All objects with the same type in one file
+			if opts.FileScope == common.FileScopeName {
+				// Every single object in a separate file
+				fileName = utils.ToFileName(item.Object.ID()) + ".go"
+			}
+			if opts.PackageScope == common.PackageScopeType {
+				fileName = path.Join(targetPkg, fileName)
+			}
+
+			f, ok := files[fileName]
+			if !ok {
+				f = jen.NewFilePathName(opts.ImportBase, targetPkg)
+				f.HeaderComment(GeneratedCodePreamble)
+			}
+
 			rendered++
+			ctx.Logger.Debug("Render object", "pkg", pkgName, "object", item.Object.String(), "file", fileName)
 			for _, stmt := range item.Object.RenderDefinition(ctx) {
 				f.Add(stmt)
 			}
-
-			buf := &bytes.Buffer{}
-			if err = f.Render(buf); err != nil {
-				if strings.ContainsRune(err.Error(), '\n') {
-					return files, MultilineError{err}
-				}
-				return files, err
-			}
-
-			ctx.Logger.Debug("Object rendered", "pkg", pkgName, "object", item.Object.String(), "file", fileName, "bytes", buf.Len())
-			files[path.Join(pkgName, fileName)] = buf
+			files[fileName] = f
 		}
 	}
 	logger.Debugf("Render stats: packages %d, objects: %d (rendered directly: %d)", len(source.Packages()), totalObjects, rendered)
+
+	for fileName, f := range files {
+		logger.Trace("Render file", "file", fileName)
+		buf := &bytes.Buffer{}
+		if b, ok := fileContents[fileName]; ok {
+			buf.WriteRune('\n')
+			buf = b
+		}
+		if err = f.Render(buf); err != nil {
+			if strings.ContainsRune(err.Error(), '\n') {
+				return fileContents, MultilineError{err}
+			}
+			return fileContents, err
+		}
+		logger.Debug("Rendered file", "file", fileName, "size", buf.Len())
+
+		fileContents[fileName] = buf
+	}
+
+	logger.Info("Rendering completed", "objects", rendered)
 	return
 }
 
 func WriteToFiles(files map[string]*bytes.Buffer, baseDir string) error {
-	l := types.NewLogger("Writing 📝")
+	logger := types.NewLogger("Writing 📝")
+	logger.Info("Run writing")
 
 	if err := ensureDir(baseDir); err != nil {
 		return err
 	}
 	totalBytes := 0
 	for fileName, buf := range files {
-		l.Debug("File", "name", fileName)
+		logger.Debug("File", "name", fileName)
 		fullPath := path.Join(baseDir, fileName)
 		if err := ensureDir(path.Dir(fullPath)); err != nil {
 			return err
@@ -120,10 +150,12 @@ func WriteToFiles(files map[string]*bytes.Buffer, baseDir string) error {
 		if err := os.WriteFile(fullPath, buf.Bytes(), 0o644); err != nil {
 			return err
 		}
-		l.Debug("File wrote", "name", fullPath, "bytes", buf.Len())
+		logger.Debug("File wrote", "name", fullPath, "bytes", buf.Len())
 		totalBytes += buf.Len()
 	}
-	l.Debugf("Writer stats: files: %d, total bytes: %d", len(files), totalBytes)
+	logger.Debugf("Writer stats: files: %d, total bytes: %d", len(files), totalBytes)
+
+	logger.Info("Writing completed", "files", len(files))
 	return nil
 }
 

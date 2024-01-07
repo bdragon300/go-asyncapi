@@ -40,7 +40,7 @@ func (s GoStruct) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 
 	if s.DirectRendering() {
 		if s.PackageName != "" && s.PackageName != ctx.CurrentPackage {
-			return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(s.PackageName), s.Name)}
+			return []*jen.Statement{jen.Qual(ctx.GeneratedModule(s.PackageName), s.Name)}
 		}
 		return []*jen.Statement{jen.Id(s.Name)}
 	}

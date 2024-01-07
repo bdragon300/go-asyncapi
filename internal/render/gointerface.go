@@ -34,7 +34,7 @@ func (i GoInterface) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 
 	if i.DirectRendering() {
 		if i.PackageName != "" && i.PackageName != ctx.CurrentPackage {
-			return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(i.PackageName), i.Name)}
+			return []*jen.Statement{jen.Qual(ctx.GeneratedModule(i.PackageName), i.Name)}
 		}
 		return []*jen.Statement{jen.Id(i.Name)}
 	}

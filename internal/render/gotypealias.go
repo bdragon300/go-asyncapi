@@ -31,7 +31,7 @@ func (p GoTypeAlias) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 
 	if p.DirectRender {
 		if p.PackageName != "" && p.PackageName != ctx.CurrentPackage {
-			return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(p.PackageName), p.Name)}
+			return []*jen.Statement{jen.Qual(ctx.GeneratedModule(p.PackageName), p.Name)}
 		}
 		return []*jen.Statement{jen.Id(p.Name)}
 	}
@@ -56,13 +56,6 @@ func (p GoTypeAlias) IsPointer() bool {
 func (p GoTypeAlias) IsStruct() bool {
 	if v, ok := any(p.AliasedType).(golangStructType); ok {
 		return v.IsStruct()
-	}
-	return false
-}
-
-func (p GoTypeAlias) IsCollection() bool {
-	if v, ok := any(p.AliasedType).(golangCollectionType); ok {
-		return v.IsCollection()
 	}
 	return false
 }

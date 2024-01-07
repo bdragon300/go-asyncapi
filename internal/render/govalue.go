@@ -93,7 +93,7 @@ func (gv GoValue) RenderUsage(ctx *common.RenderContext) []*j.Statement {
 		if gv.Empty() {
 			if gv.NilCurlyBrakets {
 				// &{} -> ToPtr({})
-				return []*j.Statement{j.Qual(ctx.RuntimePackage(""), "ToPtr").Call(j.Values())}
+				return []*j.Statement{j.Qual(ctx.RuntimeModule(""), "ToPtr").Call(j.Values())}
 			}
 			// &nil -> nil
 			return []*j.Statement{j.Nil()}
@@ -101,12 +101,12 @@ func (gv GoValue) RenderUsage(ctx *common.RenderContext) []*j.Statement {
 		if gv.Literal != nil {
 			if t, hasType := v.WrappedGolangType(); hasType {
 				// &int(123) -> ToPtr(int(123))
-				return []*j.Statement{j.Qual(ctx.RuntimePackage(""), "ToPtr").Call(
+				return []*j.Statement{j.Qual(ctx.RuntimeModule(""), "ToPtr").Call(
 					j.Add(utils.ToCode(t.RenderUsage(ctx))...).Call(valueStmt),
 				)}
 			}
 			// &123 -> ToPtr(123)
-			return []*j.Statement{j.Qual(ctx.RuntimePackage(""), "ToPtr").Call(valueStmt)}
+			return []*j.Statement{j.Qual(ctx.RuntimeModule(""), "ToPtr").Call(valueStmt)}
 		}
 
 		// &AnyType{}
@@ -126,18 +126,22 @@ func (gv GoValue) Empty() bool {
 	return gv.Literal == nil && gv.StructVals.Len() == 0 && gv.DictVals.Len() == 0 && gv.ArrayVals == nil
 }
 
+func (gv GoValue) ID() string {
+	return "GoValue"
+}
+
 func (gv GoValue) String() string {
 	switch {
 	case gv.Literal != nil:
-		return fmt.Sprintf("%v", gv.Literal)
+		return fmt.Sprintf("GoValue %v", gv.Literal)
 	case gv.StructVals.Len() > 0:
-		return fmt.Sprintf("{%v...}", lo.Slice(gv.StructVals.Entries(), 0, 2))
+		return fmt.Sprintf("GoValue {%v...}", lo.Slice(gv.StructVals.Entries(), 0, 2))
 	case gv.DictVals.Len() > 0:
-		return fmt.Sprintf("{%v...}", lo.Slice(gv.DictVals.Entries(), 0, 2))
+		return fmt.Sprintf("GoValue {%v...}", lo.Slice(gv.DictVals.Entries(), 0, 2))
 	case gv.ArrayVals != nil:
-		return fmt.Sprintf("{%v...}", lo.Slice(gv.ArrayVals, 0, 2))
+		return fmt.Sprintf("GoValue {%v...}", lo.Slice(gv.ArrayVals, 0, 2))
 	}
-	return "nil"
+	return "GoValue nil"
 }
 
 type stringAnyMap interface {

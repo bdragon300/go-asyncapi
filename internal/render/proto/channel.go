@@ -44,7 +44,7 @@ func (pc BaseProtoChannel) RenderCommonSubscriberMethods(
 		// Method ExtractEnvelope(envelope proto.EnvelopeReader, message *Message1In) error
 		j.Func().Params(receiver.Clone()).Id("ExtractEnvelope").
 			Params(
-				j.Id("envelope").Qual(ctx.RuntimePackage(pc.ProtoName), "EnvelopeReader"),
+				j.Id("envelope").Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeReader"),
 				j.Id("message").Add(utils.ToCode(msgTyp.RenderUsage(ctx))...),
 			).
 			Error().
@@ -63,7 +63,7 @@ func (pc BaseProtoChannel) RenderCommonSubscriberMethods(
 		// Method Subscriber() proto.Subscriber
 		j.Func().Params(receiver.Clone()).Id("Subscriber").
 			Params().
-			Qual(ctx.RuntimePackage(pc.ProtoName), "Subscriber").
+			Qual(ctx.RuntimeModule(pc.ProtoName), "Subscriber").
 			Block(
 				j.Return(j.Id(rn).Dot("subscriber")),
 			),
@@ -72,7 +72,7 @@ func (pc BaseProtoChannel) RenderCommonSubscriberMethods(
 		j.Func().Params(receiver.Clone()).Id("Subscribe").
 			Params(
 				j.Id("ctx").Qual("context", "Context"),
-				j.Id("cb").Func().Params(j.Id("envelope").Qual(ctx.RuntimePackage(pc.ProtoName), "EnvelopeReader")).Error(), // FIXME: *any on fallback variant
+				j.Id("cb").Func().Params(j.Id("envelope").Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeReader")).Error(), // FIXME: *any on fallback variant
 			).
 			Error().
 			Block(
@@ -94,7 +94,7 @@ func (pc BaseProtoChannel) RenderCommonPublisherMethods(
 		// Method Publisher() proto.Publisher
 		j.Func().Params(receiver.Clone()).Id("Publisher").
 			Params().
-			Qual(ctx.RuntimePackage(pc.ProtoName), "Publisher").
+			Qual(ctx.RuntimeModule(pc.ProtoName), "Publisher").
 			Block(
 				j.Return(j.Id(rn).Dot("publisher")),
 			),
@@ -103,7 +103,7 @@ func (pc BaseProtoChannel) RenderCommonPublisherMethods(
 		j.Func().Params(receiver.Clone()).Id("Publish").
 			Params(
 				j.Id("ctx").Qual("context", "Context"),
-				j.Id("envelopes").Op("...").Qual(ctx.RuntimePackage(pc.ProtoName), "EnvelopeWriter"),
+				j.Id("envelopes").Op("...").Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeWriter"),
 			).
 			Error().
 			Block(
@@ -126,7 +126,7 @@ func (pc BaseProtoChannel) RenderCommonMethods(
 		// Method Name() string
 		j.Func().Params(receiver.Clone()).Id("Name").
 			Params().
-			Qual(ctx.RuntimePackage(""), "ParamString").
+			Qual(ctx.RuntimeModule(""), "ParamString").
 			Block(
 				j.Return(j.Id(rn).Dot("name")),
 			),
@@ -169,7 +169,7 @@ func (pc BaseProtoChannel) RenderOpenFunc(
 			}).
 			Params(j.Op("*").Add(utils.ToCode(channelStruct.RenderUsage(ctx))...), j.Error()).
 			BlockFunc(func(bg *j.Group) {
-				bg.Op("if len(servers) == 0").Block(j.Op("return nil, ").Qual(ctx.RuntimePackage(""), "ErrEmptyServers"))
+				bg.Op("if len(servers) == 0").Block(j.Op("return nil, ").Qual(ctx.RuntimeModule(""), "ErrEmptyServers"))
 				if publisher || subscriber {
 					bg.Id("name").Op(":=").Id(utils.ToGolangName(channelName, true) + "Name").CallFunc(func(g *j.Group) {
 						if parametersStruct != nil {
@@ -180,10 +180,10 @@ func (pc BaseProtoChannel) RenderOpenFunc(
 						bg.Id("bindings").Op(":=").Id(bindingsStruct.Name).Values().Dot(pc.ProtoAbbr).Call()
 					}
 					if publisher {
-						bg.Var().Id("prod").Index().Qual(ctx.RuntimePackage(pc.ProtoName), "Producer")
+						bg.Var().Id("prod").Index().Qual(ctx.RuntimeModule(pc.ProtoName), "Producer")
 					}
 					if subscriber {
-						bg.Var().Id("cons").Index().Qual(ctx.RuntimePackage(pc.ProtoName), "Consumer")
+						bg.Var().Id("cons").Index().Qual(ctx.RuntimeModule(pc.ProtoName), "Consumer")
 					}
 					bg.Op("for _, srv := range servers").BlockFunc(func(g *j.Group) {
 						if publisher {
@@ -196,11 +196,11 @@ func (pc BaseProtoChannel) RenderOpenFunc(
 				}
 				if publisher {
 					bg.Op("pubs, err := ").
-						Qual(ctx.RuntimePackage(""), "GatherPublishers").
+						Qual(ctx.RuntimeModule(""), "GatherPublishers").
 						Types(
-							j.Qual(ctx.RuntimePackage(pc.ProtoName), "EnvelopeWriter"),
-							j.Qual(ctx.RuntimePackage(pc.ProtoName), "Publisher"),
-							j.Qual(ctx.RuntimePackage(pc.ProtoName), "ChannelBindings"),
+							j.Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeWriter"),
+							j.Qual(ctx.RuntimeModule(pc.ProtoName), "Publisher"),
+							j.Qual(ctx.RuntimeModule(pc.ProtoName), "ChannelBindings"),
 						).
 						CallFunc(func(g *j.Group) {
 							g.Id("name")
@@ -211,17 +211,17 @@ func (pc BaseProtoChannel) RenderOpenFunc(
 						if err != nil {
 							return nil, err
 						}`)
-					bg.Op("pub := ").Qual(ctx.RuntimePackage(""), "PublisherFanOut").
-						Types(j.Qual(ctx.RuntimePackage(pc.ProtoName), "EnvelopeWriter"), j.Qual(ctx.RuntimePackage(pc.ProtoName), "Publisher")).
+					bg.Op("pub := ").Qual(ctx.RuntimeModule(""), "PublisherFanOut").
+						Types(j.Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeWriter"), j.Qual(ctx.RuntimeModule(pc.ProtoName), "Publisher")).
 						Op("{Publishers: pubs}")
 				}
 				if subscriber {
 					bg.Op("subs, err := ").
-						Qual(ctx.RuntimePackage(""), "GatherSubscribers").
+						Qual(ctx.RuntimeModule(""), "GatherSubscribers").
 						Types(
-							j.Qual(ctx.RuntimePackage(pc.ProtoName), "EnvelopeReader"),
-							j.Qual(ctx.RuntimePackage(pc.ProtoName), "Subscriber"),
-							j.Qual(ctx.RuntimePackage(pc.ProtoName), "ChannelBindings"),
+							j.Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeReader"),
+							j.Qual(ctx.RuntimeModule(pc.ProtoName), "Subscriber"),
+							j.Qual(ctx.RuntimeModule(pc.ProtoName), "ChannelBindings"),
 						).
 						CallFunc(func(g *j.Group) {
 							g.Id("name")
@@ -234,8 +234,8 @@ func (pc BaseProtoChannel) RenderOpenFunc(
 						}
 						g.Op("return nil, err")
 					})
-					bg.Op("sub := ").Qual(ctx.RuntimePackage(""), "SubscriberFanIn").
-						Types(j.Qual(ctx.RuntimePackage(pc.ProtoName), "EnvelopeReader"), j.Qual(ctx.RuntimePackage(pc.ProtoName), "Subscriber")).
+					bg.Op("sub := ").Qual(ctx.RuntimeModule(""), "SubscriberFanIn").
+						Types(j.Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeReader"), j.Qual(ctx.RuntimeModule(pc.ProtoName), "Subscriber")).
 						Op("{Subscribers: subs}")
 				}
 				bg.Op("ch := ").Id(channelStruct.NewFuncName()).CallFunc(func(g *j.Group) {

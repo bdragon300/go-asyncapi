@@ -152,9 +152,11 @@ func (c *Module) Compile(ctx *common.CompileContext) error {
 	if err := WalkAndCompile(ctx, reflect.ValueOf(c.parsedSpec)); err != nil {
 		return fmt.Errorf("spec: %w", err)
 	}
-	c.logger.Trace("Compile the utils package", "specID", c.specID)
-	if err := UtilsCompile(ctx); err != nil {
-		return fmt.Errorf("utils package: %w", err)
+	if !ctx.CompileOpts.NoUtilsPackage {
+		c.logger.Trace("Compile the utils package", "specID", c.specID)
+		if err := UtilsCompile(ctx); err != nil {
+			return fmt.Errorf("utils package: %w", err)
+		}
 	}
 	return nil
 }

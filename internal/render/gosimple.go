@@ -11,7 +11,7 @@ import (
 type GoSimple struct {
 	Name            string            // type name
 	IsIface         bool              // TODO: check if this field is filled correctly everywhere
-	Package         string            // optional import path from any package
+	Package         string            // optional generated package name or module to import a type from
 	TypeParamValues []common.Renderer // optional type parameter types to be filled in definition and usage
 }
 
@@ -59,9 +59,14 @@ func (p GoSimple) TypeName() string {
 	return p.Name
 }
 
-func (p GoSimple) String() string {
-	if p.Package != "" {
-		return p.Package + "." + p.Name
-	}
+func (p GoSimple) ID() string {
 	return p.Name
 }
+
+func (p GoSimple) String() string {
+	if p.Package != "" {
+		return "GoSimple ." + p.Package + "." + p.Name
+	}
+	return "GoSimple " + p.Name
+}
+

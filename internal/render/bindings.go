@@ -9,7 +9,7 @@ import (
 
 // Bindings never renders itself, only as a part of other object
 type Bindings struct {
-	Path   string                             // Should not empty
+	Name   string
 	Values types.OrderedMap[string, *GoValue] // Binding values by protocol
 	// Value of jsonschema fields as json marshalled strings
 	JSONValues types.OrderedMap[string, types.OrderedMap[string, string]] // Binbing values by protocol
@@ -27,8 +27,12 @@ func (b *Bindings) RenderUsage(_ *common.RenderContext) []*j.Statement {
 	panic("not implemented")
 }
 
+func (b *Bindings) ID() string {
+	return b.Name
+}
+
 func (b *Bindings) String() string {
-	return b.Path
+	return "Bindings " + b.Name
 }
 
 func (b *Bindings) RenderBindingsMethod(
@@ -76,9 +80,9 @@ func renderChannelAndOperationBindingsMethod(
 	return []*j.Statement{
 		j.Func().Params(receiver.Clone()).Id(protoAbbr).
 			Params().
-			Qual(ctx.RuntimePackage(protoName), "ChannelBindings").
+			Qual(ctx.RuntimeModule(protoName), "ChannelBindings").
 			BlockFunc(func(bg *j.Group) {
-				cb := &GoValue{Type: &GoSimple{Name: "ChannelBindings", Package: ctx.RuntimePackage(protoName)}, NilCurlyBrakets: true}
+				cb := &GoValue{Type: &GoSimple{Name: "ChannelBindings", Package: ctx.RuntimeModule(protoName)}, NilCurlyBrakets: true}
 				if channelBindings != nil {
 					if b, ok := channelBindings.Values.Get(protoName); ok {
 						ctx.Logger.Debug("Channel bindings", "proto", protoName)

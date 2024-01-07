@@ -37,8 +37,12 @@ func (ps ProtoServer) RenderUsage(ctx *common.RenderContext) []*j.Statement {
 	return ps.Struct.RenderUsage(ctx)
 }
 
+func (ps ProtoServer) ID() string {
+	return ps.Name
+}
+
 func (ps ProtoServer) String() string {
-	return ps.BaseProtoServer.Name
+	return "Kafka ProtoServer " + ps.Name
 }
 
 func (ps ProtoServer) renderChannelMethods(ctx *common.RenderContext) []*j.Statement {

@@ -42,6 +42,18 @@ func (f GoFuncSignature) RenderUsage(ctx *common.RenderContext) []*jen.Statement
 	return []*jen.Statement{jen.Id(f.Name)}
 }
 
+func (f GoFuncSignature) ID() string {
+	return f.Name
+}
+
+func (f GoFuncSignature) DirectRendering() bool {
+	return false
+}
+
+func (f GoFuncSignature) TypeName() string {
+	return f.Name
+}
+
 func (f GoFuncSignature) String() string {
 	ret := ""
 	switch {
@@ -51,15 +63,7 @@ func (f GoFuncSignature) String() string {
 		ret = strings.Join(lo.Map(f.Return, func(item GoFuncParam, _ int) string { return item.String() }), ", ")
 	}
 	args := strings.Join(lo.Map(f.Return, func(item GoFuncParam, _ int) string { return item.String() }), ", ")
-	return fmt.Sprintf("%s(%s)%s", f.Name, args, ret)
-}
-
-func (f GoFuncSignature) DirectRendering() bool {
-	return false
-}
-
-func (f GoFuncSignature) TypeName() string {
-	return f.Name
+	return fmt.Sprintf("GoFuncSignature %s(%s)%s", f.Name, args, ret)
 }
 
 type GoFuncParam struct {
@@ -88,5 +92,5 @@ func (n GoFuncParam) renderDefinition(ctx *common.RenderContext) []*jen.Statemen
 }
 
 func (n GoFuncParam) String() string {
-	return n.Type.String() + " " + n.Type.String()
+	return "GoFuncParam " + n.Name + " of " + n.Type.String()
 }

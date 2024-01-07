@@ -35,7 +35,7 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 		return nil
 	}
 	ctx.PutObject(obj)
-	if ctx.TopPackageName() == "servers" { // FIXME: optimize somehow
+	if ctx.CurrentPackage() == "servers" { // FIXME: optimize somehow
 		ctx.Storage.AddProtocol(s.Protocol)
 	}
 	return nil
@@ -67,7 +67,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(srvName, "Bindings"),
 				DirectRender: true,
-				PackageName:  ctx.TopPackageName(),
+				PackageName:  ctx.CurrentPackage(),
 			},
 			Fields: nil,
 		}

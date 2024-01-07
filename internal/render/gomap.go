@@ -35,7 +35,7 @@ func (m GoMap) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 
 	if m.DirectRender {
 		if m.PackageName != "" && m.PackageName != ctx.CurrentPackage {
-			return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(m.PackageName), m.Name)}
+			return []*jen.Statement{jen.Qual(ctx.GeneratedModule(m.PackageName), m.Name)}
 		}
 		return []*jen.Statement{jen.Id(m.Name)}
 	}
@@ -43,8 +43,4 @@ func (m GoMap) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 	keyType := utils.ToCode(m.KeyType.RenderUsage(ctx))
 	valueType := utils.ToCode(m.ValueType.RenderUsage(ctx))
 	return []*jen.Statement{jen.Map((&jen.Statement{}).Add(keyType...)).Add(valueType...)}
-}
-
-func (m GoMap) IsCollection() bool {
-	return true
 }

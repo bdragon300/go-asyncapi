@@ -24,7 +24,7 @@ func (pb ProtoBuilder) BuildMessageBindings(ctx *common.CompileContext, rawData 
 	}
 
 	vals = render.ConstructGoValue(
-		bindings, []string{"Key"}, &render.GoSimple{Name: "MessageBindings", Package: ctx.RuntimePackage(pb.ProtoName)},
+		bindings, []string{"Key"}, &render.GoSimple{Name: "MessageBindings", Package: ctx.RuntimeModule(pb.ProtoName)},
 	)
 	if bindings.Key != nil {
 		v, err2 := json.Marshal(bindings.Key)

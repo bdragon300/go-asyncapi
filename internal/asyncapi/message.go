@@ -75,7 +75,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 				Name:         ctx.GenerateObjName(m.Name, "Out"),
 				Description:  utils.JoinNonemptyStrings("\n", m.Summary+" (Outbound Message)", m.Description),
 				DirectRender: true,
-				PackageName:  ctx.TopPackageName(),
+				PackageName:  ctx.CurrentPackage(),
 			},
 		},
 		InStruct: &render.GoStruct{
@@ -83,7 +83,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 				Name:         ctx.GenerateObjName(m.Name, "In"),
 				Description:  utils.JoinNonemptyStrings("\n", m.Summary+" (Inbound Message)", m.Description),
 				DirectRender: true,
-				PackageName:  ctx.TopPackageName(),
+				PackageName:  ctx.CurrentPackage(),
 			},
 		},
 		PayloadType:         m.getPayloadType(ctx),
@@ -117,7 +117,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(m.Name, "Bindings"),
 				DirectRender: true,
-				PackageName:  ctx.TopPackageName(),
+				PackageName:  ctx.CurrentPackage(),
 			},
 			Fields: nil,
 		}

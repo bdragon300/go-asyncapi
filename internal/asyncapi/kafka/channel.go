@@ -52,7 +52,7 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 	}
 
 	vals = render.ConstructGoValue(
-		bindings, []string{"Partitions", "Replicas", "TopicConfiguration"}, &render.GoSimple{Name: "ChannelBindings", Package: ctx.RuntimePackage(pb.ProtoName)},
+		bindings, []string{"Partitions", "Replicas", "TopicConfiguration"}, &render.GoSimple{Name: "ChannelBindings", Package: ctx.RuntimeModule(pb.ProtoName)},
 	)
 	if bindings.Partitions != nil {
 		vals.StructVals.Set("Partitions", *bindings.Partitions)
@@ -64,12 +64,12 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 		tcVals := render.ConstructGoValue(
 			*bindings.TopicConfiguration,
 			[]string{"CleanupPolicy", "RetentionMs", "DeleteRetentionMs"},
-			&render.GoSimple{Name: "TopicConfiguration", Package: ctx.RuntimePackage(pb.ProtoName)},
+			&render.GoSimple{Name: "TopicConfiguration", Package: ctx.RuntimeModule(pb.ProtoName)},
 		)
 
 		// TopicConfiguration->CleanupPolicy
 		if len(bindings.TopicConfiguration.CleanupPolicy) > 0 {
-			cpVal := &render.GoValue{Type: &render.GoSimple{Name: "TopicCleanupPolicy", Package: ctx.RuntimePackage(pb.ProtoName)}, NilCurlyBrakets: true}
+			cpVal := &render.GoValue{Type: &render.GoSimple{Name: "TopicCleanupPolicy", Package: ctx.RuntimeModule(pb.ProtoName)}, NilCurlyBrakets: true}
 			switch {
 			case lo.Contains(bindings.TopicConfiguration.CleanupPolicy, "delete"):
 				cpVal.StructVals.Set("Delete", true)

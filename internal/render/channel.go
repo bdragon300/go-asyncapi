@@ -83,8 +83,12 @@ func (c Channel) RenderUsage(_ *common.RenderContext) []*j.Statement {
 	panic("not implemented")
 }
 
-func (c Channel) String() string {
+func (c Channel) ID() string {
 	return c.Name
+}
+
+func (c Channel) String() string {
+	return "Channel " + c.Name
 }
 
 func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement {
@@ -98,10 +102,10 @@ func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement
 					g.Id("params").Add(utils.ToCode(c.ParametersStruct.RenderUsage(ctx))...)
 				}
 			}).
-			Qual(ctx.RuntimePackage(""), "ParamString").
+			Qual(ctx.RuntimeModule(""), "ParamString").
 			BlockFunc(func(bg *j.Group) {
 				if c.ParametersStruct == nil {
-					bg.Return(j.Qual(ctx.RuntimePackage(""), "ParamString").Values(j.Dict{
+					bg.Return(j.Qual(ctx.RuntimeModule(""), "ParamString").Values(j.Dict{
 						j.Id("Expr"): j.Lit(c.ChannelKey),
 					}))
 				} else {
@@ -110,7 +114,7 @@ func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement
 							d[j.Id("params").Dot(f.Name).Dot("Name").Call()] = j.Id("params").Dot(f.Name).Dot("String").Call()
 						}
 					}))
-					bg.Return(j.Qual(ctx.RuntimePackage(""), "ParamString").Values(j.Dict{
+					bg.Return(j.Qual(ctx.RuntimeModule(""), "ParamString").Values(j.Dict{
 						j.Id("Expr"):       j.Lit(c.ChannelKey),
 						j.Id("Parameters"): j.Id("paramMap"),
 					}))

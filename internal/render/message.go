@@ -66,8 +66,12 @@ func (m Message) RenderUsage(_ *common.RenderContext) []*j.Statement {
 	panic("not implemented") // TODO: separate Renderer interface instead of panic in RenderUsage?
 }
 
-func (m Message) String() string {
+func (m Message) ID() string {
 	return m.Name
+}
+
+func (m Message) String() string {
+	return "Message " + m.Name
 }
 
 func (m Message) renderPublishMessageStruct(ctx *common.RenderContext) []*j.Statement {
@@ -135,10 +139,10 @@ func (m Message) renderMarshalEnvelopeMethod(ctx *common.RenderContext, protoNam
 	return []*j.Statement{
 		// Method MarshalProtoEnvelope(envelope proto.EnvelopeWriter) error
 		j.Func().Params(receiver.Clone()).Id("Marshal" + protoAbbr + "Envelope").
-			Params(j.Id("envelope").Qual(ctx.RuntimePackage(protoName), "EnvelopeWriter")).
+			Params(j.Id("envelope").Qual(ctx.RuntimeModule(protoName), "EnvelopeWriter")).
 			Error().
 			BlockFunc(func(bg *j.Group) {
-				bg.Op("enc := ").Qual(ctx.GeneratedPackage("utils"), "NewEncoder").Call(
+				bg.Op("enc := ").Qual(ctx.GeneratedModule("utils"), "NewEncoder").Call(
 					j.Lit(m.ContentType),
 					j.Id("envelope"),
 				)
@@ -149,7 +153,7 @@ func (m Message) renderMarshalEnvelopeMethod(ctx *common.RenderContext, protoNam
 				bg.Op("envelope.SetContentType").Call(j.Lit(m.ContentType))
 				if m.HeadersTypePromise != nil {
 					bg.Id("envelope").Dot("SetHeaders").Call(
-						j.Qual(ctx.RuntimePackage(""), "Header").Values(j.DictFunc(func(d j.Dict) {
+						j.Qual(ctx.RuntimeModule(""), "Header").Values(j.DictFunc(func(d j.Dict) {
 							for _, f := range m.HeadersTypePromise.Target().Fields {
 								d[j.Lit(f.Name)] = j.Id(rn).Dot("Headers").Dot(f.Name)
 							}
@@ -157,7 +161,7 @@ func (m Message) renderMarshalEnvelopeMethod(ctx *common.RenderContext, protoNam
 					)
 				} else {
 					bg.Id("envelope.SetHeaders").Call(
-						j.Qual(ctx.RuntimePackage(""), "Headers").Call(j.Id(rn).Dot("Headers")),
+						j.Qual(ctx.RuntimeModule(""), "Headers").Call(j.Id(rn).Dot("Headers")),
 					)
 				}
 				bg.Return(j.Nil())
@@ -226,10 +230,10 @@ func (m Message) renderUnmarshalEnvelopeMethod(ctx *common.RenderContext, protoN
 	return []*j.Statement{
 		// Method UnmarshalProtoEnvelope(envelope proto.EnvelopeReader) error
 		j.Func().Params(receiver.Clone()).Id("Unmarshal" + protoAbbr + "Envelope").
-			Params(j.Id("envelope").Qual(ctx.RuntimePackage(protoName), "EnvelopeReader")).
+			Params(j.Id("envelope").Qual(ctx.RuntimeModule(protoName), "EnvelopeReader")).
 			Error().
 			BlockFunc(func(bg *j.Group) {
-				bg.Op("dec := ").Qual(ctx.GeneratedPackage("utils"), "NewDecoder").Call(
+				bg.Op("dec := ").Qual(ctx.GeneratedModule("utils"), "NewDecoder").Call(
 					j.Lit(m.ContentType),
 					j.Id("envelope"),
 				)

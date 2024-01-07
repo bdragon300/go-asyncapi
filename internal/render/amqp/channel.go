@@ -46,8 +46,12 @@ func (pc ProtoChannel) RenderUsage(ctx *common.RenderContext) []*j.Statement {
 	return pc.Struct.RenderUsage(ctx)
 }
 
+func (pc ProtoChannel) ID() string {
+	return pc.Name
+}
+
 func (pc ProtoChannel) String() string {
-	return pc.BaseProtoChannel.Name
+	return "AMQP ProtoChannel " + pc.Name
 }
 
 func (pc ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {
@@ -60,10 +64,10 @@ func (pc ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {
 					g.Id("params").Add(utils.ToCode(pc.AbstractChannel.ParametersStruct.RenderUsage(ctx))...)
 				}
 				if pc.Publisher {
-					g.Id("publisher").Qual(ctx.RuntimePackage(pc.ProtoName), "Publisher")
+					g.Id("publisher").Qual(ctx.RuntimeModule(pc.ProtoName), "Publisher")
 				}
 				if pc.Subscriber {
-					g.Id("subscriber").Qual(ctx.RuntimePackage(pc.ProtoName), "Subscriber")
+					g.Id("subscriber").Qual(ctx.RuntimeModule(pc.ProtoName), "Subscriber")
 				}
 			}).
 			Op("*").Add(utils.ToCode(pc.Struct.RenderUsage(ctx))...).
@@ -142,7 +146,7 @@ func (pc ProtoChannel) renderAMQPPublisherMethods(ctx *common.RenderContext) []*
 		// Method MakeEnvelope(envelope proto.EnvelopeWriter, message *Message1Out, deliveryTag string) error
 		j.Func().Params(receiver.Clone()).Id("MakeEnvelope").
 			ParamsFunc(func(g *j.Group) {
-				g.Id("envelope").Qual(ctx.RuntimePackage(pc.ProtoName), "EnvelopeWriter")
+				g.Id("envelope").Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeWriter")
 				g.Id("message").Add(utils.ToCode(msgTyp.RenderUsage(ctx))...)
 				g.Id("deliveryTag").String()
 			}).

@@ -8,6 +8,12 @@ import (
 	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
 )
 
+// DefaultPackage is package where objects will put if current parse package is empty
+const (
+	DefaultPackage = "default"
+	TagName        = "cgen"
+)
+
 type compiledObject interface {
 	Compile(ctx *common.CompileContext) error
 }
@@ -84,7 +90,7 @@ func traverse(ctx *common.CompileContext, object reflect.Value) error {
 }
 
 func parseTags(field reflect.StructField) (tags map[common.SchemaTag]string) {
-	tagVal, ok := field.Tag.Lookup(common.TagName)
+	tagVal, ok := field.Tag.Lookup(TagName)
 	if !ok {
 		return nil
 	}
@@ -105,12 +111,15 @@ func pushStack(ctx *common.CompileContext, pathItem string, flags map[common.Sch
 	if flags == nil {
 		flags = make(map[common.SchemaTag]string)
 	}
-	pkgName := common.DefaultPackage
+	pkgName := DefaultPackage
 	if len(ctx.Stack.Items()) > 0 {
-		pkgName = ctx.TopPackageName()
+		pkgName = ctx.CurrentPackage()
 	}
-	if v, ok := flags[common.SchemaTagPackageDown]; ok {
+	if v, ok := flags[common.SchemaTagPkgScope]; ok {
 		pkgName = v
+	}
+	if reusePkg, ok := ctx.CompileOpts.ReusePackages[pkgName]; ok {
+		pkgName = reusePkg
 	}
 	item := common.ContextStackItem{
 		Path:        pathItem,
@@ -131,3 +140,4 @@ func getFieldJSONName(f reflect.StructField) string {
 	}
 	return f.Name
 }
+

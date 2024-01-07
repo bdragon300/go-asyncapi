@@ -35,7 +35,7 @@ func (ps BaseProtoServer) RenderConsumerMethods(ctx *common.RenderContext) []*j.
 	return []*j.Statement{
 		j.Func().Params(receiver.Clone()).Id("Consumer").
 			Params().
-			Qual(ctx.RuntimePackage(ps.ProtoName), "Consumer").
+			Qual(ctx.RuntimeModule(ps.ProtoName), "Consumer").
 			Block(
 				j.Return(j.Id(rn).Dot("consumer")),
 			),
@@ -51,7 +51,7 @@ func (ps BaseProtoServer) RenderProducerMethods(ctx *common.RenderContext) []*j.
 	return []*j.Statement{
 		j.Func().Params(receiver.Clone()).Id("Producer").
 			Params().
-			Qual(ctx.RuntimePackage(ps.ProtoName), "Producer").
+			Qual(ctx.RuntimeModule(ps.ProtoName), "Producer").
 			Block(
 				j.Return(j.Id(rn).Dot("producer")),
 			),
@@ -74,7 +74,7 @@ func (ps BaseProtoServer) RenderOpenChannelMethod(ctx *common.RenderContext, cha
 			}).
 			Params(j.Op("*").Add(utils.ToCode(channel.RenderUsage(ctx))...), j.Error()).
 			Block(
-				j.Return(j.Qual(ctx.GeneratedPackage(channelStruct.PackageName), "Open"+channelStruct.Name).CallFunc(func(g *j.Group) {
+				j.Return(j.Qual(ctx.GeneratedModule(channelStruct.PackageName), "Open"+channelStruct.Name).CallFunc(func(g *j.Group) {
 					if channelParametersStructNoRender != nil {
 						g.Id("params")
 					}
@@ -107,8 +107,8 @@ func (ps BaseProtoServer) RenderNewFunc(ctx *common.RenderContext) []*j.Statemen
 		// NewServer1(producer proto.Producer, consumer proto.Consumer) *Server1
 		j.Func().Id(ps.Struct.NewFuncName()).
 			ParamsFunc(func(g *j.Group) {
-				g.Id("producer").Qual(ctx.RuntimePackage(ps.ProtoName), "Producer")
-				g.Id("consumer").Qual(ctx.RuntimePackage(ps.ProtoName), "Consumer")
+				g.Id("producer").Qual(ctx.RuntimeModule(ps.ProtoName), "Producer")
+				g.Id("consumer").Qual(ctx.RuntimeModule(ps.ProtoName), "Consumer")
 			}).
 			Op("*").Add(utils.ToCode(ps.Struct.RenderUsage(ctx))...).
 			Block(
@@ -131,7 +131,7 @@ func (ps BaseProtoServer) RenderURLFunc(ctx *common.RenderContext) []*j.Statemen
 					g.Id(entry.Value.ArgName).String()
 				}
 			}).
-			Qual(ctx.RuntimePackage(""), "ParamString").
+			Qual(ctx.RuntimeModule(""), "ParamString").
 			BlockFunc(func(bg *j.Group) {
 				if ps.Variables.Len() > 0 {
 					for _, entry := range ps.Variables.Entries() {
@@ -147,12 +147,12 @@ func (ps BaseProtoServer) RenderURLFunc(ctx *common.RenderContext) []*j.Statemen
 							d[j.Lit(entry.Key)] = j.Id(entry.Value.ArgName)
 						}
 					}))
-					bg.Return(j.Qual(ctx.RuntimePackage(""), "ParamString").Values(j.Dict{
+					bg.Return(j.Qual(ctx.RuntimeModule(""), "ParamString").Values(j.Dict{
 						j.Id("Expr"):       j.Lit(ps.URL),
 						j.Id("Parameters"): j.Id("paramMap"),
 					}))
 				} else {
-					bg.Return(j.Qual(ctx.RuntimePackage(""), "ParamString").Values(j.Dict{
+					bg.Return(j.Qual(ctx.RuntimeModule(""), "ParamString").Values(j.Dict{
 						j.Id("Expr"): j.Lit(ps.URL),
 					}))
 				}

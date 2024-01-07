@@ -95,8 +95,12 @@ func (u UtilsSerializer) RenderUsage(_ *common.RenderContext) []*j.Statement {
 	panic("not implemented")
 }
 
+func (u UtilsSerializer) ID() string {
+	return "Utils"
+}
+
 func (u UtilsSerializer) String() string {
-	return "Serializer"
+	return "Utils"
 }
 
 func getFormatByContentType(contentType string) string {

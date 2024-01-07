@@ -30,8 +30,12 @@ func (c CorrelationID) RenderUsage(_ *common.RenderContext) []*j.Statement {
 	panic("not implemented")
 }
 
-func (c CorrelationID) String() string {
+func (c CorrelationID) ID() string {
 	return c.Name
+}
+
+func (c CorrelationID) String() string {
+	return "CorrelationID " + c.Name
 }
 
 func (c CorrelationID) RenderSetterDefinition(ctx *common.RenderContext, message *Message) []*j.Statement {
@@ -142,7 +146,7 @@ func (c CorrelationID) renderMemberExtractionCode(
 
 		switch typ := baseType.(type) {
 		case *GoStruct:
-			ctx.Logger.Trace("In GoStruct", "path", path[:pathIdx], "name", typ.String(), "member", memberName)
+			ctx.Logger.Trace("In GoStruct", "path", path[:pathIdx], "name", typ.ID(), "member", memberName)
 			fld, ok := lo.Find(typ.Fields, func(item GoStructField) bool { return item.MarshalName == memberName })
 			if !ok {
 				err = fmt.Errorf("field %q not found, path: /%s", memberName, strings.Join(path[:pathIdx], "/"))
@@ -153,7 +157,7 @@ func (c CorrelationID) renderMemberExtractionCode(
 			body = []*j.Statement{j.Id(nextAnchor).Op(":=").Add(varValueStmts)}
 		case *GoMap:
 			// TODO: x-parameter in correlationIDs spec section to set numbers as "0" for string keys or 0 for int keys
-			ctx.Logger.Trace("In GoMap", "path", path[:pathIdx], "name", typ.String(), "member", memberName)
+			ctx.Logger.Trace("In GoMap", "path", path[:pathIdx], "name", typ.ID(), "member", memberName)
 			varValueStmts = j.Id(anchor).Index(j.Lit(memberName))
 			baseType = typ.ValueType
 			varExpr := j.Var().Id(nextAnchor).Add(utils.ToCode(typ.ValueType.RenderUsage(ctx))...)
@@ -182,7 +186,7 @@ func (c CorrelationID) renderMemberExtractionCode(
 				ifExpr,
 			}
 		case *GoArray:
-			ctx.Logger.Trace("In GoArray", "path", path[:pathIdx], "name", typ.String(), "member", memberName)
+			ctx.Logger.Trace("In GoArray", "path", path[:pathIdx], "name", typ.ID(), "member", memberName)
 			varValueStmts = j.Id(anchor).Index(j.Lit(memberName))
 			baseType = typ.ItemsType
 			body = []*j.Statement{j.Id(nextAnchor).Op(":=").Add(varValueStmts)}
@@ -197,7 +201,7 @@ func (c CorrelationID) renderMemberExtractionCode(
 				))
 			}
 		case *GoSimple: // Should be a terminal type in chain, raise error otherwise (if any path parts left to resolve)
-			ctx.Logger.Trace("In GoSimple", "path", path[:pathIdx], "name", typ.String(), "member", memberName)
+			ctx.Logger.Trace("In GoSimple", "path", path[:pathIdx], "name", typ.ID(), "member", memberName)
 			if pathIdx >= len(path)-1 { // Primitive types should get addressed by the last path item
 				err = fmt.Errorf(
 					"type %q doesn't contain addressable elements, path: /%s",

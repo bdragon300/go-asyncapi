@@ -39,7 +39,7 @@ func (a GoArray) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 
 	if a.DirectRender {
 		if a.PackageName != "" && a.PackageName != ctx.CurrentPackage {
-			return []*jen.Statement{jen.Qual(ctx.GeneratedPackage(a.PackageName), a.Name)}
+			return []*jen.Statement{jen.Qual(ctx.GeneratedModule(a.PackageName), a.Name)}
 		}
 		return []*jen.Statement{jen.Id(a.Name)}
 	}
@@ -50,8 +50,4 @@ func (a GoArray) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 	}
 
 	return []*jen.Statement{jen.Index().Add(items...)}
-}
-
-func (a GoArray) IsCollection() bool {
-	return true
 }

@@ -210,7 +210,7 @@ func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.Sch
 				Name:         ctx.GenerateObjName(o.Title, ""),
 				Description:  o.Description,
 				DirectRender: directRender,
-				PackageName:  ctx.TopPackageName(),
+				PackageName:  ctx.CurrentPackage(),
 			},
 			AliasedType: aliasedType,
 		}
@@ -242,14 +242,14 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 			Name:         ctx.GenerateObjName(objName, ""),
 			Description:  o.Description,
 			DirectRender: noInline,
-			PackageName:  ctx.TopPackageName(),
+			PackageName:  ctx.CurrentPackage(),
 		},
 	}
 	// TODO: cache the object name in case any sub-schemas recursively reference it
 
 	var messagesPrm *render.ListPromise[*render.Message]
 	// Collect all messages to retrieve struct field tags
-	if ctx.TopPackageName() == "models" { // TODO: fix hardcode
+	if ctx.CurrentPackage() == "models" { // TODO: fix hardcode
 		messagesPrm = render.NewListCbPromise[*render.Message](func(item common.Renderer, _ []string) bool {
 			_, ok := item.(*render.Message)
 			return ok
@@ -309,7 +309,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 						Name:         ctx.GenerateObjName(propName, "AdditionalProperties"),
 						Description:  o.AdditionalProperties.V0.Description,
 						DirectRender: false,
-						PackageName:  ctx.TopPackageName(),
+						PackageName:  ctx.CurrentPackage(),
 					},
 					KeyType:   &render.GoSimple{Name: "string"},
 					ValueType: langObj,
@@ -327,7 +327,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 						Name:         ctx.GenerateObjName(propName, "AdditionalPropertiesValue"),
 						Description:  "",
 						DirectRender: false,
-						PackageName:  ctx.TopPackageName(),
+						PackageName:  ctx.CurrentPackage(),
 					},
 					AliasedType: &render.GoSimple{Name: "any", IsIface: true},
 				}
@@ -338,7 +338,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 							Name:         ctx.GenerateObjName(propName, "AdditionalProperties"),
 							Description:  "",
 							DirectRender: false,
-							PackageName:  ctx.TopPackageName(),
+							PackageName:  ctx.CurrentPackage(),
 						},
 						KeyType:   &render.GoSimple{Name: "string"},
 						ValueType: &valTyp,
@@ -361,7 +361,7 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 			Name:         ctx.GenerateObjName(objName, ""),
 			Description:  o.Description,
 			DirectRender: noInline,
-			PackageName:  ctx.TopPackageName(),
+			PackageName:  ctx.CurrentPackage(),
 		},
 		ItemsType: nil,
 	}
@@ -378,7 +378,7 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 				Name:         ctx.GenerateObjName(objName, "ItemsItemValue"),
 				Description:  "",
 				DirectRender: false,
-				PackageName:  ctx.TopPackageName(),
+				PackageName:  ctx.CurrentPackage(),
 			},
 			AliasedType: &render.GoSimple{Name: "any", IsIface: true},
 		}
@@ -387,7 +387,7 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 				Name:         ctx.GenerateObjName(objName, "ItemsItem"),
 				Description:  "",
 				DirectRender: false,
-				PackageName:  ctx.TopPackageName(),
+				PackageName:  ctx.CurrentPackage(),
 			},
 			KeyType:   &render.GoSimple{Name: "string"},
 			ValueType: &valTyp,
@@ -405,7 +405,7 @@ func (o Object) buildUnionStruct(ctx *common.CompileContext) (*render.UnionStruc
 				Name:         ctx.GenerateObjName(objName, ""),
 				Description:  o.Description,
 				DirectRender: true, // Always render unions as separate types
-				PackageName:  ctx.TopPackageName(),
+				PackageName:  ctx.CurrentPackage(),
 			},
 		},
 	}

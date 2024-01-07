@@ -78,16 +78,6 @@ func (r *Promise[T]) IsStruct() bool {
 	return false
 }
 
-func (r *Promise[T]) IsCollection() bool {
-	if !r.assigned {
-		return false
-	}
-	if v, ok := any(r.target).(golangCollectionType); ok {
-		return v.IsCollection()
-	}
-	return false
-}
-
 // List links can only be PromiseOriginInternal, no way to set a callback in spec
 func NewListCbPromise[T any](findCb func(item common.Renderer, path []string) bool) *ListPromise[T] {
 	return &ListPromise[T]{findCb: findCb}
@@ -143,8 +133,15 @@ func (r *RendererPromise) DirectRendering() bool {
 	return false // Prevent rendering the object we're point to for several times
 }
 
+func (r *RendererPromise) ID() string {
+	if r.Assigned() {
+		return r.target.ID()
+	}
+	return ""
+}
+
 func (r *RendererPromise) String() string {
-	return "Ref to " + r.ref
+	return "RendererPromise for " + r.ref
 }
 
 func NewGolangTypePromise(ref string, origin common.PromiseOrigin) *GolangTypePromise {
@@ -173,6 +170,10 @@ func (r *GolangTypePromise) RenderUsage(ctx *common.RenderContext) []*jen.Statem
 	return r.target.RenderUsage(ctx)
 }
 
+func (r *GolangTypePromise) ID() string {
+	return "GolangTypePromise"
+}
+
 func (r *GolangTypePromise) String() string {
-	return r.ref
+	return "GolangTypePromise for " + r.ref
 }

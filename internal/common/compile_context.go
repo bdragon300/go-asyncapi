@@ -2,6 +2,7 @@ package common
 
 import (
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
@@ -10,12 +11,12 @@ import (
 	"github.com/samber/lo"
 )
 
+const nameWordSep = "_"
+
 type GolangType interface {
 	Renderer
 	TypeName() string
 }
-
-const nameWordSep = "_"
 
 type CompilationStorage interface {
 	AddObject(pkgName string, stack []string, obj Renderer)
@@ -28,6 +29,35 @@ type CompilationStorage interface {
 	DefaultContentType() string
 }
 
+type CompileOpts struct {
+	ChannelsSelection  ObjectSelectionOpts
+	MessagesSelection  ObjectSelectionOpts
+	ModelsSelection    ObjectSelectionOpts
+	ServersSelection   ObjectSelectionOpts
+	ReusePackages      map[string]string
+	NoUtilsPackage     bool
+	EnableExternalRefs bool
+	RuntimeModule      string
+}
+
+type ObjectSelectionOpts struct {
+	Enable       bool
+	IncludeRegex *regexp.Regexp
+	ExcludeRegex *regexp.Regexp
+}
+
+func (o ObjectSelectionOpts) Include(name string) bool {
+	switch {
+	case !o.Enable:
+		return false
+	case o.ExcludeRegex != nil && o.ExcludeRegex.MatchString(name):
+		return false
+	case o.IncludeRegex != nil:
+		return o.IncludeRegex.MatchString(name)
+	}
+	return true
+}
+
 type ContextStackItem struct {
 	Path        string // TODO: rename to Key or smth. This is a path item actually
 	Flags       map[SchemaTag]string
@@ -35,8 +65,8 @@ type ContextStackItem struct {
 	ObjName     string
 }
 
-func NewCompileContext(specID string) *CompileContext {
-	res := CompileContext{specID: specID}
+func NewCompileContext(specID string, compileOpts CompileOpts) *CompileContext {
+	res := CompileContext{specID: specID, CompileOpts: compileOpts}
 	res.Logger = &CompilerLogger{
 		ctx:    &res,
 		logger: types.NewLogger("Compilation 🔨"),
@@ -45,10 +75,11 @@ func NewCompileContext(specID string) *CompileContext {
 }
 
 type CompileContext struct {
-	Storage CompilationStorage
-	Stack   types.SimpleStack[ContextStackItem]
-	Logger  *CompilerLogger
-	specID  string
+	Storage     CompilationStorage
+	Stack       types.SimpleStack[ContextStackItem]
+	Logger      *CompilerLogger
+	CompileOpts CompileOpts
+	specID      string
 }
 
 func (c *CompileContext) PutObject(obj Renderer) {
@@ -85,12 +116,12 @@ func (c *CompileContext) SetTopObjName(n string) {
 	c.Stack.ReplaceTop(t)
 }
 
-func (c *CompileContext) TopPackageName() string {
+func (c *CompileContext) CurrentPackage() string {
 	return c.Stack.Top().PackageName
 }
 
-func (c *CompileContext) RuntimePackage(subPackage string) string {
-	return path.Join(RunPackagePath, subPackage)
+func (c *CompileContext) RuntimeModule(subPackage string) string {
+	return path.Join(c.CompileOpts.RuntimeModule, subPackage)
 }
 
 func (c *CompileContext) GenerateObjName(name, suffix string) string {
@@ -110,10 +141,11 @@ func (c *CompileContext) GenerateObjName(name, suffix string) string {
 
 func (c *CompileContext) WithResultsStore(store CompilationStorage) *CompileContext {
 	res := CompileContext{
-		Storage: store,
-		Stack:   types.SimpleStack[ContextStackItem]{},
-		specID:  c.specID,
-		Logger:  c.Logger,
+		Storage:     store,
+		Stack:       types.SimpleStack[ContextStackItem]{},
+		specID:      c.specID,
+		Logger:      c.Logger,
+		CompileOpts: c.CompileOpts,
 	}
 	res.Logger = &CompilerLogger{
 		ctx:    &res,

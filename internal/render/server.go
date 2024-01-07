@@ -43,6 +43,10 @@ func (s Server) RenderUsage(_ *common.RenderContext) []*j.Statement {
 	panic("not implemented")
 }
 
-func (s Server) String() string {
+func (s Server) ID() string {
 	return s.Name
+}
+
+func (s Server) String() string {
+	return "Server " + s.Name
 }
