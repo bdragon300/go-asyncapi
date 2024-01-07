@@ -142,7 +142,7 @@ func (m Message) renderMarshalEnvelopeMethod(ctx *common.RenderContext, protoNam
 			Params(j.Id("envelope").Qual(ctx.RuntimeModule(protoName), "EnvelopeWriter")).
 			Error().
 			BlockFunc(func(bg *j.Group) {
-				bg.Op("enc := ").Qual(ctx.GeneratedModule("utils"), "NewEncoder").Call(
+				bg.Op("enc := ").Qual(ctx.GeneratedModule(encodingPackageName), "NewEncoder").Call(
 					j.Lit(m.ContentType),
 					j.Id("envelope"),
 				)
@@ -233,7 +233,7 @@ func (m Message) renderUnmarshalEnvelopeMethod(ctx *common.RenderContext, protoN
 			Params(j.Id("envelope").Qual(ctx.RuntimeModule(protoName), "EnvelopeReader")).
 			Error().
 			BlockFunc(func(bg *j.Group) {
-				bg.Op("dec := ").Qual(ctx.GeneratedModule("utils"), "NewDecoder").Call(
+				bg.Op("dec := ").Qual(ctx.GeneratedModule(encodingPackageName), "NewDecoder").Call(
 					j.Lit(m.ContentType),
 					j.Id("envelope"),
 				)

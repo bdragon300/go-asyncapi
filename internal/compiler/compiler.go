@@ -152,10 +152,10 @@ func (c *Module) Compile(ctx *common.CompileContext) error {
 	if err := WalkAndCompile(ctx, reflect.ValueOf(c.parsedSpec)); err != nil {
 		return fmt.Errorf("spec: %w", err)
 	}
-	if !ctx.CompileOpts.NoUtilsPackage {
-		c.logger.Trace("Compile the utils package", "specID", c.specID)
-		if err := UtilsCompile(ctx); err != nil {
-			return fmt.Errorf("utils package: %w", err)
+	if !ctx.CompileOpts.NoEncodingPackage {
+		c.logger.Trace("Compile the encoding package", "specID", c.specID)
+		if err := EncodingCompile(ctx); err != nil {
+			return fmt.Errorf("encoding package: %w", err)
 		}
 	}
 	return nil

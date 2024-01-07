@@ -87,7 +87,7 @@ type generateObjectSelectionOpts struct {
 	ReuseServersModule string `arg:"--reuse-servers-module" help:"Module name with servers code generated before to reuse now" placeholder:"MODULE"`
 
 	NoImplementations bool `arg:"--no-implementations" help:"Do not generate any protocol implementation"`
-	NoUtils           bool `arg:"--no-utils" help:"Do not generate utils"`
+	NoEncoding        bool `arg:"--no-encoding" help:"Do not generate encoders/decoders code"`
 }
 
 func generate(cmd *GenerateCmd) error {
@@ -293,7 +293,7 @@ func getCompileOpts(opts generatePubSub) (common.CompileOpts, error) {
 	var err error
 	res := common.CompileOpts{
 		ReusePackages:      nil,
-		NoUtilsPackage:     opts.NoUtils,
+		NoEncodingPackage:  opts.NoEncoding,
 		EnableExternalRefs: opts.ExternalRefs,
 		RuntimeModule:      opts.RuntimeModule,
 	}

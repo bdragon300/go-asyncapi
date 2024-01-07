@@ -10,66 +10,51 @@ import (
 	j "github.com/dave/jennifer/jen"
 )
 
-var serializerEncoders = map[string]j.Code{
+const encodingPackageName = "encoding"
+
+var encodingEncoders = map[string]j.Code{
 	"json": j.Op(`func(w io.Writer) Encoder`).Block(j.Return(j.Qual("encoding/json", "NewEncoder").Call(j.Id("w")))),
 	"yaml": j.Op(`func(w io.Writer) Encoder`).Block(j.Return(j.Qual("gopkg.in/yaml.v3", "NewEncoder").Call(j.Id("w")))),
 	// TODO: add other encoders: protobuf, avro, etc.
 }
 
-var serializerDecoders = map[string]j.Code{
+var encodingDecoders = map[string]j.Code{
 	"json": j.Op(`func(r io.Reader) Decoder`).Block(j.Return(j.Qual("encoding/json", "NewDecoder").Call(j.Id("r")))),
 	"yaml": j.Op(`func(r io.Reader) Decoder`).Block(j.Return(j.Qual("gopkg.in/yaml.v3", "NewDecoder").Call(j.Id("r")))),
 	// TODO: add other decoders: protobuf, avro, etc.
 }
 
-type UtilsSerializer struct {
+type EncodingEncode struct {
 	AllMessages        *ListPromise[*Message]
 	DefaultContentType string
 }
 
-func (u UtilsSerializer) DirectRendering() bool {
+func (e EncodingEncode) DirectRendering() bool {
 	return true
 }
 
-func (u UtilsSerializer) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
-	ctx.LogRender("UtilsSerializer", "", "", "definition", u.DirectRendering())
+func (e EncodingEncode) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
+	ctx.LogRender("EncodingEncode", "", "", "definition", e.DirectRendering())
 	defer ctx.LogReturn()
 
-	contentTypes := lo.Uniq(lo.FilterMap(u.AllMessages.Targets(), func(item *Message, index int) (string, bool) {
+	contentTypes := lo.Uniq(lo.FilterMap(e.AllMessages.Targets(), func(item *Message, index int) (string, bool) {
 		return item.ContentType, item.ContentType != ""
 	}))
 	return []*j.Statement{
 		j.Op(`
 			type Encoder interface {
 				Encode(v any) error
-			}
-			
-			type Decoder interface {
-				Decode(v any) error
 			}`),
 
 		j.Add(utils.QualSprintf(`var Encoders = map[string]func(w %Q(io,Writer)) Encoder`)).Values(j.DictFunc(func(d j.Dict) {
 			for _, ct := range contentTypes {
 				format := getFormatByContentType(ct)
 				if format != "" {
-					if v, ok := serializerEncoders[format]; ok {
+					if v, ok := encodingEncoders[format]; ok {
 						d[j.Lit(ct)] = v
 					}
 				} else {
 					d[j.Lit(ct)] = j.Add(utils.QualSprintf(`func(_ %Q(io,Writer)) Encoder { panic("No encoder is set for content type %s") }`, ct))
-				}
-			}
-		})),
-
-		j.Add(utils.QualSprintf(`var Decoders = map[string]func(r %Q(io,Reader)) Decoder`)).Values(j.DictFunc(func(d j.Dict) {
-			for _, ct := range contentTypes {
-				format := getFormatByContentType(ct)
-				if format != "" {
-					if v, ok := serializerDecoders[format]; ok {
-						d[j.Lit(ct)] = v
-					}
-				} else {
-					d[j.Lit(ct)] = j.Add(utils.QualSprintf(`func(_ %Q(io,Reader)) Decoder { panic("No decoder is set for content type %s") }`, ct))
 				}
 			}
 		})),
@@ -80,8 +65,58 @@ func (u UtilsSerializer) RenderDefinition(ctx *common.RenderContext) []*j.Statem
 					return v(w)
 				}
 				panic("Unknown content type " + contentType)
+			}`)),
+	}
+}
+
+func (e EncodingEncode) RenderUsage(_ *common.RenderContext) []*j.Statement {
+	panic("not implemented")
+}
+
+func (e EncodingEncode) ID() string {
+	return "Encode"
+}
+
+func (e EncodingEncode) String() string {
+	return "EncodingEncode"
+}
+
+type EncodingDecode struct {
+	AllMessages        *ListPromise[*Message]
+	DefaultContentType string
+}
+
+func (e EncodingDecode) DirectRendering() bool {
+	return true
+}
+
+func (e EncodingDecode) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
+	ctx.LogRender("EncodingDecode", "", "", "definition", e.DirectRendering())
+	defer ctx.LogReturn()
+
+	contentTypes := lo.Uniq(lo.FilterMap(e.AllMessages.Targets(), func(item *Message, index int) (string, bool) {
+		return item.ContentType, item.ContentType != ""
+	}))
+	return []*j.Statement{
+		j.Op(`
+			type Decoder interface {
+				Decode(v any) error
+			}`),
+
+		j.Add(utils.QualSprintf(`var Decoders = map[string]func(r %Q(io,Reader)) Decoder`)).Values(j.DictFunc(func(d j.Dict) {
+			for _, ct := range contentTypes {
+				format := getFormatByContentType(ct)
+				if format != "" {
+					if v, ok := encodingDecoders[format]; ok {
+						d[j.Lit(ct)] = v
+					}
+				} else {
+					d[j.Lit(ct)] = j.Add(utils.QualSprintf(`func(_ %Q(io,Reader)) Decoder { panic("No decoder is set for content type %s") }`, ct))
+				}
 			}
-			
+		})),
+
+		j.Add(utils.QualSprintf(`
 			func NewDecoder(contentType string, r %Q(io,Reader)) Decoder {
 				if v, ok := Decoders[contentType]; ok {
 					return v(r)
@@ -91,16 +126,16 @@ func (u UtilsSerializer) RenderDefinition(ctx *common.RenderContext) []*j.Statem
 	}
 }
 
-func (u UtilsSerializer) RenderUsage(_ *common.RenderContext) []*j.Statement {
+func (e EncodingDecode) RenderUsage(_ *common.RenderContext) []*j.Statement {
 	panic("not implemented")
 }
 
-func (u UtilsSerializer) ID() string {
-	return "Utils"
+func (e EncodingDecode) ID() string {
+	return "Decode"
 }
 
-func (u UtilsSerializer) String() string {
-	return "Utils"
+func (e EncodingDecode) String() string {
+	return "EncodingDecode"
 }
 
 func getFormatByContentType(contentType string) string {

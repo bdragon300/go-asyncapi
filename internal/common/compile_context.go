@@ -35,7 +35,7 @@ type CompileOpts struct {
 	ModelsSelection    ObjectSelectionOpts
 	ServersSelection   ObjectSelectionOpts
 	ReusePackages      map[string]string
-	NoUtilsPackage     bool
+	NoEncodingPackage  bool
 	EnableExternalRefs bool
 	RuntimeModule      string
 }
