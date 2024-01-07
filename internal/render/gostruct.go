@@ -21,7 +21,7 @@ type GoStruct struct {
 
 func (s GoStruct) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	var res []*jen.Statement
-	ctx.LogRender("GoStruct", s.PackageName, s.Name, "definition", s.DirectRendering())
+	ctx.LogRender("GoStruct", s.Import, s.Name, "definition", s.DirectRendering())
 	defer ctx.LogReturn()
 
 	if s.Description != "" {
@@ -35,12 +35,12 @@ func (s GoStruct) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 }
 
 func (s GoStruct) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoStruct", s.PackageName, s.Name, "usage", s.DirectRendering())
+	ctx.LogRender("GoStruct", s.Import, s.Name, "usage", s.DirectRendering())
 	defer ctx.LogReturn()
 
 	if s.DirectRendering() {
-		if s.PackageName != "" && s.PackageName != ctx.CurrentPackage {
-			return []*jen.Statement{jen.Qual(ctx.GeneratedModule(s.PackageName), s.Name)}
+		if s.Import != "" && s.Import != ctx.CurrentPackage {
+			return []*jen.Statement{jen.Qual(ctx.GeneratedModule(s.Import), s.Name)}
 		}
 		return []*jen.Statement{jen.Id(s.Name)}
 	}

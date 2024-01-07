@@ -10,7 +10,7 @@ type BaseType struct {
 	// rendering of this type is invoked indirectly by another type.
 	// Such as inlined `field struct{...}` and separate `field StructName`, or `field []type` and `field ArrayName`
 	DirectRender bool
-	PackageName  string // optional generated package name or module to import a type from
+	Import       string // optional generated package name or module to import a type from
 }
 
 func (b *BaseType) DirectRendering() bool {
@@ -26,8 +26,8 @@ func (b *BaseType) ID() string {
 }
 
 func (b *BaseType) String() string {
-	if b.PackageName != "" {
-		return "GoType ." + b.PackageName + "." + b.Name
+	if b.Import != "" {
+		return "GoType ." + b.Import + "." + b.Name
 	}
 	return "GoType " + b.Name
 }

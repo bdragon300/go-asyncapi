@@ -82,7 +82,7 @@ func renderChannelAndOperationBindingsMethod(
 			Params().
 			Qual(ctx.RuntimeModule(protoName), "ChannelBindings").
 			BlockFunc(func(bg *j.Group) {
-				cb := &GoValue{Type: &GoSimple{Name: "ChannelBindings", Package: ctx.RuntimeModule(protoName)}, NilCurlyBrakets: true}
+				cb := &GoValue{Type: &GoSimple{Name: "ChannelBindings", Import: ctx.RuntimeModule(protoName)}, NilCurlyBrakets: true}
 				if channelBindings != nil {
 					if b, ok := channelBindings.Values.Get(protoName); ok {
 						ctx.Logger.Debug("Channel bindings", "proto", protoName)

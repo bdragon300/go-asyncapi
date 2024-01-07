@@ -57,7 +57,7 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 				Name:         ctx.GenerateObjName(parName, ""),
 				Description:  p.Description,
 				DirectRender: true,
-				PackageName:  ctx.CurrentPackage(),
+				Import:       ctx.CurrentPackage(),
 			},
 			Fields: []render.GoStructField{{Name: "Value", Type: prm}},
 		}
@@ -68,7 +68,7 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 				Name:         ctx.GenerateObjName(parName, ""),
 				Description:  p.Description,
 				DirectRender: true,
-				PackageName:  ctx.CurrentPackage(),
+				Import:       ctx.CurrentPackage(),
 			},
 			AliasedType: &render.GoSimple{Name: "string"},
 		}

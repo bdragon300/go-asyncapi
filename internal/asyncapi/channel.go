@@ -59,7 +59,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(chName, "Parameters"),
 				DirectRender: true,
-				PackageName:  ctx.CurrentPackage(),
+				Import:       ctx.CurrentPackage(),
 			},
 		}
 		for _, paramName := range c.Parameters.Keys() {
@@ -128,7 +128,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(chName, "Bindings"),
 				DirectRender: true,
-				PackageName:  ctx.CurrentPackage(),
+				Import:       ctx.CurrentPackage(),
 			},
 		}
 	}

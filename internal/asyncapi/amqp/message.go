@@ -22,7 +22,7 @@ func (pb ProtoBuilder) BuildMessageBindings(ctx *common.CompileContext, rawData 
 	}
 
 	vals = render.ConstructGoValue(
-		bindings, nil, &render.GoSimple{Name: "MessageBindings", Package: ctx.RuntimeModule(pb.ProtoName)},
+		bindings, nil, &render.GoSimple{Name: "MessageBindings", Import: ctx.RuntimeModule(pb.ProtoName)},
 	)
 	return
 }

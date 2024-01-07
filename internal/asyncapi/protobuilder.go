@@ -46,10 +46,10 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 				Name:         ctx.GenerateObjName(chName, pb.ProtoAbbr),
 				Description:  channel.Description,
 				DirectRender: true,
-				PackageName:  ctx.CurrentPackage(),
+				Import:       ctx.CurrentPackage(),
 			},
 			Fields: []render.GoStructField{
-				{Name: "name", Type: &render.GoSimple{Name: "ParamString", Package: ctx.RuntimeModule("")}},
+				{Name: "name", Type: &render.GoSimple{Name: "ParamString", Import: ctx.RuntimeModule("")}},
 			},
 		},
 		AbstractChannel:     abstractChannel,
@@ -63,21 +63,21 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 	if chanResult.AbstractChannel.ParametersStruct != nil {
 		openChannelServerIfaceArgs = append(openChannelServerIfaceArgs, render.GoFuncParam{
 			Name: "params",
-			Type: &render.GoSimple{Name: chanResult.AbstractChannel.ParametersStruct.Name, Package: ctx.CurrentPackage()},
+			Type: &render.GoSimple{Name: chanResult.AbstractChannel.ParametersStruct.Name, Import: ctx.CurrentPackage()},
 		})
 	}
 	chanResult.ServerIface = &render.GoInterface{
 		BaseType: render.BaseType{
 			Name:         utils.ToLowerFirstLetter(chanResult.Struct.Name + "Server"),
 			DirectRender: true,
-			PackageName:  ctx.CurrentPackage(),
+			Import:       ctx.CurrentPackage(),
 		},
 		Methods: []render.GoFuncSignature{
 			{
 				Name: "Open" + chanResult.Struct.Name,
 				Args: openChannelServerIfaceArgs,
 				Return: []render.GoFuncParam{
-					{Type: &render.GoSimple{Name: chanResult.Struct.Name, Package: ctx.CurrentPackage()}, Pointer: true},
+					{Type: &render.GoSimple{Name: chanResult.Struct.Name, Import: ctx.CurrentPackage()}, Pointer: true},
 					{Type: &render.GoSimple{Name: "error"}},
 				},
 			},
@@ -92,7 +92,7 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 			Description: channel.Publish.Description,
 			Type: &render.GoSimple{
 				Name:    "Publisher",
-				Package: ctx.RuntimeModule(pb.ProtoName),
+				Import:  ctx.RuntimeModule(pb.ProtoName),
 				IsIface: true,
 			},
 		})
@@ -107,7 +107,7 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 			Name: "Producer",
 			Args: nil,
 			Return: []render.GoFuncParam{
-				{Type: &render.GoSimple{Name: "Producer", Package: ctx.RuntimeModule(pb.ProtoName), IsIface: true}},
+				{Type: &render.GoSimple{Name: "Producer", Import: ctx.RuntimeModule(pb.ProtoName), IsIface: true}},
 			},
 		})
 	}
@@ -120,7 +120,7 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 			Description: channel.Subscribe.Description,
 			Type: &render.GoSimple{
 				Name:    "Subscriber",
-				Package: ctx.RuntimeModule(pb.ProtoName),
+				Import:  ctx.RuntimeModule(pb.ProtoName),
 				IsIface: true,
 			},
 		})
@@ -135,7 +135,7 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 			Name: "Consumer",
 			Args: nil,
 			Return: []render.GoFuncParam{
-				{Type: &render.GoSimple{Name: "Consumer", Package: ctx.RuntimeModule(pb.ProtoName), IsIface: true}},
+				{Type: &render.GoSimple{Name: "Consumer", Import: ctx.RuntimeModule(pb.ProtoName), IsIface: true}},
 			},
 		})
 	}
@@ -158,7 +158,7 @@ func (pb BaseProtoBuilder) BuildBaseProtoServer(
 				Name:         ctx.GenerateObjName(srvName, ""),
 				Description:  server.Description,
 				DirectRender: true,
-				PackageName:  ctx.CurrentPackage(),
+				Import:       ctx.CurrentPackage(),
 			},
 		},
 		ProtoName: pb.ProtoName,
@@ -194,14 +194,14 @@ func (pb BaseProtoBuilder) BuildBaseProtoServer(
 	ctx.Logger.Trace("Server producer", "proto", pb.ProtoName)
 	fld := render.GoStructField{
 		Name: "producer",
-		Type: &render.GoSimple{Name: "Producer", Package: ctx.RuntimeModule(pb.ProtoName), IsIface: true},
+		Type: &render.GoSimple{Name: "Producer", Import: ctx.RuntimeModule(pb.ProtoName), IsIface: true},
 	}
 	srvResult.Struct.Fields = append(srvResult.Struct.Fields, fld)
 
 	ctx.Logger.Trace("Server consumer", "proto", pb.ProtoName)
 	fld = render.GoStructField{
 		Name: "consumer",
-		Type: &render.GoSimple{Name: "Consumer", Package: ctx.RuntimeModule(pb.ProtoName), IsIface: true},
+		Type: &render.GoSimple{Name: "Consumer", Import: ctx.RuntimeModule(pb.ProtoName), IsIface: true},
 	}
 	srvResult.Struct.Fields = append(srvResult.Struct.Fields, fld)
 

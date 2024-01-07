@@ -30,7 +30,7 @@ func buildXGoType(xGoTypeValue *types.Union2[string, xGoType]) (golangType commo
 		t.Name = xGoTypeValue.V0
 	case 1:
 		t.Name = xGoTypeValue.V1.Type
-		t.Package = xGoTypeValue.V1.Import.Package
+		t.Import = xGoTypeValue.V1.Import.Package
 		t.IsIface = xGoTypeValue.V1.Hint.Kind == "interface"
 
 		if xGoTypeValue.V1.Hint.Pointer {

@@ -13,7 +13,7 @@ type GoArray struct {
 }
 
 func (a GoArray) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoArray", a.PackageName, a.Name, "definition", a.DirectRendering())
+	ctx.LogRender("GoArray", a.Import, a.Name, "definition", a.DirectRendering())
 	defer ctx.LogReturn()
 
 	var res []*jen.Statement
@@ -34,12 +34,12 @@ func (a GoArray) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 }
 
 func (a GoArray) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoArray", a.PackageName, a.Name, "usage", a.DirectRendering())
+	ctx.LogRender("GoArray", a.Import, a.Name, "usage", a.DirectRendering())
 	defer ctx.LogReturn()
 
 	if a.DirectRender {
-		if a.PackageName != "" && a.PackageName != ctx.CurrentPackage {
-			return []*jen.Statement{jen.Qual(ctx.GeneratedModule(a.PackageName), a.Name)}
+		if a.Import != "" && a.Import != ctx.CurrentPackage {
+			return []*jen.Statement{jen.Qual(ctx.GeneratedModule(a.Import), a.Name)}
 		}
 		return []*jen.Statement{jen.Id(a.Name)}
 	}

@@ -69,33 +69,33 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 		return
 	}
 
-	vals = &render.GoValue{Type: &render.GoSimple{Name: "ChannelBindings", Package: ctx.RuntimeModule(pb.ProtoName)}, NilCurlyBrakets: true}
+	vals = &render.GoValue{Type: &render.GoSimple{Name: "ChannelBindings", Import: ctx.RuntimeModule(pb.ProtoName)}, NilCurlyBrakets: true}
 	switch bindings.Is {
 	case "queue":
-		vals.StructVals.Set("ChannelType", &render.GoSimple{Name: "ChannelTypeQueue", Package: ctx.RuntimeModule(pb.ProtoName)})
+		vals.StructVals.Set("ChannelType", &render.GoSimple{Name: "ChannelTypeQueue", Import: ctx.RuntimeModule(pb.ProtoName)})
 	default: // routingKey and any other value
-		vals.StructVals.Set("ChannelType", &render.GoSimple{Name: "ChannelTypeRoutingKey", Package: ctx.RuntimeModule(pb.ProtoName)})
+		vals.StructVals.Set("ChannelType", &render.GoSimple{Name: "ChannelTypeRoutingKey", Import: ctx.RuntimeModule(pb.ProtoName)})
 	}
 	if bindings.Exchange != nil {
 		ecVals := render.ConstructGoValue(
-			bindings.Exchange, []string{"Type"}, &render.GoSimple{Name: "ExchangeConfiguration", Package: ctx.RuntimeModule(pb.ProtoName)},
+			bindings.Exchange, []string{"Type"}, &render.GoSimple{Name: "ExchangeConfiguration", Import: ctx.RuntimeModule(pb.ProtoName)},
 		)
 		switch bindings.Exchange.Type {
 		case "default":
-			ecVals.StructVals.Set("Type", &render.GoSimple{Name: "ExchangeTypeDefault", Package: ctx.RuntimeModule(pb.ProtoName)})
+			ecVals.StructVals.Set("Type", &render.GoSimple{Name: "ExchangeTypeDefault", Import: ctx.RuntimeModule(pb.ProtoName)})
 		case "topic":
-			ecVals.StructVals.Set("Type", &render.GoSimple{Name: "ExchangeTypeTopic", Package: ctx.RuntimeModule(pb.ProtoName)})
+			ecVals.StructVals.Set("Type", &render.GoSimple{Name: "ExchangeTypeTopic", Import: ctx.RuntimeModule(pb.ProtoName)})
 		case "direct":
-			ecVals.StructVals.Set("Type", &render.GoSimple{Name: "ExchangeTypeDirect", Package: ctx.RuntimeModule(pb.ProtoName)})
+			ecVals.StructVals.Set("Type", &render.GoSimple{Name: "ExchangeTypeDirect", Import: ctx.RuntimeModule(pb.ProtoName)})
 		case "fanout":
-			ecVals.StructVals.Set("Type", &render.GoSimple{Name: "ExchangeTypeFanout", Package: ctx.RuntimeModule(pb.ProtoName)})
+			ecVals.StructVals.Set("Type", &render.GoSimple{Name: "ExchangeTypeFanout", Import: ctx.RuntimeModule(pb.ProtoName)})
 		case "headers":
-			ecVals.StructVals.Set("Type", &render.GoSimple{Name: "ExchangeTypeHeaders", Package: ctx.RuntimeModule(pb.ProtoName)})
+			ecVals.StructVals.Set("Type", &render.GoSimple{Name: "ExchangeTypeHeaders", Import: ctx.RuntimeModule(pb.ProtoName)})
 		}
 		vals.StructVals.Set("ExchangeConfiguration", ecVals)
 	}
 	qVals := render.ConstructGoValue(
-		bindings.Queue, nil, &render.GoSimple{Name: "QueueConfiguration", Package: ctx.RuntimeModule(pb.ProtoName)},
+		bindings.Queue, nil, &render.GoSimple{Name: "QueueConfiguration", Import: ctx.RuntimeModule(pb.ProtoName)},
 	)
 	vals.StructVals.Set("QueueConfiguration", &qVals)
 
@@ -110,19 +110,19 @@ func (pb ProtoBuilder) BuildOperationBindings(ctx *common.CompileContext, rawDat
 	}
 
 	vals = render.ConstructGoValue(
-		bindings, []string{"Expiration", "DeliveryMode"}, &render.GoSimple{Name: "OperationBindings", Package: ctx.RuntimeModule(pb.ProtoName)},
+		bindings, []string{"Expiration", "DeliveryMode"}, &render.GoSimple{Name: "OperationBindings", Import: ctx.RuntimeModule(pb.ProtoName)},
 	)
 	if bindings.Expiration > 0 {
 		v := render.ConstructGoValue(
-			bindings.Expiration*int(time.Millisecond), nil, &render.GoSimple{Name: "Duration", Package: "time"},
+			bindings.Expiration*int(time.Millisecond), nil, &render.GoSimple{Name: "Duration", Import: "time"},
 		)
 		vals.StructVals.Set("Expiration", v)
 	}
 	switch bindings.DeliveryMode {
 	case 1:
-		vals.StructVals.Set("DeliveryMode", &render.GoSimple{Name: "DeliveryModeTransient", Package: ctx.RuntimeModule(pb.ProtoName)})
+		vals.StructVals.Set("DeliveryMode", &render.GoSimple{Name: "DeliveryModeTransient", Import: ctx.RuntimeModule(pb.ProtoName)})
 	case 2:
-		vals.StructVals.Set("DeliveryMode", &render.GoSimple{Name: "DeliveryModePersistent", Package: ctx.RuntimeModule(pb.ProtoName)})
+		vals.StructVals.Set("DeliveryMode", &render.GoSimple{Name: "DeliveryModePersistent", Import: ctx.RuntimeModule(pb.ProtoName)})
 	}
 
 	return

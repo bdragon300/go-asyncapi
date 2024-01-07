@@ -40,7 +40,7 @@ func (pb ProtoBuilder) BuildOperationBindings(ctx *common.CompileContext, rawDat
 	}
 
 	vals = render.ConstructGoValue(
-		bindings, []string{"Query"}, &render.GoSimple{Name: "OperationBindings", Package: ctx.RuntimeModule(pb.ProtoName)},
+		bindings, []string{"Query"}, &render.GoSimple{Name: "OperationBindings", Import: ctx.RuntimeModule(pb.ProtoName)},
 	)
 	if bindings.Query != nil {
 		v, err2 := json.Marshal(bindings.Query)

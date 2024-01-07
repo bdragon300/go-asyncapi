@@ -178,11 +178,11 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 		}
 		if res.Type == nil {
 			res.Type = &GoArray{
-				BaseType: BaseType{Name: rtyp.Name(), PackageName: rtyp.PkgPath()},
+				BaseType: BaseType{Name: rtyp.Name(), Import: rtyp.PkgPath()},
 				ItemsType: &GoSimple{
 					Name:    elemType.Name(),
 					IsIface: elemType.Kind() == reflect.Interface,
-					Package: elemType.PkgPath(),
+					Import:  elemType.PkgPath(),
 				},
 				Size: elemSize,
 			}
@@ -198,16 +198,16 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 		elemType := rtyp.Elem()
 		if res.Type == nil {
 			res.Type = &GoMap{
-				BaseType: BaseType{Name: rtyp.Name(), PackageName: rtyp.PkgPath()},
+				BaseType: BaseType{Name: rtyp.Name(), Import: rtyp.PkgPath()},
 				KeyType: &GoSimple{
 					Name:    keyType.Name(),
 					IsIface: keyType.Kind() == reflect.Interface,
-					Package: keyType.PkgPath(),
+					Import:  keyType.PkgPath(),
 				},
 				ValueType: &GoSimple{
 					Name:    elemType.Name(),
 					IsIface: elemType.Kind() == reflect.Interface,
-					Package: elemType.PkgPath(),
+					Import:  elemType.PkgPath(),
 				},
 			}
 		}
@@ -220,7 +220,7 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 	case reflect.Struct:
 		if res.Type == nil {
 			res.Type = &GoStruct{
-				BaseType: BaseType{Name: rtyp.Name(), PackageName: rtyp.PkgPath()},
+				BaseType: BaseType{Name: rtyp.Name(), Import: rtyp.PkgPath()},
 			}
 		}
 		res.NilCurlyBrakets = true

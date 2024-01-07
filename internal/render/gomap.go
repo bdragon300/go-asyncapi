@@ -13,7 +13,7 @@ type GoMap struct {
 }
 
 func (m GoMap) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoMap", m.PackageName, m.Name, "definition", m.DirectRendering())
+	ctx.LogRender("GoMap", m.Import, m.Name, "definition", m.DirectRendering())
 	defer ctx.LogReturn()
 
 	var res []*jen.Statement
@@ -30,12 +30,12 @@ func (m GoMap) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 }
 
 func (m GoMap) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoMap", m.PackageName, m.Name, "usage", m.DirectRendering())
+	ctx.LogRender("GoMap", m.Import, m.Name, "usage", m.DirectRendering())
 	defer ctx.LogReturn()
 
 	if m.DirectRender {
-		if m.PackageName != "" && m.PackageName != ctx.CurrentPackage {
-			return []*jen.Statement{jen.Qual(ctx.GeneratedModule(m.PackageName), m.Name)}
+		if m.Import != "" && m.Import != ctx.CurrentPackage {
+			return []*jen.Statement{jen.Qual(ctx.GeneratedModule(m.Import), m.Name)}
 		}
 		return []*jen.Statement{jen.Id(m.Name)}
 	}

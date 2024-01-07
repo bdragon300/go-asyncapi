@@ -11,7 +11,7 @@ import (
 type GoSimple struct {
 	Name            string            // type name
 	IsIface         bool              // TODO: check if this field is filled correctly everywhere
-	Package         string            // optional generated package name or module to import a type from
+	Import          string            // optional generated package name or module to import a type from
 	TypeParamValues []common.Renderer // optional type parameter types to be filled in definition and usage
 }
 
@@ -20,7 +20,7 @@ func (p GoSimple) DirectRendering() bool {
 }
 
 func (p GoSimple) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoSimple", p.Package, p.Name, "definition", p.DirectRendering())
+	ctx.LogRender("GoSimple", p.Import, p.Name, "definition", p.DirectRendering())
 	defer ctx.LogReturn()
 
 	stmt := jen.Id(p.Name)
@@ -34,13 +34,13 @@ func (p GoSimple) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 }
 
 func (p GoSimple) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoSimple", p.Package, p.Name, "usage", p.DirectRendering())
+	ctx.LogRender("GoSimple", p.Import, p.Name, "usage", p.DirectRendering())
 	defer ctx.LogReturn()
 
 	stmt := &jen.Statement{}
 	switch {
-	case p.Package != "" && p.Package != ctx.CurrentPackage:
-		stmt = stmt.Qual(p.Package, p.Name)
+	case p.Import != "" && p.Import != ctx.CurrentPackage:
+		stmt = stmt.Qual(p.Import, p.Name)
 	default:
 		stmt = stmt.Id(p.Name)
 	}
@@ -64,8 +64,8 @@ func (p GoSimple) ID() string {
 }
 
 func (p GoSimple) String() string {
-	if p.Package != "" {
-		return "GoSimple ." + p.Package + "." + p.Name
+	if p.Import != "" {
+		return "GoSimple ." + p.Import + "." + p.Name
 	}
 	return "GoSimple " + p.Name
 }

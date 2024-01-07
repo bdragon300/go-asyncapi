@@ -67,7 +67,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(srvName, "Bindings"),
 				DirectRender: true,
-				PackageName:  ctx.CurrentPackage(),
+				Import:       ctx.CurrentPackage(),
 			},
 			Fields: nil,
 		}

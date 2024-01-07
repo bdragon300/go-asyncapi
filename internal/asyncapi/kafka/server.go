@@ -30,7 +30,7 @@ func (pb ProtoBuilder) BuildServerBindings(ctx *common.CompileContext, rawData t
 		return vals, jsonVals, types.CompileError{Err: err, Path: ctx.PathRef(), Proto: pb.ProtoName}
 	}
 	vals = render.ConstructGoValue(
-		bindings, nil, &render.GoSimple{Name: "ServerBindings", Package: ctx.RuntimeModule(pb.ProtoName)},
+		bindings, nil, &render.GoSimple{Name: "ServerBindings", Import: ctx.RuntimeModule(pb.ProtoName)},
 	)
 
 	return

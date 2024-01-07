@@ -14,7 +14,7 @@ type GoInterface struct {
 
 func (i GoInterface) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	var res []*jen.Statement
-	ctx.LogRender("GoInterface", i.PackageName, i.Name, "definition", i.DirectRendering())
+	ctx.LogRender("GoInterface", i.Import, i.Name, "definition", i.DirectRendering())
 	defer ctx.LogReturn()
 
 	if i.Description != "" {
@@ -29,12 +29,12 @@ func (i GoInterface) RenderDefinition(ctx *common.RenderContext) []*jen.Statemen
 }
 
 func (i GoInterface) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoInterface", i.PackageName, i.Name, "usage", i.DirectRendering())
+	ctx.LogRender("GoInterface", i.Import, i.Name, "usage", i.DirectRendering())
 	defer ctx.LogReturn()
 
 	if i.DirectRendering() {
-		if i.PackageName != "" && i.PackageName != ctx.CurrentPackage {
-			return []*jen.Statement{jen.Qual(ctx.GeneratedModule(i.PackageName), i.Name)}
+		if i.Import != "" && i.Import != ctx.CurrentPackage {
+			return []*jen.Statement{jen.Qual(ctx.GeneratedModule(i.Import), i.Name)}
 		}
 		return []*jen.Statement{jen.Id(i.Name)}
 	}

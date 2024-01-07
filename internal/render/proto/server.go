@@ -74,7 +74,7 @@ func (ps BaseProtoServer) RenderOpenChannelMethod(ctx *common.RenderContext, cha
 			}).
 			Params(j.Op("*").Add(utils.ToCode(channel.RenderUsage(ctx))...), j.Error()).
 			Block(
-				j.Return(j.Qual(ctx.GeneratedModule(channelStruct.PackageName), "Open"+channelStruct.Name).CallFunc(func(g *j.Group) {
+				j.Return(j.Qual(ctx.GeneratedModule(channelStruct.Import), "Open"+channelStruct.Name).CallFunc(func(g *j.Group) {
 					if channelParametersStructNoRender != nil {
 						g.Id("params")
 					}

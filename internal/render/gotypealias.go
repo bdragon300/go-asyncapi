@@ -12,7 +12,7 @@ type GoTypeAlias struct {
 }
 
 func (p GoTypeAlias) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoTypeAlias", p.PackageName, p.Name, "definition", p.DirectRendering())
+	ctx.LogRender("GoTypeAlias", p.Import, p.Name, "definition", p.DirectRendering())
 	defer ctx.LogReturn()
 
 	var res []*jen.Statement
@@ -26,12 +26,12 @@ func (p GoTypeAlias) RenderDefinition(ctx *common.RenderContext) []*jen.Statemen
 }
 
 func (p GoTypeAlias) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoTypeAlias", p.PackageName, p.Name, "usage", p.DirectRendering())
+	ctx.LogRender("GoTypeAlias", p.Import, p.Name, "usage", p.DirectRendering())
 	defer ctx.LogReturn()
 
 	if p.DirectRender {
-		if p.PackageName != "" && p.PackageName != ctx.CurrentPackage {
-			return []*jen.Statement{jen.Qual(ctx.GeneratedModule(p.PackageName), p.Name)}
+		if p.Import != "" && p.Import != ctx.CurrentPackage {
+			return []*jen.Statement{jen.Qual(ctx.GeneratedModule(p.Import), p.Name)}
 		}
 		return []*jen.Statement{jen.Id(p.Name)}
 	}
