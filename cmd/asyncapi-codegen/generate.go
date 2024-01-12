@@ -9,18 +9,18 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/bdragon300/asyncapi-codegen-go/implementations"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi/amqp"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi/http"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi/kafka"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+	"github.com/bdragon300/go-asyncapi/implementations"
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/amqp"
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/http"
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/kafka"
+	"github.com/bdragon300/go-asyncapi/internal/types"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/compiler"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/linker"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/writer"
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
+	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/compiler"
+	"github.com/bdragon300/go-asyncapi/internal/linker"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
+	"github.com/bdragon300/go-asyncapi/internal/writer"
 	"github.com/samber/lo"
 	"golang.org/x/mod/modfile"
 )
@@ -46,7 +46,7 @@ type generatePubSub struct {
 	ImplementationsOpts
 	ExternalRefs bool `arg:"--external-refs" help:"Allow fetching specs from external $ref URLs"`
 
-	RuntimeModule string `arg:"--runtime-module" default:"github.com/bdragon300/asyncapi-codegen-go/run" help:"Runtime module name" placeholder:"MODULE"`
+	RuntimeModule string `arg:"--runtime-module" default:"github.com/bdragon300/go-asyncapi/run" help:"Runtime module name" placeholder:"MODULE"`
 }
 
 // TODO: below there are new args to implement

@@ -1,4 +1,4 @@
-module github.com/bdragon300/asyncapi-codegen-go
+module github.com/bdragon300/go-asyncapi
 
 go 1.20
 

@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"path"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
-	renderProto "github.com/bdragon300/asyncapi-codegen-go/internal/render/proto"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
+	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render"
+	renderProto "github.com/bdragon300/go-asyncapi/internal/render/proto"
+	"github.com/bdragon300/go-asyncapi/internal/types"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
 )

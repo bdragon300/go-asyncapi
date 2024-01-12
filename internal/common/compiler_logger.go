@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+	"github.com/bdragon300/go-asyncapi/internal/types"
 )
 
 type CompilerLogger struct {

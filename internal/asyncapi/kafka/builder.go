@@ -1,7 +1,7 @@
 package kafka
 
 import (
-	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
 )
 
 type ProtoBuilder struct {

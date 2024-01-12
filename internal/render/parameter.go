@@ -3,7 +3,7 @@ package render
 import (
 	"strings"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/common"
 	j "github.com/dave/jennifer/jen"
 )
 

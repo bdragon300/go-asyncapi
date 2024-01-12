@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
-	renderKafka "github.com/bdragon300/asyncapi-codegen-go/internal/render/kafka"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
+	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render"
+	renderKafka "github.com/bdragon300/go-asyncapi/internal/render/kafka"
+	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
 )

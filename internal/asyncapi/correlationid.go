@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render"
+	"github.com/bdragon300/go-asyncapi/internal/types"
 )
 
 type CorrelationID struct {

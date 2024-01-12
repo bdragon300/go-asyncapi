@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/dave/jennifer/jen"
 	"github.com/samber/lo"
 )

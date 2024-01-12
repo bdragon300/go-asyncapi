@@ -1,9 +1,9 @@
 package render
 
 import (
-	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/utils"
+	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/types"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
 	j "github.com/dave/jennifer/jen"
 )
 

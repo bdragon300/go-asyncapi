@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/common"
 )
 
 // DefaultPackage is package where objects will put if current parse package is empty

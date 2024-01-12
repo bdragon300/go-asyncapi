@@ -3,11 +3,11 @@ package http
 import (
 	"encoding/json"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/asyncapi"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
-	renderHttp "github.com/bdragon300/asyncapi-codegen-go/internal/render/http"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
+	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render"
+	renderHttp "github.com/bdragon300/go-asyncapi/internal/render/http"
+	"github.com/bdragon300/go-asyncapi/internal/types"
 	"gopkg.in/yaml.v3"
 )
 

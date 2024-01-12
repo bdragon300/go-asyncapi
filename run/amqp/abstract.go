@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/bdragon300/asyncapi-codegen-go/run"
+	"github.com/bdragon300/go-asyncapi/run"
 )
 
 // Pub

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bdragon300/asyncapi-codegen-go/run"
-	runAmqp "github.com/bdragon300/asyncapi-codegen-go/run/amqp"
+	"github.com/bdragon300/go-asyncapi/run"
+	runAmqp "github.com/bdragon300/go-asyncapi/run/amqp"
 
 	amqp091 "github.com/rabbitmq/amqp091-go"
 )

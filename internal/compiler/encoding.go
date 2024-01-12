@@ -1,8 +1,8 @@
 package compiler
 
 import (
-	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/render"
+	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render"
 )
 
 const encodingPackageName = "encoding"

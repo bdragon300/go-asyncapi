@@ -3,8 +3,8 @@ package asyncapi
 import (
 	"fmt"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/common"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/types"
 )
 
 type AsyncAPI struct {

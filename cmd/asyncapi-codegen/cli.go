@@ -5,11 +5,11 @@ import (
 	"io"
 	"os"
 
-	"github.com/bdragon300/asyncapi-codegen-go/internal/types"
+	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/charmbracelet/log"
 
 	"github.com/alexflint/go-arg"
-	"github.com/bdragon300/asyncapi-codegen-go/internal/writer"
+	"github.com/bdragon300/go-asyncapi/internal/writer"
 )
 
 var ErrWrongCliArgs = errors.New("cli args")

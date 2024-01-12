@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/bdragon300/asyncapi-codegen-go/run"
-	runHttp "github.com/bdragon300/asyncapi-codegen-go/run/http"
+	"github.com/bdragon300/go-asyncapi/run"
+	runHttp "github.com/bdragon300/go-asyncapi/run/http"
 )
 
 func NewConsumer(bindings *runHttp.ServerBindings) (consumer *ConsumeClient, err error) {
