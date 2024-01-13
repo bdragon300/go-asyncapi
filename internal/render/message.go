@@ -53,7 +53,7 @@ func (m Message) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 		res = append(res, m.PayloadType.RenderDefinition(ctx)...)
 	}
 	if m.HeadersTypePromise != nil {
-		res = append(res, m.HeadersFallbackType.RenderDefinition(ctx)...)
+		res = append(res, m.HeadersTypePromise.Target().RenderDefinition(ctx)...)
 	}
 
 	res = append(res, m.renderPublishMessageStruct(ctx)...)
@@ -153,7 +153,7 @@ func (m Message) renderMarshalEnvelopeMethod(ctx *common.RenderContext, protoNam
 				bg.Op("envelope.SetContentType").Call(j.Lit(m.ContentType))
 				if m.HeadersTypePromise != nil {
 					bg.Id("envelope").Dot("SetHeaders").Call(
-						j.Qual(ctx.RuntimeModule(""), "Header").Values(j.DictFunc(func(d j.Dict) {
+						j.Qual(ctx.RuntimeModule(""), "Headers").Values(j.DictFunc(func(d j.Dict) {
 							for _, f := range m.HeadersTypePromise.Target().Fields {
 								d[j.Lit(f.Name)] = j.Id(rn).Dot("Headers").Dot(f.Name)
 							}
@@ -240,12 +240,13 @@ func (m Message) renderUnmarshalEnvelopeMethod(ctx *common.RenderContext, protoN
 				bg.Op(fmt.Sprintf(`
 					if err := dec.Decode(&%[1]s.Payload); err != nil {
 						return err
-					}`, rn))
+					}
+					headers := envelope.Headers()`, rn))
 				if m.HeadersTypePromise != nil {
 					for _, f := range m.HeadersTypePromise.Target().Fields {
 						fType := j.Add(utils.ToCode(f.Type.RenderUsage(ctx))...)
 						bg.If(j.Op("v, ok := headers").Index(j.Lit(f.Name)), j.Id("ok")).
-							Block(j.Id(rn).Dot("Headers").Id(f.Name).Op("=").Id("v").Assert(fType))
+							Block(j.Id(rn).Dot("Headers").Dot(f.Name).Op("=").Id("v").Assert(fType))
 					}
 				} else {
 					bg.Id(rn).Dot("Headers").Op("=").Add(utils.ToCode(m.HeadersFallbackType.RenderUsage(ctx))...).Call(
