@@ -109,7 +109,7 @@ func (c *Module) Load() error {
 
 	if utils.IsRemoteSpecID(c.specID) {
 		c.logger.Info("Download a remote spec", "specID", c.specID)
-		f, err = os.CreateTemp(os.TempDir(), "asyncapi-codegen")
+		f, err = os.CreateTemp(os.TempDir(), "go-asynapi")
 		if err != nil {
 			return fmt.Errorf("cannot create temp file: %w", err)
 		}
