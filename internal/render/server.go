@@ -2,13 +2,17 @@ package render
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/types"
 	j "github.com/dave/jennifer/jen"
 )
 
 type Server struct {
-	Name            string
-	Protocol        string
-	ProtoServer     common.Renderer
+	Name        string
+	Protocol    string
+	ProtoServer common.Renderer
+
+	Variables types.OrderedMap[string, *Promise[*ServerVariable]]
+
 	BindingsStruct  *GoStruct           // nil if bindings are not defined for server
 	BindingsPromise *Promise[*Bindings] // nil if bindings are not defined for server as well
 }

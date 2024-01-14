@@ -27,7 +27,7 @@ type Channel struct {
 }
 
 func (c Channel) Compile(ctx *common.CompileContext) error {
-	ctx.SetTopObjName(ctx.Stack.Top().Path) // TODO: use title
+	ctx.SetTopObjName(ctx.Stack.Top().Path)
 	obj, err := c.build(ctx, ctx.Stack.Top().Path)
 	if err != nil {
 		return err

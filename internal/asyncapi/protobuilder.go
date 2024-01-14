@@ -15,7 +15,7 @@ import (
 
 type ProtocolBuilder interface {
 	BuildChannel(ctx *common.CompileContext, channel *Channel, channelKey string, abstractChannel *render.Channel) (common.Renderer, error)
-	BuildServer(ctx *common.CompileContext, server *Server, serverKey string) (common.Renderer, error)
+	BuildServer(ctx *common.CompileContext, server *Server, serverKey string, abstractServer *render.Server) (common.Renderer, error)
 
 	BuildMessageBindings(ctx *common.CompileContext, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *render.GoValue, jsonVals types.OrderedMap[string, string], err error)
 	BuildOperationBindings(ctx *common.CompileContext, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *render.GoValue, jsonVals types.OrderedMap[string, string], err error)
@@ -147,6 +147,7 @@ func (pb BaseProtoBuilder) BuildBaseProtoServer(
 	ctx *common.CompileContext,
 	server *Server,
 	serverKey string,
+	abstractServer *render.Server,
 ) (*renderProto.BaseProtoServer, error) {
 	srvName, _ := lo.Coalesce(server.XGoName, serverKey)
 	srvResult := &renderProto.BaseProtoServer{
@@ -161,19 +162,9 @@ func (pb BaseProtoBuilder) BuildBaseProtoServer(
 				Import:       ctx.CurrentPackage(),
 			},
 		},
-		ProtoName:  pb.ProtoName,
-		ProtoTitle: pb.ProtoTitle,
-	}
-
-	// Server variables
-	for _, v := range server.Variables.Entries() {
-		ctx.Logger.Trace("Server variable", "name", v.Key, "proto", pb.ProtoName)
-		srvResult.Variables.Set(v.Key, renderProto.ServerVariable{
-			ArgName:     utils.ToGolangName(v.Key, false),
-			Enum:        v.Value.Enum,
-			Default:     v.Value.Default,
-			Description: v.Value.Description,
-		})
+		AbstractServer: abstractServer,
+		ProtoName:      pb.ProtoName,
+		ProtoTitle:     pb.ProtoTitle,
 	}
 
 	// Channels which are connected to this server

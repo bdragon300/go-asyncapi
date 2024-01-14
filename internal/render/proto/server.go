@@ -3,17 +3,9 @@ package proto
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
-	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	j "github.com/dave/jennifer/jen"
 )
-
-type ServerVariable struct {
-	ArgName     string
-	Enum        []string // TODO: implement validation
-	Default     string
-	Description string // TODO
-}
 
 type BaseProtoServer struct {
 	Name            string // TODO: move fields to abstract server
@@ -21,7 +13,7 @@ type BaseProtoServer struct {
 	ProtocolVersion string
 	Struct          *render.GoStruct
 	ChannelsPromise *render.ListPromise[*render.Channel]
-	Variables       types.OrderedMap[string, ServerVariable]
+	AbstractServer  *render.Server
 
 	ProtoName, ProtoTitle string
 }
@@ -127,24 +119,25 @@ func (ps BaseProtoServer) RenderURLFunc(ctx *common.RenderContext) []*j.Statemen
 	return []*j.Statement{
 		j.Func().Id(ps.Struct.Name+"URL").
 			ParamsFunc(func(g *j.Group) {
-				for _, entry := range ps.Variables.Entries() {
-					g.Id(entry.Value.ArgName).String()
+				for _, entry := range ps.AbstractServer.Variables.Entries() {
+					g.Id(utils.ToGolangName(entry.Key, false)).String()
 				}
 			}).
 			Qual(ctx.RuntimeModule(""), "ParamString").
 			BlockFunc(func(bg *j.Group) {
-				if ps.Variables.Len() > 0 {
-					for _, entry := range ps.Variables.Entries() {
-						if entry.Value.Default != "" {
-							bg.If(j.Id(entry.Value.ArgName).Op("==").Lit("")).
+				if ps.AbstractServer.Variables.Len() > 0 {
+					for _, entry := range ps.AbstractServer.Variables.Entries() {
+						param := utils.ToGolangName(entry.Key, false)
+						if entry.Value.Target().Default != "" {
+							bg.If(j.Id(param).Op("==").Lit("")).
 								Block(
-									j.Id(entry.Value.ArgName).Op("=").Lit(entry.Value.Default),
+									j.Id(param).Op("=").Lit(entry.Value.Target().Default),
 								)
 						}
 					}
 					bg.Op("paramMap := map[string]string").Values(j.DictFunc(func(d j.Dict) {
-						for _, entry := range ps.Variables.Entries() {
-							d[j.Lit(entry.Key)] = j.Id(entry.Value.ArgName)
+						for _, entry := range ps.AbstractServer.Variables.Entries() {
+							d[j.Lit(entry.Key)] = j.Id(entry.Value.Target().Name)
 						}
 					}))
 					bg.Return(j.Qual(ctx.RuntimeModule(""), "ParamString").Values(j.Dict{

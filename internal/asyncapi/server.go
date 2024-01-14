@@ -1,6 +1,8 @@
 package asyncapi
 
 import (
+	"path"
+
 	"github.com/samber/lo"
 
 	"github.com/bdragon300/go-asyncapi/internal/types"
@@ -26,7 +28,7 @@ type Server struct {
 }
 
 func (s Server) Compile(ctx *common.CompileContext) error {
-	ctx.SetTopObjName(ctx.Stack.Top().Path) // TODO: use title
+	ctx.SetTopObjName(ctx.Stack.Top().Path)
 	obj, err := s.build(ctx, ctx.Stack.Top().Path)
 	if err != nil {
 		return err
@@ -61,6 +63,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	srvName, _ := lo.Coalesce(s.XGoName, serverKey)
 	res := render.Server{Name: srvName, Protocol: s.Protocol}
 
+	// Bindings
 	if s.Bindings != nil {
 		ctx.Logger.Trace("Server bindings")
 		res.BindingsStruct = &render.GoStruct{
@@ -77,22 +80,21 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		ctx.PutPromise(res.BindingsPromise)
 	}
 
+	// Server variables
+	for _, v := range s.Variables.Entries() {
+		ctx.Logger.Trace("Server variable", "name", v.Key)
+		ref := path.Join(ctx.PathRef(), "variables", v.Key)
+		prm := render.NewPromise[*render.ServerVariable](ref, common.PromiseOriginInternal)
+		ctx.PutPromise(prm)
+		res.Variables.Set(v.Key, prm)
+	}
+
 	var err error
 	ctx.Logger.Trace("Server", "proto", protoBuilder.ProtocolName())
-	res.ProtoServer, err = protoBuilder.BuildServer(ctx, &s, serverKey)
+	res.ProtoServer, err = protoBuilder.BuildServer(ctx, &s, serverKey, &res)
 	if err != nil {
 		return nil, err
 	}
 
 	return &res, nil
-}
-
-// TODO: This object MAY be extended with Specification Extensions.
-type ServerVariable struct {
-	Enum        []string `json:"enum" yaml:"enum"`
-	Default     string   `json:"default" yaml:"default"`
-	Description string   `json:"description" yaml:"description"`
-	Examples    []string `json:"examples" yaml:"examples"`
-
-	Ref string `json:"$ref" yaml:"$ref"`
 }
