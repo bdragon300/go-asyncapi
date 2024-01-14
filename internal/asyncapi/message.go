@@ -67,9 +67,9 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		return t, nil
 	}
 
-	objName, _ := lo.Coalesce(m.XGoName, messageKey)
+	msgName, _ := lo.Coalesce(m.XGoName, messageKey)
 	obj := render.Message{
-		Name: objName,
+		Name: msgName,
 		OutStruct: &render.GoStruct{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(m.Name, "Out"),
@@ -115,7 +115,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		ctx.Logger.Trace("Message bindings")
 		obj.BindingsStruct = &render.GoStruct{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(m.Name, "Bindings"),
+				Name:         ctx.GenerateObjName(msgName, "Bindings"),
 				DirectRender: true,
 				Import:       ctx.CurrentPackage(),
 			},

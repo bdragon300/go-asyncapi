@@ -240,9 +240,9 @@ func (m Message) renderUnmarshalEnvelopeMethod(ctx *common.RenderContext, protoN
 				bg.Op(fmt.Sprintf(`
 					if err := dec.Decode(&%[1]s.Payload); err != nil {
 						return err
-					}
-					headers := envelope.Headers()`, rn))
+					}`, rn))
 				if m.HeadersTypePromise != nil {
+					bg.Op("headers := envelope.Headers()")
 					for _, f := range m.HeadersTypePromise.Target().Fields {
 						fType := j.Add(utils.ToCode(f.Type.RenderUsage(ctx))...)
 						bg.If(j.Op("v, ok := headers").Index(j.Lit(f.Name)), j.Id("ok")).

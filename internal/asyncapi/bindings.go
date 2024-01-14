@@ -13,7 +13,6 @@ import (
 type RawBindings struct {
 	Ref            string                                                             `json:"$ref" yaml:"$ref"`
 	ProtocolValues types.OrderedMap[string, types.Union2[json.RawMessage, yaml.Node]] `json:"-" yaml:"-"`
-	// TODO: x-tags
 }
 
 type Bindings struct {
@@ -31,9 +30,15 @@ func (b *Bindings) build(
 	ctx *common.CompileContext,
 	bindingsKind int,
 	bindingsKey string,
-) (*render.Bindings, error) {
-	res := render.Bindings{Name: bindingsKey}
+) (common.Renderer, error) {
+	if b.Ref != "" {
+		ctx.Logger.Trace("Ref", "$ref", b.Ref)
+		res := render.NewRendererPromise(b.Ref, common.PromiseOriginUser)
+		ctx.PutPromise(res)
+		return res, nil
+	}
 
+	res := render.Bindings{Name: bindingsKey}
 	for _, e := range b.ProtocolValues.Entries() {
 		ctx.Logger.Trace("Bindings", "proto", e.Key)
 		builder, ok := ProtocolBuilders[e.Key]
