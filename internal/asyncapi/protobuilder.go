@@ -78,7 +78,7 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 				Args: openChannelServerIfaceArgs,
 				Return: []render.GoFuncParam{
 					{Type: &render.GoSimple{Name: chanResult.Struct.Name, Import: ctx.CurrentPackage()}, Pointer: true},
-					{Type: &render.GoSimple{Name: "error"}},
+					{Type: &render.GoSimple{Name: "error", IsIface: true}},
 				},
 			},
 		},

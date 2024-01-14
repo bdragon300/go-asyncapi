@@ -10,7 +10,7 @@ import (
 
 type GoSimple struct {
 	Name            string            // type name
-	IsIface         bool              // TODO: check if this field is filled correctly everywhere
+	IsIface         bool              // true if type is interface, which means it cannot be rendered as pointer
 	Import          string            // optional generated package name or module to import a type from
 	TypeParamValues []common.Renderer // optional type parameter types to be filled in definition and usage
 }
