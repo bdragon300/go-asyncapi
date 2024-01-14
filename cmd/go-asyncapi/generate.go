@@ -26,16 +26,16 @@ import (
 )
 
 type GenerateCmd struct {
-	Pub            *generatePubSub         `arg:"subcommand:pub" help:"Generate only the publisher code"`
-	Sub            *generatePubSub         `arg:"subcommand:sub" help:"Generate only the subscriber code"`
-	PubSub         *generatePubSub         `arg:"subcommand:pubsub" help:"Generate both publisher and subscriber code"`
-	Implementation *generateImplementation `arg:"subcommand:implementation" help:"Generate the implementation code only"`
+	Pub            *generatePubSubArgs         `arg:"subcommand:pub" help:"Generate only the publisher code"`
+	Sub            *generatePubSubArgs         `arg:"subcommand:sub" help:"Generate only the subscriber code"`
+	PubSub         *generatePubSubArgs         `arg:"subcommand:pubsub" help:"Generate both publisher and subscriber code"`
+	Implementation *generateImplementationArgs `arg:"subcommand:implementation" help:"Generate the implementation code only"`
 
 	TargetDir string `arg:"-t,--target-dir" default:"./asyncapi" help:"Directory to save the generated code" placeholder:"DIR"`
 	ImplDir   string `arg:"--impl-dir" default:"impl" help:"Directory to save implementations inside the target dir" placeholder:"DIR"`
 }
 
-type generatePubSub struct {
+type generatePubSubArgs struct {
 	Spec string `arg:"required,positional" help:"AsyncAPI specification file path or url" placeholder:"PATH"`
 
 	ProjectModule string `arg:"-M,--project-module" help:"Project module name to use [default: extracted from go.mod file in the current working directory]" placeholder:"MODULE"`
@@ -50,7 +50,7 @@ type generatePubSub struct {
 }
 
 // TODO: below there are new args to implement
-type generateImplementation struct {
+type generateImplementationArgs struct {
 	Protocol string `arg:"required,positional" help:"Protocol name to generate"`
 	Name     string `arg:"required,positional" help:"Implementation name to generate"`
 }
@@ -91,6 +91,10 @@ type generateObjectSelectionOpts struct {
 }
 
 func generate(cmd *GenerateCmd) error {
+	if cmd.Implementation != nil {
+		return generateImplementation(cmd)
+	}
+
 	isPub, isSub, pubSubOpts := getPubSubVariant(cmd)
 	targetPkg, _ := lo.Coalesce(pubSubOpts.TargetPackage, path.Base(cmd.TargetDir))
 	mainLogger.Debugf("Target package name is %s", targetPkg)
@@ -137,9 +141,22 @@ func generate(cmd *GenerateCmd) error {
 	// Rendering the selected implementations
 	if !pubSubOpts.NoImplementations {
 		selectedImpls := getImplementationsOpts(pubSubOpts.ImplementationsOpts)
-		if err = generationWriteImplementations(selectedImpls, mainModule, implDir); err != nil {
+		if err = generationWriteImplementations(selectedImpls, mainModule.Protocols(), implDir); err != nil {
 			return err
 		}
+	}
+
+	mainLogger.Info("Finished")
+	return nil
+}
+
+func generateImplementation(cmd *GenerateCmd) error {
+	implDir := path.Join(cmd.TargetDir, cmd.ImplDir)
+	mainLogger.Debugf("Target implementations directory is %s", implDir)
+	proto := cmd.Implementation.Protocol
+	name := cmd.Implementation.Name
+	if err := generationWriteImplementations(map[string]string{proto: name}, []string{proto}, implDir); err != nil {
+		return err
 	}
 
 	mainLogger.Info("Finished")
@@ -212,7 +229,7 @@ func generationLinking(objSources map[string]linker.ObjectSource) error {
 	return nil
 }
 
-func generationWriteImplementations(selectedImpls map[string]string, mainModule *compiler.Module, implDir string) error {
+func generationWriteImplementations(selectedImpls map[string]string, protocols []string, implDir string) error {
 	logger := types.NewLogger("Writing 📝")
 	logger.Info("Writing implementations")
 	implManifest, err := getImplementationsManifest()
@@ -222,7 +239,7 @@ func generationWriteImplementations(selectedImpls map[string]string, mainModule 
 
 	var totalBytes int
 	var writtenProtocols []string
-	for _, p := range mainModule.Protocols() {
+	for _, p := range protocols {
 		implName := selectedImpls[p]
 		if implName == "no" || implName == "" {
 			logger.Debug("Implementation has been unselected", "protocol", p)
@@ -277,7 +294,7 @@ func getImplementationsOpts(opts ImplementationsOpts) map[string]string {
 	}
 }
 
-func getPubSubVariant(cmd *GenerateCmd) (pub bool, sub bool, variant *generatePubSub) {
+func getPubSubVariant(cmd *GenerateCmd) (pub bool, sub bool, variant *generatePubSubArgs) {
 	switch {
 	case cmd.PubSub != nil:
 		return true, true, cmd.PubSub
@@ -289,7 +306,7 @@ func getPubSubVariant(cmd *GenerateCmd) (pub bool, sub bool, variant *generatePu
 	return
 }
 
-func getCompileOpts(opts generatePubSub) (common.CompileOpts, error) {
+func getCompileOpts(opts generatePubSubArgs) (common.CompileOpts, error) {
 	var err error
 	res := common.CompileOpts{
 		ReusePackages:      nil,
@@ -343,7 +360,7 @@ func getCompileOpts(opts generatePubSub) (common.CompileOpts, error) {
 	return res, nil
 }
 
-func getRenderOpts(opts generatePubSub, targetDir, targetPkg string) (common.RenderOpts, error) {
+func getRenderOpts(opts generatePubSubArgs, targetDir, targetPkg string) (common.RenderOpts, error) {
 	res := common.RenderOpts{
 		RuntimeModule: opts.RuntimeModule,
 		TargetPackage: targetPkg,
