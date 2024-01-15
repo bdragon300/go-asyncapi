@@ -46,6 +46,7 @@ type (
 		Headers() run.Headers
 
 		ResponseWriter() http.ResponseWriter
+		RespondEnvelope(code int, envelope EnvelopeWriter) error
 		RespondError(code int, error string)
 	}
 )

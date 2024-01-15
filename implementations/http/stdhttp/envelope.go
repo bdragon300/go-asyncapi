@@ -103,6 +103,25 @@ func (e *EnvelopeIn) ResponseWriter() http.ResponseWriter {
 	return e.responseWriter
 }
 
+func (e *EnvelopeIn) RespondEnvelope(code int, envelope runHttp.EnvelopeWriter) error {
+	rm := envelope.(ImplementationRecord)
+	record := rm.RecordNetHTTP()
+	e.responseWriter.WriteHeader(code)
+	if len(record.Header) > 0 {
+		for name, val := range record.Header {
+			for _, v := range val {
+				e.responseWriter.Header().Set(name, v)
+			}
+		}
+	}
+	if rm.Body() != nil {
+		if _, err := io.Copy(e.responseWriter, rm.Body()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (e *EnvelopeIn) RespondError(code int, error string) {
 	http.Error(e.responseWriter, error, code)
 }
