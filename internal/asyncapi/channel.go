@@ -83,7 +83,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 		prm := render.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
 			_, ok := item.(*render.Server)
 			// Pick only servers from `servers:` section, skip ones from `components:`
-			return ok && len(path) == 2 && path[0] == "servers" && lo.Contains(*c.Servers, path[1])
+			return ok && len(path) == 2 && path[0] == PackageScopeServers && lo.Contains(*c.Servers, path[1])
 		})
 		ctx.PutListPromise(prm)
 		res.ServersPromise = prm
@@ -91,7 +91,8 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 		ctx.Logger.Trace("Channel for all servers")
 		prm := render.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
 			_, ok := item.(*render.Server)
-			return ok && len(path) > 0 && path[0] == "servers" // Pick only servers from `servers:` section, skip ones from `components:`
+			// Pick only servers from `servers:` section, skip ones from `components:`
+			return ok && len(path) > 0 && path[0] == PackageScopeServers
 		})
 		ctx.PutListPromise(prm)
 		res.ServersPromise = prm

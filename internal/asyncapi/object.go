@@ -249,7 +249,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 
 	var messagesPrm *render.ListPromise[*render.Message]
 	// Collect all messages to retrieve struct field tags
-	if ctx.CurrentPackage() == "models" { // TODO: fix hardcode
+	if ctx.CurrentPackage() == PackageScopeModels {
 		messagesPrm = render.NewListCbPromise[*render.Message](func(item common.Renderer, _ []string) bool {
 			_, ok := item.(*render.Message)
 			return ok

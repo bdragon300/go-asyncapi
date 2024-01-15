@@ -37,7 +37,7 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 		return nil
 	}
 	ctx.PutObject(obj)
-	if ctx.CurrentPackage() == "servers" { // FIXME: optimize somehow
+	if ctx.CurrentPackage() == PackageScopeServers {
 		ctx.Storage.AddProtocol(s.Protocol)
 	}
 	return nil

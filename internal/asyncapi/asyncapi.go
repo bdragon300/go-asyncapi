@@ -7,6 +7,14 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/types"
 )
 
+const (
+	PackageScopeModels   = "models"
+	PackageScopeChannels = "channels"
+	PackageScopeServers  = "servers"
+	PackageScopeMessages = "messages"
+	PackageScopeParams   = "parameters"
+)
+
 type AsyncAPI struct {
 	Asyncapi           string                            `json:"asyncapi" yaml:"asyncapi"`
 	ID                 string                            `json:"id" yaml:"id"`

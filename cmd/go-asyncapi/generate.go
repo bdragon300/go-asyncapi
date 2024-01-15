@@ -95,7 +95,7 @@ func generate(cmd *GenerateCmd) error {
 		return generateImplementation(cmd)
 	}
 
-	isPub, isSub, pubSubOpts := getPubSubVariant(cmd)
+	isPub, isSub, pubSubOpts := getPubSubVariant(cmd) // TODO: pass pub/sub bool flags to the generation functions
 	targetPkg, _ := lo.Coalesce(pubSubOpts.TargetPackage, path.Base(cmd.TargetDir))
 	mainLogger.Debugf("Target package name is %s", targetPkg)
 	if !isSub && !isPub {
