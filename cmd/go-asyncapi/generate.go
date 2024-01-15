@@ -58,7 +58,7 @@ type generateImplementationArgs struct {
 type ImplementationsOpts struct {
 	Kafka string `arg:"--kafka-impl" default:"franz-go" help:"Implementation for Kafka ('no' to disable)" placeholder:"NAME"`
 	AMQP  string `arg:"--amqp-impl" default:"amqp091-go" help:"Implementation for AMQP ('no' to disable)" placeholder:"NAME"`
-	HTTP  string `arg:"--http-impl" default:"stdhttp" help:"Implementation for HTTP ('no' to disable)" placeholder:"NAME"`
+	HTTP  string `arg:"--http-impl" default:"nethttp" help:"Implementation for HTTP ('no' to disable)" placeholder:"NAME"`
 }
 
 type generateObjectSelectionOpts struct {

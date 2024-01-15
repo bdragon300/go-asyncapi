@@ -12,9 +12,9 @@
     }
   },
   "http": {
-    "stdhttp": {
+    "nethttp": {
       "url": "https://pkg.go.dev/net/http",
-      "dir": "http/stdhttp"
+      "dir": "http/nethttp"
     }
   }
 }

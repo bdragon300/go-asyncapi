@@ -1,4 +1,4 @@
-package stdhttp
+package nethttp
 
 import (
 	"bytes"
