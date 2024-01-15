@@ -15,25 +15,11 @@ type Union2[T0, T1 any] struct {
 }
 
 func (ju *Union2[T0, T1]) MarshalJSON() ([]byte, error) {
-	switch ju.Selector {
-	case 0:
-		return json.Marshal(ju.V0)
-	case 1:
-		return json.Marshal(ju.V1)
-	default:
-		panic(fmt.Sprintf("Selector can be 0 or 1 only, got %d", ju.Selector))
-	}
+	return json.Marshal(ju.CurrentValue())
 }
 
 func (ju *Union2[T0, T1]) MarshalYAML() (any, error) {
-	switch ju.Selector {
-	case 0:
-		return ju.V0, nil
-	case 1:
-		return ju.V1, nil
-	default:
-		panic(fmt.Sprintf("Selector can be 0 or 1 only, got %d", ju.Selector))
-	}
+	return ju.CurrentValue(), nil
 }
 
 func (ju *Union2[T0, T1]) UnmarshalJSON(bytes []byte) error {
@@ -63,6 +49,17 @@ func (ju *Union2[T0, T1]) UnmarshalYAML(value *yaml.Node) error {
 		return err
 	}
 	return nil
+}
+
+func (ju *Union2[T0, T1]) CurrentValue() any {
+	switch ju.Selector {
+	case 0:
+		return ju.V0
+	case 1:
+		return ju.V1
+	default:
+		panic(fmt.Sprintf("Selector can be 0 or 1 only, got %d", ju.Selector))
+	}
 }
 
 func ToUnion2[T0, T1 any](v any) *Union2[T0, T1] {
@@ -100,29 +97,11 @@ type Union3[T0, T1, T2 any] struct {
 }
 
 func (ju *Union3[T0, T1, T2]) MarshalJSON() ([]byte, error) {
-	switch ju.Selector {
-	case 0:
-		return json.Marshal(ju.V0)
-	case 1:
-		return json.Marshal(ju.V1)
-	case 2:
-		return json.Marshal(ju.V2)
-	default:
-		panic(fmt.Sprintf("Selector can be 0, 1 or 2 only, got %d", ju.Selector))
-	}
+	return json.Marshal(ju.CurrentValue())
 }
 
 func (ju *Union3[T0, T1, T2]) MarshalYAML() (any, error) {
-	switch ju.Selector {
-	case 0:
-		return ju.V0, nil
-	case 1:
-		return ju.V1, nil
-	case 2:
-		return ju.V2, nil
-	default:
-		panic(fmt.Sprintf("Selector can be 0, 1 or 2 only, got %d", ju.Selector))
-	}
+	return ju.CurrentValue(), nil
 }
 
 func (ju *Union3[T0, T1, T2]) UnmarshalJSON(bytes []byte) error {
@@ -156,4 +135,17 @@ func (ju *Union3[T0, T1, T2]) UnmarshalYAML(value *yaml.Node) error {
 		return err
 	}
 	return nil
+}
+
+func (ju *Union3[T0, T1, T2]) CurrentValue() any {
+	switch ju.Selector {
+	case 0:
+		return ju.V0
+	case 1:
+		return ju.V1
+	case 2:
+		return ju.V2
+	default:
+		panic(fmt.Sprintf("Selector can be 0, 1 or 2 only, got %d", ju.Selector))
+	}
 }

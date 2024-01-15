@@ -22,20 +22,34 @@ type orderedMap interface {
 	OrderedMap()
 }
 
+type union interface {
+	CurrentValue() any
+}
+
 func WalkAndCompile(ctx *common.CompileContext, object reflect.Value) error {
-	if _, ok := object.Interface().(orderedMap); ok {
+	switch v := object.Interface().(type) {
+	case orderedMap:
 		mEntries := object.MethodByName("Entries")
 		entries := mEntries.Call(nil)[0]
 		for j := 0; j < entries.Len(); j++ {
 			entry := entries.Index(j)
 			pushStack(ctx, entry.FieldByName("Key").String(), ctx.Stack.Top().Flags)
-			if err := traverse(ctx, entry.FieldByName("Value")); err != nil {
+			err := traverse(ctx, entry.FieldByName("Value"))
+			ctx.Stack.Pop()
+			if err != nil {
 				return err
 			}
-			ctx.Stack.Pop()
 		}
+		return nil
+	case union:
+		if (object.Kind() == reflect.Pointer || object.Kind() == reflect.Interface) && object.IsNil() {
+			return nil
+		}
+		if err := traverse(ctx, reflect.ValueOf(v.CurrentValue())); err != nil {
+			return err
+		}
+		return nil
 	}
-	// TODO: add Unions
 
 	if object.Kind() == reflect.Pointer {
 		object = reflect.Indirect(object)
