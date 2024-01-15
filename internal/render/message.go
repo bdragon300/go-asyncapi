@@ -63,7 +63,7 @@ func (m Message) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 }
 
 func (m Message) RenderUsage(_ *common.RenderContext) []*j.Statement {
-	panic("not implemented") // TODO: separate Renderer interface instead of panic in RenderUsage?
+	panic("not implemented")
 }
 
 func (m Message) ID() string {

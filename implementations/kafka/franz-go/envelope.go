@@ -47,6 +47,10 @@ func (e *EnvelopeOut) SetTopic(topic string) {
 	e.Topic = topic
 }
 
+func (e *EnvelopeOut) RecordFranzGo() *kgo.Record {
+	return e.Record
+}
+
 func NewEnvelopeIn(r *kgo.Record) *EnvelopeIn {
 	return &EnvelopeIn{
 		Record: r,

@@ -46,6 +46,14 @@ func (e *EnvelopeOut) SetDeliveryTag(tag string) {
 	e.deliveryTag = tag
 }
 
+func (e *EnvelopeOut) RecordAMQP091() *amqp091.Publishing {
+	return e.Publishing
+}
+
+func (e *EnvelopeOut) DeliveryTag() string {
+	return e.deliveryTag
+}
+
 type EnvelopeIn struct {
 	*amqp091.Delivery
 	reader io.Reader

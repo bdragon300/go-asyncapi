@@ -66,6 +66,11 @@ func (p ProduceClient) Publisher(channelName string, bindings *runAmqp.ChannelBi
 	}, nil
 }
 
+type ImplementationRecord interface {
+	RecordAMQP091() *amqp091.Publishing
+	DeliveryTag() string
+}
+
 type PublishClient struct {
 	*amqp091.Channel
 	routingKey   string
@@ -76,27 +81,28 @@ type PublishClient struct {
 func (p PublishClient) Send(ctx context.Context, envelopes ...runAmqp.EnvelopeWriter) error {
 	var err error
 	for _, envelope := range envelopes {
-		e := envelope.(*EnvelopeOut)
-		e.DeliveryMode = uint8(p.bindings.PublisherBindings.DeliveryMode)
-		e.Priority = uint8(p.bindings.PublisherBindings.Priority)
-		e.Timestamp = time.Time{}
+		rm := envelope.(ImplementationRecord)
+		record := rm.RecordAMQP091()
+		record.DeliveryMode = uint8(p.bindings.PublisherBindings.DeliveryMode)
+		record.Priority = uint8(p.bindings.PublisherBindings.Priority)
+		record.Timestamp = time.Time{}
 		if p.bindings.PublisherBindings.Timestamp {
-			e.Timestamp = time.Now()
+			record.Timestamp = time.Now()
 		}
-		e.ReplyTo = p.bindings.PublisherBindings.ReplyTo
-		e.UserId = p.bindings.PublisherBindings.UserID
+		record.ReplyTo = p.bindings.PublisherBindings.ReplyTo
+		record.UserId = p.bindings.PublisherBindings.UserID
 		if p.bindings.PublisherBindings.Expiration > 0 {
-			e.Expiration = p.bindings.PublisherBindings.Expiration.String()
+			record.Expiration = p.bindings.PublisherBindings.Expiration.String()
 		}
 		if len(p.bindings.PublisherBindings.CC) > 0 {
-			e.Headers["CC"] = p.bindings.PublisherBindings.CC
+			record.Headers["CC"] = p.bindings.PublisherBindings.CC
 		}
 		if len(p.bindings.PublisherBindings.BCC) > 0 {
-			e.Headers["BCC"] = p.bindings.PublisherBindings.BCC
+			record.Headers["BCC"] = p.bindings.PublisherBindings.BCC
 		}
 
 		err = errors.Join(err, p.Channel.PublishWithContext(
-			ctx, p.exchangeName, p.routingKey, p.bindings.PublisherBindings.Mandatory, false, *e.Publishing,
+			ctx, p.exchangeName, p.routingKey, p.bindings.PublisherBindings.Mandatory, false, *record,
 		))
 	}
 	return err

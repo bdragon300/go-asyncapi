@@ -3,6 +3,7 @@ package stdhttp
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/bdragon300/go-asyncapi/run"
@@ -60,6 +61,18 @@ func (e *EnvelopeOut) SetBindings(bindings runHttp.MessageBindings) {
 
 func (e *EnvelopeOut) SetPath(path string) {
 	e.path = path
+}
+
+func (e *EnvelopeOut) RecordNetHTTP() *http.Request {
+	return &e.Request
+}
+
+func (e *EnvelopeOut) Path() string {
+	return e.path
+}
+
+func (e *EnvelopeOut) Body() io.Reader {
+	return e.body
 }
 
 func NewEnvelopeIn(req *http.Request, w http.ResponseWriter) *EnvelopeIn {

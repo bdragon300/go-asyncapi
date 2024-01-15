@@ -2,6 +2,7 @@ package stdhttp
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -35,11 +36,18 @@ func (p ProduceClient) Publisher(channelName string, bindings *runHttp.ChannelBi
 	}, nil
 }
 
+type ImplementationRecord interface {
+	RecordNetHTTP() *http.Request
+	Path() string
+	Body() io.Reader
+	// TODO: Bindings?
+}
+
 type PublishClient struct {
 	channelName    string
 	url            *url.URL
 	bindings       *runHttp.ChannelBindings
-	NewRequest     func(ctx context.Context, method, url string, e *EnvelopeOut) (*http.Request, error)
+	NewRequest     func(ctx context.Context, method, url string, e ImplementationRecord) (*http.Request, error)
 	HandleResponse func(r *http.Response) error
 }
 
@@ -51,10 +59,11 @@ func (p PublishClient) Send(ctx context.Context, envelopes ...runHttp.EnvelopeWr
 	}
 
 	for _, envelope := range envelopes {
-		e := envelope.(*EnvelopeOut)
-		u := e.URL.JoinPath(p.channelName, e.path)
+		rm := envelope.(ImplementationRecord)
+		record := rm.RecordNetHTTP()
+		u := record.URL.JoinPath(p.channelName, rm.Path())
 		pool.Go(func() error {
-			req, err := p.NewRequest(ctx, method, u.String(), e)
+			req, err := p.NewRequest(ctx, method, u.String(), rm)
 			if err != nil {
 				return err
 			}
@@ -75,39 +84,36 @@ func (p PublishClient) Close() error {
 	return nil
 }
 
-func NewRequest(ctx context.Context, method, url string, e *EnvelopeOut) (*http.Request, error) {
-	var body *EnvelopeOut
-	if e.body.Len() > 0 {
-		body = e
-	}
-	req, err := http.NewRequestWithContext(ctx, method, url, body)
+func NewRequest(ctx context.Context, method, url string, e ImplementationRecord) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(ctx, method, url, e.Body())
 	if err != nil {
 		return nil, err
 	}
 
-	if e.Proto != "" {
-		req.Proto = e.Proto
+	recordReq := e.RecordNetHTTP()
+	if recordReq.Proto != "" {
+		req.Proto = recordReq.Proto
 	}
-	if e.ProtoMajor != 0 {
-		req.ProtoMajor = e.ProtoMajor
-		req.ProtoMinor = e.ProtoMinor
+	if recordReq.ProtoMajor != 0 {
+		req.ProtoMajor = recordReq.ProtoMajor
+		req.ProtoMinor = recordReq.ProtoMinor
 	}
-	if e.Header != nil {
-		req.Header = e.Header
+	if recordReq.Header != nil {
+		req.Header = recordReq.Header
 	}
-	if e.ContentLength > 0 {
-		req.ContentLength = e.ContentLength
+	if recordReq.ContentLength > 0 {
+		req.ContentLength = recordReq.ContentLength
 	}
-	req.TransferEncoding = e.TransferEncoding
-	req.Close = e.Close
-	if e.Host != "" {
-		req.Host = e.Host
+	req.TransferEncoding = recordReq.TransferEncoding
+	req.Close = recordReq.Close
+	if recordReq.Host != "" {
+		req.Host = recordReq.Host
 	}
-	req.Form = e.Form
-	req.PostForm = e.PostForm
-	req.MultipartForm = e.MultipartForm
-	req.Trailer = e.Trailer
-	req.Response = e.Response
+	req.Form = recordReq.Form
+	req.PostForm = recordReq.PostForm
+	req.MultipartForm = recordReq.MultipartForm
+	req.Trailer = recordReq.Trailer
+	req.Response = recordReq.Response
 
 	return req, nil
 }

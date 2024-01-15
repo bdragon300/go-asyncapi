@@ -56,6 +56,11 @@ func (p ProduceClient) Publisher(channelName string, bindings *runKafka.ChannelB
 	}, nil
 }
 
+type ImplementationRecord interface {
+	RecordFranzGo() *kgo.Record
+	// TODO: Bindings?
+}
+
 type PublishClient struct {
 	*kgo.Client
 	Topic    string
@@ -63,11 +68,12 @@ type PublishClient struct {
 }
 
 func (p PublishClient) Send(ctx context.Context, envelopes ...runKafka.EnvelopeWriter) error {
-	rs := make([]*kgo.Record, 0, len(envelopes))
+	records := make([]*kgo.Record, 0, len(envelopes))
 	for _, e := range envelopes {
-		rs = append(rs, e.(*EnvelopeOut).Record)
+		rm := e.(ImplementationRecord)
+		records = append(records, rm.RecordFranzGo())
 	}
-	return p.Client.ProduceSync(ctx, rs...).FirstErr()
+	return p.Client.ProduceSync(ctx, records...).FirstErr()
 }
 
 func (p PublishClient) Close() error {
