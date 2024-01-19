@@ -22,7 +22,7 @@ func NewProducer(serverURL string, bindings *runKafka.ServerBindings) (*ProduceC
 type ProduceClient struct {
 	URL       string
 	Bindings  *runKafka.ServerBindings
-	ExtraOpts []kgo.Opt
+	ExtraOpts []kgo.Opt // FIXME: move to NewProducer
 }
 
 func (p ProduceClient) Publisher(channelName string, bindings *runKafka.ChannelBindings) (runKafka.Publisher, error) {

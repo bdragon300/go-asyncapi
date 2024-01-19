@@ -16,5 +16,11 @@
       "url": "https://pkg.go.dev/net/http",
       "dir": "http/nethttp"
     }
+  },
+  "mqtt": {
+    "paho-mqtt": {
+      "url": "https://github.com/eclipse/paho.mqtt.golang",
+      "dir": "mqtt/paho-mqtt"
+    }
   }
 }

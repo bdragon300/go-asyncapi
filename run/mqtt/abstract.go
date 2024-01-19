@@ -24,6 +24,8 @@ type (
 		SetBindings(bindings MessageBindings)
 
 		SetTopic(topic string)
+		SetQoS(qos byte)
+		SetRetained(retained bool)
 	}
 )
 

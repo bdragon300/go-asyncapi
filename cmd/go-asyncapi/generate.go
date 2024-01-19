@@ -51,7 +51,6 @@ type generatePubSubArgs struct {
 	RuntimeModule string `arg:"--runtime-module" default:"github.com/bdragon300/go-asyncapi/run" help:"Runtime module name" placeholder:"MODULE"`
 }
 
-// TODO: below there are new args to implement
 type generateImplementationArgs struct {
 	Protocol string `arg:"required,positional" help:"Protocol name to generate"`
 	Name     string `arg:"required,positional" help:"Implementation name to generate"`
@@ -61,6 +60,7 @@ type ImplementationsOpts struct {
 	Kafka string `arg:"--kafka-impl" default:"franz-go" help:"Implementation for Kafka ('no' to disable)" placeholder:"NAME"`
 	AMQP  string `arg:"--amqp-impl" default:"amqp091-go" help:"Implementation for AMQP ('no' to disable)" placeholder:"NAME"`
 	HTTP  string `arg:"--http-impl" default:"nethttp" help:"Implementation for HTTP ('no' to disable)" placeholder:"NAME"`
+	MQTT  string `arg:"--mqtt-impl" default:"paho-mqtt" help:"Implementation for MQTT ('no' to disable)" placeholder:"NAME"`
 }
 
 type generateObjectSelectionOpts struct {
@@ -298,6 +298,7 @@ func getImplementationsOpts(opts ImplementationsOpts) map[string]string {
 		amqp.Builder.ProtocolName():  opts.AMQP,
 		http.Builder.ProtocolName():  opts.HTTP,
 		kafka.Builder.ProtocolName(): opts.Kafka,
+		mqtt.Builder.ProtocolName():  opts.MQTT,
 	}
 }
 

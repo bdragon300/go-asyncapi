@@ -1,0 +1,80 @@
+package pahomqtt
+
+import (
+	"bytes"
+	"io"
+
+	"github.com/bdragon300/go-asyncapi/run"
+	runMqtt "github.com/bdragon300/go-asyncapi/run/mqtt"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+)
+
+func NewEnvelopeOut() *EnvelopeOut {
+	return &EnvelopeOut{
+		OutboundMessage: OutboundMessage{payload: bytes.NewBuffer(make([]byte, 0))},
+	}
+}
+
+type OutboundMessage struct {
+	topic       string
+	qos         byte
+	retained    bool
+	payload     *bytes.Buffer
+	headers     run.Headers
+	contentType string
+}
+
+type EnvelopeOut struct {
+	OutboundMessage
+	messageBindings runMqtt.MessageBindings
+}
+
+func (e *EnvelopeOut) Write(p []byte) (n int, err error) {
+	return e.payload.Write(p)
+}
+
+func (e *EnvelopeOut) ResetPayload() {
+	e.payload.Reset()
+}
+
+func (e *EnvelopeOut) SetHeaders(headers run.Headers) {
+	e.headers = headers
+}
+
+func (e *EnvelopeOut) SetContentType(contentType string) {
+	e.contentType = contentType
+}
+
+func (e *EnvelopeOut) SetBindings(bindings runMqtt.MessageBindings) {
+	e.messageBindings = bindings
+}
+
+func (e *EnvelopeOut) SetTopic(topic string) {
+	e.topic = topic
+}
+
+func (e *EnvelopeOut) SetQoS(qos byte) {
+	e.qos = qos
+}
+
+func (e *EnvelopeOut) SetRetained(retained bool) {
+	e.retained = retained
+}
+
+func NewEnvelopeIn(msg mqtt.Message) *EnvelopeIn {
+	return &EnvelopeIn{Message: msg, reader: bytes.NewReader(msg.Payload())}
+}
+
+type EnvelopeIn struct {
+	mqtt.Message
+	reader  io.Reader
+	headers run.Headers
+}
+
+func (e *EnvelopeIn) Read(p []byte) (n int, err error) {
+	return e.reader.Read(p)
+}
+
+func (e *EnvelopeIn) Headers() run.Headers {
+	return e.headers
+}
