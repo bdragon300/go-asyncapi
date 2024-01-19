@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/mqtt"
+
 	"github.com/bdragon300/go-asyncapi/implementations"
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/amqp"
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/http"
@@ -241,10 +243,15 @@ func generationWriteImplementations(selectedImpls map[string]string, protocols [
 	var writtenProtocols []string
 	for _, p := range protocols {
 		implName := selectedImpls[p]
-		if implName == "no" || implName == "" {
+		switch implName {
+		case "no":
 			logger.Debug("Implementation has been unselected", "protocol", p)
 			continue
+		case "":
+			logger.Info("No implementation for the protocol", "protocol", p)
+			continue
 		}
+
 		writtenProtocols = append(writtenProtocols, p)
 		if _, ok := implManifest[p][implName]; !ok {
 			return fmt.Errorf("unknown implementation %q for %q protocol, use list-implementations command to see possible values", implName, p)
@@ -405,6 +412,7 @@ func protocolBuilders() map[string]asyncapi.ProtocolBuilder {
 		amqp.Builder.ProtocolName():  amqp.Builder,
 		http.Builder.ProtocolName():  http.Builder,
 		kafka.Builder.ProtocolName(): kafka.Builder,
+		mqtt.Builder.ProtocolName():  mqtt.Builder,
 	}
 }
 

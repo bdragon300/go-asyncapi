@@ -1,4 +1,4 @@
-package amqp
+package mqtt
 
 import (
 	"context"
@@ -20,15 +20,15 @@ type (
 		io.Writer
 		ResetPayload()
 		SetHeaders(headers run.Headers)
-		SetContentType(contentType string)
+		SetContentType(contentType string)  // TODO: remove
 		SetBindings(bindings MessageBindings)
 
-		SetDeliveryTag(tag string)  // TODO: remove? not binded with any AMQP entities
+		SetTopic(topic string)
 	}
 )
 
 type EnvelopeMarshaler interface {
-	MarshalAMQPEnvelope(envelope EnvelopeWriter) error
+	MarshalKafkaEnvelope(envelope EnvelopeWriter) error
 }
 
 // Sub
@@ -43,13 +43,9 @@ type (
 	EnvelopeReader interface {
 		io.Reader
 		Headers() run.Headers
-
-		Ack() error
-		Nack(requeue bool) error
-		Reject(requeue bool) error
 	}
 )
 
 type EnvelopeUnmarshaler interface {
-	UnmarshalAMQPEnvelope(envelope EnvelopeReader) error
+	UnmarshalKafkaEnvelope(envelope EnvelopeReader) error
 }

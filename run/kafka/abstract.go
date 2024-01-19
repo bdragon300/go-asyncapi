@@ -20,7 +20,7 @@ type (
 		io.Writer
 		ResetPayload()
 		SetHeaders(headers run.Headers)
-		SetContentType(contentType string)
+		SetContentType(contentType string)  // TODO: move to MakeEnvelope in generated code, not all protocols have content type
 		SetBindings(bindings MessageBindings)
 
 		SetTopic(topic string)

@@ -239,7 +239,9 @@ func (pc BaseProtoChannel) RenderOpenFunc(
 						Op("{Subscribers: subs}")
 				}
 				bg.Op("ch := ").Id(channelStruct.NewFuncName()).CallFunc(func(g *j.Group) {
-					g.Id("params")
+					if parametersStruct != nil {
+						g.Id("params")
+					}
 					if publisher {
 						g.Id("pub")
 					}
