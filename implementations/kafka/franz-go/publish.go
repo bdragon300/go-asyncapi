@@ -12,24 +12,25 @@ import (
 	"github.com/twmb/franz-go/pkg/kversion"
 )
 
-func NewProducer(serverURL string, bindings *runKafka.ServerBindings) (*ProduceClient, error) {
+func NewProducer(serverURL string, bindings *runKafka.ServerBindings, extraOpts []kgo.Opt) (*ProduceClient, error) {
 	return &ProduceClient{
-		URL:      serverURL,
-		Bindings: bindings,
+		url:       serverURL,
+		bindings:  bindings,
+		extraOpts: extraOpts,
 	}, nil
 }
 
 type ProduceClient struct {
-	URL       string
-	Bindings  *runKafka.ServerBindings
-	ExtraOpts []kgo.Opt // FIXME: move to NewProducer
+	url       string
+	bindings  *runKafka.ServerBindings
+	extraOpts []kgo.Opt
 }
 
 func (p ProduceClient) Publisher(channelName string, bindings *runKafka.ChannelBindings) (runKafka.Publisher, error) {
 	// TODO: schema registry https://github.com/twmb/franz-go/blob/master/examples/schema_registry/schema_registry.go
 	var opts []kgo.Opt
 
-	u, err := url.Parse(p.URL)
+	u, err := url.Parse(p.url)
 	if err != nil {
 		return nil, fmt.Errorf("url parse: %w", err)
 	}
@@ -42,7 +43,7 @@ func (p ProduceClient) Publisher(channelName string, bindings *runKafka.ChannelB
 	if topic != "" {
 		opts = append(opts, kgo.DefaultProduceTopic(topic))
 	}
-	opts = append(opts, p.ExtraOpts...)
+	opts = append(opts, p.extraOpts...)
 
 	cl, err := kgo.NewClient(opts...)
 	if err != nil {

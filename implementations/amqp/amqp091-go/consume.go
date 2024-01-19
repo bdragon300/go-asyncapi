@@ -20,13 +20,13 @@ func NewConsumer(url string, bindings *runAmqp.ServerBindings) (*ConsumeClient, 
 	}
 	return &ConsumeClient{
 		Connection: conn,
-		Bindings:   bindings,
+		bindings:   bindings,
 	}, nil
 }
 
 type ConsumeClient struct {
 	*amqp091.Connection
-	Bindings *runAmqp.ServerBindings
+	bindings *runAmqp.ServerBindings
 }
 
 func (c ConsumeClient) Subscriber(channelName string, bindings *runAmqp.ChannelBindings) (runAmqp.Subscriber, error) {

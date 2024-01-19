@@ -16,20 +16,20 @@ func NewProducer(serverURL string, bindings *runHttp.ServerBindings) (*ProduceCl
 		return nil, err
 	}
 	return &ProduceClient{
-		URL:      u,
-		Bindings: bindings,
+		url:      u,
+		bindings: bindings,
 	}, nil
 }
 
 type ProduceClient struct {
-	URL      *url.URL
-	Bindings *runHttp.ServerBindings
+	url      *url.URL
+	bindings *runHttp.ServerBindings
 }
 
 func (p ProduceClient) Publisher(channelName string, bindings *runHttp.ChannelBindings) (runHttp.Publisher, error) {
 	return &PublishClient{
 		channelName:    channelName,
-		url:            p.URL,
+		url:            p.url,
 		bindings:       bindings,
 		NewRequest:     NewRequest,
 		HandleResponse: nil,

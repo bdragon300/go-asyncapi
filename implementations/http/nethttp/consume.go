@@ -14,7 +14,7 @@ import (
 
 func NewConsumer(bindings *runHttp.ServerBindings) (consumer *ConsumeClient, err error) {
 	return &ConsumeClient{
-		Bindings:    bindings,
+		bindings:    bindings,
 		subscribers: make(map[string]*list.List),
 		mu:          &sync.RWMutex{},
 	}, nil
@@ -22,8 +22,7 @@ func NewConsumer(bindings *runHttp.ServerBindings) (consumer *ConsumeClient, err
 
 type ConsumeClient struct {
 	http.ServeMux
-	Bindings *runHttp.ServerBindings
-
+	bindings    *runHttp.ServerBindings
 	subscribers map[string]*list.List // Subscribers by channel name
 	mu          *sync.RWMutex
 }

@@ -19,13 +19,13 @@ func NewProducer(serverURL string, bindings *runAmqp.ServerBindings) (*ProduceCl
 	}
 	return &ProduceClient{
 		Connection: conn,
-		Bindings:   bindings,
+		bindings:   bindings,
 	}, nil
 }
 
 type ProduceClient struct {
 	*amqp091.Connection
-	Bindings *runAmqp.ServerBindings
+	bindings *runAmqp.ServerBindings
 }
 
 func (p ProduceClient) Publisher(channelName string, bindings *runAmqp.ChannelBindings) (runAmqp.Publisher, error) {

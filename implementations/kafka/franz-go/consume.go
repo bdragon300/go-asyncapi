@@ -12,17 +12,18 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
-func NewConsumer(url string, bindings *runKafka.ServerBindings) (*ConsumeClient, error) {
+func NewConsumer(url string, bindings *runKafka.ServerBindings, extraOpts []kgo.Opt) (*ConsumeClient, error) {
 	return &ConsumeClient{
-		URL:      url,
-		Bindings: bindings,
+		url:       url,
+		bindings:  bindings,
+		extraOpts: extraOpts,
 	}, nil
 }
 
 type ConsumeClient struct {
-	URL       string
-	Bindings  *runKafka.ServerBindings
-	ExtraOpts []kgo.Opt
+	url       string
+	bindings  *runKafka.ServerBindings
+	extraOpts []kgo.Opt
 }
 
 func (c ConsumeClient) Subscriber(channelName string, bindings *runKafka.ChannelBindings) (runKafka.Subscriber, error) {
@@ -30,7 +31,7 @@ func (c ConsumeClient) Subscriber(channelName string, bindings *runKafka.Channel
 	// TODO: bindings.ClientID, bindings.GroupID
 	var opts []kgo.Opt
 
-	u, err := url.Parse(c.URL)
+	u, err := url.Parse(c.url)
 	if err != nil {
 		return nil, fmt.Errorf("url parse: %w", err)
 	}
@@ -43,7 +44,7 @@ func (c ConsumeClient) Subscriber(channelName string, bindings *runKafka.Channel
 	if topic != "" {
 		opts = append(opts, kgo.ConsumeTopics(topic))
 	}
-	opts = append(opts, c.ExtraOpts...)
+	opts = append(opts, c.extraOpts...)
 
 	cl, err := kgo.NewClient(opts...)
 	if err != nil {
@@ -58,7 +59,7 @@ func (c ConsumeClient) Subscriber(channelName string, bindings *runKafka.Channel
 }
 
 type SubscribeClient struct {
-	Client            *kgo.Client
+	*kgo.Client
 	Topic             string
 	IgnoreFetchErrors bool // TODO: add opts for Subscriber/Publisher interfaces
 	bindings          *runKafka.ChannelBindings
