@@ -74,6 +74,15 @@ func (m Message) String() string {
 	return "Message " + m.Name
 }
 
+func (m Message) HasProtoBindings(protoName string) bool {
+	if m.BindingsPromise == nil {
+		return false
+	}
+	_, ok1 := m.BindingsPromise.Target().Values.Get(protoName)
+	_, ok2 := m.BindingsPromise.Target().JSONValues.Get(protoName)
+	return ok1 || ok2
+}
+
 func (m Message) renderPublishMessageStruct(ctx *common.RenderContext) []*j.Statement {
 	ctx.Logger.Trace("renderPublishMessageStruct")
 

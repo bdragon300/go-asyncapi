@@ -167,7 +167,7 @@ func (pc ProtoChannel) renderAMQPPublisherMethods(ctx *common.RenderContext) []*
 				}
 				bg.Op("envelope.SetDeliveryTag(deliveryTag)")
 				// Message SetBindings
-				if pc.PubMessagePromise != nil && pc.PubMessagePromise.Target().BindingsStruct != nil {
+				if pc.PubMessagePromise != nil && pc.PubMessagePromise.Target().HasProtoBindings(pc.ProtoName) {
 					bg.Op("envelope.SetBindings").Call(
 						j.Add(utils.ToCode(pc.PubMessagePromise.Target().BindingsStruct.RenderUsage(ctx))...).Values().Dot("AMQP()"),
 					)
