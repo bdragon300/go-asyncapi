@@ -22,8 +22,8 @@ type Parameter struct {
 }
 
 func (p Parameter) Compile(ctx *common.CompileContext) error {
-	ctx.SetTopObjName(ctx.Stack.Top().Path)
-	obj, err := p.build(ctx, ctx.Stack.Top().Path)
+	ctx.SetTopObjName(ctx.Stack.Top().PathItem)
+	obj, err := p.build(ctx, ctx.Stack.Top().PathItem)
 	if err != nil {
 		return err
 	}

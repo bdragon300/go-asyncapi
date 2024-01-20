@@ -61,7 +61,7 @@ func (o ObjectSelectionOpts) Include(name string) bool {
 }
 
 type ContextStackItem struct {
-	Path        string // TODO: rename to Key or smth. This is a path item actually
+	PathItem    string
 	Flags       map[SchemaTag]string
 	PackageName string
 	ObjName     string
@@ -109,7 +109,7 @@ func (c *CompileContext) PathRef() string {
 }
 
 func (c *CompileContext) PathStack() []string {
-	return lo.Map(c.Stack.Items(), func(item ContextStackItem, _ int) string { return item.Path })
+	return lo.Map(c.Stack.Items(), func(item ContextStackItem, _ int) string { return item.PathItem })
 }
 
 func (c *CompileContext) SetTopObjName(n string) {

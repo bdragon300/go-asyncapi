@@ -136,7 +136,7 @@ func pushStack(ctx *common.CompileContext, pathItem string, flags map[common.Sch
 		pkgName = reusePkg
 	}
 	item := common.ContextStackItem{
-		Path:        pathItem,
+		PathItem:    pathItem,
 		Flags:       flags,
 		PackageName: pkgName,
 		ObjName:     "",
