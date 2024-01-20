@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/ws"
+
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/mqtt"
 
 	"github.com/bdragon300/go-asyncapi/implementations"
@@ -299,6 +301,7 @@ func getImplementationsOpts(opts ImplementationsOpts) map[string]string {
 		http.Builder.ProtocolName():  opts.HTTP,
 		kafka.Builder.ProtocolName(): opts.Kafka,
 		mqtt.Builder.ProtocolName():  opts.MQTT,
+		ws.Builder.ProtocolName():    "no", // FIXME
 	}
 }
 
@@ -415,6 +418,7 @@ func protocolBuilders() map[string]asyncapi.ProtocolBuilder {
 		http.Builder.ProtocolName():  http.Builder,
 		kafka.Builder.ProtocolName(): kafka.Builder,
 		mqtt.Builder.ProtocolName():  mqtt.Builder,
+		ws.Builder.ProtocolName():    ws.Builder,
 	}
 }
 

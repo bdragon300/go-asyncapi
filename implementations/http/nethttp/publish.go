@@ -48,7 +48,7 @@ type PublishClient struct {
 	url            *url.URL
 	bindings       *runHttp.ChannelBindings
 	NewRequest     func(ctx context.Context, method, url string, e ImplementationRecord) (*http.Request, error)
-	HandleResponse func(r *http.Response) error
+	HandleResponse func(r *http.Response) error // TODO: move to ImplementationRecord and use EnvelopeReader along with http.Response?
 }
 
 func (p PublishClient) Send(ctx context.Context, envelopes ...runHttp.EnvelopeWriter) error {
