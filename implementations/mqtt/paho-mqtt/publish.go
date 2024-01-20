@@ -41,7 +41,7 @@ type ProduceClient struct {
 	bindings      *runMqtt.ServerBindings
 }
 
-func (p ProduceClient) Publisher(channelName string, bindings *runMqtt.ChannelBindings) (runMqtt.Publisher, error) {
+func (p ProduceClient) NewPublisher(channelName string, bindings *runMqtt.ChannelBindings) (runMqtt.Publisher, error) {
 	cl := mqtt.NewClient(p.clientOptions)
 	tok := cl.Connect()
 	if tok.Wait() && tok.Error() != nil {

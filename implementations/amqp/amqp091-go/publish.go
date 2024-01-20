@@ -28,7 +28,7 @@ type ProduceClient struct {
 	bindings *runAmqp.ServerBindings
 }
 
-func (p ProduceClient) Publisher(channelName string, bindings *runAmqp.ChannelBindings) (runAmqp.Publisher, error) {
+func (p ProduceClient) NewPublisher(channelName string, bindings *runAmqp.ChannelBindings) (runAmqp.Publisher, error) {
 	ch, err := p.Channel()
 	if err != nil {
 		return nil, err

@@ -7,7 +7,7 @@ import (
 )
 
 type AbstractProducer[B any, W AbstractEnvelopeWriter, P AbstractPublisher[W]] interface {
-	Publisher(channelName string, bindings *B) (P, error)
+	NewPublisher(channelName string, bindings *B) (P, error)
 }
 type AbstractPublisher[W AbstractEnvelopeWriter] interface {
 	Send(ctx context.Context, envelopes ...W) error
@@ -21,7 +21,7 @@ type AbstractEnvelopeWriter interface {
 }
 
 type AbstractConsumer[B any, R AbstractEnvelopeReader, S AbstractSubscriber[R]] interface {
-	Subscriber(channelName string, bindings *B) (S, error)
+	NewSubscriber(channelName string, bindings *B) (S, error)
 }
 type AbstractSubscriber[R AbstractEnvelopeReader] interface {
 	Receive(ctx context.Context, cb func(envelope R) error) error
@@ -105,7 +105,7 @@ func GatherPublishers[W AbstractEnvelopeWriter, PUB AbstractPublisher[W], B any,
 	for _, prod := range producers {
 		prod := prod
 		pool.Go(func() error {
-			p, e := prod.Publisher(chName.String(), channelBindings)
+			p, e := prod.NewPublisher(chName.String(), channelBindings)
 			pubsCh <- p
 			return e
 		})
@@ -133,7 +133,7 @@ func GatherSubscribers[R AbstractEnvelopeReader, S AbstractSubscriber[R], B any,
 	for _, cons := range consumers {
 		cons := cons
 		pool.Go(func() error {
-			s, e := cons.Subscriber(chName.String(), channelBindings)
+			s, e := cons.NewSubscriber(chName.String(), channelBindings)
 			subsCh <- s
 			return e
 		})

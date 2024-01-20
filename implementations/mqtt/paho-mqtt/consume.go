@@ -43,7 +43,7 @@ type ConsumeClient struct {
 	bindings      *runMqtt.ServerBindings
 }
 
-func (c ConsumeClient) Subscriber(channelName string, bindings *runMqtt.ChannelBindings) (runMqtt.Subscriber, error) {
+func (c ConsumeClient) NewSubscriber(channelName string, bindings *runMqtt.ChannelBindings) (runMqtt.Subscriber, error) {
 	cl := mqtt.NewClient(c.clientOptions)
 	tok := cl.Connect()
 	if tok.Wait() && tok.Error() != nil {

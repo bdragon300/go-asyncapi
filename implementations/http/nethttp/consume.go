@@ -27,7 +27,7 @@ type ConsumeClient struct {
 	mu          *sync.RWMutex
 }
 
-func (c *ConsumeClient) Subscriber(channelName string, bindings *runHttp.ChannelBindings) (runHttp.Subscriber, error) {
+func (c *ConsumeClient) NewSubscriber(channelName string, bindings *runHttp.ChannelBindings) (runHttp.Subscriber, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

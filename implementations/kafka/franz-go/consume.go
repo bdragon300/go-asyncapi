@@ -26,7 +26,7 @@ type ConsumeClient struct {
 	extraOpts []kgo.Opt
 }
 
-func (c ConsumeClient) Subscriber(channelName string, bindings *runKafka.ChannelBindings) (runKafka.Subscriber, error) {
+func (c ConsumeClient) NewSubscriber(channelName string, bindings *runKafka.ChannelBindings) (runKafka.Subscriber, error) {
 	// TODO: schema registry https://github.com/twmb/franz-go/blob/master/examples/schema_registry/schema_registry.go
 	// TODO: bindings.ClientID, bindings.GroupID
 	var opts []kgo.Opt

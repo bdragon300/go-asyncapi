@@ -26,7 +26,7 @@ type ProduceClient struct {
 	bindings *runHttp.ServerBindings
 }
 
-func (p ProduceClient) Publisher(channelName string, bindings *runHttp.ChannelBindings) (runHttp.Publisher, error) {
+func (p ProduceClient) NewPublisher(channelName string, bindings *runHttp.ChannelBindings) (runHttp.Publisher, error) {
 	return &PublishClient{
 		channelName:    channelName,
 		url:            p.url,
