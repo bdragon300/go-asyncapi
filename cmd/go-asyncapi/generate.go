@@ -344,27 +344,26 @@ func getCompileOpts(opts generatePubSubArgs, isPub, isSub bool) (common.CompileO
 	if res.ChannelsSelection, err = f(opts.OnlyChannels, opts.IgnoreChannels, opts.ChannelsRe, opts.IgnoreChannelsRe); err != nil {
 		return res, err
 	}
-	// TODO: make enum for channels
 	if opts.ReuseChannelsModule != "" {
-		res.ReusePackages["channels"] = opts.ReuseChannelsModule
+		res.ReusePackages[asyncapi.PackageScopeChannels] = opts.ReuseChannelsModule
 	}
 	if res.MessagesSelection, err = f(opts.OnlyMessages, opts.IgnoreMessages, opts.MessagesRe, opts.IgnoreMessagesRe); err != nil {
 		return res, err
 	}
 	if opts.ReuseMessagesModule != "" {
-		res.ReusePackages["messages"] = opts.ReuseMessagesModule
+		res.ReusePackages[asyncapi.PackageScopeMessages] = opts.ReuseMessagesModule
 	}
 	if res.ModelsSelection, err = f(opts.OnlyModels, opts.IgnoreModels, opts.ModelsRe, opts.IgnoreModelsRe); err != nil {
 		return res, err
 	}
 	if opts.ReuseModelsModule != "" {
-		res.ReusePackages["models"] = opts.ReuseModelsModule
+		res.ReusePackages[asyncapi.PackageScopeModels] = opts.ReuseModelsModule
 	}
 	if res.ServersSelection, err = f(opts.OnlyServers, opts.IgnoreServers, opts.ServersRe, opts.IgnoreServersRe); err != nil {
 		return res, err
 	}
 	if opts.ReuseServersModule != "" {
-		res.ReusePackages["servers"] = opts.ReuseServersModule
+		res.ReusePackages[asyncapi.PackageScopeServers] = opts.ReuseServersModule
 	}
 
 	return res, nil
