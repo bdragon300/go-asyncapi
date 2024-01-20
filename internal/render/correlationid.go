@@ -44,8 +44,7 @@ func (c CorrelationID) RenderSetterDefinition(ctx *common.RenderContext, message
 
 	f, ok := lo.Find(message.OutStruct.Fields, func(item GoStructField) bool { return item.Name == c.StructField })
 	if !ok {
-		// FIXME: output error without panic
-		panic(fmt.Sprintf("Field %s not found in OutStruct", c.StructField))
+		panic(fmt.Errorf("field %s not found in OutStruct", c.StructField))
 	}
 
 	body := []*j.Statement{
@@ -54,8 +53,7 @@ func (c CorrelationID) RenderSetterDefinition(ctx *common.RenderContext, message
 
 	bodyItems, err := c.renderMemberExtractionCode(ctx, c.Path, f.Type, true)
 	if err != nil {
-		// FIXME: output error without panic
-		panic(fmt.Sprintf("Cannot render CorrelationID %s: %s", strings.Join(c.Path, "/"), err.Error()))
+		panic(fmt.Errorf("cannot render CorrelationID %s: %s", strings.Join(c.Path, "/"), err.Error()))
 	}
 	// Exclude the last definition statement
 	body = append(body, lo.FlatMap(bodyItems[:len(bodyItems)-1], func(item correlationIDBodyItem, index int) []*j.Statement {
@@ -85,8 +83,7 @@ func (c CorrelationID) RenderGetterDefinition(ctx *common.RenderContext, message
 
 	f, ok := lo.Find(message.InStruct.Fields, func(item GoStructField) bool { return item.Name == c.StructField })
 	if !ok {
-		// FIXME: output error without panic
-		panic(fmt.Sprintf("Field %s not found in InStruct", c.StructField))
+		panic(fmt.Errorf("field %s not found in InStruct", c.StructField))
 	}
 
 	body := []*j.Statement{
@@ -95,8 +92,7 @@ func (c CorrelationID) RenderGetterDefinition(ctx *common.RenderContext, message
 
 	bodyItems, err := c.renderMemberExtractionCode(ctx, c.Path, f.Type, true)
 	if err != nil {
-		// FIXME: output error without panic
-		panic(fmt.Sprintf("Cannot render CorrelationID %s: %s", strings.Join(c.Path, "/"), err.Error()))
+		panic(fmt.Errorf("cannot render CorrelationID %s: %s", strings.Join(c.Path, "/"), err.Error()))
 	}
 	body = append(body, lo.FlatMap(bodyItems, func(item correlationIDBodyItem, index int) []*j.Statement {
 		return item.body

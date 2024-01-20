@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"runtime/debug"
 	"strings"
 
 	"github.com/bdragon300/go-asyncapi/internal/types"
@@ -102,8 +103,19 @@ func RenderPackages(source renderSource, protoRenderers map[string]common.Protoc
 
 			rendered++
 			ctx.Logger.Debug("Render object", "pkg", pkgName, "object", item.Object.String(), "file", fileName)
-			for _, stmt := range item.Object.RenderDefinition(ctx) {
-				f.Add(stmt)
+			func() {
+				// catch panics produced by rendering
+				defer func() {
+					if r := recover(); r != nil {
+						err = fmt.Errorf("%s: %s\n%v", item.Object.String(), debug.Stack(), r)
+					}
+				}()
+				for _, stmt := range item.Object.RenderDefinition(ctx) {
+					f.Add(stmt)
+				}
+			}()
+			if err != nil {
+				return
 			}
 			files[fileName] = f
 		}

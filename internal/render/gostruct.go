@@ -65,7 +65,7 @@ func (s GoStruct) MustGetField(name string) GoStructField {
 		return item.Name == name
 	})
 	if !ok {
-		panic(fmt.Sprintf("Field %s.%s not found", s.Name, name))
+		panic(fmt.Errorf("field %s.%s not found", s.Name, name))
 	}
 	return f
 }

@@ -243,5 +243,5 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 		return &GoValue{Literal: rval.Interface(), Type: overrideType}
 	}
 
-	panic(fmt.Sprintf("Cannot construct Value from a value of type %T", value))
+	panic(fmt.Errorf("cannot construct Value from a value of type %T", value))
 }
