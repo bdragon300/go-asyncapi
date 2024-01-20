@@ -37,7 +37,10 @@ func (c Channel) Compile(ctx *common.CompileContext) error {
 }
 
 func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Renderer, error) {
-	if c.XIgnore {
+	genPub := (c.Publish != nil) && ctx.CompileOpts.GeneratePublishers
+	genSub := (c.Subscribe != nil) && ctx.CompileOpts.GenerateSubscribers
+
+	if c.XIgnore || (!genPub && !genSub) {
 		ctx.Logger.Debug("Channel denoted to be ignored")
 		return &render.GoSimple{Name: "any", IsIface: true}, nil
 	}
@@ -108,7 +111,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 		res.BindingsChannelPromise = render.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
 		ctx.PutPromise(res.BindingsChannelPromise)
 	}
-	if c.Publish != nil && !c.Publish.XIgnore && c.Publish.Bindings != nil {
+	if genPub && !c.Publish.XIgnore && c.Publish.Bindings != nil {
 		ctx.Logger.Trace("Found publish operation bindings")
 		hasBindings = true
 
@@ -116,7 +119,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 		res.BindingsPublishPromise = render.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
 		ctx.PutPromise(res.BindingsPublishPromise)
 	}
-	if c.Subscribe != nil && !c.Subscribe.XIgnore && c.Subscribe.Bindings != nil {
+	if genSub && !c.Subscribe.XIgnore && c.Subscribe.Bindings != nil {
 		ctx.Logger.Trace("Found subscribe operation bindings")
 		hasBindings = true
 

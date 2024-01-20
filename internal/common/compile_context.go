@@ -30,14 +30,16 @@ type CompilationStorage interface {
 }
 
 type CompileOpts struct {
-	ChannelsSelection  ObjectSelectionOpts
-	MessagesSelection  ObjectSelectionOpts
-	ModelsSelection    ObjectSelectionOpts
-	ServersSelection   ObjectSelectionOpts
-	ReusePackages      map[string]string
-	NoEncodingPackage  bool
-	EnableExternalRefs bool
-	RuntimeModule      string
+	ChannelsSelection   ObjectSelectionOpts
+	MessagesSelection   ObjectSelectionOpts
+	ModelsSelection     ObjectSelectionOpts
+	ServersSelection    ObjectSelectionOpts
+	ReusePackages       map[string]string
+	NoEncodingPackage   bool
+	EnableExternalRefs  bool
+	RuntimeModule       string
+	GeneratePublishers  bool
+	GenerateSubscribers bool
 }
 
 type ObjectSelectionOpts struct {

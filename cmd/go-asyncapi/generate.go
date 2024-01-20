@@ -97,13 +97,13 @@ func generate(cmd *GenerateCmd) error {
 		return generateImplementation(cmd)
 	}
 
-	isPub, isSub, pubSubOpts := getPubSubVariant(cmd) // TODO: pass pub/sub bool flags to the generation functions
+	isPub, isSub, pubSubOpts := getPubSubVariant(cmd)
 	targetPkg, _ := lo.Coalesce(pubSubOpts.TargetPackage, path.Base(cmd.TargetDir))
 	mainLogger.Debugf("Target package name is %s", targetPkg)
 	if !isSub && !isPub {
 		return fmt.Errorf("%w: no publisher or subscriber set to generate", ErrWrongCliArgs)
 	}
-	compileOpts, err := getCompileOpts(*pubSubOpts)
+	compileOpts, err := getCompileOpts(*pubSubOpts, isPub, isSub)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
 	}
@@ -314,13 +314,15 @@ func getPubSubVariant(cmd *GenerateCmd) (pub bool, sub bool, variant *generatePu
 	return
 }
 
-func getCompileOpts(opts generatePubSubArgs) (common.CompileOpts, error) {
+func getCompileOpts(opts generatePubSubArgs, isPub, isSub bool) (common.CompileOpts, error) {
 	var err error
 	res := common.CompileOpts{
-		ReusePackages:      nil,
-		NoEncodingPackage:  opts.NoEncoding,
-		EnableExternalRefs: opts.ExternalRefs,
-		RuntimeModule:      opts.RuntimeModule,
+		ReusePackages:       nil,
+		NoEncodingPackage:   opts.NoEncoding,
+		EnableExternalRefs:  opts.ExternalRefs,
+		RuntimeModule:       opts.RuntimeModule,
+		GeneratePublishers:  isPub,
+		GenerateSubscribers: isSub,
 	}
 
 	includeAll := !opts.OnlyChannels && !opts.OnlyMessages && !opts.OnlyModels && !opts.OnlyServers

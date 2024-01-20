@@ -85,7 +85,7 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 	}
 
 	// Publisher stuff
-	if channel.Publish != nil && !channel.Publish.XIgnore {
+	if channel.Publish != nil && !channel.Publish.XIgnore && ctx.CompileOpts.GeneratePublishers {
 		ctx.Logger.Trace("Channel publish operation", "proto", pb.ProtoName)
 		chanResult.Struct.Fields = append(chanResult.Struct.Fields, render.GoStructField{
 			Name:        "publisher",
@@ -113,7 +113,7 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 	}
 
 	// Subscriber stuff
-	if channel.Subscribe != nil && !channel.Subscribe.XIgnore {
+	if channel.Subscribe != nil && !channel.Subscribe.XIgnore && ctx.CompileOpts.GenerateSubscribers {
 		ctx.Logger.Trace("Channel subscribe operation", "proto", pb.ProtoName)
 		chanResult.Struct.Fields = append(chanResult.Struct.Fields, render.GoStructField{
 			Name:        "subscriber",
