@@ -1,9 +1,11 @@
 package run
 
 import (
+	"container/list"
 	"context"
 	"errors"
 	"io"
+	"sync"
 )
 
 type AbstractProducer[B any, W AbstractEnvelopeWriter, P AbstractPublisher[W]] interface {
@@ -37,6 +39,7 @@ type PublisherFanOut[W AbstractEnvelopeWriter, P AbstractPublisher[W]] struct {
 }
 
 func (p PublisherFanOut[W, P]) Send(ctx context.Context, envelopes ...W) error {
+	// TODO: use FanOut everywhere here
 	if len(p.Publishers) == 1 {
 		return p.Publishers[0].Send(ctx, envelopes...)
 	}
@@ -149,4 +152,46 @@ func GatherSubscribers[R AbstractEnvelopeReader, S AbstractSubscriber[R], B any,
 		}
 	}
 	return subs, nil
+}
+
+
+func NewFanOut[MessageT any]() *FanOut[MessageT] {
+	return &FanOut[MessageT]{
+		receivers: list.New(),
+		mu:        &sync.RWMutex{},
+	}
+}
+
+type FanOut[MessageT any] struct {
+	receivers *list.List
+	mu        *sync.RWMutex
+}
+
+func (cm *FanOut[MessageT]) Add(cb func(msg MessageT) error) *list.Element {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+
+	el := list.Element{Value: cb}
+	cm.receivers.PushBack(&el)
+	return &el
+}
+
+func (cm *FanOut[MessageT]) Remove(el *list.Element) {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+
+	cm.receivers.Remove(el)
+}
+
+func (cm *FanOut[MessageT]) Put(msg MessageT) {
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
+
+	if cm.receivers.Len() == 0 {
+		return
+	}
+
+	for item := cm.receivers.Front(); item != nil; item = item.Next() {
+		item.Value.(func(msg MessageT) error)(msg)
+	}
 }

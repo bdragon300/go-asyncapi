@@ -63,6 +63,7 @@ type ImplementationsOpts struct {
 	AMQP  string `arg:"--amqp-impl" default:"amqp091-go" help:"Implementation for AMQP ('no' to disable)" placeholder:"NAME"`
 	HTTP  string `arg:"--http-impl" default:"nethttp" help:"Implementation for HTTP ('no' to disable)" placeholder:"NAME"`
 	MQTT  string `arg:"--mqtt-impl" default:"paho-mqtt" help:"Implementation for MQTT ('no' to disable)" placeholder:"NAME"`
+	WS    string `arg:"--ws-impl" default:"gobwas-ws" help:"Implementation for WebSocket ('no' to disable)" placeholder:"NAME"`
 }
 
 type generateObjectSelectionOpts struct {
@@ -301,7 +302,7 @@ func getImplementationsOpts(opts ImplementationsOpts) map[string]string {
 		http.Builder.ProtocolName():  opts.HTTP,
 		kafka.Builder.ProtocolName(): opts.Kafka,
 		mqtt.Builder.ProtocolName():  opts.MQTT,
-		ws.Builder.ProtocolName():    "no", // FIXME
+		ws.Builder.ProtocolName():    opts.WS,
 	}
 }
 

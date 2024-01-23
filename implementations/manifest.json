@@ -22,5 +22,11 @@
       "url": "https://github.com/eclipse/paho.mqtt.golang",
       "dir": "mqtt/paho-mqtt"
     }
+  },
+  "ws": {
+    "gobwas-ws": {
+      "url": "https://github.com/gobwas/ws",
+      "dir": "ws/gobwas-ws"
+    }
   }
 }

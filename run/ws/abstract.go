@@ -22,6 +22,8 @@ type (
 		SetHeaders(headers run.Headers)
 		SetContentType(contentType string)  // TODO: remove
 		SetBindings(bindings MessageBindings)
+
+		SetOpCode(opCode byte)
 	}
 )
 

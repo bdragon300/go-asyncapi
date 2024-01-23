@@ -39,6 +39,7 @@ func (c *ConsumeClient) NewSubscriber(channelName string, bindings *runHttp.Chan
 			defer c.mu.RUnlock()
 
 			if l.Len() == 0 {
+				// TODO: debug log
 				// No readers, drain out the body
 				defer req.Body.Close()
 				_, _ = io.Copy(io.Discard, req.Body)
@@ -76,6 +77,8 @@ func (c *ConsumeClient) NewSubscriber(channelName string, bindings *runHttp.Chan
 
 	return &sub, nil
 }
+
+// TODO: Serve method that runs http.Server?
 
 type SubscribeClient struct {
 	bindings  *runHttp.ChannelBindings

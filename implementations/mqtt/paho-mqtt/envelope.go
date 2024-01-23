@@ -2,7 +2,6 @@ package pahomqtt
 
 import (
 	"bytes"
-	"io"
 
 	"github.com/bdragon300/go-asyncapi/run"
 	runMqtt "github.com/bdragon300/go-asyncapi/run/mqtt"
@@ -67,7 +66,7 @@ func NewEnvelopeIn(msg mqtt.Message) *EnvelopeIn {
 
 type EnvelopeIn struct {
 	mqtt.Message
-	reader  io.Reader
+	reader  *bytes.Reader
 	headers run.Headers
 }
 
