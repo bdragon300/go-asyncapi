@@ -134,16 +134,19 @@ func (pc BaseProtoChannel) RenderCommonMethods(
 		// Method Close() (err error)
 		j.Func().Params(receiver.Clone()).Id("Close").
 			Params().
-			Params(j.Error()).
+			Params(j.Err().Error()).
 			BlockFunc(func(g *j.Group) {
-				var args []j.Code
 				if publisher {
-					args = append(args, j.Id(rn).Dot("publisher").Dot("Close").Call())
+					g.If(j.Id(rn).Dot("publisher").Op("!=").Nil()).Block(
+						j.Add(utils.QualSprintf("err = %Q(errors,Join)(err, %[1]s.publisher.Close())", rn)),
+					)
 				}
 				if subscriber {
-					args = append(args, j.Id(rn).Dot("subscriber").Dot("Close").Call())
+					g.If(j.Id(rn).Dot("subscriber").Op("!=").Nil()).Block(
+						j.Add(utils.QualSprintf("err = %Q(errors,Join)(err, %[1]s.subscriber.Close())", rn)),
+					)
 				}
-				g.Return(j.Qual("errors", "Join").Call(args...))
+				g.Return()
 			}),
 	}
 }

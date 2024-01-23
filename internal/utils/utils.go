@@ -18,7 +18,7 @@ func IsSubsequence[T comparable](subseq, iterable []T, searchIndex int) (int, bo
 	return searchIndex + len(subseq), true
 }
 
-func SlicesEqual[T comparable](a, b []T) bool {
+func SlicesEqual[T comparable](a, b []T) bool { // TODO: use slices.Compare
 	if len(a) != len(b) {
 		return false
 	}
