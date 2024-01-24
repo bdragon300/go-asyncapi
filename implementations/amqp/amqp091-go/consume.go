@@ -29,7 +29,7 @@ type ConsumeClient struct {
 	bindings *runAmqp.ServerBindings
 }
 
-func (c ConsumeClient) NewSubscriber(channelName string, bindings *runAmqp.ChannelBindings) (runAmqp.Subscriber, error) {
+func (c ConsumeClient) NewSubscriber(_ context.Context, channelName string, bindings *runAmqp.ChannelBindings) (runAmqp.Subscriber, error) {
 	ch, err := c.Channel()
 	if err != nil {
 		return nil, err

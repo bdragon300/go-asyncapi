@@ -4,35 +4,8 @@ import (
 	"container/list"
 	"context"
 	"errors"
-	"io"
 	"sync"
 )
-
-type AbstractProducer[B any, W AbstractEnvelopeWriter, P AbstractPublisher[W]] interface {
-	NewPublisher(channelName string, bindings *B) (P, error)
-}
-type AbstractPublisher[W AbstractEnvelopeWriter] interface {
-	Send(ctx context.Context, envelopes ...W) error
-	Close() error
-}
-type AbstractEnvelopeWriter interface {
-	io.Writer
-	ResetPayload()
-	SetHeaders(headers Headers)
-	SetContentType(contentType string)
-}
-
-type AbstractConsumer[B any, R AbstractEnvelopeReader, S AbstractSubscriber[R]] interface {
-	NewSubscriber(channelName string, bindings *B) (S, error)
-}
-type AbstractSubscriber[R AbstractEnvelopeReader] interface {
-	Receive(ctx context.Context, cb func(envelope R) error) error
-	Close() error
-}
-type AbstractEnvelopeReader interface {
-	io.Reader
-	Headers() Headers
-}
 
 type PublisherFanOut[W AbstractEnvelopeWriter, P AbstractPublisher[W]] struct {
 	Publishers []P
@@ -108,7 +81,7 @@ func GatherPublishers[W AbstractEnvelopeWriter, PUB AbstractPublisher[W], B any,
 	for _, prod := range producers {
 		prod := prod
 		pool.Go(func() error {
-			p, e := prod.NewPublisher(chName.String(), channelBindings)
+			p, e := prod.NewPublisher(context.TODO(), chName.String(), channelBindings)  // TODO: context
 			pubsCh <- p
 			return e
 		})
@@ -136,7 +109,7 @@ func GatherSubscribers[R AbstractEnvelopeReader, S AbstractSubscriber[R], B any,
 	for _, cons := range consumers {
 		cons := cons
 		pool.Go(func() error {
-			s, e := cons.NewSubscriber(chName.String(), channelBindings)
+			s, e := cons.NewSubscriber(context.TODO(), chName.String(), channelBindings)  // TODO: context
 			subsCh <- s
 			return e
 		})

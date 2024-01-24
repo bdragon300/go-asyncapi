@@ -2,7 +2,6 @@ package gobwasws
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"strings"
 	"sync"
@@ -30,24 +29,14 @@ type ConsumeClient struct {
 	mu              *sync.RWMutex
 }
 
-func (c *ConsumeClient) NewSubscriber(channelName string, bindings *runWs.ChannelBindings) (runWs.Subscriber, error) {
+func (c *ConsumeClient) NewSubscriber(ctx context.Context, channelName string, bindings *runWs.ChannelBindings) (runWs.Subscriber, error) {
 	c.ensureChannel(channelName, bindings)
-	conn, ok := <-c.connections[channelName]
-	if !ok {
-		// Consumer has been closed while waiting for connection
-		return nil, errors.New("consumer closed")
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case conn := <-c.connections[channelName]:
+		return conn, nil
 	}
-	return conn, nil
-}
-
-func (c *ConsumeClient) Close() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	for _, ch := range c.connections {
-		close(ch)
-	}
-	c.connections = nil
 }
 
 func (c *ConsumeClient) ensureChannel(channelName string, bindings *runWs.ChannelBindings) {

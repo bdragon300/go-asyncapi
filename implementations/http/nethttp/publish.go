@@ -2,6 +2,7 @@ package nethttp
 
 import (
 	"bufio"
+	"context"
 	"net"
 	"net/url"
 
@@ -24,12 +25,13 @@ type ProduceClient struct {
 	serverURL *url.URL
 }
 
-func (p ProduceClient) NewPublisher(channelName string, bindings *runHttp.ChannelBindings) (runHttp.Publisher, error) {
+func (p ProduceClient) NewPublisher(ctx context.Context, channelName string, bindings *runHttp.ChannelBindings) (runHttp.Publisher, error) {
 	port := p.serverURL.Port()
 	if port == "" {
 		port = "80"
 	}
-	netConn, err := net.Dial("tcp", net.JoinHostPort(p.serverURL.Hostname(), port))
+	d := net.Dialer{}
+	netConn, err := d.DialContext(ctx, "tcp", net.JoinHostPort(p.serverURL.Hostname(), port))
 	if err != nil {
 		return nil, err
 	}

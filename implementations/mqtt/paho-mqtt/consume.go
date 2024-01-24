@@ -43,19 +43,24 @@ type ConsumeClient struct {
 	bindings      *runMqtt.ServerBindings
 }
 
-func (c ConsumeClient) NewSubscriber(channelName string, bindings *runMqtt.ChannelBindings) (runMqtt.Subscriber, error) {
+func (c ConsumeClient) NewSubscriber(ctx context.Context, channelName string, bindings *runMqtt.ChannelBindings) (runMqtt.Subscriber, error) {
 	cl := mqtt.NewClient(c.clientOptions)
 	tok := cl.Connect()
-	if tok.Wait() && tok.Error() != nil {
-		return nil, tok.Error()
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-tok.Done():
+		if tok.Error() != nil {
+			return nil, tok.Error()
+		}
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx2, cancel := context.WithCancel(context.Background())
 	return SubscribeClient{
 		Client:   cl,
 		Topic:    channelName,
 		bindings: bindings,
-		ctx:      ctx,
+		ctx:      ctx2,
 		cancel:   cancel,
 	}, nil
 }
