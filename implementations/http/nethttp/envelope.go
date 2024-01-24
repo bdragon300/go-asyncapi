@@ -2,6 +2,8 @@ package nethttp
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,13 +13,21 @@ import (
 )
 
 func NewEnvelopeOut() *EnvelopeOut {
+	req := &http.Request{ // Taken from http.NewRequestWithContext
+		Method:     "GET",
+		Proto:      "HTTP/1.1",
+		ProtoMajor: 1,
+		ProtoMinor: 1,
+		Header:     make(http.Header),
+	}
 	return &EnvelopeOut{
-		body: bytes.NewBuffer(make([]byte, 0)),
+		Request: req.WithContext(context.Background()),
+		body:    bytes.NewBuffer(make([]byte, 0)),
 	}
 }
 
 type EnvelopeOut struct {
-	http.Request    // Client request stub, just for setting the options of a real request
+	*http.Request
 	messageBindings runHttp.MessageBindings
 	body            *bytes.Buffer
 	path            string
@@ -46,7 +56,7 @@ func (e *EnvelopeOut) SetHeaders(headers run.Headers) {
 				e.Header.Add(name, item)
 			}
 		default:
-			panic(fmt.Sprintf("Header values must be string or []string, got: %T", value))
+			panic(fmt.Sprintf("Header value must be string or []string, got: %T", value))
 		}
 	}
 }
@@ -64,31 +74,32 @@ func (e *EnvelopeOut) SetPath(path string) {
 }
 
 func (e *EnvelopeOut) RecordNetHTTP() *http.Request {
-	return &e.Request
+	reqCopy := *e.Request
+	reqCopy.GetBody = func() (io.ReadCloser, error) {
+		snapshot := e.body.Bytes()
+		return io.NopCloser(bytes.NewReader(snapshot)), nil
+	}
+	return &reqCopy
 }
 
 func (e *EnvelopeOut) Path() string {
 	return e.path
 }
 
-func (e *EnvelopeOut) Body() io.Reader {
-	return e.body
-}
-
-func NewEnvelopeIn(req *http.Request, w http.ResponseWriter) *EnvelopeIn {
-	return &EnvelopeIn{
-		Request:        req,
-		responseWriter: w,
-	}
+func NewEnvelopeIn(req *http.Request) *EnvelopeIn {
+	return &EnvelopeIn{Request: req}
 }
 
 type EnvelopeIn struct {
 	*http.Request
-	responseWriter http.ResponseWriter
 }
 
 func (e *EnvelopeIn) Read(p []byte) (n int, err error) {
-	return e.Request.Body.Read(p)
+	n, err = e.Request.Body.Read(p)
+	if errors.Is(err, io.EOF) {
+		_ = e.Request.Body.Close()
+	}
+	return
 }
 
 func (e *EnvelopeIn) Headers() run.Headers {
@@ -97,31 +108,4 @@ func (e *EnvelopeIn) Headers() run.Headers {
 		res[name] = val
 	}
 	return res
-}
-
-func (e *EnvelopeIn) ResponseWriter() http.ResponseWriter {
-	return e.responseWriter
-}
-
-func (e *EnvelopeIn) RespondEnvelope(code int, envelope runHttp.EnvelopeWriter) error {
-	rm := envelope.(ImplementationRecord)
-	record := rm.RecordNetHTTP()
-	e.responseWriter.WriteHeader(code)
-	if len(record.Header) > 0 {
-		for name, val := range record.Header {
-			for _, v := range val {
-				e.responseWriter.Header().Set(name, v)
-			}
-		}
-	}
-	if rm.Body() != nil {
-		if _, err := io.Copy(e.responseWriter, rm.Body()); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (e *EnvelopeIn) RespondError(code int, error string) {
-	http.Error(e.responseWriter, error, code)
 }

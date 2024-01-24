@@ -2,10 +2,8 @@ package http
 
 import (
 	"context"
-	"io"
-	"net/http"
-
 	"github.com/bdragon300/go-asyncapi/run"
+	"io"
 )
 
 // Pub
@@ -44,10 +42,6 @@ type (
 	EnvelopeReader interface {
 		io.Reader
 		Headers() run.Headers
-
-		ResponseWriter() http.ResponseWriter
-		RespondEnvelope(code int, envelope EnvelopeWriter) error
-		RespondError(code int, error string)
 	}
 )
 
