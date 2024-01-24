@@ -20,7 +20,7 @@ type (
 		io.Writer
 		ResetPayload()
 		SetHeaders(headers run.Headers)
-		SetContentType(contentType string)  // TODO: remove
+		SetContentType(contentType string)
 		SetBindings(bindings MessageBindings)
 
 		SetOpCode(opCode byte)
