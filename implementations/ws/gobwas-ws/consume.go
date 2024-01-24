@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -23,7 +24,6 @@ func NewConsumer(bindings *runWs.ServerBindings, responseTimeout time.Duration) 
 
 type ConsumeClient struct {
 	http.ServeMux
-
 	responseTimeout time.Duration
 	bindings        *runWs.ServerBindings
 	connections     map[string]chan *Connection
@@ -34,6 +34,7 @@ func (c *ConsumeClient) NewSubscriber(channelName string, bindings *runWs.Channe
 	c.ensureChannel(channelName, bindings)
 	conn, ok := <-c.connections[channelName]
 	if !ok {
+		// Consumer has been closed while waiting for connection
 		return nil, errors.New("consumer closed")
 	}
 	return conn, nil
@@ -56,31 +57,36 @@ func (c *ConsumeClient) ensureChannel(channelName string, bindings *runWs.Channe
 	if _, ok := c.connections[channelName]; !ok { // HandleFunc panics if called more than once for the same channel
 		c.connections[channelName] = make(chan *Connection)
 		c.HandleFunc(channelName, func(w http.ResponseWriter, req *http.Request) {
+			needMethod := bindings.Method
+			if needMethod != "" && strings.ToUpper(needMethod) != req.Method {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+
 			c.mu.RLock()
 			defer c.mu.RUnlock()
 			if _, ok := c.connections[channelName]; !ok {
-				w.WriteHeader(http.StatusNotFound)
+				http.Error(w, "channel not found", http.StatusNotFound)
 				return
 			}
 
-			netConn, _, _, err := ws.UpgradeHTTP(req, w)
+			netConn, rw, _, err := ws.UpgradeHTTP(req, w)
 			if err != nil {
 				// TODO: error log
-				w.WriteHeader(http.StatusInternalServerError)
+				http.Error(w, "internal server error", http.StatusInternalServerError)
 				return
 			}
 
-			reqCtx, reqCancel := context.WithTimeout(req.Context(), c.responseTimeout)
-			defer reqCancel()
+			ctx, cancel := context.WithTimeout(req.Context(), c.responseTimeout)
+			defer cancel()
 
-			conn := NewConnection(bindings, channelName, netConn)
+			conn := NewConnection(bindings, netConn, rw)
 			select {
-			case <-reqCtx.Done():
+			case <-ctx.Done():
 				// TODO: test when messages has came in between UpgradeHTTP and this, maybe it's needed to drain out?
 				// TODO: error log
+				defer conn.Close()
 				_ = wsutil.WriteServerMessage(netConn, ws.OpClose, []byte("timeout exceeded"))
-				_ = conn.Close()
-				return
 			case c.connections[channelName] <- conn:
 			}
 		})
