@@ -37,5 +37,5 @@ func (p ProduceClient) NewPublisher(ctx context.Context, channelName string, bin
 	}
 
 	rw := bufio.NewReadWriter(bufio.NewReader(netConn), bufio.NewWriter(netConn))
-	return NewConnection(bindings, p.serverURL.JoinPath(channelName), netConn, rw), nil
+	return NewChannel(bindings, p.serverURL.JoinPath(channelName), netConn, rw), nil
 }

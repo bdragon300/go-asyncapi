@@ -51,21 +51,21 @@ func (c ConsumeClient) NewSubscriber(_ context.Context, channelName string, bind
 		return nil, err
 	}
 
-	return &SubscribeClient{
+	return &SubscribeChannel{
 		Client:   cl,
 		Topic:    topic,
 		bindings: bindings,
 	}, nil
 }
 
-type SubscribeClient struct {
+type SubscribeChannel struct {
 	*kgo.Client
 	Topic             string
 	IgnoreFetchErrors bool // TODO: add opts for Subscriber/Publisher interfaces
 	bindings          *runKafka.ChannelBindings
 }
 
-func (s SubscribeClient) Receive(ctx context.Context, cb func(envelope runKafka.EnvelopeReader) error) error {
+func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope runKafka.EnvelopeReader) error) error {
 	for {
 		fetches := s.Client.PollFetches(ctx)
 		if fetches.Err0() != nil {
@@ -92,7 +92,7 @@ func (s SubscribeClient) Receive(ctx context.Context, cb func(envelope runKafka.
 	}
 }
 
-func (s SubscribeClient) Close() error {
+func (s SubscribeChannel) Close() error {
 	s.Client.Close()
 	return nil
 }

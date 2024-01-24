@@ -15,7 +15,7 @@ func NewConsumer(bindings *runHttp.ServerBindings, responseTimeout time.Duration
 	return &ConsumeClient{
 		responseTimeout: responseTimeout,
 		bindings:        bindings,
-		connections:     make(map[string]chan *Connection),
+		connections:     make(map[string]chan *Channel),
 		mu:              &sync.RWMutex{},
 	}, nil
 }
@@ -24,7 +24,7 @@ type ConsumeClient struct {
 	http.ServeMux
 	responseTimeout time.Duration
 	bindings        *runHttp.ServerBindings
-	connections     map[string]chan *Connection
+	connections     map[string]chan *Channel
 	mu              *sync.RWMutex
 }
 
@@ -43,7 +43,7 @@ func (c *ConsumeClient) ensureChannel(channelName string, bindings *runHttp.Chan
 	defer c.mu.Unlock()
 
 	if _, ok := c.connections[channelName]; !ok { // HandleFunc panics if called more than once for the same channel
-		c.connections[channelName] = make(chan *Connection)
+		c.connections[channelName] = make(chan *Channel)
 		c.HandleFunc(channelName, func(w http.ResponseWriter, req *http.Request) {
 			needMethod := bindings.SubscriberBindings.Method
 			if needMethod != "" && strings.ToUpper(needMethod) != req.Method {
@@ -80,7 +80,7 @@ func (c *ConsumeClient) ensureChannel(channelName string, bindings *runHttp.Chan
 			ctx, cancel := context.WithTimeout(req.Context(), c.responseTimeout)
 			defer cancel()
 
-			conn := NewConnection(bindings, origin, netConn, rw)
+			conn := NewChannel(bindings, origin, netConn, rw)
 			select {
 			case <-ctx.Done():
 				// TODO: error log

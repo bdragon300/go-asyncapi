@@ -16,7 +16,7 @@ func NewConsumer(bindings *runWs.ServerBindings, responseTimeout time.Duration) 
 	return &ConsumeClient{
 		responseTimeout: responseTimeout,
 		bindings:        bindings,
-		connections:     make(map[string]chan *Connection),
+		connections:     make(map[string]chan *Channel),
 		mu:              new(sync.RWMutex),
 	}, nil
 }
@@ -25,7 +25,7 @@ type ConsumeClient struct {
 	http.ServeMux
 	responseTimeout time.Duration
 	bindings        *runWs.ServerBindings
-	connections     map[string]chan *Connection
+	connections     map[string]chan *Channel
 	mu              *sync.RWMutex
 }
 
@@ -44,7 +44,7 @@ func (c *ConsumeClient) ensureChannel(channelName string, bindings *runWs.Channe
 	defer c.mu.Unlock()
 
 	if _, ok := c.connections[channelName]; !ok { // HandleFunc panics if called more than once for the same channel
-		c.connections[channelName] = make(chan *Connection)
+		c.connections[channelName] = make(chan *Channel)
 		c.HandleFunc(channelName, func(w http.ResponseWriter, req *http.Request) {
 			needMethod := bindings.Method
 			if needMethod != "" && strings.ToUpper(needMethod) != req.Method {
@@ -69,7 +69,7 @@ func (c *ConsumeClient) ensureChannel(channelName string, bindings *runWs.Channe
 			ctx, cancel := context.WithTimeout(req.Context(), c.responseTimeout)
 			defer cancel()
 
-			conn := NewConnection(bindings, netConn, rw)
+			conn := NewChannel(bindings, netConn, rw)
 			select {
 			case <-ctx.Done():
 				// TODO: test when messages has came in between UpgradeHTTP and this, maybe it's needed to drain out?

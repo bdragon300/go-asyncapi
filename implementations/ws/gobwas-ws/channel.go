@@ -13,8 +13,8 @@ import (
 	"github.com/gobwas/ws/wsutil"
 )
 
-func NewConnection(bindings *runWs.ChannelBindings, conn net.Conn, rw *bufio.ReadWriter) *Connection {
-	res := Connection{
+func NewChannel(bindings *runWs.ChannelBindings, conn net.Conn, rw *bufio.ReadWriter) *Channel {
+	res := Channel{
 		Conn:       conn,
 		ReadWriter: rw,
 		bindings:   bindings,
@@ -30,7 +30,7 @@ type ImplementationRecord interface {
 	OpCode() ws.OpCode
 }
 
-type Connection struct {
+type Channel struct {
 	net.Conn
 	ReadWriter *bufio.ReadWriter
 
@@ -40,7 +40,7 @@ type Connection struct {
 	cancel   context.CancelFunc
 }
 
-func (s Connection) Receive(ctx context.Context, cb func(envelope runWs.EnvelopeReader) error) error {
+func (s Channel) Receive(ctx context.Context, cb func(envelope runWs.EnvelopeReader) error) error {
 	el := s.items.Add(cb)
 	defer s.items.Remove(el)
 
@@ -48,14 +48,14 @@ func (s Connection) Receive(ctx context.Context, cb func(envelope runWs.Envelope
 	case <-ctx.Done():
 		return ctx.Err()
 	case <-s.ctx.Done():
-		return errors.New("connection closed")
+		return errors.New("channel closed")
 	}
 }
 
-func (s Connection) Send(_ context.Context, envelopes ...runWs.EnvelopeWriter) error {
+func (s Channel) Send(_ context.Context, envelopes ...runWs.EnvelopeWriter) error {
 	select {
 	case <-s.ctx.Done():
-		return errors.New("connection closed")
+		return errors.New("channel closed")
 	default:
 	}
 
@@ -69,12 +69,12 @@ func (s Connection) Send(_ context.Context, envelopes ...runWs.EnvelopeWriter) e
 	return nil
 }
 
-func (s Connection) Close() error {
+func (s Channel) Close() error {
 	s.cancel()
 	return s.Conn.Close()
 }
 
-func (s Connection) run() {
+func (s Channel) run() {
 	defer s.cancel()
 
 	for {

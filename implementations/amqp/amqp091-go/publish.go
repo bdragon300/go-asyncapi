@@ -3,67 +3,18 @@ package amqp091go
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
-	"github.com/bdragon300/go-asyncapi/run"
 	runAmqp "github.com/bdragon300/go-asyncapi/run/amqp"
 
 	amqp091 "github.com/rabbitmq/amqp091-go"
 )
 
-func NewProducer(serverURL string, bindings *runAmqp.ServerBindings) (*ProduceClient, error) {
-	conn, err := amqp091.Dial(serverURL)
-	if err != nil {
-		return nil, err
-	}
-	return &ProduceClient{
-		Connection: conn,
-		bindings:   bindings,
-	}, nil
-}
-
-type ProduceClient struct {
-	*amqp091.Connection
-	bindings *runAmqp.ServerBindings
-}
-
-func (p ProduceClient) NewPublisher(_ context.Context, channelName string, bindings *runAmqp.ChannelBindings) (runAmqp.Publisher, error) {
-	ch, err := p.Channel()
-	if err != nil {
-		return nil, err
-	}
-
-	ec := bindings.ExchangeConfiguration
-	declare := ec.Type != "" || ec.Durable != nil || ec.AutoDelete != nil || ec.VHost != ""
-	var exchangeName string // By default, publish to the default exchange with empty name
-	if bindings.ChannelType == runAmqp.ChannelTypeRoutingKey {
-		exchangeName = channelName
-	}
-	if ec.Name != nil {
-		exchangeName = *ec.Name
-	}
-	if declare {
-		err = ch.ExchangeDeclare(
-			exchangeName,
-			string(ec.Type),
-			run.DerefOrZero(ec.Durable),
-			run.DerefOrZero(ec.AutoDelete),
-			false,
-			false,
-			nil,
-		)
-		if err != nil {
-			// TODO: close channel
-			return nil, fmt.Errorf("exchange declare: %w", err)
-		}
-	}
-	return &PublishClient{
-		Channel:      ch,
-		routingKey:   channelName,
-		exchangeName: exchangeName,
-		bindings:     bindings,
-	}, nil
+type PublishChannel struct {
+	*amqp091.Channel
+	routingKey   string
+	exchangeName string
+	bindings     *runAmqp.ChannelBindings
 }
 
 type ImplementationRecord interface {
@@ -71,14 +22,7 @@ type ImplementationRecord interface {
 	DeliveryTag() string
 }
 
-type PublishClient struct {
-	*amqp091.Channel
-	routingKey   string
-	exchangeName string
-	bindings     *runAmqp.ChannelBindings
-}
-
-func (p PublishClient) Send(ctx context.Context, envelopes ...runAmqp.EnvelopeWriter) error {
+func (p PublishChannel) Send(ctx context.Context, envelopes ...runAmqp.EnvelopeWriter) error {
 	var err error
 	for _, envelope := range envelopes {
 		rm := envelope.(ImplementationRecord)

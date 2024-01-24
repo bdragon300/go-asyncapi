@@ -50,7 +50,7 @@ func (p ProduceClient) NewPublisher(_ context.Context, channelName string, bindi
 		return nil, err
 	}
 
-	return &PublishClient{
+	return &PublishChannel{
 		Client:   cl,
 		Topic:    topic,
 		bindings: bindings,
@@ -62,13 +62,13 @@ type ImplementationRecord interface {
 	// TODO: Bindings?
 }
 
-type PublishClient struct {
+type PublishChannel struct {
 	*kgo.Client
 	Topic    string
 	bindings *runKafka.ChannelBindings
 }
 
-func (p PublishClient) Send(ctx context.Context, envelopes ...runKafka.EnvelopeWriter) error {
+func (p PublishChannel) Send(ctx context.Context, envelopes ...runKafka.EnvelopeWriter) error {
 	records := make([]*kgo.Record, 0, len(envelopes))
 	for _, e := range envelopes {
 		rm := e.(ImplementationRecord)
@@ -77,7 +77,7 @@ func (p PublishClient) Send(ctx context.Context, envelopes ...runKafka.EnvelopeW
 	return p.Client.ProduceSync(ctx, records...).FirstErr()
 }
 
-func (p PublishClient) Close() error {
+func (p PublishChannel) Close() error {
 	p.Client.Close()
 	return nil
 }
