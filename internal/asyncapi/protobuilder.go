@@ -59,7 +59,10 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 	}
 
 	// Interface to match servers bound with a channel (type chan1KafkaServer interface)
-	var openChannelServerIfaceArgs []render.GoFuncParam
+	openChannelServerIfaceArgs := []render.GoFuncParam{{
+		Name: "ctx",
+		Type: &render.GoSimple{Name: "Context", Import: "context", IsIface: true},
+	}}
 	if chanResult.AbstractChannel.ParametersStruct != nil {
 		openChannelServerIfaceArgs = append(openChannelServerIfaceArgs, render.GoFuncParam{
 			Name: "params",

@@ -65,6 +65,7 @@ func (s SubscriberFanIn[R, S]) Close() (err error) {
 }
 
 func GatherPublishers[W AbstractEnvelopeWriter, PUB AbstractPublisher[W], B any, PRD AbstractProducer[B, W, PUB]](
+	ctx context.Context,
 	chName ParamString,
 	channelBindings *B,
 	producers []PRD,
@@ -74,7 +75,7 @@ func GatherPublishers[W AbstractEnvelopeWriter, PUB AbstractPublisher[W], B any,
 	for _, prod := range producers {
 		prod := prod
 		pool.Go(func() error {
-			p, e := prod.Publisher(context.TODO(), chName.String(), channelBindings) // TODO: context
+			p, e := prod.Publisher(ctx, chName.String(), channelBindings)
 			pubsCh <- p
 			return e
 		})
@@ -93,6 +94,7 @@ func GatherPublishers[W AbstractEnvelopeWriter, PUB AbstractPublisher[W], B any,
 }
 
 func GatherSubscribers[R AbstractEnvelopeReader, S AbstractSubscriber[R], B any, C AbstractConsumer[B, R, S]](
+	ctx context.Context,
 	chName ParamString,
 	channelBindings *B,
 	consumers []C,
@@ -102,7 +104,7 @@ func GatherSubscribers[R AbstractEnvelopeReader, S AbstractSubscriber[R], B any,
 	for _, cons := range consumers {
 		cons := cons
 		pool.Go(func() error {
-			s, e := cons.Subscriber(context.TODO(), chName.String(), channelBindings) // TODO: context
+			s, e := cons.Subscriber(ctx, chName.String(), channelBindings)
 			subsCh <- s
 			return e
 		})

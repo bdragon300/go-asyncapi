@@ -57,9 +57,10 @@ func (ps BaseProtoServer) RenderOpenChannelMethod(ctx *common.RenderContext, cha
 	receiver := j.Id(rn).Id(ps.Struct.Name)
 
 	return []*j.Statement{
-		// Method OpenChannel1Proto(params Channel1Parameters) (*Channel1Proto, error)
+		// Method OpenChannel1Proto(ctx context.Context, params Channel1Parameters) (*Channel1Proto, error)
 		j.Func().Params(receiver.Clone()).Id("Open"+channelStruct.Name).
 			ParamsFunc(func(g *j.Group) {
+				g.Id("ctx").Qual("context", "Context")
 				if channelParametersStructNoRender != nil {
 					g.Id("params").Add(utils.ToCode(channelParametersStructNoRender.RenderUsage(ctx))...)
 				}
@@ -67,6 +68,7 @@ func (ps BaseProtoServer) RenderOpenChannelMethod(ctx *common.RenderContext, cha
 			Params(j.Op("*").Add(utils.ToCode(channel.RenderUsage(ctx))...), j.Error()).
 			Block(
 				j.Return(j.Qual(ctx.GeneratedModule(channelStruct.Import), "Open"+channelStruct.Name).CallFunc(func(g *j.Group) {
+					g.Id("ctx")
 					if channelParametersStructNoRender != nil {
 						g.Id("params")
 					}

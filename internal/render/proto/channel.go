@@ -162,9 +162,10 @@ func (pc BaseProtoChannel) RenderOpenFunc(
 	ctx.Logger.Trace("RenderOpenFunc", "proto", pc.ProtoName)
 
 	return []*j.Statement{
-		// OpenChannel1Proto(params Channel1Parameters, servers ...channel1ProtoServer) (*Channel1Proto, error)
+		// OpenChannel1Proto(ctx context.Context, params Channel1Parameters, servers ...channel1ProtoServer) (*Channel1Proto, error)
 		j.Func().Id("Open"+channelStruct.Name).
 			ParamsFunc(func(g *j.Group) {
+				g.Id("ctx").Qual("context", "Context")
 				if parametersStruct != nil {
 					g.Id("params").Add(utils.ToCode(parametersStruct.RenderUsage(ctx))...)
 				}
@@ -206,6 +207,7 @@ func (pc BaseProtoChannel) RenderOpenFunc(
 							j.Qual(ctx.RuntimeModule(pc.ProtoName), "ChannelBindings"),
 						).
 						CallFunc(func(g *j.Group) {
+							g.Id("ctx")
 							g.Id("name")
 							g.Id(lo.Ternary(bindingsStruct != nil, "&bindings", "nil"))
 							g.Id("prod")
@@ -227,6 +229,7 @@ func (pc BaseProtoChannel) RenderOpenFunc(
 							j.Qual(ctx.RuntimeModule(pc.ProtoName), "ChannelBindings"),
 						).
 						CallFunc(func(g *j.Group) {
+							g.Id("ctx")
 							g.Id("name")
 							g.Id(lo.Ternary(bindingsStruct != nil, "&bindings", "nil"))
 							g.Id("cons")
