@@ -65,7 +65,7 @@ type SubscribeChannel struct {
 	bindings          *runKafka.ChannelBindings
 }
 
-func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope runKafka.EnvelopeReader) error) error {
+func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope runKafka.EnvelopeReader)) error {
 	for {
 		fetches := s.Client.PollFetches(ctx)
 		if fetches.Err0() != nil {
@@ -83,8 +83,7 @@ func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope runKafka
 		}
 
 		fetches.EachRecord(func(r *kgo.Record) {
-			envelope := NewEnvelopeIn(r)
-			batchError = errors.Join(batchError, cb(envelope))
+			cb(NewEnvelopeIn(r))
 		})
 		if batchError != nil {
 			return fmt.Errorf("callback errors: %w", batchError)

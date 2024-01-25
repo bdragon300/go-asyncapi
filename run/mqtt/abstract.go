@@ -39,7 +39,7 @@ type (
 		Subscriber(ctx context.Context, channelName string, bindings *ChannelBindings) (Subscriber, error)
 	}
 	Subscriber interface {
-		Receive(ctx context.Context, cb func(envelope EnvelopeReader) error) error
+		Receive(ctx context.Context, cb func(envelope EnvelopeReader)) error
 		Close() error
 	}
 	EnvelopeReader interface {

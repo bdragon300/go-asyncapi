@@ -19,7 +19,7 @@ type SubscribeChannel struct {
 	bindings  *runAmqp.ChannelBindings
 }
 
-func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope runAmqp.EnvelopeReader) error) (err error) {
+func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope runAmqp.EnvelopeReader)) (err error) {
 	// TODO: consumer tag in x- schema argument
 	consumerTag := fmt.Sprintf("consumer-%s", time.Now().Format(time.RFC3339))
 	deliveries, err := s.ConsumeWithContext(
@@ -44,15 +44,7 @@ func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope runAmqp.
 			Delivery: &delivery,
 			reader:   bytes.NewReader(delivery.Body),
 		}
-		if err = cb(&evlp); err != nil {
-			err = fmt.Errorf("message callback: %w", err)
-			if s.bindings.SubscriberBindings.Ack {
-				if e := s.Nack(delivery.DeliveryTag, false, false); e != nil {
-					err = errors.Join(err, fmt.Errorf("nack: %w", e))
-				}
-			}
-			return err
-		}
+		cb(&evlp)
 		if s.bindings.SubscriberBindings.Ack {
 			if e := s.Ack(delivery.DeliveryTag, false); e != nil {
 				return fmt.Errorf("ack: %w", e)

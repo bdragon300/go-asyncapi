@@ -68,11 +68,11 @@ func (pc BaseProtoChannel) RenderCommonSubscriberMethods(
 				j.Return(j.Id(rn).Dot("subscriber")),
 			),
 
-		// Method Subscribe(ctx context.Context, cb func(envelope proto.EnvelopeReader) error) error
+		// Method Subscribe(ctx context.Context, cb func(envelope proto.EnvelopeReader)) error
 		j.Func().Params(receiver.Clone()).Id("Subscribe").
 			Params(
 				j.Id("ctx").Qual("context", "Context"),
-				j.Id("cb").Func().Params(j.Id("envelope").Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeReader")).Error(), // FIXME: *any on fallback variant
+				j.Id("cb").Func().Params(j.Id("envelope").Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeReader")), // FIXME: *any on fallback variant
 			).
 			Error().
 			Block(

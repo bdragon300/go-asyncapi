@@ -23,7 +23,7 @@ type AbstractConsumer[B any, R AbstractEnvelopeReader, S AbstractSubscriber[R]] 
 	Subscriber(ctx context.Context, channelName string, bindings *B) (S, error)
 }
 type AbstractSubscriber[R AbstractEnvelopeReader] interface {
-	Receive(ctx context.Context, cb func(envelope R) error) error
+	Receive(ctx context.Context, cb func(envelope R)) error
 	Close() error
 }
 type AbstractEnvelopeReader interface {

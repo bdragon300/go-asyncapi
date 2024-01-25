@@ -43,7 +43,7 @@ type Channel struct {
 	cancel    context.CancelFunc
 }
 
-func (s Channel) Receive(ctx context.Context, cb func(envelope runHttp.EnvelopeReader) error) error {
+func (s Channel) Receive(ctx context.Context, cb func(envelope runHttp.EnvelopeReader)) error {
 	el := s.items.Add(cb)
 	defer s.items.Remove(el)
 

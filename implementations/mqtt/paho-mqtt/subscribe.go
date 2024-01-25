@@ -22,7 +22,7 @@ type SubscribeChannel struct {
 	cancel        context.CancelFunc
 }
 
-func (r *SubscribeChannel) Receive(ctx context.Context, cb func(envelope runMqtt.EnvelopeReader) error) error {
+func (r *SubscribeChannel) Receive(ctx context.Context, cb func(envelope runMqtt.EnvelopeReader)) error {
 	el := r.subscribeChan.Add(cb)
 	defer r.subscribeChan.Remove(el)
 

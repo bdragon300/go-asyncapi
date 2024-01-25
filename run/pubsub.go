@@ -37,10 +37,9 @@ func (p PublisherFanOut[W, P]) Close() (err error) {
 
 type SubscriberFanIn[R AbstractEnvelopeReader, S AbstractSubscriber[R]] struct {
 	Subscribers      []S
-	StopOnFirstError bool
 }
 
-func (s SubscriberFanIn[R, S]) Receive(ctx context.Context, cb func(envelope R) error) error {
+func (s SubscriberFanIn[R, S]) Receive(ctx context.Context, cb func(envelope R)) error {
 	if len(s.Subscribers) == 1 {
 		return s.Subscribers[0].Receive(ctx, cb)
 	}
@@ -52,13 +51,7 @@ func (s SubscriberFanIn[R, S]) Receive(ctx context.Context, cb func(envelope R) 
 	for i := 0; i < len(s.Subscribers); i++ {
 		i := i
 		pool.Go(func() error {
-			return s.Subscribers[i].Receive(poolCtx, func(envelope R) error {
-				err := cb(envelope)
-				if err != nil && s.StopOnFirstError {
-					cancel()
-				}
-				return err
-			})
+			return s.Subscribers[i].Receive(poolCtx, cb)
 		})
 	}
 	return pool.Wait()
@@ -140,7 +133,7 @@ type FanOut[MessageT any] struct {
 	mu        *sync.RWMutex
 }
 
-func (cm *FanOut[MessageT]) Add(cb func(msg MessageT) error) *list.Element {
+func (cm *FanOut[MessageT]) Add(cb func(msg MessageT)) *list.Element {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
@@ -165,6 +158,6 @@ func (cm *FanOut[MessageT]) Put(msg MessageT) {
 	}
 
 	for item := cm.receivers.Front(); item != nil; item = item.Next() {
-		item.Value.(func(msg MessageT) error)(msg)
+		item.Value.(func(msg MessageT))(msg)
 	}
 }
