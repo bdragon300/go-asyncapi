@@ -26,7 +26,7 @@ type ProduceClient struct {
 	serverURL *url.URL
 }
 
-func (p ProduceClient) NewPublisher(ctx context.Context, channelName string, bindings *runWs.ChannelBindings) (runWs.Publisher, error) {
+func (p ProduceClient) Publisher(ctx context.Context, channelName string, bindings *runWs.ChannelBindings) (runWs.Publisher, error) {
 	if bindings.Method != "" && bindings.Method != "GET" {
 		return nil, fmt.Errorf("unsupported method %s", bindings.Method)
 	}

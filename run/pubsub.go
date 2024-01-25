@@ -81,7 +81,7 @@ func GatherPublishers[W AbstractEnvelopeWriter, PUB AbstractPublisher[W], B any,
 	for _, prod := range producers {
 		prod := prod
 		pool.Go(func() error {
-			p, e := prod.NewPublisher(context.TODO(), chName.String(), channelBindings)  // TODO: context
+			p, e := prod.Publisher(context.TODO(), chName.String(), channelBindings) // TODO: context
 			pubsCh <- p
 			return e
 		})
@@ -109,7 +109,7 @@ func GatherSubscribers[R AbstractEnvelopeReader, S AbstractSubscriber[R], B any,
 	for _, cons := range consumers {
 		cons := cons
 		pool.Go(func() error {
-			s, e := cons.NewSubscriber(context.TODO(), chName.String(), channelBindings)  // TODO: context
+			s, e := cons.Subscriber(context.TODO(), chName.String(), channelBindings) // TODO: context
 			subsCh <- s
 			return e
 		})

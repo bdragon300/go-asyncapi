@@ -26,7 +26,7 @@ type Client struct {
 	bindings *runAmqp.ServerBindings
 }
 
-func (c Client) NewPublisher(_ context.Context, channelName string, bindings *runAmqp.ChannelBindings) (runAmqp.Publisher, error) {
+func (c Client) Publisher(_ context.Context, channelName string, bindings *runAmqp.ChannelBindings) (runAmqp.Publisher, error) {
 	ch, err := c.Channel()
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (c Client) NewPublisher(_ context.Context, channelName string, bindings *ru
 	}, nil
 }
 
-func (c Client) NewSubscriber(_ context.Context, channelName string, bindings *runAmqp.ChannelBindings) (runAmqp.Subscriber, error) {
+func (c Client) Subscriber(_ context.Context, channelName string, bindings *runAmqp.ChannelBindings) (runAmqp.Subscriber, error) {
 	ch, err := c.Channel()
 	if err != nil {
 		return nil, err

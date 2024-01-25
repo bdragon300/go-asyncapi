@@ -61,7 +61,7 @@ type Client struct {
 	subscribers map[string]*SubscribeChannel
 }
 
-func (c *Client) NewSubscriber(ctx context.Context, channelName string, bindings *runMqtt.ChannelBindings) (runMqtt.Subscriber, error) {
+func (c *Client) Subscriber(ctx context.Context, channelName string, bindings *runMqtt.ChannelBindings) (runMqtt.Subscriber, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -98,7 +98,7 @@ func (c *Client) NewSubscriber(ctx context.Context, channelName string, bindings
 	return &r, nil
 }
 
-func (c *Client) NewPublisher(_ context.Context, channelName string, bindings *runMqtt.ChannelBindings) (runMqtt.Publisher, error) {
+func (c *Client) Publisher(_ context.Context, channelName string, bindings *runMqtt.ChannelBindings) (runMqtt.Publisher, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

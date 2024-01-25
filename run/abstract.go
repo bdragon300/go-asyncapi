@@ -6,7 +6,7 @@ import (
 )
 
 type AbstractProducer[B any, W AbstractEnvelopeWriter, P AbstractPublisher[W]] interface {
-	NewPublisher(ctx context.Context, channelName string, bindings *B) (P, error)
+	Publisher(ctx context.Context, channelName string, bindings *B) (P, error)
 }
 type AbstractPublisher[W AbstractEnvelopeWriter] interface {
 	Send(ctx context.Context, envelopes ...W) error
@@ -20,7 +20,7 @@ type AbstractEnvelopeWriter interface {
 }
 
 type AbstractConsumer[B any, R AbstractEnvelopeReader, S AbstractSubscriber[R]] interface {
-	NewSubscriber(ctx context.Context, channelName string, bindings *B) (S, error)
+	Subscriber(ctx context.Context, channelName string, bindings *B) (S, error)
 }
 type AbstractSubscriber[R AbstractEnvelopeReader] interface {
 	Receive(ctx context.Context, cb func(envelope R) error) error

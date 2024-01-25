@@ -28,7 +28,7 @@ type ConsumeClient struct {
 	mu              *sync.RWMutex
 }
 
-func (c *ConsumeClient) NewSubscriber(ctx context.Context, channelName string, bindings *runHttp.ChannelBindings) (runHttp.Subscriber, error) {
+func (c *ConsumeClient) Subscriber(ctx context.Context, channelName string, bindings *runHttp.ChannelBindings) (runHttp.Subscriber, error) {
 	c.ensureChannel(channelName, bindings)
 	select {
 	case <-ctx.Done():

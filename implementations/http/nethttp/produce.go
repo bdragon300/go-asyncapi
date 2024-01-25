@@ -25,7 +25,7 @@ type ProduceClient struct {
 	serverURL *url.URL
 }
 
-func (p ProduceClient) NewPublisher(ctx context.Context, channelName string, bindings *runHttp.ChannelBindings) (runHttp.Publisher, error) {
+func (p ProduceClient) Publisher(ctx context.Context, channelName string, bindings *runHttp.ChannelBindings) (runHttp.Publisher, error) {
 	port := p.serverURL.Port()
 	if port == "" {
 		port = "80"
