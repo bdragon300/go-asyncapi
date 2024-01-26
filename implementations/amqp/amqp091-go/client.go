@@ -52,7 +52,7 @@ func (c Client) Publisher(_ context.Context, channelName string, bindings *runAm
 			nil,
 		)
 		if err != nil {
-			// TODO: close channel
+			err = errors.Join(err, ch.Close())
 			return nil, fmt.Errorf("exchange declare: %w", err)
 		}
 	}
