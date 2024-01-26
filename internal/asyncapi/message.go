@@ -49,7 +49,7 @@ func (m Message) Compile(ctx *common.CompileContext) error {
 }
 
 func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Renderer, error) {
-	_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagCompoennt]
+	_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagComponent]
 	ignore := m.XIgnore || (isComponent && !ctx.CompileOpts.MessageOpts.IsAllowedName(messageKey))
 	if ignore {
 		ctx.Logger.Debug("Message denoted to be ignored")

@@ -32,9 +32,10 @@ func (c CorrelationID) Compile(ctx *common.CompileContext) error {
 }
 
 func (c CorrelationID) build(ctx *common.CompileContext, correlationIDKey string) (common.Renderer, error) {
-	if c.XIgnore {
+	ignore := c.XIgnore || !ctx.CompileOpts.MessageOpts.Enable
+	if ignore {
 		ctx.Logger.Debug("CorrelationID denoted to be ignored")
-		return &render.GoSimple{Name: "any", IsIface: true}, nil
+		return &render.CorrelationID{}, nil
 	}
 	// TODO: move this ref code from everywhere to single place?
 	if c.Ref != "" {

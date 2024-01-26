@@ -3,7 +3,7 @@ package common
 type SchemaTag string
 
 const (
-	SchemaTagDirectRender SchemaTag = "directRender"
+	SchemaTagDirectRender SchemaTag = "directRender" // Object must be rendered directly (only on the current level)
 	SchemaTagPkgScope     SchemaTag = "pkgScope"
-	SchemaTagCompoennt    SchemaTag = "components" // Set to objects located in `components` document section
+	SchemaTagComponent    SchemaTag = "components" // Set to objects located in `components` document section
 )

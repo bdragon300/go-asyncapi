@@ -5,7 +5,6 @@ import (
 )
 
 type ComponentsItem struct {
-	// TODO: components, pkgScope -> componentsScope, modelsScope. Etc.
 	Schemas types.OrderedMap[string, Object] `json:"schemas" yaml:"schemas" cgen:"directRender,components,pkgScope=models"`
 	// TODO: maybe it's needed to make a difference between channels/servers in components and root of schema?
 	Servers types.OrderedMap[string, Server] `json:"servers" yaml:"servers" cgen:"directRender,components,pkgScope=servers"`
