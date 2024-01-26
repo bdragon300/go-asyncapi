@@ -330,7 +330,7 @@ func getCompileOpts(opts generatePubSubArgs, isPub, isSub bool) (common.CompileO
 	}
 
 	includeAll := !opts.OnlyChannels && !opts.OnlyMessages && !opts.OnlyModels && !opts.OnlyServers
-	f := func(only, ignore bool, re, ire string) (r common.ObjectSelectionOpts, e error) {
+	f := func(only, ignore bool, re, ire string) (r common.ObjectCompileOpts, e error) {
 		r.Enable = (includeAll || only) && !ignore
 		if re != "" {
 			if r.IncludeRegex, e = regexp.Compile(re); e != nil {
@@ -345,25 +345,25 @@ func getCompileOpts(opts generatePubSubArgs, isPub, isSub bool) (common.CompileO
 		return
 	}
 
-	if res.ChannelsSelection, err = f(opts.OnlyChannels, opts.IgnoreChannels, opts.ChannelsRe, opts.IgnoreChannelsRe); err != nil {
+	if res.ChannelOpts, err = f(opts.OnlyChannels, opts.IgnoreChannels, opts.ChannelsRe, opts.IgnoreChannelsRe); err != nil {
 		return res, err
 	}
 	if opts.ReuseChannelsModule != "" {
 		res.ReusePackages[asyncapi.PackageScopeChannels] = opts.ReuseChannelsModule
 	}
-	if res.MessagesSelection, err = f(opts.OnlyMessages, opts.IgnoreMessages, opts.MessagesRe, opts.IgnoreMessagesRe); err != nil {
+	if res.MessageOpts, err = f(opts.OnlyMessages, opts.IgnoreMessages, opts.MessagesRe, opts.IgnoreMessagesRe); err != nil {
 		return res, err
 	}
 	if opts.ReuseMessagesModule != "" {
 		res.ReusePackages[asyncapi.PackageScopeMessages] = opts.ReuseMessagesModule
 	}
-	if res.ModelsSelection, err = f(opts.OnlyModels, opts.IgnoreModels, opts.ModelsRe, opts.IgnoreModelsRe); err != nil {
+	if res.ModelOpts, err = f(opts.OnlyModels, opts.IgnoreModels, opts.ModelsRe, opts.IgnoreModelsRe); err != nil {
 		return res, err
 	}
 	if opts.ReuseModelsModule != "" {
 		res.ReusePackages[asyncapi.PackageScopeModels] = opts.ReuseModelsModule
 	}
-	if res.ServersSelection, err = f(opts.OnlyServers, opts.IgnoreServers, opts.ServersRe, opts.IgnoreServersRe); err != nil {
+	if res.ServerOpts, err = f(opts.OnlyServers, opts.IgnoreServers, opts.ServersRe, opts.IgnoreServersRe); err != nil {
 		return res, err
 	}
 	if opts.ReuseServersModule != "" {

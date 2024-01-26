@@ -12,6 +12,7 @@ import (
 
 type Message struct {
 	Name                 string
+	Dummy                bool
 	OutStruct            *GoStruct
 	InStruct             *GoStruct
 	PayloadType          common.GolangType // `any` or a particular type
@@ -26,7 +27,7 @@ type Message struct {
 }
 
 func (m Message) DirectRendering() bool {
-	return true
+	return !m.Dummy
 }
 
 func (m Message) RenderDefinition(ctx *common.RenderContext) []*j.Statement {

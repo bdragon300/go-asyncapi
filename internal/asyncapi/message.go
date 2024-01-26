@@ -32,7 +32,7 @@ type Message struct {
 	Examples      []MessageExample       `json:"examples" yaml:"examples"`
 	Traits        []MessageTrait         `json:"traits" yaml:"traits"`
 
-	XGoType *types.Union2[string, xGoType] `json:"x-go-type" yaml:"x-go-type"`
+	XGoType *types.Union2[string, xGoType] `json:"x-go-type" yaml:"x-go-type"` // TODO: remove? what x-go-type means for message?
 	XGoName string                         `json:"x-go-name" yaml:"x-go-name"`
 	XIgnore bool                           `json:"x-ignore" yaml:"x-ignore"`
 
@@ -50,9 +50,11 @@ func (m Message) Compile(ctx *common.CompileContext) error {
 }
 
 func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Renderer, error) {
-	if m.XIgnore {
+	_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagCompoennt]
+	ignore := m.XIgnore || (isComponent && !ctx.CompileOpts.MessageOpts.IsAllowedName(messageKey))
+	if ignore {
 		ctx.Logger.Debug("Message denoted to be ignored")
-		return &render.GoSimple{Name: "any", IsIface: true}, nil
+		return &render.Message{Dummy: true}, nil
 	}
 	if m.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", m.Ref)

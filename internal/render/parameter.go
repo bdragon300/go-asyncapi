@@ -9,12 +9,13 @@ import (
 
 type Parameter struct {
 	Name       string
+	Dummy      bool
 	Type       common.GolangType
 	PureString bool
 }
 
 func (p Parameter) DirectRendering() bool {
-	return p.Type.DirectRendering()
+	return !p.Dummy && p.Type.DirectRendering()
 }
 
 func (p Parameter) RenderDefinition(ctx *common.RenderContext) []*j.Statement {

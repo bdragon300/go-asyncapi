@@ -44,16 +44,16 @@ func (c CorrelationID) build(ctx *common.CompileContext, correlationIDKey string
 		return res, nil
 	}
 
-	parts := strings.SplitN(c.Location, "#", 2)
-	if len(parts) < 2 {
+	locationParts := strings.SplitN(c.Location, "#", 2)
+	if len(locationParts) < 2 {
 		return nil, types.CompileError{Err: errors.New("no fragment part in location"), Path: ctx.PathRef()}
 	}
 
 	var structField string
 	switch {
-	case strings.HasSuffix(parts[0], "header"):
+	case strings.HasSuffix(locationParts[0], "header"):
 		structField = "Headers"
-	case strings.HasSuffix(parts[0], "payload"):
+	case strings.HasSuffix(locationParts[0], "payload"):
 		structField = "Payload"
 	default:
 		return nil, types.CompileError{
@@ -62,20 +62,20 @@ func (c CorrelationID) build(ctx *common.CompileContext, correlationIDKey string
 		}
 	}
 
-	if !strings.HasPrefix(parts[1], "/") {
+	if !strings.HasPrefix(locationParts[1], "/") {
 		return nil, types.CompileError{Err: errors.New("fragment part must start with a slash"), Path: ctx.PathRef()}
 	}
-	if parts[1] == "/" {
+	if locationParts[1] == "/" {
 		return nil, types.CompileError{Err: errors.New("location must not point to root of message/header"), Path: ctx.PathRef()}
 	}
 
-	pathParts := strings.Split(parts[1], "/")[1:] // TODO: implement rfc6901 symbols encoding
-	ctx.Logger.Trace("CorrelationID object", "messageField", structField, "path", pathParts)
+	locationPath := strings.Split(locationParts[1], "/")[1:] // TODO: implement rfc6901 symbols encoding
+	ctx.Logger.Trace("CorrelationID object", "messageField", structField, "path", locationPath)
 
 	return &render.CorrelationID{
-		Name:        correlationIDKey,
-		Description: c.Description,
-		StructField: structField,
-		Path:        pathParts,
+		Name:         correlationIDKey,
+		Description:  c.Description,
+		StructField:  structField,
+		LocationPath: locationPath,
 	}, nil
 }

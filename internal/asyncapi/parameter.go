@@ -15,7 +15,7 @@ type Parameter struct {
 	Schema      *Object `json:"schema" yaml:"schema"`     // TODO: implement
 	Location    string  `json:"location" yaml:"location"` // TODO: implement
 
-	XGoType *types.Union2[string, xGoType] `json:"x-go-type" yaml:"x-go-type"`
+	XGoType *types.Union2[string, xGoType] `json:"x-go-type" yaml:"x-go-type"` // FIXME: what does it mean for parameter?
 	XGoName string                         `json:"x-go-name" yaml:"x-go-name"`
 
 	Ref string `json:"$ref" yaml:"$ref"`
@@ -32,6 +32,11 @@ func (p Parameter) Compile(ctx *common.CompileContext) error {
 }
 
 func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (common.Renderer, error) {
+	ignore := !ctx.CompileOpts.ChannelOpts.Enable
+	if ignore {
+		ctx.Logger.Debug("Parameter denoted to be ignored along with all channels")
+		return &render.Parameter{Dummy: true}, nil
+	}
 	if p.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", p.Ref)
 		res := render.NewRendererPromise(p.Ref, common.PromiseOriginUser)

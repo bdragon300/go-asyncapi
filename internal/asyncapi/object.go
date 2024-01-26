@@ -73,7 +73,7 @@ type Object struct {
 
 func (o Object) Compile(ctx *common.CompileContext) error {
 	ctx.SetTopObjName(ctx.Stack.Top().PathItem)
-	obj, err := o.build(ctx, ctx.Stack.Top().Flags)
+	obj, err := o.build(ctx, ctx.Stack.Top().Flags, ctx.Stack.Top().PathItem)
 	if err != nil {
 		return err
 	}
@@ -81,8 +81,10 @@ func (o Object) Compile(ctx *common.CompileContext) error {
 	return nil
 }
 
-func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]string) (common.GolangType, error) {
-	if o.XIgnore {
+func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]string, objectKey string) (common.GolangType, error) {
+	_, isComponent := flags[common.SchemaTagCompoennt]
+	ignore := o.XIgnore || (isComponent && !ctx.CompileOpts.ModelOpts.IsAllowedName(objectKey))
+	if ignore {
 		ctx.Logger.Debug("Object denoted to be ignored")
 		return &render.GoSimple{Name: "any", IsIface: true}, nil
 	}
@@ -248,7 +250,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 	// TODO: cache the object name in case any sub-schemas recursively reference it
 
 	var messagesPrm *render.ListPromise[*render.Message]
-	// Collect all messages to retrieve struct field tags
+	// Messages formats such as JSON, XML, etc. are relevant only for models
 	if ctx.CurrentPackage() == PackageScopeModels {
 		messagesPrm = render.NewListCbPromise[*render.Message](func(item common.Renderer, _ []string) bool {
 			_, ok := item.(*render.Message)

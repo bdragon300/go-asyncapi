@@ -8,6 +8,7 @@ import (
 
 type Server struct {
 	Name        string
+	Dummy       bool
 	Protocol    string
 	ProtoServer common.Renderer
 
@@ -18,7 +19,7 @@ type Server struct {
 }
 
 func (s Server) DirectRendering() bool {
-	return true
+	return !s.Dummy
 }
 
 func (s Server) RenderDefinition(ctx *common.RenderContext) []*j.Statement {

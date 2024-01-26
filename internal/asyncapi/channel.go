@@ -40,9 +40,10 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 	genPub := (c.Publish != nil) && ctx.CompileOpts.GeneratePublishers
 	genSub := (c.Subscribe != nil) && ctx.CompileOpts.GenerateSubscribers
 
-	if c.XIgnore || (!genPub && !genSub) {
+	ignore := c.XIgnore || (!genPub && !genSub) || !ctx.CompileOpts.ChannelOpts.IsAllowedName(channelKey)
+	if ignore {
 		ctx.Logger.Debug("Channel denoted to be ignored")
-		return &render.GoSimple{Name: "any", IsIface: true}, nil
+		return &render.Channel{Dummy: true}, nil
 	}
 	if c.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", c.Ref)

@@ -37,6 +37,7 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 		return nil
 	}
 	ctx.PutObject(obj)
+	// FIXME: its needed to consider servers only from `servers` section
 	if ctx.CurrentPackage() == PackageScopeServers {
 		ctx.Storage.AddProtocol(s.Protocol)
 	}
@@ -44,9 +45,10 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 }
 
 func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Renderer, error) {
-	if s.XIgnore {
+	ignore := s.XIgnore || !ctx.CompileOpts.ServerOpts.IsAllowedName(serverKey)
+	if ignore {
 		ctx.Logger.Debug("Server denoted to be ignored")
-		return &render.GoSimple{Name: "any", IsIface: true}, nil
+		return &render.Server{Dummy: true}, nil
 	}
 	if s.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", s.Ref)

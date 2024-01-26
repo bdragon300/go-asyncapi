@@ -19,9 +19,9 @@ type AsyncAPI struct {
 	Asyncapi           string                            `json:"asyncapi" yaml:"asyncapi"`
 	ID                 string                            `json:"id" yaml:"id"`
 	Info               InfoItem                          `json:"info" yaml:"info"`
-	Servers            types.OrderedMap[string, Server]  `json:"servers" yaml:"servers" cgen:"directRender,pkgScope=servers"`
+	Servers            types.OrderedMap[string, Server]  `json:"servers" yaml:"servers" cgen:"directRender,servers,pkgScope=servers"`
 	DefaultContentType string                            `json:"defaultContentType" yaml:"defaultContentType"`
-	Channels           types.OrderedMap[string, Channel] `json:"channels" yaml:"channels" cgen:"directRender,pkgScope=channels"`
+	Channels           types.OrderedMap[string, Channel] `json:"channels" yaml:"channels" cgen:"directRender,channels,pkgScope=channels"`
 	Components         ComponentsItem                    `json:"components" yaml:"components"`
 	Tags               []Tag                             `json:"tags" yaml:"tags"`
 	ExternalDocs       ExternalDocumentation             `json:"externalDocs" yaml:"externalDocs"`

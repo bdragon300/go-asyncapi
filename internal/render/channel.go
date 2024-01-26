@@ -11,7 +11,8 @@ import (
 )
 
 type Channel struct {
-	Name                string                     // Channel name, typically equals to Channel key, can get overridden in x-go-name
+	Name                string // Channel name, typically equals to Channel key, can get overridden in x-go-name
+	Dummy               bool
 	ChannelKey          string                     // Channel key
 	ExplicitServerNames []string                   // List of servers the channel is linked with. Empty means "all servers"
 	ServersPromise      *ListPromise[*Server]      // Servers list this channel is applied to, either explicitly marked or "all servers"
@@ -26,7 +27,7 @@ type Channel struct {
 }
 
 func (c Channel) DirectRendering() bool {
-	return true
+	return !c.Dummy
 }
 
 func (c Channel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {

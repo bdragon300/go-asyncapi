@@ -51,6 +51,9 @@ func (ps ProtoServer) renderChannelMethods(ctx *common.RenderContext) []*j.State
 	var res []*j.Statement
 
 	for _, ch := range ps.ChannelsPromise.Targets() {
+		if ch.Dummy {
+			continue
+		}
 		protoChan := ch.AllProtoChannels[ps.ProtoName].(*ProtoChannel)
 		res = append(res,
 			ps.RenderOpenChannelMethod(ctx, protoChan.Struct, protoChan, protoChan.AbstractChannel.ParametersStruct)...,

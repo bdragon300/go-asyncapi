@@ -12,10 +12,10 @@ import (
 
 // CorrelationID never renders itself, only as a part of message struct
 type CorrelationID struct {
-	Name        string
-	Description string
-	StructField string   // Payload or Headers
-	Path        []string // Should be non-empty
+	Name         string
+	Description  string
+	StructField  string   // Payload or Headers
+	LocationPath []string // Should be non-empty
 }
 
 func (c CorrelationID) DirectRendering() bool {
@@ -51,9 +51,13 @@ func (c CorrelationID) RenderSetterDefinition(ctx *common.RenderContext, message
 		j.Op("v0 :=").Id(message.OutStruct.ReceiverName() + "." + c.StructField),
 	}
 
-	bodyItems, err := c.renderMemberExtractionCode(ctx, c.Path, f.Type, true)
+	bodyItems, err := c.renderMemberExtractionCode(ctx, c.LocationPath, f.Type, true)
 	if err != nil {
-		panic(fmt.Errorf("cannot render CorrelationID %s: %s", strings.Join(c.Path, "/"), err.Error()))
+		panic(fmt.Errorf(
+			"cannot resolve generated Go types chain for CorrelationID location %q: %s",
+			strings.Join(c.LocationPath, "/"),
+			err.Error(),
+		))
 	}
 	// Exclude the last definition statement
 	body = append(body, lo.FlatMap(bodyItems[:len(bodyItems)-1], func(item correlationIDBodyItem, index int) []*j.Statement {
@@ -90,9 +94,13 @@ func (c CorrelationID) RenderGetterDefinition(ctx *common.RenderContext, message
 		j.Id("v0").Op(":=").Id(message.InStruct.ReceiverName() + "." + c.StructField),
 	}
 
-	bodyItems, err := c.renderMemberExtractionCode(ctx, c.Path, f.Type, true)
+	bodyItems, err := c.renderMemberExtractionCode(ctx, c.LocationPath, f.Type, true)
 	if err != nil {
-		panic(fmt.Errorf("cannot render CorrelationID %s: %s", strings.Join(c.Path, "/"), err.Error()))
+		panic(fmt.Errorf(
+			"cannot resolve generated Go types chain for CorrelationID location %s: %s",
+			strings.Join(c.LocationPath, "/"),
+			err.Error(),
+		))
 	}
 	body = append(body, lo.FlatMap(bodyItems, func(item correlationIDBodyItem, index int) []*j.Statement {
 		return item.body
@@ -200,7 +208,7 @@ func (c CorrelationID) renderMemberExtractionCode(
 			ctx.Logger.Trace("In GoSimple", "path", path[:pathIdx], "name", typ.ID(), "member", memberName)
 			if pathIdx >= len(path)-1 { // Primitive types should get addressed by the last path item
 				err = fmt.Errorf(
-					"type %q doesn't contain addressable elements, path: /%s",
+					"type %q cannot be resolved further, path: /%s",
 					typ.TypeName(),
 					strings.Join(path[:pathIdx], "/"),
 				)

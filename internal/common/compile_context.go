@@ -30,10 +30,10 @@ type CompilationStorage interface {
 }
 
 type CompileOpts struct {
-	ChannelsSelection   ObjectSelectionOpts
-	MessagesSelection   ObjectSelectionOpts
-	ModelsSelection     ObjectSelectionOpts
-	ServersSelection    ObjectSelectionOpts
+	ChannelOpts         ObjectCompileOpts
+	MessageOpts         ObjectCompileOpts
+	ModelOpts           ObjectCompileOpts
+	ServerOpts          ObjectCompileOpts
 	ReusePackages       map[string]string
 	NoEncodingPackage   bool
 	EnableExternalRefs  bool
@@ -42,13 +42,13 @@ type CompileOpts struct {
 	GenerateSubscribers bool
 }
 
-type ObjectSelectionOpts struct {
+type ObjectCompileOpts struct {
 	Enable       bool
 	IncludeRegex *regexp.Regexp
 	ExcludeRegex *regexp.Regexp
 }
 
-func (o ObjectSelectionOpts) Include(name string) bool {
+func (o ObjectCompileOpts) IsAllowedName(name string) bool {
 	switch {
 	case !o.Enable:
 		return false
