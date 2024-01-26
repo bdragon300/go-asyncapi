@@ -60,8 +60,9 @@ func (s Channel) Send(_ context.Context, envelopes ...runWs.EnvelopeWriter) erro
 	}
 
 	for i, envelope := range envelopes {
-		msg := envelope.(ImplementationRecord).RecordGobwasWS()
-		err := wsutil.WriteServerMessage(s.ReadWriter, ws.OpText, msg) // TODO: OpBinary?
+		ir := envelope.(ImplementationRecord)
+		msg := ir.RecordGobwasWS()
+		err := wsutil.WriteServerMessage(s.ReadWriter, ir.OpCode(), msg)
 		if err != nil {
 			return fmt.Errorf("envelope #%d: %w", i, err)
 		}
