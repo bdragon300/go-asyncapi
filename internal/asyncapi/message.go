@@ -32,9 +32,8 @@ type Message struct {
 	Examples      []MessageExample       `json:"examples" yaml:"examples"`
 	Traits        []MessageTrait         `json:"traits" yaml:"traits"`
 
-	XGoType *types.Union2[string, xGoType] `json:"x-go-type" yaml:"x-go-type"` // TODO: remove? what x-go-type means for message?
-	XGoName string                         `json:"x-go-name" yaml:"x-go-name"`
-	XIgnore bool                           `json:"x-ignore" yaml:"x-ignore"`
+	XGoName string `json:"x-go-name" yaml:"x-go-name"`
+	XIgnore bool   `json:"x-ignore" yaml:"x-ignore"`
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }
@@ -61,12 +60,6 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		res := render.NewRendererPromise(m.Ref, common.PromiseOriginUser)
 		ctx.PutPromise(res)
 		return res, nil
-	}
-
-	if m.XGoType != nil {
-		t := buildXGoType(m.XGoType)
-		ctx.Logger.Trace("Message is a custom type", "type", t.String())
-		return t, nil
 	}
 
 	msgName, _ := lo.Coalesce(m.XGoName, messageKey)

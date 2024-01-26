@@ -3,7 +3,6 @@ package asyncapi
 import (
 	"path"
 
-	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/samber/lo"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -15,8 +14,7 @@ type Parameter struct {
 	Schema      *Object `json:"schema" yaml:"schema"`     // TODO: implement
 	Location    string  `json:"location" yaml:"location"` // TODO: implement
 
-	XGoType *types.Union2[string, xGoType] `json:"x-go-type" yaml:"x-go-type"` // FIXME: what does it mean for parameter?
-	XGoName string                         `json:"x-go-name" yaml:"x-go-name"`
+	XGoName string `json:"x-go-name" yaml:"x-go-name"`
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }
@@ -42,12 +40,6 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 		res := render.NewRendererPromise(p.Ref, common.PromiseOriginUser)
 		ctx.PutPromise(res)
 		return res, nil
-	}
-
-	if p.XGoType != nil {
-		t := buildXGoType(p.XGoType)
-		ctx.Logger.Trace("Parameter is a custom type", "type", t.String())
-		return t, nil
 	}
 
 	parName, _ := lo.Coalesce(p.XGoName, parameterKey)
