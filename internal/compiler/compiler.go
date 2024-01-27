@@ -49,13 +49,15 @@ type Module struct {
 	protocols          map[string]int
 	promises           []common.ObjectPromise
 	listPromises       []common.ObjectListPromise
+	activeServers      []string // Servers in `servers` document section
+	activeChannels     []string // Channels in `channels` document section
 }
 
 func (c *Module) AddObject(pkgName string, stack []string, obj common.Renderer) {
 	c.objects[pkgName] = append(c.objects[pkgName], Object{Object: obj, Path: stack})
 }
 
-func (c *Module) AddProtocol(protoName string) {
+func (c *Module) RegisterProtocol(protoName string) {
 	c.protocols[protoName]++
 }
 
@@ -77,6 +79,22 @@ func (c *Module) Protocols() []string {
 
 func (c *Module) SetDefaultContentType(contentType string) {
 	c.defaultContentType = contentType
+}
+
+func (c *Module) SetActiveServers(servers []string) {
+	c.activeServers = servers
+}
+
+func (c *Module) ActiveServers() []string {
+	return c.activeServers
+}
+
+func (c *Module) SetActiveChannels(channels []string) {
+	c.activeChannels = channels
+}
+
+func (c *Module) ActiveChannels() []string {
+	return c.activeChannels
 }
 
 func (c *Module) DefaultContentType() string {

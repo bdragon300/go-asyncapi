@@ -20,13 +20,19 @@ type GolangType interface {
 
 type CompilationStorage interface {
 	AddObject(pkgName string, stack []string, obj Renderer)
-	AddProtocol(protoName string)
+	RegisterProtocol(protoName string)
 	AddRemoteSpecID(specID string)
 	AddPromise(p ObjectPromise)
 	AddListPromise(p ObjectListPromise)
 
 	SetDefaultContentType(contentType string)
 	DefaultContentType() string
+
+	SetActiveServers(servers []string)
+	ActiveServers() []string
+
+	SetActiveChannels(channels []string)
+	ActiveChannels() []string
 }
 
 type CompileOpts struct {

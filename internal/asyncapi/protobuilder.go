@@ -155,6 +155,7 @@ func (pb BaseProtoBuilder) BuildBaseProtoServer(
 	srvName, _ := lo.Coalesce(server.XGoName, serverKey)
 	srvResult := &renderProto.BaseProtoServer{
 		Name:            srvName,
+		Key:             serverKey,
 		URL:             server.URL,
 		ProtocolVersion: server.ProtocolVersion,
 		Struct: &render.GoStruct{
@@ -171,18 +172,13 @@ func (pb BaseProtoBuilder) BuildBaseProtoServer(
 	}
 
 	// Channels which are connected to this server
-	channelsPrm := render.NewListCbPromise[*render.Channel](func(item common.Renderer, path []string) bool {
-		ch, ok := item.(*render.Channel)
-		if !ok {
-			return false
-		}
-		if len(ch.ExplicitServerNames) > 0 {
-			return lo.Contains(ch.ExplicitServerNames, serverKey)
-		}
-		return len(ch.ExplicitServerNames) == 0 // Empty servers list means "all servers", see spec
+	prms := lo.Map(ctx.Storage.ActiveChannels(), func(item string, index int) *render.Promise[*render.Channel] {
+		ref := path.Join("#/channels", item)
+		prm := render.NewPromise[*render.Channel](ref, common.PromiseOriginInternal)
+		ctx.PutPromise(prm)
+		return prm
 	})
-	srvResult.ChannelsPromise = channelsPrm
-	ctx.PutListPromise(channelsPrm)
+	srvResult.AllChannelsPromises = prms
 
 	// Producer/consumer
 	ctx.Logger.Trace("Server producer", "proto", pb.ProtoName)

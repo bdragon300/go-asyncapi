@@ -7,10 +7,11 @@ import (
 )
 
 type Server struct {
-	Name        string
-	Dummy       bool
-	Protocol    string
-	ProtoServer common.Renderer
+	Name         string
+	DirectRender bool // Typically, it's true if server is defined in `servers` section, false if in `components` section
+	Dummy        bool
+	Protocol     string
+	ProtoServer  common.Renderer // nil if protocol is not supported by the tool
 
 	Variables types.OrderedMap[string, *Promise[*ServerVariable]]
 
@@ -19,7 +20,7 @@ type Server struct {
 }
 
 func (s Server) DirectRendering() bool {
-	return !s.Dummy
+	return s.DirectRender && !s.Dummy
 }
 
 func (s Server) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
@@ -40,7 +41,9 @@ func (s Server) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 			}
 		}
 	}
-	res = append(res, s.ProtoServer.RenderDefinition(ctx)...)
+	if s.ProtoServer != nil {
+		res = append(res, s.ProtoServer.RenderDefinition(ctx)...)
+	}
 	return res
 }
 

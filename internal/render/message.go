@@ -19,7 +19,7 @@ type Message struct {
 	PayloadHasSchema     bool
 	HeadersFallbackType  *GoMap
 	HeadersTypePromise   *Promise[*GoStruct]
-	AllServers           *ListPromise[*Server]    // For extracting all using protocols
+	AllServersPromises   []*Promise[*Server]      // For extracting all using protocols
 	BindingsStruct       *GoStruct                // nil if message bindings are not defined for message
 	BindingsPromise      *Promise[*Bindings]      // nil if message bindings are not defined for message as well
 	ContentType          string                   // Message's content type or default from schema or fallback
@@ -269,12 +269,12 @@ func (m Message) renderUnmarshalEnvelopeMethod(ctx *common.RenderContext, protoN
 }
 
 func (m Message) getServerProtocols(ctx *common.RenderContext) []string {
-	res := lo.FilterMap(m.AllServers.Targets(), func(item *Server, index int) (string, bool) {
-		_, ok := ctx.ProtoRenderers[item.Protocol]
+	res := lo.FilterMap(m.AllServersPromises, func(item *Promise[*Server], index int) (string, bool) {
+		_, ok := ctx.ProtoRenderers[item.Target().Protocol]
 		if !ok {
-			ctx.Logger.Warnf("Skip protocol %q since it is not supported", item.Protocol)
+			ctx.Logger.Warnf("Skip protocol %q since it is not supported", item.Target().Protocol)
 		}
-		return item.Protocol, ok
+		return item.Target().Protocol, ok
 	})
 	sort.Strings(res)
 	return res

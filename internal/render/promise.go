@@ -119,6 +119,10 @@ func NewRendererPromise(ref string, origin common.PromiseOrigin) *RendererPromis
 
 type RendererPromise struct {
 	Promise[common.Renderer]
+	// DirectRender marks the promise to be rendered directly, even if object it points to not marked to do so.
+	// Be careful, in order to avoid duplicated object appearing in the output, this flag should be set only for
+	// objects which are not marked to be rendered directly
+	DirectRender bool
 }
 
 func (r *RendererPromise) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
@@ -130,7 +134,7 @@ func (r *RendererPromise) RenderUsage(ctx *common.RenderContext) []*jen.Statemen
 }
 
 func (r *RendererPromise) DirectRendering() bool {
-	return false // Prevent rendering the object we're point to for several times
+	return r.DirectRender // Prevent rendering the object we're point to for several times
 }
 
 func (r *RendererPromise) ID() string {
@@ -152,6 +156,10 @@ func NewGolangTypePromise(ref string, origin common.PromiseOrigin) *GolangTypePr
 
 type GolangTypePromise struct {
 	Promise[common.GolangType]
+	// DirectRender marks the promise to be rendered directly, even if object it points to not marked to do so.
+	// Be careful, in order to avoid duplicated object appearing in the output, this flag should be set only for
+	// objects which are not marked to be rendered directly
+	DirectRender bool
 }
 
 func (r *GolangTypePromise) TypeName() string {
@@ -159,7 +167,7 @@ func (r *GolangTypePromise) TypeName() string {
 }
 
 func (r *GolangTypePromise) DirectRendering() bool {
-	return false // Prevent rendering the object we're point to for several times
+	return r.DirectRender // Prevent rendering the object we're point to for several times
 }
 
 func (r *GolangTypePromise) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {

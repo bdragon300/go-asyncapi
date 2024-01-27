@@ -3,6 +3,7 @@ package asyncapi
 import (
 	"encoding/json"
 	"fmt"
+	"path"
 
 	"github.com/bdragon300/go-asyncapi/internal/types"
 
@@ -89,12 +90,13 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", obj.ContentType))
 
 	// Lookup servers after linking to figure out all protocols the message is used in
-	allServersPrm := render.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
-		_, ok := item.(*render.Server)
-		return ok
+	prms := lo.Map(ctx.Storage.ActiveServers(), func(item string, index int) *render.Promise[*render.Server] {
+		ref := path.Join("#/servers", item)
+		prm := render.NewPromise[*render.Server](ref, common.PromiseOriginInternal)
+		ctx.PutPromise(prm)
+		return prm
 	})
-	ctx.PutListPromise(allServersPrm)
-	obj.AllServers = allServersPrm
+	obj.AllServersPromises = prms
 
 	// Link to Headers struct if any
 	if m.Headers != nil {

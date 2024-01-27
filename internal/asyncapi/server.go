@@ -33,18 +33,13 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 	if err != nil {
 		return err
 	}
-	if obj == nil {
-		return nil
-	}
 	ctx.PutObject(obj)
-	// FIXME: its needed to consider servers only from `servers` section
-	if ctx.CurrentPackage() == PackageScopeServers {
-		ctx.Storage.AddProtocol(s.Protocol)
-	}
+
 	return nil
 }
 
 func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Renderer, error) {
+	_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagComponent]
 	ignore := s.XIgnore || !ctx.CompileOpts.ServerOpts.IsAllowedName(serverKey)
 	if ignore {
 		ctx.Logger.Debug("Server denoted to be ignored")
@@ -52,18 +47,16 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	}
 	if s.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", s.Ref)
-		res := render.NewRendererPromise(s.Ref, common.PromiseOriginUser)
-		ctx.PutPromise(res)
-		return res, nil
+		prm := render.NewRendererPromise(s.Ref, common.PromiseOriginUser)
+		// Set a server to be rendered if we reference it from `servers` document section
+		prm.DirectRender = !isComponent
+		ctx.PutPromise(prm)
+		return prm, nil
 	}
 
-	protoBuilder, ok := ProtocolBuilders[s.Protocol]
-	if !ok {
-		ctx.Logger.Warn("Skip unsupported server protocol", "proto", s.Protocol)
-		return nil, nil
-	}
 	srvName, _ := lo.Coalesce(s.XGoName, serverKey)
-	res := render.Server{Name: srvName, Protocol: s.Protocol}
+	// Render only the servers defined directly in `servers` document section, not in `components`
+	res := render.Server{Name: srvName, Protocol: s.Protocol, DirectRender: !isComponent}
 
 	// Bindings
 	if s.Bindings != nil {
@@ -91,11 +84,21 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		res.Variables.Set(v.Key, prm)
 	}
 
-	var err error
-	ctx.Logger.Trace("Server", "proto", protoBuilder.ProtocolName())
-	res.ProtoServer, err = protoBuilder.BuildServer(ctx, &s, serverKey, &res)
-	if err != nil {
-		return nil, err
+	protoBuilder, ok := ProtocolBuilders[s.Protocol]
+	if !ok {
+		ctx.Logger.Warn("Skip unsupported server protocol", "proto", s.Protocol)
+	} else {
+		var err error
+		ctx.Logger.Trace("Server", "proto", protoBuilder.ProtocolName())
+		res.ProtoServer, err = protoBuilder.BuildServer(ctx, &s, serverKey, &res)
+		if err != nil {
+			return nil, err
+		}
+
+		// Register protocol only for servers in `servers` document section, not in `components`
+		if !isComponent {
+			ctx.Storage.RegisterProtocol(s.Protocol)
+		}
 	}
 
 	return &res, nil

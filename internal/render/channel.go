@@ -12,10 +12,11 @@ import (
 
 type Channel struct {
 	Name                string // Channel name, typically equals to Channel key, can get overridden in x-go-name
+	DirectRender        bool   // Typically, it's true if channel is defined in `channels` section, false if in `components` section
 	Dummy               bool
 	ChannelKey          string                     // Channel key
 	ExplicitServerNames []string                   // List of servers the channel is linked with. Empty means "all servers"
-	ServersPromise      *ListPromise[*Server]      // Servers list this channel is applied to, either explicitly marked or "all servers"
+	ServersPromises     []*Promise[*Server]        // Servers list this channel is applied to, either explicitly marked or "all servers"
 	AllProtoChannels    map[string]common.Renderer // Proto channels for all supported protocols
 
 	ParametersStruct *GoStruct // nil if no parameters
@@ -27,7 +28,7 @@ type Channel struct {
 }
 
 func (c Channel) DirectRendering() bool {
-	return !c.Dummy
+	return c.DirectRender && !c.Dummy
 }
 
 func (c Channel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
@@ -125,12 +126,12 @@ func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement
 }
 
 func (c Channel) getServerProtocols(ctx *common.RenderContext) []string {
-	res := lo.FilterMap(c.ServersPromise.Targets(), func(item *Server, index int) (string, bool) {
-		_, ok := ctx.ProtoRenderers[item.Protocol]
+	res := lo.FilterMap(c.ServersPromises, func(item *Promise[*Server], index int) (string, bool) {
+		_, ok := ctx.ProtoRenderers[item.Target().Protocol]
 		if !ok {
-			ctx.Logger.Warnf("Skip protocol %q since it is not supported", item.Protocol)
+			ctx.Logger.Warnf("Skip protocol %q since it is not supported", item.Target().Protocol)
 		}
-		return item.Protocol, ok
+		return item.Target().Protocol, ok && !item.Target().Dummy
 	})
 	sort.Strings(res)
 	return res

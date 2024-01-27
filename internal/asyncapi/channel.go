@@ -37,23 +37,26 @@ func (c Channel) Compile(ctx *common.CompileContext) error {
 }
 
 func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Renderer, error) {
-	genPub := (c.Publish != nil) && ctx.CompileOpts.GeneratePublishers
-	genSub := (c.Subscribe != nil) && ctx.CompileOpts.GenerateSubscribers
-
-	ignore := c.XIgnore || (!genPub && !genSub) || !ctx.CompileOpts.ChannelOpts.IsAllowedName(channelKey)
+	_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagComponent]
+	ignore := c.XIgnore ||
+		(!ctx.CompileOpts.GeneratePublishers && !ctx.CompileOpts.GenerateSubscribers) ||
+		!ctx.CompileOpts.ChannelOpts.IsAllowedName(channelKey)
 	if ignore {
 		ctx.Logger.Debug("Channel denoted to be ignored")
 		return &render.Channel{Dummy: true}, nil
 	}
 	if c.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", c.Ref)
-		res := render.NewRendererPromise(c.Ref, common.PromiseOriginUser)
-		ctx.PutPromise(res)
-		return res, nil
+		prm := render.NewRendererPromise(c.Ref, common.PromiseOriginUser)
+		// Set a channel to be rendered if we reference it from `channels` document section
+		prm.DirectRender = !isComponent
+		ctx.PutPromise(prm)
+		return prm, nil
 	}
 
 	chName, _ := lo.Coalesce(c.XGoName, channelKey)
-	res := &render.Channel{Name: chName, ChannelKey: channelKey, AllProtoChannels: make(map[string]common.Renderer)}
+	// Render only the channels defined directly in `channels` document section, not in `components`
+	res := &render.Channel{Name: chName, ChannelKey: channelKey, AllProtoChannels: make(map[string]common.Renderer), DirectRender: !isComponent}
 
 	// Channel parameters
 	if c.Parameters.Len() > 0 {
@@ -84,22 +87,26 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 	if c.Servers != nil {
 		ctx.Logger.Trace("Channel servers", "names", *c.Servers)
 		res.ExplicitServerNames = *c.Servers
-		prm := render.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
-			_, ok := item.(*render.Server)
-			// Pick only servers from `servers:` section, skip ones from `components:`
-			return ok && len(path) == 2 && path[0] == PackageScopeServers && lo.Contains(*c.Servers, path[1])
+		prms := lo.FilterMap(ctx.Storage.ActiveServers(), func(item string, index int) (*render.Promise[*render.Server], bool) {
+			if lo.Contains(*c.Servers, item) {
+				ref := path.Join("#/servers", item)
+				prm := render.NewPromise[*render.Server](ref, common.PromiseOriginInternal)
+				ctx.PutPromise(prm)
+				return prm, true
+			}
+			return nil, false
 		})
-		ctx.PutListPromise(prm)
-		res.ServersPromise = prm
+		res.ServersPromises = prms
 	} else {
 		ctx.Logger.Trace("Channel for all servers")
-		prm := render.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
-			_, ok := item.(*render.Server)
-			// Pick only servers from `servers:` section, skip ones from `components:`
-			return ok && len(path) > 0 && path[0] == PackageScopeServers
+		prms := lo.Map(ctx.Storage.ActiveServers(), func(item string, index int) *render.Promise[*render.Server] {
+			ref := path.Join("#/servers", item)
+			prm := render.NewPromise[*render.Server](ref, common.PromiseOriginInternal)
+			ctx.PutPromise(prm)
+			return prm
 		})
-		ctx.PutListPromise(prm)
-		res.ServersPromise = prm
+
+		res.ServersPromises = prms
 	}
 
 	// Channel/operation bindings
@@ -112,6 +119,9 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 		res.BindingsChannelPromise = render.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
 		ctx.PutPromise(res.BindingsChannelPromise)
 	}
+
+	genPub := (c.Publish != nil) && ctx.CompileOpts.GeneratePublishers
+	genSub := (c.Subscribe != nil) && ctx.CompileOpts.GenerateSubscribers
 	if genPub && !c.Publish.XIgnore && c.Publish.Bindings != nil {
 		ctx.Logger.Trace("Found publish operation bindings")
 		hasBindings = true

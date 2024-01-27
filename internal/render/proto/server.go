@@ -5,15 +5,17 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/render"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	j "github.com/dave/jennifer/jen"
+	"github.com/samber/lo"
 )
 
 type BaseProtoServer struct {
-	Name            string // TODO: move fields to abstract server
-	URL             string
-	ProtocolVersion string
-	Struct          *render.GoStruct
-	ChannelsPromise *render.ListPromise[*render.Channel]
-	AbstractServer  *render.Server
+	Name                string // TODO: move fields to abstract server
+	Key                 string // Server name without considering x-go-name
+	URL                 string
+	ProtocolVersion     string
+	Struct              *render.GoStruct
+	AllChannelsPromises []*render.Promise[*render.Channel]
+	AbstractServer      *render.Server
 
 	ProtoName, ProtoTitle string
 }
@@ -161,4 +163,12 @@ func (ps BaseProtoServer) RenderProtocolVersionConst(ctx *common.RenderContext) 
 	return []*j.Statement{
 		j.Const().Id(ps.Struct.Name + "ProtocolVersion").Op("=").Lit(ps.ProtocolVersion),
 	}
+}
+
+func (ps BaseProtoServer) GetRelevantChannels() []*render.Channel {
+	return lo.FilterMap(ps.AllChannelsPromises, func(p *render.Promise[*render.Channel], index int) (*render.Channel, bool) {
+		// Empty/omitted servers field in channel means "all servers"
+		ok := len(p.Target().ExplicitServerNames) == 0 || lo.Contains(p.Target().ExplicitServerNames, ps.Key)
+		return p.Target(), ok && !p.Target().Dummy
+	})
 }
