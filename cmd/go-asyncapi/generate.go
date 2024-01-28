@@ -8,6 +8,7 @@ import (
 	"path"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/ws"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/http"
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/kafka"
 	"github.com/bdragon300/go-asyncapi/internal/types"
+	stdHTTP "net/http"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -48,9 +50,11 @@ type generatePubSubArgs struct {
 	FileScope     string `arg:"--file-scope" default:"name" help:"How to split up the generated code on files inside packages. Possible values: name, type" placeholder:"SCOPE"`
 	generateObjectSelectionOpts
 	ImplementationsOpts
-	ExternalRefs bool `arg:"--external-refs" help:"Allow fetching specs from external $ref URLs"`
+	RemoteRefs bool `arg:"--remote-refs" help:"Allow fetching specs from external $ref URLs"`
 
-	RuntimeModule string `arg:"--runtime-module" default:"github.com/bdragon300/go-asyncapi/run" help:"Runtime module name" placeholder:"MODULE"`
+	RuntimeModule       string        `arg:"--runtime-module" default:"github.com/bdragon300/go-asyncapi/run" help:"Runtime module name" placeholder:"MODULE"`
+	SpecResolverTimeout time.Duration `arg:"--spec-resolver-timeout" default:"30s" help:"Timeout to resolve a spec file" placeholder:"DURATION"`
+	SpecResolverCommand string        `arg:"--spec-resolver-command" help:"Custom resolver command for spec files" placeholder:"COMMAND"`
 }
 
 type generateImplementationArgs struct {
@@ -118,8 +122,9 @@ func generate(cmd *GenerateCmd) error {
 	mainLogger.Debugf("Target implementations directory is %s", implDir)
 
 	// Compilation
-	specID, _ := utils.SplitSpecPath(pubSubOpts.Spec)
-	modules, err := generationCompile(specID, compileOpts)
+	resolver := gerResolver(*pubSubOpts)
+	specID, _, _ := utils.SplitRefToPathPointer(pubSubOpts.Spec)
+	modules, err := generationCompile(specID, compileOpts, resolver)
 	if err != nil {
 		return err
 	}
@@ -168,7 +173,7 @@ func generateImplementation(cmd *GenerateCmd) error {
 	return nil
 }
 
-func generationCompile(specID string, compileOpts common.CompileOpts) (map[string]*compiler.Module, error) {
+func generationCompile(specID string, compileOpts common.CompileOpts, resolver compiler.SpecResolver) (map[string]*compiler.Module, error) {
 	logger := types.NewLogger("Compilation 🔨")
 	asyncapi.ProtocolBuilders = protocolBuilders()
 	compileQueue := []string{specID}             // Queue of specIDs to compile
@@ -184,19 +189,19 @@ func generationCompile(specID string, compileOpts common.CompileOpts) (map[strin
 		module := compiler.NewModule(specID)
 		modules[specID] = module
 
-		if !compileOpts.EnableExternalRefs && utils.IsRemoteSpecID(specID) {
+		if !compileOpts.EnableRemoteRefs && compiler.IsRemoteSpecID(specID) {
 			return nil, fmt.Errorf("external refs are forbidden by default for security reasons, use --external-refs flag to allow fetching specs from external resources")
 		}
 		logger.Debug("Loading a spec", "specID", specID)
-		if err := module.Load(); err != nil {
-			return nil, fmt.Errorf("load the spec: %w", err)
+		if err := module.Load(resolver); err != nil {
+			return nil, fmt.Errorf("load a spec: %w", err)
 		}
 		logger.Debug("Compilation a spec", "specID", specID)
 		if err := module.Compile(common.NewCompileContext(specID, compileOpts)); err != nil {
 			return nil, fmt.Errorf("compilation the spec: %w", err)
 		}
 		logger.Debugf("Compiler stats: %s", module.Stats())
-		compileQueue = lo.Flatten([][]string{compileQueue, module.RemoteSpecIDs()}) // Extend queue with remote specIDs
+		compileQueue = lo.Flatten([][]string{compileQueue, module.ExternalSpecIDs()}) // Extend queue with remote specIDs
 	}
 
 	logger.Info("Compilation completed", "files", len(modules))
@@ -323,7 +328,7 @@ func getCompileOpts(opts generatePubSubArgs, isPub, isSub bool) (common.CompileO
 	res := common.CompileOpts{
 		ReusePackages:       nil,
 		NoEncodingPackage:   opts.NoEncoding,
-		EnableExternalRefs:  opts.ExternalRefs,
+		EnableRemoteRefs:    opts.RemoteRefs,
 		RuntimeModule:       opts.RuntimeModule,
 		GeneratePublishers:  isPub,
 		GenerateSubscribers: isSub,
@@ -371,6 +376,18 @@ func getCompileOpts(opts generatePubSubArgs, isPub, isSub bool) (common.CompileO
 	}
 
 	return res, nil
+}
+
+func gerResolver(opts generatePubSubArgs) compiler.SpecResolver {
+	logger := types.NewLogger("Resolving 📡")
+	if opts.SpecResolverCommand != "" {
+		return compiler.SubproccessSpecResolver{
+			CommandLine: opts.SpecResolverCommand,
+			RunTimeout:  opts.SpecResolverTimeout,
+			Logger:      logger,
+		}
+	}
+	return compiler.DefaultSpecResolver{Client: stdHTTP.DefaultClient, Timeout: opts.SpecResolverTimeout, Logger: logger}
 }
 
 func getRenderOpts(opts generatePubSubArgs, targetDir, targetPkg string) (common.RenderOpts, error) {
@@ -436,3 +453,4 @@ func getImplementationsManifest() (implementations.ImplManifest, error) {
 
 	return meta, nil
 }
+

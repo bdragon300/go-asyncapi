@@ -120,7 +120,7 @@ func Stats(sources map[string]ObjectSource) string {
 // TODO: detect ref loops to avoid infinite recursion
 // TODO: external refs can not be resolved at first time -- leave them unresolved
 func resolvePromise(p common.ObjectPromise, srcSpecID string, sources map[string]ObjectSource) (common.Renderer, bool) {
-	tgtSpecID, refPointer := utils.SplitSpecPath(p.Ref())
+	tgtSpecID, refPointer, _ := utils.SplitRefToPathPointer(p.Ref())
 	if tgtSpecID == "" {
 		tgtSpecID = srcSpecID // `#/ref` references
 	}

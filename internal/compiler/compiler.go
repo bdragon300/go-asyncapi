@@ -1,16 +1,15 @@
 package compiler
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
-	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/bdragon300/go-asyncapi/internal/types"
-	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -35,9 +34,9 @@ func NewModule(specID string) *Module {
 }
 
 type Module struct {
-	specID        string
-	logger        *types.Logger
-	remoteSpecIDs []string
+	specID          string
+	logger          *types.Logger
+	externalSpecIDs []string
 
 	// Set on parsing
 	parsedSpecKind SpecKind
@@ -61,8 +60,8 @@ func (c *Module) RegisterProtocol(protoName string) {
 	c.protocols[protoName]++
 }
 
-func (c *Module) AddRemoteSpecID(specID string) {
-	c.remoteSpecIDs = append(c.remoteSpecIDs, specID)
+func (c *Module) AddExternalSpecID(specID string) {
+	c.externalSpecIDs = append(c.externalSpecIDs, specID)
 }
 
 func (c *Module) AddPromise(p common.ObjectPromise) {
@@ -121,39 +120,26 @@ func (c *Module) ListPromises() []common.ObjectListPromise {
 	return c.listPromises
 }
 
-func (c *Module) Load() error {
-	var f *os.File
-	var err error
-
-	if utils.IsRemoteSpecID(c.specID) {
-		c.logger.Info("Download a remote spec", "specID", c.specID)
-		f, err = os.CreateTemp(os.TempDir(), "go-asyncapi")
-		if err != nil {
-			return fmt.Errorf("cannot create temp file: %w", err)
-		}
-		defer f.Close()
-		if err = downloadAndWrite(c.specID, f); err != nil {
-			return fmt.Errorf("download remote file %q: %w", c.specID, err)
-		}
-		offset, _ := f.Seek(0, io.SeekCurrent)
-		c.logger.Debug("Downloaded file", "specID", c.specID, "bytes", offset, "tmpFile", f.Name())
-		if _, err := f.Seek(0, io.SeekStart); err != nil {
-			return fmt.Errorf("seek on %q: %w", f.Name(), err)
-		}
-	} else {
-		c.logger.Info("Use a local spec", "specID", c.specID)
-		f, err = os.Open(c.specID)
-		if err != nil {
-			return fmt.Errorf("open local file %s: %w", c.specID, err)
-		}
-		defer f.Close()
+func (c *Module) Load(specResolver SpecResolver) error {
+	c.logger.Debug("Resolve spec", "specID", c.specID)
+	t := time.Now()
+	data, err := specResolver.Resolve(c.specID)
+	if err != nil {
+		return fmt.Errorf("resolve spec %q: %w", c.specID, err)
 	}
+	defer data.Close()
+	buf, err := io.ReadAll(data)
+	if err != nil {
+		return fmt.Errorf("read spec data: %w", err)
+	}
+	c.logger.Debug("Spec resolved", "specID", c.specID, "duration", time.Since(t))
+	c.logger.Trace("Received data", "bytes", len(buf), "data", string(buf))
 
-	specKind, spec, err := c.parseSpecFile(c.specID, f)
+	specKind, spec, err := c.parseSpec(c.specID, bytes.NewReader(buf))
 	if err != nil {
 		return err
 	}
-	c.logger.Debug("Schema parsed", "specID", c.specID, "kind", specKind)
+	c.logger.Debug("Spec parsed", "specID", c.specID, "kind", specKind)
 	c.parsedSpecKind = specKind
 	c.parsedSpec = spec
 	return nil
@@ -179,8 +165,8 @@ func (c *Module) Compile(ctx *common.CompileContext) error {
 	return nil
 }
 
-func (c *Module) RemoteSpecIDs() []string {
-	return c.remoteSpecIDs
+func (c *Module) ExternalSpecIDs() []string {
+	return c.externalSpecIDs
 }
 
 func (c *Module) Stats() string {
@@ -190,50 +176,32 @@ func (c *Module) Stats() string {
 	)
 }
 
-func (c *Module) parseSpecFile(specID string, f *os.File) (SpecKind, compiledObject, error) {
+func (c *Module) parseSpec(specID string, data io.ReadSeeker) (SpecKind, compiledObject, error) {
 	switch {
 	case strings.HasSuffix(specID, ".yaml") || strings.HasSuffix(specID, ".yml"):
-		c.logger.Debug("Found YAML spec file", "specID", specID, "file", f.Name())
-		schemaKind, spec, err := guessSpecKind(yaml.NewDecoder(f))
+		c.logger.Debug("Found YAML spec file", "specID", specID)
+		schemaKind, spec, err := guessSpecKind(yaml.NewDecoder(data))
 		if err != nil {
 			return "", nil, fmt.Errorf("guess spec kind: %w", err)
 		}
-		if _, err = f.Seek(0, io.SeekStart); err != nil {
+		if _, err = data.Seek(0, io.SeekStart); err != nil {
 			return "", nil, fmt.Errorf("file seek: %w", err)
 		}
-		err = yaml.NewDecoder(f).Decode(spec)
+		err = yaml.NewDecoder(data).Decode(spec)
 		return schemaKind, spec, err
 	case strings.HasSuffix(specID, ".json"):
-		c.logger.Debug("Found JSON spec file", "specID", specID, "file", f.Name())
-		schemaKind, spec, err := guessSpecKind(json.NewDecoder(f))
+		c.logger.Debug("Found JSON spec file", "specID", specID)
+		schemaKind, spec, err := guessSpecKind(json.NewDecoder(data))
 		if err != nil {
 			return "", nil, fmt.Errorf("guess spec kind: %w", err)
 		}
-		if _, err = f.Seek(0, io.SeekStart); err != nil {
+		if _, err = data.Seek(0, io.SeekStart); err != nil {
 			return "", nil, fmt.Errorf("file seek: %w", err)
 		}
-		err = json.NewDecoder(f).Decode(spec)
+		err = json.NewDecoder(data).Decode(spec)
 		return schemaKind, spec, err
 	}
 
 	return "", nil, fmt.Errorf("cannot determine format of a spec file: unknown filename extension: %s", specID)
 }
 
-func downloadAndWrite(uri string, f *os.File) error {
-	// TODO: add additional cli settings such as headers, skip ssl check, follow redirects, allowed http response codes etc.
-	resp, err := http.Get(uri)
-	if err != nil {
-		return fmt.Errorf("make a http request: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode > 300 {
-		_, _ = io.Copy(io.Discard, resp.Body)
-		return fmt.Errorf("error http code: %d", resp.StatusCode)
-	}
-	_, err = io.Copy(f, resp.Body)
-	if err != nil {
-		return fmt.Errorf("copy http response to file: %w", err)
-	}
-
-	return nil
-}

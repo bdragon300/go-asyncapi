@@ -26,29 +26,26 @@ func SlicesEqual[T comparable](a, b []T) bool { // TODO: use slices.Compare
 	return ok
 }
 
-func SplitSpecPath(path string) (specID, pointer string) {
-	path = strings.TrimSpace(path)
-	if strings.HasPrefix(path, "#/") {
-		return "", path[1:]
+func SplitRefToPathPointer(ref string) (specID, pointer string, remote bool) {
+	ref = strings.TrimSpace(ref)
+	if strings.HasPrefix(ref, "#/") {
+		return "", ref[1:], false
 	}
 
-	specID = path
-	if u, err := url.Parse(path); err == nil {
+	specID = ref
+	if u, err := url.Parse(ref); err == nil {
 		pointer = u.Fragment
 		u.Fragment = ""
 
 		switch {
-		case u.Scheme == "file" || u.Host == "" && u.User == nil && u.Scheme == "": // Ref to a file on the local machine
-			// Cut out the optional scheme, assuming that the rest is a filename
+		case u.Scheme == "file" || u.Host == "" && u.User == nil && u.Scheme == "": // Ref points to a local file
+			// Cut out the optional 'file://' scheme, assuming that the rest is a filename
 			u.Scheme = ""
 			specID, _ = filepath.Abs(u.String())
-		default: // Ref to a remote file
+		default: // Ref points to a remote file by URL
+			remote = true
 			specID = u.String()
 		}
 	}
 	return
-}
-
-func IsRemoteSpecID(specID string) bool {
-	return strings.HasPrefix(specID, "http://") || strings.HasPrefix(specID, "https://")
 }

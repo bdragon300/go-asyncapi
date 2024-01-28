@@ -50,7 +50,7 @@ func main() {
 		log.SetOutput(io.Discard)
 	}
 	log.SetReportTimestamp(false)
-	mainLogger = types.NewLogger("")
+	mainLogger = types.NewLogger("") // FIXME: configure logger in single place
 
 	cmd := cliArgs.GenerateCmd
 	if err := generate(cmd); err != nil {

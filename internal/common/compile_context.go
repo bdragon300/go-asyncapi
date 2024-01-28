@@ -21,7 +21,7 @@ type GolangType interface {
 type CompilationStorage interface {
 	AddObject(pkgName string, stack []string, obj Renderer)
 	RegisterProtocol(protoName string)
-	AddRemoteSpecID(specID string)
+	AddExternalSpecID(specID string)
 	AddPromise(p ObjectPromise)
 	AddListPromise(p ObjectListPromise)
 
@@ -42,7 +42,7 @@ type CompileOpts struct {
 	ServerOpts          ObjectCompileOpts
 	ReusePackages       map[string]string
 	NoEncodingPackage   bool
-	EnableExternalRefs  bool
+	EnableRemoteRefs    bool
 	RuntimeModule       string
 	GeneratePublishers  bool
 	GenerateSubscribers bool
@@ -99,9 +99,9 @@ func (c *CompileContext) PutObject(obj Renderer) {
 }
 
 func (c *CompileContext) PutPromise(p ObjectPromise) {
-	refSpecID, _ := utils.SplitSpecPath(p.Ref())
-	if utils.IsRemoteSpecID(refSpecID) {
-		c.Storage.AddRemoteSpecID(refSpecID)
+	refSpecID, _, _ := utils.SplitRefToPathPointer(p.Ref())
+	if refSpecID != "" {
+		c.Storage.AddExternalSpecID(refSpecID)
 	}
 	c.Storage.AddPromise(p)
 }
