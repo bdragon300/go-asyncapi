@@ -122,12 +122,14 @@ func (c *Module) ListPromises() []common.ObjectListPromise {
 
 func (c *Module) Load(specResolver SpecResolver) error {
 	c.logger.Debug("Resolve spec", "specID", c.specID)
+
 	t := time.Now()
 	data, err := specResolver.Resolve(c.specID)
 	if err != nil {
 		return fmt.Errorf("resolve spec %q: %w", c.specID, err)
 	}
 	defer data.Close()
+
 	buf, err := io.ReadAll(data)
 	if err != nil {
 		return fmt.Errorf("read spec data: %w", err)

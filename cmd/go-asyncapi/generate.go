@@ -53,6 +53,7 @@ type generatePubSubArgs struct {
 	RemoteRefs bool `arg:"--remote-refs" help:"Allow fetching specs from external $ref URLs"`
 
 	RuntimeModule       string        `arg:"--runtime-module" default:"github.com/bdragon300/go-asyncapi/run" help:"Runtime module name" placeholder:"MODULE"`
+	SpecBaseDir         string        `arg:"--spec-base-dir" help:"Directory to search spec files in. By default it's the current working directory" placeholder:"PATH"`
 	SpecResolverTimeout time.Duration `arg:"--spec-resolver-timeout" default:"30s" help:"Timeout to resolve a spec file" placeholder:"DURATION"`
 	SpecResolverCommand string        `arg:"--spec-resolver-command" help:"Custom resolver command for spec files" placeholder:"COMMAND"`
 }
@@ -387,7 +388,12 @@ func gerResolver(opts generatePubSubArgs) compiler.SpecResolver {
 			Logger:      logger,
 		}
 	}
-	return compiler.DefaultSpecResolver{Client: stdHTTP.DefaultClient, Timeout: opts.SpecResolverTimeout, Logger: logger}
+	return compiler.DefaultSpecResolver{
+		Client:  stdHTTP.DefaultClient,
+		Timeout: opts.SpecResolverTimeout,
+		BaseDir: opts.SpecBaseDir,
+		Logger:  logger,
+	}
 }
 
 func getRenderOpts(opts generatePubSubArgs, targetDir, targetPkg string) (common.RenderOpts, error) {

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -27,6 +28,7 @@ type SpecResolver interface {
 type DefaultSpecResolver struct {
 	Client  *http.Client
 	Timeout time.Duration
+	BaseDir string // Where to search local specs
 	Logger  *types.Logger
 }
 
@@ -38,8 +40,12 @@ func (r DefaultSpecResolver) Resolve(specID string) (io.ReadCloser, error) {
 }
 
 func (r DefaultSpecResolver) resolveLocal(specID string) (io.ReadCloser, error) {
-	r.Logger.Info("Reading local file", "specID", specID)
-	return os.Open(specID)
+	absPath, err := filepath.Abs(filepath.Join(r.BaseDir, specID))
+	if err != nil {
+		return nil, fmt.Errorf("resolve path %q: %w", filepath.Join(r.BaseDir, specID), err)
+	}
+	r.Logger.Info("Reading local file", "baseDir", r.BaseDir, "specID", specID, "absolutePath", absPath)
+	return os.Open(absPath)
 }
 
 func (r DefaultSpecResolver) resolveRemote(specID string) (io.ReadCloser, error) {

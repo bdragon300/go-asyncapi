@@ -2,7 +2,6 @@ package utils
 
 import (
 	"net/url"
-	"path/filepath"
 	"strings"
 )
 
@@ -41,11 +40,10 @@ func SplitRefToPathPointer(ref string) (specID, pointer string, remote bool) {
 		case u.Scheme == "file" || u.Host == "" && u.User == nil && u.Scheme == "": // Ref points to a local file
 			// Cut out the optional 'file://' scheme, assuming that the rest is a filename
 			u.Scheme = ""
-			specID, _ = filepath.Abs(u.String())
 		default: // Ref points to a remote file by URL
 			remote = true
-			specID = u.String()
 		}
+		specID = u.String()
 	}
 	return
 }
