@@ -154,7 +154,7 @@ func (pc ProtoChannel) renderKafkaPublisherMethods(ctx *common.RenderContext) []
 				// Message SetBindings
 				if pc.PubMessagePromise != nil && pc.PubMessagePromise.Target().HasProtoBindings(pc.ProtoName) {
 					bg.Op("envelope.SetBindings").Call(
-						j.Add(utils.ToCode(pc.PubMessagePromise.Target().BindingsStruct.RenderUsage(ctx))...).Values().Dot("Kafka()"),
+						j.Add(utils.ToCode(pc.PubMessagePromise.Target().BindingsStruct.RenderUsage(ctx))...).Values().Dot(pc.ProtoTitle).Call(),
 					)
 				}
 				bg.Return(j.Nil())

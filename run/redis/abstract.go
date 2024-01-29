@@ -1,4 +1,4 @@
-package kafka
+package redis
 
 import (
 	"context"
@@ -22,13 +22,11 @@ type (
 		SetHeaders(headers run.Headers)
 		SetContentType(contentType string)
 		SetBindings(bindings MessageBindings)
-
-		SetTopic(topic string)  // Topic may be different from channel name
 	}
 )
 
 type EnvelopeMarshaler interface {
-	MarshalKafkaEnvelope(envelope EnvelopeWriter) error
+	MarshalWebSocketEnvelope(envelope EnvelopeWriter) error
 }
 
 // Sub
@@ -47,5 +45,5 @@ type (
 )
 
 type EnvelopeUnmarshaler interface {
-	UnmarshalKafkaEnvelope(envelope EnvelopeReader) error
+	UnmarshalWebSocketEnvelope(envelope EnvelopeReader) error
 }

@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/redis"
+
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/ws"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/mqtt"
@@ -69,6 +71,7 @@ type ImplementationsOpts struct {
 	HTTP  string `arg:"--http-impl" default:"nethttp" help:"Implementation for HTTP ('no' to disable)" placeholder:"NAME"`
 	MQTT  string `arg:"--mqtt-impl" default:"paho-mqtt" help:"Implementation for MQTT ('no' to disable)" placeholder:"NAME"`
 	WS    string `arg:"--ws-impl" default:"gobwas-ws" help:"Implementation for WebSocket ('no' to disable)" placeholder:"NAME"`
+	Redis string `arg:"--redis-impl" default:"no" help:"Implementation for Redis ('no' to disable)" placeholder:"NAME"` // FIXME
 }
 
 type generateObjectSelectionOpts struct {
@@ -309,6 +312,7 @@ func getImplementationsOpts(opts ImplementationsOpts) map[string]string {
 		kafka.Builder.ProtocolName(): opts.Kafka,
 		mqtt.Builder.ProtocolName():  opts.MQTT,
 		ws.Builder.ProtocolName():    opts.WS,
+		redis.Builder.ProtocolName(): opts.Redis, // FIXME
 	}
 }
 
@@ -443,6 +447,7 @@ func protocolBuilders() map[string]asyncapi.ProtocolBuilder {
 		kafka.Builder.ProtocolName(): kafka.Builder,
 		mqtt.Builder.ProtocolName():  mqtt.Builder,
 		ws.Builder.ProtocolName():    ws.Builder,
+		redis.Builder.ProtocolName(): redis.Builder,
 	}
 }
 

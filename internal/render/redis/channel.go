@@ -1,4 +1,4 @@
-package amqp
+package redis
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -19,7 +19,6 @@ func (pc ProtoChannel) DirectRendering() bool {
 func (pc ProtoChannel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 	ctx.LogRender("Channel", "", pc.Name, "definition", pc.DirectRendering(), "proto", pc.ProtoName)
 	defer ctx.LogReturn()
-
 	var res []*j.Statement
 	res = append(res, pc.ServerIface.RenderDefinition(ctx)...)
 	res = append(res, pc.RenderOpenFunc(
@@ -29,13 +28,15 @@ func (pc ProtoChannel) RenderDefinition(ctx *common.RenderContext) []*j.Statemen
 	res = append(res, pc.renderNewFunc(ctx)...)
 	res = append(res, pc.Struct.RenderDefinition(ctx)...)
 	res = append(res, pc.RenderCommonMethods(ctx, pc.Struct, pc.Publisher, pc.Subscriber)...)
-	res = append(res, pc.renderAMQPMethods(ctx)...)
+	res = append(res, pc.renderRedisMethods(ctx)...)
 	if pc.Publisher {
 		res = append(res, pc.RenderCommonPublisherMethods(ctx, pc.Struct)...)
-		res = append(res, pc.renderAMQPPublisherMethods(ctx)...)
+		res = append(res, pc.renderRedisPublisherMethods(ctx)...)
 	}
 	if pc.Subscriber {
-		res = append(res, pc.RenderCommonSubscriberMethods(ctx, pc.Struct, pc.SubMessagePromise, pc.FallbackMessageType)...)
+		res = append(res, pc.RenderCommonSubscriberMethods(
+			ctx, pc.Struct, pc.SubMessagePromise, pc.FallbackMessageType,
+		)...)
 	}
 	return res
 }
@@ -51,11 +52,13 @@ func (pc ProtoChannel) ID() string {
 }
 
 func (pc ProtoChannel) String() string {
-	return "AMQP ProtoChannel " + pc.Name
+	return "Redis ProtoChannel " + pc.Name
 }
 
 func (pc ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {
 	ctx.Logger.Trace("renderNewFunc", "proto", pc.ProtoName)
+
+	// TODO: move to ProtoChannel
 	return []*j.Statement{
 		// NewChannel1Proto(params Channel1Parameters, publisher proto.Publisher, subscriber proto.Subscriber) *Channel1Proto
 		j.Func().Id(pc.Struct.NewFuncName()).
@@ -85,55 +88,18 @@ func (pc ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {
 						d[j.Id("subscriber")] = j.Id("subscriber")
 					}
 				}))
-
-				if pc.AbstractChannel.BindingsStruct != nil {
-					bg.Id("bindings").Op(":=").Add(
-						utils.ToCode(pc.AbstractChannel.BindingsStruct.RenderUsage(ctx))...).Values().Dot(pc.ProtoTitle).Call()
-					bg.Op(`
-						switch bindings.ChannelType {
-						case "queue":
-							res.queue = res.name.String()
-						default:
-							res.exchange = res.name.String()
-						}
-						if bindings.ExchangeConfiguration.Name != nil {
-							res.exchange = *bindings.ExchangeConfiguration.Name
-						}
-						if bindings.QueueConfiguration.Name != "" {
-							res.queue = bindings.QueueConfiguration.Name
-						}`)
-				}
 				bg.Op(`return &res`)
 			}),
 	}
 }
 
-func (pc ProtoChannel) renderAMQPMethods(ctx *common.RenderContext) []*j.Statement {
-	ctx.Logger.Trace("renderAMQPMethods", "proto", pc.ProtoName)
-	rn := pc.Struct.ReceiverName()
-	receiver := j.Id(rn).Id(pc.Struct.Name)
-
-	return []*j.Statement{
-		// Method Exchange() string
-		j.Func().Params(receiver.Clone()).Id("Exchange").
-			Params().
-			String().
-			Block(
-				j.Return(j.Id(rn).Dot("exchange")),
-			),
-
-		// Method Queue() string
-		j.Func().Params(receiver.Clone()).Id("Queue").
-			Params().
-			String().
-			Block(
-				j.Return(j.Id(rn).Dot("queue")),
-			),
-	}
+func (pc ProtoChannel) renderRedisMethods(_ *common.RenderContext) []*j.Statement {
+	return []*j.Statement{}
 }
 
-func (pc ProtoChannel) renderAMQPPublisherMethods(ctx *common.RenderContext) []*j.Statement {
-	ctx.Logger.Trace("renderAMQPPublisherMethods", "proto", pc.ProtoName)
+func (pc ProtoChannel) renderRedisPublisherMethods(ctx *common.RenderContext) []*j.Statement {
+	ctx.Logger.Trace("renderRedisPublisherMethods", "proto", pc.ProtoName)
+
 	rn := pc.Struct.ReceiverName()
 	receiver := j.Id(rn).Id(pc.Struct.Name)
 
@@ -142,13 +108,13 @@ func (pc ProtoChannel) renderAMQPPublisherMethods(ctx *common.RenderContext) []*
 		msgTyp = render.GoPointer{Type: pc.PubMessagePromise.Target().OutStruct, DirectRender: true}
 	}
 
+	// TODO: move to ProtoChannel
 	return []*j.Statement{
-		// Method MakeEnvelope(envelope proto.EnvelopeWriter, message *Message1Out, deliveryTag string) error
+		// Method MakeEnvelope(envelope proto.EnvelopeWriter, message *Message1Out) error
 		j.Func().Params(receiver.Clone()).Id("MakeEnvelope").
 			ParamsFunc(func(g *j.Group) {
 				g.Id("envelope").Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeWriter")
 				g.Id("message").Add(utils.ToCode(msgTyp.RenderUsage(ctx))...)
-				g.Id("deliveryTag").String()
 			}).
 			Error().
 			BlockFunc(func(bg *j.Group) {
@@ -161,11 +127,10 @@ func (pc ProtoChannel) renderAMQPPublisherMethods(ctx *common.RenderContext) []*
 						}`))
 				} else { // Message is set for Channel in spec
 					bg.Op(`
-						if err := message.MarshalAMQPEnvelope(envelope); err != nil {
+						if err := message.MarshalRedisEnvelope(envelope); err != nil {
 							return err
 						}`)
 				}
-				bg.Op("envelope.SetDeliveryTag(deliveryTag)")
 				// Message SetBindings
 				if pc.PubMessagePromise != nil && pc.PubMessagePromise.Target().HasProtoBindings(pc.ProtoName) {
 					bg.Op("envelope.SetBindings").Call(
