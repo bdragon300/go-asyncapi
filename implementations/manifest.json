@@ -28,5 +28,11 @@
       "url": "https://github.com/gobwas/ws",
       "dir": "ws/gobwas-ws"
     }
+  },
+  "redis": {
+    "go-redis": {
+      "url": "https://github.com/redis/go-redis",
+      "dir": "redis/go-redis"
+    }
   }
 }
