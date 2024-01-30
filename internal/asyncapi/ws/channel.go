@@ -17,8 +17,8 @@ type channelBindings struct {
 	Headers any    `json:"headers" yaml:"headers"` // jsonschema object
 }
 
-func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, channelKey string, abstractChannel *render.Channel) (common.Renderer, error) {
-	baseChan, err := pb.BuildBaseProtoChannel(ctx, channel, channelKey, abstractChannel)
+func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, parent *render.Channel) (common.Renderer, error) {
+	baseChan, err := pb.BuildBaseProtoChannel(ctx, channel, parent)
 	if err != nil {
 		return nil, err
 	}

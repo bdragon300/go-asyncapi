@@ -20,8 +20,8 @@ func (p GoSimple) DirectRendering() bool {
 }
 
 func (p GoSimple) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoSimple", p.Import, p.Name, "definition", p.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("GoSimple", p.Import, p.Name, "definition", p.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	stmt := jen.Id(p.Name)
 	if len(p.TypeParamValues) > 0 {
@@ -34,8 +34,8 @@ func (p GoSimple) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 }
 
 func (p GoSimple) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoSimple", p.Import, p.Name, "usage", p.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("GoSimple", p.Import, p.Name, "usage", p.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	stmt := &jen.Statement{}
 	switch {

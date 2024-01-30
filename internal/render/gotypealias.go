@@ -12,8 +12,8 @@ type GoTypeAlias struct {
 }
 
 func (p GoTypeAlias) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoTypeAlias", p.Import, p.Name, "definition", p.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("GoTypeAlias", p.Import, p.Name, "definition", p.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	var res []*jen.Statement
 	if p.Description != "" {
@@ -26,8 +26,8 @@ func (p GoTypeAlias) RenderDefinition(ctx *common.RenderContext) []*jen.Statemen
 }
 
 func (p GoTypeAlias) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoTypeAlias", p.Import, p.Name, "usage", p.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("GoTypeAlias", p.Import, p.Name, "usage", p.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	if p.DirectRender {
 		if p.Import != "" && p.Import != ctx.CurrentPackage {

@@ -12,14 +12,22 @@ import (
 
 type Channel struct {
 	Name                string // Channel name, typically equals to Channel key, can get overridden in x-go-name
+	GolangName          string // Name of channel struct
 	DirectRender        bool   // Typically, it's true if channel is defined in `channels` section, false if in `components` section
 	Dummy               bool
-	ChannelKey          string                     // Channel key
+	RawName             string                     // Channel key
 	ExplicitServerNames []string                   // List of servers the channel is linked with. Empty means "all servers"
 	ServersPromises     []*Promise[*Server]        // Servers list this channel is applied to, either explicitly marked or "all servers"
 	AllProtoChannels    map[string]common.Renderer // Proto channels for all supported protocols
 
+	Publisher  bool // true if channel has `publish` operation
+	Subscriber bool // true if channel has `subscribe` operation
+
 	ParametersStruct *GoStruct // nil if no parameters
+
+	PubMessagePromise   *Promise[*Message] // nil when message is not set
+	SubMessagePromise   *Promise[*Message] // nil when message is not set
+	FallbackMessageType common.GolangType  // Used in generated code when the message is not set, typically it's `any`
 
 	BindingsStruct           *GoStruct           // nil if no bindings are set for channel at all
 	BindingsChannelPromise   *Promise[*Bindings] // nil if channel bindings are not set
@@ -33,8 +41,8 @@ func (c Channel) DirectRendering() bool {
 
 func (c Channel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 	var res []*j.Statement
-	ctx.LogRender("Channel", "", c.Name, "definition", c.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("Channel", "", c.Name, "definition", c.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	// Parameters
 	if c.ParametersStruct != nil {
@@ -98,7 +106,7 @@ func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement
 
 	// Channel1Name(params Chan1Parameters) runtime.ParamString
 	return []*j.Statement{
-		j.Func().Id(utils.ToGolangName(c.Name, true)+"Name").
+		j.Func().Id(c.GolangName+"Name").
 			ParamsFunc(func(g *j.Group) {
 				if c.ParametersStruct != nil {
 					g.Id("params").Add(utils.ToCode(c.ParametersStruct.RenderUsage(ctx))...)
@@ -108,7 +116,7 @@ func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement
 			BlockFunc(func(bg *j.Group) {
 				if c.ParametersStruct == nil {
 					bg.Return(j.Qual(ctx.RuntimeModule(""), "ParamString").Values(j.Dict{
-						j.Id("Expr"): j.Lit(c.ChannelKey),
+						j.Id("Expr"): j.Lit(c.RawName),
 					}))
 				} else {
 					bg.Op("paramMap := map[string]string").Values(j.DictFunc(func(d j.Dict) {
@@ -117,7 +125,7 @@ func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement
 						}
 					}))
 					bg.Return(j.Qual(ctx.RuntimeModule(""), "ParamString").Values(j.Dict{
-						j.Id("Expr"):       j.Lit(c.ChannelKey),
+						j.Id("Expr"):       j.Lit(c.RawName),
 						j.Id("Parameters"): j.Id("paramMap"),
 					}))
 				}

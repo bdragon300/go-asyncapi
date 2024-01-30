@@ -56,7 +56,24 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 
 	srvName, _ := lo.Coalesce(s.XGoName, serverKey)
 	// Render only the servers defined directly in `servers` document section, not in `components`
-	res := render.Server{Name: srvName, Protocol: s.Protocol, DirectRender: !isComponent}
+	res := render.Server{
+		Name:            srvName,
+		RawName:         serverKey,
+		GolangName:      ctx.GenerateObjName(srvName, ""),
+		DirectRender:    !isComponent,
+		URL:             s.URL,
+		Protocol:        s.Protocol,
+		ProtocolVersion: s.ProtocolVersion,
+	}
+
+	// Channels which are connected to this server
+	prms := lo.Map(ctx.Storage.ActiveChannels(), func(item string, index int) *render.Promise[*render.Channel] {
+		ref := path.Join("#/channels", item)
+		prm := render.NewPromise[*render.Channel](ref, common.PromiseOriginInternal)
+		ctx.PutPromise(prm)
+		return prm
+	})
+	res.AllChannelsPromises = prms
 
 	// Bindings
 	if s.Bindings != nil {
@@ -90,7 +107,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	} else {
 		var err error
 		ctx.Logger.Trace("Server", "proto", protoBuilder.ProtocolName())
-		res.ProtoServer, err = protoBuilder.BuildServer(ctx, &s, serverKey, &res)
+		res.ProtoServer, err = protoBuilder.BuildServer(ctx, &s, &res)
 		if err != nil {
 			return nil, err
 		}

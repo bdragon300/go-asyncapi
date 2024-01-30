@@ -34,8 +34,8 @@ func (gv GoValue) RenderDefinition(_ *common.RenderContext) []*j.Statement {
 }
 
 func (gv GoValue) RenderUsage(ctx *common.RenderContext) []*j.Statement {
-	ctx.LogRender("GoValue", "", "", "usage", gv.DirectRendering(), "type", gv.Type)
-	defer ctx.LogReturn()
+	ctx.LogStartRender("GoValue", "", "", "usage", gv.DirectRendering(), "type", gv.Type)
+	defer ctx.LogFinishRender()
 
 	var valueStmt *j.Statement
 	switch {

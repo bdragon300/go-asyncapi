@@ -34,8 +34,8 @@ func (e EncodingEncode) DirectRendering() bool {
 }
 
 func (e EncodingEncode) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
-	ctx.LogRender("EncodingEncode", "", "", "definition", e.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("EncodingEncode", "", "", "definition", e.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	contentTypes := lo.Uniq(lo.FilterMap(e.AllMessages.Targets(), func(item *Message, index int) (string, bool) {
 		return item.ContentType, item.ContentType != ""
@@ -91,8 +91,8 @@ func (e EncodingDecode) DirectRendering() bool {
 }
 
 func (e EncodingDecode) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
-	ctx.LogRender("EncodingDecode", "", "", "definition", e.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("EncodingDecode", "", "", "definition", e.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	contentTypes := lo.Uniq(lo.FilterMap(e.AllMessages.Targets(), func(item *Message, index int) (string, bool) {
 		return item.ContentType, item.ContentType != ""

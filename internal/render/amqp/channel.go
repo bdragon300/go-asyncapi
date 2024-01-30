@@ -17,41 +17,38 @@ func (pc ProtoChannel) DirectRendering() bool {
 }
 
 func (pc ProtoChannel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
-	ctx.LogRender("Channel", "", pc.Name, "definition", pc.DirectRendering(), "proto", pc.ProtoName)
-	defer ctx.LogReturn()
+	ctx.LogStartRender("Channel", "", pc.Parent.Name, "definition", pc.DirectRendering(), "proto", pc.ProtoName)
+	defer ctx.LogFinishRender()
 
 	var res []*j.Statement
 	res = append(res, pc.ServerIface.RenderDefinition(ctx)...)
-	res = append(res, pc.RenderOpenFunc(
-		ctx, pc.Struct, pc.Name, pc.ServerIface, pc.AbstractChannel.ParametersStruct, pc.AbstractChannel.BindingsStruct,
-		pc.Publisher, pc.Subscriber,
-	)...)
+	res = append(res, pc.RenderOpenFunc(ctx)...)
 	res = append(res, pc.renderNewFunc(ctx)...)
 	res = append(res, pc.Struct.RenderDefinition(ctx)...)
-	res = append(res, pc.RenderCommonMethods(ctx, pc.Struct, pc.Publisher, pc.Subscriber)...)
-	res = append(res, pc.renderAMQPMethods(ctx)...)
-	if pc.Publisher {
-		res = append(res, pc.RenderCommonPublisherMethods(ctx, pc.Struct)...)
-		res = append(res, pc.renderAMQPPublisherMethods(ctx)...)
+	res = append(res, pc.RenderCommonMethods(ctx)...)
+	res = append(res, pc.renderProtoMethods(ctx)...)
+	if pc.Parent.Publisher {
+		res = append(res, pc.RenderCommonPublisherMethods(ctx)...)
+		res = append(res, pc.renderProtoPublisherMethods(ctx)...)
 	}
-	if pc.Subscriber {
-		res = append(res, pc.RenderCommonSubscriberMethods(ctx, pc.Struct, pc.SubMessagePromise, pc.FallbackMessageType)...)
+	if pc.Parent.Subscriber {
+		res = append(res, pc.RenderCommonSubscriberMethods(ctx)...)
 	}
 	return res
 }
 
 func (pc ProtoChannel) RenderUsage(ctx *common.RenderContext) []*j.Statement {
-	ctx.LogRender("Channel", "", pc.Name, "usage", pc.DirectRendering(), "proto", pc.ProtoName)
-	defer ctx.LogReturn()
+	ctx.LogStartRender("Channel", "", pc.Parent.Name, "usage", pc.DirectRendering(), "proto", pc.ProtoName)
+	defer ctx.LogFinishRender()
 	return pc.Struct.RenderUsage(ctx)
 }
 
 func (pc ProtoChannel) ID() string {
-	return pc.Name
+	return pc.Parent.Name
 }
 
 func (pc ProtoChannel) String() string {
-	return "AMQP ProtoChannel " + pc.Name
+	return "AMQP ProtoChannel " + pc.Parent.Name
 }
 
 func (pc ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {
@@ -60,35 +57,35 @@ func (pc ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {
 		// NewChannel1Proto(params Channel1Parameters, publisher proto.Publisher, subscriber proto.Subscriber) *Channel1Proto
 		j.Func().Id(pc.Struct.NewFuncName()).
 			ParamsFunc(func(g *j.Group) {
-				if pc.AbstractChannel.ParametersStruct != nil {
-					g.Id("params").Add(utils.ToCode(pc.AbstractChannel.ParametersStruct.RenderUsage(ctx))...)
+				if pc.Parent.ParametersStruct != nil {
+					g.Id("params").Add(utils.ToCode(pc.Parent.ParametersStruct.RenderUsage(ctx))...)
 				}
-				if pc.Publisher {
+				if pc.Parent.Publisher {
 					g.Id("publisher").Qual(ctx.RuntimeModule(pc.ProtoName), "Publisher")
 				}
-				if pc.Subscriber {
+				if pc.Parent.Subscriber {
 					g.Id("subscriber").Qual(ctx.RuntimeModule(pc.ProtoName), "Subscriber")
 				}
 			}).
 			Op("*").Add(utils.ToCode(pc.Struct.RenderUsage(ctx))...).
 			BlockFunc(func(bg *j.Group) {
 				bg.Op("res := ").Add(utils.ToCode(pc.Struct.RenderUsage(ctx))...).Values(j.DictFunc(func(d j.Dict) {
-					d[j.Id("name")] = j.Id(utils.ToGolangName(pc.Name, true) + "Name").CallFunc(func(g *j.Group) {
-						if pc.AbstractChannel.ParametersStruct != nil {
+					d[j.Id("name")] = j.Id(pc.Parent.GolangName + "Name").CallFunc(func(g *j.Group) {
+						if pc.Parent.ParametersStruct != nil {
 							g.Id("params")
 						}
 					})
-					if pc.Publisher {
+					if pc.Parent.Publisher {
 						d[j.Id("publisher")] = j.Id("publisher")
 					}
-					if pc.Subscriber {
+					if pc.Parent.Subscriber {
 						d[j.Id("subscriber")] = j.Id("subscriber")
 					}
 				}))
 
-				if pc.AbstractChannel.BindingsStruct != nil {
+				if pc.Parent.BindingsStruct != nil {
 					bg.Id("bindings").Op(":=").Add(
-						utils.ToCode(pc.AbstractChannel.BindingsStruct.RenderUsage(ctx))...).Values().Dot(pc.ProtoTitle).Call()
+						utils.ToCode(pc.Parent.BindingsStruct.RenderUsage(ctx))...).Values().Dot(pc.ProtoTitle).Call()
 					bg.Op(`
 						switch bindings.ChannelType {
 						case "queue":
@@ -108,8 +105,8 @@ func (pc ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {
 	}
 }
 
-func (pc ProtoChannel) renderAMQPMethods(ctx *common.RenderContext) []*j.Statement {
-	ctx.Logger.Trace("renderAMQPMethods", "proto", pc.ProtoName)
+func (pc ProtoChannel) renderProtoMethods(ctx *common.RenderContext) []*j.Statement {
+	ctx.Logger.Trace("renderProtoMethods", "proto", pc.ProtoName)
 	rn := pc.Struct.ReceiverName()
 	receiver := j.Id(rn).Id(pc.Struct.Name)
 
@@ -132,14 +129,14 @@ func (pc ProtoChannel) renderAMQPMethods(ctx *common.RenderContext) []*j.Stateme
 	}
 }
 
-func (pc ProtoChannel) renderAMQPPublisherMethods(ctx *common.RenderContext) []*j.Statement {
-	ctx.Logger.Trace("renderAMQPPublisherMethods", "proto", pc.ProtoName)
+func (pc ProtoChannel) renderProtoPublisherMethods(ctx *common.RenderContext) []*j.Statement {
+	ctx.Logger.Trace("renderProtoPublisherMethods", "proto", pc.ProtoName)
 	rn := pc.Struct.ReceiverName()
 	receiver := j.Id(rn).Id(pc.Struct.Name)
 
-	var msgTyp common.GolangType = render.GoPointer{Type: pc.FallbackMessageType, DirectRender: true}
-	if pc.PubMessagePromise != nil {
-		msgTyp = render.GoPointer{Type: pc.PubMessagePromise.Target().OutStruct, DirectRender: true}
+	var msgTyp common.GolangType = render.GoPointer{Type: pc.Parent.FallbackMessageType, DirectRender: true}
+	if pc.Parent.PubMessagePromise != nil {
+		msgTyp = render.GoPointer{Type: pc.Parent.PubMessagePromise.Target().OutStruct, DirectRender: true}
 	}
 
 	return []*j.Statement{
@@ -153,7 +150,7 @@ func (pc ProtoChannel) renderAMQPPublisherMethods(ctx *common.RenderContext) []*
 			Error().
 			BlockFunc(func(bg *j.Group) {
 				bg.Op("envelope.ResetPayload()")
-				if pc.PubMessagePromise == nil { // No Message set for Channel in spec
+				if pc.Parent.PubMessagePromise == nil { // No Message set for Channel in spec
 					bg.Empty().Add(utils.QualSprintf(`
 						enc := %Q(encoding/json,NewEncoder)(envelope)
 						if err := enc.Encode(message); err != nil {
@@ -167,9 +164,9 @@ func (pc ProtoChannel) renderAMQPPublisherMethods(ctx *common.RenderContext) []*
 				}
 				bg.Op("envelope.SetDeliveryTag(deliveryTag)")
 				// Message SetBindings
-				if pc.PubMessagePromise != nil && pc.PubMessagePromise.Target().HasProtoBindings(pc.ProtoName) {
+				if pc.Parent.PubMessagePromise != nil && pc.Parent.PubMessagePromise.Target().HasProtoBindings(pc.ProtoName) {
 					bg.Op("envelope.SetBindings").Call(
-						j.Add(utils.ToCode(pc.PubMessagePromise.Target().BindingsStruct.RenderUsage(ctx))...).Values().Dot(pc.ProtoTitle).Call(),
+						j.Add(utils.ToCode(pc.Parent.PubMessagePromise.Target().BindingsStruct.RenderUsage(ctx))...).Values().Dot(pc.ProtoTitle).Call(),
 					)
 				}
 				bg.Return(j.Nil())

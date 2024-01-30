@@ -14,8 +14,8 @@ type GoInterface struct {
 
 func (i GoInterface) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	var res []*jen.Statement
-	ctx.LogRender("GoInterface", i.Import, i.Name, "definition", i.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("GoInterface", i.Import, i.Name, "definition", i.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	if i.Description != "" {
 		res = append(res, jen.Comment(i.Name+" -- "+utils.ToLowerFirstLetter(i.Description)))
@@ -29,8 +29,8 @@ func (i GoInterface) RenderDefinition(ctx *common.RenderContext) []*jen.Statemen
 }
 
 func (i GoInterface) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoInterface", i.Import, i.Name, "usage", i.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("GoInterface", i.Import, i.Name, "usage", i.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	if i.DirectRendering() {
 		if i.Import != "" && i.Import != ctx.CurrentPackage {

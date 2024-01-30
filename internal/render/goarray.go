@@ -13,8 +13,8 @@ type GoArray struct {
 }
 
 func (a GoArray) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoArray", a.Import, a.Name, "definition", a.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("GoArray", a.Import, a.Name, "definition", a.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	var res []*jen.Statement
 	if a.Description != "" {
@@ -34,8 +34,8 @@ func (a GoArray) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 }
 
 func (a GoArray) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoArray", a.Import, a.Name, "usage", a.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("GoArray", a.Import, a.Name, "usage", a.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	if a.DirectRender {
 		if a.Import != "" && a.Import != ctx.CurrentPackage {

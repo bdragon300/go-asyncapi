@@ -15,13 +15,9 @@ func (ps ProtoServer) DirectRendering() bool {
 }
 
 func (ps ProtoServer) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
-	ctx.LogRender("Server", "", ps.Name, "definition", ps.DirectRendering(), "proto", ps.ProtoName)
-	defer ctx.LogReturn()
+	ctx.LogStartRender("Server", "", ps.Parent.Name, "definition", ps.DirectRendering(), "proto", ps.ProtoName)
+	defer ctx.LogFinishRender()
 	var res []*j.Statement
-	if ps.ProtocolVersion != "" {
-		res = append(res, ps.RenderProtocolVersionConst(ctx)...)
-	}
-	res = append(res, ps.RenderURLFunc(ctx)...)
 	res = append(res, ps.RenderNewFunc(ctx)...)
 	res = append(res, ps.Struct.RenderDefinition(ctx)...)
 	res = append(res, ps.RenderCommonMethods(ctx)...)
@@ -32,17 +28,17 @@ func (ps ProtoServer) RenderDefinition(ctx *common.RenderContext) []*j.Statement
 }
 
 func (ps ProtoServer) RenderUsage(ctx *common.RenderContext) []*j.Statement {
-	ctx.LogRender("Server", "", ps.Name, "usage", ps.DirectRendering(), "proto", ps.ProtoName)
-	defer ctx.LogReturn()
+	ctx.LogStartRender("Server", "", ps.Parent.Name, "usage", ps.DirectRendering(), "proto", ps.ProtoName)
+	defer ctx.LogFinishRender()
 	return ps.Struct.RenderUsage(ctx)
 }
 
 func (ps ProtoServer) ID() string {
-	return ps.Name
+	return ps.Parent.Name
 }
 
 func (ps ProtoServer) String() string {
-	return "Redis ProtoServer " + ps.Name
+	return "Redis ProtoServer " + ps.Parent.Name
 }
 
 func (ps ProtoServer) renderChannelMethods(ctx *common.RenderContext) []*j.Statement {
@@ -50,10 +46,10 @@ func (ps ProtoServer) renderChannelMethods(ctx *common.RenderContext) []*j.State
 
 	var res []*j.Statement
 
-	for _, ch := range ps.GetRelevantChannels() {
+	for _, ch := range ps.Parent.GetRelevantChannels() {
 		protoChan := ch.AllProtoChannels[ps.ProtoName].(*ProtoChannel)
 		res = append(res,
-			ps.RenderOpenChannelMethod(ctx, protoChan.Struct, protoChan, protoChan.AbstractChannel.ParametersStruct)...,
+			ps.RenderOpenChannelMethod(ctx, protoChan.Struct, protoChan, protoChan.Parent.ParametersStruct)...,
 		)
 	}
 	return res

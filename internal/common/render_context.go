@@ -68,7 +68,11 @@ func (c *RenderContext) GeneratedModule(subPackage string) string {
 	panic(fmt.Sprintf("Unknown package scope %q", c.RenderOpts.PackageScope))
 }
 
-func (c *RenderContext) LogRender(kind, pkg, name, mode string, directRendering bool, args ...any) {
+// LogStartRender is typically called at the beginning of a RenderDefinition or RenderUsage method and logs that the
+// object is started to be rendered. It also logs the object's name, type, and the current package.
+// Every call to LogStartRender should be followed by a call to LogFinishRender which logs that the object is finished to be
+// rendered.
+func (c *RenderContext) LogStartRender(kind, pkg, name, mode string, directRendering bool, args ...any) {
 	l := c.Logger
 	args = append(args, "pkg", c.CurrentPackage, "mode", mode)
 	if pkg != "" {
@@ -86,7 +90,7 @@ func (c *RenderContext) LogRender(kind, pkg, name, mode string, directRendering 
 	c.logCallLvl++
 }
 
-func (c *RenderContext) LogReturn() {
+func (c *RenderContext) LogFinishRender() {
 	if c.logCallLvl > 0 {
 		c.logCallLvl--
 	}

@@ -15,8 +15,8 @@ type UnionStruct struct {
 
 func (s UnionStruct) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	var res []*jen.Statement
-	ctx.LogRender("UnionStruct", s.Import, s.Name, "definition", s.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("UnionStruct", s.Import, s.Name, "definition", s.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	hasNonStructs := lo.ContainsBy(s.Fields, func(item GoStructField) bool {
 		return !isTypeStruct(item.Type)

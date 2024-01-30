@@ -21,8 +21,8 @@ type GoStruct struct {
 
 func (s GoStruct) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	var res []*jen.Statement
-	ctx.LogRender("GoStruct", s.Import, s.Name, "definition", s.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("GoStruct", s.Import, s.Name, "definition", s.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	if s.Description != "" {
 		res = append(res, jen.Comment(s.Name+" -- "+utils.ToLowerFirstLetter(s.Description)))
@@ -35,8 +35,8 @@ func (s GoStruct) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 }
 
 func (s GoStruct) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoStruct", s.Import, s.Name, "usage", s.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("GoStruct", s.Import, s.Name, "usage", s.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	if s.DirectRendering() {
 		if s.Import != "" && s.Import != ctx.CurrentPackage {
@@ -88,8 +88,8 @@ type GoStructField struct {
 
 func (f GoStructField) renderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	var res []*jen.Statement
-	ctx.LogRender("GoStructField", "", f.Name, "definition", false)
-	defer ctx.LogReturn()
+	ctx.LogStartRender("GoStructField", "", f.Name, "definition", false)
+	defer ctx.LogFinishRender()
 
 	if f.Description != "" {
 		res = append(res, jen.Comment(f.Name+" -- "+utils.ToLowerFirstLetter(f.Description)))

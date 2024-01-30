@@ -56,7 +56,14 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 
 	chName, _ := lo.Coalesce(c.XGoName, channelKey)
 	// Render only the channels defined directly in `channels` document section, not in `components`
-	res := &render.Channel{Name: chName, ChannelKey: channelKey, AllProtoChannels: make(map[string]common.Renderer), DirectRender: !isComponent}
+	res := &render.Channel{
+		Name:                chName,
+		GolangName:          ctx.GenerateObjName(chName, ""),
+		RawName:             channelKey,
+		AllProtoChannels:    make(map[string]common.Renderer),
+		DirectRender:        !isComponent,
+		FallbackMessageType: &render.GoSimple{Name: "any", IsIface: true},
+	}
 
 	// Channel parameters
 	if c.Parameters.Len() > 0 {
@@ -120,23 +127,41 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 		ctx.PutPromise(res.BindingsChannelPromise)
 	}
 
-	genPub := (c.Publish != nil) && ctx.CompileOpts.GeneratePublishers
-	genSub := (c.Subscribe != nil) && ctx.CompileOpts.GenerateSubscribers
-	if genPub && !c.Publish.XIgnore && c.Publish.Bindings != nil {
-		ctx.Logger.Trace("Found publish operation bindings")
-		hasBindings = true
+	genPub := c.Publish != nil && ctx.CompileOpts.GeneratePublishers
+	genSub := c.Subscribe != nil && ctx.CompileOpts.GenerateSubscribers
+	if genPub && !c.Publish.XIgnore {
+		res.Publisher = true
+		if c.Publish.Bindings != nil {
+			ctx.Logger.Trace("Found publish operation bindings")
+			hasBindings = true
 
-		ref := ctx.PathRef() + "/publish/bindings"
-		res.BindingsPublishPromise = render.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
-		ctx.PutPromise(res.BindingsPublishPromise)
+			ref := path.Join(ctx.PathRef(), "publish/bindings")
+			res.BindingsPublishPromise = render.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
+			ctx.PutPromise(res.BindingsPublishPromise)
+		}
+		if c.Publish.Message != nil {
+			ctx.Logger.Trace("Found publish operation message")
+			ref := path.Join(ctx.PathRef(), "publish/message")
+			res.PubMessagePromise = render.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
+			ctx.PutPromise(res.PubMessagePromise)
+		}
 	}
-	if genSub && !c.Subscribe.XIgnore && c.Subscribe.Bindings != nil {
-		ctx.Logger.Trace("Found subscribe operation bindings")
-		hasBindings = true
+	if genSub && !c.Subscribe.XIgnore {
+		res.Subscriber = true
+		if c.Subscribe.Bindings != nil {
+			ctx.Logger.Trace("Found subscribe operation bindings")
+			hasBindings = true
 
-		ref := ctx.PathRef() + "/subscribe/bindings"
-		res.BindingsSubscribePromise = render.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
-		ctx.PutPromise(res.BindingsSubscribePromise)
+			ref := path.Join(ctx.PathRef(), "subscribe/bindings")
+			res.BindingsSubscribePromise = render.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
+			ctx.PutPromise(res.BindingsSubscribePromise)
+		}
+		if c.Subscribe.Message != nil {
+			ctx.Logger.Trace("Channel subscribe operation message")
+			ref := path.Join(ctx.PathRef(), "subscribe/message")
+			res.SubMessagePromise = render.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
+			ctx.PutPromise(res.SubMessagePromise)
+		}
 	}
 	if hasBindings {
 		res.BindingsStruct = &render.GoStruct{
@@ -156,7 +181,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 	for proto, b := range ProtocolBuilders {
 		ctx.Logger.Trace("Channel", "proto", proto)
 		ctx.Logger.NextCallLevel()
-		obj, err := b.BuildChannel(ctx, &c, channelKey, res)
+		obj, err := b.BuildChannel(ctx, &c, res)
 		ctx.Logger.PrevCallLevel()
 		if err != nil {
 			return nil, err

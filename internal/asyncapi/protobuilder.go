@@ -2,20 +2,18 @@ package asyncapi
 
 import (
 	"encoding/json"
-	"path"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
 	renderProto "github.com/bdragon300/go-asyncapi/internal/render/proto"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
-	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
 )
 
 type ProtocolBuilder interface {
-	BuildChannel(ctx *common.CompileContext, channel *Channel, channelKey string, abstractChannel *render.Channel) (common.Renderer, error)
-	BuildServer(ctx *common.CompileContext, server *Server, serverKey string, abstractServer *render.Server) (common.Renderer, error)
+	BuildChannel(ctx *common.CompileContext, channel *Channel, parent *render.Channel) (common.Renderer, error)
+	BuildServer(ctx *common.CompileContext, server *Server, parent *render.Server) (common.Renderer, error)
 
 	BuildMessageBindings(ctx *common.CompileContext, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *render.GoValue, jsonVals types.OrderedMap[string, string], err error)
 	BuildOperationBindings(ctx *common.CompileContext, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *render.GoValue, jsonVals types.OrderedMap[string, string], err error)
@@ -35,15 +33,15 @@ type BaseProtoBuilder struct {
 func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 	ctx *common.CompileContext,
 	channel *Channel,
-	channelKey string,
-	abstractChannel *render.Channel,
+	parentChannel *render.Channel,
 ) (*renderProto.BaseProtoChannel, error) {
-	chName, _ := lo.Coalesce(channel.XGoName, channelKey)
+	golangName := parentChannel.GolangName + pb.ProtoTitle
 	chanResult := &renderProto.BaseProtoChannel{
-		Name: chName,
+		Parent:          parentChannel,
+		GolangNameProto: golangName,
 		Struct: &render.GoStruct{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(chName, pb.ProtoTitle),
+				Name:         golangName,
 				Description:  channel.Description,
 				DirectRender: true,
 				Import:       ctx.CurrentPackage(),
@@ -52,10 +50,8 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 				{Name: "name", Type: &render.GoSimple{Name: "ParamString", Import: ctx.RuntimeModule("")}},
 			},
 		},
-		AbstractChannel:     abstractChannel,
-		FallbackMessageType: &render.GoSimple{Name: "any", IsIface: true},
-		ProtoName:           pb.ProtoName,
-		ProtoTitle:          pb.ProtoTitle,
+		ProtoName:  pb.ProtoName,
+		ProtoTitle: pb.ProtoTitle,
 	}
 
 	// Interface to match servers bound with a channel (type chan1KafkaServer interface)
@@ -63,21 +59,21 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 		Name: "ctx",
 		Type: &render.GoSimple{Name: "Context", Import: "context", IsIface: true},
 	}}
-	if chanResult.AbstractChannel.ParametersStruct != nil {
+	if chanResult.Parent.ParametersStruct != nil {
 		openChannelServerIfaceArgs = append(openChannelServerIfaceArgs, render.GoFuncParam{
 			Name: "params",
-			Type: &render.GoSimple{Name: chanResult.AbstractChannel.ParametersStruct.Name, Import: ctx.CurrentPackage()},
+			Type: &render.GoSimple{Name: chanResult.Parent.ParametersStruct.Name, Import: ctx.CurrentPackage()},
 		})
 	}
 	chanResult.ServerIface = &render.GoInterface{
 		BaseType: render.BaseType{
-			Name:         utils.ToLowerFirstLetter(chanResult.Struct.Name + "Server"),
+			Name:         utils.ToLowerFirstLetter(chanResult.GolangNameProto + "Server"),
 			DirectRender: true,
 			Import:       ctx.CurrentPackage(),
 		},
 		Methods: []render.GoFuncSignature{
 			{
-				Name: "Open" + chanResult.Struct.Name,
+				Name: "Open" + chanResult.GolangNameProto,
 				Args: openChannelServerIfaceArgs,
 				Return: []render.GoFuncParam{
 					{Type: &render.GoSimple{Name: chanResult.Struct.Name, Import: ctx.CurrentPackage()}, Pointer: true},
@@ -88,7 +84,7 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 	}
 
 	// Publisher stuff
-	if channel.Publish != nil && !channel.Publish.XIgnore && ctx.CompileOpts.GeneratePublishers {
+	if parentChannel.Publisher {
 		ctx.Logger.Trace("Channel publish operation", "proto", pb.ProtoName)
 		chanResult.Struct.Fields = append(chanResult.Struct.Fields, render.GoStructField{
 			Name:        "publisher",
@@ -99,13 +95,7 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 				IsIface: true,
 			},
 		})
-		chanResult.Publisher = true
-		if channel.Publish.Message != nil {
-			ctx.Logger.Trace("Channel publish operation message", "proto", pb.ProtoName)
-			ref := path.Join(ctx.PathRef(), "publish/message")
-			chanResult.PubMessagePromise = render.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
-			ctx.PutPromise(chanResult.PubMessagePromise)
-		}
+
 		chanResult.ServerIface.Methods = append(chanResult.ServerIface.Methods, render.GoFuncSignature{
 			Name: "Producer",
 			Args: nil,
@@ -116,7 +106,7 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 	}
 
 	// Subscriber stuff
-	if channel.Subscribe != nil && !channel.Subscribe.XIgnore && ctx.CompileOpts.GenerateSubscribers {
+	if parentChannel.Subscriber {
 		ctx.Logger.Trace("Channel subscribe operation", "proto", pb.ProtoName)
 		chanResult.Struct.Fields = append(chanResult.Struct.Fields, render.GoStructField{
 			Name:        "subscriber",
@@ -127,13 +117,7 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 				IsIface: true,
 			},
 		})
-		chanResult.Subscriber = true
-		if channel.Subscribe.Message != nil {
-			ctx.Logger.Trace("Channel subscribe operation message", "proto", pb.ProtoName)
-			ref := path.Join(ctx.PathRef(), "subscribe/message")
-			chanResult.SubMessagePromise = render.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
-			ctx.PutPromise(chanResult.SubMessagePromise)
-		}
+
 		chanResult.ServerIface.Methods = append(chanResult.ServerIface.Methods, render.GoFuncSignature{
 			Name: "Consumer",
 			Args: nil,
@@ -149,36 +133,21 @@ func (pb BaseProtoBuilder) BuildBaseProtoChannel(
 func (pb BaseProtoBuilder) BuildBaseProtoServer(
 	ctx *common.CompileContext,
 	server *Server,
-	serverKey string,
 	abstractServer *render.Server,
 ) (*renderProto.BaseProtoServer, error) {
-	srvName, _ := lo.Coalesce(server.XGoName, serverKey)
 	srvResult := &renderProto.BaseProtoServer{
-		Name:            srvName,
-		Key:             serverKey,
-		URL:             server.URL,
-		ProtocolVersion: server.ProtocolVersion,
 		Struct: &render.GoStruct{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(srvName, ""),
+				Name:         abstractServer.GolangName,
 				Description:  server.Description,
 				DirectRender: true,
 				Import:       ctx.CurrentPackage(),
 			},
 		},
-		AbstractServer: abstractServer,
-		ProtoName:      pb.ProtoName,
-		ProtoTitle:     pb.ProtoTitle,
+		Parent:     abstractServer,
+		ProtoName:  pb.ProtoName,
+		ProtoTitle: pb.ProtoTitle,
 	}
-
-	// Channels which are connected to this server
-	prms := lo.Map(ctx.Storage.ActiveChannels(), func(item string, index int) *render.Promise[*render.Channel] {
-		ref := path.Join("#/channels", item)
-		prm := render.NewPromise[*render.Channel](ref, common.PromiseOriginInternal)
-		ctx.PutPromise(prm)
-		return prm
-	})
-	srvResult.AllChannelsPromises = prms
 
 	// Producer/consumer
 	ctx.Logger.Trace("Server producer", "proto", pb.ProtoName)

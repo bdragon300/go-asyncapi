@@ -13,8 +13,8 @@ type GoMap struct {
 }
 
 func (m GoMap) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoMap", m.Import, m.Name, "definition", m.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("GoMap", m.Import, m.Name, "definition", m.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	var res []*jen.Statement
 	if m.Description != "" {
@@ -30,8 +30,8 @@ func (m GoMap) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 }
 
 func (m GoMap) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoMap", m.Import, m.Name, "usage", m.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("GoMap", m.Import, m.Name, "usage", m.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	if m.DirectRender {
 		if m.Import != "" && m.Import != ctx.CurrentPackage {

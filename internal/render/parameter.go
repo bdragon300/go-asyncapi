@@ -20,8 +20,8 @@ func (p Parameter) DirectRendering() bool {
 
 func (p Parameter) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 	var res []*j.Statement
-	ctx.LogRender("Parameter", "", p.Name, "definition", p.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("Parameter", "", p.Name, "definition", p.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	res = append(res, p.Type.RenderDefinition(ctx)...)
 	res = append(res, p.renderMethods(ctx)...)
@@ -62,8 +62,8 @@ func (p Parameter) renderMethods(ctx *common.RenderContext) []*j.Statement {
 }
 
 func (p Parameter) RenderUsage(ctx *common.RenderContext) []*j.Statement {
-	ctx.LogRender("Parameter", "", p.Name, "usage", p.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("Parameter", "", p.Name, "usage", p.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	return p.Type.RenderUsage(ctx)
 }

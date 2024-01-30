@@ -32,8 +32,8 @@ func (m Message) DirectRendering() bool {
 
 func (m Message) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 	var res []*j.Statement
-	ctx.LogRender("Message", "", m.Name, "definition", m.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("Message", "", m.Name, "definition", m.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	// Bindings struct and its methods according to protocols of channels where the message is used
 	if m.BindingsStruct != nil {

@@ -40,8 +40,8 @@ func (b *Bindings) RenderBindingsMethod(
 	bindingsStruct *GoStruct,
 	protoName, protoTitle string,
 ) []*j.Statement {
-	ctx.LogRender("Bindings.RenderBindingsMethod", "", bindingsStruct.Name, "definition", false)
-	defer ctx.LogReturn()
+	ctx.LogStartRender("Bindings.RenderBindingsMethod", "", bindingsStruct.Name, "definition", false)
+	defer ctx.LogFinishRender()
 
 	receiver := j.Id(bindingsStruct.ReceiverName()).Add(utils.ToCode(bindingsStruct.RenderUsage(ctx))...)
 	pv, ok := b.Values.Get(protoName)
@@ -72,8 +72,8 @@ func renderChannelAndOperationBindingsMethod(
 	channelBindings, publishBindings, subscribeBindings *Bindings,
 	protoName, protoTitle string,
 ) []*j.Statement {
-	ctx.LogRender("renderChannelAndOperationBindingsMethod", "", bindingsStruct.Name, "definition", false)
-	defer ctx.LogReturn()
+	ctx.LogStartRender("renderChannelAndOperationBindingsMethod", "", bindingsStruct.Name, "definition", false)
+	defer ctx.LogFinishRender()
 
 	receiver := j.Id(bindingsStruct.ReceiverName()).Add(utils.ToCode(bindingsStruct.RenderUsage(ctx))...)
 

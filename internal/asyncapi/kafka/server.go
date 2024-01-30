@@ -16,8 +16,8 @@ type serverBindings struct {
 	SchemaRegistryVendor string `json:"schemaRegistryVendor" yaml:"schemaRegistryVendor"`
 }
 
-func (pb ProtoBuilder) BuildServer(ctx *common.CompileContext, server *asyncapi.Server, serverKey string, abstractServer *render.Server) (common.Renderer, error) {
-	baseServer, err := pb.BuildBaseProtoServer(ctx, server, serverKey, abstractServer)
+func (pb ProtoBuilder) BuildServer(ctx *common.CompileContext, server *asyncapi.Server, parent *render.Server) (common.Renderer, error) {
+	baseServer, err := pb.BuildBaseProtoServer(ctx, server, parent)
 	if err != nil {
 		return nil, err
 	}

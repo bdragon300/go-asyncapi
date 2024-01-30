@@ -16,15 +16,15 @@ func (p GoPointer) DirectRendering() bool {
 }
 
 func (p GoPointer) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoPointer", "", "", "definition", p.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("GoPointer", "", "", "definition", p.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	return p.Type.RenderDefinition(ctx)
 }
 
 func (p GoPointer) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoPointer", "", "", "usage", p.DirectRendering())
-	defer ctx.LogReturn()
+	ctx.LogStartRender("GoPointer", "", "", "usage", p.DirectRendering())
+	defer ctx.LogFinishRender()
 
 	isPtr := true
 	switch v := p.Type.(type) {

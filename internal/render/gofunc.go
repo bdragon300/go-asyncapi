@@ -17,8 +17,8 @@ type GoFuncSignature struct {
 }
 
 func (f GoFuncSignature) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoFuncSignature", "", f.Name, "definition", false)
-	defer ctx.LogReturn()
+	ctx.LogStartRender("GoFuncSignature", "", f.Name, "definition", false)
+	defer ctx.LogFinishRender()
 
 	stmt := jen.Id(f.Name)
 	code := lo.FlatMap(f.Args, func(item GoFuncParam, index int) []*jen.Statement {
@@ -37,8 +37,8 @@ func (f GoFuncSignature) RenderDefinition(ctx *common.RenderContext) []*jen.Stat
 }
 
 func (f GoFuncSignature) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoFuncSignature", "", f.Name, "usage", false)
-	defer ctx.LogReturn()
+	ctx.LogStartRender("GoFuncSignature", "", f.Name, "usage", false)
+	defer ctx.LogFinishRender()
 	return []*jen.Statement{jen.Id(f.Name)}
 }
 
@@ -74,8 +74,8 @@ type GoFuncParam struct {
 }
 
 func (n GoFuncParam) renderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	ctx.LogRender("GoFuncParam", "", n.Name, "definition", false)
-	defer ctx.LogReturn()
+	ctx.LogStartRender("GoFuncParam", "", n.Name, "definition", false)
+	defer ctx.LogFinishRender()
 
 	stmt := &jen.Statement{}
 	if n.Name != "" {
