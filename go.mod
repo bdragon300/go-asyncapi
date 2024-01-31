@@ -17,6 +17,7 @@ require (
 )
 
 require (
+	github.com/BobuSumisu/aho-corasick v1.0.3 // indirect
 	github.com/alexflint/go-scalar v1.2.0 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect

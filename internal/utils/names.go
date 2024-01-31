@@ -1,8 +1,12 @@
 package utils
 
 import (
+	"go/token"
 	"regexp"
 	"strings"
+	"unicode"
+
+	ahocorasick "github.com/BobuSumisu/aho-corasick"
 
 	"github.com/samber/lo"
 
@@ -13,6 +17,14 @@ var (
 	golangTypeReplaceRe = regexp.MustCompile("[^a-zA-Z0-9_]+")
 	fileNameReplaceRe   = regexp.MustCompile("[^a-zA-Z0-9_-]+")
 )
+
+// Initialisms are the commonly used acronyms inside identifiers, that code linters want they to be in upper case
+var initialisms = []string{
+	"Acl", "Api", "Ascii", "Cpu", "Css", "Dns", "Eof", "Guid", "Html", "Http", "Https", "Id", "Ip", "Json", "Lhs",
+	"Qps", "Ram", "Rhs", "Rpc", "Sla", "Smtp", "Sql", "Ssh", "Tcp", "Tls", "Ttl", "Udp", "Ui", "Uid", "Uuid", "Uri",
+	"Url", "Utf8", "Vm", "Xml", "Xmpp", "Xsrf", "Xss",
+}
+var initialismsTrie = ahocorasick.NewTrieBuilder().AddStrings(initialisms).Build()
 
 func ToGolangName(rawString string, exported bool) string {
 	if rawString == "" {
@@ -28,12 +40,35 @@ func ToGolangName(rawString string, exported bool) string {
 	// Cut numbers from string start
 	rawString = strings.TrimLeft(rawString, "1234567890")
 
-	// TODO: detect Go builtin words and replace them
-	// TODO: transform words such as ID, URL, etc., to upper case
+	var camel []byte
 	if exported {
-		return strcase.UpperCamelCase(rawString)
+		camel = []byte(strcase.UpperCamelCase(rawString))
+	} else {
+		camel = []byte(strcase.LowerCamelCase(rawString))
 	}
-	return strcase.LowerCamelCase(rawString)
+
+	// Transform possible initialisms to upper case if they appear in string
+	var bld strings.Builder
+	initialismsTrie.Walk(camel, func(end, n, pattern int64) bool {
+		right := end + 1 // `end` is inclusive, so we need to add 1
+		bld.Write(camel[bld.Len() : right-n])
+		if right == int64(len(camel)) || unicode.IsUpper(rune(camel[right])) {
+			bld.WriteString(strings.ToUpper(initialisms[pattern]))
+		} else {
+			bld.Write(camel[right-n : right])
+		}
+		return true
+	})
+	if bld.Len() < len(camel) {
+		bld.Write(camel[bld.Len():])
+	}
+	res := bld.String()
+
+	// Avoid to conflict with Golang reserved keywords
+	if token.IsKeyword(res) {
+		return res + "_"
+	}
+	return res
 }
 
 func ToLowerFirstLetter(s string) string {
@@ -60,7 +95,4 @@ func ToFileName(rawString string) string {
 	rawString = strings.Trim(rawString, "_")
 
 	return strcase.SnakeCase(rawString)
-	// return strings.Join(lo.Map(parts, func(item string, index int) string {
-	//	return strings.ToLower(item)
-	// }), "_")
 }
