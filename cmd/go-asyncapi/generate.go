@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/rawsocket"
+
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/redis"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/ws"
@@ -66,12 +68,13 @@ type generateImplementationArgs struct {
 }
 
 type ImplementationsOpts struct {
-	Kafka string `arg:"--kafka-impl" default:"franz-go" help:"Implementation for Kafka ('no' to disable)" placeholder:"NAME"`
-	AMQP  string `arg:"--amqp-impl" default:"amqp091-go" help:"Implementation for AMQP ('no' to disable)" placeholder:"NAME"`
-	HTTP  string `arg:"--http-impl" default:"nethttp" help:"Implementation for HTTP ('no' to disable)" placeholder:"NAME"`
-	MQTT  string `arg:"--mqtt-impl" default:"paho-mqtt" help:"Implementation for MQTT ('no' to disable)" placeholder:"NAME"`
-	WS    string `arg:"--ws-impl" default:"gobwas-ws" help:"Implementation for WebSocket ('no' to disable)" placeholder:"NAME"`
-	Redis string `arg:"--redis-impl" default:"go-redis" help:"Implementation for Redis ('no' to disable)" placeholder:"NAME"`
+	Kafka     string `arg:"--kafka-impl" default:"franz-go" help:"Implementation for Kafka ('no' to disable)" placeholder:"NAME"`
+	AMQP      string `arg:"--amqp-impl" default:"amqp091-go" help:"Implementation for AMQP ('no' to disable)" placeholder:"NAME"`
+	HTTP      string `arg:"--http-impl" default:"nethttp" help:"Implementation for HTTP ('no' to disable)" placeholder:"NAME"`
+	MQTT      string `arg:"--mqtt-impl" default:"paho-mqtt" help:"Implementation for MQTT ('no' to disable)" placeholder:"NAME"`
+	WS        string `arg:"--ws-impl" default:"gobwas-ws" help:"Implementation for WebSocket ('no' to disable)" placeholder:"NAME"`
+	Redis     string `arg:"--redis-impl" default:"go-redis" help:"Implementation for Redis ('no' to disable)" placeholder:"NAME"`
+	RawSocket string `arg:"--rawsocket-impl" default:"no" help:"Implementation for raw sockets ('no' to disable)" placeholder:"NAME"`
 }
 
 type generateObjectSelectionOpts struct {
@@ -307,12 +310,13 @@ func getImportBase() (string, error) {
 
 func getImplementationsOpts(opts ImplementationsOpts) map[string]string {
 	return map[string]string{
-		amqp.Builder.ProtocolName():  opts.AMQP,
-		http.Builder.ProtocolName():  opts.HTTP,
-		kafka.Builder.ProtocolName(): opts.Kafka,
-		mqtt.Builder.ProtocolName():  opts.MQTT,
-		ws.Builder.ProtocolName():    opts.WS,
-		redis.Builder.ProtocolName(): opts.Redis,
+		amqp.Builder.ProtocolName():      opts.AMQP,
+		http.Builder.ProtocolName():      opts.HTTP,
+		kafka.Builder.ProtocolName():     opts.Kafka,
+		mqtt.Builder.ProtocolName():      opts.MQTT,
+		ws.Builder.ProtocolName():        opts.WS,
+		redis.Builder.ProtocolName():     opts.Redis,
+		rawsocket.Builder.ProtocolName(): opts.RawSocket,
 	}
 }
 
@@ -442,12 +446,13 @@ func getRenderOpts(opts generatePubSubArgs, targetDir, targetPkg string) (common
 
 func protocolBuilders() map[string]asyncapi.ProtocolBuilder {
 	return map[string]asyncapi.ProtocolBuilder{
-		amqp.Builder.ProtocolName():  amqp.Builder,
-		http.Builder.ProtocolName():  http.Builder,
-		kafka.Builder.ProtocolName(): kafka.Builder,
-		mqtt.Builder.ProtocolName():  mqtt.Builder,
-		ws.Builder.ProtocolName():    ws.Builder,
-		redis.Builder.ProtocolName(): redis.Builder,
+		amqp.Builder.ProtocolName():      amqp.Builder,
+		http.Builder.ProtocolName():      http.Builder,
+		kafka.Builder.ProtocolName():     kafka.Builder,
+		mqtt.Builder.ProtocolName():      mqtt.Builder,
+		ws.Builder.ProtocolName():        ws.Builder,
+		redis.Builder.ProtocolName():     redis.Builder,
+		rawsocket.Builder.ProtocolName(): rawsocket.Builder,
 	}
 }
 

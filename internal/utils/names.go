@@ -19,6 +19,7 @@ var (
 )
 
 // Initialisms are the commonly used acronyms inside identifiers, that code linters want they to be in upper case
+// Got from https://github.com/golang/lint/blob/6edffad5e6160f5949cdefc81710b2706fbcd4f6/lint.go#L770
 var initialisms = []string{
 	"Acl", "Api", "Ascii", "Cpu", "Css", "Dns", "Eof", "Guid", "Html", "Http", "Https", "Id", "Ip", "Json", "Lhs",
 	"Qps", "Ram", "Rhs", "Rpc", "Sla", "Smtp", "Sql", "Ssh", "Tcp", "Tls", "Ttl", "Udp", "Ui", "Uid", "Uuid", "Uri",
@@ -52,6 +53,7 @@ func ToGolangName(rawString string, exported bool) string {
 	initialismsTrie.Walk(camel, func(end, n, pattern int64) bool {
 		right := end + 1 // `end` is inclusive, so we need to add 1
 		bld.Write(camel[bld.Len() : right-n])
+		// Transform only if the matched part of string is the whole word, not a part of other word
 		if right == int64(len(camel)) || unicode.IsUpper(rune(camel[right])) {
 			bld.WriteString(strings.ToUpper(initialisms[pattern]))
 		} else {
