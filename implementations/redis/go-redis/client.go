@@ -21,11 +21,11 @@ type Client struct {
 }
 
 func (c *Client) Publisher(_ context.Context, channelName string, _ *runRedis.ChannelBindings) (runRedis.Publisher, error) {
-	return PublishChannel{Client: c.Client, Name: channelName}, nil
+	return &PublishChannel{Client: c.Client, Name: channelName}, nil
 }
 
 func (c *Client) Subscriber(ctx context.Context, channelName string, _ *runRedis.ChannelBindings) (runRedis.Subscriber, error) {
-	return SubscriberChannel{
+	return &SubscriberChannel{
 		PubSub: c.Client.Subscribe(ctx, channelName),
 		Name:   channelName,
 	}, nil

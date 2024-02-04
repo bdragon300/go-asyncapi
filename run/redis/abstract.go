@@ -26,7 +26,7 @@ type (
 )
 
 type EnvelopeMarshaler interface {
-	MarshalWebSocketEnvelope(envelope EnvelopeWriter) error
+	MarshalRedisEnvelope(envelope EnvelopeWriter) error
 }
 
 // Sub
@@ -45,5 +45,5 @@ type (
 )
 
 type EnvelopeUnmarshaler interface {
-	UnmarshalWebSocketEnvelope(envelope EnvelopeReader) error
+	UnmarshalRedisEnvelope(envelope EnvelopeReader) error
 }
