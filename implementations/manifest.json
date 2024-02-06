@@ -12,9 +12,9 @@
     }
   },
   "http": {
-    "nethttp": {
+    "std": {
       "url": "https://pkg.go.dev/net/http",
-      "dir": "http/nethttp"
+      "dir": "http/std"
     }
   },
   "mqtt": {
