@@ -21,7 +21,7 @@ type PublishChannel struct {
 }
 
 type ImplementationRecord interface {
-	RecordPaho() *mqtt.Message
+	RecordPaho() []byte
 }
 
 func (r *PublishChannel) Send(ctx context.Context, envelopes ...runMqtt.EnvelopeWriter) error {
