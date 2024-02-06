@@ -9,21 +9,17 @@ import (
 )
 
 func NewEnvelopeOut() *EnvelopeOut {
-	return &EnvelopeOut{payload: &strings.Builder{}}
+	return &EnvelopeOut{Builder: &strings.Builder{}}
 }
 
 type EnvelopeOut struct {
-	payload     *strings.Builder
+	*strings.Builder
 	headers     run.Headers
 	contentType string
 }
 
-func (e *EnvelopeOut) Write(p []byte) (n int, err error) {
-	return e.payload.Write(p)
-}
-
 func (e *EnvelopeOut) ResetPayload() {
-	e.payload.Reset()
+	e.Builder.Reset()
 }
 
 func (e *EnvelopeOut) SetHeaders(headers run.Headers) {
@@ -37,7 +33,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 func (e *EnvelopeOut) SetBindings(_ runRedis.MessageBindings) {}
 
 func (e *EnvelopeOut) RecordGoRedis() any {
-	return e.payload.String()
+	return e.Builder.String()
 }
 
 func NewEnvelopeIn(msg *redis.Message) *EnvelopeIn {

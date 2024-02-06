@@ -10,22 +10,18 @@ import (
 )
 
 func NewEnvelopeOut() *EnvelopeOut {
-	return &EnvelopeOut{payload: bytes.NewBuffer(make([]byte, 0))}
+	return &EnvelopeOut{Buffer: bytes.NewBuffer(make([]byte, 0))}
 }
 
 type EnvelopeOut struct {
+	*bytes.Buffer
 	opCode      ws.OpCode
-	payload     *bytes.Buffer
 	headers     run.Headers
 	contentType string
 }
 
-func (e *EnvelopeOut) Write(p []byte) (n int, err error) {
-	return e.payload.Write(p)
-}
-
 func (e *EnvelopeOut) ResetPayload() {
-	e.payload.Reset()
+	e.Buffer.Reset()
 }
 
 func (e *EnvelopeOut) SetHeaders(headers run.Headers) {
@@ -43,7 +39,7 @@ func (e *EnvelopeOut) SetOpCode(opCode byte) {
 }
 
 func (e *EnvelopeOut) RecordGobwasWS() []byte {
-	return e.payload.Bytes()
+	return e.Buffer.Bytes()
 }
 
 func (e *EnvelopeOut) OpCode() ws.OpCode {

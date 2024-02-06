@@ -8,21 +8,17 @@ import (
 )
 
 func NewEnvelopeOut() *EnvelopeOut {
-	return &EnvelopeOut{payload: bytes.NewBuffer(nil)}
+	return &EnvelopeOut{Buffer: bytes.NewBuffer(nil)}
 }
 
 type EnvelopeOut struct {
-	payload     *bytes.Buffer
+	*bytes.Buffer
 	headers     run.Headers
 	contentType string
 }
 
-func (e *EnvelopeOut) Write(p []byte) (n int, err error) {
-	return e.payload.Write(p)
-}
-
 func (e *EnvelopeOut) ResetPayload() {
-	e.payload.Reset()
+	e.Buffer.Reset()
 }
 
 func (e *EnvelopeOut) SetHeaders(headers run.Headers) {
@@ -36,19 +32,15 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 func (e *EnvelopeOut) SetBindings(_ runTCP.MessageBindings) {}
 
 func (e *EnvelopeOut) RecordStd() []byte {
-	return e.payload.Bytes()
+	return e.Buffer.Bytes()
 }
 
 func NewEnvelopeIn(msg []byte) *EnvelopeIn {
-	return &EnvelopeIn{payload: bytes.NewReader(msg)}
+	return &EnvelopeIn{Reader: bytes.NewReader(msg)}
 }
 
 type EnvelopeIn struct {
-	payload *bytes.Reader
-}
-
-func (e *EnvelopeIn) Read(p []byte) (n int, err error) {
-	return e.payload.Read(p)
+	*bytes.Reader
 }
 
 func (e *EnvelopeIn) Headers() run.Headers {

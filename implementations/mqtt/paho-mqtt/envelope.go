@@ -10,15 +10,15 @@ import (
 
 func NewEnvelopeOut() *EnvelopeOut {
 	return &EnvelopeOut{
-		OutboundMessage: OutboundMessage{payload: bytes.NewBuffer(make([]byte, 0))},
+		OutboundMessage: OutboundMessage{Buffer: bytes.NewBuffer(make([]byte, 0))},
 	}
 }
 
 type OutboundMessage struct {
+	*bytes.Buffer
 	topic       string
 	qos         byte
 	retained    bool
-	payload     *bytes.Buffer
 	headers     run.Headers
 	contentType string
 }
@@ -28,12 +28,8 @@ type EnvelopeOut struct {
 	messageBindings runMqtt.MessageBindings
 }
 
-func (e *EnvelopeOut) Write(p []byte) (n int, err error) {
-	return e.payload.Write(p)
-}
-
 func (e *EnvelopeOut) ResetPayload() {
-	e.payload.Reset()
+	e.Buffer.Reset()
 }
 
 func (e *EnvelopeOut) SetHeaders(headers run.Headers) {
@@ -61,7 +57,7 @@ func (e *EnvelopeOut) SetRetained(retained bool) {
 }
 
 func (e *EnvelopeOut) RecordPaho() []byte {
-	return e.payload.Bytes()
+	return e.Buffer.Bytes()
 }
 
 func NewEnvelopeIn(msg mqtt.Message) *EnvelopeIn {
