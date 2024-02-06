@@ -3,6 +3,7 @@ package rawsocket
 import (
 	"context"
 	"io"
+	"net"
 
 	"github.com/bdragon300/go-asyncapi/run"
 )
@@ -22,11 +23,13 @@ type (
 		SetHeaders(headers run.Headers)
 		SetContentType(contentType string)
 		SetBindings(bindings MessageBindings)
+
+		SetRemoteAddr(addr net.Addr)
 	}
 )
 
 type EnvelopeMarshaler interface {
-	MarshalWebSocketEnvelope(envelope EnvelopeWriter) error
+	MarshalRawSocketEnvelope(envelope EnvelopeWriter) error
 }
 
 // Sub
@@ -41,9 +44,11 @@ type (
 	EnvelopeReader interface {
 		io.Reader
 		Headers() run.Headers
+
+		RemoteAddr() net.Addr
 	}
 )
 
 type EnvelopeUnmarshaler interface {
-	UnmarshalWebSocketEnvelope(envelope EnvelopeReader) error
+	UnmarshalRawSocketEnvelope(envelope EnvelopeReader) error
 }
