@@ -21,13 +21,13 @@ type PublishChannel struct {
 }
 
 type ImplementationRecord interface {
-	RecordPaho() []byte
+	Bytes() []byte
 }
 
 func (r *PublishChannel) Send(ctx context.Context, envelopes ...runMqtt.EnvelopeWriter) error {
 	for _, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
-		tok := r.Client.Publish(r.Topic, byte(r.bindings.PublisherBindings.QoS), r.bindings.PublisherBindings.Retain, ir.RecordPaho())
+		tok := r.Client.Publish(r.Topic, byte(r.bindings.PublisherBindings.QoS), r.bindings.PublisherBindings.Retain, ir.Bytes())
 
 		select {
 		case <-ctx.Done():

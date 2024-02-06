@@ -46,7 +46,7 @@ func (e *EnvelopeOut) SetDeliveryTag(tag string) {
 	e.deliveryTag = tag
 }
 
-func (e *EnvelopeOut) RecordAMQP091() *amqp091.Publishing {
+func (e *EnvelopeOut) AsAMQP091Record() *amqp091.Publishing {
 	return e.Publishing
 }
 

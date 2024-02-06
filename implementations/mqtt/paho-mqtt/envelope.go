@@ -56,10 +56,6 @@ func (e *EnvelopeOut) SetRetained(retained bool) {
 	e.retained = retained
 }
 
-func (e *EnvelopeOut) RecordPaho() []byte {
-	return e.Buffer.Bytes()
-}
-
 func NewEnvelopeIn(msg mqtt.Message) *EnvelopeIn {
 	return &EnvelopeIn{Message: msg, reader: bytes.NewReader(msg.Payload())}
 }

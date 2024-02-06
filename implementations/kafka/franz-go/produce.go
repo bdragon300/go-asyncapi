@@ -58,7 +58,7 @@ func (p ProduceClient) Publisher(_ context.Context, channelName string, bindings
 }
 
 type ImplementationRecord interface {
-	RecordFranzGo() *kgo.Record
+	AsFranzGoRecord() *kgo.Record
 	// TODO: Bindings?
 }
 
@@ -72,7 +72,7 @@ func (p PublishChannel) Send(ctx context.Context, envelopes ...runKafka.Envelope
 	records := make([]*kgo.Record, 0, len(envelopes))
 	for _, e := range envelopes {
 		rm := e.(ImplementationRecord)
-		records = append(records, rm.RecordFranzGo())
+		records = append(records, rm.AsFranzGoRecord())
 	}
 	return p.Client.ProduceSync(ctx, records...).FirstErr()
 }

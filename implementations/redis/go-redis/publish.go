@@ -14,13 +14,13 @@ type PublishChannel struct {
 }
 
 type ImplementationRecord interface {
-	RecordGoRedis() any
+	AsAny() any
 }
 
 func (p PublishChannel) Send(ctx context.Context, envelopes ...runRedis.EnvelopeWriter) error {
 	for i, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
-		if err := p.Client.Publish(ctx, p.Name, ir.RecordGoRedis()).Err(); err != nil {
+		if err := p.Client.Publish(ctx, p.Name, ir.AsAny()).Err(); err != nil {
 			return fmt.Errorf("envelope #%d: %w", i, err)
 		}
 	}

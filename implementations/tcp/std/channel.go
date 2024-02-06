@@ -36,13 +36,13 @@ type Channel struct {
 }
 
 type ImplementationRecord interface {
-	RecordStd() []byte
+	Bytes() []byte
 }
 
 func (c *Channel) Send(_ context.Context, envelopes ...runTCP.EnvelopeWriter) error {
 	for _, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
-		if _, err := c.TCPConn.Write(ir.RecordStd()); err != nil {
+		if _, err := c.TCPConn.Write(ir.Bytes()); err != nil {
 			return err
 		}
 	}

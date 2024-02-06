@@ -18,7 +18,7 @@ type PublishChannel struct {
 }
 
 type ImplementationRecord interface {
-	RecordAMQP091() *amqp091.Publishing
+	AsAMQP091Record() *amqp091.Publishing
 	DeliveryTag() string
 }
 
@@ -26,7 +26,7 @@ func (p PublishChannel) Send(ctx context.Context, envelopes ...runAmqp.EnvelopeW
 	var err error
 	for _, envelope := range envelopes {
 		rm := envelope.(ImplementationRecord)
-		record := rm.RecordAMQP091()
+		record := rm.AsAMQP091Record()
 		record.DeliveryMode = uint8(p.bindings.PublisherBindings.DeliveryMode)
 		record.Priority = uint8(p.bindings.PublisherBindings.Priority)
 		record.Timestamp = time.Time{}

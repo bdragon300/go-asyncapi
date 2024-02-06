@@ -73,7 +73,7 @@ func (e *EnvelopeOut) SetPath(path string) {
 	e.path = path
 }
 
-func (e *EnvelopeOut) RecordNetHTTP() *http.Request {
+func (e *EnvelopeOut) AsStdRecord() *http.Request {
 	reqCopy := *e.Request
 	reqCopy.GetBody = func() (io.ReadCloser, error) {
 		snapshot := e.body.Bytes()

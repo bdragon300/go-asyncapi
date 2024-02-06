@@ -33,7 +33,7 @@ type Channel struct {
 }
 
 type ImplementationRecord interface {
-	RecordStd() []byte
+	Bytes() []byte
 	RemoteAddr() net.Addr
 }
 
@@ -44,7 +44,7 @@ func (c *Channel) Send(_ context.Context, envelopes ...runRawSocket.EnvelopeWrit
 		if addr == nil {
 			addr = c.defaultRemoteAddress
 		}
-		if _, err := c.IPConn.WriteTo(ir.RecordStd(), addr); err != nil {
+		if _, err := c.IPConn.WriteTo(ir.Bytes(), addr); err != nil {
 			return err
 		}
 	}

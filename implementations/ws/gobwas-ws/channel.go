@@ -26,7 +26,7 @@ func NewChannel(bindings *runWs.ChannelBindings, conn net.Conn, rw *bufio.ReadWr
 }
 
 type ImplementationRecord interface {
-	RecordGobwasWS() []byte
+	Bytes() []byte
 	OpCode() ws.OpCode
 }
 
@@ -61,7 +61,7 @@ func (s Channel) Send(_ context.Context, envelopes ...runWs.EnvelopeWriter) erro
 
 	for i, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
-		msg := ir.RecordGobwasWS()
+		msg := ir.Bytes()
 		err := wsutil.WriteServerMessage(s.ReadWriter, ir.OpCode(), msg)
 		if err != nil {
 			return fmt.Errorf("envelope #%d: %w", i, err)

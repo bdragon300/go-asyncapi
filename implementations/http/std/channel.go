@@ -27,7 +27,7 @@ func NewChannel(bindings *runHttp.ChannelBindings, serverURL *url.URL, conn net.
 }
 
 type ImplementationRecord interface {
-	RecordNetHTTP() *http.Request
+	AsStdRecord() *http.Request
 	Path() string
 	// TODO: Bindings?
 }
@@ -69,7 +69,7 @@ func (s Channel) Send(ctx context.Context, envelopes ...runHttp.EnvelopeWriter) 
 
 	for i, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
-		req := ir.RecordNetHTTP().WithContext(ctx)
+		req := ir.AsStdRecord().WithContext(ctx)
 
 		u := req.URL
 		if u == nil {

@@ -31,10 +31,6 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 
 func (e *EnvelopeOut) SetBindings(_ runTCP.MessageBindings) {}
 
-func (e *EnvelopeOut) RecordStd() []byte {
-	return e.Buffer.Bytes()
-}
-
 func NewEnvelopeIn(msg []byte) *EnvelopeIn {
 	return &EnvelopeIn{Reader: bytes.NewReader(msg)}
 }

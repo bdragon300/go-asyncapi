@@ -32,7 +32,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 
 func (e *EnvelopeOut) SetBindings(_ runRedis.MessageBindings) {}
 
-func (e *EnvelopeOut) RecordGoRedis() any {
+func (e *EnvelopeOut) AsAny() any {
 	return e.Builder.String()
 }
 

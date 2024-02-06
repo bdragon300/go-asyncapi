@@ -19,7 +19,7 @@ type EnvelopeOut struct {
 	remoteAddr  net.Addr
 }
 
-func (e *EnvelopeOut) ResetPayload() { // TODO: rename to Reset
+func (e *EnvelopeOut) ResetPayload() {
 	e.Buffer.Reset()
 }
 
@@ -32,10 +32,6 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 }
 
 func (e *EnvelopeOut) SetBindings(_ runRawSocket.MessageBindings) {}
-
-func (e *EnvelopeOut) RecordStd() []byte {
-	return e.Buffer.Bytes()
-}
 
 func (e *EnvelopeOut) SetRemoteAddr(addr net.Addr) {
 	e.remoteAddr = addr

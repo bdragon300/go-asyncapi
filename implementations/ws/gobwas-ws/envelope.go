@@ -38,10 +38,6 @@ func (e *EnvelopeOut) SetOpCode(opCode byte) {
 	e.opCode = ws.OpCode(opCode)
 }
 
-func (e *EnvelopeOut) RecordGobwasWS() []byte {
-	return e.Buffer.Bytes()
-}
-
 func (e *EnvelopeOut) OpCode() ws.OpCode {
 	return e.opCode
 }
