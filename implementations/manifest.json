@@ -34,5 +34,23 @@
       "url": "https://github.com/redis/go-redis",
       "dir": "redis/go-redis"
     }
+  },
+  "tcp": {
+    "std": {
+      "url": "https://pkg.go.dev/net",
+      "dir": "tcp/std"
+    }
+  },
+  "udp": {
+    "std": {
+      "url": "https://pkg.go.dev/net",
+      "dir": "udp/std"
+    }
+  },
+  "rawsocket": {
+    "std": {
+      "url": "https://pkg.go.dev/net",
+      "dir": "rawsocket/std"
+    }
   }
 }

@@ -10,6 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/tcp"
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/udp"
+
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/rawsocket"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/redis"
@@ -74,7 +77,9 @@ type ImplementationsOpts struct {
 	MQTT      string `arg:"--mqtt-impl" default:"paho-mqtt" help:"Implementation for MQTT ('no' to disable)" placeholder:"NAME"`
 	WS        string `arg:"--ws-impl" default:"gobwas-ws" help:"Implementation for WebSocket ('no' to disable)" placeholder:"NAME"`
 	Redis     string `arg:"--redis-impl" default:"go-redis" help:"Implementation for Redis ('no' to disable)" placeholder:"NAME"`
-	RawSocket string `arg:"--rawsocket-impl" default:"no" help:"Implementation for raw sockets ('no' to disable)" placeholder:"NAME"`
+	RawSocket string `arg:"--rawsocket-impl" default:"std" help:"Implementation for raw sockets ('no' to disable)" placeholder:"NAME"`
+	TCP       string `arg:"--tcp-impl" default:"std" help:"Implementation for TCP ('no' to disable)" placeholder:"NAME"`
+	UDP       string `arg:"--udp-impl" default:"std" help:"Implementation for UDP ('no' to disable)" placeholder:"NAME"`
 }
 
 type generateObjectSelectionOpts struct {
@@ -317,6 +322,8 @@ func getImplementationsOpts(opts ImplementationsOpts) map[string]string {
 		ws.Builder.ProtocolName():        opts.WS,
 		redis.Builder.ProtocolName():     opts.Redis,
 		rawsocket.Builder.ProtocolName(): opts.RawSocket,
+		tcp.Builder.ProtocolName():       opts.TCP,
+		udp.Builder.ProtocolName():       opts.UDP,
 	}
 }
 
@@ -453,6 +460,8 @@ func protocolBuilders() map[string]asyncapi.ProtocolBuilder {
 		ws.Builder.ProtocolName():        ws.Builder,
 		redis.Builder.ProtocolName():     redis.Builder,
 		rawsocket.Builder.ProtocolName(): rawsocket.Builder,
+		tcp.Builder.ProtocolName():       tcp.Builder,
+		udp.Builder.ProtocolName():       udp.Builder,
 	}
 }
 
