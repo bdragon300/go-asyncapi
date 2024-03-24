@@ -178,10 +178,10 @@ import (
 message := messages.NewMyMessageOut().WithPayload("Hello, world!")
 envelope := implKafka.NewEnvelopeOut()
 if err := channel.MakeEnvelope(envelope, message); err != nil {
-    log.Printf("failed to make envelope: %v", err)
+    log.Fatalf("failed to make envelope: %v", err)
 }
 if err := channel.Publish(cancelCtx, envelope); err != nil {
-    log.Printf("failed to publish message: %v", err)
+    log.Fatalf("failed to publish message: %v", err)
 }
 ```
 {{< /tab >}}
@@ -198,13 +198,12 @@ import (
 err := channel.Subscribe(cancelCtx, func(envelope runKafka.EnvelopeReader) {
 	message := messages.NewMyMessageIn()
     if err := channel.ExtractEnvelope(envelope, message); err != nil {
-        log.Printf("failed to extract a message from envelope: %v", err)
-		return
+        log.Fatalf("failed to extract a message from envelope: %v", err)
     }
     log.Printf("received message: %s", message.MessagePayload())
 })
 if err != nil {
-    log.Printf("failed to subscribe: %v", err)
+    log.Fatalf("failed to subscribe: %v", err)
 }
 ```
 {{< /tab >}}
@@ -410,16 +409,31 @@ func (m MyMessageBindings) Kafka() kafka.MessageBindings {
 Message bindings are automatically used on `MakeEnvelope` call:
 
 ```go
+
+import (
+    implKafka "myproject/impl/kafka"
+    messages "myproject/messages"
+)
+
+//...
+
 message := messages.NewMyMessageOut().WithPayload("Hello, world!")
 envelope := implKafka.NewEnvelopeOut()
 if err := channel.MakeEnvelope(envelope, message); err != nil {
-    log.Printf("failed to make envelope: %v", err)
+    log.Fatalf("failed to make envelope: %v", err)
 }
 ```
 
 You can also use bindings manually:
 
 ```go
+
+import (
+    implKafka "myproject/impl/kafka"
+)
+
+//...
+
 envelope := implKafka.NewEnvelopeOut()
 envelope.SetBindings(messages.MyMessageBindings().Kafka())
 ```

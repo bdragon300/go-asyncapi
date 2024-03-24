@@ -112,6 +112,7 @@ func main() {
   if err != nil {
     log.Fatalf("failed to open subscribe channel: %v", err)
   }
+  defer channel.Close()
 
   httpServer := http.Server{Addr: ":80", Handler: consumer}
   go func() {
@@ -125,8 +126,7 @@ func main() {
     // Extract a message from an envelope
     msgIn := messages.NewPingMessageIn()
     if err := channel.ExtractEnvelope(envelope, msgIn); err != nil {
-      log.Printf("failed to extract envelope: %v", err)
-      return
+      log.Fatalf("failed to extract envelope: %v", err)
     }
     log.Printf("received message: %v", msgIn.Payload)
 
@@ -136,11 +136,10 @@ func main() {
     )
     envelopeOut := implWs.NewEnvelopeOut()
     if err := channel.MakeEnvelope(envelopeOut, msgOut); err != nil {
-      log.Printf("failed to make envelope: %v", err)
-      return
+      log.Fatalf("failed to make envelope: %v", err)
     }
     if err := channel.Publish(cancelCtx, envelopeOut); err != nil {
-      log.Printf("failed to send message: %v", err)
+      log.Fatalf("failed to send message: %v", err)
     }
   })
   if err != nil {

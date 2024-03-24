@@ -337,6 +337,10 @@ channelName := MychannelVariantName(channelParams)
 fmt.Println(channelName) 
 // Output: mychannel_foo
 channel, err := OpenMychannelVariantKafka(context.Background(), channelParams, myServer)
+if err != nil {
+    log.Fatalf("Failed to open channel: %v", err)
+}
+defer channel.Close()
 ```
 
 {{< /tab >}}
@@ -393,12 +397,20 @@ The "Open channel" function automatically uses the bindings, if any:
 
 ```go
 channel, err := OpenMychannelKafka(context.Background(), myServer)
+if err != nil {
+    log.Fatalf("Failed to open channel: %v", err)
+}
+defer channel.Close()
 ```
 
 At a lower level the channel bindings are used to make a Publisher/Subscriber object:
 
 ```go
 publisher, err := producer.NewPublisher(ctx, "mychannel", MychannelBindings.Kafka())
+if err != nil {
+    log.Fatalf("Failed to create Kafka publisher: %v", err)
+}
+defer publisher.Close()
 ```
 
 {{< /tab >}}
