@@ -200,3 +200,59 @@ var consumer = implKafka.NewConsumer(MyServerURL().String(), MyServerBindings().
 {{< /tab >}}
 {{< /tabs >}}
 {{< /details >}}
+
+## x-go-name
+
+This extra field is used to explicitly set the name of the server in generated code. By default, the Go name is
+generated from the AsyncAPI server name.
+
+{{< details "Example" >}}
+{{< tabs "4" >}}
+{{< tab "Definition" >}}
+```yaml
+channels:
+  myChannel:
+    description: My channel
+
+servers:
+  myServer:
+    url: 'kafka://localhost:9092'
+    protocol: kafka
+    x-go-name: FooBar
+```
+{{< /tab >}}
+
+{{< tab "Produced code" >}}
+```go
+
+//...
+
+type FooBar struct {
+    producer kafka.Producer
+    consumer kafka.Consumer
+}
+
+//...
+```
+{{< /tab >}}
+{{< /tabs >}}
+{{< /details >}}
+
+## x-ignore
+
+If this extra field it set to **true**, the server will not be generated. All references
+to this server in the generated code (if any) are replaced by Go `any` type.
+
+{{< details "Example" >}}
+```yaml
+channels:
+  myChannel:
+    description: My channel
+
+servers:
+  myServer:
+    url: 'kafka://localhost:9092'
+    protocol: kafka
+    x-ignore: true
+```
+{{< /details >}}

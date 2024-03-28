@@ -538,3 +538,92 @@ message.SetCorrelationID("123")
 {{< /tabs >}}
 {{< /details >}}
 
+### x-go-ignore
+
+If set to **true**, the correlation id code will be ignored.
+
+{{< details "Example" >}}
+```yaml
+components:
+  messages:
+    myMessage:
+      payload:
+        type: object
+        properties:
+          name:
+            type: string
+          age:
+            type: integer
+          correlationId:
+            type: string
+      correlationId:
+        location: '$message.payload#/correlationId'
+        x-go-ignore: true
+```
+{{< /details >}}
+
+## x-go-name
+
+This extra field is used to explicitly set the name of the message in generated code. By default, the Go name is
+generated from the AsyncAPI message name by converting it to CamelCase.
+
+{{< details "Example" >}}
+{{< tabs "6" >}}
+{{< tab "Definition" >}}
+```yaml
+components:
+  messages:
+    myMessage:
+      x-go-name: FooBar
+      description: MyMessage
+      payload:
+        type: string
+```
+{{< /tab >}}
+
+{{< tab "Generated message code" >}}
+```go
+//...
+
+/*
+FooBarOut --  (Outbound Message)
+MyMessage
+*/
+type FooBarOut struct {
+	Payload string
+	Headers map[string]any
+}
+
+//...
+
+/*
+FooBarIn --  (Inbound Message)
+MyMessage
+*/
+type FooBarIn struct {
+	Payload string
+	Headers map[string]any
+}
+
+//...
+```
+{{< /tab >}}
+{{< /tabs >}}
+{{< /details >}}
+
+## x-go-ignore
+
+If this extra field it set to **true**, the message will not be generated. All references
+to this message in the generated code (if any) are replaced by Go `any` type.
+
+{{< details "Example" >}}
+```yaml
+components:
+  messages:
+    myMessage:
+      x-go-ignore: true
+      description: MyMessage
+      payload:
+        type: string
+```
+{{< /details >}}

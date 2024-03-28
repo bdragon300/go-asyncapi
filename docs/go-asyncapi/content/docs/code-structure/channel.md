@@ -235,6 +235,30 @@ components:
 In a similar way, only the servers from the `servers` section are considered. See the
 [Servers]({{< relref "/docs/code-structure/server" >}}) for more details.
 
+## Operation
+
+### x-ignore
+
+If this extra field it set to **true**, the operation will not be generated. All references
+to objects in this operation in the generated code (if any) are replaced by Go `any` type.
+
+{{< details "Example" >}}
+```yaml
+servers:
+  myServer:
+    url: 'kafka://localhost:9092'
+    protocol: kafka
+
+channels:
+  myChannel:
+    publish:
+      x-ignore: true
+      message:
+        payload:
+          type: string
+```
+{{< /details >}}
+
 ## Channel parameters
 
 Channel parameters are variables, that are substituted in the channel name during channel opening. This is useful when
@@ -347,6 +371,34 @@ defer channel.Close()
 {{< /tabs >}}
 {{< /details >}}
 
+### x-go-name
+
+Explicitly set the name of the parameter in generated code. By default, the Go name is taken from a parameter name.
+
+{{< details "Example" >}}
+{{< tabs "3" >}}
+{{< tab "Definition" >}}
+```yaml
+channels:
+  mychannel_{variant}:
+    description: My channel
+    parameters:
+      variant:
+        schema:
+          type: string
+        x-go-name: VariantName
+    publish:
+      message:
+        payload:
+          type: object
+          properties:
+            value:
+              type: string
+```
+{{< /tab >}}
+{{< /tabs >}}
+{{< /details >}}
+
 ## Channel bindings, operation bindings
 
 Channel bindings are protocol-specific properties, that are used to define the channel behavior. They
@@ -415,4 +467,69 @@ defer publisher.Close()
 
 {{< /tab >}}
 {{< /tabs >}}
+{{< /details >}}
+
+## x-go-name
+
+This extra field is used to explicitly set the name of the channel in generated code. By default, the Go name is 
+generated from the AsyncAPI channel name.
+
+{{< details "Example" >}}
+{{< tabs "4" >}}
+{{< tab "Definition" >}}
+```yaml
+servers:
+  myServer:
+    url: 'kafka://localhost:9092'
+    protocol: kafka
+
+channels:
+  myChannel:
+    x-go-name: FooBar
+    description: My channel
+    publish:
+      message:
+        payload:
+          type: string
+```
+{{< /tab >}}
+
+{{< tab "Produced code" >}}
+```go
+
+//...
+
+// FooBarKafka -- my channel
+type FooBarKafka struct {
+    name      run.ParamString
+    publisher kafka.Publisher
+    topic     string
+}
+
+//...
+```
+{{< /tab >}}
+{{< /tabs >}}
+{{< /details >}}
+
+## x-ignore
+
+If this extra field it set to **true**, the channel will not be generated. All references 
+to this channel in the generated code (if any) are replaced by Go `any` type.
+
+{{< details "Example" >}}
+```yaml
+servers:
+  myServer:
+    url: 'kafka://localhost:9092'
+    protocol: kafka
+
+channels:
+  myChannel:
+    x-ignore: true
+    publish:
+      message:
+        payload:
+          type: string
+```
 {{< /details >}}
