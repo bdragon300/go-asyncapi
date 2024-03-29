@@ -1,6 +1,5 @@
 +++
 title = 'Overview'
-bookCollapseSection = true
 weight = 10
 +++
 
@@ -23,7 +22,7 @@ generated code is modular, so any object can be used separately or be reused fro
 Also, `go-asyncapi` provides the predefined minimal **implementations** for all supported protocols (at least one
 for each protocol), which are attached to the generated code by default.
 
-Supported AsyncAPI entities and protocols are listed in the [Features]({{< relref "/docs/overview/features" >}}) page.
+Supported AsyncAPI entities and protocols are listed in the [Features]({{< relref "/docs/features" >}}) page.
 
 Now only the version 2.6.0 of AsyncAPI specification is supported.
 
@@ -45,7 +44,7 @@ project uses the Watermill. Also, it supports only the AMQP protocol.
 
 `go-asyncapi` produces framework-agnostic code with the standard Go library as dependency (except for
 pluggable protocol-specific implementations, which is optional). It supports many
-[protocols]({{< relref "/docs/overview/features#protocols" >}}) and many AsyncAPI entities, such as
+[protocols]({{< relref "/docs/features#protocols" >}}) and many AsyncAPI entities, such as
 bindings, correlation ids, server variables, etc.
 
 And finally, `go-asyncapi` is written in Go, so you don't need node.js or Docker or similar tools to run the generator.

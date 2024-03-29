@@ -55,3 +55,7 @@ Can be referred by any other entity.
 **[Implementation]({{< relref "/docs/code-structure/implementation" >}})** is a concrete library to work with a
 particular protocol.
 See TODO
+
+**Encoding** package contains the code that is used to to marshal and unmarshal the messages based on their 
+content type. All encoders/decoders of [supported content types]({{< relref "/docs/features#content-types" >}}) 
+mentioned in the AsyncAPI document get here. You can add your own encoders/decoders and replace the existing ones.

@@ -20,7 +20,7 @@ The tool also considers all content types of the messages where a particular mod
 is met in messages of JSON and YAML content types, the field tags will be: `json:"fieldName" yaml:"fieldName"`.
 
 The JSONSchema features and content types supported by the tool are described on the 
-[Features]({{< relref "/docs/overview/features" >}}) page.
+[Features]({{< relref "/docs/features" >}}) page.
 
 The generated code is placed in the `models` package by default.
 
@@ -148,8 +148,8 @@ type FooBar struct {
 ## x-go-type
 
 This extra field overrides a model type. This is useful when you want to use a custom type instead of generated one.
-If the `x-go-type` is set, the tool will not generate the model, but will import and use the specified type in the 
-generated code. It can be any built-in type, a type from the standard library, third-party libraries, and
+If the `x-go-type` is set, the tool ignores the object definition and will import and use the specified type
+instead. It can be any built-in type, a type from the standard library, third-party libraries, and
 other generated types.
 
 `x-go-type` can have string value with type name, e.g. `x-go-type: string`. In this case, the tool just 

@@ -15,9 +15,6 @@ Implementation is a concrete library to work with a particular protocol. `go-asy
 predefined implementations for all supported protocols, that can be chosen by cli flags, but you can also implement
 your own.
 
-It's possible to generate an implementation only, without other code. This is useful when you need just a sample
-implementation for a protocol, e.g. to make your own based on it. 
-
 The generated implementation code is put by default to `impl` package in target directory.
 
 Every implementation provide the following:
@@ -34,7 +31,7 @@ Every implementation provide the following:
 
 Take, for example, the Kafka producer provided by the implementation [franz-go](https://github.com/twmb/franz-go).
 
-This is how to use the implementation alone:
+Roughly, the code to send a message to Kafka will look like this:
 
 ```go
 import (
