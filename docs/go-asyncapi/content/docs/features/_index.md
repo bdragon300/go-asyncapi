@@ -35,15 +35,15 @@ weight = 10
 
 Here are the protocols that are supported by `go-asyncapi` for now:
 
-- {{< figure src="/images/kafka.svg" alt="Apache Kafka" link="https://kafka.apache.org/" class="brand-icon" >}} [Apache Kafka](https://kafka.apache.org/)
-- {{< figure src="/images/amqp.svg" alt="AMQP" link="https://www.amqp.org/" class="brand-icon" >}} [AMQP](https://www.amqp.org/)
-- {{< figure src="/images/mqtt.svg" alt="MQTT" link="https://mqtt.org/" class="brand-icon" >}} [MQTT](https://mqtt.org/)
-- {{< figure src="/images/websocket.svg" alt="WebSocket" link="https://tools.ietf.org/html/rfc6455" class="brand-icon" >}} [WebSockets](https://tools.ietf.org/html/rfc6455)
-- {{< figure src="/images/redis.svg" alt="Redis" link="https://redis.io/" class="brand-icon" >}} [Redis](https://redis.io/)
-- {{< figure src="/images/http-small.png" alt="HTTP" link="https://tools.ietf.org/html/rfc7230" class="brand-icon" >}} [HTTP](https://tools.ietf.org/html/rfc7230)
-- {{< figure src="/images/tcpudp.svg" alt="TCP" link="https://tools.ietf.org/html/rfc793" class="brand-icon" >}} [TCP](https://tools.ietf.org/html/rfc793)**&ast;**
-- {{< figure src="/images/tcpudp.svg" alt="UDP" link="https://tools.ietf.org/html/rfc768" class="brand-icon" >}} [UDP](https://tools.ietf.org/html/rfc768)**&ast;**
-- {{< figure src="/images/ip.png" alt="IP" link="https://tools.ietf.org/html/rfc791" class="brand-icon" >}} [Raw IP sockets](https://tools.ietf.org/html/rfc791)**&ast;**
+- {{< figure src="/images/kafka.svg" alt="Apache Kafka" link="/docs/protocols-and-implementations/apache-kafka" class="brand-icon" >}} [Apache Kafka]({{< relref "/docs/protocols-and-implementations/apache-kafka" >}})
+- {{< figure src="/images/amqp.svg" alt="AMQP" link="/docs/protocols-and-implementations/amqp" class="brand-icon" >}} [AMQP]({{< relref "/docs/protocols-and-implementations/amqp" >}})
+- {{< figure src="/images/mqtt.svg" alt="MQTT" link="/docs/protocols-and-implementations/mqtt" class="brand-icon" >}} [MQTT]({{< relref "/docs/protocols-and-implementations/mqtt" >}})
+- {{< figure src="/images/websocket.svg" alt="WebSocket" link="/docs/protocols-and-implementations/websocket" class="brand-icon" >}} [WebSocket]({{< relref "/docs/protocols-and-implementations/websocket" >}})
+- {{< figure src="/images/redis.svg" alt="Redis" link="/docs/protocols-and-implementations/redis" class="brand-icon" >}} [Redis]({{< relref "/docs/protocols-and-implementations/redis" >}})
+- {{< figure src="/images/http-small.png" alt="HTTP" link="/docs/protocols-and-implementations/http" class="brand-icon" >}} [HTTP]({{< relref "/docs/protocols-and-implementations/http" >}})
+- {{< figure src="/images/tcpudp.svg" alt="TCP" link="/docs/protocols-and-implementations/tcp" class="brand-icon" >}} [TCP]({{< relref "/docs/protocols-and-implementations/tcp" >}})**&ast;**
+- {{< figure src="/images/tcpudp.svg" alt="UDP" link="/docs/protocols-and-implementations/udp" class="brand-icon" >}} [UDP]({{< relref "/docs/protocols-and-implementations/udp" >}})**&ast;**
+- {{< figure src="/images/ip.png" alt="IP" link="/docs/protocols-and-implementations/raw-sockets" class="brand-icon" >}} [Raw IP sockets]({{< relref "/docs/protocols-and-implementations/raw-sockets" >}})**&ast;**
 
 {{< hint warning >}}
 **&ast;** - not described in the AsyncAPI specification
