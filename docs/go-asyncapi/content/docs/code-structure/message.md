@@ -210,8 +210,6 @@ if err != nil {
 {{< /tabs >}}
 {{< /details >}}
 
-Full example see TODO
-
 ## Content type
 
 The encoder and decoder that is used to marshal/unmarshal the message payload depends on the message content type.

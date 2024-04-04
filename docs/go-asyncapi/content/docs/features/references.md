@@ -38,8 +38,8 @@ If you need different behavior, you can use your own custom spec resolver.
 
 ## Custom spec resolver
 
-Custom resolver is just an executable. For every specification file path the `go-asyncapi` 
-calls this executable, feeds a path to STDIN and expects the resolved content on STDOUT. 
+Custom resolver is just an executable. For every specification file path to be resolved, the `go-asyncapi` 
+runs this executable, feeds a path to STDIN and expects the resolved content on STDOUT. 
 The command should return 0 (within timeout) if the reference is resolved successfully.
 
 {{< details "Example" >}}

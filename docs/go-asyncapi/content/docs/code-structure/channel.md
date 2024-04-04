@@ -404,8 +404,6 @@ channels:
 Channel bindings are protocol-specific properties, that are used to define the channel behavior. They
 are defined in the `bindings` section of the channel definition.
 
-TODO add operation bindings to example!!!!!!!!!
-
 {{< details "Channel bindings example" >}}
 {{< tabs "3" >}}
 {{< tab "Definition" >}}
@@ -420,6 +418,11 @@ channels:
           properties:
             value:
               type: string
+      bindings:
+        kafka:
+          clientId:  # This should contain jsonschema definition according to AsyncAPI spec 
+            type: string
+            default: "my-client"
     bindings:
       kafka:
         partitions: 64
@@ -436,6 +439,8 @@ type MychannelBindings struct{}
 
 func (m MychannelBindings) Kafka() kafka.ChannelBindings {
 	b := kafka.ChannelBindings{Partitions: 64}
+	clientID := "{\"default\":\"my-client\",\"type\":\"string\"}"
+	_ = json.Unmarshal([]byte(clientID), &b.PublisherBindings.ClientID)
 	return b
 }
 

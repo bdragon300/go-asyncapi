@@ -9,27 +9,27 @@ weight = 10
 
 <link rel="stylesheet" href="/css/text.css">
 
-#TODO: reorder
-
-- AsyncAPI documents in JSON and YAML formats are supported
-- No extra dependencies in the generated code
-- References ($ref) resolver
+- Support the majority of [AsyncAPI features](#asyncapi-entities)
+- Support many [protocols](#protocols)
+- AsyncAPI 2.6.0
+- No extra dependencies in the generated code (except for optional implementations and encoders/decoders)
+- Optional simple client [implementations]({{< relref "/docs/protocols-and-implementations" >}}) based on most 
+  popular libraries
+- [Reuse the code]({{< relref "/docs/features/code-reuse" >}}) generated before
+- [Breaking down the generated code]({{< relref "/docs/features/code-breakdown" >}}) in several ways
+- [Objects selection]({{< relref "/docs/features/code-selection" >}}) to generate
+- "Only consumer", "only producer" code generation
+- [Content types](#content-types) support
+- [References ($ref) resolving]({{< relref "/docs/features/references" >}})
     - Document-local refs
-    - External refs to files on the local filesystem
-    - External refs to the remote documents (fetching them via HTTP/HTTPS)
-    - You can provide your own resolver (an executable), if refs are needed to be resolved in a custom way
-- Generated code customization:
-    - Source code files and packages scoping
-    - Excluding the particular objects or the whole document sections from the generation
-    - Specification extensions (`x-` fields) support to control the generation result for particular objects
-    - Generating only the consume code or only the produce code (or both)
-- Importing a part of the source code generated before by `go-asyncapi`
-- Pluggable minimal [implementations]({{< relref "/docs/protocols-and-implementations" >}}) for supported protocols.
-  You can also refuse to include them in your project and use your own implementation.
-- Pluggable encoders/decoders for message content types. You can use you own encoder/decoder for any other content
-  type or replace the default one.
+    - Refs to files on local filesystem
+    - Refs to the remote documents available via HTTP(S)
+    - [Custom resolver]({{< relref "/docs/features/references#custom-spec-resolver" >}}) (just an executable you provide), if refs are needed to be resolved in a custom way
+- Optional encoders/decoders for content types, specified in the AsyncAPI document
 - Support many features of jsonschema, including polymorphism (oneOf, anyOf, allOf)
 - Support the zero-allocation approach if you need to reduce the load on the Go's garbage collector
+
+*Batteries included, but removable* :)
 
 ## Protocols
 
@@ -51,7 +51,9 @@ Here are the protocols that are supported by `go-asyncapi` for now:
 
 ## AsyncAPI entities
 
-Below is the full list of AsyncAPI entities and which of these are supported by `go-asyncapi`:
+The marked items below are supported by the `go-asyncapi` tool, unmarked items are in the roadmap.
+
+For reference see AsyncAPI specification https://github.com/asyncapi/spec/blob/v2.6.0/spec/asyncapi.md
 
 - [x] AsyncAPI object **&ast;&ast;**
     - [x] Default Content Type

@@ -66,8 +66,8 @@ go-asyncapi generate pubsub test.asyncapi.yaml
 The generated Go code will be placed to **./asyncapi** directory. Let's take a look what we've got:
 
 * **channels/ws_api.go** -- Websocket-specific code for channel `wsAPI`
-* **encoding/{encode,decode}.go** -- encoder/decoder for messages. We didn't define the content type in the 
-  AsyncAPI document, so the default JSON encoding is used
+* **encoding/{encode,decode}.go** -- encoder/decoder for messages. We didn't specify the content type, so the 
+  default JSON encoding is used
 * **messages/{ping_message,pong_message}.go** -- `pingMessage` and `pongMessage` messages
 * **models/text_message.go** -- `textMessage` model that is used in messages
 * **servers/websocket_api.go** -- `websocketAPI` server

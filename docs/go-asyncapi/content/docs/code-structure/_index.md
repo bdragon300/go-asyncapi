@@ -20,8 +20,6 @@ requirement is to be able to track and handle these dependencies.
 Finally, to help the user to mock up or make prototypes or write the applications, it's better to provide minimal
 implementations based on popular libraries for the most popular protocols. And they should be pluggable as well.
 
-In other words, *batteries included, but removable* :)
-
 ## Structure
 
 The code structure, reflecting all AsyncAPI features supported by `go-asyncapi`, is shown in figure below.
@@ -53,8 +51,8 @@ protocol-specific settings for this message
 Can be referred by any other entity.
 
 **[Implementation]({{< relref "/docs/code-structure/implementation" >}})** is a concrete library to work with a
-particular protocol.
-See TODO
+particular protocol. See [Protocols and implementations]({{< relref "/docs/protocols-and-implementations" >}}) section
+for full list.
 
 **Encoding** package contains the code that is used to to marshal and unmarshal the messages based on their 
 content type. All encoders/decoders of [supported content types]({{< relref "/docs/features#content-types" >}}) 
