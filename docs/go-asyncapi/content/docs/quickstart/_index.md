@@ -1,6 +1,6 @@
 ---
 title: "Quickstart"
-weight: 40
+weight: 200
 # bookFlatSection: false
 # bookToc: true
 # bookHidden: false

@@ -1,6 +1,6 @@
 +++
 title = 'Overview'
-weight = 10
+weight = 100
 +++
 
 # Overview
@@ -22,9 +22,9 @@ generated code is modular, so any object can be used separately or be reused fro
 Also, `go-asyncapi` provides the predefined minimal **implementations** for all supported protocols (at least one
 for each protocol), which are attached to the generated code by default.
 
-Supported AsyncAPI entities and protocols are listed in the [Features]({{< relref "/docs/features" >}}) page.
+*Batteries included, but removable* :)
 
-Now only the version 2.6.0 of AsyncAPI specification is supported.
+Supported AsyncAPI entities and protocols are listed in the [Features]({{< relref "/docs/features" >}}) page.
 
 ## Installation
 

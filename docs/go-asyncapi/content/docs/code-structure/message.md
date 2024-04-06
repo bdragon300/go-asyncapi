@@ -1,6 +1,6 @@
 ---
 title: "Message"
-weight: 1
+weight: 430
 # bookFlatSection: false
 # bookToc: true
 # bookHidden: false
@@ -130,11 +130,7 @@ func (m *MyMessageIn) MessageHeaders() map[string]any {
 Envelope is the protocol-specific "wrapper" for incoming or outgoing message along with its metadata. 
 Simply put, the envelope is a message suitable for sending/receiving the data by a particular library.
 
-There are two envelope structures: incoming for receiving data and outgoing for publishing data. The motivation 
-behind this is the fact, that many libraries have different types for incoming and outgoing messages, so we are forced 
-to do the same in order to abstract the message and channel from the library-specific details. Another reason is 
-that typically the incoming message is meant to be read-only, while the outgoing message is meant to be written to -- 
-so they have different interface.
+See the [Implementation](/docs/code-structure/implementation#messageprotocol--envelope) page for more details.
 
 {{< details "Usage example" >}}
 {{< tabs "2" >}}

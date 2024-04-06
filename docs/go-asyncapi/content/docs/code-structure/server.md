@@ -1,6 +1,6 @@
 ---
 title: "Server"
-weight: 50
+weight: 410
 # bookFlatSection: false
 # bookToc: true
 # bookHidden: false
@@ -20,6 +20,9 @@ always has a URL to connect to.
 
 The generated server code contains some common methods and fields, and also method to open channels that are bound to
 this server. By default, the server code is generated in the `servers` package.
+
+To learn how a server is reflected in implementation code, see the 
+[Implementations]({{< relref "/docs/code-structure/implementation#server--producerconsumer" >}}) page.
 
 {{< details "Minimal example" >}}
 {{< tabs "1" >}}

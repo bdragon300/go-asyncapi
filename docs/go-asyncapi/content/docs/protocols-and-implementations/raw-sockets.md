@@ -1,6 +1,5 @@
 ---
 title: "Raw sockets"
-weight: 1
 # bookFlatSection: false
 # bookToc: true
 # bookHidden: false

@@ -1,6 +1,6 @@
 ---
 title: "Code selection"
-weight: 1
+weight: 320
 # bookFlatSection: false
 # bookToc: true
 # bookHidden: false

@@ -1,7 +1,7 @@
 +++
 title = 'Code structure'
 bookCollapseSection = true
-weight = 10
+weight = 400
 +++
 
 # Code structure
@@ -22,11 +22,12 @@ implementations based on popular libraries for the most popular protocols. And t
 
 ## Structure
 
-The code structure, reflecting all AsyncAPI features supported by `go-asyncapi`, is shown in figure below.
+If we'd involve <u>all AsyncAPI features</u> supported by `go-asyncapi`, the code structure would 
+be as follows:
 
-{{< figure src="../objects.svg" alt="Objects structure diagram" >}}
+{{< figure src="types.svg" alt="Types structure diagram" >}}
 
-Let's take a look what each of these objects is.
+This figure helps give an overview of the generated code structure. Let's take a look what each of these objects is.
 
 **[Server]({{< relref "/docs/code-structure/server" >}})** is generated from `server` AsyncAPI entity.
 The main purpose of server is to keep the information to easily open a **Channel** to this server. For this,

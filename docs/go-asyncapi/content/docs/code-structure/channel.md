@@ -1,6 +1,6 @@
 ---
 title: "Channel"
-weight: 1
+weight: 420
 # bookFlatSection: false
 # bookToc: true
 # bookHidden: false
@@ -29,7 +29,7 @@ The channel code also contains an interface for servers bound to this channel. A
 channel in the AsyncAPI document are complies to this interface (we automatically append the needed methods to the
 server code during generation).
 
-And finally, the channel code contains a convenience method to open the channel for given servers.
+And finally, the channel code contains a convenience method to open the channel to given servers.
 
 By default, the channel code is generated in the `channels` package.
 

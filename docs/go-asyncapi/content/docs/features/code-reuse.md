@@ -1,6 +1,6 @@
 ---
 title: "Code reuse"
-weight: 1
+weight: 340
 # bookFlatSection: false
 # bookToc: true
 # bookHidden: false
