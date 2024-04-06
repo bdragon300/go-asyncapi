@@ -1,0 +1,25 @@
+baseURL = 'https://bdragon300.github.io/go-asyncapi/'
+languageCode = 'en-us'
+title = 'go-asyncapi'
+enableGitInfo = true
+
+[module]
+[[module.imports]]
+path="github.com/alex-shpak/hugo-book"
+disable=false
+
+[markup.goldmark.renderer]
+unsafe = true
+
+[menu]
+[[menu.after]]
+name = "GitHub"
+url = "https://github.com/bdragon300/go-asyncapi"
+weight = 10
+pre = '<div style="margin-top: 2rem"></div>&#x1F517;'
+
+[params]
+BookTheme = "auto"
+BookSearch = true
+BookComments = false
+BookToc = false
