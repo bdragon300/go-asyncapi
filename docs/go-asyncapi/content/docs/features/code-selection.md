@@ -1,12 +1,7 @@
 ---
 title: "Code selection"
 weight: 320
-# bookFlatSection: false
-# bookToc: true
-# bookHidden: false
-# bookCollapseSection: false
-# bookComments: false
-# bookSearchExclude: false
+description: "Objects to generate could be included or excluded from the result by entity kind, name regex or publish/subscribe mark"
 ---
 
 # Code selection

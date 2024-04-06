@@ -1,12 +1,7 @@
 ---
 title: "Code reuse"
 weight: 340
-# bookFlatSection: false
-# bookToc: true
-# bookHidden: false
-# bookCollapseSection: false
-# bookComments: false
-# bookSearchExclude: false
+description: "The generated code can reuse the code you already have, both locally and from the external modules"
 ---
 
 # Code reuse

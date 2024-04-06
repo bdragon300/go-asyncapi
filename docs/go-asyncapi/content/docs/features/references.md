@@ -1,12 +1,7 @@
 ---
 title: "References"
 weight: 310
-# bookFlatSection: false
-# bookToc: true
-# bookHidden: false
-# bookCollapseSection: false
-# bookComments: false
-# bookSearchExclude: false
+description: "go-asynapi can resolve references ($ref) to objects in the same document, in local or remote file. Custom resolver is supported for more complex scenarios" 
 ---
 
 # References

@@ -1,16 +1,9 @@
 ---
 title: "Raw sockets"
-# bookFlatSection: false
-# bookToc: true
-# bookHidden: false
-# bookCollapseSection: false
-# bookComments: false
-# bookSearchExclude: false
+description: "Raw IP sockets are supported by go-asyncapi"
 ---
 
 # Raw sockets
-
-<link rel="stylesheet" href="/css/text.css">
 
 {{< hint info >}}
 

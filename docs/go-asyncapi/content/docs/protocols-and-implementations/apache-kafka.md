@@ -1,16 +1,9 @@
 ---
 title: "Apache Kafka"
-# bookFlatSection: false
-# bookToc: true
-# bookHidden: false
-# bookCollapseSection: false
-# bookComments: false
-# bookSearchExclude: false
+description: "Apache Kafka is supported by go-asyncapi"
 ---
 
 # Apache Kafka
-
-<link rel="stylesheet" href="/css/text.css">
 
 {{< hint info >}}
 

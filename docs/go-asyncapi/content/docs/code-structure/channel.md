@@ -1,12 +1,7 @@
 ---
 title: "Channel"
 weight: 420
-# bookFlatSection: false
-# bookToc: true
-# bookHidden: false
-# bookCollapseSection: false
-# bookComments: false
-# bookSearchExclude: false
+description: "Channel is an AsyncAPI entity that represents a communication channel using one or more Servers."
 ---
 
 # Channel

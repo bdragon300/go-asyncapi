@@ -1,19 +1,14 @@
 ---
 title: "Implementation"
 weight: 450
-# bookFlatSection: false
-# bookToc: true
-# bookHidden: false
-# bookCollapseSection: false
-# bookComments: false
-# bookSearchExclude: false
+description: "Implementation is a library to work with supported protocols. `go-asyncapi` contains implementations for all supported protocols based on popular libraries"
 ---
 
 # Implementation
 
-Implementation is a concrete library to work with a particular protocol. `go-asyncapi` has the set of
-predefined implementations for all supported protocols, that can be chosen by cli flags, but you can also implement
-your own.
+Implementation is a concrete library wrapper to work with a particular protocol. `go-asyncapi` contains implementations
+for all supported protocols, that are based on most popular libraries. They can be chosen by cli flags, but you can 
+also implement your own implementation.
 
 The generated implementation code is put by default to `impl` package in target directory.
 

@@ -1,16 +1,9 @@
 ---
 title: "HTTP"
-# bookFlatSection: false
-# bookToc: true
-# bookHidden: false
-# bookCollapseSection: false
-# bookComments: false
-# bookSearchExclude: false
+description: "HTTP is supported by go-asyncapi"
 ---
 
 # HTTP
-
-<link rel="stylesheet" href="/css/text.css">
 
 {{< hint info >}}
 

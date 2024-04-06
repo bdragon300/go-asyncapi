@@ -1,16 +1,9 @@
 ---
 title: "AMQP"
-# bookFlatSection: false
-# bookToc: true
-# bookHidden: false
-# bookCollapseSection: false
-# bookComments: false
-# bookSearchExclude: false
+description: "AMQP or Advanced Message Queuing Protocol is supported by go-asyncapi"
 ---
 
 # AMQP
-
-<link rel="stylesheet" href="/css/text.css">
 
 {{< hint info >}}
 

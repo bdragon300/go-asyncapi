@@ -1,12 +1,7 @@
 ---
 title: "Code breakdown"
 weight: 330
-# bookFlatSection: false
-# bookToc: true
-# bookHidden: false
-# bookCollapseSection: false
-# bookComments: false
-# bookSearchExclude: false
+description: "Generated code could be broken down by packages and files by type, by entity, all-in-one package"
 ---
 
 # Breakdown the generated code

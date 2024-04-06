@@ -1,12 +1,7 @@
 ---
 title: "Quickstart"
 weight: 200
-# bookFlatSection: false
-# bookToc: true
-# bookHidden: false
-# bookCollapseSection: false
-# bookComments: false
-# bookSearchExclude: false
+description: "Quickstart guide for go-asyncapi tool"
 ---
 
 # Quickstart
@@ -167,4 +162,4 @@ curl -i -N \
   http://localhost/wsAPI
 ```
 
-#TODO: feed input to curl above, test everything above
+<div style="color: var(--body-background)">#TODO: feed input to curl above, test everything above</div>

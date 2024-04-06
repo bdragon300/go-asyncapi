@@ -1,16 +1,9 @@
 ---
 title: "Websocket"
-# bookFlatSection: false
-# bookToc: true
-# bookHidden: false
-# bookCollapseSection: false
-# bookComments: false
-# bookSearchExclude: false
+description: "Websocket is supported by go-asyncapi"
 ---
 
 # Websocket
-
-<link rel="stylesheet" href="/css/text.css">
 
 {{< hint info >}}
 

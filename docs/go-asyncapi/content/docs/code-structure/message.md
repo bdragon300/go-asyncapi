@@ -1,12 +1,7 @@
 ---
 title: "Message"
 weight: 430
-# bookFlatSection: false
-# bookToc: true
-# bookHidden: false
-# bookCollapseSection: false
-# bookComments: false
-# bookSearchExclude: false
+description: "Message is the protocol-agnostic structure that is sent from one service to another. Message can have a payload, headers, and other properties."
 ---
 
 # Message

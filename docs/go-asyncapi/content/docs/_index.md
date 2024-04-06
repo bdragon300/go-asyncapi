@@ -1,9 +1,11 @@
 +++
-title = 'Overview'
+title = "Main page"
+url = "/"
 weight = 100
+description = 'Generate Go code based on your AsyncAPI documents! This tool supports most of AsyncAPI features, ready-to-go protocol clients, reference resolver and more!'
 +++
 
-# Overview
+# go-asyncapi
 
 `go-asyncapi` is the codegen tool that generates the boilerplate Go code based on [AsyncAPI](https://www.asyncapi.com/)
 documents. Especially, it is useful for architectures that use the schema-first development approach.
@@ -23,8 +25,6 @@ Also, `go-asyncapi` provides the predefined minimal **implementations** for all 
 for each protocol), which are attached to the generated code by default.
 
 *Batteries included, but removable* :)
-
-Supported AsyncAPI entities and protocols are listed in the [Features]({{< relref "/docs/features" >}}) page.
 
 ## Installation
 

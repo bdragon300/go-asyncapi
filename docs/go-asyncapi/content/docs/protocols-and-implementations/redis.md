@@ -1,16 +1,9 @@
 ---
 title: "Redis"
-# bookFlatSection: false
-# bookToc: true
-# bookHidden: false
-# bookCollapseSection: false
-# bookComments: false
-# bookSearchExclude: false
+description: "Redis is supported by go-asyncapi"
 ---
 
 # Redis
-
-<link rel="stylesheet" href="/css/text.css">
 
 {{< hint info >}}
 

@@ -2,12 +2,10 @@
 title = 'Features'
 bookCollapseSection = true
 weight = 300
+description = 'Most of AsyncAPI features support, ready-to-go protocol implementations, reference resolver, codegen process customization, encoders/decoders, etc.'
 +++
 
-
 # Features
-
-<link rel="stylesheet" href="/css/text.css">
 
 - AsyncAPI 2.6.0
 - Support the majority of [AsyncAPI features](#asyncapi-entities)
@@ -34,15 +32,15 @@ weight = 300
 
 Here are the protocols that are supported by `go-asyncapi` for now:
 
-- {{< figure src="/images/amqp.svg" alt="AMQP" link="/docs/protocols-and-implementations/amqp" class="brand-icon" >}} [AMQP]({{< relref "/docs/protocols-and-implementations/amqp" >}})
-- {{< figure src="/images/kafka.svg" alt="Apache Kafka" link="/docs/protocols-and-implementations/apache-kafka" class="brand-icon" >}} [Apache Kafka]({{< relref "/docs/protocols-and-implementations/apache-kafka" >}})
-- {{< figure src="/images/http-small.png" alt="HTTP" link="/docs/protocols-and-implementations/http" class="brand-icon" >}} [HTTP]({{< relref "/docs/protocols-and-implementations/http" >}})
-- {{< figure src="/images/mqtt.svg" alt="MQTT" link="/docs/protocols-and-implementations/mqtt" class="brand-icon" >}} [MQTT]({{< relref "/docs/protocols-and-implementations/mqtt" >}})
-- {{< figure src="/images/ip.png" alt="IP" link="/docs/protocols-and-implementations/raw-sockets" class="brand-icon" >}} [Raw IP sockets]({{< relref "/docs/protocols-and-implementations/raw-sockets" >}})**&ast;**
-- {{< figure src="/images/redis.svg" alt="Redis" link="/docs/protocols-and-implementations/redis" class="brand-icon" >}} [Redis]({{< relref "/docs/protocols-and-implementations/redis" >}})
-- {{< figure src="/images/tcpudp.svg" alt="TCP" link="/docs/protocols-and-implementations/tcp" class="brand-icon" >}} [TCP]({{< relref "/docs/protocols-and-implementations/tcp" >}})**&ast;**
-- {{< figure src="/images/tcpudp.svg" alt="UDP" link="/docs/protocols-and-implementations/udp" class="brand-icon" >}} [UDP]({{< relref "/docs/protocols-and-implementations/udp" >}})**&ast;**
-- {{< figure src="/images/websocket.svg" alt="WebSocket" link="/docs/protocols-and-implementations/websocket" class="brand-icon" >}} [WebSocket]({{< relref "/docs/protocols-and-implementations/websocket" >}})
+- {{< figure src="images/amqp.svg" alt="AMQP" link="/docs/protocols-and-implementations/amqp" class="brand-icon" >}} [AMQP]({{< relref "/docs/protocols-and-implementations/amqp" >}})
+- {{< figure src="images/kafka.svg" alt="Apache Kafka" link="/docs/protocols-and-implementations/apache-kafka" class="brand-icon" >}} [Apache Kafka]({{< relref "/docs/protocols-and-implementations/apache-kafka" >}})
+- {{< figure src="images/http-small.png" alt="HTTP" link="/docs/protocols-and-implementations/http" class="brand-icon" >}} [HTTP]({{< relref "/docs/protocols-and-implementations/http" >}})
+- {{< figure src="images/mqtt.svg" alt="MQTT" link="/docs/protocols-and-implementations/mqtt" class="brand-icon" >}} [MQTT]({{< relref "/docs/protocols-and-implementations/mqtt" >}})
+- {{< figure src="images/ip.png" alt="IP" link="/docs/protocols-and-implementations/raw-sockets" class="brand-icon" >}} [Raw IP sockets]({{< relref "/docs/protocols-and-implementations/raw-sockets" >}})**&ast;**
+- {{< figure src="images/redis.svg" alt="Redis" link="/docs/protocols-and-implementations/redis" class="brand-icon" >}} [Redis]({{< relref "/docs/protocols-and-implementations/redis" >}})
+- {{< figure src="images/tcpudp.svg" alt="TCP" link="/docs/protocols-and-implementations/tcp" class="brand-icon" >}} [TCP]({{< relref "/docs/protocols-and-implementations/tcp" >}})**&ast;**
+- {{< figure src="images/tcpudp.svg" alt="UDP" link="/docs/protocols-and-implementations/udp" class="brand-icon" >}} [UDP]({{< relref "/docs/protocols-and-implementations/udp" >}})**&ast;**
+- {{< figure src="images/websocket.svg" alt="WebSocket" link="/docs/protocols-and-implementations/websocket" class="brand-icon" >}} [WebSocket]({{< relref "/docs/protocols-and-implementations/websocket" >}})
 
 {{< hint warning >}}
 **&ast;** - not described in the AsyncAPI specification

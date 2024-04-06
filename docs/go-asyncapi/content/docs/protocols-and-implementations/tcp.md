@@ -1,16 +1,9 @@
 ---
 title: "TCP"
-# bookFlatSection: false
-# bookToc: true
-# bookHidden: false
-# bookCollapseSection: false
-# bookComments: false
-# bookSearchExclude: false
+description: "Pure TCP sockets or Transmission Control Protocol are supported by go-asyncapi"
 ---
 
 # TCP
-
-<link rel="stylesheet" href="/css/text.css">
 
 {{< hint info >}}
 

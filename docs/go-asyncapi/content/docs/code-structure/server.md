@@ -1,13 +1,7 @@
 ---
 title: "Server"
 weight: 410
-# bookFlatSection: false
-# bookToc: true
-# bookHidden: false
-# bookCollapseSection: false
-# bookComments: false
-# bookSearchExclude: false
-
+description: "Server is an AsyncAPI entity that contains information how to connect to the message broker and how to open channels"
 ---
 
 # Server

@@ -1,12 +1,7 @@
 ---
 title: "Model"
 weight: 440
-# bookFlatSection: false
-# bookToc: true
-# bookHidden: false
-# bookCollapseSection: false
-# bookComments: false
-# bookSearchExclude: false
+description: "Models are just structs generated from JSONSchema definitions in the components.schemas AsyncAPI section"
 ---
 
 # Model

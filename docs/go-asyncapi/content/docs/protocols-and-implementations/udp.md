@@ -1,16 +1,9 @@
 ---
 title: "UDP"
-# bookFlatSection: false
-# bookToc: true
-# bookHidden: false
-# bookCollapseSection: false
-# bookComments: false
-# bookSearchExclude: false
+description: "Pure UDP or User Datagram Protocol is supported by go-asyncapi"
 ---
 
 # UDP
-
-<link rel="stylesheet" href="/css/text.css">
 
 {{< hint info >}}
 

@@ -1,16 +1,9 @@
 ---
 title: "MQTT"
-# bookFlatSection: false
-# bookToc: true
-# bookHidden: false
-# bookCollapseSection: false
-# bookComments: false
-# bookSearchExclude: false
+description: "MQTT or Message Queuing Telemetry Transport is supported by go-asyncapi"
 ---
 
 # MQTT
-
-<link rel="stylesheet" href="/css/text.css">
 
 {{< hint info >}}
 

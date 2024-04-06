@@ -2,6 +2,7 @@
 title = 'Code structure'
 bookCollapseSection = true
 weight = 400
+description = 'Generated code design overview and explanation'
 +++
 
 # Code structure
