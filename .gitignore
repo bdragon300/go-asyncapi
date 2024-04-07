@@ -23,3 +23,5 @@ go.work.sum
 
 # Docs
 /docs/go-asyncapi/public
+/docs/go-asyncapi/resources
+.hugo_build.lock
