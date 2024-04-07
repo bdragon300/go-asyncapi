@@ -71,15 +71,15 @@ type generateImplementationArgs struct {
 }
 
 type ImplementationsOpts struct {
-	Kafka     string `arg:"--kafka-impl" default:"franz-go" help:"Implementation for Kafka ('no' to disable)" placeholder:"NAME"`
-	AMQP      string `arg:"--amqp-impl" default:"amqp091-go" help:"Implementation for AMQP ('no' to disable)" placeholder:"NAME"`
-	HTTP      string `arg:"--http-impl" default:"std" help:"Implementation for HTTP ('no' to disable)" placeholder:"NAME"`
-	MQTT      string `arg:"--mqtt-impl" default:"paho-mqtt" help:"Implementation for MQTT ('no' to disable)" placeholder:"NAME"`
-	WS        string `arg:"--ws-impl" default:"gobwas-ws" help:"Implementation for WebSocket ('no' to disable)" placeholder:"NAME"`
-	Redis     string `arg:"--redis-impl" default:"go-redis" help:"Implementation for Redis ('no' to disable)" placeholder:"NAME"`
-	RawSocket string `arg:"--rawsocket-impl" default:"std" help:"Implementation for raw sockets ('no' to disable)" placeholder:"NAME"`
-	TCP       string `arg:"--tcp-impl" default:"std" help:"Implementation for TCP ('no' to disable)" placeholder:"NAME"`
-	UDP       string `arg:"--udp-impl" default:"std" help:"Implementation for UDP ('no' to disable)" placeholder:"NAME"`
+	Kafka     string `arg:"--kafka-impl" default:"franz-go" help:"Implementation for Kafka ('none' to disable)" placeholder:"NAME"`
+	AMQP      string `arg:"--amqp-impl" default:"amqp091-go" help:"Implementation for AMQP ('none' to disable)" placeholder:"NAME"`
+	HTTP      string `arg:"--http-impl" default:"std" help:"Implementation for HTTP ('none' to disable)" placeholder:"NAME"`
+	MQTT      string `arg:"--mqtt-impl" default:"paho-mqtt" help:"Implementation for MQTT ('none' to disable)" placeholder:"NAME"`
+	WS        string `arg:"--ws-impl" default:"gobwas-ws" help:"Implementation for WebSocket ('none' to disable)" placeholder:"NAME"`
+	Redis     string `arg:"--redis-impl" default:"go-redis" help:"Implementation for Redis ('none' to disable)" placeholder:"NAME"`
+	RawSocket string `arg:"--rawsocket-impl" default:"std" help:"Implementation for raw sockets ('none' to disable)" placeholder:"NAME"`
+	TCP       string `arg:"--tcp-impl" default:"std" help:"Implementation for TCP ('none' to disable)" placeholder:"NAME"`
+	UDP       string `arg:"--udp-impl" default:"std" help:"Implementation for UDP ('none' to disable)" placeholder:"NAME"`
 }
 
 type generateObjectSelectionOpts struct {
@@ -264,7 +264,7 @@ func generationWriteImplementations(selectedImpls map[string]string, protocols [
 	for _, p := range protocols {
 		implName := selectedImpls[p]
 		switch implName {
-		case "no":
+		case "none":
 			logger.Debug("Implementation has been unselected", "protocol", p)
 			continue
 		case "":

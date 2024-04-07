@@ -29,7 +29,7 @@ Full list of supported implementations can be found in the
 
 ### Exclusion
 
-To refuse from the implementation for a particular protocol, pass the `--kafka-impl no` cli flag. To refuse from 
+To refuse from the implementation for a particular protocol, pass the `--kafka-impl none` cli flag. To refuse from 
 all implementations pass the `--no-implementations` cli flag, the implementations will not appear at all in this case.
 
 ## Entities
