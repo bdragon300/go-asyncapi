@@ -54,6 +54,13 @@ func (e *EnvelopeOut) DeliveryTag() string {
 	return e.deliveryTag
 }
 
+func NewEnvelopeIn(delivery *amqp091.Delivery, rd io.Reader) *EnvelopeIn {
+	return &EnvelopeIn{
+		Delivery: delivery,
+		reader:   rd,
+	}
+}
+
 type EnvelopeIn struct {
 	*amqp091.Delivery
 	reader io.Reader

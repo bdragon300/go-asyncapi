@@ -40,11 +40,8 @@ func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope runAmqp.
 		err = errors.Join(err, s.Cancel(consumerTag, false))
 	}()
 	for delivery := range deliveries {
-		evlp := EnvelopeIn{
-			Delivery: &delivery,
-			reader:   bytes.NewReader(delivery.Body),
-		}
-		cb(&evlp)
+		evlp := NewEnvelopeIn(&delivery, bytes.NewReader(delivery.Body))
+		cb(evlp)
 		if s.bindings.SubscriberBindings.Ack {
 			if e := s.Ack(delivery.DeliveryTag, false); e != nil {
 				return fmt.Errorf("ack: %w", e)
