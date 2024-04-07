@@ -114,7 +114,7 @@ func renderChannelAndOperationBindingsMethod(
 				if publishBindings != nil {
 					ctx.Logger.Debug("Publish operation jsonschema bindings", "proto", protoName)
 					for _, e := range publishBindings.JSONValues.GetOr(protoName, types.OrderedMap[string, string]{}).Entries() {
-						n := utils.ToLowerFirstLetter(e.Key)
+						n := utils.ToLowerFirstLetter(e.Key) + "Pub"
 						bg.Id(n).Op(":=").Lit(e.Value)
 						bg.Add(utils.QualSprintf("_ = %Q(encoding/json,Unmarshal)([]byte(%[1]s), &b.PublisherBindings.%[2]s)", n, e.Key))
 					}
@@ -122,7 +122,7 @@ func renderChannelAndOperationBindingsMethod(
 				if subscribeBindings != nil {
 					ctx.Logger.Debug("Subscribe operation jsonschema bindings", "proto", protoName)
 					for _, e := range subscribeBindings.JSONValues.GetOr(protoName, types.OrderedMap[string, string]{}).Entries() {
-						n := utils.ToLowerFirstLetter(e.Key)
+						n := utils.ToLowerFirstLetter(e.Key) + "Sub"
 						bg.Id(n).Op(":=").Lit(e.Value)
 						bg.Add(utils.QualSprintf("_ = %Q(encoding/json,Unmarshal)([]byte(%[1]s), &b.SubscriberBindings.%[2]s)", n, e.Key))
 					}
