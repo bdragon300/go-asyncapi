@@ -83,29 +83,29 @@ type ImplementationsOpts struct {
 }
 
 type generateObjectSelectionOpts struct {
-	OnlyChannels        bool   `arg:"--only-channels" help:"Generate channels only"`
-	ChannelsRe          string `arg:"--channels-re" help:"Generate only the channels that component key matches the regex" placeholder:"REGEX"`
-	IgnoreChannelsRe    string `arg:"--ignore-channels-re" help:"Ignore the channels that component key matches the regex" placeholder:"REGEX"`
-	IgnoreChannels      bool   `arg:"--ignore-channels" help:"Ignore all channels to be generated"`
-	ReuseChannelsModule string `arg:"--reuse-channels-module" help:"Module name with channels code generated before to reuse now" placeholder:"MODULE"`
+	SelectChannelsAll   bool   `arg:"--select-channels-all" help:"Select all channels to be generated"`
+	SelectChannelsRe    string `arg:"--select-channels-re" help:"Select channels whose name in document matches the regex" placeholder:"REGEX"`
+	IgnoreChannelsAll   bool   `arg:"--ignore-channels-all" help:"Ignore all channels to be generated"`
+	IgnoreChannelsRe    string `arg:"--ignore-channels-re" help:"Ignore channels whose name in document matches the regex" placeholder:"REGEX"`
+	ReuseChannelsModule string `arg:"--reuse-channels-module" help:"Reuse the module with channels code" placeholder:"MODULE"`
 
-	OnlyMessages        bool   `arg:"--only-messages" help:"Generate messages only"`
-	MessagesRe          string `arg:"--messages-re" help:"Generate only the messages that component key matches the regex" placeholder:"REGEX"`
-	IgnoreMessagesRe    string `arg:"--ignore-messages-re" help:"Ignore the messages that component key matches the regex" placeholder:"REGEX"`
-	IgnoreMessages      bool   `arg:"--ignore-messages" help:"Ignore all messages to be generated"`
-	ReuseMessagesModule string `arg:"--reuse-messages-module" help:"Module name with messages code generated before to reuse now" placeholder:"MODULE"`
+	SelectMessagesAll   bool   `arg:"--select-messages-all" help:"Select all messages to be generated"`
+	SelectMessagesRe    string `arg:"--select-messages-re" help:"Select messages whose name in document matches the regex" placeholder:"REGEX"`
+	IgnoreMessagesAll   bool   `arg:"--ignore-messages-all" help:"Ignore all messages to be generated"`
+	IgnoreMessagesRe    string `arg:"--ignore-messages-re" help:"Ignore messages whose name in document matches the regex" placeholder:"REGEX"`
+	ReuseMessagesModule string `arg:"--reuse-messages-module" help:"Reuse the module with messages code" placeholder:"MODULE"`
 
-	OnlyModels        bool   `arg:"--only-models" help:"Generate models only"`
-	ModelsRe          string `arg:"--models-re" help:"Generate only the models that component key matches the regex" placeholder:"REGEX"`
-	IgnoreModelsRe    string `arg:"--ignore-models-re" help:"Ignore the models that component key matches the regex" placeholder:"REGEX"`
-	IgnoreModels      bool   `arg:"--ignore-models" help:"Ignore all models to be generated"`
-	ReuseModelsModule string `arg:"--reuse-models-module" help:"Module name with models code generated before to reuse now" placeholder:"MODULE"`
+	SelectModelsAll   bool   `arg:"--select-models-all" help:"Select all models to be generated"`
+	SelectModelsRe    string `arg:"--select-models-re" help:"Select models whose name in document matches the regex" placeholder:"REGEX"`
+	IgnoreModelsAll   bool   `arg:"--ignore-models-all" help:"Ignore all models to be generated"`
+	IgnoreModelsRe    string `arg:"--ignore-models-re" help:"Ignore models whose name in document matches the regex" placeholder:"REGEX"`
+	ReuseModelsModule string `arg:"--reuse-models-module" help:"Reuse the module with models code" placeholder:"MODULE"`
 
-	OnlyServers        bool   `arg:"--only-servers" help:"Generate servers only"`
-	ServersRe          string `arg:"--servers-re" help:"Generate only the servers that component key matches the regex" placeholder:"REGEX"`
-	IgnoreServersRe    string `arg:"--ignore-servers-re" help:"Ignore the servers that component key matches the regex" placeholder:"REGEX"`
-	IgnoreServers      bool   `arg:"--ignore-servers" help:"Ignore all servers to be generated"`
-	ReuseServersModule string `arg:"--reuse-servers-module" help:"Module name with servers code generated before to reuse now" placeholder:"MODULE"`
+	SelectServersAll   bool   `arg:"--select-servers=all" help:"Select all servers to be generated"`
+	SelectServersRe    string `arg:"--select-servers-re" help:"Select servers whose name in document matches the regex" placeholder:"REGEX"`
+	IgnoreServersAll   bool   `arg:"--ignore-servers-all" help:"Ignore all servers to be generated"`
+	IgnoreServersRe    string `arg:"--ignore-servers-re" help:"Ignore servers whose name in document matches the regex" placeholder:"REGEX"`
+	ReuseServersModule string `arg:"--reuse-servers-module" help:"Reuse the module with servers code" placeholder:"MODULE"`
 
 	NoImplementations bool `arg:"--no-implementations" help:"Do not generate any protocol implementation"`
 	NoEncoding        bool `arg:"--no-encoding" help:"Do not generate encoders/decoders code"`
@@ -350,41 +350,41 @@ func getCompileOpts(opts generatePubSubArgs, isPub, isSub bool) (common.CompileO
 		GenerateSubscribers: isSub,
 	}
 
-	includeAll := !opts.OnlyChannels && !opts.OnlyMessages && !opts.OnlyModels && !opts.OnlyServers
-	f := func(only, ignore bool, re, ire string) (r common.ObjectCompileOpts, e error) {
-		r.Enable = (includeAll || only) && !ignore
+	includeAll := !opts.SelectChannelsAll && !opts.SelectMessagesAll && !opts.SelectModelsAll && !opts.SelectServersAll
+	f := func(all, ignoreAll bool, re, ignoreRe string) (r common.ObjectCompileOpts, e error) {
+		r.Enable = (includeAll || all) && !ignoreAll
 		if re != "" {
 			if r.IncludeRegex, e = regexp.Compile(re); e != nil {
 				return
 			}
 		}
-		if ire != "" {
-			if r.ExcludeRegex, e = regexp.Compile(ire); e != nil {
+		if ignoreRe != "" {
+			if r.ExcludeRegex, e = regexp.Compile(ignoreRe); e != nil {
 				return
 			}
 		}
 		return
 	}
 
-	if res.ChannelOpts, err = f(opts.OnlyChannels, opts.IgnoreChannels, opts.ChannelsRe, opts.IgnoreChannelsRe); err != nil {
+	if res.ChannelOpts, err = f(opts.SelectChannelsAll, opts.IgnoreChannelsAll, opts.SelectChannelsRe, opts.IgnoreChannelsRe); err != nil {
 		return res, err
 	}
 	if opts.ReuseChannelsModule != "" {
 		res.ReusePackages[asyncapi.PackageScopeChannels] = opts.ReuseChannelsModule
 	}
-	if res.MessageOpts, err = f(opts.OnlyMessages, opts.IgnoreMessages, opts.MessagesRe, opts.IgnoreMessagesRe); err != nil {
+	if res.MessageOpts, err = f(opts.SelectMessagesAll, opts.IgnoreMessagesAll, opts.SelectMessagesRe, opts.IgnoreMessagesRe); err != nil {
 		return res, err
 	}
 	if opts.ReuseMessagesModule != "" {
 		res.ReusePackages[asyncapi.PackageScopeMessages] = opts.ReuseMessagesModule
 	}
-	if res.ModelOpts, err = f(opts.OnlyModels, opts.IgnoreModels, opts.ModelsRe, opts.IgnoreModelsRe); err != nil {
+	if res.ModelOpts, err = f(opts.SelectModelsAll, opts.IgnoreModelsAll, opts.SelectModelsRe, opts.IgnoreModelsRe); err != nil {
 		return res, err
 	}
 	if opts.ReuseModelsModule != "" {
 		res.ReusePackages[asyncapi.PackageScopeModels] = opts.ReuseModelsModule
 	}
-	if res.ServerOpts, err = f(opts.OnlyServers, opts.IgnoreServers, opts.ServersRe, opts.IgnoreServersRe); err != nil {
+	if res.ServerOpts, err = f(opts.SelectServersAll, opts.IgnoreServersAll, opts.SelectServersRe, opts.IgnoreServersRe); err != nil {
 		return res, err
 	}
 	if opts.ReuseServersModule != "" {

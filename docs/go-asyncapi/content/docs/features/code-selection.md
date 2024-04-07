@@ -39,23 +39,23 @@ all implementations pass the `--no-implementations` cli flag, the implementation
 When you run the `go-asyncapi` tool, you must decide what code you want to generate: publisher, subscriber or both.
 The `pub`, `sub` and `pubsub` cli subcommands are used for this purpose.
 
-The group of `--only-*` cli flags selects the appropriate entity types to generate, excluding the others. E.g. 
-`--only-channels` generates the code only for the channels. Flags can be combined, e.g. 
-`--only-channels --only-schemas` generates the code both for the channels and schemas.
+The group of `--select-*` cli flags selects document entities to generate, excluding the others. E.g. 
+`--select-channels-all` generates the code only for the channels. Flags can be combined, e.g. 
+`--select-channels-all --select-schemas-all` generates the code both for the channels and schemas.
 
 There are special cli flags that select particular AsyncAPI entities. They accept a 
-[regular expression](https://en.wikipedia.org/wiki/Regular_expression), and the tool selects only those entities whose names matched this expression. 
-These flags also can be combined. Some examples:
+[regular expression](https://en.wikipedia.org/wiki/Regular_expression), and the tool selects only those entities 
+whose names in document matched this expression. These flags also can be combined. Some examples:
  
-* `--channels-re '^user''` generates the code only for the channels that names start with **user**. 
-* `--models-re '^foobar$'` generates the code only for the models named **foobar**.
-* `--servers-re 'prod'` generates the code only for the servers that names contain a substring **prod**.
+* `--select-channels-re '^user''` generates the code only for the channels that names start with **user**. 
+* `--select-models-re '^foobar$'` generates the code only for the models named **foobar**.
+* `--select-servers-re 'prod'` generates the code only for the servers that names contain a substring **prod**.
 
 ### Exclusion
 
-`--ignore-*` cli flags, on the contrary, exclude the appropriate entities from the generation, keeping others. E.g. 
-`--ignore-channels` generates the code for everything except the channels. Flags can be combined, e.g. 
-`--ignore-channels --ignore-schemas` generates the code for everything except the channels and schemas.
+`--ignore-*` cli flags, on the contrary, exclude entities from the generation, keeping others. E.g. 
+`--ignore-channels-all` generates the code for everything except the channels. Flags can be combined, e.g. 
+`--ignore-channels-all --ignore-schemas-all` generates the code for everything except the channels and schemas.
 
 `--ignore-*-re` flags tells the tool to exclude the entities whose names match the regular expression. Some examples:
 
@@ -63,4 +63,6 @@ These flags also can be combined. Some examples:
 * `--ignore-models-re '^foobar$'` generates the code for everything except the models named **foobar**.
 * `--ignore-servers-re 'prod'` generates the code for everything except the servers that names contain a substring **prod**.
 
-It's possible also to exclude the encoding package from the generation, use the `--no-encoding` cli flag for that.
+## Encoding
+
+It's possible to exclude the encoding package from the generation, use the `--no-encoding` cli flag for that.
