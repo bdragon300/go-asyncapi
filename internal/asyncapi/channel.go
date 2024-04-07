@@ -178,6 +178,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 	// Servers will be known on rendering stage (after linking), but there we will already need to have proto
 	// channels to be compiled for certain protocols we want to render.
 	// As a solution, here we just build the proto channels for all supported protocols
+	ctx.Logger.Trace("Prebuild the channels for every supported protocol")
 	for proto, b := range ProtocolBuilders {
 		ctx.Logger.Trace("Channel", "proto", proto)
 		ctx.Logger.NextCallLevel()
