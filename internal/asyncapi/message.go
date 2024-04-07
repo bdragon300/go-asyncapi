@@ -68,7 +68,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		Name: msgName,
 		OutStruct: &render.GoStruct{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(m.Name, "Out"),
+				Name:         ctx.GenerateObjName(msgName, "Out"),
 				Description:  utils.JoinNonemptyStrings("\n", m.Summary+" (Outbound Message)", m.Description),
 				DirectRender: true,
 				Import:       ctx.CurrentPackage(),
@@ -76,7 +76,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		},
 		InStruct: &render.GoStruct{
 			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(m.Name, "In"),
+				Name:         ctx.GenerateObjName(msgName, "In"),
 				Description:  utils.JoinNonemptyStrings("\n", m.Summary+" (Inbound Message)", m.Description),
 				DirectRender: true,
 				Import:       ctx.CurrentPackage(),
