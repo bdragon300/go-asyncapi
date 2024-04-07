@@ -23,10 +23,10 @@ type Object struct {
 	Path   []string
 }
 
-func NewModule(specID string) *Module {
+func NewModule(specPath string) *Module {
 	return &Module{
 		logger:             types.NewLogger("Compilation 🔨"),
-		specID:             specID,
+		specPath:           specPath,
 		objects:            make(map[string][]Object), // Object by rendered code package
 		defaultContentType: fallbackContentType,
 		protocols:          make(map[string]int),
@@ -34,9 +34,9 @@ func NewModule(specID string) *Module {
 }
 
 type Module struct {
-	specID          string
-	logger          *types.Logger
-	externalSpecIDs []string
+	specPath          string
+	logger            *types.Logger
+	externalSpecPaths []string
 
 	// Set on parsing
 	parsedSpecKind SpecKind
@@ -60,8 +60,8 @@ func (c *Module) RegisterProtocol(protoName string) {
 	c.protocols[protoName]++
 }
 
-func (c *Module) AddExternalSpecID(specID string) {
-	c.externalSpecIDs = append(c.externalSpecIDs, specID)
+func (c *Module) AddExternalSpecPath(specPath string) {
+	c.externalSpecPaths = append(c.externalSpecPaths, specPath)
 }
 
 func (c *Module) AddPromise(p common.ObjectPromise) {
@@ -120,13 +120,13 @@ func (c *Module) ListPromises() []common.ObjectListPromise {
 	return c.listPromises
 }
 
-func (c *Module) Load(specResolver SpecResolver) error {
-	c.logger.Debug("Resolve spec", "specID", c.specID)
+func (c *Module) Load(specFileResolver SpecFileResolver) error {
+	c.logger.Debug("Resolve spec", "specPath", c.specPath)
 
 	t := time.Now()
-	data, err := specResolver.Resolve(c.specID)
+	data, err := specFileResolver.Resolve(c.specPath)
 	if err != nil {
-		return fmt.Errorf("resolve spec %q: %w", c.specID, err)
+		return fmt.Errorf("resolve spec %q: %w", c.specPath, err)
 	}
 	defer data.Close()
 
@@ -134,14 +134,14 @@ func (c *Module) Load(specResolver SpecResolver) error {
 	if err != nil {
 		return fmt.Errorf("read spec data: %w", err)
 	}
-	c.logger.Debug("Spec resolved", "specID", c.specID, "duration", time.Since(t))
+	c.logger.Debug("Spec resolved", "specPath", c.specPath, "duration", time.Since(t))
 	c.logger.Trace("Received data", "bytes", len(buf), "data", string(buf))
 
-	specKind, spec, err := c.parseSpec(c.specID, bytes.NewReader(buf))
+	specKind, spec, err := c.parseSpec(c.specPath, bytes.NewReader(buf))
 	if err != nil {
 		return err
 	}
-	c.logger.Debug("Spec parsed", "specID", c.specID, "kind", specKind)
+	c.logger.Debug("Spec parsed", "specPath", c.specPath, "kind", specKind)
 	c.parsedSpecKind = specKind
 	c.parsedSpec = spec
 	return nil
@@ -149,17 +149,17 @@ func (c *Module) Load(specResolver SpecResolver) error {
 
 func (c *Module) Compile(ctx *common.CompileContext) error {
 	ctx = ctx.WithResultsStore(c)
-	c.logger.Debug("Compile a spec", "specID", c.specID, "kind", c.parsedSpecKind)
-	c.logger.Trace("Compile the root component", "specID", c.specID)
+	c.logger.Debug("Compile a spec", "specPath", c.specPath, "kind", c.parsedSpecKind)
+	c.logger.Trace("Compile the root component", "specPath", c.specPath)
 	if err := c.parsedSpec.Compile(ctx); err != nil {
 		return fmt.Errorf("root component in %s schema: %w", c.parsedSpecKind, err)
 	}
-	c.logger.Trace("Compile nested components", "specID", c.specID)
+	c.logger.Trace("Compile nested components", "specPath", c.specPath)
 	if err := WalkAndCompile(ctx, reflect.ValueOf(c.parsedSpec)); err != nil {
 		return fmt.Errorf("spec: %w", err)
 	}
 	if !ctx.CompileOpts.NoEncodingPackage {
-		c.logger.Trace("Compile the encoding package", "specID", c.specID)
+		c.logger.Trace("Compile the encoding package", "specPath", c.specPath)
 		if err := EncodingCompile(ctx); err != nil {
 			return fmt.Errorf("encoding package: %w", err)
 		}
@@ -167,21 +167,21 @@ func (c *Module) Compile(ctx *common.CompileContext) error {
 	return nil
 }
 
-func (c *Module) ExternalSpecIDs() []string {
-	return c.externalSpecIDs
+func (c *Module) ExternalSpecPaths() []string {
+	return c.externalSpecPaths
 }
 
 func (c *Module) Stats() string {
 	return fmt.Sprintf(
 		"%s(%s): %d objects in %d packages, known protocols: %s",
-		c.specID, c.parsedSpecKind, len(c.AllObjects()), len(c.Packages()), strings.Join(lo.Keys(c.protocols), ","),
+		c.specPath, c.parsedSpecKind, len(c.AllObjects()), len(c.Packages()), strings.Join(lo.Keys(c.protocols), ","),
 	)
 }
 
-func (c *Module) parseSpec(specID string, data io.ReadSeeker) (SpecKind, compiledObject, error) {
+func (c *Module) parseSpec(specPath string, data io.ReadSeeker) (SpecKind, compiledObject, error) {
 	switch {
-	case strings.HasSuffix(specID, ".yaml") || strings.HasSuffix(specID, ".yml"):
-		c.logger.Debug("Found YAML spec file", "specID", specID)
+	case strings.HasSuffix(specPath, ".yaml") || strings.HasSuffix(specPath, ".yml"):
+		c.logger.Debug("Found YAML spec file", "specPath", specPath)
 		schemaKind, spec, err := guessSpecKind(yaml.NewDecoder(data))
 		if err != nil {
 			return "", nil, fmt.Errorf("guess spec kind: %w", err)
@@ -191,8 +191,8 @@ func (c *Module) parseSpec(specID string, data io.ReadSeeker) (SpecKind, compile
 		}
 		err = yaml.NewDecoder(data).Decode(spec)
 		return schemaKind, spec, err
-	case strings.HasSuffix(specID, ".json"):
-		c.logger.Debug("Found JSON spec file", "specID", specID)
+	case strings.HasSuffix(specPath, ".json"):
+		c.logger.Debug("Found JSON spec file", "specPath", specPath)
 		schemaKind, spec, err := guessSpecKind(json.NewDecoder(data))
 		if err != nil {
 			return "", nil, fmt.Errorf("guess spec kind: %w", err)
@@ -204,6 +204,6 @@ func (c *Module) parseSpec(specID string, data io.ReadSeeker) (SpecKind, compile
 		return schemaKind, spec, err
 	}
 
-	return "", nil, fmt.Errorf("cannot determine format of a spec file: unknown filename extension: %s", specID)
+	return "", nil, fmt.Errorf("cannot determine format of a spec file: unknown filename extension: %s", specPath)
 }
 

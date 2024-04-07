@@ -25,13 +25,13 @@ func SlicesEqual[T comparable](a, b []T) bool { // TODO: use slices.Compare
 	return ok
 }
 
-func SplitRefToPathPointer(ref string) (specID, pointer string, remote bool) {
+func SplitRefToPathPointer(ref string) (specPath, pointer string, remote bool) {
 	ref = strings.TrimSpace(ref)
 	if strings.HasPrefix(ref, "#/") {
 		return "", ref[1:], false
 	}
 
-	specID = ref
+	specPath = ref
 	if u, err := url.Parse(ref); err == nil {
 		pointer = u.Fragment
 		u.Fragment = ""
@@ -43,7 +43,7 @@ func SplitRefToPathPointer(ref string) (specID, pointer string, remote bool) {
 		default: // Ref points to a remote file by URL
 			remote = true
 		}
-		specID = u.String()
+		specPath = u.String()
 	}
 	return
 }

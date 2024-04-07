@@ -44,8 +44,8 @@ upgrading the tool. E.g. **1.4.0 &rarr; 1.4.1**.
 Releasing a *minor version* means that the generated code may be affected, but without breaking changes. You may need to
 regenerate the code. E.g. **1.4.0 &rarr; 1.5.0**.
 
-*Major version* release typically introduces the breaking changes. You may need to regenerate the code and to fix your 
-projects that uses it. E.g. **1.4.0 &rarr; 2.0.0**.
+*Major version* release typically introduces the breaking changes. You may need to regenerate the code, to fix your 
+projects that uses it or to change the tool command line. E.g. **1.4.0 &rarr; 2.0.0**.
 
 ## FAQ
 

@@ -57,12 +57,12 @@ type generatePubSubArgs struct {
 	FileScope     string `arg:"--file-scope" default:"name" help:"How to split up the generated code on files inside packages. Possible values: name, type" placeholder:"SCOPE"`
 	generateObjectSelectionOpts
 	ImplementationsOpts
-	RemoteRefs bool `arg:"--remote-refs" help:"Allow fetching specs from external $ref URLs"`
+	AllowRemoteRefs bool `arg:"--allow-remote-refs" help:"Allow fetching spec files from remote $ref URLs"`
 
-	RuntimeModule       string        `arg:"--runtime-module" default:"github.com/bdragon300/go-asyncapi/run" help:"Runtime module name" placeholder:"MODULE"`
-	SpecBaseDir         string        `arg:"--spec-base-dir" help:"Directory to search spec files in. By default it's the current working directory" placeholder:"PATH"`
-	SpecResolverTimeout time.Duration `arg:"--spec-resolver-timeout" default:"30s" help:"Timeout to resolve a spec file" placeholder:"DURATION"`
-	SpecResolverCommand string        `arg:"--spec-resolver-command" help:"Custom resolver command for spec files" placeholder:"COMMAND"`
+	RuntimeModule         string        `arg:"--runtime-module" default:"github.com/bdragon300/go-asyncapi/run" help:"Runtime module name" placeholder:"MODULE"`
+	FileResolverSearchDir string        `arg:"--file-resolver-search-dir" help:"Directory to search the local spec files for [default: current working directory]" placeholder:"PATH"`
+	FileResolverTimeout   time.Duration `arg:"--file-resolver-timeout" default:"30s" help:"Timeout for file resolver to resolve a spec file" placeholder:"DURATION"`
+	FileResolverCommand   string        `arg:"--file-resolver-command" help:"Custom file resolver executable to use instead of built-in resolver" placeholder:"PATH"`
 }
 
 type generateImplementationArgs struct {
@@ -134,14 +134,14 @@ func generate(cmd *GenerateCmd) error {
 	mainLogger.Debugf("Target implementations directory is %s", implDir)
 
 	// Compilation
-	resolver := gerResolver(*pubSubOpts)
-	specID, _, _ := utils.SplitRefToPathPointer(pubSubOpts.Spec)
-	modules, err := generationCompile(specID, compileOpts, resolver)
+	resolver := getResolver(*pubSubOpts)
+	specPath, _, _ := utils.SplitRefToPathPointer(pubSubOpts.Spec)
+	modules, err := generationCompile(specPath, compileOpts, resolver)
 	if err != nil {
 		return err
 	}
 	objSources := lo.MapValues(modules, func(value *compiler.Module, _ string) linker.ObjectSource { return value })
-	mainModule := modules[specID]
+	mainModule := modules[specPath]
 
 	// Linking
 	if err = generationLinking(objSources); err != nil {
@@ -185,35 +185,35 @@ func generateImplementation(cmd *GenerateCmd) error {
 	return nil
 }
 
-func generationCompile(specID string, compileOpts common.CompileOpts, resolver compiler.SpecResolver) (map[string]*compiler.Module, error) {
+func generationCompile(specPath string, compileOpts common.CompileOpts, resolver compiler.SpecFileResolver) (map[string]*compiler.Module, error) {
 	logger := types.NewLogger("Compilation 🔨")
 	asyncapi.ProtocolBuilders = protocolBuilders()
-	compileQueue := []string{specID}             // Queue of specIDs to compile
+	compileQueue := []string{specPath}           // Queue of specPaths to compile
 	modules := make(map[string]*compiler.Module) // Compilers by spec id
 	for len(compileQueue) > 0 {
-		specID = compileQueue[0]          // Pop from the queue
-		compileQueue = compileQueue[1:]   //
-		if _, ok := modules[specID]; ok { // Skip if specID has been already modules
+		specPath = compileQueue[0]          // Pop from the queue
+		compileQueue = compileQueue[1:]     //
+		if _, ok := modules[specPath]; ok { // Skip if specPath has been already modules
 			continue
 		}
 
-		logger.Info("Run compilation", "specID", specID)
-		module := compiler.NewModule(specID)
-		modules[specID] = module
+		logger.Info("Run compilation", "specPath", specPath)
+		module := compiler.NewModule(specPath)
+		modules[specPath] = module
 
-		if !compileOpts.EnableRemoteRefs && compiler.IsRemoteSpecID(specID) {
-			return nil, fmt.Errorf("external refs are forbidden by default for security reasons, use --external-refs flag to allow fetching specs from external resources")
+		if !compileOpts.AllowRemoteRefs && compiler.IsRemoteSpecPath(specPath) {
+			return nil, fmt.Errorf("remote refs are forbidden by default for security reasons, use --allow-remote-refs flag to allow fetching files from remote resources")
 		}
-		logger.Debug("Loading a spec", "specID", specID)
+		logger.Debug("Loading a spec", "specPath", specPath)
 		if err := module.Load(resolver); err != nil {
 			return nil, fmt.Errorf("load a spec: %w", err)
 		}
-		logger.Debug("Compilation a spec", "specID", specID)
-		if err := module.Compile(common.NewCompileContext(specID, compileOpts)); err != nil {
+		logger.Debug("Compilation a spec", "specPath", specPath)
+		if err := module.Compile(common.NewCompileContext(specPath, compileOpts)); err != nil {
 			return nil, fmt.Errorf("compilation the spec: %w", err)
 		}
 		logger.Debugf("Compiler stats: %s", module.Stats())
-		compileQueue = lo.Flatten([][]string{compileQueue, module.ExternalSpecIDs()}) // Extend queue with remote specIDs
+		compileQueue = lo.Flatten([][]string{compileQueue, module.ExternalSpecPaths()}) // Extend queue with remote specPaths
 	}
 
 	logger.Info("Compilation completed", "files", len(modules))
@@ -344,7 +344,7 @@ func getCompileOpts(opts generatePubSubArgs, isPub, isSub bool) (common.CompileO
 	res := common.CompileOpts{
 		ReusePackages:       nil,
 		NoEncodingPackage:   opts.NoEncoding,
-		EnableRemoteRefs:    opts.RemoteRefs,
+		AllowRemoteRefs:     opts.AllowRemoteRefs,
 		RuntimeModule:       opts.RuntimeModule,
 		GeneratePublishers:  isPub,
 		GenerateSubscribers: isSub,
@@ -394,19 +394,19 @@ func getCompileOpts(opts generatePubSubArgs, isPub, isSub bool) (common.CompileO
 	return res, nil
 }
 
-func gerResolver(opts generatePubSubArgs) compiler.SpecResolver {
+func getResolver(opts generatePubSubArgs) compiler.SpecFileResolver {
 	logger := types.NewLogger("Resolving 📡")
-	if opts.SpecResolverCommand != "" {
-		return compiler.SubproccessSpecResolver{
-			CommandLine: opts.SpecResolverCommand,
-			RunTimeout:  opts.SpecResolverTimeout,
+	if opts.FileResolverCommand != "" {
+		return compiler.SubprocessSpecFileResolver{
+			CommandLine: opts.FileResolverCommand,
+			RunTimeout:  opts.FileResolverTimeout,
 			Logger:      logger,
 		}
 	}
-	return compiler.DefaultSpecResolver{
+	return compiler.DefaultSpecFileResolver{
 		Client:  stdHTTP.DefaultClient,
-		Timeout: opts.SpecResolverTimeout,
-		BaseDir: opts.SpecBaseDir,
+		Timeout: opts.FileResolverTimeout,
+		BaseDir: opts.FileResolverSearchDir,
 		Logger:  logger,
 	}
 }

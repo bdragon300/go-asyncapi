@@ -20,7 +20,7 @@ used instead of the reference.
 * References to the objects in the remote document by URL, e.g.
   `https://example.com/path/to/file#/components/schemas/MySchema`
 
-Remote references are forbidden by default by security reasons, use `--remote-refs` cli flag to allow it.
+Remote references are forbidden by default by security reasons, use `--allow-remote-refs` cli flag to allow it.
 
 ## Spec resolver
 
@@ -74,7 +74,7 @@ esac
 {{< /tab >}}
 {{< tab "Usage" >}}
 ```shell
-go-asyncapi generate pubsub --remote-refs --spec-resolver-command my-resolver.sh asyncapi-spec.yaml
+go-asyncapi generate pubsub --allow-remote-refs --file-resolver-command my-resolver.sh asyncapi-spec.yaml
 ```
 {{< /tab >}}
 {{< /tabs >}}

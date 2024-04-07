@@ -17,42 +17,42 @@ import (
 	"github.com/samber/lo"
 )
 
-const HangedProcessTimeout = 3 * time.Second
+const HangedSubprocessTimeout = 3 * time.Second
 
-type SpecResolver interface {
-	Resolve(specID string) (io.ReadCloser, error)
+type SpecFileResolver interface {
+	Resolve(specPath string) (io.ReadCloser, error)
 }
 
-// DefaultSpecResolver is the default spec resolver. Local specs are read from the filesystem, remote specs are
-// downloaded via http.
-type DefaultSpecResolver struct {
+// DefaultSpecFileResolver is the default file resolver. Local spec files are read from the filesystem, remote spec
+// files are downloaded via http(s).
+type DefaultSpecFileResolver struct {
 	Client  *http.Client
 	Timeout time.Duration
 	BaseDir string // Where to search local specs
 	Logger  *types.Logger
 }
 
-func (r DefaultSpecResolver) Resolve(specID string) (io.ReadCloser, error) {
-	if IsRemoteSpecID(specID) {
-		return r.resolveRemote(specID)
+func (r DefaultSpecFileResolver) Resolve(specPath string) (io.ReadCloser, error) {
+	if IsRemoteSpecPath(specPath) {
+		return r.resolveRemote(specPath)
 	}
-	return r.resolveLocal(specID)
+	return r.resolveLocal(specPath)
 }
 
-func (r DefaultSpecResolver) resolveLocal(specID string) (io.ReadCloser, error) {
-	absPath, err := filepath.Abs(filepath.Join(r.BaseDir, specID))
+func (r DefaultSpecFileResolver) resolveLocal(specPath string) (io.ReadCloser, error) {
+	absPath, err := filepath.Abs(filepath.Join(r.BaseDir, specPath))
 	if err != nil {
-		return nil, fmt.Errorf("resolve path %q: %w", filepath.Join(r.BaseDir, specID), err)
+		return nil, fmt.Errorf("resolve path %q: %w", filepath.Join(r.BaseDir, specPath), err)
 	}
-	r.Logger.Info("Reading local file", "baseDir", r.BaseDir, "specID", specID, "absolutePath", absPath)
+	r.Logger.Info("Reading local file", "baseDir", r.BaseDir, "specPath", specPath, "absolutePath", absPath)
 	return os.Open(absPath)
 }
 
-func (r DefaultSpecResolver) resolveRemote(specID string) (io.ReadCloser, error) {
-	r.Logger.Info("Downloading remote file", "specID", specID)
+func (r DefaultSpecFileResolver) resolveRemote(specPath string) (io.ReadCloser, error) {
+	r.Logger.Info("Downloading remote file", "specPath", specPath)
 	ctx, cancel := context.WithTimeout(context.Background(), r.Timeout)
 	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, specID, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, specPath, nil)
 	if err != nil {
 		return nil, fmt.Errorf("create http request: %w", err)
 	}
@@ -84,9 +84,9 @@ func (r DefaultSpecResolver) resolveRemote(specID string) (io.ReadCloser, error)
 	return resp.Body, nil
 }
 
-// SubproccessSpecResolver is the resolver based on user-defined command. Both local and remote specs are resolved
-// by running this command as subprocess, which read specID from stdin and write spec content to stdout.
-type SubproccessSpecResolver struct {
+// SubprocessSpecFileResolver is the resolver based on user-defined command. Both local and remote specs are resolved
+// by running this command as subprocess, which read specPath from stdin and write spec content to stdout.
+type SubprocessSpecFileResolver struct {
 	CommandLine string
 	RunTimeout  time.Duration
 	Logger      *types.Logger
@@ -99,8 +99,8 @@ type subprocessSpecCommand struct {
 	stderr  io.ReadWriter
 }
 
-func (r SubproccessSpecResolver) Resolve(specID string) (io.ReadCloser, error) {
-	r.Logger.Info("Resolving spec by command", "specID", specID, "commandLine", r.CommandLine, "timeout", r.RunTimeout)
+func (r SubprocessSpecFileResolver) Resolve(specPath string) (io.ReadCloser, error) {
+	r.Logger.Info("Resolving spec by command", "specPath", specPath, "commandLine", r.CommandLine, "timeout", r.RunTimeout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), r.RunTimeout)
 	defer cancel()
@@ -109,11 +109,11 @@ func (r SubproccessSpecResolver) Resolve(specID string) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get command: %w", err)
 	}
-	r.Logger.Debug("Run command", "cmd", cmd.command, "stdinData", specID)
+	r.Logger.Debug("Run command", "cmd", cmd.command, "stdinData", specPath)
 	if err = cmd.command.Start(); err != nil {
 		return nil, fmt.Errorf("start command: %w", err)
 	}
-	if _, err = fmt.Fprintln(cmd.stdin, specID); err != nil {
+	if _, err = fmt.Fprintln(cmd.stdin, specPath); err != nil {
 		return nil, fmt.Errorf("write to stdin: %w", err)
 	}
 
@@ -125,7 +125,7 @@ func (r SubproccessSpecResolver) Resolve(specID string) (io.ReadCloser, error) {
 	return io.NopCloser(cmd.stdout), nil
 }
 
-func (r SubproccessSpecResolver) getCommand(ctx context.Context) (subprocessSpecCommand, error) {
+func (r SubprocessSpecFileResolver) getCommand(ctx context.Context) (subprocessSpecCommand, error) {
 	res := subprocessSpecCommand{
 		stdin:  bytes.NewBuffer(make([]byte, 0)),
 		stdout: bytes.NewBuffer(make([]byte, 0)),
@@ -141,7 +141,7 @@ func (r SubproccessSpecResolver) getCommand(ctx context.Context) (subprocessSpec
 	res.command.Stdout = res.stdout
 	res.command.Stdin = res.stdin
 	res.command.Stderr = res.stderr
-	res.command.WaitDelay = HangedProcessTimeout
+	res.command.WaitDelay = HangedSubprocessTimeout
 
 	return res, nil
 }
@@ -189,7 +189,7 @@ func parseCommandLine(commandLine string) []string {
 	return args
 }
 
-func IsRemoteSpecID(specID string) bool {
-	_, _, remote := utils.SplitRefToPathPointer(specID)
+func IsRemoteSpecPath(specPath string) bool {
+	_, _, remote := utils.SplitRefToPathPointer(specPath)
 	return remote
 }

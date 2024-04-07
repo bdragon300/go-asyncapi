@@ -21,7 +21,7 @@ type GolangType interface {
 type CompilationStorage interface {
 	AddObject(pkgName string, stack []string, obj Renderer)
 	RegisterProtocol(protoName string)
-	AddExternalSpecID(specID string)
+	AddExternalSpecPath(specPath string)
 	AddPromise(p ObjectPromise)
 	AddListPromise(p ObjectListPromise)
 
@@ -42,7 +42,7 @@ type CompileOpts struct {
 	ServerOpts          ObjectCompileOpts
 	ReusePackages       map[string]string
 	NoEncodingPackage   bool
-	EnableRemoteRefs    bool
+	AllowRemoteRefs     bool
 	RuntimeModule       string
 	GeneratePublishers  bool
 	GenerateSubscribers bool
@@ -73,8 +73,8 @@ type ContextStackItem struct {
 	ObjName     string
 }
 
-func NewCompileContext(specID string, compileOpts CompileOpts) *CompileContext {
-	res := CompileContext{specID: specID, CompileOpts: compileOpts}
+func NewCompileContext(specPath string, compileOpts CompileOpts) *CompileContext {
+	res := CompileContext{specPath: specPath, CompileOpts: compileOpts}
 	res.Logger = &CompilerLogger{
 		ctx:    &res,
 		logger: types.NewLogger("Compilation 🔨"),
@@ -87,7 +87,7 @@ type CompileContext struct {
 	Stack       types.SimpleStack[ContextStackItem]
 	Logger      *CompilerLogger
 	CompileOpts CompileOpts
-	specID      string
+	specPath    string
 }
 
 func (c *CompileContext) PutObject(obj Renderer) {
@@ -99,9 +99,9 @@ func (c *CompileContext) PutObject(obj Renderer) {
 }
 
 func (c *CompileContext) PutPromise(p ObjectPromise) {
-	refSpecID, _, _ := utils.SplitRefToPathPointer(p.Ref())
-	if refSpecID != "" {
-		c.Storage.AddExternalSpecID(refSpecID)
+	refSpecPath, _, _ := utils.SplitRefToPathPointer(p.Ref())
+	if refSpecPath != "" {
+		c.Storage.AddExternalSpecPath(refSpecPath)
 	}
 	c.Storage.AddPromise(p)
 }
@@ -151,7 +151,7 @@ func (c *CompileContext) WithResultsStore(store CompilationStorage) *CompileCont
 	res := CompileContext{
 		Storage:     store,
 		Stack:       types.SimpleStack[ContextStackItem]{},
-		specID:      c.specID,
+		specPath:    c.specPath,
 		Logger:      c.Logger,
 		CompileOpts: c.CompileOpts,
 	}
