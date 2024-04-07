@@ -14,14 +14,14 @@ import (
 
 func NewProducer(serverURL string, bindings *runKafka.ServerBindings, extraOpts []kgo.Opt) (*ProduceClient, error) {
 	return &ProduceClient{
-		url:       serverURL,
+		serverURL: serverURL,
 		bindings:  bindings,
 		extraOpts: extraOpts,
 	}, nil
 }
 
 type ProduceClient struct {
-	url       string
+	serverURL string
 	bindings  *runKafka.ServerBindings
 	extraOpts []kgo.Opt
 }
@@ -30,7 +30,7 @@ func (p ProduceClient) Publisher(_ context.Context, channelName string, bindings
 	// TODO: schema registry https://github.com/twmb/franz-go/blob/master/examples/schema_registry/schema_registry.go
 	var opts []kgo.Opt
 
-	u, err := url.Parse(p.url)
+	u, err := url.Parse(p.serverURL)
 	if err != nil {
 		return nil, fmt.Errorf("url parse: %w", err)
 	}

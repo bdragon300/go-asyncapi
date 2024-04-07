@@ -12,16 +12,16 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
-func NewConsumer(url string, bindings *runKafka.ServerBindings, extraOpts []kgo.Opt) (*ConsumeClient, error) {
+func NewConsumer(serverURL string, bindings *runKafka.ServerBindings, extraOpts []kgo.Opt) (*ConsumeClient, error) {
 	return &ConsumeClient{
-		url:       url,
+		serverURL: serverURL,
 		bindings:  bindings,
 		extraOpts: extraOpts,
 	}, nil
 }
 
 type ConsumeClient struct {
-	url       string
+	serverURL string
 	bindings  *runKafka.ServerBindings
 	extraOpts []kgo.Opt
 }
@@ -31,7 +31,7 @@ func (c ConsumeClient) Subscriber(_ context.Context, channelName string, binding
 	// TODO: bindings.ClientID, bindings.GroupID
 	var opts []kgo.Opt
 
-	u, err := url.Parse(c.url)
+	u, err := url.Parse(c.serverURL)
 	if err != nil {
 		return nil, fmt.Errorf("url parse: %w", err)
 	}
