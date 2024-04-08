@@ -444,7 +444,7 @@ $message.<payload|header>#/a/json/pointer
 
 where `$message` is a special keyword that means the message itself, `payload` or `header` is the target field, and 
 `#/a/json/pointer` is the path to the field in [JSON Pointer (RFC 6901)](https://tools.ietf.org/html/rfc6901) format.
-E.g. `$message.payload#/field1/0/field2`.
+E.g. `$message.payload#/field1/10/field2`.
 
 The `go-asyncapi` is able to generate the code that sets and retrieves a correlation ID value from a message. 
 Despite the name, the JSONPointer path works with all formats, not only JSON -- it is interpreted by the 
@@ -526,6 +526,20 @@ message.SetCorrelationID("123")
 {{< /tab >}}
 {{< /tabs >}}
 {{< /details >}}
+
+### Symbols escaping
+
+According to [RFC 6901](https://tools.ietf.org/html/rfc6901), two of symbols should be written in a special way:
+
+* Tilda symbol `~` must be written as `~0`.
+* Forward slash `/` must be written as `~1`.
+
+Path items wrapped in quotes (single or double) are always treated as strings. Quotes are stripped before
+path evaluation. This is non-standard behavior, but this is useful when you need the number path item to be 
+interpreted as a string.
+
+E.g, `$message.payload#/~0field1/'10'/""field2"~1foo"` contains three fields: `~field1`, `10`
+(a string, not an integer) and `"field2"/foo`.
 
 ### x-go-ignore
 

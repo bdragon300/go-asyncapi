@@ -145,10 +145,25 @@ func (c CorrelationID) renderMemberExtractionCode(
 	for pathIdx < len(path) {
 		var body []*j.Statement
 		var varValueStmts *j.Statement
+
 		// Anchor is a variable that holds the current value of the path item
 		anchor := fmt.Sprintf("v%d", pathIdx)
 		nextAnchor := fmt.Sprintf("v%d", pathIdx+1)
-		memberName := path[pathIdx]
+
+		// Path item is interpreted as a string by default. Number path item is interpreted as a integer
+		// Wrapping path item in quotes forces to be it a string, quotes around will be stripped one time
+		// Examples:
+		// /foo/10/bar -> 10 is integer
+		// /foo/"10"/bar -> 10 is string
+		memberStr := path[pathIdx]
+		var memberName any = memberStr
+		quoted := strings.HasPrefix(path[pathIdx], "\"") && strings.HasSuffix(path[pathIdx], "\"") ||
+			strings.HasPrefix(path[pathIdx], "'") && strings.HasSuffix(path[pathIdx], "'")
+		if quoted {
+			memberName = memberStr[1 : len(memberStr)-1] // Unquote and treat as a string
+		} else if v, err := strconv.Atoi(memberStr); err == nil {
+			memberName = v // Treat as an integer
+		}
 
 		switch typ := baseType.(type) {
 		case *GoStruct:
@@ -196,8 +211,7 @@ func (c CorrelationID) renderMemberExtractionCode(
 			}
 		case *GoArray:
 			ctx.Logger.Trace("In GoArray", "path", path[:pathIdx], "name", typ.ID(), "member", memberName)
-			numMember, err2 := strconv.Atoi(memberName)
-			if err2 != nil {
+			if _, ok := memberName.(string); ok {
 				err = fmt.Errorf(
 					"index %q is not a number, array %s, path: /%s",
 					memberName,
@@ -206,15 +220,15 @@ func (c CorrelationID) renderMemberExtractionCode(
 				)
 				return
 			}
-			varValueStmts = j.Id(anchor).Index(j.Lit(numMember))
+			varValueStmts = j.Id(anchor).Index(j.Lit(memberName))
 			baseType = typ.ItemsType
 			body = []*j.Statement{j.Id(nextAnchor).Op(":=").Add(varValueStmts)}
 			if validationCode {
-				body = append(body, j.If(j.Len(j.Id(anchor)).Op("<=").Lit(numMember)).Block(
+				body = append(body, j.If(j.Len(j.Id(anchor)).Op("<=").Lit(memberName)).Block(
 					j.Err().Op("=").Qual("fmt", "Errorf").Call(
 						j.Lit(fmt.Sprintf("index %%q is out of range, length %%d on path /%s", strings.Join(path[:pathIdx], "/"))),
 						j.Len(j.Id(anchor)),
-						j.Lit(numMember),
+						j.Lit(memberName),
 					),
 					j.Return(),
 				))
