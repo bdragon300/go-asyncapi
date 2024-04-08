@@ -150,17 +150,15 @@ func (c CorrelationID) renderMemberExtractionCode(
 		anchor := fmt.Sprintf("v%d", pathIdx)
 		nextAnchor := fmt.Sprintf("v%d", pathIdx+1)
 
-		// Path item is interpreted as a string by default. Number path item is interpreted as a integer
-		// Wrapping path item in quotes forces to be it a string, quotes around will be stripped one time
-		// Examples:
-		// /foo/10/bar -> 10 is integer
-		// /foo/"10"/bar -> 10 is string
-		memberStr := path[pathIdx]
-		var memberName any = memberStr
+		// Replace ~1 with / and ~0 with ~ according to RFC 6901
+		memberStr := strings.ReplaceAll(strings.ReplaceAll(path[pathIdx], "~1", "/"), "~0", "~")
+		// Number path items are treated as integers. Wrapping it in quotes forces to be it a string,
+		// quotes around will be stripped one time.
+		var memberName any = memberStr // By default, treat as a string
 		quoted := strings.HasPrefix(path[pathIdx], "\"") && strings.HasSuffix(path[pathIdx], "\"") ||
 			strings.HasPrefix(path[pathIdx], "'") && strings.HasSuffix(path[pathIdx], "'")
 		if quoted {
-			memberName = memberStr[1 : len(memberStr)-1] // Unquote and treat as a string
+			memberName = memberStr[1 : len(memberStr)-1] // Unquote
 		} else if v, err := strconv.Atoi(memberStr); err == nil {
 			memberName = v // Treat as an integer
 		}
