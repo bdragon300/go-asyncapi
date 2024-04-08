@@ -301,7 +301,8 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 		case 0: // "additionalProperties:" is an object
 			ctx.Logger.Trace("Object additional properties as an object")
 			ref := path.Join(ctx.PathRef(), "additionalProperties")
-			langObj := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+			prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+			ctx.PutPromise(prm)
 			xTags, xTagNames, xTagVals := o.AdditionalProperties.V0.xGoTagsInfo(ctx)
 			f := render.GoStructField{
 				Name:        "AdditionalProperties",
@@ -314,7 +315,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 						Import:       ctx.CurrentPackage(),
 					},
 					KeyType:   &render.GoSimple{Name: "string"},
-					ValueType: langObj,
+					ValueType: prm,
 				},
 				ExtraTags:      xTags,
 				ExtraTagNames:  xTagNames,
@@ -372,7 +373,9 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 	case o.Items != nil && o.Items.Selector == 0: // Only one "type:" of items
 		ctx.Logger.Trace("Object items (single type)")
 		ref := path.Join(ctx.PathRef(), "items")
-		res.ItemsType = render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+		prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+		ctx.PutPromise(prm)
+		res.ItemsType = prm
 	case o.Items == nil || o.Items.Selector == 1: // No items or Several types for each item sequentially
 		ctx.Logger.Trace("Object items (zero or several types)")
 		valTyp := render.GoTypeAlias{

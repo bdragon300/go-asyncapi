@@ -2,6 +2,7 @@ package render
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -51,10 +52,10 @@ func (c CorrelationID) RenderSetterDefinition(ctx *common.RenderContext, message
 		j.Op("v0 :=").Id(message.OutStruct.ReceiverName() + "." + c.StructField),
 	}
 
-	bodyItems, err := c.renderMemberExtractionCode(ctx, c.LocationPath, f.Type, true)
+	bodyItems, err := c.renderMemberExtractionCode(ctx, c.LocationPath, f.Type, false)
 	if err != nil {
 		panic(fmt.Errorf(
-			"cannot resolve generated Go types chain for CorrelationID location %q: %s",
+			"cannot generate CorrelationID value setter code for types chain at location %q: %s",
 			strings.Join(c.LocationPath, "/"),
 			err.Error(),
 		))
@@ -97,7 +98,7 @@ func (c CorrelationID) RenderGetterDefinition(ctx *common.RenderContext, message
 	bodyItems, err := c.renderMemberExtractionCode(ctx, c.LocationPath, f.Type, true)
 	if err != nil {
 		panic(fmt.Errorf(
-			"cannot resolve generated Go types chain for CorrelationID location %s: %s",
+			"cannot generate CorrelationID value getter code for types chain at location %s: %s",
 			strings.Join(c.LocationPath, "/"),
 			err.Error(),
 		))
@@ -144,6 +145,7 @@ func (c CorrelationID) renderMemberExtractionCode(
 	for pathIdx < len(path) {
 		var body []*j.Statement
 		var varValueStmts *j.Statement
+		// Anchor is a variable that holds the current value of the path item
 		anchor := fmt.Sprintf("v%d", pathIdx)
 		nextAnchor := fmt.Sprintf("v%d", pathIdx+1)
 		memberName := path[pathIdx]
@@ -153,7 +155,10 @@ func (c CorrelationID) renderMemberExtractionCode(
 			ctx.Logger.Trace("In GoStruct", "path", path[:pathIdx], "name", typ.ID(), "member", memberName)
 			fld, ok := lo.Find(typ.Fields, func(item GoStructField) bool { return item.MarshalName == memberName })
 			if !ok {
-				err = fmt.Errorf("field %q not found, path: /%s", memberName, strings.Join(path[:pathIdx], "/"))
+				err = fmt.Errorf(
+					"field %q not found in struct %s, path: /%s",
+					memberName, typ.Name, strings.Join(path[:pathIdx], "/"),
+				)
 				return
 			}
 			varValueStmts = j.Id(anchor).Dot(fld.Name)
@@ -191,15 +196,25 @@ func (c CorrelationID) renderMemberExtractionCode(
 			}
 		case *GoArray:
 			ctx.Logger.Trace("In GoArray", "path", path[:pathIdx], "name", typ.ID(), "member", memberName)
-			varValueStmts = j.Id(anchor).Index(j.Lit(memberName))
+			numMember, err2 := strconv.Atoi(memberName)
+			if err2 != nil {
+				err = fmt.Errorf(
+					"index %q is not a number, array %s, path: /%s",
+					memberName,
+					typ.Name,
+					strings.Join(path[:pathIdx], "/"),
+				)
+				return
+			}
+			varValueStmts = j.Id(anchor).Index(j.Lit(numMember))
 			baseType = typ.ItemsType
 			body = []*j.Statement{j.Id(nextAnchor).Op(":=").Add(varValueStmts)}
 			if validationCode {
-				body = append(body, j.If(j.Len(j.Id(anchor)).Op("<=").Lit(memberName)).Block(
+				body = append(body, j.If(j.Len(j.Id(anchor)).Op("<=").Lit(numMember)).Block(
 					j.Err().Op("=").Qual("fmt", "Errorf").Call(
-						j.Lit(fmt.Sprintf("index %%q not found in array of length %%d on path /%s", strings.Join(path[:pathIdx], "/"))),
+						j.Lit(fmt.Sprintf("index %%q is out of range, length %%d on path /%s", strings.Join(path[:pathIdx], "/"))),
 						j.Len(j.Id(anchor)),
-						j.Lit(memberName),
+						j.Lit(numMember),
 					),
 					j.Return(),
 				))
