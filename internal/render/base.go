@@ -27,7 +27,7 @@ func (b *BaseType) ID() string {
 
 func (b *BaseType) String() string {
 	if b.Import != "" {
-		return "GoType ." + b.Import + "." + b.Name
+		return "GoType /" + b.Import + "." + b.Name
 	}
 	return "GoType " + b.Name
 }

@@ -36,9 +36,9 @@ func AssignRefs(sources map[string]ObjectSource) {
 				if res, ok := resolvePromise(p, srcSpecID, sources); ok {
 					switch p.Origin() {
 					case common.PromiseOriginInternal:
-						logger.Trace("Internal ref resolved", "$ref", p.Ref(), "target", res)
+						logger.Debug("Processing an internal ref", "$ref", p.Ref(), "target", res)
 					case common.PromiseOriginUser:
-						logger.Debug("Ref resolved", "$ref", p.Ref(), "target", res)
+						logger.Debug("Processing a ref", "$ref", p.Ref(), "target", res)
 					default:
 						panic(fmt.Sprintf("Unknown link origin %v, this must not happen", p.Origin()))
 					}

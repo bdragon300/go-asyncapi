@@ -145,7 +145,7 @@ func (r *RendererPromise) ID() string {
 }
 
 func (r *RendererPromise) String() string {
-	return "RendererPromise for " + r.ref
+	return "RendererPromise -> " + r.ref
 }
 
 func NewGolangTypePromise(ref string, origin common.PromiseOrigin) *GolangTypePromise {
@@ -183,5 +183,5 @@ func (r *GolangTypePromise) ID() string {
 }
 
 func (r *GolangTypePromise) String() string {
-	return "GolangTypePromise for " + r.ref
+	return "GolangTypePromise -> " + r.ref
 }

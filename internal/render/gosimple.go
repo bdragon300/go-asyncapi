@@ -65,7 +65,7 @@ func (p GoSimple) ID() string {
 
 func (p GoSimple) String() string {
 	if p.Import != "" {
-		return "GoSimple ." + p.Import + "." + p.Name
+		return "GoSimple /" + p.Import + "." + p.Name
 	}
 	return "GoSimple " + p.Name
 }

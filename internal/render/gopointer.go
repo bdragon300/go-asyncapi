@@ -50,7 +50,7 @@ func (p GoPointer) ID() string {
 }
 
 func (p GoPointer) String() string {
-	return "GoPointer to " + p.Type.String()
+	return "GoPointer -> " + p.Type.String()
 }
 
 func (p GoPointer) WrappedGolangType() (common.GolangType, bool) {
