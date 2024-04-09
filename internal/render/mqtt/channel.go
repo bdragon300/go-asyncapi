@@ -117,8 +117,8 @@ func (pc ProtoChannel) renderProtoPublisherMethods(ctx *common.RenderContext) []
 	}
 
 	return []*j.Statement{
-		// Method MakeEnvelope(envelope proto.EnvelopeWriter, message *Message1Out) error
-		j.Func().Params(receiver.Clone()).Id("MakeEnvelope").
+		// Method SealEnvelope(envelope proto.EnvelopeWriter, message *Message1Out) error
+		j.Func().Params(receiver.Clone()).Id("SealEnvelope").
 			ParamsFunc(func(g *j.Group) {
 				g.Id("envelope").Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeWriter")
 				g.Id("message").Add(utils.ToCode(msgTyp.RenderUsage(ctx))...)

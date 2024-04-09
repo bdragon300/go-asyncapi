@@ -130,7 +130,7 @@ func main() {
       fmt.Sprintf("Hello! Your message was: %v", msgIn.Payload.Message),
     )
     envelopeOut := implWs.NewEnvelopeOut()
-    if err := channel.MakeEnvelope(envelopeOut, msgOut); err != nil {
+    if err := channel.SealEnvelope(envelopeOut, msgOut); err != nil {
       log.Fatalf("failed to make envelope: %v", err)
     }
     if err := channel.Publish(cancelCtx, envelopeOut); err != nil {

@@ -168,7 +168,7 @@ import (
 
 message := messages.NewMyMessageOut().WithPayload("Hello, world!")
 envelope := implKafka.NewEnvelopeOut()
-if err := channel.MakeEnvelope(envelope, message); err != nil {
+if err := channel.SealEnvelope(envelope, message); err != nil {
     log.Fatalf("failed to make envelope: %v", err)
 }
 if err := channel.Publish(cancelCtx, envelope); err != nil {
@@ -395,7 +395,7 @@ func (m MyMessageBindings) Kafka() kafka.MessageBindings {
 
 {{< tab "Usage" >}}
 
-Message bindings are automatically used on `MakeEnvelope` call:
+Message bindings are automatically used in `SealEnvelope` call:
 
 ```go
 
@@ -408,7 +408,7 @@ import (
 
 message := messages.NewMyMessageOut().WithPayload("Hello, world!")
 envelope := implKafka.NewEnvelopeOut()
-if err := channel.MakeEnvelope(envelope, message); err != nil {
+if err := channel.SealEnvelope(envelope, message); err != nil {
     log.Fatalf("failed to make envelope: %v", err)
 }
 ```

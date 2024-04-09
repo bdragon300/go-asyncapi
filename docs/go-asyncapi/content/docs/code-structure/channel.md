@@ -122,7 +122,7 @@ func (m MyChannelKafka) Publisher() kafka.Publisher {
 func (m MyChannelKafka) Publish(ctx context.Context, envelopes ...kafka.EnvelopeWriter) error {
 	return m.publisher.Send(ctx, envelopes...)
 }
-func (m MyChannelKafka) MakeEnvelope(envelope kafka.EnvelopeWriter, message *MyChannelMessageOut) error {
+func (m MyChannelKafka) SealEnvelope(envelope kafka.EnvelopeWriter, message *MyChannelMessageOut) error {
 	envelope.ResetPayload()
 
 	if err := message.MarshalKafkaEnvelope(envelope); err != nil {
