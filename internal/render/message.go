@@ -249,11 +249,13 @@ func (m Message) renderUnmarshalEnvelopeMethod(ctx *common.RenderContext, protoN
 						return err
 					}`, rn))
 				if m.HeadersTypePromise != nil {
-					bg.Op("headers := envelope.Headers()")
-					for _, f := range m.HeadersTypePromise.Target().Fields {
-						fType := j.Add(utils.ToCode(f.Type.RenderUsage(ctx))...)
-						bg.If(j.Op("v, ok := headers").Index(j.Lit(f.Name)), j.Id("ok")).
-							Block(j.Id(rn).Dot("Headers").Dot(f.Name).Op("=").Id("v").Assert(fType))
+					if len(m.HeadersTypePromise.Target().Fields) > 0 { // Object defined as empty should not provide code
+						bg.Op("headers := envelope.Headers()")
+						for _, f := range m.HeadersTypePromise.Target().Fields {
+							fType := j.Add(utils.ToCode(f.Type.RenderUsage(ctx))...)
+							bg.If(j.Op("v, ok := headers").Index(j.Lit(f.Name)), j.Id("ok")).
+								Block(j.Id(rn).Dot("Headers").Dot(f.Name).Op("=").Id("v").Assert(fType))
+						}
 					}
 				} else {
 					bg.Id(rn).Dot("Headers").Op("=").Add(utils.ToCode(m.HeadersFallbackType.RenderUsage(ctx))...).Call(
