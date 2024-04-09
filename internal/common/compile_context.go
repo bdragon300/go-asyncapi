@@ -67,10 +67,10 @@ func (o ObjectCompileOpts) IsAllowedName(name string) bool {
 }
 
 type ContextStackItem struct {
-	PathItem    string
-	Flags       map[SchemaTag]string
-	PackageName string
-	ObjName     string
+	PathItem       string
+	Flags          map[SchemaTag]string
+	PackageName    string
+	RegisteredName string
 }
 
 func NewCompileContext(specPath string, compileOpts CompileOpts) *CompileContext {
@@ -118,9 +118,9 @@ func (c *CompileContext) PathStack() []string {
 	return lo.Map(c.Stack.Items(), func(item ContextStackItem, _ int) string { return item.PathItem })
 }
 
-func (c *CompileContext) SetTopObjName(n string) {
+func (c *CompileContext) RegisterNameTop(n string) {
 	t := c.Stack.Top()
-	t.ObjName = n
+	t.RegisteredName = n
 	c.Stack.ReplaceTop(t)
 }
 
@@ -134,9 +134,9 @@ func (c *CompileContext) RuntimeModule(subPackage string) string {
 
 func (c *CompileContext) GenerateObjName(name, suffix string) string {
 	if name == "" {
-		// Use names of registered object from current stack (that were set by SetTopObjName call)
+		// Use names of registered object from current stack (that were set by RegisterNameTop call)
 		items := lo.FilterMap(c.Stack.Items(), func(item ContextStackItem, _ int) (string, bool) {
-			return item.ObjName, item.ObjName != ""
+			return item.RegisteredName, item.RegisteredName != ""
 		})
 		// Otherwise if no registered objects in stack, just use path
 		if len(items) == 0 {

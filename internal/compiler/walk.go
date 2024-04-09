@@ -136,10 +136,10 @@ func pushStack(ctx *common.CompileContext, pathItem string, flags map[common.Sch
 		pkgName = reusePkg
 	}
 	item := common.ContextStackItem{
-		PathItem:    pathItem,
-		Flags:       flags,
-		PackageName: pkgName,
-		ObjName:     "",
+		PathItem:       pathItem,
+		Flags:          flags,
+		PackageName:    pkgName,
+		RegisteredName: "",
 	}
 	ctx.Stack.Push(item)
 }

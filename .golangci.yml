@@ -7,11 +7,6 @@ run:
   timeout: 5m
   modules-download-mode: readonly
 
-issues:
-  exclude-dirs:
-    - run/3rdparty
-    - tmp
-
 linters:
   enable:
     - gofumpt
@@ -29,3 +24,6 @@ linters-settings:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
+  exclude-dirs:
+    - run/3rdparty
+    - tmp

@@ -28,7 +28,7 @@ type Server struct {
 }
 
 func (s Server) Compile(ctx *common.CompileContext) error {
-	ctx.SetTopObjName(ctx.Stack.Top().PathItem)
+	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
 	obj, err := s.build(ctx, ctx.Stack.Top().PathItem)
 	if err != nil {
 		return err

@@ -22,7 +22,7 @@ type CorrelationID struct {
 
 func (c CorrelationID) Compile(ctx *common.CompileContext) error {
 	// TODO: move this code from everywhere to single place?
-	ctx.SetTopObjName(ctx.Stack.Top().PathItem)
+	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
 	obj, err := c.build(ctx, ctx.Stack.Top().PathItem)
 	if err != nil {
 		return err

@@ -27,7 +27,7 @@ type Channel struct {
 }
 
 func (c Channel) Compile(ctx *common.CompileContext) error {
-	ctx.SetTopObjName(ctx.Stack.Top().PathItem)
+	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
 	obj, err := c.build(ctx, ctx.Stack.Top().PathItem)
 	if err != nil {
 		return err
@@ -209,7 +209,7 @@ type Operation struct {
 }
 
 func (c Operation) Compile(ctx *common.CompileContext) error {
-	ctx.SetTopObjName(ctx.Stack.Top().PathItem)
+	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
 	return nil
 }
 

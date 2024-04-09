@@ -72,7 +72,7 @@ type Object struct {
 }
 
 func (o Object) Compile(ctx *common.CompileContext) error {
-	ctx.SetTopObjName(ctx.Stack.Top().PathItem)
+	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
 	obj, err := o.build(ctx, ctx.Stack.Top().Flags, ctx.Stack.Top().PathItem)
 	if err != nil {
 		return err
