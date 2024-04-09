@@ -40,7 +40,7 @@ func AssignRefs(sources map[string]ObjectSource) {
 					case common.PromiseOriginUser:
 						logger.Debug("Processing a ref", "$ref", p.Ref(), "target", res)
 					default:
-						panic(fmt.Sprintf("Unknown link origin %v, this must not happen", p.Origin()))
+						panic(fmt.Sprintf("Unknown promise origin %v, this must not happen", p.Origin()))
 					}
 
 					p.Assign(res)
@@ -73,7 +73,7 @@ func AssignListPromises(sources map[string]ObjectSource) {
 					if len(res) > 2 {
 						targets += ", ..."
 					}
-					logger.Trace("Internal list link resolved", "count", len(res), "targets", targets)
+					logger.Trace("Internal list promise resolved", "count", len(res), "targets", targets)
 
 					p.AssignList(lo.ToAnySlice(res))
 					assigned++
@@ -136,7 +136,7 @@ func resolvePromise(p common.ObjectPromise, srcSpecID string, sources map[string
 	}
 	found := lo.Filter(srcObjects, func(obj compiler.Object, _ int) bool { return cb(obj.Object, obj.Path) })
 	if len(found) != 1 {
-		panic(fmt.Sprintf("Ref %q must point to one object, got %d objects", p.Ref(), len(found)))
+		panic(fmt.Sprintf("Ref %q must point to one object, but %d objects found", p.Ref(), len(found)))
 	}
 
 	obj := found[0]
@@ -147,7 +147,7 @@ func resolvePromise(p common.ObjectPromise, srcSpecID string, sources map[string
 		}
 		return resolvePromise(v, tgtSpecID, sources)
 	case common.ObjectListPromise:
-		panic(fmt.Sprintf("Ref %q must point to one object, but points to a nested list link", p.Ref()))
+		panic(fmt.Sprintf("Ref %q must point to one object, but it points to a another list promise", p.Ref()))
 	case common.Renderer:
 		return v, true
 	default:
