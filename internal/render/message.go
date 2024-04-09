@@ -53,9 +53,6 @@ func (m Message) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 	if m.PayloadHasSchema {
 		res = append(res, m.PayloadType.RenderDefinition(ctx)...)
 	}
-	if m.HeadersTypePromise != nil {
-		res = append(res, m.HeadersTypePromise.Target().RenderDefinition(ctx)...)
-	}
 
 	res = append(res, m.renderPublishMessageStruct(ctx)...)
 	res = append(res, m.renderSubscribeMessageStruct(ctx)...)
