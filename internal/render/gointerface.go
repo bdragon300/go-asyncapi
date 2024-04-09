@@ -21,7 +21,7 @@ func (i GoInterface) RenderDefinition(ctx *common.RenderContext) []*jen.Statemen
 		res = append(res, jen.Comment(i.Name+" -- "+utils.ToLowerFirstLetter(i.Description)))
 	}
 
-	code := lo.FlatMap(i.Methods, func(item GoFuncSignature, index int) []*jen.Statement {
+	code := lo.FlatMap(i.Methods, func(item GoFuncSignature, _ int) []*jen.Statement {
 		return item.RenderDefinition(ctx)
 	})
 	res = append(res, jen.Type().Id(i.Name).Interface(utils.ToCode(code)...))
@@ -39,7 +39,7 @@ func (i GoInterface) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 		return []*jen.Statement{jen.Id(i.Name)}
 	}
 
-	code := lo.FlatMap(i.Methods, func(item GoFuncSignature, index int) []*jen.Statement {
+	code := lo.FlatMap(i.Methods, func(item GoFuncSignature, _ int) []*jen.Statement {
 		return item.RenderDefinition(ctx)
 	})
 	return []*jen.Statement{

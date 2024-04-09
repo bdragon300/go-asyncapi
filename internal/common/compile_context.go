@@ -134,11 +134,11 @@ func (c *CompileContext) RuntimeModule(subPackage string) string {
 
 func (c *CompileContext) GenerateObjName(name, suffix string) string {
 	if name == "" {
-		// Join name from usernames, set earlier by SetTopObjName (if any)
-		items := lo.FilterMap(c.Stack.Items(), func(item ContextStackItem, index int) (string, bool) {
+		// Use names of registered object from current stack (that were set by SetTopObjName call)
+		items := lo.FilterMap(c.Stack.Items(), func(item ContextStackItem, _ int) (string, bool) {
 			return item.ObjName, item.ObjName != ""
 		})
-		// Otherwise join name from current spec path
+		// Otherwise if no registered objects in stack, just use path
 		if len(items) == 0 {
 			items = c.PathStack()
 		}

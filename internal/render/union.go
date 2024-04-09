@@ -23,7 +23,7 @@ func (s UnionStruct) RenderDefinition(ctx *common.RenderContext) []*jen.Statemen
 	})
 	if hasNonStructs { // Draw union with named fields and methods
 		strct := s.GoStruct
-		strct.Fields = lo.Map(strct.Fields, func(item GoStructField, index int) GoStructField {
+		strct.Fields = lo.Map(strct.Fields, func(item GoStructField, _ int) GoStructField {
 			item.Name = item.Type.TypeName()
 			return item
 		})

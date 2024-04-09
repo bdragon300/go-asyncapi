@@ -61,7 +61,7 @@ func (c CorrelationID) RenderSetterDefinition(ctx *common.RenderContext, message
 		))
 	}
 	// Exclude the last definition statement
-	body = append(body, lo.FlatMap(bodyItems[:len(bodyItems)-1], func(item correlationIDBodyItem, index int) []*j.Statement {
+	body = append(body, lo.FlatMap(bodyItems[:len(bodyItems)-1], func(item correlationIDBodyItem, _ int) []*j.Statement {
 		return item.body
 	})...)
 
@@ -103,7 +103,7 @@ func (c CorrelationID) RenderGetterDefinition(ctx *common.RenderContext, message
 			err.Error(),
 		))
 	}
-	body = append(body, lo.FlatMap(bodyItems, func(item correlationIDBodyItem, index int) []*j.Statement {
+	body = append(body, lo.FlatMap(bodyItems, func(item correlationIDBodyItem, _ int) []*j.Statement {
 		return item.body
 	})...)
 	receiver := j.Id(message.InStruct.ReceiverName()).Id(message.InStruct.Name)

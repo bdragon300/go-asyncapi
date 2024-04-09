@@ -63,7 +63,16 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		return res, nil
 	}
 
-	msgName, _ := lo.Coalesce(m.XGoName, messageKey)
+	msgName := messageKey
+	// If the message is not a component, but inlined in a channel (i.e. in channels package), the messageKey always
+	// will be "message". So, we need to generate a unique name for the message, considering if it's
+	// publish/subscribe message, because we don't generate a separate code object for a channel operation,
+	// therefore a channel can have two identical messages.
+	if ctx.CurrentPackage() == PackageScopeChannels {
+		msgName = ctx.GenerateObjName(m.XGoName, "")
+	}
+	msgName, _ = lo.Coalesce(m.XGoName, msgName)
+
 	obj := render.Message{
 		Name: msgName,
 		OutStruct: &render.GoStruct{
@@ -90,7 +99,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", obj.ContentType))
 
 	// Lookup servers after linking to figure out all protocols the message is used in
-	prms := lo.Map(ctx.Storage.ActiveServers(), func(item string, index int) *render.Promise[*render.Server] {
+	prms := lo.Map(ctx.Storage.ActiveServers(), func(item string, _ int) *render.Promise[*render.Server] {
 		ref := path.Join("#/servers", item)
 		prm := render.NewPromise[*render.Server](ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)

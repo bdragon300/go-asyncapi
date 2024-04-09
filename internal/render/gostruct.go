@@ -27,7 +27,7 @@ func (s GoStruct) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 	if s.Description != "" {
 		res = append(res, jen.Comment(s.Name+" -- "+utils.ToLowerFirstLetter(s.Description)))
 	}
-	code := lo.FlatMap(s.Fields, func(item GoStructField, index int) []*jen.Statement {
+	code := lo.FlatMap(s.Fields, func(item GoStructField, _ int) []*jen.Statement {
 		return item.renderDefinition(ctx)
 	})
 	res = append(res, jen.Type().Id(s.Name).Struct(utils.ToCode(code)...))
@@ -45,7 +45,7 @@ func (s GoStruct) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 		return []*jen.Statement{jen.Id(s.Name)}
 	}
 
-	code := lo.FlatMap(s.Fields, func(item GoStructField, index int) []*jen.Statement {
+	code := lo.FlatMap(s.Fields, func(item GoStructField, _ int) []*jen.Statement {
 		return item.renderDefinition(ctx)
 	})
 
@@ -102,7 +102,7 @@ func (f GoStructField) renderDefinition(ctx *common.RenderContext) []*jen.Statem
 
 	if f.TagsSource != nil {
 		tagValues := append([]string{f.MarshalName}, f.ExtraTagValues...)
-		tagNames := lo.Uniq(lo.FilterMap(f.TagsSource.Targets(), func(item *Message, index int) (string, bool) {
+		tagNames := lo.Uniq(lo.FilterMap(f.TagsSource.Targets(), func(item *Message, _ int) (string, bool) {
 			format := getFormatByContentType(item.ContentType)
 			return format, format != ""
 		}))

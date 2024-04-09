@@ -21,11 +21,11 @@ func (f GoFuncSignature) RenderDefinition(ctx *common.RenderContext) []*jen.Stat
 	defer ctx.LogFinishRender()
 
 	stmt := jen.Id(f.Name)
-	code := lo.FlatMap(f.Args, func(item GoFuncParam, index int) []*jen.Statement {
+	code := lo.FlatMap(f.Args, func(item GoFuncParam, _ int) []*jen.Statement {
 		return item.renderDefinition(ctx)
 	})
 	stmt = stmt.Params(utils.ToCode(code)...)
-	code = lo.FlatMap(f.Return, func(item GoFuncParam, index int) []*jen.Statement {
+	code = lo.FlatMap(f.Return, func(item GoFuncParam, _ int) []*jen.Statement {
 		return item.renderDefinition(ctx)
 	})
 	if len(code) > 1 {

@@ -18,7 +18,7 @@ type OrderedMap[K comparable, V any] struct {
 func (o *OrderedMap[K, V]) UnmarshalJSON(bytes []byte) error {
 	return jsonparser.ObjectEach(
 		bytes,
-		func(keyData []byte, valueData []byte, dataType jsonparser.ValueType, offset int) error {
+		func(keyData []byte, valueData []byte, _ jsonparser.ValueType, _ int) error {
 			var key K
 			if err := json.Unmarshal(keyData, &key); err != nil {
 				return err
@@ -98,7 +98,7 @@ func (o OrderedMap[K, V]) Keys() []K {
 }
 
 func (o OrderedMap[K, V]) Entries() []lo.Entry[K, V] {
-	return lo.Map(o.keys, func(item K, index int) lo.Entry[K, V] {
+	return lo.Map(o.keys, func(item K, _ int) lo.Entry[K, V] {
 		return lo.Entry[K, V]{Key: item, Value: o.data[item]}
 	})
 }

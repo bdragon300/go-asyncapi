@@ -122,7 +122,7 @@ func (s Server) String() string {
 }
 
 func (s Server) GetRelevantChannels() []*Channel {
-	return lo.FilterMap(s.AllChannelsPromises, func(p *Promise[*Channel], index int) (*Channel, bool) {
+	return lo.FilterMap(s.AllChannelsPromises, func(p *Promise[*Channel], _ int) (*Channel, bool) {
 		// Empty/omitted servers field in channel means "all servers"
 		ok := len(p.Target().ExplicitServerNames) == 0 || lo.Contains(p.Target().ExplicitServerNames, s.RawName)
 		return p.Target(), ok && !p.Target().Dummy

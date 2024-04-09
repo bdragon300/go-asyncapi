@@ -67,7 +67,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	}
 
 	// Channels which are connected to this server
-	prms := lo.Map(ctx.Storage.ActiveChannels(), func(item string, index int) *render.Promise[*render.Channel] {
+	prms := lo.Map(ctx.Storage.ActiveChannels(), func(item string, _ int) *render.Promise[*render.Channel] {
 		ref := path.Join("#/channels", item)
 		prm := render.NewPromise[*render.Channel](ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)

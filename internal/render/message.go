@@ -268,7 +268,7 @@ func (m Message) renderUnmarshalEnvelopeMethod(ctx *common.RenderContext, protoN
 }
 
 func (m Message) getServerProtocols(ctx *common.RenderContext) []string {
-	res := lo.FilterMap(m.AllServersPromises, func(item *Promise[*Server], index int) (string, bool) {
+	res := lo.FilterMap(m.AllServersPromises, func(item *Promise[*Server], _ int) (string, bool) {
 		_, ok := ctx.ProtoRenderers[item.Target().Protocol]
 		if !ok {
 			ctx.Logger.Warnf("Skip protocol %q since it is not supported", item.Target().Protocol)

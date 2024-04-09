@@ -16,7 +16,7 @@ func EncodingCompile(ctx *common.CompileContext) error {
 }
 
 func buildEncoderDecoder(ctx *common.CompileContext) (*render.EncodingEncode, *render.EncodingDecode) {
-	allMessagesPrm := render.NewListCbPromise[*render.Message](func(item common.Renderer, path []string) bool {
+	allMessagesPrm := render.NewListCbPromise[*render.Message](func(item common.Renderer, _ []string) bool {
 		_, ok := item.(*render.Message)
 		return ok
 	})

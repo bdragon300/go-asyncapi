@@ -71,7 +71,7 @@ func (c *Client) Subscriber(ctx context.Context, channelName string, bindings *r
 	}
 
 	subCh := run.NewFanOut[runMqtt.EnvelopeReader]()
-	tok := c.Client.Subscribe(channelName, byte(bindings.SubscriberBindings.QoS), func(client mqtt.Client, message mqtt.Message) {
+	tok := c.Client.Subscribe(channelName, byte(bindings.SubscriberBindings.QoS), func(_ mqtt.Client, message mqtt.Message) {
 		subCh.Put(NewEnvelopeIn(message))
 	})
 	select {

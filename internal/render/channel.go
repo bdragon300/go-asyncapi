@@ -134,7 +134,7 @@ func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement
 }
 
 func (c Channel) getServerProtocols(ctx *common.RenderContext) []string {
-	res := lo.FilterMap(c.ServersPromises, func(item *Promise[*Server], index int) (string, bool) {
+	res := lo.FilterMap(c.ServersPromises, func(item *Promise[*Server], _ int) (string, bool) {
 		_, ok := ctx.ProtoRenderers[item.Target().Protocol]
 		if !ok {
 			ctx.Logger.Warnf("Skip protocol %q since it is not supported", item.Target().Protocol)

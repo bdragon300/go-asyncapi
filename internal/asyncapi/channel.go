@@ -94,7 +94,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 	if c.Servers != nil {
 		ctx.Logger.Trace("Channel servers", "names", *c.Servers)
 		res.ExplicitServerNames = *c.Servers
-		prms := lo.FilterMap(ctx.Storage.ActiveServers(), func(item string, index int) (*render.Promise[*render.Server], bool) {
+		prms := lo.FilterMap(ctx.Storage.ActiveServers(), func(item string, _ int) (*render.Promise[*render.Server], bool) {
 			if lo.Contains(*c.Servers, item) {
 				ref := path.Join("#/servers", item)
 				prm := render.NewPromise[*render.Server](ref, common.PromiseOriginInternal)
@@ -106,7 +106,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 		res.ServersPromises = prms
 	} else {
 		ctx.Logger.Trace("Channel for all servers")
-		prms := lo.Map(ctx.Storage.ActiveServers(), func(item string, index int) *render.Promise[*render.Server] {
+		prms := lo.Map(ctx.Storage.ActiveServers(), func(item string, _ int) *render.Promise[*render.Server] {
 			ref := path.Join("#/servers", item)
 			prm := render.NewPromise[*render.Server](ref, common.PromiseOriginInternal)
 			ctx.PutPromise(prm)
@@ -206,6 +206,11 @@ type Operation struct {
 	Message *Message `json:"message" yaml:"message"`
 
 	XIgnore bool `json:"x-ignore" yaml:"x-ignore"`
+}
+
+func (c Operation) Compile(ctx *common.CompileContext) error {
+	ctx.SetTopObjName(ctx.Stack.Top().PathItem)
+	return nil
 }
 
 type OperationTrait struct {

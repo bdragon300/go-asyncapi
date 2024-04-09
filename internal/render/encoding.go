@@ -37,7 +37,7 @@ func (e EncodingEncode) RenderDefinition(ctx *common.RenderContext) []*j.Stateme
 	ctx.LogStartRender("EncodingEncode", "", "", "definition", e.DirectRendering())
 	defer ctx.LogFinishRender()
 
-	contentTypes := lo.Uniq(lo.FilterMap(e.AllMessages.Targets(), func(item *Message, index int) (string, bool) {
+	contentTypes := lo.Uniq(lo.FilterMap(e.AllMessages.Targets(), func(item *Message, _ int) (string, bool) {
 		return item.ContentType, item.ContentType != ""
 	}))
 	return []*j.Statement{
@@ -94,7 +94,7 @@ func (e EncodingDecode) RenderDefinition(ctx *common.RenderContext) []*j.Stateme
 	ctx.LogStartRender("EncodingDecode", "", "", "definition", e.DirectRendering())
 	defer ctx.LogFinishRender()
 
-	contentTypes := lo.Uniq(lo.FilterMap(e.AllMessages.Targets(), func(item *Message, index int) (string, bool) {
+	contentTypes := lo.Uniq(lo.FilterMap(e.AllMessages.Targets(), func(item *Message, _ int) (string, bool) {
 		return item.ContentType, item.ContentType != ""
 	}))
 	return []*j.Statement{

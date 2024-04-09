@@ -25,7 +25,7 @@ func (p GoSimple) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
 
 	stmt := jen.Id(p.Name)
 	if len(p.TypeParamValues) > 0 {
-		typeParams := lo.FlatMap(p.TypeParamValues, func(item common.Renderer, index int) []jen.Code {
+		typeParams := lo.FlatMap(p.TypeParamValues, func(item common.Renderer, _ int) []jen.Code {
 			return utils.ToCode(item.RenderUsage(ctx))
 		})
 		stmt = stmt.Types(typeParams...)
@@ -46,7 +46,7 @@ func (p GoSimple) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
 	}
 
 	if len(p.TypeParamValues) > 0 {
-		typeParams := lo.FlatMap(p.TypeParamValues, func(item common.Renderer, index int) []jen.Code {
+		typeParams := lo.FlatMap(p.TypeParamValues, func(item common.Renderer, _ int) []jen.Code {
 			return utils.ToCode(item.RenderUsage(ctx))
 		})
 		stmt = stmt.Types(typeParams...)
