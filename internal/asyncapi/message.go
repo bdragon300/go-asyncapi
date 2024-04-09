@@ -103,6 +103,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		ctx.Logger.Trace("Message headers")
 		ref := ctx.PathRef() + "/headers"
 		obj.HeadersTypePromise = render.NewPromise[*render.GoStruct](ref, common.PromiseOriginInternal)
+		obj.HeadersTypePromise.AssignErrorNote = "Probably the headers schema has type other than of 'object'?"
 		ctx.PutPromise(obj.HeadersTypePromise)
 	}
 	m.setStructFields(ctx, &obj)

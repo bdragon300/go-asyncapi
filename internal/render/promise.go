@@ -17,16 +17,21 @@ func NewCbPromise[T any](findCb func(item common.Renderer, path []string) bool, 
 }
 
 type Promise[T any] struct {
-	ref    string
-	origin common.PromiseOrigin
-	findCb func(item common.Renderer, path []string) bool
+	AssignErrorNote string // Optional error message additional note to be shown when assignment fails
+	ref             string
+	origin          common.PromiseOrigin
+	findCb          func(item common.Renderer, path []string) bool
 
 	target   T
 	assigned bool
 }
 
 func (r *Promise[T]) Assign(obj any) {
-	r.target = obj.(T)
+	t, ok := obj.(T)
+	if !ok {
+		panic(fmt.Sprintf("Cannot assign an object %+v to a promise of type %T. %s", obj, r.target, r.AssignErrorNote))
+	}
+	r.target = t
 	r.assigned = true
 }
 
@@ -84,7 +89,8 @@ func NewListCbPromise[T any](findCb func(item common.Renderer, path []string) bo
 }
 
 type ListPromise[T any] struct {
-	findCb func(item common.Renderer, path []string) bool
+	AssignErrorNote string // Optional error message additional note to be shown when assignment fails
+	findCb          func(item common.Renderer, path []string) bool
 
 	targets  []T
 	assigned bool
@@ -94,7 +100,7 @@ func (r *ListPromise[T]) AssignList(objs []any) {
 	var ok bool
 	r.targets, ok = lo.FromAnySlice[T](objs)
 	if !ok {
-		panic(fmt.Sprintf("Cannot assign slice of %+v to type %T", objs, r.targets))
+		panic(fmt.Sprintf("Cannot assign slice of %+v to a promise of type %T. %s", objs, r.targets, r.AssignErrorNote))
 	}
 	r.assigned = true
 }
