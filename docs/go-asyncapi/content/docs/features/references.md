@@ -16,9 +16,23 @@ used instead of the reference.
 
 * References to the objects in the same document, e.g. `#/components/schemas/MySchema`
 * References to the objects in another document by file path, e.g.
-  `/path/to/file#/components/schemas/MySchema`
+  `/path/to/file#/components/schemas/MySchema` or `file:///path/to/file#/components/schemas/MySchema`
 * References to the objects in the remote document by URL, e.g.
   `https://example.com/path/to/file#/components/schemas/MySchema`
+
+{{< hint warning >}}
+
+AsyncAPI specification states that reference is the 
+[JSON Reference](https://datatracker.ietf.org/doc/html/draft-pbryan-zyp-json-ref-03), which in turn contains 
+[URI](https://tools.ietf.org/html/rfc3986#section-2.1) in `$ref` field. 
+So, symbols that are non-alphanumeric and not `-`, `.`, `_`, `~` must be percent-encoded as described in
+[RFC 3986](https://tools.ietf.org/html/rfc3986#section-2.1) using the `%` character followed by two hexadecimal digits.
+([encoding table](https://www.w3schools.com/tags/ref_urlencode.ASP)).
+
+For example, the reference that points to a channel with name `foo/bar baz` could be written as 
+`{"$ref": "#/components/channels/foo%2Fbar%20baz"}`.
+
+{{< /hint >}}
 
 Remote references are forbidden by default by security reasons, use `--allow-remote-refs` cli flag to allow it.
 

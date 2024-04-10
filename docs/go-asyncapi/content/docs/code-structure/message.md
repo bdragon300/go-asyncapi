@@ -527,18 +527,25 @@ message.SetCorrelationID("123")
 {{< /tabs >}}
 {{< /details >}}
 
-### Symbols escaping
+### Symbols encoding
 
-According to [RFC 6901](https://tools.ietf.org/html/rfc6901), two of symbols should be written in a special way:
+AsyncAPI specification states that Correlation id location contains the 
+[JSON Pointer](https://datatracker.ietf.org/doc/html/rfc6901) after the `#` symbol. According to the specification,
+the JSON Pointer is a string that contains a sequence of encoded symbols separated by `/`.
 
+Encoding rules are:
+
+* Alphanumeric characters and symbols `-`, `.`, `_` are written as is.
 * Tilda symbol `~` must be written as `~0`.
 * Forward slash `/` must be written as `~1`.
+* Quotes at the beginning and at the end of path item (single or double) have special meaning, see below.
+* Other symbols must be percent-encoded as described in [RFC 3986](https://tools.ietf.org/html/rfc3986#section-2.1) 
+  using the `%` character followed by two hexadecimal digits ([encoding table](https://www.w3schools.com/tags/ref_urlencode.ASP))
 
 Path items wrapped in quotes (single or double) are always treated as strings. Quotes are stripped before
-path evaluation. This is non-standard behavior, but this is useful when you need the number path item to be 
-interpreted as a string.
+path evaluation. The only use-case for this is to force the path item to be treated as a string, not as an integer.
 
-E.g, `$message.payload#/~0field1/'10'/""field2"~1foo"` contains three fields: `~field1`, `10`
+E.g, `$message.payload#/~0field%20_1/'10'/%22field2%22~1foo` contains three fields: `~field _1`, `10`
 (a string, not an integer) and `"field2"/foo`.
 
 ### x-go-ignore
