@@ -1,8 +1,6 @@
 package asyncapi
 
 import (
-	"path"
-
 	"github.com/samber/lo"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -47,7 +45,7 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 
 	if p.Schema != nil {
 		ctx.Logger.Trace("Parameter schema")
-		prm := render.NewGolangTypePromise(path.Join(ctx.PathRef(), "schema"), common.PromiseOriginInternal)
+		prm := render.NewGolangTypePromise(ctx.PathStackRef("schema"), common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
 		res.Type = &render.GoStruct{
 			BaseType: render.BaseType{

@@ -66,7 +66,7 @@ func (b *Bindings) build(
 			vals, jsonVals, err = builder.BuildServerBindings(ctx, e.Value)
 		}
 		if err != nil {
-			return nil, types.CompileError{Err: fmt.Errorf("bindings build: %w", err), Path: ctx.PathRef(), Proto: e.Key}
+			return nil, types.CompileError{Err: fmt.Errorf("bindings build: %w", err), Path: ctx.PathStackRef(), Proto: e.Key}
 		}
 		if vals != nil {
 			ctx.Logger.Trace("Have bindings values", "proto", builder.ProtocolName(), "value", vals)

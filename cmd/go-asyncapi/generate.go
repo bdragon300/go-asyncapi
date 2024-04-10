@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bdragon300/go-asyncapi/internal/specurl"
+
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/tcp"
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/udp"
 
@@ -32,7 +34,6 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/compiler"
 	"github.com/bdragon300/go-asyncapi/internal/linker"
-	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/bdragon300/go-asyncapi/internal/writer"
 	"github.com/samber/lo"
 	"golang.org/x/mod/modfile"
@@ -135,13 +136,13 @@ func generate(cmd *GenerateCmd) error {
 
 	// Compilation
 	resolver := getResolver(*pubSubOpts)
-	specPath, _, _ := utils.SplitRefToPathPointer(pubSubOpts.Spec)
-	modules, err := generationCompile(specPath, compileOpts, resolver)
+	specURL := specurl.Parse(pubSubOpts.Spec)
+	modules, err := generationCompile(specURL, compileOpts, resolver)
 	if err != nil {
 		return err
 	}
 	objSources := lo.MapValues(modules, func(value *compiler.Module, _ string) linker.ObjectSource { return value })
-	mainModule := modules[specPath]
+	mainModule := modules[specURL.SpecID]
 
 	// Linking
 	if err = generationLinking(objSources); err != nil {
@@ -185,35 +186,37 @@ func generateImplementation(cmd *GenerateCmd) error {
 	return nil
 }
 
-func generationCompile(specPath string, compileOpts common.CompileOpts, resolver compiler.SpecFileResolver) (map[string]*compiler.Module, error) {
+func generationCompile(specURL *specurl.URL, compileOpts common.CompileOpts, resolver compiler.SpecFileResolver) (map[string]*compiler.Module, error) {
 	logger := types.NewLogger("Compilation 🔨")
 	asyncapi.ProtocolBuilders = protocolBuilders()
-	compileQueue := []string{specPath}           // Queue of specPaths to compile
+	compileQueue := []*specurl.URL{specURL}      // Queue of specIDs to compile
 	modules := make(map[string]*compiler.Module) // Compilers by spec id
 	for len(compileQueue) > 0 {
-		specPath = compileQueue[0]          // Pop from the queue
-		compileQueue = compileQueue[1:]     //
-		if _, ok := modules[specPath]; ok { // Skip if specPath has been already modules
-			continue
+		specURL, compileQueue = compileQueue[0], compileQueue[1:] // Pop an item from queue
+		if _, ok := modules[specURL.SpecID]; ok {
+			continue // Skip if a spec file has been already compiled
 		}
 
-		logger.Info("Run compilation", "specPath", specPath)
-		module := compiler.NewModule(specPath)
-		modules[specPath] = module
+		logger.Info("Run compilation", "specURL", specURL)
+		module := compiler.NewModule(specURL)
+		modules[specURL.SpecID] = module
 
-		if !compileOpts.AllowRemoteRefs && compiler.IsRemoteSpecPath(specPath) {
-			return nil, fmt.Errorf("remote refs are forbidden by default for security reasons, use --allow-remote-refs flag to allow fetching files from remote resources")
+		if !compileOpts.AllowRemoteRefs && specURL.IsRemote() {
+			return nil, fmt.Errorf(
+				"%s: external requests are forbidden by default for security reasons, use --allow-remote-refs flag to allow them",
+				specURL,
+			)
 		}
-		logger.Debug("Loading a spec", "specPath", specPath)
+		logger.Debug("Loading a spec", "specURL", specURL)
 		if err := module.Load(resolver); err != nil {
 			return nil, fmt.Errorf("load a spec: %w", err)
 		}
-		logger.Debug("Compilation a spec", "specPath", specPath)
-		if err := module.Compile(common.NewCompileContext(specPath, compileOpts)); err != nil {
-			return nil, fmt.Errorf("compilation the spec: %w", err)
+		logger.Debug("Compilation a spec", "specURL", specURL)
+		if err := module.Compile(common.NewCompileContext(specURL, compileOpts)); err != nil {
+			return nil, fmt.Errorf("compilation a spec: %w", err)
 		}
 		logger.Debugf("Compiler stats: %s", module.Stats())
-		compileQueue = lo.Flatten([][]string{compileQueue, module.ExternalSpecPaths()}) // Extend queue with remote specPaths
+		compileQueue = lo.Flatten([][]*specurl.URL{compileQueue, module.ExternalSpecs()}) // Extend queue with remote specPaths
 	}
 
 	logger.Info("Compilation completed", "files", len(modules))

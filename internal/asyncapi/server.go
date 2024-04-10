@@ -1,8 +1,7 @@
 package asyncapi
 
 import (
-	"path"
-
+	"github.com/bdragon300/go-asyncapi/internal/specurl"
 	"github.com/samber/lo"
 
 	"github.com/bdragon300/go-asyncapi/internal/types"
@@ -68,7 +67,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 
 	// Channels which are connected to this server
 	prms := lo.Map(ctx.Storage.ActiveChannels(), func(item string, _ int) *render.Promise[*render.Channel] {
-		ref := path.Join("#/channels", item)
+		ref := specurl.BuildRef("channels", item)
 		prm := render.NewPromise[*render.Channel](ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
 		return prm
@@ -87,7 +86,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 			Fields: nil,
 		}
 
-		ref := ctx.PathRef() + "/bindings"
+		ref := ctx.PathStackRef("bindings")
 		res.BindingsPromise = render.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
 		ctx.PutPromise(res.BindingsPromise)
 	}
@@ -95,7 +94,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	// Server variables
 	for _, v := range s.Variables.Entries() {
 		ctx.Logger.Trace("Server variable", "name", v.Key)
-		ref := path.Join(ctx.PathRef(), "variables", v.Key)
+		ref := ctx.PathStackRef("variables", v.Key)
 		prm := render.NewPromise[*render.ServerVariable](ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
 		res.Variables.Set(v.Key, prm)

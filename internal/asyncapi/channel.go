@@ -1,8 +1,7 @@
 package asyncapi
 
 import (
-	"path"
-
+	"github.com/bdragon300/go-asyncapi/internal/specurl"
 	"github.com/samber/lo"
 
 	"github.com/bdragon300/go-asyncapi/internal/types"
@@ -78,7 +77,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 		}
 		for _, paramName := range c.Parameters.Keys() {
 			ctx.Logger.Trace("Channel parameter", "name", paramName)
-			ref := path.Join(ctx.PathRef(), "parameters", paramName)
+			ref := ctx.PathStackRef("parameters", paramName)
 			prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 			ctx.PutPromise(prm)
 			res.ParametersStruct.Fields = append(res.ParametersStruct.Fields, render.GoStructField{
@@ -96,7 +95,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 		res.ExplicitServerNames = *c.Servers
 		prms := lo.FilterMap(ctx.Storage.ActiveServers(), func(item string, _ int) (*render.Promise[*render.Server], bool) {
 			if lo.Contains(*c.Servers, item) {
-				ref := path.Join("#/servers", item)
+				ref := specurl.BuildRef("servers", item)
 				prm := render.NewPromise[*render.Server](ref, common.PromiseOriginInternal)
 				ctx.PutPromise(prm)
 				return prm, true
@@ -107,7 +106,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 	} else {
 		ctx.Logger.Trace("Channel for all servers")
 		prms := lo.Map(ctx.Storage.ActiveServers(), func(item string, _ int) *render.Promise[*render.Server] {
-			ref := path.Join("#/servers", item)
+			ref := specurl.BuildRef("servers", item)
 			prm := render.NewPromise[*render.Server](ref, common.PromiseOriginInternal)
 			ctx.PutPromise(prm)
 			return prm
@@ -122,7 +121,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 		ctx.Logger.Trace("Found channel bindings")
 		hasBindings = true
 
-		ref := ctx.PathRef() + "/bindings"
+		ref := ctx.PathStackRef("bindings")
 		res.BindingsChannelPromise = render.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
 		ctx.PutPromise(res.BindingsChannelPromise)
 	}
@@ -135,13 +134,13 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 			ctx.Logger.Trace("Found publish operation bindings")
 			hasBindings = true
 
-			ref := path.Join(ctx.PathRef(), "publish/bindings")
+			ref := ctx.PathStackRef("publish", "bindings")
 			res.BindingsPublishPromise = render.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
 			ctx.PutPromise(res.BindingsPublishPromise)
 		}
 		if c.Publish.Message != nil {
 			ctx.Logger.Trace("Found publish operation message")
-			ref := path.Join(ctx.PathRef(), "publish/message")
+			ref := ctx.PathStackRef("publish", "message")
 			res.PubMessagePromise = render.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
 			ctx.PutPromise(res.PubMessagePromise)
 		}
@@ -152,13 +151,13 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 			ctx.Logger.Trace("Found subscribe operation bindings")
 			hasBindings = true
 
-			ref := path.Join(ctx.PathRef(), "subscribe/bindings")
+			ref := ctx.PathStackRef("subscribe", "bindings")
 			res.BindingsSubscribePromise = render.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
 			ctx.PutPromise(res.BindingsSubscribePromise)
 		}
 		if c.Subscribe.Message != nil {
 			ctx.Logger.Trace("Channel subscribe operation message")
-			ref := path.Join(ctx.PathRef(), "subscribe/message")
+			ref := ctx.PathStackRef("subscribe", "message")
 			res.SubMessagePromise = render.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
 			ctx.PutPromise(res.SubMessagePromise)
 		}

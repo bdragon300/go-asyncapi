@@ -12,15 +12,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bdragon300/go-asyncapi/internal/specurl"
+
 	"github.com/bdragon300/go-asyncapi/internal/types"
-	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 )
 
 const HangedSubprocessTimeout = 3 * time.Second
 
 type SpecFileResolver interface {
-	Resolve(specPath string) (io.ReadCloser, error)
+	Resolve(specPath *specurl.URL) (io.ReadCloser, error)
 }
 
 // DefaultSpecFileResolver is the default file resolver. Local spec files are read from the filesystem, remote spec
@@ -32,11 +33,11 @@ type DefaultSpecFileResolver struct {
 	Logger  *types.Logger
 }
 
-func (r DefaultSpecFileResolver) Resolve(specPath string) (io.ReadCloser, error) {
-	if IsRemoteSpecPath(specPath) {
-		return r.resolveRemote(specPath)
+func (r DefaultSpecFileResolver) Resolve(specPath *specurl.URL) (io.ReadCloser, error) {
+	if specPath.IsRemote() {
+		return r.resolveRemote(specPath.SpecID)
 	}
-	return r.resolveLocal(specPath)
+	return r.resolveLocal(specPath.SpecID)
 }
 
 func (r DefaultSpecFileResolver) resolveLocal(specPath string) (io.ReadCloser, error) {
@@ -99,7 +100,7 @@ type subprocessSpecCommand struct {
 	stderr  io.ReadWriter
 }
 
-func (r SubprocessSpecFileResolver) Resolve(specPath string) (io.ReadCloser, error) {
+func (r SubprocessSpecFileResolver) Resolve(specPath *specurl.URL) (io.ReadCloser, error) {
 	r.Logger.Info("Resolving spec by command", "specPath", specPath, "commandLine", r.CommandLine, "timeout", r.RunTimeout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), r.RunTimeout)
@@ -109,11 +110,11 @@ func (r SubprocessSpecFileResolver) Resolve(specPath string) (io.ReadCloser, err
 	if err != nil {
 		return nil, fmt.Errorf("get command: %w", err)
 	}
-	r.Logger.Debug("Run command", "cmd", cmd.command, "stdinData", specPath)
+	r.Logger.Debug("Run command", "cmd", cmd.command, "stdinData", specPath.SpecID)
 	if err = cmd.command.Start(); err != nil {
 		return nil, fmt.Errorf("start command: %w", err)
 	}
-	if _, err = fmt.Fprintln(cmd.stdin, specPath); err != nil {
+	if _, err = fmt.Fprintln(cmd.stdin, specPath.SpecID); err != nil {
 		return nil, fmt.Errorf("write to stdin: %w", err)
 	}
 
@@ -187,9 +188,4 @@ func parseCommandLine(commandLine string) []string {
 		args = append(args, arg)
 	}
 	return args
-}
-
-func IsRemoteSpecPath(specPath string) bool {
-	_, _, remote := utils.SplitRefToPathPointer(specPath)
-	return remote
 }

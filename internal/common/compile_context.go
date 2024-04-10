@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/bdragon300/go-asyncapi/internal/specurl"
+
 	"github.com/bdragon300/go-asyncapi/internal/types"
 
 	"github.com/bdragon300/go-asyncapi/internal/utils"
@@ -21,7 +23,7 @@ type GolangType interface {
 type CompilationStorage interface {
 	AddObject(pkgName string, stack []string, obj Renderer)
 	RegisterProtocol(protoName string)
-	AddExternalSpecPath(specPath string)
+	AddExternalSpecPath(specPath *specurl.URL)
 	AddPromise(p ObjectPromise)
 	AddListPromise(p ObjectListPromise)
 
@@ -73,8 +75,8 @@ type ContextStackItem struct {
 	RegisteredName string
 }
 
-func NewCompileContext(specPath string, compileOpts CompileOpts) *CompileContext {
-	res := CompileContext{specPath: specPath, CompileOpts: compileOpts}
+func NewCompileContext(specPath *specurl.URL, compileOpts CompileOpts) *CompileContext {
+	res := CompileContext{specRef: specPath, CompileOpts: compileOpts}
 	res.Logger = &CompilerLogger{
 		ctx:    &res,
 		logger: types.NewLogger("Compilation 🔨"),
@@ -87,7 +89,7 @@ type CompileContext struct {
 	Stack       types.SimpleStack[ContextStackItem]
 	Logger      *CompilerLogger
 	CompileOpts CompileOpts
-	specPath    string
+	specRef     *specurl.URL
 }
 
 func (c *CompileContext) PutObject(obj Renderer) {
@@ -99,9 +101,9 @@ func (c *CompileContext) PutObject(obj Renderer) {
 }
 
 func (c *CompileContext) PutPromise(p ObjectPromise) {
-	refSpecPath, _, _ := utils.SplitRefToPathPointer(p.Ref())
-	if refSpecPath != "" {
-		c.Storage.AddExternalSpecPath(refSpecPath)
+	ref := specurl.Parse(p.Ref())
+	if ref.IsExternal() {
+		c.Storage.AddExternalSpecPath(ref)
 	}
 	c.Storage.AddPromise(p)
 }
@@ -110,8 +112,13 @@ func (c *CompileContext) PutListPromise(p ObjectListPromise) {
 	c.Storage.AddListPromise(p)
 }
 
-func (c *CompileContext) PathRef() string {
-	return "#/" + path.Join(c.PathStack()...)
+// PathStackRef returns a path to the current stack as a reference. NOTE: the reference is URL-encoded.
+func (c *CompileContext) PathStackRef(joinParts ...string) string {
+	parts := c.PathStack()
+	if len(joinParts) > 0 {
+		parts = append(parts, joinParts...)
+	}
+	return specurl.BuildRef(parts...)
 }
 
 func (c *CompileContext) PathStack() []string {
@@ -151,7 +158,7 @@ func (c *CompileContext) WithResultsStore(store CompilationStorage) *CompileCont
 	res := CompileContext{
 		Storage:     store,
 		Stack:       types.SimpleStack[ContextStackItem]{},
-		specPath:    c.specPath,
+		specRef:     c.specRef,
 		Logger:      c.Logger,
 		CompileOpts: c.CompileOpts,
 	}

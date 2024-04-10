@@ -34,7 +34,7 @@ func (pb ProtoBuilder) BuildChannelBindings(
 ) (vals *render.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	var bindings channelBindings
 	if err = types.UnmarshalRawsUnion2(rawData, &bindings); err != nil {
-		err = types.CompileError{Err: err, Path: ctx.PathRef(), Proto: pb.ProtoName}
+		err = types.CompileError{Err: err, Path: ctx.PathStackRef(), Proto: pb.ProtoName}
 		return
 	}
 
@@ -42,7 +42,7 @@ func (pb ProtoBuilder) BuildChannelBindings(
 	if bindings.Query != nil {
 		v, err2 := json.Marshal(bindings.Query)
 		if err2 != nil {
-			err = types.CompileError{Err: err2, Path: ctx.PathRef(), Proto: pb.ProtoName}
+			err = types.CompileError{Err: err2, Path: ctx.PathStackRef(), Proto: pb.ProtoName}
 			return
 		}
 		jsonVals.Set("Query", string(v))
@@ -50,7 +50,7 @@ func (pb ProtoBuilder) BuildChannelBindings(
 	if bindings.Headers != nil {
 		v, err2 := json.Marshal(bindings.Headers)
 		if err2 != nil {
-			err = types.CompileError{Err: err2, Path: ctx.PathRef(), Proto: pb.ProtoName}
+			err = types.CompileError{Err: err2, Path: ctx.PathStackRef(), Proto: pb.ProtoName}
 			return
 		}
 		jsonVals.Set("Headers", string(v))

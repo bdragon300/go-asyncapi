@@ -81,8 +81,7 @@ func ToLowerFirstLetter(s string) string {
 }
 
 func JoinNonemptyStrings(sep string, s ...string) string {
-	s = lo.Filter(s, func(item string, _ int) bool { return item != "" })
-	return strings.Join(s, sep)
+	return strings.Join(lo.Compact(s), sep)
 }
 
 func ToFileName(rawString string) string {

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bdragon300/go-asyncapi/internal/specurl"
+
 	"github.com/bdragon300/go-asyncapi/internal/types"
 
 	"github.com/bdragon300/go-asyncapi/internal/compiler"
-
-	"github.com/bdragon300/go-asyncapi/internal/utils"
 
 	"github.com/samber/lo"
 
@@ -120,17 +120,18 @@ func Stats(sources map[string]ObjectSource) string {
 // TODO: detect ref loops to avoid infinite recursion
 // TODO: external refs can not be resolved at first time -- leave them unresolved
 func resolvePromise(p common.ObjectPromise, srcSpecID string, sources map[string]ObjectSource) (common.Renderer, bool) {
-	tgtSpecID, refPointer, _ := utils.SplitRefToPathPointer(p.Ref())
-	if tgtSpecID == "" {
-		tgtSpecID = srcSpecID // `#/ref` references
+	tgtSpecID := srcSpecID
+
+	ref := specurl.Parse(p.Ref())
+	if ref.IsExternal() {
+		tgtSpecID = ref.SpecID
 	}
 	if _, ok := sources[tgtSpecID]; !ok {
 		return nil, false
 	}
 
 	srcObjects := sources[tgtSpecID].AllObjects()
-	refPath := splitRefPointer(refPointer)
-	cb := func(_ common.Renderer, path []string) bool { return utils.SlicesEqual(path, refPath) }
+	cb := func(_ common.Renderer, path []string) bool { return ref.MatchPointer(path) }
 	if qcb := p.FindCallback(); qcb != nil {
 		cb = qcb
 	}
@@ -195,14 +196,6 @@ func resolveListPromise(p common.ObjectListPromise, srcSpecID string, sources ma
 		}
 	}
 	return results, true
-}
-
-func splitRefPointer(refPointer string) []string {
-	parts := strings.Split(refPointer, "/")
-	if len(parts) > 0 && parts[0] == "" {
-		parts = parts[1:]
-	}
-	return parts
 }
 
 func isPromise(obj any) bool {

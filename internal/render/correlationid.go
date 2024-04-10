@@ -2,6 +2,7 @@ package render
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -150,17 +151,10 @@ func (c CorrelationID) renderMemberExtractionCode(
 		anchor := fmt.Sprintf("v%d", pathIdx)
 		nextAnchor := fmt.Sprintf("v%d", pathIdx+1)
 
-		// Replace ~1 with / and ~0 with ~ according to RFC 6901
-		memberStr := strings.ReplaceAll(strings.ReplaceAll(path[pathIdx], "~1", "/"), "~0", "~")
-		// Number path items are treated as integers. Wrapping it in quotes forces to be it a string,
-		// quotes around will be stripped one time.
-		var memberName any = memberStr // By default, treat as a string
-		quoted := strings.HasPrefix(path[pathIdx], "\"") && strings.HasSuffix(path[pathIdx], "\"") ||
-			strings.HasPrefix(path[pathIdx], "'") && strings.HasSuffix(path[pathIdx], "'")
-		if quoted {
-			memberName = memberStr[1 : len(memberStr)-1] // Unquote
-		} else if v, err := strconv.Atoi(memberStr); err == nil {
-			memberName = v // Treat as an integer
+		memberName, err2 := unescapeCorrelationIDPathItem(path[pathIdx])
+		if err2 != nil {
+			err = fmt.Errorf("cannot unescape CorrelationID path %q, item %q: %w", path, path[pathIdx], err)
+			return
 		}
 
 		switch typ := baseType.(type) {
@@ -280,4 +274,26 @@ func (c CorrelationID) renderMemberExtractionCode(
 	}
 
 	return
+}
+
+func unescapeCorrelationIDPathItem(value string) (any, error) {
+	if v, err := strconv.Atoi(value); err == nil {
+		return v, nil // Number path items are treated as integers
+	}
+
+	// Unquote path item if it is quoted. Quoted forces a path item to be treated as a string, not number.
+	quoted := strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"") ||
+		strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'")
+	if quoted {
+		value = value[1 : len(value)-1] // Unquote
+	}
+
+	// RFC3986 URL unescape
+	value, err := url.PathUnescape(value)
+	if err != nil {
+		return nil, err
+	}
+
+	// RFC6901 JSON Pointer unescape: replace `~1` to `/` and `~0` to `~`
+	return strings.ReplaceAll(strings.ReplaceAll(value, "~1", "/"), "~0", "~"), nil
 }

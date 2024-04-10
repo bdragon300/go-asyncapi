@@ -37,7 +37,7 @@ func (pb ProtoBuilder) BuildOperationBindings(
 ) (vals *render.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	var bindings operationBindings
 	if err = types.UnmarshalRawsUnion2(rawData, &bindings); err != nil {
-		err = types.CompileError{Err: err, Path: ctx.PathRef(), Proto: pb.ProtoName}
+		err = types.CompileError{Err: err, Path: ctx.PathStackRef(), Proto: pb.ProtoName}
 		return
 	}
 	vals = render.ConstructGoValue(

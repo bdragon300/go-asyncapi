@@ -3,8 +3,8 @@ package asyncapi
 import (
 	"encoding/json"
 	"fmt"
-	"path"
 
+	"github.com/bdragon300/go-asyncapi/internal/specurl"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 
 	yaml "gopkg.in/yaml.v3"
@@ -100,7 +100,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 
 	// Lookup servers after linking to figure out all protocols the message is used in
 	prms := lo.Map(ctx.Storage.ActiveServers(), func(item string, _ int) *render.Promise[*render.Server] {
-		ref := path.Join("#/servers", item)
+		ref := specurl.BuildRef("servers", item)
 		prm := render.NewPromise[*render.Server](ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
 		return prm
@@ -110,7 +110,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	// Link to Headers struct if any
 	if m.Headers != nil {
 		ctx.Logger.Trace("Message headers")
-		ref := ctx.PathRef() + "/headers"
+		ref := ctx.PathStackRef("headers")
 		obj.HeadersTypePromise = render.NewPromise[*render.GoStruct](ref, common.PromiseOriginInternal)
 		obj.HeadersTypePromise.AssignErrorNote = "Probably the headers schema has type other than of 'object'?"
 		ctx.PutPromise(obj.HeadersTypePromise)
@@ -129,7 +129,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 			Fields: nil,
 		}
 
-		ref := ctx.PathRef() + "/bindings"
+		ref := ctx.PathStackRef("bindings")
 		obj.BindingsPromise = render.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
 		ctx.PutPromise(obj.BindingsPromise)
 	}
@@ -137,7 +137,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	// Link to CorrelationID if any
 	if m.CorrelationID != nil {
 		ctx.Logger.Trace("Message correlationId")
-		ref := ctx.PathRef() + "/correlationId"
+		ref := ctx.PathStackRef("correlationId")
 		obj.CorrelationIDPromise = render.NewPromise[*render.CorrelationID](ref, common.PromiseOriginInternal)
 		ctx.PutPromise(obj.CorrelationIDPromise)
 	}
@@ -165,7 +165,7 @@ func (m Message) setStructFields(ctx *common.CompileContext, langMessage *render
 func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 	if m.Payload != nil {
 		ctx.Logger.Trace("Message payload has a concrete type")
-		ref := ctx.PathRef() + "/payload"
+		ref := ctx.PathStackRef("payload")
 		prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
 		return prm

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"path"
 	"strconv"
 
 	"github.com/bdragon300/go-asyncapi/internal/types"
@@ -141,7 +140,7 @@ func (o Object) getTypeName(ctx *common.CompileContext) (typeName string, nullab
 		case nullable: // Null only -> 'any', that can be only nil
 			typeName = "null"
 		default:
-			err = types.CompileError{Err: errors.New("empty object type"), Path: ctx.PathRef()}
+			err = types.CompileError{Err: errors.New("empty object type"), Path: ctx.PathStackRef()}
 			return
 		}
 		ctx.Logger.Trace(fmt.Sprintf("Multitype object type inferred as %q", typeName))
@@ -202,7 +201,7 @@ func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.Sch
 		ctx.Logger.Trace("Object is string")
 		aliasedType = &render.GoSimple{Name: "string"}
 	default:
-		return nil, types.CompileError{Err: fmt.Errorf("unknown jsonschema type %q", typeName), Path: ctx.PathRef()}
+		return nil, types.CompileError{Err: fmt.Errorf("unknown jsonschema type %q", typeName), Path: ctx.PathStackRef()}
 	}
 
 	if aliasedType != nil {
@@ -269,7 +268,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 	// regular properties
 	for _, entry := range o.Properties.Entries() {
 		ctx.Logger.Trace("Object property", "name", entry.Key)
-		ref := path.Join(ctx.PathRef(), "properties", entry.Key)
+		ref := ctx.PathStackRef("properties", entry.Key)
 		prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
 
@@ -300,7 +299,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 		switch o.AdditionalProperties.Selector {
 		case 0: // "additionalProperties:" is an object
 			ctx.Logger.Trace("Object additional properties as an object")
-			ref := path.Join(ctx.PathRef(), "additionalProperties")
+			ref := ctx.PathStackRef("additionalProperties")
 			prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 			ctx.PutPromise(prm)
 			xTags, xTagNames, xTagVals := o.AdditionalProperties.V0.xGoTagsInfo(ctx)
@@ -372,7 +371,7 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 	switch {
 	case o.Items != nil && o.Items.Selector == 0: // Only one "type:" of items
 		ctx.Logger.Trace("Object items (single type)")
-		ref := path.Join(ctx.PathRef(), "items")
+		ref := ctx.PathStackRef("items")
 		prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
 		res.ItemsType = prm
@@ -423,19 +422,19 @@ func (o Object) buildUnionStruct(ctx *common.CompileContext) (*render.UnionStruc
 	ctx.PutListPromise(messagesPrm)
 
 	res.Fields = lo.Times(len(o.OneOf), func(index int) render.GoStructField {
-		ref := path.Join(ctx.PathRef(), "oneOf", strconv.Itoa(index))
+		ref := ctx.PathStackRef("oneOf", strconv.Itoa(index))
 		prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
 		return render.GoStructField{Type: &render.GoPointer{Type: prm}}
 	})
 	res.Fields = append(res.Fields, lo.Times(len(o.AnyOf), func(index int) render.GoStructField {
-		ref := path.Join(ctx.PathRef(), "anyOf", strconv.Itoa(index))
+		ref := ctx.PathStackRef("anyOf", strconv.Itoa(index))
 		prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
 		return render.GoStructField{Type: &render.GoPointer{Type: prm}}
 	})...)
 	res.Fields = append(res.Fields, lo.Times(len(o.AllOf), func(index int) render.GoStructField {
-		ref := path.Join(ctx.PathRef(), "allOf", strconv.Itoa(index))
+		ref := ctx.PathStackRef("allOf", strconv.Itoa(index))
 		prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
 		return render.GoStructField{Type: prm}
