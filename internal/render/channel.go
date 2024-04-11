@@ -69,8 +69,10 @@ func (c Channel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 		}
 		for _, p := range protocols {
 			protoTitle := ctx.ProtoRenderers[p].ProtocolTitle()
+			// Protocol renderer can maintain multiple Server protocols, so get the protocol name from renderer
+			protoName := ctx.ProtoRenderers[p].ProtocolName()
 			res = append(res, renderChannelAndOperationBindingsMethod(
-				ctx, c.BindingsStruct, chanBindings, pubBindings, subBindings, p, protoTitle,
+				ctx, c.BindingsStruct, chanBindings, pubBindings, subBindings, protoName, protoTitle,
 			)...)
 		}
 	}
