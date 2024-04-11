@@ -92,7 +92,6 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 			},
 		},
 		PayloadType:         m.getPayloadType(ctx),
-		PayloadHasSchema:    m.Payload != nil && m.Payload.Ref == "",
 		HeadersFallbackType: &render.GoMap{KeyType: &render.GoSimple{Name: "string"}, ValueType: &render.GoSimple{Name: "any", IsIface: true}},
 	}
 	obj.ContentType, _ = lo.Coalesce(m.ContentType, ctx.Storage.DefaultContentType())

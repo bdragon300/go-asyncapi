@@ -16,7 +16,6 @@ type Message struct {
 	OutStruct            *GoStruct
 	InStruct             *GoStruct
 	PayloadType          common.GolangType // `any` or a particular type
-	PayloadHasSchema     bool
 	HeadersFallbackType  *GoMap
 	HeadersTypePromise   *Promise[*GoStruct]
 	AllServersPromises   []*Promise[*Server]      // For extracting all using protocols
@@ -48,10 +47,6 @@ func (m Message) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 				res = append(res, tgt.RenderBindingsMethod(ctx, m.BindingsStruct, p, protoTitle)...)
 			}
 		}
-	}
-
-	if m.PayloadHasSchema {
-		res = append(res, m.PayloadType.RenderDefinition(ctx)...)
 	}
 
 	res = append(res, m.renderPublishMessageStruct(ctx)...)

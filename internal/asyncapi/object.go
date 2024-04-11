@@ -100,7 +100,7 @@ func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]str
 
 	if len(o.OneOf)+len(o.AnyOf)+len(o.AllOf) > 0 {
 		ctx.Logger.Trace("Object is union struct")
-		return o.buildUnionStruct(ctx) // TODO: process other items that can be set along with oneof/anyof/allof
+		return o.buildUnionStruct(ctx, flags) // TODO: process other items that can be set along with oneof/anyof/allof
 	}
 
 	typeName, nullable, err := o.getTypeName(ctx)
@@ -236,13 +236,13 @@ func (o Object) getDefaultObjectType(ctx *common.CompileContext) *types.Union2[s
 }
 
 func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.SchemaTag]string) (*render.GoStruct, error) {
-	_, noInline := flags[common.SchemaTagDirectRender]
+	_, directRender := flags[common.SchemaTagDirectRender]
 	objName, _ := lo.Coalesce(o.XGoName, o.Title)
 	res := render.GoStruct{
 		BaseType: render.BaseType{
 			Name:         ctx.GenerateObjName(objName, ""),
 			Description:  o.Description,
-			DirectRender: noInline,
+			DirectRender: directRender,
 			Import:       ctx.CurrentPackage(),
 		},
 	}
@@ -356,13 +356,13 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 }
 
 func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.SchemaTag]string) (*render.GoArray, error) {
-	_, noInline := flags[common.SchemaTagDirectRender]
+	_, directRender := flags[common.SchemaTagDirectRender]
 	objName, _ := lo.Coalesce(o.XGoName, o.Title)
 	res := render.GoArray{
 		BaseType: render.BaseType{
 			Name:         ctx.GenerateObjName(objName, ""),
 			Description:  o.Description,
-			DirectRender: noInline,
+			DirectRender: directRender,
 			Import:       ctx.CurrentPackage(),
 		},
 		ItemsType: nil,
@@ -401,14 +401,15 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 	return &res, nil
 }
 
-func (o Object) buildUnionStruct(ctx *common.CompileContext) (*render.UnionStruct, error) {
+func (o Object) buildUnionStruct(ctx *common.CompileContext, flags map[common.SchemaTag]string) (*render.UnionStruct, error) {
+	_, directRender := flags[common.SchemaTagDirectRender]
 	objName, _ := lo.Coalesce(o.XGoName, o.Title)
 	res := render.UnionStruct{
 		GoStruct: render.GoStruct{
 			BaseType: render.BaseType{
 				Name:         ctx.GenerateObjName(objName, ""),
 				Description:  o.Description,
-				DirectRender: true, // Always render unions as separate types
+				DirectRender: directRender,
 				Import:       ctx.CurrentPackage(),
 			},
 		},

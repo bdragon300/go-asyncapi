@@ -18,10 +18,12 @@ func (s UnionStruct) RenderDefinition(ctx *common.RenderContext) []*jen.Statemen
 	ctx.LogStartRender("UnionStruct", s.Import, s.Name, "definition", s.DirectRendering())
 	defer ctx.LogFinishRender()
 
-	hasNonStructs := lo.ContainsBy(s.Fields, func(item GoStructField) bool {
-		return !isTypeStruct(item.Type)
+	onlyStructs := lo.EveryBy(s.Fields, func(item GoStructField) bool {
+		return isTypeStruct(item.Type)
 	})
-	if hasNonStructs { // Draw union with named fields and methods
+	if onlyStructs { // Draw simplified union with embedded fields
+		res = s.GoStruct.RenderDefinition(ctx)
+	} else { // Draw union with named fields and methods
 		strct := s.GoStruct
 		strct.Fields = lo.Map(strct.Fields, func(item GoStructField, _ int) GoStructField {
 			item.Name = item.Type.TypeName()
@@ -32,8 +34,6 @@ func (s UnionStruct) RenderDefinition(ctx *common.RenderContext) []*jen.Statemen
 		}
 		res = strct.RenderDefinition(ctx)
 		res = append(res, s.renderMethods(ctx)...)
-	} else { // Draw simplified union with embedded fields
-		res = s.GoStruct.RenderDefinition(ctx)
 	}
 	return res
 }
