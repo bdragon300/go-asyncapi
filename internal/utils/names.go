@@ -49,28 +49,44 @@ func ToGolangName(rawString string, exported bool) string {
 	}
 
 	// Transform possible initialisms to upper case if they appear in string
-	var bld strings.Builder
+	res := make([]byte, len(camel))
+	var last int64
 	initialismsTrie.Walk(camel, func(end, n, pattern int64) bool {
+		// end: index of the last character of the matched pattern
+		// n: length of the matched pattern
+		// pattern: index of the matched pattern in the initialisms slice
+
 		right := end + 1 // `end` is inclusive, so we need to add 1
-		bld.Write(camel[bld.Len() : right-n])
-		// Transform only if the matched part of string is the whole word, not a part of other word
-		if right == int64(len(camel)) || unicode.IsUpper(rune(camel[right])) {
-			bld.WriteString(strings.ToUpper(initialisms[pattern]))
-		} else {
-			bld.Write(camel[right-n : right])
+		left := right - n
+		// Write everything before the matched pattern
+		// `left` may point before `last` here on the repeated match on the same position. E.g. when "http" and "https"
+		// initialisms found.
+		if left > last {
+			copy(res[last:], camel[last:left])
 		}
+
+		// Transform only the whole word, not a part of other word
+		// For example, "httpsSmthId":
+		// 1. First matches "http", it's written without transform since it's not a whole word
+		// 2. On next iteration matches "https" as whole word (next letter is in uppercase), transforms it
+		//    and writes "HTTPS" over "http" from the previous iteration
+		// 3. Matches "id" as whole word (end of string), transforms it to "ID"
+		if right == int64(len(camel)) || unicode.IsUpper(rune(camel[right])) {
+			copy(res[left:], strings.ToUpper(initialisms[pattern]))
+		} else {
+			copy(res[left:], camel[left:right])
+		}
+		last = right
 		return true
 	})
-	if bld.Len() < len(camel) {
-		bld.Write(camel[bld.Len():])
-	}
-	res := bld.String()
+	copy(res[last:], camel[last:])
+	str := string(res)
 
-	// Avoid to conflict with Golang reserved keywords
-	if token.IsKeyword(res) {
-		return res + "_"
+	// Avoid conflict with Golang reserved keywords
+	if token.IsKeyword(str) {
+		return str + "_"
 	}
-	return res
+	return str
 }
 
 func ToLowerFirstLetter(s string) string {
