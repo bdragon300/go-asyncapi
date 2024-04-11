@@ -9,6 +9,7 @@ type (
 	}
 
 	OperationBindings struct {
+		Type  string
 		Method string
 		Query  any // jsonschema contents
 	}
