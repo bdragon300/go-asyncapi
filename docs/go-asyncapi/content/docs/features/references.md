@@ -36,20 +36,31 @@ For example, the reference that points to a channel with name `foo/bar baz` coul
 
 Remote references are forbidden by default by security reasons, use `--allow-remote-refs` cli flag to allow it.
 
-## Spec resolver
+## File resolver
 
-The reference resolving process relies on the spec resolver that reads the contents of files mentioned in `$ref` values.
+The reference resolving process relies on the spec file resolver that reads the contents of files where 
+`$ref` are pointed to.
 
-`go-asyncapi` has a built-in spec resolver. It just reads the local files by path or fetches remote files by URL 
-using the standard Go's HTTP client. 
+`go-asyncapi` has a built-in spec resolver. It just reads the local files by path from filesystem or fetches remote
+files by URL using the standard Go's HTTP client. 
 
-If you need different behavior, you can use your own custom spec resolver.
+If you need different behavior, you can use your own custom file resolver.
 
-## Custom spec resolver
+## Custom file resolver
 
-Custom resolver is just an executable. For every specification file path to be resolved, the `go-asyncapi` 
-runs this executable, feeds a path to STDIN and expects the resolved content on STDOUT. 
-The command should return 0 (within timeout) if the reference is resolved successfully.
+Custom resolver is just an executable you provide. For every specification file path to be resolved, the `go-asyncapi` 
+runs this executable, feeds a file path to STDIN and expects the resolved content on STDOUT. 
+The command should return 0 on success. If the command returns a non-zero exit code, `go-asyncapi` will exit immediately
+as well.
+
+{{< hint warning >}}
+`go-asyncapi` waits for the command to be finished for 30 seconds timeout (which can be configured by the 
+`--file-resolver-timeout` flag). If a resolver process is still running after this timeout has passed, `go-asyncapi`
+does the *graceful shutdown*:
+
+1. `go-asyncapi` sends **SIGTERM** signal to a process awaiting it to be finished
+2. After another 3 seconds `go-asyncapi` kills a process if it still doesn't respond
+{{< /hint >}}
 
 {{< details "Example" >}}
 {{< tabs "1" >}}

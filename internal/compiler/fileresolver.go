@@ -18,7 +18,7 @@ import (
 	"github.com/samber/lo"
 )
 
-const HangedSubprocessTimeout = 3 * time.Second
+const SubprocessGracefulShutdownTimeout = 3 * time.Second
 
 type SpecFileResolver interface {
 	Resolve(specPath *specurl.URL) (io.ReadCloser, error)
@@ -101,7 +101,13 @@ type subprocessSpecCommand struct {
 }
 
 func (r SubprocessSpecFileResolver) Resolve(specPath *specurl.URL) (io.ReadCloser, error) {
-	r.Logger.Info("Resolving spec by command", "specPath", specPath, "commandLine", r.CommandLine, "timeout", r.RunTimeout)
+	r.Logger.Info(
+		"Resolving spec by command",
+		"specPath", specPath,
+		"commandLine", r.CommandLine,
+		"timeout", r.RunTimeout,
+		"gracefulShutdownTimeout", SubprocessGracefulShutdownTimeout,
+	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), r.RunTimeout)
 	defer cancel()
@@ -119,7 +125,7 @@ func (r SubprocessSpecFileResolver) Resolve(specPath *specurl.URL) (io.ReadClose
 	}
 
 	if err = cmd.command.Wait(); err != nil {
-		return nil, fmt.Errorf("wait command: %w", err)
+		return nil, fmt.Errorf("wait for command: %w", err)
 	}
 	r.Logger.Debug("Command finished")
 
@@ -142,7 +148,7 @@ func (r SubprocessSpecFileResolver) getCommand(ctx context.Context) (subprocessS
 	res.command.Stdout = res.stdout
 	res.command.Stdin = res.stdin
 	res.command.Stderr = res.stderr
-	res.command.WaitDelay = HangedSubprocessTimeout
+	res.command.WaitDelay = SubprocessGracefulShutdownTimeout
 
 	return res, nil
 }

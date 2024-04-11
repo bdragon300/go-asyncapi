@@ -123,22 +123,13 @@ func (c *Module) ListPromises() []common.ObjectListPromise {
 }
 
 func (c *Module) Load(specFileResolver SpecFileResolver) error {
-	c.logger.Debug("Resolve spec", "specURL", c.specURL)
-
-	t := time.Now()
-	data, err := specFileResolver.Resolve(c.specURL)
+	c.logger.Debug("Resolve and load a spec", "specURL", c.specURL)
+	buf, err := c.readSpec(c.specURL, specFileResolver)
 	if err != nil {
-		return fmt.Errorf("resolve spec %q: %w", c.specURL, err)
+		return err
 	}
-	defer data.Close()
 
-	buf, err := io.ReadAll(data)
-	if err != nil {
-		return fmt.Errorf("read spec data: %w", err)
-	}
-	c.logger.Debug("Spec resolved", "specURL", c.specURL, "duration", time.Since(t))
 	c.logger.Trace("Received data", "bytes", len(buf), "data", string(buf))
-
 	specKind, spec, err := c.decodeSpecFile(c.specURL.SpecID, bytes.NewReader(buf))
 	if err != nil {
 		return err
@@ -147,6 +138,25 @@ func (c *Module) Load(specFileResolver SpecFileResolver) error {
 	c.parsedSpecKind = specKind
 	c.parsedSpec = spec
 	return nil
+}
+
+func (c *Module) readSpec(specURL *specurl.URL, specFileResolver SpecFileResolver) ([]byte, error) {
+	t := time.Now()
+	defer func() {
+		c.logger.Debug("File resolver finished", "specURL", specURL, "duration", time.Since(t))
+	}()
+
+	data, err := specFileResolver.Resolve(specURL)
+	if err != nil {
+		return nil, fmt.Errorf("resolve spec %q: %w", specURL, err)
+	}
+	defer data.Close()
+
+	buf, err := io.ReadAll(data)
+	if err != nil {
+		return nil, fmt.Errorf("read spec data: %w", err)
+	}
+	return buf, nil
 }
 
 func (c *Module) Compile(ctx *common.CompileContext) error {
