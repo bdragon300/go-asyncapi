@@ -129,11 +129,19 @@ func pushStack(ctx *common.CompileContext, pathItem string, flags map[common.Sch
 	if len(ctx.Stack.Items()) > 0 {
 		pkgName = ctx.CurrentPackage()
 	}
+	// Inherit `pkgScope` from parent
 	if v, ok := flags[common.SchemaTagPkgScope]; ok {
 		pkgName = v
 	}
 	if reusePkg, ok := ctx.CompileOpts.ReusePackages[pkgName]; ok {
 		pkgName = reusePkg
+	}
+
+	// Inherit `marshal` from parent
+	if len(ctx.Stack.Items()) > 0 {
+		if _, ok := ctx.Stack.Top().Flags[common.SchemaTagMarshal]; ok {
+			flags[common.SchemaTagMarshal] = ctx.Stack.Top().Flags[common.SchemaTagMarshal]
+		}
 	}
 	item := common.ContextStackItem{
 		PathItem:       pathItem,

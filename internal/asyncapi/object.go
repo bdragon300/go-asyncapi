@@ -249,8 +249,8 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 	// TODO: cache the object name in case any sub-schemas recursively reference it
 
 	var messagesPrm *render.ListPromise[*render.Message]
-	// Messages formats such as JSON, XML, etc. are relevant only for models
-	if ctx.CurrentPackage() == PackageScopeModels {
+	_, isMarshal := flags[common.SchemaTagMarshal]
+	if isMarshal {
 		messagesPrm = render.NewListCbPromise[*render.Message](func(item common.Renderer, _ []string) bool {
 			_, ok := item.(*render.Message)
 			return ok

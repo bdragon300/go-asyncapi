@@ -18,8 +18,8 @@ import (
 
 type Message struct {
 	MessageID     string                 `json:"messageId" yaml:"messageId"`
-	Headers       *Object                `json:"headers" yaml:"headers"`
-	Payload       *Object                `json:"payload" yaml:"payload"` // TODO: other formats
+	Headers       *Object                `json:"headers" yaml:"headers" cgen:"marshal"`
+	Payload       *Object                `json:"payload" yaml:"payload" cgen:"marshal"` // TODO: other formats
 	CorrelationID *CorrelationID         `json:"correlationId" yaml:"correlationId"`
 	SchemaFormat  string                 `json:"schemaFormat" yaml:"schemaFormat"`
 	ContentType   string                 `json:"contentType" yaml:"contentType"`
