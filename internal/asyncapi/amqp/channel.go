@@ -95,9 +95,9 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 		vals.StructVals.Set("ExchangeConfiguration", ecVals)
 	}
 	qVals := render.ConstructGoValue(
-		bindings.Queue, nil, &render.GoSimple{Name: "QueueConfiguration", Import: ctx.RuntimeModule(pb.ProtoName)},
+		*bindings.Queue, nil, &render.GoSimple{Name: "QueueConfiguration", Import: ctx.RuntimeModule(pb.ProtoName)},
 	)
-	vals.StructVals.Set("QueueConfiguration", &qVals)
+	vals.StructVals.Set("QueueConfiguration", qVals)
 
 	return
 }
