@@ -2,12 +2,10 @@ package render
 
 import (
 	"fmt"
-	"sort"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	j "github.com/dave/jennifer/jen"
-	"github.com/samber/lo"
 )
 
 type Message struct {
@@ -40,7 +38,7 @@ func (m Message) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 
 		if m.BindingsPromise != nil {
 			tgt := m.BindingsPromise.Target()
-			protocols := m.getServerProtocols(ctx)
+			protocols := getServerProtocols(ctx, m.AllServersPromises)
 			ctx.Logger.Debug("Message protocols", "protocols", protocols)
 			for _, p := range protocols {
 				protoTitle := ctx.ProtoRenderers[p].ProtocolTitle()
@@ -85,7 +83,7 @@ func (m Message) renderPublishMessageStruct(ctx *common.RenderContext) []*j.Stat
 	))
 	res = append(res, m.OutStruct.RenderDefinition(ctx)...)
 
-	for _, p := range m.getServerProtocols(ctx) {
+	for _, p := range getServerProtocols(ctx, m.AllServersPromises) {
 		res = append(res, m.renderMarshalEnvelopeMethod(ctx, p, ctx.ProtoRenderers[p].ProtocolTitle())...)
 	}
 	res = append(res, m.renderPublishCommonMethods(ctx)...)
@@ -180,7 +178,7 @@ func (m Message) renderSubscribeMessageStruct(ctx *common.RenderContext) []*j.St
 	))
 	res = append(res, m.InStruct.RenderDefinition(ctx)...)
 
-	for _, p := range m.getServerProtocols(ctx) {
+	for _, p := range getServerProtocols(ctx, m.AllServersPromises) {
 		res = append(res, m.renderUnmarshalEnvelopeMethod(ctx, p, ctx.ProtoRenderers[p].ProtocolTitle())...)
 	}
 	res = append(res, m.renderSubscribeCommonMethods(ctx)...)
@@ -260,16 +258,4 @@ func (m Message) renderUnmarshalEnvelopeMethod(ctx *common.RenderContext, protoN
 				bg.Return(j.Nil())
 			}),
 	}
-}
-
-func (m Message) getServerProtocols(ctx *common.RenderContext) []string {
-	res := lo.FilterMap(m.AllServersPromises, func(item *Promise[*Server], _ int) (string, bool) {
-		_, ok := ctx.ProtoRenderers[item.Target().Protocol]
-		if !ok {
-			ctx.Logger.Warnf("Skip protocol %q since it is not supported", item.Target().Protocol)
-		}
-		return item.Target().Protocol, ok
-	})
-	sort.Strings(res)
-	return res
 }

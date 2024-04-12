@@ -1,6 +1,8 @@
 package render
 
 import (
+	"sort"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
@@ -127,4 +129,16 @@ func (s Server) GetRelevantChannels() []*Channel {
 		ok := len(p.Target().ExplicitServerNames) == 0 || lo.Contains(p.Target().ExplicitServerNames, s.RawName)
 		return p.Target(), ok && !p.Target().Dummy
 	})
+}
+
+func getServerProtocols(ctx *common.RenderContext, promises []*Promise[*Server]) []string {
+	res := lo.Uniq(lo.FilterMap(promises, func(item *Promise[*Server], _ int) (string, bool) {
+		_, ok := ctx.ProtoRenderers[item.Target().Protocol]
+		if !ok {
+			ctx.Logger.Warnf("Skip protocol %q since it is not supported", item.Target().Protocol)
+		}
+		return item.Target().Protocol, ok && !item.Target().Dummy
+	}))
+	sort.Strings(res)
+	return res
 }

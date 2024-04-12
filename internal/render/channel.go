@@ -2,13 +2,11 @@ package render
 
 import (
 	"fmt"
-	"sort"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 
 	j "github.com/dave/jennifer/jen"
-	"github.com/samber/lo"
 )
 
 type Channel struct {
@@ -50,7 +48,7 @@ func (c Channel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 		res = append(res, c.ParametersStruct.RenderDefinition(ctx)...)
 	}
 
-	protocols := c.getServerProtocols(ctx)
+	protocols := getServerProtocols(ctx, c.ServersPromises)
 	ctx.Logger.Debug("Channel protocols", "protocols", protocols)
 
 	// Bindings
@@ -138,16 +136,4 @@ func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement
 				}
 			}),
 	}
-}
-
-func (c Channel) getServerProtocols(ctx *common.RenderContext) []string {
-	res := lo.FilterMap(c.ServersPromises, func(item *Promise[*Server], _ int) (string, bool) {
-		_, ok := ctx.ProtoRenderers[item.Target().Protocol]
-		if !ok {
-			ctx.Logger.Warnf("Skip protocol %q since it is not supported", item.Target().Protocol)
-		}
-		return item.Target().Protocol, ok && !item.Target().Dummy
-	})
-	sort.Strings(res)
-	return res
 }
