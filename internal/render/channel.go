@@ -88,8 +88,8 @@ func (c Channel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 		res = append(res, r.RenderDefinition(ctx)...)
 	}
 	if len(protocols) == 0 {
-		res = append(res, j.Comment(fmt.Sprintf("Channel %q is not assigned to any server, so no code to generate", c.Name)))
-		ctx.Logger.Info("Channel is not assigned to any server, so no code to generate", "channel", c.Name)
+		res = append(res, j.Comment(fmt.Sprintf("Channel %q is not assigned to any server with supported protocol, so no code to generate", c.Name)))
+		ctx.Logger.Info("Channel is not assigned to any server with supported protocol, so no code to generate", "channel", c.Name)
 	}
 	return res
 }
