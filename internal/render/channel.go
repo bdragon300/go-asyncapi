@@ -1,6 +1,7 @@
 package render
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -87,6 +88,10 @@ func (c Channel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 			continue
 		}
 		res = append(res, r.RenderDefinition(ctx)...)
+	}
+	if len(protocols) == 0 {
+		res = append(res, j.Comment(fmt.Sprintf("Channel %q is not assigned to any server, so no code to generate", c.Name)))
+		ctx.Logger.Info("Channel is not assigned to any server, so no code to generate", "channel", c.Name)
 	}
 	return res
 }
