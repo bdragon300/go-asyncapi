@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"path"
 	"reflect"
 	"strings"
 	"time"
@@ -191,8 +192,8 @@ func (c *Module) Stats() string {
 }
 
 func (c *Module) decodeSpecFile(specPath string, data io.ReadSeeker) (SpecKind, compiledObject, error) {
-	switch {
-	case strings.HasSuffix(specPath, ".yaml") || strings.HasSuffix(specPath, ".yml"):
+	switch path.Ext(specPath) {
+	case ".yaml", ".yml":
 		c.logger.Debug("Found YAML spec file", "specPath", specPath)
 		schemaKind, spec, err := guessSpecKind(yaml.NewDecoder(data))
 		if err != nil {
@@ -203,7 +204,7 @@ func (c *Module) decodeSpecFile(specPath string, data io.ReadSeeker) (SpecKind, 
 		}
 		err = yaml.NewDecoder(data).Decode(spec)
 		return schemaKind, spec, err
-	case strings.HasSuffix(specPath, ".json"):
+	case ".json":
 		c.logger.Debug("Found JSON spec file", "specPath", specPath)
 		schemaKind, spec, err := guessSpecKind(json.NewDecoder(data))
 		if err != nil {
