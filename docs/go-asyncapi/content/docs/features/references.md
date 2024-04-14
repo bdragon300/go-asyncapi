@@ -21,12 +21,13 @@ used instead of the reference.
   `https://example.com/path/to/file#/components/schemas/MySchema`
 
 {{< hint warning >}}
+Security reasons forbid remote references by default, use `--allow-remote-refs` cli flag to allow it.
+{{< /hint >}}
 
-AsyncAPI specification states that reference is the 
-[JSON Reference](https://datatracker.ietf.org/doc/html/draft-pbryan-zyp-json-ref-03), which in turn contains 
-[URI](https://tools.ietf.org/html/rfc3986#section-2.1) in `$ref` field. 
-So, symbols that are non-alphanumeric and not `-`, `.`, `_`, `~` must be percent-encoded as described in
-[RFC 3986](https://tools.ietf.org/html/rfc3986#section-2.1) using the `%` character followed by two hexadecimal digits.
+{{< hint info >}}
+[Reference is URI](https://datatracker.ietf.org/doc/html/draft-pbryan-zyp-json-ref-03#section-3). So the symbols in 
+`$ref` field that are non-alphanumeric and not `-`, `.`, `_`, `~` must be percent-encoded as described in
+[RFC 3986](https://tools.ietf.org/html/rfc3986#section-2.1) 
 ([encoding table](https://www.w3schools.com/tags/ref_urlencode.ASP)).
 
 For example, the reference that points to a channel with name `foo/bar baz` could be written as 
@@ -34,15 +35,22 @@ For example, the reference that points to a channel with name `foo/bar baz` coul
 
 {{< /hint >}}
 
-Remote references are forbidden by default by security reasons, use `--allow-remote-refs` cli flag to allow it.
-
 ## File resolver
 
 The reference resolving process relies on the spec file resolver that reads the contents of files where 
 `$ref` are pointed to.
 
-`go-asyncapi` has a built-in spec resolver. It just reads the local files by path from filesystem or fetches remote
+`go-asyncapi` has a built-in file resolver. It just reads the local files by path from filesystem or fetches remote
 files by URL using the standard Go's HTTP client. 
+
+{{< hint warning >}}
+The files, which are referenced by the `$ref` field, are resolved relatively to the search directory (current working
+directory by default), not to the file
+where the reference is placed. Use `--file-resolver-search-dir` cli flag to change this directory.
+
+For example, the reference `foo.yaml#/bar/baz` inside the `/path/to/spam.yaml` will be resolved as
+`/search_dir/foo.yaml#/bar/baz`, not as `/path/to/foo.yaml#/bar/baz`. **The second option is not supported yet.**
+{{< /hint >}}
 
 If you need different behavior, you can use your own custom file resolver.
 
@@ -53,7 +61,7 @@ runs this executable, feeds a file path to STDIN and expects the resolved conten
 The command should return 0 on success. If the command returns a non-zero exit code, `go-asyncapi` will exit immediately
 as well.
 
-{{< hint warning >}}
+{{< hint info >}}
 `go-asyncapi` waits for the command to be finished for 30 seconds timeout (which can be configured by the 
 `--file-resolver-timeout` flag). If a resolver process is still running after this timeout has passed, `go-asyncapi`
 does the *graceful shutdown*:
@@ -68,8 +76,8 @@ does the *graceful shutdown*:
 
 Let's write a custom resolver in shell language that:
 
-* reads a file by absolute path from the local file system
-* reads a file by relative path from [apicurio schema registry](https://www.apicur.io/registry/)
+* read a file by absolute path from the local file system
+* read a file by relative path from [apicurio schema registry](https://www.apicur.io/registry/)
 * fetches HTTP URLs using [curl](https://curl.se/)
 
 ```shell
