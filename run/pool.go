@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"runtime/debug"
-	"sync"
+	"sync/atomic"
 )
 
 type panicError struct {
@@ -18,23 +18,23 @@ func (p panicError) Error() string {
 
 func NewErrorPool() *ErrorPool {
 	return &ErrorPool{
-		wg:   &sync.WaitGroup{},
+		running: &atomic.Int64{},
 		errs: make(chan error),
 	}
 }
 
 type ErrorPool struct {
-	wg   *sync.WaitGroup
+	running *atomic.Int64
 	errs chan error
 }
 
 func (p *ErrorPool) Go(cb func() error) {
-	p.wg.Add(1)
+	p.running.Add(1)
 	go func() {
-		defer p.wg.Done()
+		defer p.running.Add(-1)
 		defer func() {
 			if v := recover(); v != nil {
-				p.errs <- &panicError{
+				p.errs <- panicError{
 					val:   v,
 					stack: debug.Stack(),
 				}
@@ -45,17 +45,13 @@ func (p *ErrorPool) Go(cb func() error) {
 }
 
 func (p *ErrorPool) Wait() (err error) {
-	p.wg.Wait()
-	close(p.errs)
-
-	for e := range p.errs {
+	for p.running.Load() > 0 {
+		e := <-p.errs
 		switch e.(type) {
 		case panicError:
-			panic(e.Error()) // Repanic a panic occurred in a goroutine
+			panic(e.Error()) // Rethrow a panic occurred in a goroutine
 		default:
-			if err != nil {
-				err = errors.Join(e)
-			}
+			err = errors.Join(e)
 		}
 	}
 	return

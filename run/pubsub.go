@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"context"
 	"errors"
+	"reflect"
 	"sync"
 )
 
@@ -84,22 +85,23 @@ func GatherPublishers[W AbstractEnvelopeWriter, PUB AbstractPublisher[W], B any,
 	close(pubsCh)
 
 	pubs := make([]PUB, 0, len(producers))
+	var zero PUB
 	for pub := range pubsCh {
 		pubs = append(pubs, pub)
-		if err != nil {
-			err = errors.Join(err, pub.Close())
+		if err != nil && !reflect.DeepEqual(pub, zero) {
+			err = errors.Join(err, pub.Close())  // Close subscribers on error to avoid resource leak
 		}
 	}
-	return pubs, nil
+	return pubs, err
 }
 
-func GatherSubscribers[R AbstractEnvelopeReader, S AbstractSubscriber[R], B any, C AbstractConsumer[B, R, S]](
+func GatherSubscribers[R AbstractEnvelopeReader, SUB AbstractSubscriber[R], B any, C AbstractConsumer[B, R, SUB]](
 	ctx context.Context,
 	chName ParamString,
 	channelBindings *B,
 	consumers []C,
-) ([]S, error) {
-	subsCh := make(chan S, len(consumers))
+) ([]SUB, error) {
+	subsCh := make(chan SUB, len(consumers))
 	pool := NewErrorPool()
 	for _, cons := range consumers {
 		cons := cons
@@ -112,14 +114,15 @@ func GatherSubscribers[R AbstractEnvelopeReader, S AbstractSubscriber[R], B any,
 	err := pool.Wait()
 	close(subsCh)
 
-	subs := make([]S, 0, len(consumers))
+	subs := make([]SUB, 0, len(consumers))
+	var zero SUB
 	for sub := range subsCh {
 		subs = append(subs, sub)
-		if err != nil {
-			err = errors.Join(err, sub.Close())
+		if err != nil && !reflect.DeepEqual(sub, zero) {
+			err = errors.Join(err, sub.Close())  // Close subscribers on error to avoid resource leak
 		}
 	}
-	return subs, nil
+	return subs, err
 }
 
 
