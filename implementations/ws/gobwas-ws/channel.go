@@ -86,7 +86,7 @@ func (s Channel) run() {
 			case <-s.ctx.Done():
 				return
 			default:
-				s.items.Put(NewEnvelopeIn(msg))
+				s.items.Put(func() runWs.EnvelopeReader { return NewEnvelopeIn(msg) })
 			}
 		}
 	}

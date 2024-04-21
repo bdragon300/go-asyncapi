@@ -10,6 +10,7 @@ import (
 	runTCP "github.com/bdragon300/go-asyncapi/run/tcp"
 )
 
+// TODO: move protocolVersion, protocolFamily to serverURL?
 func NewProducer(serverURL string, bindings *runTCP.ChannelBindings, protocolVersion string) (*ProduceClient, error) {
 	if protocolVersion != "" && protocolVersion != "4" && protocolVersion != "6" {
 		return nil, fmt.Errorf("invalid protocol version: %s", protocolVersion)

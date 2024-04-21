@@ -22,15 +22,17 @@ func NewClient(ctx context.Context, serverURL string, bindings *runMqtt.ServerBi
 	}
 
 	co.AddBroker(u.String())
-	co.SetCleanSession(bindings.CleanSession)
-	if bindings.ClientID != "" {
-		co.SetClientID(bindings.ClientID)
-	}
-	if bindings.KeepAlive != 0 {
-		co.SetKeepAlive(bindings.KeepAlive)
-	}
-	if bindings.LastWill != nil {
-		co.SetWill(bindings.LastWill.Topic, bindings.LastWill.Message, byte(bindings.LastWill.QoS), bindings.LastWill.Retain)
+	if bindings != nil {
+		co.SetCleanSession(bindings.CleanSession)
+		if bindings.ClientID != "" {
+			co.SetClientID(bindings.ClientID)
+		}
+		if bindings.KeepAlive != 0 {
+			co.SetKeepAlive(bindings.KeepAlive)
+		}
+		if bindings.LastWill != nil {
+			co.SetWill(bindings.LastWill.Topic, bindings.LastWill.Message, byte(bindings.LastWill.QoS), bindings.LastWill.Retain)
+		}
 	}
 
 	cl := mqtt.NewClient(co)
@@ -70,9 +72,14 @@ func (c *Client) Subscriber(ctx context.Context, channelName string, bindings *r
 		return v, nil
 	}
 
+	var qos byte
+	if bindings != nil {
+		qos = byte(bindings.SubscriberBindings.QoS)
+	}
+
 	subCh := run.NewFanOut[runMqtt.EnvelopeReader]()
-	tok := c.Client.Subscribe(channelName, byte(bindings.SubscriberBindings.QoS), func(_ mqtt.Client, message mqtt.Message) {
-		subCh.Put(NewEnvelopeIn(message))
+	tok := c.Client.Subscribe(channelName, qos, func(_ mqtt.Client, message mqtt.Message) {
+		subCh.Put(func() runMqtt.EnvelopeReader { return NewEnvelopeIn(message) })
 	})
 	select {
 	case <-ctx.Done():

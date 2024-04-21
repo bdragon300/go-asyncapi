@@ -105,7 +105,7 @@ func (s Channel) run() {
 				// TODO: error log
 				continue
 			}
-			s.items.Put(NewEnvelopeIn(req))
+			s.items.Put(func() runHttp.EnvelopeReader { return NewEnvelopeIn(req) })
 		}
 	}
 }

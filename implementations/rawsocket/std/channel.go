@@ -83,6 +83,6 @@ func (c *Channel) run() {
 			c.cancel(err)
 			return
 		}
-		c.items.Put(NewEnvelopeIn(buf[:n], addr))
+		c.items.Put(func() runRawSocket.EnvelopeReader { return NewEnvelopeIn(buf[:n], addr) })
 	}
 }

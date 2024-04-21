@@ -19,6 +19,7 @@ type Decoder interface {
 	Decode(v any) error
 }
 
+// TODO: move protocolVersion, protocolFamily to serverURL?
 func NewConsumer(bindings *runTCP.ChannelBindings, protocolVersion string) (*ConsumeClient, error) {
 	if protocolVersion != "" && protocolVersion != "4" && protocolVersion != "6" {
 		return nil, fmt.Errorf("invalid protocol version: %s", protocolVersion)

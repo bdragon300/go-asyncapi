@@ -27,7 +27,13 @@ type ImplementationRecord interface {
 func (r *PublishChannel) Send(ctx context.Context, envelopes ...runMqtt.EnvelopeWriter) error {
 	for _, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
-		tok := r.Client.Publish(r.Topic, byte(r.bindings.PublisherBindings.QoS), r.bindings.PublisherBindings.Retain, ir.Bytes())
+		var qos byte
+		var retain bool
+		if r.bindings != nil {
+			qos = byte(r.bindings.PublisherBindings.QoS)
+			retain = r.bindings.PublisherBindings.Retain
+		}
+		tok := r.Client.Publish(r.Topic, qos, retain, ir.Bytes())
 
 		select {
 		case <-ctx.Done():

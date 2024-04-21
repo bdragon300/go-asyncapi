@@ -77,14 +77,14 @@ func (c *Channel) run() {
 				c.cancel(c.scanner.Err())
 				return
 			}
-			c.items.Put(NewEnvelopeIn(c.scanner.Bytes()))
+			c.items.Put(func() runTCP.EnvelopeReader { return NewEnvelopeIn(c.scanner.Bytes()) })
 		default:
 			n, err := c.TCPConn.Read(buf)
 			if err != nil {
 				c.cancel(err)
 				return
 			}
-			c.items.Put(NewEnvelopeIn(buf[:n]))
+			c.items.Put(func() runTCP.EnvelopeReader { return NewEnvelopeIn(buf[:n]) })
 		}
 	}
 }

@@ -82,6 +82,6 @@ func (c *Channel) run() {
 			c.cancel(err)
 			return
 		}
-		c.items.Put(NewEnvelopeIn(buf[:n], addr))
+		c.items.Put(func() runUDP.EnvelopeReader { return NewEnvelopeIn(buf[:n], addr) })
 	}
 }

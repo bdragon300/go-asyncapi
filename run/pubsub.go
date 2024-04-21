@@ -142,9 +142,7 @@ func (cm *FanOut[MessageT]) Add(cb func(msg MessageT)) *list.Element {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
-	el := list.Element{Value: cb}
-	cm.receivers.PushBack(&el)
-	return &el
+	return cm.receivers.PushBack(cb)
 }
 
 func (cm *FanOut[MessageT]) Remove(el *list.Element) {
@@ -154,7 +152,7 @@ func (cm *FanOut[MessageT]) Remove(el *list.Element) {
 	cm.receivers.Remove(el)
 }
 
-func (cm *FanOut[MessageT]) Put(msg MessageT) {
+func (cm *FanOut[MessageT]) Put(newItem func() MessageT) {
 	cm.mu.RLock()
 	defer cm.mu.RUnlock()
 
@@ -163,6 +161,6 @@ func (cm *FanOut[MessageT]) Put(msg MessageT) {
 	}
 
 	for item := cm.receivers.Front(); item != nil; item = item.Next() {
-		item.Value.(func(msg MessageT))(msg)
+		item.Value.(func(msg MessageT))(newItem())
 	}
 }

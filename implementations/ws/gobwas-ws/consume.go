@@ -30,7 +30,7 @@ type ConsumeClient struct {
 }
 
 func (c *ConsumeClient) Subscriber(ctx context.Context, channelName string, bindings *runWs.ChannelBindings) (runWs.Subscriber, error) {
-	c.ensureChannel(channelName, bindings)
+	c.ensureChannel(channelName, bindings) // FIXME: maybe it's better to take the path from bindings?
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()

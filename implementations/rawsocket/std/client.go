@@ -14,10 +14,12 @@ const (
 	DefaultMaxEnvelopeSize = 1024
 )
 
+// TODO: move protocolVersion, protocolFamily to serverURL?
 func NewConsumer(bindings *runRawSocket.ChannelBindings, protocolVersion string) (*Client, error) {
 	return NewProducer("", bindings, protocolVersion)
 }
 
+// TODO: move protocolVersion, protocolFamily to serverURL?
 func NewProducer(serverURL string, bindings *runRawSocket.ChannelBindings, protocolVersion string) (*Client, error) {
 	if protocolVersion != "" && protocolVersion != "4" && protocolVersion != "6" {
 		return nil, fmt.Errorf("invalid protocol version: %s", protocolVersion)

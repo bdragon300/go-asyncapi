@@ -15,6 +15,7 @@ const (
 	DefaultMaxEnvelopeSize = 1024
 )
 
+// TODO: move protocolVersion, protocolFamily to serverURL?
 func NewConsumer(bindings *runUDP.ChannelBindings, protocolVersion string) (*Client, error) {
 	return NewProducer("", bindings, protocolVersion)
 }
