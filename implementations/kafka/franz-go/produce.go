@@ -37,7 +37,7 @@ func (p ProduceClient) Publisher(_ context.Context, channelName string, bindings
 	opts = append(opts, kgo.SeedBrokers(strings.Split(u.Host, ",")...))
 
 	topic := channelName
-	if bindings.Topic != "" {
+	if bindings != nil && bindings.Topic != "" {
 		topic = bindings.Topic
 	}
 	if topic != "" {
