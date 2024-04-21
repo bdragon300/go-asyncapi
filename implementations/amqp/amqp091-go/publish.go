@@ -7,19 +7,18 @@ import (
 
 	runAmqp "github.com/bdragon300/go-asyncapi/run/amqp"
 
-	amqp091 "github.com/rabbitmq/amqp091-go"
+	"github.com/rabbitmq/amqp091-go"
 )
 
 type PublishChannel struct {
 	*amqp091.Channel
-	routingKey   string
 	exchangeName string
 	bindings     *runAmqp.ChannelBindings
 }
 
 type ImplementationRecord interface {
 	AsAMQP091Record() *amqp091.Publishing
-	DeliveryTag() string
+	RoutingKey() string
 }
 
 func (p PublishChannel) Send(ctx context.Context, envelopes ...runAmqp.EnvelopeWriter) error {
@@ -46,7 +45,7 @@ func (p PublishChannel) Send(ctx context.Context, envelopes ...runAmqp.EnvelopeW
 		}
 
 		err = errors.Join(err, p.Channel.PublishWithContext(
-			ctx, p.exchangeName, p.routingKey, p.bindings.PublisherBindings.Mandatory, false, *record,
+			ctx, p.exchangeName, rm.RoutingKey(), p.bindings.PublisherBindings.Mandatory, false, *record,
 		))
 	}
 	return err

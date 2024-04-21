@@ -23,7 +23,7 @@ type (
 		SetContentType(contentType string)
 		SetBindings(bindings MessageBindings)
 
-		SetDeliveryTag(tag string)  // TODO: remove? not binded with any AMQP entities
+		SetRoutingKey(tag string) // TODO: remove? sets in SealEnvelope
 	}
 )
 

@@ -85,14 +85,17 @@ func (pc ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {
 
 				if pc.Parent.BindingsStruct != nil {
 					bg.Id("bindings").Op(":=").Add(
-						utils.ToCode(pc.Parent.BindingsStruct.RenderUsage(ctx))...).Values().Dot(pc.ProtoTitle).Call()
+						utils.ToCode(pc.Parent.BindingsStruct.RenderUsage(ctx))...,
+					).Values().Dot(pc.ProtoTitle).Call()
+					bg.Switch(j.Id("bindings.ChannelType")).BlockFunc(func(bg2 *j.Group) {
+						bg2.Case(j.Qual(ctx.RuntimeModule(pc.ProtoName), "ChannelTypeQueue")).Block(
+							j.Id("res.queue").Op("=").Op("res.name.String()"),
+						)
+						bg2.Default().Block(
+							j.Id("res.routingKey").Op("=").Op("res.name.String()"),
+						)
+					})
 					bg.Op(`
-						switch bindings.ChannelType {
-						case "queue":
-							res.queue = res.name.String()
-						default:
-							res.exchange = res.name.String()
-						}
 						if bindings.ExchangeConfiguration.Name != nil {
 							res.exchange = *bindings.ExchangeConfiguration.Name
 						}
@@ -126,6 +129,14 @@ func (pc ProtoChannel) renderProtoMethods(ctx *common.RenderContext) []*j.Statem
 			Block(
 				j.Return(j.Id(rn).Dot("queue")),
 			),
+
+		// Method RoutingKey() string
+		j.Func().Params(receiver.Clone()).Id("RoutingKey").
+			Params().
+			String().
+			Block(
+				j.Return(j.Id(rn).Dot("routingKey")),
+			),
 	}
 }
 
@@ -140,12 +151,11 @@ func (pc ProtoChannel) renderProtoPublisherMethods(ctx *common.RenderContext) []
 	}
 
 	return []*j.Statement{
-		// Method SealEnvelope(envelope proto.EnvelopeWriter, message *Message1Out, deliveryTag string) error
+		// Method SealEnvelope(envelope proto.EnvelopeWriter, message *Message1Out) error
 		j.Func().Params(receiver.Clone()).Id("SealEnvelope").
 			ParamsFunc(func(g *j.Group) {
 				g.Id("envelope").Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeWriter")
 				g.Id("message").Add(utils.ToCode(msgTyp.RenderUsage(ctx))...)
-				g.Id("deliveryTag").String()
 			}).
 			Error().
 			BlockFunc(func(bg *j.Group) {
@@ -162,7 +172,7 @@ func (pc ProtoChannel) renderProtoPublisherMethods(ctx *common.RenderContext) []
 							return err
 						}`)
 				}
-				bg.Op("envelope.SetDeliveryTag(deliveryTag)")
+				bg.Id("envelope").Dot("SetRoutingKey").Call(j.Id(rn).Dot("routingKey"))
 				// Message SetBindings
 				if pc.Parent.PubMessagePromise != nil && pc.Parent.PubMessagePromise.Target().HasProtoBindings(pc.ProtoName) {
 					bg.Op("envelope.SetBindings").Call(

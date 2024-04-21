@@ -6,7 +6,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/run"
 	runAmqp "github.com/bdragon300/go-asyncapi/run/amqp"
 
-	amqp091 "github.com/rabbitmq/amqp091-go"
+	"github.com/rabbitmq/amqp091-go"
 )
 
 func NewEnvelopeOut() *EnvelopeOut {
@@ -17,7 +17,7 @@ func NewEnvelopeOut() *EnvelopeOut {
 
 type EnvelopeOut struct {
 	*amqp091.Publishing
-	deliveryTag string
+	routingKey string
 }
 
 func (e *EnvelopeOut) Write(p []byte) (n int, err error) {
@@ -42,16 +42,16 @@ func (e *EnvelopeOut) SetBindings(bindings runAmqp.MessageBindings) {
 	e.Type = bindings.MessageType
 }
 
-func (e *EnvelopeOut) SetDeliveryTag(tag string) {
-	e.deliveryTag = tag
+func (e *EnvelopeOut) SetRoutingKey(routingKey string) {
+	e.routingKey = routingKey
 }
 
 func (e *EnvelopeOut) AsAMQP091Record() *amqp091.Publishing {
 	return e.Publishing
 }
 
-func (e *EnvelopeOut) DeliveryTag() string {
-	return e.deliveryTag
+func (e *EnvelopeOut) RoutingKey() string {
+	return e.routingKey
 }
 
 func NewEnvelopeIn(delivery *amqp091.Delivery, rd io.Reader) *EnvelopeIn {

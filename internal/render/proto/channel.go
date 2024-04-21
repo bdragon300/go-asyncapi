@@ -166,10 +166,16 @@ func (pc BaseProtoChannel) RenderOpenFunc(ctx *common.RenderContext) []*j.Statem
 					}
 					bg.Op("for _, srv := range servers").BlockFunc(func(g *j.Group) {
 						if pc.Parent.Publisher {
-							g.Op("prod = append(prod, srv.Producer())")
+							g.Op(`
+								if srv.Producer() != nil {
+									prod = append(prod, srv.Producer())
+								}`)
 						}
 						if pc.Parent.Subscriber {
-							g.Op("cons = append(cons, srv.Consumer())")
+							g.Op(`
+								if srv.Consumer() != nil {
+									cons = append(cons, srv.Consumer())
+								}`)
 						}
 					})
 				}

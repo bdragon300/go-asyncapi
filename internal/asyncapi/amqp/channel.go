@@ -57,6 +57,7 @@ func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncap
 		baseChan.Struct.Fields,
 		render.GoStructField{Name: "exchange", Type: &render.GoSimple{Name: "string"}},
 		render.GoStructField{Name: "queue", Type: &render.GoSimple{Name: "string"}},
+		render.GoStructField{Name: "routingKey", Type: &render.GoSimple{Name: "string"}},
 	)
 
 	return &renderAmqp.ProtoChannel{BaseProtoChannel: *baseChan}, nil
@@ -78,7 +79,7 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 	}
 	if bindings.Exchange != nil {
 		ecVals := render.ConstructGoValue(
-			bindings.Exchange, []string{"Type"}, &render.GoSimple{Name: "ExchangeConfiguration", Import: ctx.RuntimeModule(pb.ProtoName)},
+			*bindings.Exchange, []string{"Type"}, &render.GoSimple{Name: "ExchangeConfiguration", Import: ctx.RuntimeModule(pb.ProtoName)},
 		)
 		switch bindings.Exchange.Type {
 		case "default":

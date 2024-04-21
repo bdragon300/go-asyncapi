@@ -3,42 +3,44 @@ package amqp091go
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
-	"time"
 
 	"github.com/bdragon300/go-asyncapi/run"
 	runAmqp "github.com/bdragon300/go-asyncapi/run/amqp"
 
-	amqp091 "github.com/rabbitmq/amqp091-go"
+	"github.com/rabbitmq/amqp091-go"
 )
 
 type SubscribeChannel struct {
 	*amqp091.Channel
+	// ConsumerTag uniquely identifies the consumer process. If empty, a unique tag is generated.
+	ConsumerTag string
+	// Additional arguments for the consumer. See ConsumeWithContext docs for details.
+	ConsumeArgs amqp091.Table
+
 	queueName string
 	bindings  *runAmqp.ChannelBindings
 }
 
 func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope runAmqp.EnvelopeReader)) (err error) {
 	// TODO: consumer tag in x- schema argument
-	consumerTag := fmt.Sprintf("consumer-%s", time.Now().Format(time.RFC3339))
+	// Separate context is used to stop consumer process for a particular consumer tag on function exit.
+	consumerCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	deliveries, err := s.ConsumeWithContext(
-		ctx,
+		consumerCtx,
 		s.queueName,
-		consumerTag,
-		!s.bindings.SubscriberBindings.Ack,
+		s.ConsumerTag,
+		s.bindings.SubscriberBindings.Ack,
 		run.DerefOrZero(s.bindings.QueueConfiguration.Exclusive),
 		false,
 		false,
-		nil,
+		s.ConsumeArgs,
 	)
 	if err != nil {
 		return err
 	}
 
-	defer func() {
-		err = errors.Join(err, s.Cancel(consumerTag, false))
-	}()
 	for delivery := range deliveries {
 		evlp := NewEnvelopeIn(&delivery, bytes.NewReader(delivery.Body))
 		cb(evlp)
