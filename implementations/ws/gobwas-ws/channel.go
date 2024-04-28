@@ -1,9 +1,7 @@
 package gobwasws
 
 import (
-	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"net"
 
@@ -13,14 +11,14 @@ import (
 	"github.com/gobwas/ws/wsutil"
 )
 
-func NewChannel(bindings *runWs.ChannelBindings, conn net.Conn, rw *bufio.ReadWriter) *Channel {
+func NewChannel(bindings *runWs.ChannelBindings, conn net.Conn, clientSide bool) *Channel {
 	res := Channel{
 		Conn:       conn,
-		ReadWriter: rw,
+		clientSide: clientSide,
 		bindings:   bindings,
 		items:      run.NewFanOut[runWs.EnvelopeReader](),
 	}
-	res.ctx, res.cancel = context.WithCancel(context.Background())
+	res.ctx, res.cancel = context.WithCancelCause(context.Background())
 	go res.run()
 	return &res
 }
@@ -32,12 +30,16 @@ type ImplementationRecord interface {
 
 type Channel struct {
 	net.Conn
-	ReadWriter *bufio.ReadWriter
 
-	bindings *runWs.ChannelBindings
-	items    *run.FanOut[runWs.EnvelopeReader]
-	ctx      context.Context
-	cancel   context.CancelFunc
+	// clientSide determines if this channel is a client-side or a server-side.
+	// To prevent cache spoofing attack, the client-side application must additionally mask the payload in
+	// outgoing websocket frames, whereas the server-side code must unmask the payload back in incoming frames
+	// https://www.rfc-editor.org/rfc/rfc6455#section-5.3
+	clientSide bool
+	bindings   *runWs.ChannelBindings
+	items      *run.FanOut[runWs.EnvelopeReader]
+	ctx        context.Context
+	cancel     context.CancelCauseFunc
 }
 
 func (s Channel) Receive(ctx context.Context, cb func(envelope runWs.EnvelopeReader)) error {
@@ -48,39 +50,58 @@ func (s Channel) Receive(ctx context.Context, cb func(envelope runWs.EnvelopeRea
 	case <-ctx.Done():
 		return ctx.Err()
 	case <-s.ctx.Done():
-		return errors.New("channel closed")
+		return context.Cause(s.ctx)
 	}
 }
 
-func (s Channel) Send(_ context.Context, envelopes ...runWs.EnvelopeWriter) error {
-	select {
-	case <-s.ctx.Done():
-		return errors.New("channel closed")
-	default:
-	}
-
+func (s Channel) Send(ctx context.Context, envelopes ...runWs.EnvelopeWriter) error {
 	for i, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
 		msg := ir.Bytes()
-		err := wsutil.WriteServerMessage(s.ReadWriter, ir.OpCode(), msg)
-		if err != nil {
-			return fmt.Errorf("envelope #%d: %w", i, err)
+
+		select {
+		case <-s.ctx.Done():
+			return context.Cause(s.ctx)
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			var err error
+			if s.clientSide {
+				err = wsutil.WriteClientMessage(s.Conn, ir.OpCode(), msg)
+			} else {
+				err = wsutil.WriteServerMessage(s.Conn, ir.OpCode(), msg)
+			}
+			if err != nil {
+				return fmt.Errorf("envelope #%d: %w", i, err)
+			}
 		}
 	}
 	return nil
 }
 
 func (s Channel) Close() error {
-	s.cancel()
+	s.cancel(nil)
 	return s.Conn.Close()
 }
 
 func (s Channel) run() {
-	defer s.cancel()
+	var err error
+	defer func() {
+		if err != nil {
+			s.cancel(err)
+		}
+	}()
 
 	for {
-		// TODO: error log
-		msgs, _ := wsutil.ReadClientMessage(s.ReadWriter, nil)
+		var msgs []wsutil.Message
+		if s.clientSide {
+			msgs, err = wsutil.ReadServerMessage(s.Conn, nil)
+		} else {
+			msgs, err = wsutil.ReadClientMessage(s.Conn, nil)
+		}
+		if err != nil {
+			return
+		}
 		for _, msg := range msgs {
 			select {
 			case <-s.ctx.Done():

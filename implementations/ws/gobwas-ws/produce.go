@@ -1,7 +1,6 @@
 package gobwasws
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"net/url"
@@ -27,15 +26,14 @@ type ProduceClient struct {
 }
 
 func (p ProduceClient) Publisher(ctx context.Context, channelName string, bindings *runWs.ChannelBindings) (runWs.Publisher, error) {
-	if bindings.Method != "" && bindings.Method != "GET" {
+	if bindings != nil && bindings.Method != "" && bindings.Method != "GET" {
 		return nil, fmt.Errorf("unsupported method %s", bindings.Method)
 	}
 	u := p.serverURL.JoinPath(channelName)
-	netConn, rd, _, err := ws.Dial(ctx, u.String())
+	netConn, _, _, err := ws.Dial(ctx, u.String())
 	if err != nil {
 		return nil, err
 	}
 
-	rw := bufio.NewReadWriter(rd, bufio.NewWriter(netConn))
-	return NewChannel(bindings, netConn, rw), nil
+	return NewChannel(bindings, netConn, true), nil
 }
