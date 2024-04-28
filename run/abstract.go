@@ -17,8 +17,8 @@ type AbstractEnvelopeWriter interface {
 	io.Writer
 	ResetPayload()
 	SetHeaders(headers Headers)
-	// SetContentType here because it could be set in message definition in AsyncAPI. Also, some protocols may have
-	// content type property of data, e.g. AMQP.
+	// SetContentType is here because it may be set in message definition in AsyncAPI. Also, some protocols may have
+	// content type property of data, AMQP, for instance.
 	SetContentType(contentType string)
 }
 

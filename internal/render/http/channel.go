@@ -82,27 +82,13 @@ func (pc ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {
 						d[j.Id("subscriber")] = j.Id("subscriber")
 					}
 				}))
-				bg.Op("res.path = res.name.String()")
 				bg.Op(`return &res`)
 			}),
 	}
 }
 
-func (pc ProtoChannel) renderProtoMethods(ctx *common.RenderContext) []*j.Statement {
-	ctx.Logger.Trace("renderProtoMethods", "proto", pc.ProtoName)
-
-	rn := pc.Struct.ReceiverName()
-	receiver := j.Id(rn).Id(pc.Struct.Name)
-
-	return []*j.Statement{
-		// Method Path() string
-		j.Func().Params(receiver.Clone()).Id("Path").
-			Params().
-			String().
-			Block(
-				j.Return(j.Id(rn).Dot("path")),
-			),
-	}
+func (pc ProtoChannel) renderProtoMethods(_ *common.RenderContext) []*j.Statement {
+	return nil
 }
 
 func (pc ProtoChannel) renderProtoPublisherMethods(ctx *common.RenderContext) []*j.Statement {
@@ -138,7 +124,6 @@ func (pc ProtoChannel) renderProtoPublisherMethods(ctx *common.RenderContext) []
 							return err
 						}`)
 				}
-				bg.Op("envelope.SetPath").Call(j.Id(rn).Dot("path"))
 				// Message SetBindings
 				if pc.Parent.PubMessagePromise != nil && pc.Parent.PubMessagePromise.Target().HasProtoBindings(pc.ProtoName) {
 					bg.Op("envelope.SetBindings").Call(

@@ -127,37 +127,42 @@ func GatherSubscribers[R AbstractEnvelopeReader, SUB AbstractSubscriber[R], B an
 
 
 func NewFanOut[MessageT any]() *FanOut[MessageT] {
+	mu := &sync.RWMutex{}
 	return &FanOut[MessageT]{
 		receivers: list.New(),
-		mu:        &sync.RWMutex{},
+		mu:        mu,
+		cnd: sync.NewCond(mu),
 	}
 }
 
 type FanOut[MessageT any] struct {
 	receivers *list.List
 	mu        *sync.RWMutex
+	cnd 	 *sync.Cond
 }
 
 func (cm *FanOut[MessageT]) Add(cb func(msg MessageT)) *list.Element {
-	cm.mu.Lock()
-	defer cm.mu.Unlock()
+	cm.cnd.L.Lock()
+	defer cm.cnd.L.Unlock()
 
-	return cm.receivers.PushBack(cb)
+	res := cm.receivers.PushBack(cb)
+	cm.cnd.Broadcast()
+	return res
 }
 
 func (cm *FanOut[MessageT]) Remove(el *list.Element) {
-	cm.mu.Lock()
-	defer cm.mu.Unlock()
+	cm.cnd.L.Lock()
+	defer cm.cnd.L.Unlock()
 
+	cm.cnd.Broadcast()
 	cm.receivers.Remove(el)
 }
 
 func (cm *FanOut[MessageT]) Put(newItem func() MessageT) {
-	cm.mu.RLock()
-	defer cm.mu.RUnlock()
-
-	if cm.receivers.Len() == 0 {
-		return
+	cm.cnd.L.Lock()
+	defer cm.cnd.L.Unlock()
+	for cm.receivers.Len() == 0 {
+		cm.cnd.Wait()
 	}
 
 	for item := cm.receivers.Front(); item != nil; item = item.Next() {

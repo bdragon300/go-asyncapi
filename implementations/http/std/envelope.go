@@ -30,7 +30,6 @@ type EnvelopeOut struct {
 	*http.Request
 	messageBindings runHttp.MessageBindings
 	body            *bytes.Buffer
-	path            string
 }
 
 func (e *EnvelopeOut) Write(p []byte) (n int, err error) {
@@ -50,13 +49,17 @@ func (e *EnvelopeOut) SetHeaders(headers run.Headers) {
 		switch v := value.(type) {
 		case string:
 			e.Header.Set(name, v)
+		case []byte:
+			e.Header.Set(name, string(v))
+		case fmt.Stringer:
+			e.Header.Set(name, v.String())
 		case []string:
 			e.Header.Del(name)
 			for _, item := range v {
 				e.Header.Add(name, item)
 			}
 		default:
-			panic(fmt.Sprintf("Header value must be string or []string, got: %T", value))
+			panic(fmt.Sprintf("Header value can be string, []byte, fmt.Stringer, []string; got: %T", value))
 		}
 	}
 }
@@ -69,29 +72,24 @@ func (e *EnvelopeOut) SetBindings(bindings runHttp.MessageBindings) {
 	e.messageBindings = bindings
 }
 
-func (e *EnvelopeOut) SetPath(path string) {
-	e.path = path
-}
-
 func (e *EnvelopeOut) AsStdRecord() *http.Request {
-	reqCopy := *e.Request
+	reqCopy := e.Request.Clone(context.Background())
+	reqCopy.Body = io.NopCloser(e.body)
+	reqCopy.ContentLength = int64(e.body.Len())
 	reqCopy.GetBody = func() (io.ReadCloser, error) {
 		snapshot := e.body.Bytes()
 		return io.NopCloser(bytes.NewReader(snapshot)), nil
 	}
-	return &reqCopy
+	return reqCopy
 }
 
-func (e *EnvelopeOut) Path() string {
-	return e.path
-}
-
-func NewEnvelopeIn(req *http.Request) *EnvelopeIn {
-	return &EnvelopeIn{Request: req}
+func NewEnvelopeIn(req *http.Request, responseWriter http.ResponseWriter) *EnvelopeIn {
+	return &EnvelopeIn{Request: req, ResponseWriter: responseWriter}
 }
 
 type EnvelopeIn struct {
 	*http.Request
+	ResponseWriter http.ResponseWriter
 }
 
 func (e *EnvelopeIn) Read(p []byte) (n int, err error) {

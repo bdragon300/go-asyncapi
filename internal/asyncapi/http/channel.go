@@ -23,8 +23,6 @@ func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncap
 		return nil, err
 	}
 
-	baseChan.Struct.Fields = append(baseChan.Struct.Fields, render.GoStructField{Name: "path", Type: &render.GoSimple{Name: "string"}})
-
 	return &renderHttp.ProtoChannel{BaseProtoChannel: *baseChan}, nil
 }
 

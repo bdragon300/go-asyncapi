@@ -21,8 +21,6 @@ type (
 		SetHeaders(headers run.Headers)
 		SetContentType(contentType string)
 		SetBindings(bindings MessageBindings)
-
-		SetPath(path string)
 	}
 )
 

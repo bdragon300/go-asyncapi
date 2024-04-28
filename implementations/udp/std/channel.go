@@ -3,7 +3,6 @@ package std
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 
 	"github.com/bdragon300/go-asyncapi/run"
@@ -59,7 +58,7 @@ func (c *Channel) Receive(ctx context.Context, cb func(envelope runUDP.EnvelopeR
 	case <-ctx.Done():
 		return ctx.Err()
 	case <-c.ctx.Done():
-		return fmt.Errorf("channel closed: %w", c.ctx.Err())
+		return context.Cause(c.ctx)
 	}
 }
 

@@ -23,8 +23,8 @@ Some of the most popular HTTP servers include Apache HTTP Server, Nginx, Microso
 | Feature      | Protocol specifics |
 |--------------|--------------------|
 | Protocol key | `http`             |
-| Channel      | Connection         |
+| Channel      | HTTP route         |
 | Server       | HTTP server        |
-| Envelope     | Message            |
+| Envelope     | HTTP request       |
 
 Protocol bindings are described in https://github.com/asyncapi/bindings/blob/master/http/README.md

@@ -1,9 +1,7 @@
 package std
 
 import (
-	"bufio"
 	"context"
-	"net"
 	"net/url"
 
 	runHttp "github.com/bdragon300/go-asyncapi/run/http"
@@ -25,17 +23,6 @@ type ProduceClient struct {
 	serverURL *url.URL
 }
 
-func (p ProduceClient) Publisher(ctx context.Context, channelName string, bindings *runHttp.ChannelBindings) (runHttp.Publisher, error) {
-	port := p.serverURL.Port()
-	if port == "" {
-		port = "80"
-	}
-	d := net.Dialer{}
-	netConn, err := d.DialContext(ctx, "tcp", net.JoinHostPort(p.serverURL.Hostname(), port))
-	if err != nil {
-		return nil, err
-	}
-
-	rw := bufio.NewReadWriter(bufio.NewReader(netConn), bufio.NewWriter(netConn))
-	return NewChannel(bindings, p.serverURL.JoinPath(channelName), netConn, rw), nil
+func (p ProduceClient) Publisher(_ context.Context, channelName string, bindings *runHttp.ChannelBindings) (runHttp.Publisher, error) {
+	return NewPublisher(bindings, p.serverURL.JoinPath(channelName)), nil
 }
