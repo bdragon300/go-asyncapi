@@ -5,46 +5,55 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/url"
 	"strconv"
 
 	runTCP "github.com/bdragon300/go-asyncapi/run/tcp"
 )
 
-// TODO: move protocolVersion, protocolFamily to serverURL?
-func NewProducer(serverURL string, bindings *runTCP.ChannelBindings, protocolVersion string) (*ProduceClient, error) {
-	if protocolVersion != "" && protocolVersion != "4" && protocolVersion != "6" {
-		return nil, fmt.Errorf("invalid protocol version: %s", protocolVersion)
+func NewProducer(serverURL string, bindings *runTCP.ChannelBindings) (*ProduceClient, error) {
+	u, err := url.Parse(serverURL)
+	if err != nil {
+		return nil, err
 	}
-	protocolFamily := ProtocolFamily + protocolVersion
+	if u.Scheme != "tcp" && u.Scheme != "tcp4" && u.Scheme != "tcp6" {
+		return nil, fmt.Errorf("invalid scheme: %s", u.Scheme)
+	}
+	address := u.Host
 
 	d := net.Dialer{}
 	if bindings != nil {
-		address := net.JoinHostPort(bindings.LocalAddress, strconv.Itoa(bindings.LocalPort))
-		la, err := net.ResolveTCPAddr(protocolFamily, address)
-		if err != nil {
-			return nil, err
-		}
-		d.LocalAddr = la
+		address = net.JoinHostPort(bindings.LocalAddress, strconv.Itoa(bindings.LocalPort))
 	}
+
+	la, err := net.ResolveTCPAddr(u.Scheme, address)
+	if err != nil {
+		return nil, err
+	}
+	d.LocalAddr = la
+
 	return &ProduceClient{
 		Dialer:          d,
-		Address:         serverURL,
+		Scanner:         bufio.NewScanner(nil),
 		MaxEnvelopeSize: DefaultMaxEnvelopeSize,
-		protocolFamily:  protocolFamily,
+		address:         address,
+		protocolFamily:  u.Scheme,
 	}, nil
 }
 
 type ProduceClient struct {
 	net.Dialer
-	Address         string
+	// Scanner splits the incoming data into Envelopes. If equal to nil, the data is
+	// split on chunks of MaxEnvelopeSize bytes, which is equal to bufio.MaxScanTokenSize by default.
 	Scanner         *bufio.Scanner
 	MaxEnvelopeSize int
 
+	address        string
 	protocolFamily string
 }
 
 func (p ProduceClient) Publisher(ctx context.Context, _ string, _ *runTCP.ChannelBindings) (runTCP.Publisher, error) {
-	conn, err := p.DialContext(ctx, p.protocolFamily, p.Address)
+	conn, err := p.DialContext(ctx, p.protocolFamily, p.address)
 	if err != nil {
 		return nil, err
 	}

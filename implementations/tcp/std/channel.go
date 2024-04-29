@@ -3,7 +3,6 @@ package std
 import (
 	"bufio"
 	"context"
-	"errors"
 	"net"
 
 	"github.com/bdragon300/go-asyncapi/run"
@@ -24,9 +23,6 @@ func NewChannel(conn *net.TCPConn, scanner *bufio.Scanner, maxEnvelopeSize int) 
 
 type Channel struct {
 	*net.TCPConn
-	// scanner is used to split the incoming data into Envelopes. The maximum envelope size is limited by
-	// maxEnvelopeSize bytes, which is equal to bufio.MaxScanTokenSize by default. If nil the data will be split on
-	// chunks of maxEnvelopeSize.
 	scanner         *bufio.Scanner
 	maxEnvelopeSize int
 	items           *run.FanOut[runTCP.EnvelopeReader]
@@ -61,7 +57,7 @@ func (c *Channel) Receive(ctx context.Context, cb func(envelope runTCP.EnvelopeR
 }
 
 func (c *Channel) Close() error {
-	c.cancel(errors.New("close channel"))
+	c.cancel(nil)
 	return c.TCPConn.Close()
 }
 

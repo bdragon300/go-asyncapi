@@ -5,32 +5,33 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/url"
 	"strconv"
 
 	runTCP "github.com/bdragon300/go-asyncapi/run/tcp"
 )
 
-const (
-	ProtocolFamily         = "tcp"
-	DefaultMaxEnvelopeSize = 1024
-)
+const DefaultMaxEnvelopeSize = 1024
 
 type Decoder interface {
 	Decode(v any) error
 }
 
-// TODO: move protocolVersion, protocolFamily to serverURL?
-func NewConsumer(bindings *runTCP.ChannelBindings, protocolVersion string) (*ConsumeClient, error) {
-	if protocolVersion != "" && protocolVersion != "4" && protocolVersion != "6" {
-		return nil, fmt.Errorf("invalid protocol version: %s", protocolVersion)
+func NewConsumer(listenURL string, bindings *runTCP.ChannelBindings) (*ConsumeClient, error) {
+	u, err := url.Parse(listenURL)
+	if err != nil {
+		return nil, err
 	}
+	if u.Scheme != "tcp" && u.Scheme != "tcp4" && u.Scheme != "tcp6" {
+		return nil, fmt.Errorf("invalid scheme: %s", u.Scheme)
+	}
+	address := u.Host
 
-	listenAddress := ""
 	if bindings != nil {
-		listenAddress = net.JoinHostPort(bindings.LocalAddress, strconv.Itoa(bindings.LocalPort))
+		address = net.JoinHostPort(bindings.LocalAddress, strconv.Itoa(bindings.LocalPort))
 	}
 
-	listener, err := net.Listen(ProtocolFamily+protocolVersion, listenAddress)
+	listener, err := net.Listen(u.Scheme, address)
 
 	return &ConsumeClient{
 		TCPListener:     listener.(*net.TCPListener),
@@ -40,6 +41,8 @@ func NewConsumer(bindings *runTCP.ChannelBindings, protocolVersion string) (*Con
 
 type ConsumeClient struct {
 	*net.TCPListener
+	// Scanner splits the incoming data into Envelopes. If equal to nil, the data will
+	// be split on chunks of MaxEnvelopeSize bytes, which is equal to bufio.MaxScanTokenSize by default.
 	Scanner         *bufio.Scanner
 	MaxEnvelopeSize int
 }
