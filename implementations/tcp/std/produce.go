@@ -18,9 +18,8 @@ func NewProducer(serverURL string) (*ProduceClient, error) {
 	if u.Scheme != "tcp" && u.Scheme != "tcp4" && u.Scheme != "tcp6" {
 		return nil, fmt.Errorf("invalid scheme: %s", u.Scheme)
 	}
-	address := u.Host
 
-	la, err := net.ResolveTCPAddr(u.Scheme, address)
+	la, err := net.ResolveTCPAddr(u.Scheme, u.Host)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +29,7 @@ func NewProducer(serverURL string) (*ProduceClient, error) {
 		Dialer:          d,
 		Scanner:         bufio.NewScanner(nil),
 		MaxEnvelopeSize: DefaultMaxEnvelopeSize,
-		address:         address,
+		address:         u.Host,
 		protocolFamily:  u.Scheme,
 	}, nil
 }

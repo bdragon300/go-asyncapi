@@ -24,9 +24,7 @@ func NewConsumer(listenURL string) (*ConsumeClient, error) {
 	if u.Scheme != "tcp" && u.Scheme != "tcp4" && u.Scheme != "tcp6" {
 		return nil, fmt.Errorf("invalid scheme: %s", u.Scheme)
 	}
-	address := u.Host
-
-	listener, err := net.Listen(u.Scheme, address)
+	listener, err := net.Listen(u.Scheme, u.Host)
 
 	return &ConsumeClient{
 		TCPListener:     listener.(*net.TCPListener),
