@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"strconv"
 
 	runTCP "github.com/bdragon300/go-asyncapi/run/tcp"
 )
 
-func NewProducer(serverURL string, bindings *runTCP.ChannelBindings) (*ProduceClient, error) {
+func NewProducer(serverURL string) (*ProduceClient, error) {
 	u, err := url.Parse(serverURL)
 	if err != nil {
 		return nil, err
@@ -21,16 +20,11 @@ func NewProducer(serverURL string, bindings *runTCP.ChannelBindings) (*ProduceCl
 	}
 	address := u.Host
 
-	d := net.Dialer{}
-	if bindings != nil {
-		address = net.JoinHostPort(bindings.LocalAddress, strconv.Itoa(bindings.LocalPort))
-	}
-
 	la, err := net.ResolveTCPAddr(u.Scheme, address)
 	if err != nil {
 		return nil, err
 	}
-	d.LocalAddr = la
+	d := net.Dialer{LocalAddr: la}
 
 	return &ProduceClient{
 		Dialer:          d,

@@ -2,10 +2,7 @@ package tcp
 
 type (
 	ServerBindings struct {}
-	ChannelBindings struct {
-		LocalAddress string
-		LocalPort int
-	}
+	ChannelBindings struct {}
 	OperationBindings struct {}
 	MessageBindings struct {}
 )

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"strconv"
 
 	runTCP "github.com/bdragon300/go-asyncapi/run/tcp"
 )
@@ -17,7 +16,7 @@ type Decoder interface {
 	Decode(v any) error
 }
 
-func NewConsumer(listenURL string, bindings *runTCP.ChannelBindings) (*ConsumeClient, error) {
+func NewConsumer(listenURL string) (*ConsumeClient, error) {
 	u, err := url.Parse(listenURL)
 	if err != nil {
 		return nil, err
@@ -26,10 +25,6 @@ func NewConsumer(listenURL string, bindings *runTCP.ChannelBindings) (*ConsumeCl
 		return nil, fmt.Errorf("invalid scheme: %s", u.Scheme)
 	}
 	address := u.Host
-
-	if bindings != nil {
-		address = net.JoinHostPort(bindings.LocalAddress, strconv.Itoa(bindings.LocalPort))
-	}
 
 	listener, err := net.Listen(u.Scheme, address)
 
