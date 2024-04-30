@@ -2,7 +2,6 @@ package std
 
 import (
 	"context"
-	"errors"
 	"net"
 
 	"github.com/bdragon300/go-asyncapi/run"
@@ -63,7 +62,7 @@ func (c *Channel) Receive(ctx context.Context, cb func(envelope runUDP.EnvelopeR
 }
 
 func (c *Channel) Close() error {
-	c.cancel(errors.New("close channel"))
+	c.cancel(nil)
 	return c.UDPConn.Close()
 }
 

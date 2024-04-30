@@ -4,37 +4,45 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"strconv"
+	"net/url"
 
 	runUDP "github.com/bdragon300/go-asyncapi/run/udp"
 )
 
-const (
-	ProtocolFamily         = "udp"
-	DefaultLocalAddress    = "localhost"
-	DefaultMaxEnvelopeSize = 1024
-)
+const DefaultMaxEnvelopeSize = 1024
 
-// TODO: move protocolVersion, protocolFamily to serverURL?
-func NewConsumer(bindings *runUDP.ChannelBindings, protocolVersion string) (*Client, error) {
-	return NewProducer("", bindings, protocolVersion)
-}
+func NewClient(localURL, remoteURL string) (*Client, error) {
+	var la, ra, pf string
 
-func NewProducer(serverURL string, bindings *runUDP.ChannelBindings, protocolVersion string) (*Client, error) {
-	if protocolVersion != "" && protocolVersion != "4" && protocolVersion != "6" {
-		return nil, fmt.Errorf("invalid protocol version: %s", protocolVersion)
+	if localURL != "" {
+		u, err := url.Parse(localURL)
+		if err != nil {
+			return nil, fmt.Errorf("parse localURL: %w", err)
+		}
+		if u.Scheme != "udp" && u.Scheme != "udp4" && u.Scheme != "udp6" {
+			return nil, fmt.Errorf("invalid scheme: %s", u.Scheme)
+		}
+		la = u.Host
+		pf = u.Scheme
 	}
 
-	localAddress := DefaultLocalAddress
-	if bindings != nil && bindings.LocalAddress != "" || bindings.LocalPort != 0 {
-		localAddress = net.JoinHostPort(bindings.LocalAddress, strconv.Itoa(bindings.LocalPort))
+	if remoteURL != "" {
+		u, err := url.Parse(remoteURL)
+		if err != nil {
+			return nil, fmt.Errorf("parse remoteURL: %w", err)
+		}
+		if u.Scheme != "udp" && u.Scheme != "udp4" && u.Scheme != "udp6" {
+			return nil, fmt.Errorf("invalid scheme: %s", u.Scheme)
+		}
+		ra = u.Host
+		pf = u.Scheme
 	}
 
 	return &Client{
-		LocalAddress:         localAddress,
-		DefaultRemoteAddress: serverURL,
+		LocalAddress:         la,
+		DefaultRemoteAddress: ra,
 		MaxEnvelopeSize:      DefaultMaxEnvelopeSize,
-		protocolFamily:       ProtocolFamily + protocolVersion,
+		protocolFamily:       pf,
 	}, nil
 }
 
@@ -65,10 +73,11 @@ func (c *Client) channel(ctx context.Context) (*Channel, error) {
 		return nil, err
 	}
 
-	addr, err := net.ResolveIPAddr(c.protocolFamily, c.DefaultRemoteAddress)
+	addr, err := net.ResolveUDPAddr(c.protocolFamily, c.DefaultRemoteAddress)
 	if err != nil {
 		return nil, fmt.Errorf("resolve remote address: %w", err)
 	}
 
 	return NewChannel(conn.(*net.UDPConn), c.MaxEnvelopeSize, addr), nil
 }
+

@@ -38,10 +38,7 @@ Does not support any server bindings.
 
 ### Channel bindings
 
-| Field name     | Type    | Description              |
-|----------------|---------|--------------------------|
-| `localAddress` | string  | Local IP address to use. |
-| `localPort`    | integer | Local port to use.       |
+Does not support any channel bindings.
 
 ### Operation bindings
 
