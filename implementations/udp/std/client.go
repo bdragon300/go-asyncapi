@@ -19,9 +19,6 @@ func NewClient(localURL, remoteURL string) (*Client, error) {
 		if err != nil {
 			return nil, fmt.Errorf("parse localURL: %w", err)
 		}
-		if u.Scheme != "udp" && u.Scheme != "udp4" && u.Scheme != "udp6" {
-			return nil, fmt.Errorf("invalid scheme: %s", u.Scheme)
-		}
 		la = u.Host
 		pf = u.Scheme
 	}
@@ -30,9 +27,6 @@ func NewClient(localURL, remoteURL string) (*Client, error) {
 		u, err := url.Parse(remoteURL)
 		if err != nil {
 			return nil, fmt.Errorf("parse remoteURL: %w", err)
-		}
-		if u.Scheme != "udp" && u.Scheme != "udp4" && u.Scheme != "udp6" {
-			return nil, fmt.Errorf("invalid scheme: %s", u.Scheme)
 		}
 		ra = u.Host
 		pf = u.Scheme

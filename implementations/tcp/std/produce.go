@@ -3,7 +3,6 @@ package std
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"net"
 	"net/url"
 
@@ -15,10 +14,6 @@ func NewProducer(serverURL string) (*ProduceClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	if u.Scheme != "tcp" && u.Scheme != "tcp4" && u.Scheme != "tcp6" {
-		return nil, fmt.Errorf("invalid scheme: %s", u.Scheme)
-	}
-
 	la, err := net.ResolveTCPAddr(u.Scheme, u.Host)
 	if err != nil {
 		return nil, err

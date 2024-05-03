@@ -3,7 +3,6 @@ package std
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"net"
 	"net/url"
 
@@ -20,9 +19,6 @@ func NewConsumer(listenURL string) (*ConsumeClient, error) {
 	u, err := url.Parse(listenURL)
 	if err != nil {
 		return nil, err
-	}
-	if u.Scheme != "tcp" && u.Scheme != "tcp4" && u.Scheme != "tcp6" {
-		return nil, fmt.Errorf("invalid scheme: %s", u.Scheme)
 	}
 	listener, err := net.Listen(u.Scheme, u.Host)
 
