@@ -2,9 +2,7 @@ package rawsocket
 
 type (
 	ServerBindings struct {}
-	ChannelBindings struct {
-		LocalAddress string
-	}
+	ChannelBindings struct {}
 	OperationBindings struct {}
 	MessageBindings struct {}
 )

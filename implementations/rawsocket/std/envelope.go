@@ -2,10 +2,22 @@ package std
 
 import (
 	"bytes"
-	"net"
+	"errors"
+	"fmt"
+	"io"
+
+	"golang.org/x/net/ipv4"
+	"golang.org/x/net/ipv6"
 
 	"github.com/bdragon300/go-asyncapi/run"
 	runRawSocket "github.com/bdragon300/go-asyncapi/run/rawsocket"
+)
+
+var ErrUnexpectedIPVersion = errors.New("unexpected IP version")
+
+const (
+	HeaderIPHeaders = "headers"
+	HeaderIPVersion = "version"
 )
 
 func NewEnvelopeOut() *EnvelopeOut {
@@ -14,9 +26,7 @@ func NewEnvelopeOut() *EnvelopeOut {
 
 type EnvelopeOut struct {
 	*bytes.Buffer
-	headers     run.Headers
-	contentType string
-	remoteAddr  net.Addr
+	headers run.Headers
 }
 
 func (e *EnvelopeOut) ResetPayload() {
@@ -27,33 +37,57 @@ func (e *EnvelopeOut) SetHeaders(headers run.Headers) {
 	e.headers = headers
 }
 
-func (e *EnvelopeOut) SetContentType(contentType string) {
-	e.contentType = contentType
-}
+func (e *EnvelopeOut) SetContentType(_ string) {}
 
 func (e *EnvelopeOut) SetBindings(_ runRawSocket.MessageBindings) {}
 
-func (e *EnvelopeOut) SetRemoteAddr(addr net.Addr) {
-	e.remoteAddr = addr
+func (e *EnvelopeOut) HeaderBytes() ([]byte, error) {
+	h, ok := e.headers[HeaderIPHeaders]
+	if !ok {
+		return nil, nil
+	}
+
+	switch v := h.(type) {
+	case []byte:
+		return v, nil
+	case *ipv4.Header:
+		return v.Marshal()
+	case *ipv6.Header:
+		panic("ipv6") // FIXME
+	case io.Reader:
+		return io.ReadAll(v)
+	default:
+		return nil, fmt.Errorf("unexpected header type: %T", v)
+	}
 }
 
-func (e *EnvelopeOut) RemoteAddr() net.Addr {
-	return e.remoteAddr
-}
-
-func NewEnvelopeIn(msg []byte, addr net.Addr) *EnvelopeIn {
-	return &EnvelopeIn{Reader: bytes.NewReader(msg), remoteAddr: addr}
+func NewEnvelopeIn(headers, payload []byte, version int) *EnvelopeIn {
+	return &EnvelopeIn{Reader: bytes.NewReader(payload), IPHeaders: headers, IPVersion: version}
 }
 
 type EnvelopeIn struct {
 	*bytes.Reader
-	remoteAddr net.Addr
+	IPHeaders []byte
+	IPVersion int
 }
 
 func (e *EnvelopeIn) Headers() run.Headers {
-	return nil
+	return run.Headers{
+		HeaderIPVersion: e.IPVersion,
+		HeaderIPHeaders: e.IPHeaders,
+	}
 }
 
-func (e *EnvelopeIn) RemoteAddr() net.Addr {
-	return e.remoteAddr
+func (e *EnvelopeIn) Headers4() (*ipv4.Header, error) {
+	if e.IPVersion != 4 {
+		return nil, ErrUnexpectedIPVersion
+	}
+	return ipv4.ParseHeader(e.IPHeaders)
+}
+
+func (e *EnvelopeIn) Headers6() (*ipv6.Header, error) {
+	if e.IPVersion != 6 {
+		return nil, ErrUnexpectedIPVersion
+	}
+	return ipv6.ParseHeader(e.IPHeaders)
 }

@@ -2,10 +2,10 @@ package rawsocket
 
 import (
 	"context"
-	"io"
-	"net"
-
 	"github.com/bdragon300/go-asyncapi/run"
+	"golang.org/x/net/ipv4"
+	"golang.org/x/net/ipv6"
+	"io"
 )
 
 // Pub
@@ -23,8 +23,6 @@ type (
 		SetHeaders(headers run.Headers)
 		SetContentType(contentType string)
 		SetBindings(bindings MessageBindings)
-
-		SetRemoteAddr(addr net.Addr)
 	}
 )
 
@@ -45,7 +43,8 @@ type (
 		io.Reader
 		Headers() run.Headers
 
-		RemoteAddr() net.Addr
+		Headers4() (*ipv4.Header, error)
+		Headers6() (*ipv6.Header, error)
 	}
 )
 

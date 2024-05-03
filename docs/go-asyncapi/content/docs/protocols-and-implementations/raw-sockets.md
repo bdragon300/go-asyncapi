@@ -41,9 +41,7 @@ Does not support any server bindings.
 
 ### Channel Bindings
 
-| Field name     | Type    | Description              |
-|----------------|---------|--------------------------|
-| `localAddress` | string  | Local IP address to use. |
+Does not support any channel bindings.
 
 ### Operation Bindings
 

@@ -4,49 +4,49 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/url"
 
 	runRawSocket "github.com/bdragon300/go-asyncapi/run/rawsocket"
 )
 
-const (
-	ProtocolFamily         = "ip"
-	DefaultLocalAddress    = "localhost"
-	DefaultMaxEnvelopeSize = 1024
-)
+const DefaultMaxEnvelopeSize = 1024
 
-// TODO: move protocolVersion, protocolFamily to serverURL?
-func NewConsumer(bindings *runRawSocket.ChannelBindings, protocolVersion string) (*Client, error) {
-	return NewProducer("", bindings, protocolVersion)
-}
+func NewClient(localURL, remoteURL string) (*Client, error) {
+	res := &Client{MaxEnvelopeSize: DefaultMaxEnvelopeSize}
 
-// TODO: move protocolVersion, protocolFamily to serverURL?
-func NewProducer(serverURL string, bindings *runRawSocket.ChannelBindings, protocolVersion string) (*Client, error) {
-	if protocolVersion != "" && protocolVersion != "4" && protocolVersion != "6" {
-		return nil, fmt.Errorf("invalid protocol version: %s", protocolVersion)
+	if localURL != "" {
+		u, err := url.Parse(localURL)
+		if err != nil {
+			return nil, fmt.Errorf("parse localURL: %w", err)
+		}
+		res.localAddress = u.Hostname()
+		res.localProtocolFamily = u.Scheme
+		if p := u.Query().Get("proto"); p != "" {
+			res.localProtocolFamily += ":" + p
+		}
 	}
 
-	localAddress := DefaultLocalAddress
-	if bindings != nil && bindings.LocalAddress != "" {
-		localAddress = bindings.LocalAddress
+	if remoteURL != "" {
+		u, err := url.Parse(remoteURL)
+		if err != nil {
+			return nil, fmt.Errorf("parse remoteURL: %w", err)
+		}
+		res.remoteAddress = u.Hostname()
 	}
-	return &Client{
-		LocalAddress:         localAddress,
-		DefaultRemoteAddress: serverURL,
-		MaxEnvelopeSize:      DefaultMaxEnvelopeSize,
-		protocolFamily:       ProtocolFamily + protocolVersion,
-	}, nil
+
+	return res, nil
 }
 
 type Client struct {
-	Config               net.ListenConfig
-	LocalAddress         string
-	DefaultRemoteAddress string
+	Config              net.ListenConfig
+	localAddress        string
+	localProtocolFamily string
+	remoteAddress       string
+
 	// MaxEnvelopeSize is the maximum size of received envelopes. It should be set to the maximum
 	// expected size of the IP datagram that can be received. If the size of the received datagram
 	// exceeds this value, the datagram will be truncated and the rest of the data will be lost. By default, it is 1024.
 	MaxEnvelopeSize int
-
-	protocolFamily string
 }
 
 func (c *Client) Subscriber(ctx context.Context, _ string, _ *runRawSocket.ChannelBindings) (runRawSocket.Subscriber, error) {
@@ -58,15 +58,18 @@ func (c *Client) Publisher(ctx context.Context, _ string, _ *runRawSocket.Channe
 }
 
 func (c *Client) channel(ctx context.Context) (*Channel, error) {
-	conn, err := c.Config.ListenPacket(ctx, c.protocolFamily, c.LocalAddress)
+	conn, err := c.Config.ListenPacket(ctx, c.localProtocolFamily, c.localAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	addr, err := net.ResolveIPAddr(c.protocolFamily, c.DefaultRemoteAddress)
-	if err != nil {
-		return nil, fmt.Errorf("resolve remote address: %w", err)
+	var raddr net.Addr
+	if c.remoteAddress != "" {
+		raddr, err = net.ResolveIPAddr(c.localProtocolFamily, c.remoteAddress)
+		if err != nil {
+			return nil, fmt.Errorf("resolve remote address: %w", err)
+		}
 	}
 
-	return NewChannel(conn.(*net.IPConn), c.MaxEnvelopeSize, addr), nil
+	return NewChannel(conn.(*net.IPConn), c.MaxEnvelopeSize, raddr), nil
 }

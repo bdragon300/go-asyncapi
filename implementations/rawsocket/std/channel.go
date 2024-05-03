@@ -3,18 +3,22 @@ package std
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
+	"syscall"
+
+	"golang.org/x/sys/unix"
 
 	"github.com/bdragon300/go-asyncapi/run"
 	runRawSocket "github.com/bdragon300/go-asyncapi/run/rawsocket"
 )
 
-func NewChannel(conn *net.IPConn, bufferSize int, defaultRemoteAddress net.Addr) *Channel {
+func NewChannel(conn *net.IPConn, bufferSize int, remoteAddress net.Addr) *Channel {
 	res := Channel{
-		IPConn:               conn,
-		defaultRemoteAddress: defaultRemoteAddress,
-		bufferSize:           bufferSize,
-		items:                run.NewFanOut[runRawSocket.EnvelopeReader](),
+		IPConn:        conn,
+		remoteAddress: remoteAddress,
+		bufferSize:    bufferSize,
+		items:         run.NewFanOut[runRawSocket.EnvelopeReader](),
 	}
 	res.ctx, res.cancel = context.WithCancelCause(context.Background())
 	go res.run() // TODO: run once Receive is called (everywhere do this)
@@ -24,26 +28,32 @@ func NewChannel(conn *net.IPConn, bufferSize int, defaultRemoteAddress net.Addr)
 type Channel struct {
 	*net.IPConn
 
-	defaultRemoteAddress net.Addr
-	bufferSize           int // Including IP headers
-	items                *run.FanOut[runRawSocket.EnvelopeReader]
-	ctx                  context.Context
-	cancel               context.CancelCauseFunc
+	remoteAddress    net.Addr // Ignored if includeIPHeaders is true, see TCP/IP stack docs
+	bufferSize       int
+	includeIPHeaders bool
+	items            *run.FanOut[runRawSocket.EnvelopeReader]
+	ctx              context.Context
+	cancel           context.CancelCauseFunc
 }
 
 type ImplementationRecord interface {
 	Bytes() []byte
-	RemoteAddr() net.Addr
+	HeaderBytes() ([]byte, error)
 }
 
 func (c *Channel) Send(_ context.Context, envelopes ...runRawSocket.EnvelopeWriter) error {
-	for _, envelope := range envelopes {
+	for i, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
-		addr := ir.RemoteAddr()
-		if addr == nil {
-			addr = c.defaultRemoteAddress
+		msg := ir.Bytes()
+		if c.includeIPHeaders {
+			headers, err := ir.HeaderBytes()
+			if err != nil {
+				return fmt.Errorf("header bytes in envelope #%d: %w", i, err)
+			}
+			msg = append(headers, msg...)
 		}
-		if _, err := c.IPConn.WriteTo(ir.Bytes(), addr); err != nil {
+
+		if _, err := c.IPConn.WriteTo(msg, c.remoteAddress); err != nil {
 			return err
 		}
 	}
@@ -63,12 +73,36 @@ func (c *Channel) Receive(ctx context.Context, cb func(envelope runRawSocket.Env
 	}
 }
 
+func (c *Channel) SetIncludeIPHeaders(include bool) error {
+	c.includeIPHeaders = include
+
+	sock, err := c.IPConn.SyscallConn()
+	if err != nil {
+		return fmt.Errorf("get syscall conn: %w", err)
+	}
+	var includeInt int
+	if include {
+		includeInt = 1
+	}
+	return sock.Control(func(fd uintptr) {
+		// FIXME: fix this in more elegant way, we should know here the IP version instead of guessing
+		err := syscall.SetsockoptInt(int(fd), syscall.IPPROTO_IP, syscall.IP_HDRINCL, includeInt)
+		if err != nil {
+			if err2 := syscall.SetsockoptInt(int(fd), syscall.IPPROTO_IPV6, unix.IPV6_HDRINCL, includeInt); err2 != nil {
+				panic(errors.Join(err, err2).Error())
+			}
+		}
+	})
+}
+
 func (c *Channel) Close() error {
-	c.cancel(errors.New("close channel"))
+	c.cancel(nil)
 	return c.IPConn.Close()
 }
 
 func (c *Channel) run() {
+	var ok bool
+
 	for {
 		select {
 		case <-c.ctx.Done():
@@ -77,11 +111,50 @@ func (c *Channel) run() {
 		}
 
 		buf := make([]byte, c.bufferSize) // TODO: sync.Pool
-		n, addr, err := c.IPConn.ReadFrom(buf)
+		n, err := c.IPConn.Read(buf)
 		if err != nil {
 			c.cancel(err)
 			return
 		}
-		c.items.Put(func() runRawSocket.EnvelopeReader { return NewEnvelopeIn(buf[:n], addr) })
+
+		var po, ver int
+		if po, ok = ipv4PayloadOffset(n, buf); ok {
+			ver = 4
+		} else if po, ok = ipv6PayloadOffset(n, buf); ok {
+			ver = 6
+		}
+		c.items.Put(func() runRawSocket.EnvelopeReader { return NewEnvelopeIn(buf[:po], buf[po:n], ver) })
 	}
+}
+
+func ipv4PayloadOffset(n int, b []byte) (int, bool) {
+	if len(b) < 20 {
+		return 0, false
+	}
+	// Check an IP version
+	if b[0]>>4 != 4 {
+		return 0, false
+	}
+	ihl := int(b[0]&0x0f) << 2 // Internet Header Length
+	if 20 > ihl || ihl > len(b) {
+		return 0, true
+	}
+	if ihl > n {
+		return n, true
+	}
+	return ihl, true
+}
+
+func ipv6PayloadOffset(n int, b []byte) (int, bool) {
+	if len(b) < 40 {
+		return 0, false
+	}
+	// Check an IP version
+	if b[0]>>4 != 6 {
+		return 0, false
+	}
+	if n < 40 {
+		return n, true
+	}
+	return 40, true
 }
