@@ -36,7 +36,7 @@ Here are the protocols that are supported by `go-asyncapi` for now:
 - {{< figure src="images/kafka.svg" alt="Apache Kafka" link="/docs/protocols-and-implementations/apache-kafka" class="brand-icon" >}} [Apache Kafka]({{< relref "/docs/protocols-and-implementations/apache-kafka" >}})
 - {{< figure src="images/http-small.png" alt="HTTP" link="/docs/protocols-and-implementations/http" class="brand-icon" >}} [HTTP]({{< relref "/docs/protocols-and-implementations/http" >}})
 - {{< figure src="images/mqtt.svg" alt="MQTT" link="/docs/protocols-and-implementations/mqtt" class="brand-icon" >}} [MQTT]({{< relref "/docs/protocols-and-implementations/mqtt" >}})
-- {{< figure src="images/ip.png" alt="IP" link="/docs/protocols-and-implementations/raw-sockets" class="brand-icon" >}} [Raw IP sockets]({{< relref "/docs/protocols-and-implementations/raw-sockets" >}})**&ast;**
+- {{< figure src="images/ip.png" alt="IP" link="/docs/protocols-and-implementations/ip" class="brand-icon" >}} [IP RAW sockets]({{< relref "/docs/protocols-and-implementations/ip" >}})**&ast;**
 - {{< figure src="images/redis.svg" alt="Redis" link="/docs/protocols-and-implementations/redis" class="brand-icon" >}} [Redis]({{< relref "/docs/protocols-and-implementations/redis" >}})
 - {{< figure src="images/tcpudp.svg" alt="TCP" link="/docs/protocols-and-implementations/tcp" class="brand-icon" >}} [TCP]({{< relref "/docs/protocols-and-implementations/tcp" >}})**&ast;**
 - {{< figure src="images/tcpudp.svg" alt="UDP" link="/docs/protocols-and-implementations/udp" class="brand-icon" >}} [UDP]({{< relref "/docs/protocols-and-implementations/udp" >}})**&ast;**

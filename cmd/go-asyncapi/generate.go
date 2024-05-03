@@ -15,7 +15,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/tcp"
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/udp"
 
-	"github.com/bdragon300/go-asyncapi/internal/asyncapi/rawsocket"
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/ip"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/redis"
 
@@ -72,15 +72,15 @@ type generateImplementationArgs struct {
 }
 
 type ImplementationsOpts struct {
-	Kafka     string `arg:"--kafka-impl" default:"franz-go" help:"Implementation for Kafka ('none' to disable)" placeholder:"NAME"`
-	AMQP      string `arg:"--amqp-impl" default:"amqp091-go" help:"Implementation for AMQP ('none' to disable)" placeholder:"NAME"`
-	HTTP      string `arg:"--http-impl" default:"std" help:"Implementation for HTTP ('none' to disable)" placeholder:"NAME"`
-	MQTT      string `arg:"--mqtt-impl" default:"paho-mqtt" help:"Implementation for MQTT ('none' to disable)" placeholder:"NAME"`
-	WS        string `arg:"--ws-impl" default:"gobwas-ws" help:"Implementation for WebSocket ('none' to disable)" placeholder:"NAME"`
-	Redis     string `arg:"--redis-impl" default:"go-redis" help:"Implementation for Redis ('none' to disable)" placeholder:"NAME"`
-	RawSocket string `arg:"--rawsocket-impl" default:"std" help:"Implementation for raw sockets ('none' to disable)" placeholder:"NAME"`
-	TCP       string `arg:"--tcp-impl" default:"std" help:"Implementation for TCP ('none' to disable)" placeholder:"NAME"`
-	UDP       string `arg:"--udp-impl" default:"std" help:"Implementation for UDP ('none' to disable)" placeholder:"NAME"`
+	Kafka string `arg:"--kafka-impl" default:"franz-go" help:"Implementation for Kafka ('none' to disable)" placeholder:"NAME"`
+	AMQP  string `arg:"--amqp-impl" default:"amqp091-go" help:"Implementation for AMQP ('none' to disable)" placeholder:"NAME"`
+	HTTP  string `arg:"--http-impl" default:"std" help:"Implementation for HTTP ('none' to disable)" placeholder:"NAME"`
+	MQTT  string `arg:"--mqtt-impl" default:"paho-mqtt" help:"Implementation for MQTT ('none' to disable)" placeholder:"NAME"`
+	WS    string `arg:"--ws-impl" default:"gobwas-ws" help:"Implementation for WebSocket ('none' to disable)" placeholder:"NAME"`
+	Redis string `arg:"--redis-impl" default:"go-redis" help:"Implementation for Redis ('none' to disable)" placeholder:"NAME"`
+	IP    string `arg:"--ip-impl" default:"std" help:"Implementation for IP raw sockets ('none' to disable)" placeholder:"NAME"`
+	TCP   string `arg:"--tcp-impl" default:"std" help:"Implementation for TCP ('none' to disable)" placeholder:"NAME"`
+	UDP   string `arg:"--udp-impl" default:"std" help:"Implementation for UDP ('none' to disable)" placeholder:"NAME"`
 }
 
 type generateObjectSelectionOpts struct {
@@ -318,15 +318,15 @@ func getImportBase() (string, error) {
 
 func getImplementationsOpts(opts ImplementationsOpts) map[string]string {
 	return map[string]string{
-		amqp.Builder.ProtocolName():      opts.AMQP,
-		http.Builder.ProtocolName():      opts.HTTP,
-		kafka.Builder.ProtocolName():     opts.Kafka,
-		mqtt.Builder.ProtocolName():      opts.MQTT,
-		ws.Builder.ProtocolName():        opts.WS,
-		redis.Builder.ProtocolName():     opts.Redis,
-		rawsocket.Builder.ProtocolName(): opts.RawSocket,
-		tcp.Builder.ProtocolName():       opts.TCP,
-		udp.Builder.ProtocolName():       opts.UDP,
+		amqp.Builder.ProtocolName():  opts.AMQP,
+		http.Builder.ProtocolName():  opts.HTTP,
+		kafka.Builder.ProtocolName(): opts.Kafka,
+		mqtt.Builder.ProtocolName():  opts.MQTT,
+		ws.Builder.ProtocolName():    opts.WS,
+		redis.Builder.ProtocolName(): opts.Redis,
+		ip.Builder.ProtocolName():    opts.IP,
+		tcp.Builder.ProtocolName():   opts.TCP,
+		udp.Builder.ProtocolName():   opts.UDP,
 	}
 }
 
@@ -456,15 +456,15 @@ func getRenderOpts(opts generatePubSubArgs, targetDir, targetPkg string) (common
 
 func protocolBuilders() map[string]asyncapi.ProtocolBuilder {
 	return map[string]asyncapi.ProtocolBuilder{
-		amqp.Builder.ProtocolName():      amqp.Builder,
-		http.Builder.ProtocolName():      http.Builder,
-		kafka.Builder.ProtocolName():     kafka.Builder,
-		mqtt.Builder.ProtocolName():      mqtt.Builder,
-		ws.Builder.ProtocolName():        ws.Builder,
-		redis.Builder.ProtocolName():     redis.Builder,
-		rawsocket.Builder.ProtocolName(): rawsocket.Builder,
-		tcp.Builder.ProtocolName():       tcp.Builder,
-		udp.Builder.ProtocolName():       udp.Builder,
+		amqp.Builder.ProtocolName():  amqp.Builder,
+		http.Builder.ProtocolName():  http.Builder,
+		kafka.Builder.ProtocolName(): kafka.Builder,
+		mqtt.Builder.ProtocolName():  mqtt.Builder,
+		ws.Builder.ProtocolName():    ws.Builder,
+		redis.Builder.ProtocolName(): redis.Builder,
+		ip.Builder.ProtocolName():    ip.Builder,
+		tcp.Builder.ProtocolName():   tcp.Builder,
+		udp.Builder.ProtocolName():   udp.Builder,
 	}
 }
 

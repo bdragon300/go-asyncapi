@@ -10,7 +10,7 @@ import (
 	"golang.org/x/net/ipv6"
 
 	"github.com/bdragon300/go-asyncapi/run"
-	runRawSocket "github.com/bdragon300/go-asyncapi/run/rawsocket"
+	runIP "github.com/bdragon300/go-asyncapi/run/ip"
 )
 
 var ErrUnexpectedIPVersion = errors.New("unexpected IP version")
@@ -39,7 +39,7 @@ func (e *EnvelopeOut) SetHeaders(headers run.Headers) {
 
 func (e *EnvelopeOut) SetContentType(_ string) {}
 
-func (e *EnvelopeOut) SetBindings(_ runRawSocket.MessageBindings) {}
+func (e *EnvelopeOut) SetBindings(_ runIP.MessageBindings) {}
 
 func (e *EnvelopeOut) HeaderBytes() ([]byte, error) {
 	h, ok := e.headers[HeaderIPHeaders]

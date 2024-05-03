@@ -1,4 +1,4 @@
-package rawsocket
+package ip
 
 import (
 	"context"
@@ -27,7 +27,7 @@ type (
 )
 
 type EnvelopeMarshaler interface {
-	MarshalRawSocketEnvelope(envelope EnvelopeWriter) error
+	MarshalIPEnvelope(envelope EnvelopeWriter) error
 }
 
 // Sub
@@ -49,5 +49,5 @@ type (
 )
 
 type EnvelopeUnmarshaler interface {
-	UnmarshalRawSocketEnvelope(envelope EnvelopeReader) error
+	UnmarshalIPEnvelope(envelope EnvelopeReader) error
 }

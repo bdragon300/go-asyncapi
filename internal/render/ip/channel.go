@@ -1,4 +1,4 @@
-package rawsocket
+package ip
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -47,7 +47,7 @@ func (pc ProtoChannel) ID() string {
 }
 
 func (pc ProtoChannel) String() string {
-	return "RawSocket ProtoChannel " + pc.Parent.Name
+	return "IP ProtoChannel " + pc.Parent.Name
 }
 
 func (pc ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {
@@ -120,7 +120,7 @@ func (pc ProtoChannel) renderProtoPublisherMethods(ctx *common.RenderContext) []
 						}`))
 				} else { // Message is set for Channel in spec
 					bg.Op(`
-						if err := message.MarshalRawSocketEnvelope(envelope); err != nil {
+						if err := message.MarshalIPEnvelope(envelope); err != nil {
 							return err
 						}`)
 				}

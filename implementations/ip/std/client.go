@@ -6,7 +6,7 @@ import (
 	"net"
 	"net/url"
 
-	runRawSocket "github.com/bdragon300/go-asyncapi/run/rawsocket"
+	runIP "github.com/bdragon300/go-asyncapi/run/ip"
 )
 
 const DefaultMaxEnvelopeSize = 1024
@@ -49,11 +49,11 @@ type Client struct {
 	MaxEnvelopeSize int
 }
 
-func (c *Client) Subscriber(ctx context.Context, _ string, _ *runRawSocket.ChannelBindings) (runRawSocket.Subscriber, error) {
+func (c *Client) Subscriber(ctx context.Context, _ string, _ *runIP.ChannelBindings) (runIP.Subscriber, error) {
 	return c.channel(ctx)
 }
 
-func (c *Client) Publisher(ctx context.Context, _ string, _ *runRawSocket.ChannelBindings) (runRawSocket.Publisher, error) {
+func (c *Client) Publisher(ctx context.Context, _ string, _ *runIP.ChannelBindings) (runIP.Publisher, error) {
 	return c.channel(ctx)
 }
 

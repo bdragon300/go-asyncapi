@@ -1,4 +1,4 @@
-package rawsocket
+package ip
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -38,7 +38,7 @@ func (ps ProtoServer) ID() string {
 }
 
 func (ps ProtoServer) String() string {
-	return "RawSocket ProtoServer " + ps.Parent.Name
+	return "IP ProtoServer " + ps.Parent.Name
 }
 
 func (ps ProtoServer) renderChannelMethods(ctx *common.RenderContext) []*j.Statement {

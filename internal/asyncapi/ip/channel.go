@@ -1,4 +1,4 @@
-package rawsocket
+package ip
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
-	renderRawSocket "github.com/bdragon300/go-asyncapi/internal/render/rawsocket"
+	renderIP "github.com/bdragon300/go-asyncapi/internal/render/ip"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"gopkg.in/yaml.v3"
 )
@@ -17,7 +17,7 @@ func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncap
 		return nil, err
 	}
 
-	return &renderRawSocket.ProtoChannel{BaseProtoChannel: *baseChan}, nil
+	return &renderIP.ProtoChannel{BaseProtoChannel: *baseChan}, nil
 }
 
 func (pb ProtoBuilder) BuildChannelBindings(_ *common.CompileContext, _ types.Union2[json.RawMessage, yaml.Node]) (vals *render.GoValue, jsonVals types.OrderedMap[string, string], err error) {

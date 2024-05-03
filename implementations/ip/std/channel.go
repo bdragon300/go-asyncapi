@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/bdragon300/go-asyncapi/run"
-	runRawSocket "github.com/bdragon300/go-asyncapi/run/rawsocket"
+	runIP "github.com/bdragon300/go-asyncapi/run/ip"
 )
 
 func NewChannel(conn *net.IPConn, bufferSize int, remoteAddress net.Addr) *Channel {
@@ -18,7 +18,7 @@ func NewChannel(conn *net.IPConn, bufferSize int, remoteAddress net.Addr) *Chann
 		IPConn:        conn,
 		remoteAddress: remoteAddress,
 		bufferSize:    bufferSize,
-		items:         run.NewFanOut[runRawSocket.EnvelopeReader](),
+		items:         run.NewFanOut[runIP.EnvelopeReader](),
 	}
 	res.ctx, res.cancel = context.WithCancelCause(context.Background())
 	go res.run() // TODO: run once Receive is called (everywhere do this)
@@ -31,7 +31,7 @@ type Channel struct {
 	remoteAddress    net.Addr // Ignored if includeIPHeaders is true, see TCP/IP stack docs
 	bufferSize       int
 	includeIPHeaders bool
-	items            *run.FanOut[runRawSocket.EnvelopeReader]
+	items            *run.FanOut[runIP.EnvelopeReader]
 	ctx              context.Context
 	cancel           context.CancelCauseFunc
 }
@@ -41,7 +41,7 @@ type ImplementationRecord interface {
 	HeaderBytes() ([]byte, error)
 }
 
-func (c *Channel) Send(_ context.Context, envelopes ...runRawSocket.EnvelopeWriter) error {
+func (c *Channel) Send(_ context.Context, envelopes ...runIP.EnvelopeWriter) error {
 	for i, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
 		msg := ir.Bytes()
@@ -61,7 +61,7 @@ func (c *Channel) Send(_ context.Context, envelopes ...runRawSocket.EnvelopeWrit
 	return nil
 }
 
-func (c *Channel) Receive(ctx context.Context, cb func(envelope runRawSocket.EnvelopeReader)) error {
+func (c *Channel) Receive(ctx context.Context, cb func(envelope runIP.EnvelopeReader)) error {
 	el := c.items.Add(cb)
 	defer c.items.Remove(el)
 
@@ -123,7 +123,7 @@ func (c *Channel) run() {
 		} else if po, ok = ipv6PayloadOffset(n, buf); ok {
 			ver = 6
 		}
-		c.items.Put(func() runRawSocket.EnvelopeReader { return NewEnvelopeIn(buf[:po], buf[po:n], ver) })
+		c.items.Put(func() runIP.EnvelopeReader { return NewEnvelopeIn(buf[:po], buf[po:n], ver) })
 	}
 }
 

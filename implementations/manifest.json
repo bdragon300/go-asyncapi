@@ -47,10 +47,10 @@
       "dir": "udp/std"
     }
   },
-  "rawsocket": {
+  "ip": {
     "std": {
       "url": "https://pkg.go.dev/net",
-      "dir": "rawsocket/std"
+      "dir": "ip/std"
     }
   }
 }
