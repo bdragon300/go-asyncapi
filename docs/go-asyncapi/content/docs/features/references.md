@@ -21,7 +21,7 @@ used instead of the reference.
   `https://example.com/path/to/file#/components/schemas/MySchema`
 
 {{< hint warning >}}
-Security reasons forbid remote references by default, use `--allow-remote-refs` cli flag to allow it.
+Remote references initially are forbidden by security reasons, use `--allow-remote-refs` cli flag to allow it.
 {{< /hint >}}
 
 {{< hint info >}}
