@@ -22,7 +22,7 @@ HTTP to establish a persistent connection between clients and servers.
 
 | Feature      | Protocol specifics |
 |--------------|--------------------|
-| Protocol key | `websocket`        |
+| Protocol key | `ws`               |
 | Channel      | Connection         |
 | Server       | Websocket server   |
 | Envelope     | Websocket Message  |
