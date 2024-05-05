@@ -20,9 +20,9 @@ The generated channel code contains some common methods and fields. Depending on
 code contains proper publisher/subscriber fields and methods to send/receive 
 [Message envelopes]({{< relref "/docs/code-structure/message" >}}).
 
-The channel code also contains an interface for servers bound to this channel. All servers, that are bound to this 
-channel in the AsyncAPI document are complies to this interface (we automatically append the needed methods to the
-server code during generation).
+The channel code also contains an interface for servers bound to this channel. 
+All servers that are bound to this channel in the AsyncAPI document are complied to this interface 
+(we automatically append the needed methods to the server code during generation).
 
 And finally, the channel code contains a convenience method to open the channel to given servers.
 
@@ -196,10 +196,10 @@ A channel can be defined in two places in the AsyncAPI document:
 - `components.channels` section
 
 Channels in `channels` produce the code. Channels in `components.channels` are just reusable objects, that produce the
-code only being referred somewhere in the `channels` section. Therefore, if such channel is not referred anywhere,
+code only being referred somewhere in the `channels` section. Therefore, if such a channel is not referred anywhere,
 it will not be generated at all.
 
-So, in example below, only the `spam` and `eggs` are considered, `fooChannel` will be ignored:
+So, in the example below, only the `spam` and `eggs` are considered, `fooChannel` will be ignored:
 
 {{< details "Example" >}}
 ```yaml
@@ -234,8 +234,8 @@ In a similar way, only the servers from the `servers` section are considered. Se
 
 ### x-ignore
 
-If this extra field it set to **true**, the operation will not be generated. All references
-to objects in this operation in the generated code (if any) are replaced by Go `any` type.
+If this extra field is set to **true**, the operation will not be generated.
+All references to objects in this operation in the generated code (if any) are replaced by Go `any` type.
 
 {{< details "Example" >}}
 ```yaml
@@ -256,9 +256,9 @@ channels:
 
 ## Channel parameters
 
-Channel parameters are variables, that are substituted in the channel name during channel opening. This is useful when
-the channel name is not known at the time of the code generation. For example, when channel name sets the topic or 
-queue to use, and you want to determine it at runtime.
+Channel parameters are variables that are substituted in the channel name during channel opening.
+This is useful when the channel name is not known at the time of the code generation.
+For example, when channel name sets the topic or queue to use, and you want to determine it at runtime.
 
 The channel parameters are defined in the `parameters` section and are substituted to the appropriate placeholders, 
 enclosed in curly braces.
@@ -396,8 +396,8 @@ channels:
 
 ## Channel bindings, operation bindings
 
-Channel bindings are protocol-specific properties, that are used to define the channel behavior. They
-are defined in the `bindings` section of the channel definition.
+Channel bindings are protocol-specific properties that are used to define the channel behavior.
+They are defined in the `bindings` section of the channel definition.
 
 {{< details "Channel bindings example" >}}
 {{< tabs "3" >}}
@@ -455,7 +455,7 @@ if err != nil {
 defer channel.Close()
 ```
 
-At a lower level the channel bindings are used to make a Publisher/Subscriber object:
+At a lower level, the channel bindings are used to make a Publisher/Subscriber object:
 
 ```go
 publisher, err := producer.NewPublisher(ctx, "mychannel", MychannelBindings.Kafka())
@@ -514,8 +514,8 @@ type FooBarKafka struct {
 
 ## x-ignore
 
-If this extra field it set to **true**, the channel will not be generated. All references 
-to this channel in the generated code (if any) are replaced by Go `any` type.
+If this extra field is set to **true**, the channel will not be generated.
+All references to this channel in the generated code (if any) are replaced by Go `any` type.
 
 {{< details "Example" >}}
 ```yaml

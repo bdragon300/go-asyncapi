@@ -1,13 +1,13 @@
 ---
 title: "References"
 weight: 310
-description: "go-asynapi can resolve references ($ref) to objects in the same document, in local or remote file. Custom resolver is supported for more complex scenarios" 
+description: "go-asyncapi can resolve references ($ref) to objects in the same document, in local or remote file. Custom resolver is supported for more complex scenarios" 
 ---
 
 # References
 
-AsyncAPI specification allows to use references to the objects in the document. This is useful to avoid duplication and
-to make the document more readable. 
+AsyncAPI specification allows using references to the objects in the document.
+This is useful to avoid duplication and to make the document more readable. 
 
 References are set by `$ref` field in the object. The value of this field is a JSON Pointer to the object that should be
 used instead of the reference.
@@ -62,7 +62,7 @@ The command should return 0 on success. If the command returns a non-zero exit c
 as well.
 
 {{< hint info >}}
-`go-asyncapi` waits for the command to be finished for 30 seconds timeout (which can be configured by the 
+`go-asyncapi` waits for the command to be finished in timeout of 30 seconds (which can be configured by the 
 `--file-resolver-timeout` flag). If a resolver process is still running after this timeout has passed, `go-asyncapi`
 does the *graceful shutdown*:
 

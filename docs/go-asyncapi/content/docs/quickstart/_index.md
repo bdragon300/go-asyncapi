@@ -7,8 +7,9 @@ draft: true
 
 # Quickstart
 
-This guide will help you to get started with the go-asyncapi tool. In this example we'll create a simple echo Websocket
-server that listens for incoming messages and sends them back to the client.
+This guide will help you to get started with the go-asyncapi tool.
+In this example, we'll create a simple echo Websocket server that listens for incoming messages and sends them back 
+to the client.
 
 The following AsyncAPI document describes one server and one channel with two operations: `publish` and `subscribe`:
 
@@ -59,7 +60,7 @@ It's time to generate Go code using the go-asyncapi tool:
 go-asyncapi generate pubsub test.asyncapi.yaml
 ```
 
-The generated Go code will be placed to **./asyncapi** directory. Let's take a look what we've got:
+The generated Go code will be placed to **./asyncapi** directory. Let's take a look at what we've got:
 
 * **channels/ws_api.go** -- Websocket-specific code for channel `wsAPI`
 * **encoding/{encode,decode}.go** -- encoder/decoder for messages. We didn't specify the content type, so the 

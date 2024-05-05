@@ -6,7 +6,7 @@ description: "The generated code can reuse the code you already have, both local
 
 # Code reuse
 
-While generating the code you may want to reuse the code you already have. There are two ways to do that.
+While generating the code, you may want to reuse the code you already have. There are two ways to do that.
 
 The first way is applicable when you already have the module generated before by `go-asyncapi` and want
 to reuse it as a whole. For that, you can add the `--reuse-*` flags. They tell the generator to import the types 

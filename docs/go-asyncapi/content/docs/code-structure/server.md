@@ -8,9 +8,10 @@ description: "Server is an AsyncAPI entity that contains information how to conn
 
 ## Overview
 
-Server is one of the main entities in the AsyncAPI document. It represents a server that is used by the channels to
-send and receive messages. Server is always assigned to a particular protocol, such as Kafka, AMQP, MQTT, etc. Also, it
-always has a URL to connect to.
+Server is one of the main entities in the AsyncAPI document.
+It represents a server used by the channels to send and receive messages.
+The Server is always assigned to a particular protocol, such as Kafka, AMQP, MQTT, etc. 
+Also, it always has a URL to connect to.
 
 The generated server code contains some common methods and fields, and also method to open channels that are bound to
 this server. By default, the server code is generated in the `servers` package.
@@ -80,7 +81,7 @@ Servers in `servers` produce the code. Servers in `components.servers` are just 
 code only being referred somewhere in the `servers` section. Therefore, if such server is not referred anywhere, 
 it will not be generated at all.
 
-So, in example below, only the `foo` and `bar` are considered, `spam` will be ignored: 
+So, in the example below, only the `foo` and `bar` are considered, `spam` will be ignored: 
 
 {{< details "Example" >}}
 ```yaml
@@ -237,8 +238,8 @@ type FooBar struct {
 
 ## x-ignore
 
-If this extra field it set to **true**, the server will not be generated. All references
-to this server in the generated code (if any) are replaced by Go `any` type.
+If this extra field is set to **true**, the server will not be generated.
+All references to this server in the generated code (if any) are replaced by Go `any` type.
 
 {{< details "Example" >}}
 ```yaml

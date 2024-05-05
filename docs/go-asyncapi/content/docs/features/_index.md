@@ -16,7 +16,7 @@ description = 'Most of AsyncAPI features support, ready-to-go protocol implement
 - [Reuse the code]({{< relref "/docs/features/code-reuse" >}}) generated before
 - [Breaking down the generated code]({{< relref "/docs/features/code-breakdown" >}}) in several ways
 - [Objects selection]({{< relref "/docs/features/code-selection" >}}) to generate
-- "Only consumer", "only producer" code generation
+- "Consumer only", "producer only" code generation
 - [Content types](#content-types) support
 - [References ($ref) resolving]({{< relref "/docs/features/references" >}})
     - Document-local refs

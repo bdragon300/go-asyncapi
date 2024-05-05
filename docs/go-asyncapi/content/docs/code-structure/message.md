@@ -8,8 +8,9 @@ description: "Message is the protocol-agnostic structure that is sent from one s
 
 ## Overview
 
-Message is the protocol-agnostic structure that is sent from one service to another, it is generated from message
-definition in the AsyncAPI document. Message can have a payload, headers, and other properties.
+Message is the protocol-agnostic structure sent from one service to another.
+It is generated from message definition in the AsyncAPI document.
+Message can have a payload, headers, and other properties.
 
 To be able to send or receive a message over a channel of specific protocol and specific library, it's wrapped in the 
 implementation-specific structure -- [Envelope](#envelope).
@@ -122,10 +123,10 @@ func (m *MyMessageIn) MessageHeaders() map[string]any {
 
 ## Envelope
 
-Envelope is the protocol-specific "wrapper" for incoming or outgoing message along with its metadata. 
-Simply put, the envelope is a message suitable for sending/receiving the data by a particular library.
+Envelope is the protocol-specific "wrapper" for the incoming or outgoing message along with its metadata. 
+In other words, the envelope is a message suitable for sending/receiving the data by a particular library.
 
-See the [Implementation](/docs/code-structure/implementation#messageprotocol--envelope) page for more details.
+See the [Implementation]({{< relref "/docs/code-structure/implementation#messageprotocol--envelope" >}}) page for more details.
 
 {{< details "Usage example" >}}
 {{< tabs "2" >}}
@@ -203,7 +204,7 @@ if err != nil {
 
 ## Content type
 
-The encoder and decoder that is used to marshal/unmarshal the message payload depends on the message content type.
+The encoder and decoder are used to marshal/unmarshal the message payload depends on the message content type.
 By default, the content type is `application/json`, but it can be changed in the message definition or globally in the
 AsyncAPI document in `defaultContentType` field.
 
@@ -212,8 +213,9 @@ AsyncAPI document in `defaultContentType` field.
 `go-asyncapi` generates the encoder and decoder code for all message types of all messages in document and 
 puts it to the `encoding` package by default. 
 
-They are used automatically during marshaling/unmarshaling the message. You can use them manually or provide 
-your own implementation if you like. You may also choose not to generate the encoder/decoder code at all.
+They are used automatically during marshaling/unmarshalling the message.
+You can use them manually or provide your own implementation if you like.
+You may also choose not to generate the encoder/decoder code at all.
 
 {{< details "Example" >}}
 {{< tabs "3" >}}
@@ -434,9 +436,9 @@ envelope.SetBindings(messages.MyMessageBindings().Kafka())
 
 ## Correlation ID
 
-Correlation ID is a user-defined unique identifier that is used to correlate the request and response messages. 
-Its `location` field determines where the value is stored in message -- in its payload or headers. Briefly, the 
-location has the format:
+Correlation ID is a user-defined unique identifier used to correlate the request and response messages. 
+Its `location` field determines where the value is stored in the message—in its payload or headers.
+Briefly, the location has the format:
 
 ```
 $message.<payload|header>#/a/json/pointer
@@ -447,7 +449,7 @@ where `$message` is a special keyword that means the message itself, `payload` o
 E.g. `$message.payload#/field1/10/field2`.
 
 The `go-asyncapi` is able to generate the code that sets and retrieves a correlation ID value from a message. 
-Despite the name, the JSONPointer path works with all formats, not only JSON -- it is interpreted by the 
+Despite the name, the JSONPointer path works with all formats, not only JSON—it is interpreted by the 
 tool as just a path through generated nested Go's types.
 
 {{< details "Correlation ID example" >}}
@@ -545,7 +547,7 @@ Encoding rules are:
 Path items wrapped in quotes (single or double) are always treated as strings. Quotes are stripped before
 path evaluation. The only use-case for this is to force the path item to be treated as a string, not as an integer.
 
-E.g, `$message.payload#/~0field%20_1/'10'/%22field2%22~1foo` contains three fields: `~field _1`, `10`
+E.g., `$message.payload#/~0field%20_1/'10'/%22field2%22~1foo` contains three fields: `~field _1`, `10`
 (a string, not an integer) and `"field2"/foo`.
 
 ### x-go-ignore
@@ -623,8 +625,8 @@ type FooBarIn struct {
 
 ## x-go-ignore
 
-If this extra field it set to **true**, the message will not be generated. All references
-to this message in the generated code (if any) are replaced by Go `any` type.
+If this extra field is set to **true**, the message will not be generated.
+All references to this message in the generated code (if any) are replaced by Go `any` type.
 
 {{< details "Example" >}}
 ```yaml

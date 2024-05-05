@@ -18,7 +18,7 @@ part of it, or even to replace some parts with his own version.
 Many complex architectures may be described in dozens of AsyncAPI documents referenced to each other. So, another
 requirement is to be able to track and handle these dependencies.
 
-Finally, to help the user to mock up or make prototypes or write the applications, it's better to provide minimal
+Finally, to help the user to make prototypes or write the applications, it's better to provide minimal
 implementations based on popular libraries for the most popular protocols. And they should be pluggable as well.
 
 ## Overview
@@ -34,7 +34,7 @@ be as follows:
 
 {{< figure src="images/code-types.svg" alt="Types structure diagram" >}}
 
-This figure helps give an overview of the generated code structure. Let's take a look what each of these objects is.
+This figure helps give an overview of the generated code structure. Let's take a look at what these objects are.
 
 **[Server]({{< relref "/docs/code-structure/server" >}})** is generated from `server` AsyncAPI entity.
 The main purpose of server is to keep the information to easily open a **Channel** to this server. For this,
@@ -60,8 +60,8 @@ Can be referred by any other entity.
 
 **[Implementation]({{< relref "/docs/code-structure/implementation" >}})** is a concrete library to work with a
 particular protocol. See [Protocols and implementations]({{< relref "/docs/protocols-and-implementations" >}}) section
-for full list.
+for a full list.
 
-**Encoding** package contains the code that is used to to marshal and unmarshal the messages based on their 
+**Encoding** package contains the code used to marshal and unmarshal the messages based on their 
 content type. All encoders/decoders of [supported content types]({{< relref "/docs/features#content-types" >}}) 
 mentioned in the AsyncAPI document get here. You can add your own encoders/decoders and replace the existing ones.

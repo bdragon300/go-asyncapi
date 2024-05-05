@@ -19,8 +19,9 @@ The bunch of cli flags may help to control which code will appear in the result.
 You can use a built-in implementation for a particular protocol by using `--*-impl` flags. E.g. `--kafka-impl sarama` 
 tells the tool to use **Sarama** implementation for Kafka protocol instead of default **franz-go**.
 
-It's possible to generate the implementation only, without other code. This is useful when you need just a sample
-implementation for a protocol, e.g. to make your own based on it. Use the `implementation` subcommand: 
+It's possible to generate the implementation only without other code.
+This is useful when you need just a sample implementation for a protocol, e.g., to make your own based on it.
+Use the `implementation` subcommand: 
 `go-asyncapi generate implementation kafka sarama`.
 
 Full list of supported implementations can be found in the 
@@ -30,7 +31,7 @@ Full list of supported implementations can be found in the
 ### Exclusion
 
 To refuse from the implementation for a particular protocol, pass the `--kafka-impl none` cli flag. To refuse from 
-all implementations pass the `--no-implementations` cli flag, the implementations will not appear at all in this case.
+all implementations use the `--no-implementations` cli flag, the implementations will not appear at all in this case.
 
 ## Entities
 
@@ -45,7 +46,7 @@ The group of `--select-*` cli flags selects document entities to generate, exclu
 
 There are special cli flags that select particular AsyncAPI entities. They accept a 
 [regular expression](https://en.wikipedia.org/wiki/Regular_expression), and the tool selects only those entities 
-whose names in document matched this expression. These flags also can be combined. Some examples:
+whose names matched this expression. These flags also can be combined. Some examples:
  
 * `--select-channels-re '^user''` generates the code only for the channels that names start with **user**. 
 * `--select-models-re '^foobar$'` generates the code only for the models named **foobar**.

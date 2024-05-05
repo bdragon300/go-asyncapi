@@ -7,7 +7,7 @@ description: "Implementation is a library to work with supported protocols. `go-
 # Implementation
 
 Implementation is a concrete library wrapper to work with a particular protocol. `go-asyncapi` contains implementations
-for all supported protocols, that are based on most popular libraries. They can be chosen by cli flags, but you can 
+for all supported protocols that are based on most popular libraries. They can be chosen by cli flags, but you can 
 also implement your own implementation.
 
 The generated implementation code is put by default to `impl` package in target directory.
@@ -50,11 +50,11 @@ if err != nil {
 
 ## Concepts
 
-Most protocols operate with two kind of connections: one is a network connection to a server and another
+Most protocols operate with two kinds of connections: one is a network connection to a server, and another
 is a channel inside this connection. In the generated code, the *Producer*/*Consumer* represent the former, and
 the *Publisher*/*Subscriber* represent the latter.
 
-See nested page in main menu for the particular protocol to learn more.
+See nested page in the main menu for the particular protocol to learn more.
 
 ### Server = *Producer+Consumer*
 
@@ -85,9 +85,11 @@ type Consumer interface {
 
 `ChannelBindings` type is protocol-specific.
 
-Many libraries consider the connection as bidirectional, so implementation can have the type complies both
-to *Producer* and *Consumer*. Other libraries have different types for producing and consuming, therefore we have
-two different types in implementation as well. This aspect fully depends on a particular library.
+Many libraries consider the connection as bidirectional, so implementation can have the type complied both
+to *Producer* and *Consumer*.
+Other libraries have different types for producing and consuming, therefore, we have two different types in 
+implementation as well. 
+This aspect fully depends on a particular library.
 
 ### Channel = *Publisher+Subscriber*
 
@@ -121,15 +123,15 @@ type Subscriber interface {
 
 `EnvelopeWriter` and `EnvelopeReader` types are protocol-specific interfaces (see below).
 
-Same as before, some libraries has the same type both for producing and consuming or different types. Therefore in
-implementation we define one or two separate types for *Publisher* and *Subscriber* as well.
+Same as before, some libraries have the same type both for producing and consuming or different types.
+Therefore, in implementation, we define one or two separate types for *Publisher* and *Subscriber* as well.
 
 ### Message+Protocol = *Envelope*
 
-A message can't just being sent to a concrete server as is, it must contain protocol-specific information.
-In the same time a message is supposed by AsyncAPI authors to be protocol-agnostic.
+A message can't just be sent to a concrete server as is, it must contain protocol-specific information.
+At the same time, a message is supposed by AsyncAPI authors to be protocol-agnostic.
 
-So, the solution is to wrap protocol-agnostic message by a library-specific *Envelope*. And operate with *Envelopes*.
+So, the solution is to wrap a protocol-agnostic message by a library-specific *Envelope*. And operate with *Envelopes*.
 
 Many libraries use the same type for incoming and outgoing messages, but some of them use different types.
 So we have two basic interfaces for *Envelopes*, one for outgoing data and another for incoming data:
@@ -159,17 +161,18 @@ However, not all protocols obey the approach described above by their design.
 
 #### Brokerless (peer-to-peer) protocols
 
-*Websocket* is a brokerless protocol, that implies only one connection directly to the server without any channels
-inside. How can it look like in terms of AsyncAPI?
+*Websocket* is a brokerless protocol that implies only one connection directly to the server without any channels
+inside.
+How can it look in terms of AsyncAPI?
 
-Everything is simple for *Producer* -- it does nothing. *Publisher* is an opened connection.
+Everything is straightforward for *Producer* -- it does nothing. *Publisher* is an opened connection.
 
-But for the *Consumer* the situation is slight complicated: "channel" here is incoming connection that has came
+But for the *Consumer* the situation is slightly complicated: "channel" here is an incoming connection that has come 
 to a particular HTTP path. So, one of the solutions is make *Consumer* the `http.ServeMux` that intended to
-be passed to your HTTP server object. And then, as soon as a new connection has came, we create a new `Subscriber`.
+be passed to your HTTP server object. And then, as soon as a new connection has come, we create a new `Subscriber`.
 
 This situation is typical for HTTP, Websocket, TCP, and other brokerless protocols. We can't just open a channel
-and just wait for data. Instead, we must wait for a new channel will be opened as soon as a new connection has came.
+and just wait for data. Instead, we must wait for a new channel will be opened as soon as a new connection has come.
 
 #### UDP and IP raw sockets
 

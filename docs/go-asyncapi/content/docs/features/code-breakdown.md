@@ -10,7 +10,7 @@ description: "Generated code could be broken down by packages and files by type,
 Also, additional packages will be created and placed alongside: `impl` for the protocol implementations and 
 `encoding` for the encoders/decoders.
 
-The way how the generated code will breaked down by packages and files is controlled by `--*-scope` cli args. 
+The way how the generated code will be broken down by packages and files is controlled by `--*-scope` cli args. 
 
 By default, the tool creates a package per entity type (**models**, **servers**, **channels**, etc.). 
 Every single entity is put to a separate file.

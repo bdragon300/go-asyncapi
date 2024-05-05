@@ -58,7 +58,7 @@ projects that uses it or to change the tool command line. E.g. **1.4.0 &rarr; 2.
 **Long story short**: this one provides more features and protocols, and it has written in Go.
 
 The official generator is quite specific for many cases.
-At the moment, it produces the Go code bound with Watermill framework, but not everyone uses the Watermill in 
+At the moment, it produces the Go code bound with the Watermill framework, but not everyone uses the Watermill in 
 their projects.
 Also, it supports only the AMQP protocol.
 

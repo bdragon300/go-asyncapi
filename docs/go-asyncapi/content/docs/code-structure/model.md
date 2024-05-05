@@ -62,7 +62,7 @@ type MyModel struct {
 ## x-nullable
 
 Extra field `x-nullable` forcibly marks a model/field as nullable. By default, the field is nullable if it can be
-`null` or needed to be checked for `nil` in the generated code, i.e. marked as required. Nullable fields are generated
+`null` or needed to be checked for `nil` in the generated code, i.e., marked as required. Nullable fields are generated
 as pointers in Go code.
 
 {{< details "Example" >}}
@@ -151,7 +151,7 @@ other generated types.
 substitutes the type name everywhere where the model is used. Suitable for built-in types and types from the 
 same package as the model.
 
-The advanced way is to use `x-go-type` as object. Possible subfields are:
+The advanced way is to set the object in `x-go-type`. Possible subfields are:
 
 * `name` -- the type name. Required.
 * `import` -- the import path for the type. Optional. Can be either a package name in generated code, e.g. `"messages"`
@@ -159,10 +159,10 @@ The advanced way is to use `x-go-type` as object. Possible subfields are:
 * `embedded` -- if **true**, the tool will embed a type in the generated model instead of replacing it. Optional. 
   Default is **false**.
 * `hint` -- various hints how this type should be used. Optional. Possible values are:
-  * `pointer` -- if **true**, then objects of this type should be used as pointers in the generated code. If **false**
-    (default) being a pointer depends on context.
+  * `pointer` -- **true** forces the objects of this type to be used as pointers in the generated code.
+    Otherwise, this depends on the context (default behavior).
   * `kind` -- the kind of the type. Now it's supported only the `"interface"`, which denotes that the type is Go 
-    interface. This means, for example, that we can't get the address of the object of this type.
+    interface. For example, we can't get the address of such objects anymore.
 
 {{< details "Example" >}}
 ```yaml
@@ -184,9 +184,9 @@ components:
           type: string
         server:
           type: object
-            x-go-type:
-              name: MyServer  # `MyServer` from the `servers` generated package will be used
-              import: "servers"
+          x-go-type:
+            name: MyServer  # `MyServer` from the `servers` generated package will be used
+            import: "servers"
 ```
 {{< /details >}}
 
@@ -195,7 +195,7 @@ components:
 You can add your own tags to the generated model fields using the `x-go-tags` and `x-go-tags-values` extra fields.
 By default, the tags are generated based on the content type of the message where the model is used.
 
-To add tags that is meant to have the same values as other ones, pass a list to the `x-go-tags` field.
+To add tags that are meant to have the same values as other ones, pass a list to the `x-go-tags` field.
 
 {{< details "Example" >}}
 {{< tabs "4" >}}
@@ -229,8 +229,8 @@ type MyModel struct {
 {{< /tabs >}}
 {{< /details >}}
 
-To add certain tags with certain values, pass a map of values to the `x-go-tags` field. If such tag is already present
-in the generated code, the value will be replaced.
+To add certain tags with certain values, pass a map of values to the `x-go-tags` field.
+If a tag is already present in the generated code, its value will be replaced.
 
 {{< details "Example" >}}
 {{< tabs "5" >}}
@@ -303,8 +303,8 @@ type MyModel struct {
 
 ## x-ignore
 
-If this extra field it set to **true**, the model will not be generated. All references
-to this model in the generated code (if any) are replaced by Go `any` type.
+If this extra field is set to **true**, the model will not be generated.
+All references to this model in the generated code (if any) are replaced by Go `any` type.
 
 {{< details "Example" >}}
 ```yaml
