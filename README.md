@@ -1,10 +1,3 @@
-+++
-title = "Main page"
-url = "/"
-weight = 100
-description = 'Generate Go code based on your AsyncAPI documents! This tool supports most of AsyncAPI features, ready-to-go protocol clients, reference resolver and more!'
-+++
-
 # go-asyncapi
 
 ![GitHub go.mod Go version (subdirectory of monorepo)](https://img.shields.io/github/go-mod/go-version/bdragon300/go-asynapi)
