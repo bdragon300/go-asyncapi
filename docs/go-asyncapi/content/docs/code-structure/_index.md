@@ -21,12 +21,18 @@ requirement is to be able to track and handle these dependencies.
 Finally, to help the user to mock up or make prototypes or write the applications, it's better to provide minimal
 implementations based on popular libraries for the most popular protocols. And they should be pluggable as well.
 
+## Overview
+
+On the figure below it's shown what the code looks like from high level.
+
+{{< figure src="images/code-overview.svg" alt="Code structure overview" >}}
+
 ## Structure
 
 If we'd involve <u>all AsyncAPI features</u> supported by `go-asyncapi`, the code structure would 
 be as follows:
 
-{{< figure src="types.svg" alt="Types structure diagram" >}}
+{{< figure src="images/code-types.svg" alt="Types structure diagram" >}}
 
 This figure helps give an overview of the generated code structure. Let's take a look what each of these objects is.
 

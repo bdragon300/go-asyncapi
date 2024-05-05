@@ -19,7 +19,8 @@ architecture use to communicate with each other.
 
 The generated code is not only just a bunch of stubs, it contains the abstract logic sufficient to send and 
 receive data through channels with no external dependencies except the standard Go library.
-So, no extra features are inside, such as logging, metrics, etc. -- it's up to you what you use in your project.
+So, no extra features are inside beyond what is necessary (such as logging, metrics, etc.) --
+it's up to you what you use in your project.
 
 The code is also modular, so many generated objects can be used separately or be reused from another location.
 
@@ -52,32 +53,37 @@ projects that uses it or to change the tool command line. E.g. **1.4.0 &rarr; 2.
 
 ## FAQ
 
-**Why do I need another third-party codegen tool? We have already the [official generator](https://github.com/asyncapi/generator)**
+### Why do I need another third-party codegen tool? We have already the [official generator](https://github.com/asyncapi/generator)
 
-The official generator is quite specific for most cases.
-At the moment, it produces the code only for the Watermill framework, but not everyone uses the Watermill in 
+**Long story short**: this one provides more features and protocols, and it has written in Go.
+
+The official generator is quite specific for many cases.
+At the moment, it produces the Go code bound with Watermill framework, but not everyone uses the Watermill in 
 their projects.
 Also, it supports only the AMQP protocol.
 
-`go-asyncapi` produces framework-agnostic code with the standard Go library as single dependency. It supports many
-[protocols]({{< relref "/docs/features#protocols" >}}) and many specific AsyncAPI entities, such as
+Instead, `go-asyncapi`:
+
+* produces framework-agnostic code with the standard Go library as single dependency. 
+* supports more
+[protocols]({{< relref "/docs/features#protocols" >}}) and more specific AsyncAPI entities, such as
 bindings, correlation ids, server variables, etc.
+* contains the pluggable minimal clients for all supported protocols based on popular libraries.
+* written in Go, so no need to have node.js or Docker or similar tools to run the generator.
 
-`go-asyncapi` contains the simple clients for all supported protocols based on popular libraries. They are modular, so
-you can use them directly or as a base for your own implementation. Or don't use them at all if you don't need them.
+*Another reason is that I don't know JavaScript well. And I'm not sure that if we want to support all AsyncAPI features,
+the existing template would not be rewritten from the ground.*
 
-And finally, `go-asyncapi` is written in Go, so you don't need node.js or Docker or similar tools to run the generator.
-
-**How can I customize the generated code templates?**
+### How can I customize the generated code templates?
 
 `go-asyncapi` has many ways to customize the generated code, see the command line flags and `x-` fields description.
 
 However, unlike the more common approach for other codegen tools that use templates, the `go-asyncapi` uses the
 [jennifer](https://github.com/dave/jennifer) library. This approach is less customizable by user, but more
-flexible. It's easier to make support of AsyncAPI specification more complete this way and deal with complex documents 
-with plenty of interlinked objects.
+flexible. It's easier to make support of AsyncAPI specification more complete this way and to deal with complex 
+documents with plenty of interlinked objects.
 
-But still, user templates feature in some reduced form is planned.
+But still, user template support in some reduced form is a planned feature.
 
 ## Alternatives
 
