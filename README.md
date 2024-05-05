@@ -1,7 +1,7 @@
 # go-asyncapi
 
 ![GitHub go.mod Go version (subdirectory of monorepo)](https://img.shields.io/github/go-mod/go-version/bdragon300/go-asynapi)
-![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/bdragon300/go-asyncapi/run-tests.yml?branch=master)
+![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/bdragon300/go-asyncapi/go-test.yml?branch=master)
 
 [Documentation](https://bdragon300.github.io/go-asyncapi/)
 
@@ -54,7 +54,7 @@ projects that uses it or to change the tool command line. E.g. **1.4.0 &rarr; 2.
 **Long story short**: this one provides more features and protocols, and it has written in Go.
 
 The official generator is quite specific for many cases.
-At the moment, it produces the Go code bound with Watermill framework, but not everyone uses the Watermill in
+At the moment, it produces the Go code bound with the Watermill framework, but not everyone uses the Watermill in
 their projects.
 Also, it supports only the AMQP protocol.
 
