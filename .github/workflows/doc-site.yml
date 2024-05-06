@@ -22,7 +22,7 @@ jobs:
         with:
           hugo-version: 'latest'
       - name: Build
-        run: hugo --minify
+        run: hugo
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
         if: github.ref == 'refs/heads/master'
