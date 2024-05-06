@@ -25,7 +25,7 @@ Use the `implementation` subcommand:
 `go-asyncapi generate implementation kafka sarama`.
 
 Full list of supported implementations can be found in the 
-[Implementations]({{< relref "/docs/features#protocols" >}}) page or by running the 
+[Implementations]({{< relref "/features#protocols" >}}) page or by running the 
 `go-asyncapi list-implementations` command.
 
 ### Exclusion

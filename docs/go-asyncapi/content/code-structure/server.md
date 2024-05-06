@@ -17,7 +17,7 @@ The generated server code contains some common methods and fields, and also meth
 this server. By default, the server code is generated in the `servers` package.
 
 To learn how a server is reflected in implementation code, see the 
-[Implementations]({{< relref "/docs/code-structure/implementation#server--producerconsumer" >}}) page.
+[Implementations]({{< relref "/code-structure/implementation#server--producerconsumer" >}}) page.
 
 {{< details "Minimal example" >}}
 {{< tabs "1" >}}
@@ -104,7 +104,7 @@ components:
 {{< /details >}}
 
 In a similar way, only the channels from the `channels` section are considered for the server code generation. See the
-[Channels]({{< relref "/docs/code-structure/channel" >}}) for more details.
+[Channels]({{< relref "/code-structure/channel" >}}) for more details.
 
 ## Server variables
 

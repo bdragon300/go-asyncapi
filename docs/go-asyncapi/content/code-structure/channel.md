@@ -9,7 +9,7 @@ description: "Channel is an AsyncAPI entity that represents a communication chan
 ## Overview
 
 Channel is an AsyncAPI entity that represents a communication channel using one or more 
-[Servers]({{< relref "/docs/code-structure/server" >}}). Channel is protocol-agnostic, the concrete protocol is 
+[Servers]({{< relref "/code-structure/server" >}}). Channel is protocol-agnostic, the concrete protocol is 
 set by the Server object that this channel is bound to. However, the channel may contain protocol-specific properties,
 see [Channel bindings](#channel-bindings-operation-bindings).
 
@@ -18,7 +18,7 @@ like a stub. This depends on `publish` and `subscribe` sections in document defi
 
 The generated channel code contains some common methods and fields. Depending on the channel direction, the channel 
 code contains proper publisher/subscriber fields and methods to send/receive 
-[Message envelopes]({{< relref "/docs/code-structure/message" >}}).
+[Message envelopes]({{< relref "/code-structure/message" >}}).
 
 The channel code also contains an interface for servers bound to this channel. 
 All servers that are bound to this channel in the AsyncAPI document are complied to this interface 
@@ -228,7 +228,7 @@ components:
 {{< /details >}}
 
 In a similar way, only the servers from the `servers` section are considered. See the
-[Servers]({{< relref "/docs/code-structure/server" >}}) for more details.
+[Servers]({{< relref "/code-structure/server" >}}) for more details.
 
 ## Operation
 

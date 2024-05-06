@@ -126,7 +126,7 @@ func (m *MyMessageIn) MessageHeaders() map[string]any {
 Envelope is the protocol-specific "wrapper" for the incoming or outgoing message along with its metadata. 
 In other words, the envelope is a message suitable for sending/receiving the data by a particular library.
 
-See the [Implementation]({{< relref "/docs/code-structure/implementation#messageprotocol--envelope" >}}) page for more details.
+See the [Implementation]({{< relref "/code-structure/implementation#messageprotocol--envelope" >}}) page for more details.
 
 {{< details "Usage example" >}}
 {{< tabs "2" >}}

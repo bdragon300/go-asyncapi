@@ -17,4 +17,4 @@ with the same names from the specified modules instead of generating. For exampl
 
 Another way is more precise, but applicable only for models for now. The `x-go-type` extra field in a model definition 
 prevents the generator from generating the type for this model and uses the specified type instead. See 
-[model article]({{< relref "/docs/code-structure/model#x-go-type" >}}).
+[model article]({{< relref "/code-structure/model#x-go-type" >}}).

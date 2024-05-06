@@ -2,6 +2,7 @@ baseURL = 'https://bdragon300.github.io/go-asyncapi/'
 languageCode = 'en-us'
 title = 'go-asyncapi'
 enableGitInfo = true
+sectionPagesMenu = "main"
 
 [module]
 [[module.imports]]
@@ -22,4 +23,5 @@ pre = '<div style="margin-top: 2rem"></div>&#x1F517;'
 BookTheme = "auto"
 BookSearch = true
 BookComments = false
+BookSection = "/"
 BookToc = false

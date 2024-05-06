@@ -15,7 +15,7 @@ The tool also considers all content types of the messages where a particular mod
 is met in messages of JSON and YAML content types, the field tags will be: `json:"fieldName" yaml:"fieldName"`.
 
 The JSONSchema features and content types supported by the tool are described on the 
-[Features]({{< relref "/docs/features" >}}) page.
+[Features]({{< relref "/features" >}}) page.
 
 The generated code is placed in the `models` package by default.
 

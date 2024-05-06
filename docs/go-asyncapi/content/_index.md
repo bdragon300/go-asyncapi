@@ -1,7 +1,7 @@
 +++
 title = "Main page"
-url = "/"
-weight = 100
+weight = 1
+draft = false
 description = 'Generate Go code based on your AsyncAPI documents! This tool supports most of AsyncAPI features, ready-to-go protocol clients, reference resolver and more!'
 +++
 
@@ -28,7 +28,7 @@ Finally, `go-asyncapi` provides a pluggable **implementation** for every support
 based on one of popular libraries for that protocol. This is convenient for simple needs or may be used as quickstart
 for your own implementation.
 
-Full list of features available on [Features]({{< relref "/docs/features" >}}) page.
+Full list of features available on [Features]({{< relref "/features" >}}) page.
 
 *Batteries included, but removable* :)
 
@@ -66,7 +66,7 @@ Instead, `go-asyncapi`:
 
 * produces framework-agnostic code with the standard Go library as single dependency. 
 * supports more
-[protocols]({{< relref "/docs/features#protocols" >}}) and more specific AsyncAPI entities, such as
+[protocols]({{< relref "/features" >}}) and more specific AsyncAPI entities, such as
 bindings, correlation ids, server variables, etc.
 * contains the pluggable minimal clients for all supported protocols based on popular libraries.
 * written in Go, so no need to have node.js or Docker or similar tools to run the generator.

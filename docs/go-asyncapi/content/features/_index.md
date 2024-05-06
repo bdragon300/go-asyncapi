@@ -11,18 +11,18 @@ description = 'Most of AsyncAPI features support, ready-to-go protocol implement
 - Support the majority of [AsyncAPI features](#asyncapi-entities)
 - Support many [protocols](#protocols)
 - No extra dependencies in the generated code
-- Optional simple client [implementations]({{< relref "/docs/protocols-and-implementations" >}}) based on most 
+- Optional simple client [implementations]({{< relref "/protocols-and-implementations" >}}) based on most 
   popular libraries
-- [Reuse the code]({{< relref "/docs/features/code-reuse" >}}) generated before
-- [Breaking down the generated code]({{< relref "/docs/features/code-breakdown" >}}) in several ways
-- [Objects selection]({{< relref "/docs/features/code-selection" >}}) to generate
+- [Reuse the code]({{< relref "/features/code-reuse" >}}) generated before
+- [Breaking down the generated code]({{< relref "/features/code-breakdown" >}}) in several ways
+- [Objects selection]({{< relref "/features/code-selection" >}}) to generate
 - "Consumer only", "producer only" code generation
 - [Content types](#content-types) support
-- [References ($ref) resolving]({{< relref "/docs/features/references" >}})
+- [References ($ref) resolving]({{< relref "/features/references" >}})
     - Document-local refs
     - Refs to files on local filesystem
     - Refs to the remote documents available via HTTP(S)
-    - [Custom resolver]({{< relref "/docs/features/references#custom-spec-resolver" >}}) (just an executable you provide), if refs are needed to be resolved in a custom way
+    - [Custom resolver]({{< relref "/features/references#custom-spec-resolver" >}}) (just an executable you provide), if refs are needed to be resolved in a custom way
 - Optional encoders/decoders for content types, specified in the AsyncAPI document
 - Support many features of jsonschema, including polymorphism (oneOf, anyOf, allOf)
 - Support the zero-allocation approach if you need to reduce the load on the Go's garbage collector
@@ -32,15 +32,15 @@ description = 'Most of AsyncAPI features support, ready-to-go protocol implement
 
 Here are the protocols that are supported by `go-asyncapi` for now:
 
-- {{< figure src="images/amqp.svg" alt="AMQP" link="/docs/protocols-and-implementations/amqp" class="brand-icon" >}} [AMQP]({{< relref "/docs/protocols-and-implementations/amqp" >}})
-- {{< figure src="images/kafka.svg" alt="Apache Kafka" link="/docs/protocols-and-implementations/apache-kafka" class="brand-icon" >}} [Apache Kafka]({{< relref "/docs/protocols-and-implementations/apache-kafka" >}})
-- {{< figure src="images/http-small.png" alt="HTTP" link="/docs/protocols-and-implementations/http" class="brand-icon" >}} [HTTP]({{< relref "/docs/protocols-and-implementations/http" >}})
-- {{< figure src="images/mqtt.svg" alt="MQTT" link="/docs/protocols-and-implementations/mqtt" class="brand-icon" >}} [MQTT]({{< relref "/docs/protocols-and-implementations/mqtt" >}})
-- {{< figure src="images/ip.png" alt="IP" link="/docs/protocols-and-implementations/ip" class="brand-icon" >}} [IP RAW sockets]({{< relref "/docs/protocols-and-implementations/ip" >}})**&ast;**
-- {{< figure src="images/redis.svg" alt="Redis" link="/docs/protocols-and-implementations/redis" class="brand-icon" >}} [Redis]({{< relref "/docs/protocols-and-implementations/redis" >}})
-- {{< figure src="images/tcpudp.svg" alt="TCP" link="/docs/protocols-and-implementations/tcp" class="brand-icon" >}} [TCP]({{< relref "/docs/protocols-and-implementations/tcp" >}})**&ast;**
-- {{< figure src="images/tcpudp.svg" alt="UDP" link="/docs/protocols-and-implementations/udp" class="brand-icon" >}} [UDP]({{< relref "/docs/protocols-and-implementations/udp" >}})**&ast;**
-- {{< figure src="images/websocket.svg" alt="WebSocket" link="/docs/protocols-and-implementations/websocket" class="brand-icon" >}} [WebSocket]({{< relref "/docs/protocols-and-implementations/websocket" >}})
+- {{< figure src="images/amqp.svg" alt="AMQP" link="/protocols-and-implementations/amqp" class="brand-icon" >}} [AMQP]({{< relref "/protocols-and-implementations/amqp" >}})
+- {{< figure src="images/kafka.svg" alt="Apache Kafka" link="/protocols-and-implementations/apache-kafka" class="brand-icon" >}} [Apache Kafka]({{< relref "/protocols-and-implementations/apache-kafka" >}})
+- {{< figure src="images/http-small.png" alt="HTTP" link="/protocols-and-implementations/http" class="brand-icon" >}} [HTTP]({{< relref "/protocols-and-implementations/http" >}})
+- {{< figure src="images/mqtt.svg" alt="MQTT" link="/protocols-and-implementations/mqtt" class="brand-icon" >}} [MQTT]({{< relref "/protocols-and-implementations/mqtt" >}})
+- {{< figure src="images/ip.png" alt="IP" link="/protocols-and-implementations/ip" class="brand-icon" >}} [IP RAW sockets]({{< relref "/protocols-and-implementations/ip" >}})**&ast;**
+- {{< figure src="images/redis.svg" alt="Redis" link="/protocols-and-implementations/redis" class="brand-icon" >}} [Redis]({{< relref "/protocols-and-implementations/redis" >}})
+- {{< figure src="images/tcpudp.svg" alt="TCP" link="/protocols-and-implementations/tcp" class="brand-icon" >}} [TCP]({{< relref "/protocols-and-implementations/tcp" >}})**&ast;**
+- {{< figure src="images/tcpudp.svg" alt="UDP" link="/protocols-and-implementations/udp" class="brand-icon" >}} [UDP]({{< relref "/protocols-and-implementations/udp" >}})**&ast;**
+- {{< figure src="images/websocket.svg" alt="WebSocket" link="/protocols-and-implementations/websocket" class="brand-icon" >}} [WebSocket]({{< relref "/protocols-and-implementations/websocket" >}})
 
 {{< hint warning >}}
 **&ast;** - not described in the AsyncAPI specification
