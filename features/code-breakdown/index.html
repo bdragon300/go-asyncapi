@@ -1,0 +1,80 @@
+<!doctype html><html lang=en-us dir=ltr><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="Generated code could be broken down by packages and files by type, by entity, all-in-one package"><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://bdragon300.github.io/go-asyncapi/features/code-breakdown/"><meta property="og:site_name" content="go-asyncapi"><meta property="og:title" content="Code breakdown"><meta property="og:description" content="Generated code could be broken down by packages and files by type, by entity, all-in-one package"><meta property="og:locale" content="en-us"><meta property="og:type" content="article"><meta property="article:section" content="features"><meta property="article:modified_time" content="2024-05-06T16:23:32+04:00"><title>Code breakdown | go-asyncapi</title>
+<link rel=manifest href=/go-asyncapi/manifest.json><link rel=icon href=/go-asyncapi/favicon.png><link rel=stylesheet href=/go-asyncapi/book.min.f8de3645fe00591b41524aee174e19edd98a22255a2930a0cdc82a94835ba387.css integrity="sha256-+N42Rf4AWRtBUkruF04Z7dmKIiVaKTCgzcgqlINbo4c=" crossorigin=anonymous><script defer src=/go-asyncapi/flexsearch.min.js></script><script defer src=/go-asyncapi/en.search.min.6e7acfd3ee03d96079f6e65f683ff547bfa5142a7ef7b1bb2649ae62bcb17952.js integrity="sha256-bnrP0+4D2WB59uZfaD/1R7+lFCp+97G7JkmuYryxeVI=" crossorigin=anonymous></script><link rel=stylesheet href=https://bdragon300.github.io/go-asyncapi/css/text.css></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/go-asyncapi/><span>go-asyncapi</span></a></h2><div class=book-search><input type=text id=book-search-input placeholder=Search aria-label=Search maxlength=64 data-hotkeys=s/><div class="book-search-spinner hidden"></div><ul id=book-search-results></ul></div><ul><li><input type=checkbox id=section-f415979306e5149d2e94c59ae8d1a94b class=toggle checked>
+<label for=section-f415979306e5149d2e94c59ae8d1a94b class="flex justify-between"><a href=/go-asyncapi/features/>Features</a></label><ul><li><a href=/go-asyncapi/features/references/>References</a></li><li><a href=/go-asyncapi/features/code-selection/>Code selection</a></li><li><a href=/go-asyncapi/features/code-breakdown/ class=active>Code breakdown</a></li><li><a href=/go-asyncapi/features/code-reuse/>Code reuse</a></li></ul></li><li><input type=checkbox id=section-10d42178eaab1a0b265b40249fb2fbaf class=toggle>
+<label for=section-10d42178eaab1a0b265b40249fb2fbaf class="flex justify-between"><a href=/go-asyncapi/code-structure/>Code structure</a></label><ul><li><a href=/go-asyncapi/code-structure/server/>Server</a></li><li><a href=/go-asyncapi/code-structure/channel/>Channel</a></li><li><a href=/go-asyncapi/code-structure/message/>Message</a></li><li><a href=/go-asyncapi/code-structure/model/>Model</a></li><li><a href=/go-asyncapi/code-structure/implementation/>Implementation</a></li></ul></li><li><input type=checkbox id=section-e30832cd14a13543c41df229110acd3b class=toggle>
+<label for=section-e30832cd14a13543c41df229110acd3b class="flex justify-between"><a href=/go-asyncapi/protocols-and-implementations/>Protocols and implementations</a></label><ul><li><a href=/go-asyncapi/protocols-and-implementations/amqp/>AMQP</a></li><li><a href=/go-asyncapi/protocols-and-implementations/apache-kafka/>Apache Kafka</a></li><li><a href=/go-asyncapi/protocols-and-implementations/http/>HTTP</a></li><li><a href=/go-asyncapi/protocols-and-implementations/ip/>IP RAW sockets</a></li><li><a href=/go-asyncapi/protocols-and-implementations/mqtt/>MQTT</a></li><li><a href=/go-asyncapi/protocols-and-implementations/redis/>Redis</a></li><li><a href=/go-asyncapi/protocols-and-implementations/tcp/>TCP</a></li><li><a href=/go-asyncapi/protocols-and-implementations/udp/>UDP</a></li><li><a href=/go-asyncapi/protocols-and-implementations/websocket/>Websocket</a></li></ul></li></ul><ul><li><a href=https://github.com/bdragon300/go-asyncapi target=_blank rel=noopener><div style=margin-top:2rem></div>&#x1F517;
+GitHub</a></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/go-asyncapi/svg/menu.svg class=book-icon alt=Menu>
+</label><strong>Code breakdown</strong>
+<label for=toc-control></label></div></header><article class="markdown book-article"><h1 id=breakdown-the-generated-code>Breakdown the generated code
+<a class=anchor href=#breakdown-the-generated-code>#</a></h1><p><code>go-asyncapi</code> puts all the generated code to the target directory, breaking it down by the packages and files.
+Also, additional packages will be created and placed alongside: <code>impl</code> for the protocol implementations and
+<code>encoding</code> for the encoders/decoders.</p><p>The way how the generated code will be broken down by packages and files is controlled by <code>--*-scope</code> cli args.</p><p>By default, the tool creates a package per entity type (<strong>models</strong>, <strong>servers</strong>, <strong>channels</strong>, etc.).
+Every single entity is put to a separate file.</p><details><summary>Example</summary><div class=markdown-inner><pre tabindex=0><code>target_dir
+├── channels
+│   ├── channel1.go
+│   ├── channel2.go
+│   └── ...
+├── servers
+│   ├── server1.go
+│   ├── server2.go
+│   └── ...
+├── models
+│   ├── model1.go
+│   ├── model2.go
+│   └── ...
+├── ...
+├── impl
+│   ├── kafka
+│       └── ...
+│   └── ...
+└── encoding
+    ├── decode.go
+    └── encode.go
+</code></pre></div></details><h2 id=package-breakdown>Package breakdown
+<a class=anchor href=#package-breakdown>#</a></h2><p>Besides the default package breakdown (by entity type), you can put the whole code into one package by setting
+the <code>--package-scope all</code> cli arg.</p><details><summary>Example</summary><div class=markdown-inner><pre tabindex=0><code>target_dir
+├── channel1.go
+├── channel2.go
+├── server1.go
+├── server2.go
+├── model1.go
+├── model2.go
+├── ...
+├── impl
+│   ├── kafka
+│       └── ...
+│   └── ...
+└── encoding
+    ├── decode.go
+    └── encode.go
+</code></pre></div></details><h2 id=file-breakdown>File breakdown
+<a class=anchor href=#file-breakdown>#</a></h2><p>Besides the default file breakdown (by entity name), you can break down entities by the entity type by setting
+the <code>--file-scope type</code> cli arg.</p><details><summary>Example</summary><div class=markdown-inner><pre tabindex=0><code>target_dir
+├── channels
+│   ├── channels.go
+├── servers
+│   ├── servers.go
+├── models
+│   ├── models.go
+├── ...
+├── impl
+│   ├── kafka
+│       └── ...
+│   └── ...
+└── encoding
+    ├── decode.go
+    └── encode.go
+</code></pre></div></details><p>Below is the combined example of the <code>--package-scope all</code> and <code>--file-scope type</code>:</p><details><summary>Example</summary><div class=markdown-inner><pre tabindex=0><code>target_dir
+├── channels.go
+├── servers.go
+├── models.go
+├── ...
+├── impl
+│   ├── kafka
+│       └── ...
+│   └── ...
+└── encoding
+    ├── decode.go
+    └── encode.go
+</code></pre></div></details></article><footer class=book-footer><div class="flex flex-wrap justify-between"></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><label for=menu-control class="hidden book-menu-overlay"></label></div></main></body></html>

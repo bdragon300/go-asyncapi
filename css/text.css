@@ -1,0 +1,29 @@
+/* line-height: 1.6 */
+
+.brand-icon {
+  display: inline-block;
+  margin: 0 !important;
+}
+
+.brand-icon img {
+  width: 1.3em;
+  height: 1.3em;
+}
+
+.text-initial {
+  float: left;
+  margin: 0 !important;
+  margin-right: 0.5em !important;
+  padding: 0.3em 0;
+  height: 3.2em;
+}
+
+.text-initial img {
+  height: 100%;
+  object-position: left;
+  object-fit: contain;
+}
+
+.text-initial + p {
+  margin-top: 0;
+}

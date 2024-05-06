@@ -1,0 +1,156 @@
+<!doctype html><html lang=en-us dir=ltr><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="Server is an AsyncAPI entity that contains information how to connect to the message broker and how to open channels"><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://bdragon300.github.io/go-asyncapi/code-structure/server/"><meta property="og:site_name" content="go-asyncapi"><meta property="og:title" content="Server"><meta property="og:description" content="Server is an AsyncAPI entity that contains information how to connect to the message broker and how to open channels"><meta property="og:locale" content="en-us"><meta property="og:type" content="article"><meta property="article:section" content="code-structure"><meta property="article:modified_time" content="2024-05-06T16:23:32+04:00"><title>Server | go-asyncapi</title>
+<link rel=manifest href=/go-asyncapi/manifest.json><link rel=icon href=/go-asyncapi/favicon.png><link rel=stylesheet href=/go-asyncapi/book.min.f8de3645fe00591b41524aee174e19edd98a22255a2930a0cdc82a94835ba387.css integrity="sha256-+N42Rf4AWRtBUkruF04Z7dmKIiVaKTCgzcgqlINbo4c=" crossorigin=anonymous><script defer src=/go-asyncapi/flexsearch.min.js></script><script defer src=/go-asyncapi/en.search.min.6e7acfd3ee03d96079f6e65f683ff547bfa5142a7ef7b1bb2649ae62bcb17952.js integrity="sha256-bnrP0+4D2WB59uZfaD/1R7+lFCp+97G7JkmuYryxeVI=" crossorigin=anonymous></script><link rel=stylesheet href=https://bdragon300.github.io/go-asyncapi/css/text.css></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/go-asyncapi/><span>go-asyncapi</span></a></h2><div class=book-search><input type=text id=book-search-input placeholder=Search aria-label=Search maxlength=64 data-hotkeys=s/><div class="book-search-spinner hidden"></div><ul id=book-search-results></ul></div><ul><li><input type=checkbox id=section-f415979306e5149d2e94c59ae8d1a94b class=toggle>
+<label for=section-f415979306e5149d2e94c59ae8d1a94b class="flex justify-between"><a href=/go-asyncapi/features/>Features</a></label><ul><li><a href=/go-asyncapi/features/references/>References</a></li><li><a href=/go-asyncapi/features/code-selection/>Code selection</a></li><li><a href=/go-asyncapi/features/code-breakdown/>Code breakdown</a></li><li><a href=/go-asyncapi/features/code-reuse/>Code reuse</a></li></ul></li><li><input type=checkbox id=section-10d42178eaab1a0b265b40249fb2fbaf class=toggle checked>
+<label for=section-10d42178eaab1a0b265b40249fb2fbaf class="flex justify-between"><a href=/go-asyncapi/code-structure/>Code structure</a></label><ul><li><a href=/go-asyncapi/code-structure/server/ class=active>Server</a></li><li><a href=/go-asyncapi/code-structure/channel/>Channel</a></li><li><a href=/go-asyncapi/code-structure/message/>Message</a></li><li><a href=/go-asyncapi/code-structure/model/>Model</a></li><li><a href=/go-asyncapi/code-structure/implementation/>Implementation</a></li></ul></li><li><input type=checkbox id=section-e30832cd14a13543c41df229110acd3b class=toggle>
+<label for=section-e30832cd14a13543c41df229110acd3b class="flex justify-between"><a href=/go-asyncapi/protocols-and-implementations/>Protocols and implementations</a></label><ul><li><a href=/go-asyncapi/protocols-and-implementations/amqp/>AMQP</a></li><li><a href=/go-asyncapi/protocols-and-implementations/apache-kafka/>Apache Kafka</a></li><li><a href=/go-asyncapi/protocols-and-implementations/http/>HTTP</a></li><li><a href=/go-asyncapi/protocols-and-implementations/ip/>IP RAW sockets</a></li><li><a href=/go-asyncapi/protocols-and-implementations/mqtt/>MQTT</a></li><li><a href=/go-asyncapi/protocols-and-implementations/redis/>Redis</a></li><li><a href=/go-asyncapi/protocols-and-implementations/tcp/>TCP</a></li><li><a href=/go-asyncapi/protocols-and-implementations/udp/>UDP</a></li><li><a href=/go-asyncapi/protocols-and-implementations/websocket/>Websocket</a></li></ul></li></ul><ul><li><a href=https://github.com/bdragon300/go-asyncapi target=_blank rel=noopener><div style=margin-top:2rem></div>&#x1F517;
+GitHub</a></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/go-asyncapi/svg/menu.svg class=book-icon alt=Menu>
+</label><strong>Server</strong>
+<label for=toc-control></label></div></header><article class="markdown book-article"><h1 id=server>Server
+<a class=anchor href=#server>#</a></h1><h2 id=overview>Overview
+<a class=anchor href=#overview>#</a></h2><p>Server is one of the main entities in the AsyncAPI document.
+It represents a server used by the channels to send and receive messages.
+The Server is always assigned to a particular protocol, such as Kafka, AMQP, MQTT, etc.
+Also, it always has a URL to connect to.</p><p>The generated server code contains some common methods and fields, and also method to open channels that are bound to
+this server. By default, the server code is generated in the <code>servers</code> package.</p><p>To learn how a server is reflected in implementation code, see the
+<a href=/go-asyncapi/code-structure/implementation/#server--producerconsumer>Implementations</a> page.</p><details><summary>Minimal example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-1 id=tabs-1-0 checked>
+<label for=tabs-1-0>Definition</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>channels</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>myChannel</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>description</span>: <span style=color:#ae81ff>My channel</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>servers</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>myServer</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>url</span>: <span style=color:#e6db74>&#39;kafka://localhost:9092&#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>protocol</span>: <span style=color:#ae81ff>kafka</span>
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-1 id=tabs-1-1>
+<label for=tabs-1-1>Produced code</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>servers</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>MyServerURL</span>() <span style=color:#a6e22e>run</span>.<span style=color:#a6e22e>ParamString</span> {
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>run</span>.<span style=color:#a6e22e>ParamString</span>{<span style=color:#a6e22e>Expr</span>: <span style=color:#e6db74>&#34;kafka://localhost:9092&#34;</span>}
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>NewMyServer</span>(<span style=color:#a6e22e>producer</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Producer</span>, <span style=color:#a6e22e>consumer</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Consumer</span>) <span style=color:#f92672>*</span><span style=color:#a6e22e>MyServer</span> {
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>MyServer</span>{
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>consumer</span>: <span style=color:#a6e22e>consumer</span>,
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>producer</span>: <span style=color:#a6e22e>producer</span>,
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>MyServer</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>producer</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Producer</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>consumer</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Consumer</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#a6e22e>MyServer</span>) <span style=color:#a6e22e>Name</span>() <span style=color:#66d9ef>string</span> {
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;myServer&#34;</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#a6e22e>MyServer</span>) <span style=color:#a6e22e>OpenMyChannelKafka</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>channels</span>.<span style=color:#a6e22e>MyChannelKafka</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>channels</span>.<span style=color:#a6e22e>OpenMyChannelKafka</span>(<span style=color:#a6e22e>ctx</span>, <span style=color:#a6e22e>m</span>)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#a6e22e>MyServer</span>) <span style=color:#a6e22e>Producer</span>() <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Producer</span> {
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>producer</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#a6e22e>MyServer</span>) <span style=color:#a6e22e>Consumer</span>() <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Consumer</span> {
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>consumer</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div></div></div></div></details><h2 id=document-scope>Document scope
+<a class=anchor href=#document-scope>#</a></h2><p>A server can be defined in two sections in the AsyncAPI document:</p><ul><li><code>servers</code></li><li><code>components.servers</code></li></ul><p>Servers in <code>servers</code> produce the code. Servers in <code>components.servers</code> are just reusable objects, that produce the
+code only being referred somewhere in the <code>servers</code> section. Therefore, if such server is not referred anywhere,
+it will not be generated at all.</p><p>So, in the example below, only the <code>foo</code> and <code>bar</code> are considered, <code>spam</code> will be ignored:</p><details><summary>Example</summary><div class=markdown-inner><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>servers</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>foo</span>:  <span style=color:#75715e># &lt;-- will be generated</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>url</span>: <span style=color:#e6db74>&#39;kafka://localhost:9092&#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>protocol</span>: <span style=color:#ae81ff>kafka</span>
+</span></span><span style=display:flex><span>  <span style=color:#f92672>bar</span>:  <span style=color:#75715e># &lt;-- will be generated</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>$ref</span>: <span style=color:#e6db74>&#39;#/components/servers/barServer&#39;</span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span><span style=color:#f92672>components</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>servers</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>barServer</span>:  <span style=color:#75715e># &lt;-- will be generated as `bar` (it&#39;s referred by the `bar` server)</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>url</span>: <span style=color:#e6db74>&#39;mqtt://localhost:1883&#39;</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>protocol</span>: <span style=color:#ae81ff>mqtt</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>spamServer</span>:  <span style=color:#75715e># &lt;-- will NOT be generated (does not appear in the `servers` section)</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>url</span>: <span style=color:#e6db74>&#39;amqp://localhost:5672&#39;</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>protocol</span>: <span style=color:#ae81ff>amqp</span>
+</span></span></code></pre></div></div></details><p>In a similar way, only the channels from the <code>channels</code> section are considered for the server code generation. See the
+<a href=/go-asyncapi/code-structure/channel/>Channels</a> for more details.</p><h2 id=server-variables>Server variables
+<a class=anchor href=#server-variables>#</a></h2><p>Server variables are used for the server URL templating. They are defined in the <code>variables</code> section of the server
+object and are substituted to the appropriate placeholders, enclosed in curly braces.</p><details><summary>Server variables example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-2 id=tabs-2-0 checked>
+<label for=tabs-2-0>Definition</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>servers</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>myServer</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>url</span>: <span style=color:#e6db74>&#39;kafka://{host}:{port}&#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>protocol</span>: <span style=color:#ae81ff>kafka</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>variables</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>host</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>default</span>: <span style=color:#e6db74>&#39;localhost&#39;</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>port</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>default</span>: <span style=color:#e6db74>&#39;9092&#39;</span>
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-2 id=tabs-2-1>
+<label for=tabs-2-1>Produced code</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>servers</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>MyServerURL</span>(<span style=color:#a6e22e>host</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>port</span> <span style=color:#66d9ef>string</span>) <span style=color:#a6e22e>run</span>.<span style=color:#a6e22e>ParamString</span> {
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>paramMap</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>string</span>{<span style=color:#e6db74>&#34;host&#34;</span>: <span style=color:#a6e22e>host</span>, <span style=color:#e6db74>&#34;port&#34;</span>: <span style=color:#a6e22e>port</span>}
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>run</span>.<span style=color:#a6e22e>ParamString</span>{<span style=color:#a6e22e>Expr</span>: <span style=color:#e6db74>&#34;kafka://{host}:{port}&#34;</span>, <span style=color:#a6e22e>ParamMap</span>: <span style=color:#a6e22e>paramMap</span>}
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// ...
+</span></span></span></code></pre></div></div><input type=radio class=toggle name=tabs-2 id=tabs-2-2>
+<label for=tabs-2-2>Usage</label><div class="book-tabs-content markdown-inner"><p><code>ParamString</code> complies the <code>fmt.Stringer</code> interface, so you can use it as a string:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Println</span>(<span style=color:#a6e22e>MyServerURL</span>(<span style=color:#e6db74>&#34;localhost&#34;</span>, <span style=color:#e6db74>&#34;9092&#34;</span>))
+</span></span><span style=display:flex><span><span style=color:#75715e>// Output: kafka://localhost:9092
+</span></span></span></code></pre></div></div></div></div></details><h2 id=server-bindings>Server bindings
+<a class=anchor href=#server-bindings>#</a></h2><p>Server bindings set the protocol-specific properties for the server. They are defined in the <code>bindings</code> section of the
+server object.</p><details><summary>Server bindings example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-3 id=tabs-3-0 checked>
+<label for=tabs-3-0>Definition</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>servers</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>myServer</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>url</span>: <span style=color:#e6db74>&#39;kafka://localhost:9092&#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>protocol</span>: <span style=color:#ae81ff>kafka</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>bindings</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>kafka</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>schemaRegistryUrl</span>: <span style=color:#e6db74>&#39;http://localhost:8081&#39;</span>
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-3 id=tabs-3-1>
+<label for=tabs-3-1>Produced code</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>servers</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>MyServerBindings</span> <span style=color:#66d9ef>struct</span>{}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#a6e22e>MyServerBindings</span>) <span style=color:#a6e22e>Kafka</span>() <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>ServerBindings</span> {
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>b</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>ServerBindings</span>{<span style=color:#a6e22e>SchemaRegistryURL</span>: <span style=color:#e6db74>&#34;http://localhost:8081&#34;</span>}
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>b</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span></code></pre></div></div><input type=radio class=toggle name=tabs-3 id=tabs-3-2>
+<label for=tabs-3-2>Usage</label><div class="book-tabs-content markdown-inner"><p>Typically, bindings are passed to implementation to set Consumer or Producer creation options:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>var</span> <span style=color:#a6e22e>consumer</span> = <span style=color:#a6e22e>implKafka</span>.<span style=color:#a6e22e>NewConsumer</span>(<span style=color:#a6e22e>MyServerURL</span>().<span style=color:#a6e22e>String</span>(), <span style=color:#a6e22e>MyServerBindings</span>().<span style=color:#a6e22e>Kafka</span>(), <span style=color:#66d9ef>nil</span>) 
+</span></span></code></pre></div></div></div></div></details><h2 id=x-go-name>x-go-name
+<a class=anchor href=#x-go-name>#</a></h2><p>This extra field is used to explicitly set the name of the server in generated code. By default, the Go name is
+generated from the AsyncAPI server name.</p><details><summary>Example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-4 id=tabs-4-0 checked>
+<label for=tabs-4-0>Definition</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>channels</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>myChannel</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>description</span>: <span style=color:#ae81ff>My channel</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>servers</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>myServer</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>url</span>: <span style=color:#e6db74>&#39;kafka://localhost:9092&#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>protocol</span>: <span style=color:#ae81ff>kafka</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>x-go-name</span>: <span style=color:#ae81ff>FooBar</span>
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-4 id=tabs-4-1>
+<label for=tabs-4-1>Produced code</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>FooBar</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>producer</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Producer</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>consumer</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Consumer</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span></code></pre></div></div></div></div></details><h2 id=x-ignore>x-ignore
+<a class=anchor href=#x-ignore>#</a></h2><p>If this extra field is set to <strong>true</strong>, the server will not be generated.
+All references to this server in the generated code (if any) are replaced by Go <code>any</code> type.</p><details><summary>Example</summary><div class=markdown-inner><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>channels</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>myChannel</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>description</span>: <span style=color:#ae81ff>My channel</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>servers</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>myServer</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>url</span>: <span style=color:#e6db74>&#39;kafka://localhost:9092&#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>protocol</span>: <span style=color:#ae81ff>kafka</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>x-ignore</span>: <span style=color:#66d9ef>true</span>
+</span></span></code></pre></div></div></details></article><footer class=book-footer><div class="flex flex-wrap justify-between"></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><label for=menu-control class="hidden book-menu-overlay"></label></div></main></body></html>

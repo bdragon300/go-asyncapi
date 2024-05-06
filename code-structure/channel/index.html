@@ -1,0 +1,385 @@
+<!doctype html><html lang=en-us dir=ltr><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="Channel is an AsyncAPI entity that represents a communication channel using one or more Servers."><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://bdragon300.github.io/go-asyncapi/code-structure/channel/"><meta property="og:site_name" content="go-asyncapi"><meta property="og:title" content="Channel"><meta property="og:description" content="Channel is an AsyncAPI entity that represents a communication channel using one or more Servers."><meta property="og:locale" content="en-us"><meta property="og:type" content="article"><meta property="article:section" content="code-structure"><meta property="article:modified_time" content="2024-05-06T16:23:32+04:00"><title>Channel | go-asyncapi</title>
+<link rel=manifest href=/go-asyncapi/manifest.json><link rel=icon href=/go-asyncapi/favicon.png><link rel=stylesheet href=/go-asyncapi/book.min.f8de3645fe00591b41524aee174e19edd98a22255a2930a0cdc82a94835ba387.css integrity="sha256-+N42Rf4AWRtBUkruF04Z7dmKIiVaKTCgzcgqlINbo4c=" crossorigin=anonymous><script defer src=/go-asyncapi/flexsearch.min.js></script><script defer src=/go-asyncapi/en.search.min.6e7acfd3ee03d96079f6e65f683ff547bfa5142a7ef7b1bb2649ae62bcb17952.js integrity="sha256-bnrP0+4D2WB59uZfaD/1R7+lFCp+97G7JkmuYryxeVI=" crossorigin=anonymous></script><link rel=stylesheet href=https://bdragon300.github.io/go-asyncapi/css/text.css></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/go-asyncapi/><span>go-asyncapi</span></a></h2><div class=book-search><input type=text id=book-search-input placeholder=Search aria-label=Search maxlength=64 data-hotkeys=s/><div class="book-search-spinner hidden"></div><ul id=book-search-results></ul></div><ul><li><input type=checkbox id=section-f415979306e5149d2e94c59ae8d1a94b class=toggle>
+<label for=section-f415979306e5149d2e94c59ae8d1a94b class="flex justify-between"><a href=/go-asyncapi/features/>Features</a></label><ul><li><a href=/go-asyncapi/features/references/>References</a></li><li><a href=/go-asyncapi/features/code-selection/>Code selection</a></li><li><a href=/go-asyncapi/features/code-breakdown/>Code breakdown</a></li><li><a href=/go-asyncapi/features/code-reuse/>Code reuse</a></li></ul></li><li><input type=checkbox id=section-10d42178eaab1a0b265b40249fb2fbaf class=toggle checked>
+<label for=section-10d42178eaab1a0b265b40249fb2fbaf class="flex justify-between"><a href=/go-asyncapi/code-structure/>Code structure</a></label><ul><li><a href=/go-asyncapi/code-structure/server/>Server</a></li><li><a href=/go-asyncapi/code-structure/channel/ class=active>Channel</a></li><li><a href=/go-asyncapi/code-structure/message/>Message</a></li><li><a href=/go-asyncapi/code-structure/model/>Model</a></li><li><a href=/go-asyncapi/code-structure/implementation/>Implementation</a></li></ul></li><li><input type=checkbox id=section-e30832cd14a13543c41df229110acd3b class=toggle>
+<label for=section-e30832cd14a13543c41df229110acd3b class="flex justify-between"><a href=/go-asyncapi/protocols-and-implementations/>Protocols and implementations</a></label><ul><li><a href=/go-asyncapi/protocols-and-implementations/amqp/>AMQP</a></li><li><a href=/go-asyncapi/protocols-and-implementations/apache-kafka/>Apache Kafka</a></li><li><a href=/go-asyncapi/protocols-and-implementations/http/>HTTP</a></li><li><a href=/go-asyncapi/protocols-and-implementations/ip/>IP RAW sockets</a></li><li><a href=/go-asyncapi/protocols-and-implementations/mqtt/>MQTT</a></li><li><a href=/go-asyncapi/protocols-and-implementations/redis/>Redis</a></li><li><a href=/go-asyncapi/protocols-and-implementations/tcp/>TCP</a></li><li><a href=/go-asyncapi/protocols-and-implementations/udp/>UDP</a></li><li><a href=/go-asyncapi/protocols-and-implementations/websocket/>Websocket</a></li></ul></li></ul><ul><li><a href=https://github.com/bdragon300/go-asyncapi target=_blank rel=noopener><div style=margin-top:2rem></div>&#x1F517;
+GitHub</a></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/go-asyncapi/svg/menu.svg class=book-icon alt=Menu>
+</label><strong>Channel</strong>
+<label for=toc-control></label></div></header><article class="markdown book-article"><h1 id=channel>Channel
+<a class=anchor href=#channel>#</a></h1><h2 id=overview>Overview
+<a class=anchor href=#overview>#</a></h2><p>Channel is an AsyncAPI entity that represents a communication channel using one or more
+<a href=/go-asyncapi/code-structure/server/>Servers</a>. Channel is protocol-agnostic, the concrete protocol is
+set by the Server object that this channel is bound to. However, the channel may contain protocol-specific properties,
+see <a href=#channel-bindings-operation-bindings>Channel bindings</a>.</p><p>Typically, a channel may be one-directional or bidirectional. It also may have no direction, which means it acts mostly
+like a stub. This depends on <code>publish</code> and <code>subscribe</code> sections in document definition.</p><p>The generated channel code contains some common methods and fields. Depending on the channel direction, the channel
+code contains proper publisher/subscriber fields and methods to send/receive
+<a href=/go-asyncapi/code-structure/message/>Message envelopes</a>.</p><p>The channel code also contains an interface for servers bound to this channel.
+All servers that are bound to this channel in the AsyncAPI document are complied to this interface
+(we automatically append the needed methods to the server code during generation).</p><p>And finally, the channel code contains a convenience method to open the channel to given servers.</p><p>By default, the channel code is generated in the <code>channels</code> package.</p><details><summary>Minimal example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-1 id=tabs-1-0 checked>
+<label for=tabs-1-0>Definition</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>channels</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>myChannel</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>description</span>: <span style=color:#ae81ff>My channel</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>publish</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>message</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>object</span>
+</span></span><span style=display:flex><span>          <span style=color:#f92672>properties</span>:
+</span></span><span style=display:flex><span>            <span style=color:#f92672>value</span>:
+</span></span><span style=display:flex><span>              <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>servers</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>myServer</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>url</span>: <span style=color:#e6db74>&#39;kafka://localhost:9092&#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>protocol</span>: <span style=color:#ae81ff>kafka</span>
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-1 id=tabs-1-1>
+<label for=tabs-1-1>Produced channel code</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>channels</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> (
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;context&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;errors&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>run</span> <span style=color:#e6db74>&#34;github.com/bdragon300/go-asyncapi/run&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>kafka</span> <span style=color:#e6db74>&#34;github.com/bdragon300/go-asyncapi/run/kafka&#34;</span>
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>MyChannelName</span>() <span style=color:#a6e22e>run</span>.<span style=color:#a6e22e>ParamString</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>run</span>.<span style=color:#a6e22e>ParamString</span>{<span style=color:#a6e22e>Expr</span>: <span style=color:#e6db74>&#34;myChannel&#34;</span>}
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>myChannelKafkaServer</span> <span style=color:#66d9ef>interface</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>OpenMyChannelKafka</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>MyChannelKafka</span>, <span style=color:#66d9ef>error</span>)
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Producer</span>() <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Producer</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>OpenMyChannelKafka</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>, <span style=color:#a6e22e>servers</span> <span style=color:#f92672>...</span><span style=color:#a6e22e>myChannelKafkaServer</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>MyChannelKafka</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> len(<span style=color:#a6e22e>servers</span>) <span style=color:#f92672>==</span> <span style=color:#ae81ff>0</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>run</span>.<span style=color:#a6e22e>ErrEmptyServers</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>name</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>MyChannelName</span>()
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>var</span> <span style=color:#a6e22e>prod</span> []<span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Producer</span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>for</span> <span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>srv</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>range</span> <span style=color:#a6e22e>servers</span> {
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>prod</span> = append(<span style=color:#a6e22e>prod</span>, <span style=color:#a6e22e>srv</span>.<span style=color:#a6e22e>Producer</span>())
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>pubs</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>run</span>.<span style=color:#a6e22e>GatherPublishers</span>[<span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>EnvelopeWriter</span>, <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Publisher</span>, <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>ChannelBindings</span>](<span style=color:#a6e22e>ctx</span>, <span style=color:#a6e22e>name</span>, <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>prod</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>pub</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>run</span>.<span style=color:#a6e22e>PublisherFanOut</span>[<span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>EnvelopeWriter</span>, <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Publisher</span>]{<span style=color:#a6e22e>Publishers</span>: <span style=color:#a6e22e>pubs</span>}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>ch</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>NewMyChannelKafka</span>(<span style=color:#a6e22e>pub</span>)
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>ch</span>, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>NewMyChannelKafka</span>(<span style=color:#a6e22e>publisher</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Publisher</span>) <span style=color:#f92672>*</span><span style=color:#a6e22e>MyChannelKafka</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>res</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>MyChannelKafka</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>name</span>:      <span style=color:#a6e22e>MyChannelName</span>(),
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>publisher</span>: <span style=color:#a6e22e>publisher</span>,
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>res</span>.<span style=color:#a6e22e>topic</span> = <span style=color:#a6e22e>res</span>.<span style=color:#a6e22e>name</span>.<span style=color:#a6e22e>String</span>()
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>res</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// MyChannelKafka -- my channel
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>MyChannelKafka</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>name</span>      <span style=color:#a6e22e>run</span>.<span style=color:#a6e22e>ParamString</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>publisher</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Publisher</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>topic</span>     <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#a6e22e>MyChannelKafka</span>) <span style=color:#a6e22e>Name</span>() <span style=color:#a6e22e>run</span>.<span style=color:#a6e22e>ParamString</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>name</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#a6e22e>MyChannelKafka</span>) <span style=color:#a6e22e>Close</span>() (<span style=color:#a6e22e>err</span> <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>publisher</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>err</span> = <span style=color:#a6e22e>errors</span>.<span style=color:#a6e22e>Join</span>(<span style=color:#a6e22e>err</span>, <span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>publisher</span>.<span style=color:#a6e22e>Close</span>())
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#a6e22e>MyChannelKafka</span>) <span style=color:#a6e22e>Topic</span>() <span style=color:#66d9ef>string</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>topic</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#a6e22e>MyChannelKafka</span>) <span style=color:#a6e22e>Publisher</span>() <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Publisher</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>publisher</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#a6e22e>MyChannelKafka</span>) <span style=color:#a6e22e>Publish</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>, <span style=color:#a6e22e>envelopes</span> <span style=color:#f92672>...</span><span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>EnvelopeWriter</span>) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>publisher</span>.<span style=color:#a6e22e>Send</span>(<span style=color:#a6e22e>ctx</span>, <span style=color:#a6e22e>envelopes</span><span style=color:#f92672>...</span>)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#a6e22e>MyChannelKafka</span>) <span style=color:#a6e22e>SealEnvelope</span>(<span style=color:#a6e22e>envelope</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>EnvelopeWriter</span>, <span style=color:#a6e22e>message</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>MyChannelMessageOut</span>) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>envelope</span>.<span style=color:#a6e22e>ResetPayload</span>()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>message</span>.<span style=color:#a6e22e>MarshalKafkaEnvelope</span>(<span style=color:#a6e22e>envelope</span>); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>envelope</span>.<span style=color:#a6e22e>SetTopic</span>(<span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>topic</span>)
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-1 id=tabs-1-2>
+<label for=tabs-1-2>Produced server code</label><div class="book-tabs-content markdown-inner"><p>Pay attention to <code>OpenMyChannelKafka</code> method, generated to comply the <code>myChannelKafkaServer</code> interface in channel code.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>servers</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> (
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;context&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>channels</span> <span style=color:#e6db74>&#34;myproject/channels&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>run</span> <span style=color:#e6db74>&#34;github.com/bdragon300/go-asyncapi/run&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>kafka</span> <span style=color:#e6db74>&#34;github.com/bdragon300/go-asyncapi/run/kafka&#34;</span>
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>MyServerURL</span>() <span style=color:#a6e22e>run</span>.<span style=color:#a6e22e>ParamString</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>run</span>.<span style=color:#a6e22e>ParamString</span>{<span style=color:#a6e22e>Expr</span>: <span style=color:#e6db74>&#34;kafka://localhost:9092&#34;</span>}
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>MyServerBindings</span> <span style=color:#66d9ef>struct</span>{}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#a6e22e>MyServerBindings</span>) <span style=color:#a6e22e>Kafka</span>() <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>ServerBindings</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>b</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>ServerBindings</span>{<span style=color:#a6e22e>SchemaRegistryURL</span>: <span style=color:#e6db74>&#34;http://localhost:8081&#34;</span>}
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>b</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>NewMyServer</span>(<span style=color:#a6e22e>producer</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Producer</span>, <span style=color:#a6e22e>consumer</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Consumer</span>) <span style=color:#f92672>*</span><span style=color:#a6e22e>MyServer</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>MyServer</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>consumer</span>: <span style=color:#a6e22e>consumer</span>,
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>producer</span>: <span style=color:#a6e22e>producer</span>,
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>MyServer</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>producer</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Producer</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>consumer</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Consumer</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#a6e22e>MyServer</span>) <span style=color:#a6e22e>Name</span>() <span style=color:#66d9ef>string</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;myServer&#34;</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#a6e22e>MyServer</span>) <span style=color:#a6e22e>OpenMyChannelKafka</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>channels</span>.<span style=color:#a6e22e>MyChannelKafka</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>channels</span>.<span style=color:#a6e22e>OpenMyChannelKafka</span>(<span style=color:#a6e22e>ctx</span>, <span style=color:#a6e22e>m</span>)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#a6e22e>MyServer</span>) <span style=color:#a6e22e>Producer</span>() <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Producer</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>producer</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#a6e22e>MyServer</span>) <span style=color:#a6e22e>Consumer</span>() <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Consumer</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>consumer</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div></div></div></div></details><h2 id=document-scope>Document scope
+<a class=anchor href=#document-scope>#</a></h2><p>A channel can be defined in two places in the AsyncAPI document:</p><ul><li><code>channels</code> section</li><li><code>components.channels</code> section</li></ul><p>Channels in <code>channels</code> produce the code. Channels in <code>components.channels</code> are just reusable objects, that produce the
+code only being referred somewhere in the <code>channels</code> section. Therefore, if such a channel is not referred anywhere,
+it will not be generated at all.</p><p>So, in the example below, only the <code>spam</code> and <code>eggs</code> are considered, <code>fooChannel</code> will be ignored:</p><details><summary>Example</summary><div class=markdown-inner><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>channels</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>spam</span>:  <span style=color:#75715e># &lt;-- will be generated</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>publish</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>message</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span><span style=display:flex><span>  <span style=color:#f92672>eggs</span>:  <span style=color:#75715e># &lt;-- will be generated</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>$ref</span>: <span style=color:#e6db74>&#39;#/components/channels/eggsChannel&#39;</span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span><span style=color:#f92672>components</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>channels</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>eggsChannel</span>:  <span style=color:#75715e># &lt;-- will be generated as `eggs` (it&#39;s referred by the `eggs` channel)</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>subscribe</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>message</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>            <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>fooChannel</span>:  <span style=color:#75715e># &lt;-- will NOT be generated (does not appear in the `channels` section)</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>publish</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>message</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>            <span style=color:#f92672>type</span>: <span style=color:#ae81ff>integer</span>
+</span></span></code></pre></div></div></details><p>In a similar way, only the servers from the <code>servers</code> section are considered. See the
+<a href=/go-asyncapi/code-structure/server/>Servers</a> for more details.</p><h2 id=operation>Operation
+<a class=anchor href=#operation>#</a></h2><h3 id=x-ignore>x-ignore
+<a class=anchor href=#x-ignore>#</a></h3><p>If this extra field is set to <strong>true</strong>, the operation will not be generated.
+All references to objects in this operation in the generated code (if any) are replaced by Go <code>any</code> type.</p><details><summary>Example</summary><div class=markdown-inner><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>servers</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>myServer</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>url</span>: <span style=color:#e6db74>&#39;kafka://localhost:9092&#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>protocol</span>: <span style=color:#ae81ff>kafka</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>channels</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>myChannel</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>publish</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>x-ignore</span>: <span style=color:#66d9ef>true</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>message</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span></code></pre></div></div></details><h2 id=channel-parameters>Channel parameters
+<a class=anchor href=#channel-parameters>#</a></h2><p>Channel parameters are variables that are substituted in the channel name during channel opening.
+This is useful when the channel name is not known at the time of the code generation.
+For example, when channel name sets the topic or queue to use, and you want to determine it at runtime.</p><p>The channel parameters are defined in the <code>parameters</code> section and are substituted to the appropriate placeholders,
+enclosed in curly braces.</p><details><summary>Channel parameters example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-2 id=tabs-2-0 checked>
+<label for=tabs-2-0>Definition</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>channels</span>:
+</span></span><span style=display:flex><span>  <span style=color:#ae81ff>mychannel_{variant}:</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>description</span>: <span style=color:#ae81ff>My channel</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>parameters</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>variant</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>schema</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>publish</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>message</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>object</span>
+</span></span><span style=display:flex><span>          <span style=color:#f92672>properties</span>:
+</span></span><span style=display:flex><span>            <span style=color:#f92672>value</span>:
+</span></span><span style=display:flex><span>              <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-2 id=tabs-2-1>
+<label for=tabs-2-1>Produced code</label><div class="book-tabs-content markdown-inner"><p><strong>variant.go</strong>:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>channels</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> <span style=color:#e6db74>&#34;fmt&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>Variant</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Value</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>v</span> <span style=color:#a6e22e>Variant</span>) <span style=color:#a6e22e>Name</span>() <span style=color:#66d9ef>string</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;variant&#34;</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>v</span> <span style=color:#a6e22e>Variant</span>) <span style=color:#a6e22e>String</span>() <span style=color:#66d9ef>string</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Sprint</span>(<span style=color:#a6e22e>v</span>.<span style=color:#a6e22e>Value</span>)
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p><strong>mychannel_variant.go</strong>:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>channels</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>MychannelVariantParameters</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Variant</span> <span style=color:#a6e22e>Variant</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>MychannelVariantName</span>(<span style=color:#a6e22e>params</span> <span style=color:#a6e22e>MychannelVariantParameters</span>) <span style=color:#a6e22e>run</span>.<span style=color:#a6e22e>ParamString</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>paramMap</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>string</span>{<span style=color:#a6e22e>params</span>.<span style=color:#a6e22e>Variant</span>.<span style=color:#a6e22e>Name</span>(): <span style=color:#a6e22e>params</span>.<span style=color:#a6e22e>Variant</span>.<span style=color:#a6e22e>String</span>()}
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>run</span>.<span style=color:#a6e22e>ParamString</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Expr</span>:       <span style=color:#e6db74>&#34;mychannel_{variant}&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Parameters</span>: <span style=color:#a6e22e>paramMap</span>,
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>mychannelVariantKafkaServer</span> <span style=color:#66d9ef>interface</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>OpenMychannelVariantKafka</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>, <span style=color:#a6e22e>params</span> <span style=color:#a6e22e>MychannelVariantParameters</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>MychannelVariantKafka</span>, <span style=color:#66d9ef>error</span>)
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Producer</span>() <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Producer</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>OpenMychannelVariantKafka</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>, <span style=color:#a6e22e>params</span> <span style=color:#a6e22e>MychannelVariantParameters</span>, <span style=color:#a6e22e>servers</span> <span style=color:#f92672>...</span><span style=color:#a6e22e>mychannelVariantKafkaServer</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>MychannelVariantKafka</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>NewMychannelVariantKafka</span>(<span style=color:#a6e22e>params</span> <span style=color:#a6e22e>MychannelVariantParameters</span>, <span style=color:#a6e22e>publisher</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Publisher</span>) <span style=color:#f92672>*</span><span style=color:#a6e22e>MychannelVariantKafka</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>res</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>MychannelVariantKafka</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>name</span>:      <span style=color:#a6e22e>MychannelVariantName</span>(<span style=color:#a6e22e>params</span>),
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>publisher</span>: <span style=color:#a6e22e>publisher</span>,
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>res</span>.<span style=color:#a6e22e>topic</span> = <span style=color:#a6e22e>res</span>.<span style=color:#a6e22e>name</span>.<span style=color:#a6e22e>String</span>()
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>res</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span></code></pre></div></div><input type=radio class=toggle name=tabs-2 id=tabs-2-2>
+<label for=tabs-2-2>Usage</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#a6e22e>channelParams</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>MychannelVariantParameters</span>{
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Variant</span>: <span style=color:#a6e22e>Variant</span>{<span style=color:#a6e22e>Value</span>: <span style=color:#e6db74>&#34;foo&#34;</span>}
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#a6e22e>channelName</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>MychannelVariantName</span>(<span style=color:#a6e22e>channelParams</span>)
+</span></span><span style=display:flex><span><span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Println</span>(<span style=color:#a6e22e>channelName</span>) 
+</span></span><span style=display:flex><span><span style=color:#75715e>// Output: mychannel_foo
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span><span style=color:#a6e22e>channel</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>OpenMychannelVariantKafka</span>(<span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Background</span>(), <span style=color:#a6e22e>channelParams</span>, <span style=color:#a6e22e>myServer</span>)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Fatalf</span>(<span style=color:#e6db74>&#34;Failed to open channel: %v&#34;</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>defer</span> <span style=color:#a6e22e>channel</span>.<span style=color:#a6e22e>Close</span>()
+</span></span></code></pre></div></div></div></div></details><h3 id=x-go-name>x-go-name
+<a class=anchor href=#x-go-name>#</a></h3><p>Explicitly set the name of the parameter in generated code. By default, the Go name is taken from a parameter name.</p><details><summary>Example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-3 id=tabs-3-0 checked>
+<label for=tabs-3-0>Definition</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>channels</span>:
+</span></span><span style=display:flex><span>  <span style=color:#ae81ff>mychannel_{variant}:</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>description</span>: <span style=color:#ae81ff>My channel</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>parameters</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>variant</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>schema</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>x-go-name</span>: <span style=color:#ae81ff>VariantName</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>publish</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>message</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>object</span>
+</span></span><span style=display:flex><span>          <span style=color:#f92672>properties</span>:
+</span></span><span style=display:flex><span>            <span style=color:#f92672>value</span>:
+</span></span><span style=display:flex><span>              <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span></code></pre></div></div></div></div></details><h2 id=channel-bindings-operation-bindings>Channel bindings, operation bindings
+<a class=anchor href=#channel-bindings-operation-bindings>#</a></h2><p>Channel bindings are protocol-specific properties that are used to define the channel behavior.
+They are defined in the <code>bindings</code> section of the channel definition.</p><details><summary>Channel bindings example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-3 id=tabs-3-0 checked>
+<label for=tabs-3-0>Definition</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>channels</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>mychannel</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>description</span>: <span style=color:#ae81ff>My channel</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>publish</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>message</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>object</span>
+</span></span><span style=display:flex><span>          <span style=color:#f92672>properties</span>:
+</span></span><span style=display:flex><span>            <span style=color:#f92672>value</span>:
+</span></span><span style=display:flex><span>              <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>bindings</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>kafka</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>clientId</span>:  <span style=color:#75715e># This should contain jsonschema definition according to AsyncAPI spec </span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>default</span>: <span style=color:#e6db74>&#34;my-client&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>bindings</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>kafka</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>partitions</span>: <span style=color:#ae81ff>64</span>
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-3 id=tabs-3-1>
+<label for=tabs-3-1>Produced code</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>channels</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>MychannelBindings</span> <span style=color:#66d9ef>struct</span>{}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#a6e22e>MychannelBindings</span>) <span style=color:#a6e22e>Kafka</span>() <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>ChannelBindings</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>b</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>ChannelBindings</span>{<span style=color:#a6e22e>Partitions</span>: <span style=color:#ae81ff>64</span>}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>clientID</span> <span style=color:#f92672>:=</span> <span style=color:#e6db74>&#34;{\&#34;default\&#34;:\&#34;my-client\&#34;,\&#34;type\&#34;:\&#34;string\&#34;}&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>_</span> = <span style=color:#a6e22e>json</span>.<span style=color:#a6e22e>Unmarshal</span>([]byte(<span style=color:#a6e22e>clientID</span>), <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>b</span>.<span style=color:#a6e22e>PublisherBindings</span>.<span style=color:#a6e22e>ClientID</span>)
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>b</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span></code></pre></div></div><input type=radio class=toggle name=tabs-3 id=tabs-3-2>
+<label for=tabs-3-2>Usage</label><div class="book-tabs-content markdown-inner"><p>The &ldquo;Open channel&rdquo; function automatically uses the bindings, if any:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#a6e22e>channel</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>OpenMychannelKafka</span>(<span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Background</span>(), <span style=color:#a6e22e>myServer</span>)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Fatalf</span>(<span style=color:#e6db74>&#34;Failed to open channel: %v&#34;</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>defer</span> <span style=color:#a6e22e>channel</span>.<span style=color:#a6e22e>Close</span>()
+</span></span></code></pre></div><p>At a lower level, the channel bindings are used to make a Publisher/Subscriber object:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#a6e22e>publisher</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>producer</span>.<span style=color:#a6e22e>NewPublisher</span>(<span style=color:#a6e22e>ctx</span>, <span style=color:#e6db74>&#34;mychannel&#34;</span>, <span style=color:#a6e22e>MychannelBindings</span>.<span style=color:#a6e22e>Kafka</span>())
+</span></span><span style=display:flex><span><span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Fatalf</span>(<span style=color:#e6db74>&#34;Failed to create Kafka publisher: %v&#34;</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>defer</span> <span style=color:#a6e22e>publisher</span>.<span style=color:#a6e22e>Close</span>()
+</span></span></code></pre></div></div></div></div></details><h2 id=x-go-name-1>x-go-name
+<a class=anchor href=#x-go-name-1>#</a></h2><p>This extra field is used to explicitly set the name of the channel in generated code. By default, the Go name is
+generated from the AsyncAPI channel name.</p><details><summary>Example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-4 id=tabs-4-0 checked>
+<label for=tabs-4-0>Definition</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>servers</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>myServer</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>url</span>: <span style=color:#e6db74>&#39;kafka://localhost:9092&#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>protocol</span>: <span style=color:#ae81ff>kafka</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>channels</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>myChannel</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>x-go-name</span>: <span style=color:#ae81ff>FooBar</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>description</span>: <span style=color:#ae81ff>My channel</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>publish</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>message</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-4 id=tabs-4-1>
+<label for=tabs-4-1>Produced code</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// FooBarKafka -- my channel
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>FooBarKafka</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>name</span>      <span style=color:#a6e22e>run</span>.<span style=color:#a6e22e>ParamString</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>publisher</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Publisher</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>topic</span>     <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span></code></pre></div></div></div></div></details><h2 id=x-ignore-1>x-ignore
+<a class=anchor href=#x-ignore-1>#</a></h2><p>If this extra field is set to <strong>true</strong>, the channel will not be generated.
+All references to this channel in the generated code (if any) are replaced by Go <code>any</code> type.</p><details><summary>Example</summary><div class=markdown-inner><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>servers</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>myServer</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>url</span>: <span style=color:#e6db74>&#39;kafka://localhost:9092&#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>protocol</span>: <span style=color:#ae81ff>kafka</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>channels</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>myChannel</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>x-ignore</span>: <span style=color:#66d9ef>true</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>publish</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>message</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span></code></pre></div></div></details></article><footer class=book-footer><div class="flex flex-wrap justify-between"></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><label for=menu-control class="hidden book-menu-overlay"></label></div></main></body></html>

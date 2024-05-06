@@ -1,0 +1,15 @@
+{
+  "name": "go-asyncapi",
+  "short_name": "go-asyncapi",
+  "start_url": "/go-asyncapi/",
+  "scope": "/go-asyncapi/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/go-asyncapi/favicon.svg",
+      "sizes": "512x512"
+    }
+  ]
+}

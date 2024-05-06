@@ -1,0 +1,201 @@
+<!doctype html><html lang=en-us dir=ltr><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="Models are just structs generated from JSONSchema definitions in the components.schemas AsyncAPI section"><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://bdragon300.github.io/go-asyncapi/code-structure/model/"><meta property="og:site_name" content="go-asyncapi"><meta property="og:title" content="Model"><meta property="og:description" content="Models are just structs generated from JSONSchema definitions in the components.schemas AsyncAPI section"><meta property="og:locale" content="en-us"><meta property="og:type" content="article"><meta property="article:section" content="code-structure"><meta property="article:modified_time" content="2024-05-06T16:23:32+04:00"><title>Model | go-asyncapi</title>
+<link rel=manifest href=/go-asyncapi/manifest.json><link rel=icon href=/go-asyncapi/favicon.png><link rel=stylesheet href=/go-asyncapi/book.min.f8de3645fe00591b41524aee174e19edd98a22255a2930a0cdc82a94835ba387.css integrity="sha256-+N42Rf4AWRtBUkruF04Z7dmKIiVaKTCgzcgqlINbo4c=" crossorigin=anonymous><script defer src=/go-asyncapi/flexsearch.min.js></script><script defer src=/go-asyncapi/en.search.min.6e7acfd3ee03d96079f6e65f683ff547bfa5142a7ef7b1bb2649ae62bcb17952.js integrity="sha256-bnrP0+4D2WB59uZfaD/1R7+lFCp+97G7JkmuYryxeVI=" crossorigin=anonymous></script><link rel=stylesheet href=https://bdragon300.github.io/go-asyncapi/css/text.css></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/go-asyncapi/><span>go-asyncapi</span></a></h2><div class=book-search><input type=text id=book-search-input placeholder=Search aria-label=Search maxlength=64 data-hotkeys=s/><div class="book-search-spinner hidden"></div><ul id=book-search-results></ul></div><ul><li><input type=checkbox id=section-f415979306e5149d2e94c59ae8d1a94b class=toggle>
+<label for=section-f415979306e5149d2e94c59ae8d1a94b class="flex justify-between"><a href=/go-asyncapi/features/>Features</a></label><ul><li><a href=/go-asyncapi/features/references/>References</a></li><li><a href=/go-asyncapi/features/code-selection/>Code selection</a></li><li><a href=/go-asyncapi/features/code-breakdown/>Code breakdown</a></li><li><a href=/go-asyncapi/features/code-reuse/>Code reuse</a></li></ul></li><li><input type=checkbox id=section-10d42178eaab1a0b265b40249fb2fbaf class=toggle checked>
+<label for=section-10d42178eaab1a0b265b40249fb2fbaf class="flex justify-between"><a href=/go-asyncapi/code-structure/>Code structure</a></label><ul><li><a href=/go-asyncapi/code-structure/server/>Server</a></li><li><a href=/go-asyncapi/code-structure/channel/>Channel</a></li><li><a href=/go-asyncapi/code-structure/message/>Message</a></li><li><a href=/go-asyncapi/code-structure/model/ class=active>Model</a></li><li><a href=/go-asyncapi/code-structure/implementation/>Implementation</a></li></ul></li><li><input type=checkbox id=section-e30832cd14a13543c41df229110acd3b class=toggle>
+<label for=section-e30832cd14a13543c41df229110acd3b class="flex justify-between"><a href=/go-asyncapi/protocols-and-implementations/>Protocols and implementations</a></label><ul><li><a href=/go-asyncapi/protocols-and-implementations/amqp/>AMQP</a></li><li><a href=/go-asyncapi/protocols-and-implementations/apache-kafka/>Apache Kafka</a></li><li><a href=/go-asyncapi/protocols-and-implementations/http/>HTTP</a></li><li><a href=/go-asyncapi/protocols-and-implementations/ip/>IP RAW sockets</a></li><li><a href=/go-asyncapi/protocols-and-implementations/mqtt/>MQTT</a></li><li><a href=/go-asyncapi/protocols-and-implementations/redis/>Redis</a></li><li><a href=/go-asyncapi/protocols-and-implementations/tcp/>TCP</a></li><li><a href=/go-asyncapi/protocols-and-implementations/udp/>UDP</a></li><li><a href=/go-asyncapi/protocols-and-implementations/websocket/>Websocket</a></li></ul></li></ul><ul><li><a href=https://github.com/bdragon300/go-asyncapi target=_blank rel=noopener><div style=margin-top:2rem></div>&#x1F517;
+GitHub</a></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/go-asyncapi/svg/menu.svg class=book-icon alt=Menu>
+</label><strong>Model</strong>
+<label for=toc-control></label></div></header><article class="markdown book-article"><h1 id=model>Model
+<a class=anchor href=#model>#</a></h1><h2 id=overview>Overview
+<a class=anchor href=#overview>#</a></h2><p>Models are just structs generated from <a href=https://json-schema.org/>JSONSchema</a> definitions in the <code>components.schemas</code>
+AsyncAPI section.</p><p>The tool also considers all content types of the messages where a particular model is used. So, for example, if a model
+is met in messages of JSON and YAML content types, the field tags will be: <code>json:"fieldName" yaml:"fieldName"</code>.</p><p>The JSONSchema features and content types supported by the tool are described on the
+<a href=/go-asyncapi/features/>Features</a> page.</p><p>The generated code is placed in the <code>models</code> package by default.</p><details><summary>Minimal example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-1 id=tabs-1-0 checked>
+<label for=tabs-1-0>Definition</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>components</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>messages</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>myMessage</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>$ref</span>: <span style=color:#e6db74>&#39;#/components/schemas/myModel&#39;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>myMessage2</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>$ref</span>: <span style=color:#e6db74>&#39;#/components/schemas/myModel&#39;</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>contentType</span>: <span style=color:#ae81ff>application/yaml</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  <span style=color:#f92672>schemas</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>myModel</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>type</span>: <span style=color:#ae81ff>object</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>properties</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>id</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>integer</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>name</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-1 id=tabs-1-1>
+<label for=tabs-1-1>Produced code</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>models</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>MyModel</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>ID</span>   <span style=color:#66d9ef>int</span>    <span style=color:#e6db74>`json:&#34;id&#34; yaml:&#34;id&#34;`</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Name</span> <span style=color:#66d9ef>string</span> <span style=color:#e6db74>`json:&#34;name&#34; yaml:&#34;name&#34;`</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div></div></div></div></details><h2 id=x-nullable>x-nullable
+<a class=anchor href=#x-nullable>#</a></h2><p>Extra field <code>x-nullable</code> forcibly marks a model/field as nullable. By default, the field is nullable if it can be
+<code>null</code> or needed to be checked for <code>nil</code> in the generated code, i.e., marked as required. Nullable fields are generated
+as pointers in Go code.</p><details><summary>Example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-2 id=tabs-2-0 checked>
+<label for=tabs-2-0>Definition</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>components</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>schemas</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>myModel</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>type</span>: <span style=color:#ae81ff>object</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>required</span>:
+</span></span><span style=display:flex><span>        - <span style=color:#ae81ff>id</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>properties</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>id</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>integer</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>name</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span><span style=display:flex><span>          <span style=color:#f92672>x-nullable</span>: <span style=color:#66d9ef>true</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>description</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-2 id=tabs-2-1>
+<label for=tabs-2-1>Produced code</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>models</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>MyModel</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>ID</span>          <span style=color:#f92672>*</span><span style=color:#66d9ef>int</span>     <span style=color:#e6db74>`json:&#34;id&#34;`</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Name</span>        <span style=color:#f92672>*</span><span style=color:#66d9ef>string</span>  <span style=color:#e6db74>`json:&#34;name&#34;`</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Description</span> <span style=color:#66d9ef>string</span>   <span style=color:#e6db74>`json:&#34;description&#34;`</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div></div></div></div></details><h2 id=x-go-name>x-go-name
+<a class=anchor href=#x-go-name>#</a></h2><p>This extra field is used to explicitly set the name of the model in generated code. By default, for named models the
+Go name is generated from schema&rsquo;s name, for anonymous schema the Go name is deduced from the parent objects
+where the object is defined.</p><details><summary>Example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-3 id=tabs-3-0 checked>
+<label for=tabs-3-0>Definition</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>components</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>schemas</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>myModel</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>x-go-name</span>: <span style=color:#ae81ff>FooBar</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>type</span>: <span style=color:#ae81ff>object</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>properties</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>id</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>x-go-name</span>: <span style=color:#ae81ff>FooID</span>
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>integer</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>name</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-3 id=tabs-3-1>
+<label for=tabs-3-1>Produced code</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>FooBar</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>FooID</span>   <span style=color:#66d9ef>int</span> <span style=color:#e6db74>`json:&#34;id&#34;`</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Name</span> <span style=color:#66d9ef>string</span> <span style=color:#e6db74>`json:&#34;name&#34;`</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span></code></pre></div></div></div></div></details><h2 id=x-go-type>x-go-type
+<a class=anchor href=#x-go-type>#</a></h2><p>This extra field overrides a model type. This is useful when you want to use a custom type instead of generated one.
+If the <code>x-go-type</code> is set, the tool ignores the object definition and will import and use the specified type
+instead. It can be any built-in type, a type from the standard library, third-party libraries, and
+other generated types.</p><p><code>x-go-type</code> can have string value with type name, e.g. <code>x-go-type: string</code>. In this case, the tool just
+substitutes the type name everywhere where the model is used. Suitable for built-in types and types from the
+same package as the model.</p><p>The advanced way is to set the object in <code>x-go-type</code>. Possible subfields are:</p><ul><li><code>name</code> &ndash; the type name. Required.</li><li><code>import</code> &ndash; the import path for the type. Optional. Can be either a package name in generated code, e.g. <code>"messages"</code>
+or a full import path, e.g. <code>"github.com/myorg/mylib"</code>. If empty, the tool just uses the type name.</li><li><code>embedded</code> &ndash; if <strong>true</strong>, the tool will embed a type in the generated model instead of replacing it. Optional.
+Default is <strong>false</strong>.</li><li><code>hint</code> &ndash; various hints how this type should be used. Optional. Possible values are:<ul><li><code>pointer</code> &ndash; <strong>true</strong> forces the objects of this type to be used as pointers in the generated code.
+Otherwise, this depends on the context (default behavior).</li><li><code>kind</code> &ndash; the kind of the type. Now it&rsquo;s supported only the <code>"interface"</code>, which denotes that the type is Go
+interface. For example, we can&rsquo;t get the address of such objects anymore.</li></ul></li></ul><details><summary>Example</summary><div class=markdown-inner><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>components</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>schemas</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>myModel</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>x-go-type</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>name</span>: <span style=color:#ae81ff>MyCustomType</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>import</span>: <span style=color:#e6db74>&#34;github.com/myorg/mylib&#34;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>embedded</span>: <span style=color:#66d9ef>true</span>  <span style=color:#75715e># `github.com/myorg/mylib.MyCustomType` will be embedded to `MyModel`</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>hint</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>kind</span>: <span style=color:#e6db74>&#34;interface&#34;</span>  <span style=color:#75715e># Treat the `MyCustomType` as interface</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>type</span>: <span style=color:#ae81ff>object</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>properties</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>id</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>integer</span>
+</span></span><span style=display:flex><span>          <span style=color:#f92672>x-go-type</span>: <span style=color:#ae81ff>int8 </span> <span style=color:#75715e># `ID` field will have int8 type</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>name</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>server</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>object</span>
+</span></span><span style=display:flex><span>          <span style=color:#f92672>x-go-type</span>:
+</span></span><span style=display:flex><span>            <span style=color:#f92672>name</span>: <span style=color:#ae81ff>MyServer </span> <span style=color:#75715e># `MyServer` from the `servers` generated package will be used</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>import</span>: <span style=color:#e6db74>&#34;servers&#34;</span>
+</span></span></code></pre></div></div></details><h2 id=x-go-tags-and-x-go-tags-values>x-go-tags and x-go-tags-values
+<a class=anchor href=#x-go-tags-and-x-go-tags-values>#</a></h2><p>You can add your own tags to the generated model fields using the <code>x-go-tags</code> and <code>x-go-tags-values</code> extra fields.
+By default, the tags are generated based on the content type of the message where the model is used.</p><p>To add tags that are meant to have the same values as other ones, pass a list to the <code>x-go-tags</code> field.</p><details><summary>Example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-4 id=tabs-4-0 checked>
+<label for=tabs-4-0>Definition</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>components</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>schemas</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>myModel</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>type</span>: <span style=color:#ae81ff>object</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>properties</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>id</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>x-go-tags</span>:
+</span></span><span style=display:flex><span>            - <span style=color:#ae81ff>spam</span>
+</span></span><span style=display:flex><span>            - <span style=color:#ae81ff>eggs</span>
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>integer</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>name</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-4 id=tabs-4-1>
+<label for=tabs-4-1>Produced code</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>models</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>MyModel</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>ID</span>   <span style=color:#66d9ef>int</span>    <span style=color:#e6db74>`json:&#34;id&#34; spam:&#34;id&#34; eggs:&#34;id&#34;`</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Name</span> <span style=color:#66d9ef>string</span> <span style=color:#e6db74>`json:&#34;name&#34;`</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div></div></div></div></details><p>To add certain tags with certain values, pass a map of values to the <code>x-go-tags</code> field.
+If a tag is already present in the generated code, its value will be replaced.</p><details><summary>Example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-5 id=tabs-5-0 checked>
+<label for=tabs-5-0>Definition</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>components</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>schemas</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>myModel</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>type</span>: <span style=color:#ae81ff>object</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>properties</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>id</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>x-go-tags</span>:
+</span></span><span style=display:flex><span>            <span style=color:#f92672>spam</span>: <span style=color:#e6db74>&#34;foo&#34;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>eggs</span>: <span style=color:#e6db74>&#34;bar&#34;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>json</span>: <span style=color:#e6db74>&#34;baz&#34;</span>
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>integer</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>name</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-5 id=tabs-5-1>
+<label for=tabs-5-1>Produced code</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>models</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>MyModel</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>ID</span>   <span style=color:#66d9ef>int</span>    <span style=color:#e6db74>`json:&#34;baz&#34; spam:&#34;foo&#34; eggs:&#34;bar&#34;`</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Name</span> <span style=color:#66d9ef>string</span> <span style=color:#e6db74>`json:&#34;name&#34;`</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div></div></div></div></details><p>You also add flags to all tags, using the <code>x-go-tags-values</code> field.</p><details><summary>Example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-6 id=tabs-6-0 checked>
+<label for=tabs-6-0>Definition</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>components</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>schemas</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>myModel</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>type</span>: <span style=color:#ae81ff>object</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>properties</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>id</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>x-go-tags-values</span>:
+</span></span><span style=display:flex><span>            - <span style=color:#ae81ff>omitempty</span>
+</span></span><span style=display:flex><span>          <span style=color:#f92672>x-go-tags</span>:
+</span></span><span style=display:flex><span>            - <span style=color:#ae81ff>spam</span>
+</span></span><span style=display:flex><span>            - <span style=color:#ae81ff>eggs</span>
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>integer</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>name</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-6 id=tabs-6-1>
+<label for=tabs-6-1>Produced code</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>models</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>MyModel</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>ID</span>   <span style=color:#66d9ef>int</span>    <span style=color:#e6db74>`json:&#34;id,omitempty&#34; spam:&#34;id,omitempty&#34; eggs:&#34;id,omitempty&#34;`</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Name</span> <span style=color:#66d9ef>string</span> <span style=color:#e6db74>`json:&#34;name&#34;`</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div></div></div></div></details><h2 id=x-ignore>x-ignore
+<a class=anchor href=#x-ignore>#</a></h2><p>If this extra field is set to <strong>true</strong>, the model will not be generated.
+All references to this model in the generated code (if any) are replaced by Go <code>any</code> type.</p><details><summary>Example</summary><div class=markdown-inner><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>components</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>schemas</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>myModel</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>x-ignore</span>: <span style=color:#66d9ef>true</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>type</span>: <span style=color:#ae81ff>object</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>properties</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>id</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>integer</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>name</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span></code></pre></div></div></details></article><footer class=book-footer><div class="flex flex-wrap justify-between"></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><label for=menu-control class="hidden book-menu-overlay"></label></div></main></body></html>

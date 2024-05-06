@@ -1,0 +1,469 @@
+<!doctype html><html lang=en-us dir=ltr><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="Message is the protocol-agnostic structure that is sent from one service to another. Message can have a payload, headers, and other properties."><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://bdragon300.github.io/go-asyncapi/code-structure/message/"><meta property="og:site_name" content="go-asyncapi"><meta property="og:title" content="Message"><meta property="og:description" content="Message is the protocol-agnostic structure that is sent from one service to another. Message can have a payload, headers, and other properties."><meta property="og:locale" content="en-us"><meta property="og:type" content="article"><meta property="article:section" content="code-structure"><meta property="article:modified_time" content="2024-05-06T16:23:32+04:00"><title>Message | go-asyncapi</title>
+<link rel=manifest href=/go-asyncapi/manifest.json><link rel=icon href=/go-asyncapi/favicon.png><link rel=stylesheet href=/go-asyncapi/book.min.f8de3645fe00591b41524aee174e19edd98a22255a2930a0cdc82a94835ba387.css integrity="sha256-+N42Rf4AWRtBUkruF04Z7dmKIiVaKTCgzcgqlINbo4c=" crossorigin=anonymous><script defer src=/go-asyncapi/flexsearch.min.js></script><script defer src=/go-asyncapi/en.search.min.6e7acfd3ee03d96079f6e65f683ff547bfa5142a7ef7b1bb2649ae62bcb17952.js integrity="sha256-bnrP0+4D2WB59uZfaD/1R7+lFCp+97G7JkmuYryxeVI=" crossorigin=anonymous></script><link rel=stylesheet href=https://bdragon300.github.io/go-asyncapi/css/text.css></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/go-asyncapi/><span>go-asyncapi</span></a></h2><div class=book-search><input type=text id=book-search-input placeholder=Search aria-label=Search maxlength=64 data-hotkeys=s/><div class="book-search-spinner hidden"></div><ul id=book-search-results></ul></div><ul><li><input type=checkbox id=section-f415979306e5149d2e94c59ae8d1a94b class=toggle>
+<label for=section-f415979306e5149d2e94c59ae8d1a94b class="flex justify-between"><a href=/go-asyncapi/features/>Features</a></label><ul><li><a href=/go-asyncapi/features/references/>References</a></li><li><a href=/go-asyncapi/features/code-selection/>Code selection</a></li><li><a href=/go-asyncapi/features/code-breakdown/>Code breakdown</a></li><li><a href=/go-asyncapi/features/code-reuse/>Code reuse</a></li></ul></li><li><input type=checkbox id=section-10d42178eaab1a0b265b40249fb2fbaf class=toggle checked>
+<label for=section-10d42178eaab1a0b265b40249fb2fbaf class="flex justify-between"><a href=/go-asyncapi/code-structure/>Code structure</a></label><ul><li><a href=/go-asyncapi/code-structure/server/>Server</a></li><li><a href=/go-asyncapi/code-structure/channel/>Channel</a></li><li><a href=/go-asyncapi/code-structure/message/ class=active>Message</a></li><li><a href=/go-asyncapi/code-structure/model/>Model</a></li><li><a href=/go-asyncapi/code-structure/implementation/>Implementation</a></li></ul></li><li><input type=checkbox id=section-e30832cd14a13543c41df229110acd3b class=toggle>
+<label for=section-e30832cd14a13543c41df229110acd3b class="flex justify-between"><a href=/go-asyncapi/protocols-and-implementations/>Protocols and implementations</a></label><ul><li><a href=/go-asyncapi/protocols-and-implementations/amqp/>AMQP</a></li><li><a href=/go-asyncapi/protocols-and-implementations/apache-kafka/>Apache Kafka</a></li><li><a href=/go-asyncapi/protocols-and-implementations/http/>HTTP</a></li><li><a href=/go-asyncapi/protocols-and-implementations/ip/>IP RAW sockets</a></li><li><a href=/go-asyncapi/protocols-and-implementations/mqtt/>MQTT</a></li><li><a href=/go-asyncapi/protocols-and-implementations/redis/>Redis</a></li><li><a href=/go-asyncapi/protocols-and-implementations/tcp/>TCP</a></li><li><a href=/go-asyncapi/protocols-and-implementations/udp/>UDP</a></li><li><a href=/go-asyncapi/protocols-and-implementations/websocket/>Websocket</a></li></ul></li></ul><ul><li><a href=https://github.com/bdragon300/go-asyncapi target=_blank rel=noopener><div style=margin-top:2rem></div>&#x1F517;
+GitHub</a></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/go-asyncapi/svg/menu.svg class=book-icon alt=Menu>
+</label><strong>Message</strong>
+<label for=toc-control></label></div></header><article class="markdown book-article"><h1 id=message>Message
+<a class=anchor href=#message>#</a></h1><h2 id=overview>Overview
+<a class=anchor href=#overview>#</a></h2><p>Message is the protocol-agnostic structure sent from one service to another.
+It is generated from message definition in the AsyncAPI document.
+Message can have a payload, headers, and other properties.</p><p>To be able to send or receive a message over a channel of specific protocol and specific library, it&rsquo;s wrapped in the
+implementation-specific structure &ndash; <a href=#envelope>Envelope</a>.</p><p>The generated message code contains only payload and headers fields and methods to work with them, and also
+marshaling/unmarshalling methods for particular protocols. Every message has two structures: one for inbound messages
+and one for outbound messages.</p><details><summary>Minimal example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-1 id=tabs-1-0 checked>
+<label for=tabs-1-0>Definition</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>servers</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>myServer</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>url</span>: <span style=color:#e6db74>&#39;kafka://localhost:9092&#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>protocol</span>: <span style=color:#ae81ff>kafka</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>channels</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>mychannel</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>description</span>: <span style=color:#ae81ff>My channel</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>publish</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>message</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>$ref</span>: <span style=color:#e6db74>&#39;#/components/messages/myMessage&#39;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>components</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>messages</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>myMessage</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>type</span>: <span style=color:#ae81ff>object</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>properties</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>value</span>:
+</span></span><span style=display:flex><span>            <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-1 id=tabs-1-1>
+<label for=tabs-1-1>Produced message code</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// Code generated by go-asyncapi tool. DO NOT EDIT.
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>messages</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> (
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>encoding</span> <span style=color:#e6db74>&#34;myproject/encoding&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>run</span> <span style=color:#e6db74>&#34;github.com/bdragon300/go-asyncapi/run&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>kafka</span> <span style=color:#e6db74>&#34;github.com/bdragon300/go-asyncapi/run/kafka&#34;</span>
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>MyMessagePayload</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>NewMyMessageOut</span>() <span style=color:#f92672>*</span><span style=color:#a6e22e>MyMessageOut</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>MyMessageOut</span>{}
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// MyMessageOut --  (Outbound Message)
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>MyMessageOut</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Payload</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Headers</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#a6e22e>any</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>MyMessageOut</span>) <span style=color:#a6e22e>MarshalKafkaEnvelope</span>(<span style=color:#a6e22e>envelope</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>EnvelopeWriter</span>) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>enc</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>encoding</span>.<span style=color:#a6e22e>NewEncoder</span>(<span style=color:#e6db74>&#34;application/json&#34;</span>, <span style=color:#a6e22e>envelope</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>enc</span>.<span style=color:#a6e22e>Encode</span>(<span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>Payload</span>); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>envelope</span>.<span style=color:#a6e22e>SetContentType</span>(<span style=color:#e6db74>&#34;application/json&#34;</span>)
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>envelope</span>.<span style=color:#a6e22e>SetHeaders</span>(<span style=color:#a6e22e>run</span>.<span style=color:#a6e22e>Headers</span>(<span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>Headers</span>))
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>MyMessageOut</span>) <span style=color:#a6e22e>WithPayload</span>(<span style=color:#a6e22e>payload</span> <span style=color:#66d9ef>string</span>) <span style=color:#f92672>*</span><span style=color:#a6e22e>MyMessageOut</span> {
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>Payload</span> = <span style=color:#a6e22e>payload</span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>m</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>MyMessageOut</span>) <span style=color:#a6e22e>WithHeaders</span>(<span style=color:#a6e22e>headers</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#a6e22e>any</span>) <span style=color:#f92672>*</span><span style=color:#a6e22e>MyMessageOut</span> {
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>Headers</span> = <span style=color:#a6e22e>headers</span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>m</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>NewMyMessageIn</span>() <span style=color:#f92672>*</span><span style=color:#a6e22e>MyMessageIn</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>MyMessageIn</span>{}
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// MyMessageIn --  (Inbound Message)
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>MyMessageIn</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Payload</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Headers</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#a6e22e>any</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>MyMessageIn</span>) <span style=color:#a6e22e>UnmarshalKafkaEnvelope</span>(<span style=color:#a6e22e>envelope</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>EnvelopeReader</span>) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>dec</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>encoding</span>.<span style=color:#a6e22e>NewDecoder</span>(<span style=color:#e6db74>&#34;application/json&#34;</span>, <span style=color:#a6e22e>envelope</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>dec</span>.<span style=color:#a6e22e>Decode</span>(<span style=color:#f92672>&amp;</span><span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>Payload</span>); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>Headers</span> = <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#a6e22e>any</span>(<span style=color:#a6e22e>envelope</span>.<span style=color:#a6e22e>Headers</span>())
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>MyMessageIn</span>) <span style=color:#a6e22e>MessagePayload</span>() <span style=color:#66d9ef>string</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>Payload</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>MyMessageIn</span>) <span style=color:#a6e22e>MessageHeaders</span>() <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#a6e22e>any</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>Headers</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div></div></div></div></details><h2 id=envelope>Envelope
+<a class=anchor href=#envelope>#</a></h2><p>Envelope is the protocol-specific &ldquo;wrapper&rdquo; for the incoming or outgoing message along with its metadata.
+In other words, the envelope is a message suitable for sending/receiving the data by a particular library.</p><p>See the <a href=/go-asyncapi/code-structure/implementation/#messageprotocol--envelope>Implementation</a> page for more details.</p><details><summary>Usage example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-2 id=tabs-2-0 checked>
+<label for=tabs-2-0>Definition</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>servers</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>myServer</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>url</span>: <span style=color:#e6db74>&#39;kafka://localhost:9092&#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>protocol</span>: <span style=color:#ae81ff>kafka</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>channels</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>mychannel</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>description</span>: <span style=color:#ae81ff>My channel</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>publish</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>message</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>$ref</span>: <span style=color:#e6db74>&#39;#/components/messages/myMessage&#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>subscribe</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>message</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>$ref</span>: <span style=color:#e6db74>&#39;#/components/messages/myMessage&#39;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>components</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>messages</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>myMessage</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>type</span>: <span style=color:#ae81ff>object</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>properties</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>value</span>:
+</span></span><span style=display:flex><span>            <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-2 id=tabs-2-1>
+<label for=tabs-2-1>Publishing</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>import</span> (
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>implKafka</span> <span style=color:#e6db74>&#34;myproject/impl/kafka&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>messages</span> <span style=color:#e6db74>&#34;myproject/messages&#34;</span>
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>message</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>messages</span>.<span style=color:#a6e22e>NewMyMessageOut</span>().<span style=color:#a6e22e>WithPayload</span>(<span style=color:#e6db74>&#34;Hello, world!&#34;</span>)
+</span></span><span style=display:flex><span><span style=color:#a6e22e>envelope</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>implKafka</span>.<span style=color:#a6e22e>NewEnvelopeOut</span>()
+</span></span><span style=display:flex><span><span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>channel</span>.<span style=color:#a6e22e>SealEnvelope</span>(<span style=color:#a6e22e>envelope</span>, <span style=color:#a6e22e>message</span>); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Fatalf</span>(<span style=color:#e6db74>&#34;failed to make envelope: %v&#34;</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>channel</span>.<span style=color:#a6e22e>Publish</span>(<span style=color:#a6e22e>cancelCtx</span>, <span style=color:#a6e22e>envelope</span>); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Fatalf</span>(<span style=color:#e6db74>&#34;failed to publish message: %v&#34;</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-2 id=tabs-2-2>
+<label for=tabs-2-2>Subscribing</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>import</span> (
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>implKafka</span> <span style=color:#e6db74>&#34;myproject/impl/kafka&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>messages</span> <span style=color:#e6db74>&#34;myproject/messages&#34;</span>
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>channel</span>.<span style=color:#a6e22e>Subscribe</span>(<span style=color:#a6e22e>cancelCtx</span>, <span style=color:#66d9ef>func</span>(<span style=color:#a6e22e>envelope</span> <span style=color:#a6e22e>runKafka</span>.<span style=color:#a6e22e>EnvelopeReader</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>message</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>messages</span>.<span style=color:#a6e22e>NewMyMessageIn</span>()
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>channel</span>.<span style=color:#a6e22e>ExtractEnvelope</span>(<span style=color:#a6e22e>envelope</span>, <span style=color:#a6e22e>message</span>); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Fatalf</span>(<span style=color:#e6db74>&#34;failed to extract a message from envelope: %v&#34;</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Printf</span>(<span style=color:#e6db74>&#34;received message: %s&#34;</span>, <span style=color:#a6e22e>message</span>.<span style=color:#a6e22e>MessagePayload</span>())
+</span></span><span style=display:flex><span>})
+</span></span><span style=display:flex><span><span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Fatalf</span>(<span style=color:#e6db74>&#34;failed to subscribe: %v&#34;</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div></div></div></div></details><h2 id=content-type>Content type
+<a class=anchor href=#content-type>#</a></h2><p>The encoder and decoder are used to marshal/unmarshal the message payload depends on the message content type.
+By default, the content type is <code>application/json</code>, but it can be changed in the message definition or globally in the
+AsyncAPI document in <code>defaultContentType</code> field.</p><h3 id=encoders-and-decoders>Encoders and decoders
+<a class=anchor href=#encoders-and-decoders>#</a></h3><p><code>go-asyncapi</code> generates the encoder and decoder code for all message types of all messages in document and
+puts it to the <code>encoding</code> package by default.</p><p>They are used automatically during marshaling/unmarshalling the message.
+You can use them manually or provide your own implementation if you like.
+You may also choose not to generate the encoder/decoder code at all.</p><details><summary>Example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-3 id=tabs-3-0 checked>
+<label for=tabs-3-0>Document</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>asyncapi</span>: <span style=color:#e6db74>&#39;2.6.0&#39;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>info</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>title</span>: <span style=color:#ae81ff>My API</span>
+</span></span><span style=display:flex><span>  <span style=color:#f92672>version</span>: <span style=color:#e6db74>&#39;1.0.0&#39;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>defaultContentType</span>: <span style=color:#e6db74>&#39;application/yaml&#39;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>channels</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>mychannel</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>description</span>: <span style=color:#ae81ff>My channel</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>publish</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>message</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>$ref</span>: <span style=color:#e6db74>&#39;#/components/messages/myMessage&#39;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>components</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>messages</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>myMessage</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>contentType</span>: <span style=color:#e6db74>&#39;application/json&#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>myMessage2</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-3 id=tabs-3-1>
+<label for=tabs-3-1>Generated encoders/decoders code</label><div class="book-tabs-content markdown-inner"><p><strong>encode.go</strong></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>encoding</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> (
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;encoding/json&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>yamlv3</span> <span style=color:#e6db74>&#34;gopkg.in/yaml.v3&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;io&#34;</span>
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>Encoder</span> <span style=color:#66d9ef>interface</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Encode</span>(<span style=color:#a6e22e>v</span> <span style=color:#a6e22e>any</span>) <span style=color:#66d9ef>error</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>var</span> <span style=color:#a6e22e>Encoders</span> = <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>func</span>(<span style=color:#a6e22e>w</span> <span style=color:#a6e22e>io</span>.<span style=color:#a6e22e>Writer</span>) <span style=color:#a6e22e>Encoder</span>{
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;application/json&#34;</span>: <span style=color:#66d9ef>func</span>(<span style=color:#a6e22e>w</span> <span style=color:#a6e22e>io</span>.<span style=color:#a6e22e>Writer</span>) <span style=color:#a6e22e>Encoder</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>json</span>.<span style=color:#a6e22e>NewEncoder</span>(<span style=color:#a6e22e>w</span>)
+</span></span><span style=display:flex><span>	},
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;application/yaml&#34;</span>: <span style=color:#66d9ef>func</span>(<span style=color:#a6e22e>w</span> <span style=color:#a6e22e>io</span>.<span style=color:#a6e22e>Writer</span>) <span style=color:#a6e22e>Encoder</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>yamlv3</span>.<span style=color:#a6e22e>NewEncoder</span>(<span style=color:#a6e22e>w</span>)
+</span></span><span style=display:flex><span>	},
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>NewEncoder</span>(<span style=color:#a6e22e>contentType</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>w</span> <span style=color:#a6e22e>io</span>.<span style=color:#a6e22e>Writer</span>) <span style=color:#a6e22e>Encoder</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>v</span>, <span style=color:#a6e22e>ok</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>Encoders</span>[<span style=color:#a6e22e>contentType</span>]; <span style=color:#a6e22e>ok</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>v</span>(<span style=color:#a6e22e>w</span>)
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	panic(<span style=color:#e6db74>&#34;Unknown content type &#34;</span> <span style=color:#f92672>+</span> <span style=color:#a6e22e>contentType</span>)
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p><strong>decode.go</strong></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>encoding</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> (
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;encoding/json&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>yamlv3</span> <span style=color:#e6db74>&#34;gopkg.in/yaml.v3&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;io&#34;</span>
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>Decoder</span> <span style=color:#66d9ef>interface</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Decode</span>(<span style=color:#a6e22e>v</span> <span style=color:#a6e22e>any</span>) <span style=color:#66d9ef>error</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>var</span> <span style=color:#a6e22e>Decoders</span> = <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>func</span>(<span style=color:#a6e22e>r</span> <span style=color:#a6e22e>io</span>.<span style=color:#a6e22e>Reader</span>) <span style=color:#a6e22e>Decoder</span>{
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;application/json&#34;</span>: <span style=color:#66d9ef>func</span>(<span style=color:#a6e22e>r</span> <span style=color:#a6e22e>io</span>.<span style=color:#a6e22e>Reader</span>) <span style=color:#a6e22e>Decoder</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>json</span>.<span style=color:#a6e22e>NewDecoder</span>(<span style=color:#a6e22e>r</span>)
+</span></span><span style=display:flex><span>	},
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;application/yaml&#34;</span>: <span style=color:#66d9ef>func</span>(<span style=color:#a6e22e>r</span> <span style=color:#a6e22e>io</span>.<span style=color:#a6e22e>Reader</span>) <span style=color:#a6e22e>Decoder</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>yamlv3</span>.<span style=color:#a6e22e>NewDecoder</span>(<span style=color:#a6e22e>r</span>)
+</span></span><span style=display:flex><span>	},
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>NewDecoder</span>(<span style=color:#a6e22e>contentType</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>r</span> <span style=color:#a6e22e>io</span>.<span style=color:#a6e22e>Reader</span>) <span style=color:#a6e22e>Decoder</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>v</span>, <span style=color:#a6e22e>ok</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>Decoders</span>[<span style=color:#a6e22e>contentType</span>]; <span style=color:#a6e22e>ok</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>v</span>(<span style=color:#a6e22e>r</span>)
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	panic(<span style=color:#e6db74>&#34;Unknown content type &#34;</span> <span style=color:#f92672>+</span> <span style=color:#a6e22e>contentType</span>)
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-3 id=tabs-3-2>
+<label for=tabs-3-2>Generated message code</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// ...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>MyMessageOut</span>) <span style=color:#a6e22e>MarshalKafkaEnvelope</span>(<span style=color:#a6e22e>envelope</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>EnvelopeWriter</span>) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>enc</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>encoding</span>.<span style=color:#a6e22e>NewEncoder</span>(<span style=color:#e6db74>&#34;application/json&#34;</span>, <span style=color:#a6e22e>envelope</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>enc</span>.<span style=color:#a6e22e>Encode</span>(<span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>Payload</span>); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>envelope</span>.<span style=color:#a6e22e>SetContentType</span>(<span style=color:#e6db74>&#34;application/json&#34;</span>)
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>envelope</span>.<span style=color:#a6e22e>SetHeaders</span>(<span style=color:#a6e22e>run</span>.<span style=color:#a6e22e>Headers</span>(<span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>Headers</span>))
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// ...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>MyMessageIn</span>) <span style=color:#a6e22e>UnmarshalKafkaEnvelope</span>(<span style=color:#a6e22e>envelope</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>EnvelopeReader</span>) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>dec</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>encoding</span>.<span style=color:#a6e22e>NewDecoder</span>(<span style=color:#e6db74>&#34;application/json&#34;</span>, <span style=color:#a6e22e>envelope</span>)
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>dec</span>.<span style=color:#a6e22e>Decode</span>(<span style=color:#f92672>&amp;</span><span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>Payload</span>); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>Headers</span> = <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#a6e22e>any</span>(<span style=color:#a6e22e>envelope</span>.<span style=color:#a6e22e>Headers</span>())
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// ...
+</span></span></span></code></pre></div></div></div></div></details><h2 id=message-bindings>Message bindings
+<a class=anchor href=#message-bindings>#</a></h2><p>Message bindings are the protocol-specific properties that are used to describe how the message is sent or received over
+the channel. They are defined in the <code>bindings</code> section of the message definition.</p><details><summary>Message bindings example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-4 id=tabs-4-0 checked>
+<label for=tabs-4-0>Definition</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>servers</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>myServer</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>url</span>: <span style=color:#e6db74>&#39;kafka://localhost:9092&#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>protocol</span>: <span style=color:#ae81ff>kafka</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>channels</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>mychannel</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>description</span>: <span style=color:#ae81ff>My channel</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>publish</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>message</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>$ref</span>: <span style=color:#e6db74>&#39;#/components/messages/myMessage&#39;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>components</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>messages</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>myMessage</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>bindings</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>kafka</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>schemaIdPayloadEncoding</span>: <span style=color:#e6db74>&#39;confluent&#39;</span>
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-4 id=tabs-4-1>
+<label for=tabs-4-1>Generated message code</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>messages</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>MyMessageBindings</span> <span style=color:#66d9ef>struct</span>{}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#a6e22e>MyMessageBindings</span>) <span style=color:#a6e22e>Kafka</span>() <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>MessageBindings</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>b</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>MessageBindings</span>{<span style=color:#a6e22e>SchemaIDPayloadEncoding</span>: <span style=color:#e6db74>&#34;confluent&#34;</span>}
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>b</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span></code></pre></div></div><input type=radio class=toggle name=tabs-4 id=tabs-4-2>
+<label for=tabs-4-2>Usage</label><div class="book-tabs-content markdown-inner"><p>Message bindings are automatically used in <code>SealEnvelope</code> call:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> (
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>implKafka</span> <span style=color:#e6db74>&#34;myproject/impl/kafka&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>messages</span> <span style=color:#e6db74>&#34;myproject/messages&#34;</span>
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>message</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>messages</span>.<span style=color:#a6e22e>NewMyMessageOut</span>().<span style=color:#a6e22e>WithPayload</span>(<span style=color:#e6db74>&#34;Hello, world!&#34;</span>)
+</span></span><span style=display:flex><span><span style=color:#a6e22e>envelope</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>implKafka</span>.<span style=color:#a6e22e>NewEnvelopeOut</span>()
+</span></span><span style=display:flex><span><span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>channel</span>.<span style=color:#a6e22e>SealEnvelope</span>(<span style=color:#a6e22e>envelope</span>, <span style=color:#a6e22e>message</span>); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Fatalf</span>(<span style=color:#e6db74>&#34;failed to make envelope: %v&#34;</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>You can also use bindings manually:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> (
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>implKafka</span> <span style=color:#e6db74>&#34;myproject/impl/kafka&#34;</span>
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>envelope</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>implKafka</span>.<span style=color:#a6e22e>NewEnvelopeOut</span>()
+</span></span><span style=display:flex><span><span style=color:#a6e22e>envelope</span>.<span style=color:#a6e22e>SetBindings</span>(<span style=color:#a6e22e>messages</span>.<span style=color:#a6e22e>MyMessageBindings</span>().<span style=color:#a6e22e>Kafka</span>())
+</span></span></code></pre></div></div></div></div></details><h2 id=correlation-id>Correlation ID
+<a class=anchor href=#correlation-id>#</a></h2><p>Correlation ID is a user-defined unique identifier used to correlate the request and response messages.
+Its <code>location</code> field determines where the value is stored in the message—in its payload or headers.
+Briefly, the location has the format:</p><pre tabindex=0><code>$message.&lt;payload|header&gt;#/a/json/pointer
+</code></pre><p>where <code>$message</code> is a special keyword that means the message itself, <code>payload</code> or <code>header</code> is the target field, and
+<code>#/a/json/pointer</code> is the path to the field in <a href=https://tools.ietf.org/html/rfc6901>JSON Pointer (RFC 6901)</a> format.
+E.g. <code>$message.payload#/field1/10/field2</code>.</p><p>The <code>go-asyncapi</code> is able to generate the code that sets and retrieves a correlation ID value from a message.
+Despite the name, the JSONPointer path works with all formats, not only JSON—it is interpreted by the
+tool as just a path through generated nested Go&rsquo;s types.</p><details><summary>Correlation ID example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-5 id=tabs-5-0 checked>
+<label for=tabs-5-0>Definition</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>components</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>messages</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>myMessage</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>type</span>: <span style=color:#ae81ff>object</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>properties</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>name</span>:
+</span></span><span style=display:flex><span>            <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span><span style=display:flex><span>          <span style=color:#f92672>age</span>:
+</span></span><span style=display:flex><span>            <span style=color:#f92672>type</span>: <span style=color:#ae81ff>integer</span>
+</span></span><span style=display:flex><span>          <span style=color:#f92672>correlationId</span>:
+</span></span><span style=display:flex><span>            <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>correlationId</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>location</span>: <span style=color:#e6db74>&#39;$message.payload#/correlationId&#39;</span>
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-5 id=tabs-5-1>
+<label for=tabs-5-1>Generated message code</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>messages</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// MyMessageOut --  (Outbound Message)
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>MyMessageOut</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Payload</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Name</span>          <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Age</span>           <span style=color:#66d9ef>int</span>
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>CorrelationID</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Headers</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#a6e22e>any</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#a6e22e>MyMessageOut</span>) <span style=color:#a6e22e>SetCorrelationID</span>(<span style=color:#a6e22e>value</span> <span style=color:#66d9ef>string</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>v0</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>Payload</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>v0</span>.<span style=color:#a6e22e>CorrelationID</span> = <span style=color:#a6e22e>value</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>Payload</span> = <span style=color:#a6e22e>v0</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// MyMessageIn --  (Inbound Message)
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>MyMessageIn</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Payload</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Name</span>          <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Age</span>           <span style=color:#66d9ef>int</span>
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>CorrelationID</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Headers</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#a6e22e>any</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>m</span> <span style=color:#a6e22e>MyMessageIn</span>) <span style=color:#a6e22e>CorrelationID</span>() (<span style=color:#a6e22e>value</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>err</span> <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>v0</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>m</span>.<span style=color:#a6e22e>Payload</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>v1</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>v0</span>.<span style=color:#a6e22e>CorrelationID</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>value</span> = <span style=color:#a6e22e>v1</span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-5 id=tabs-5-2>
+<label for=tabs-5-2>Usage</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#a6e22e>message</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>messages</span>.<span style=color:#a6e22e>NewMyMessageOut</span>().<span style=color:#a6e22e>WithPayload</span>(<span style=color:#e6db74>&#34;Hello, world!&#34;</span>)
+</span></span><span style=display:flex><span><span style=color:#a6e22e>message</span>.<span style=color:#a6e22e>SetCorrelationID</span>(<span style=color:#e6db74>&#34;123&#34;</span>)
+</span></span></code></pre></div></div></div></div></details><h3 id=symbols-encoding>Symbols encoding
+<a class=anchor href=#symbols-encoding>#</a></h3><p>AsyncAPI specification states that Correlation id location contains the
+<a href=https://datatracker.ietf.org/doc/html/rfc6901>JSON Pointer</a> after the <code>#</code> symbol. According to the specification,
+the JSON Pointer is a string that contains a sequence of encoded symbols separated by <code>/</code>.</p><p>Encoding rules are:</p><ul><li>Alphanumeric characters and symbols <code>-</code>, <code>.</code>, <code>_</code> are written as is.</li><li>Tilda symbol <code>~</code> must be written as <code>~0</code>.</li><li>Forward slash <code>/</code> must be written as <code>~1</code>.</li><li>Quotes at the beginning and at the end of path item (single or double) have special meaning, see below.</li><li>Other symbols must be percent-encoded as described in <a href=https://tools.ietf.org/html/rfc3986#section-2.1>RFC 3986</a>
+using the <code>%</code> character followed by two hexadecimal digits (<a href=https://www.w3schools.com/tags/ref_urlencode.ASP>encoding table</a>)</li></ul><p>Path items wrapped in quotes (single or double) are always treated as strings. Quotes are stripped before
+path evaluation. The only use-case for this is to force the path item to be treated as a string, not as an integer.</p><p>E.g., <code>$message.payload#/~0field%20_1/'10'/%22field2%22~1foo</code> contains three fields: <code>~field _1</code>, <code>10</code>
+(a string, not an integer) and <code>"field2"/foo</code>.</p><h3 id=x-go-ignore>x-go-ignore
+<a class=anchor href=#x-go-ignore>#</a></h3><p>If set to <strong>true</strong>, the correlation id code will be ignored.</p><details><summary>Example</summary><div class=markdown-inner><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>components</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>messages</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>myMessage</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>type</span>: <span style=color:#ae81ff>object</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>properties</span>:
+</span></span><span style=display:flex><span>          <span style=color:#f92672>name</span>:
+</span></span><span style=display:flex><span>            <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span><span style=display:flex><span>          <span style=color:#f92672>age</span>:
+</span></span><span style=display:flex><span>            <span style=color:#f92672>type</span>: <span style=color:#ae81ff>integer</span>
+</span></span><span style=display:flex><span>          <span style=color:#f92672>correlationId</span>:
+</span></span><span style=display:flex><span>            <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>correlationId</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>location</span>: <span style=color:#e6db74>&#39;$message.payload#/correlationId&#39;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>x-go-ignore</span>: <span style=color:#66d9ef>true</span>
+</span></span></code></pre></div></div></details><h2 id=x-go-name>x-go-name
+<a class=anchor href=#x-go-name>#</a></h2><p>This extra field is used to explicitly set the name of the message in generated code. By default, the Go name is
+generated from the AsyncAPI message name by converting it to CamelCase.</p><details><summary>Example</summary><div class=markdown-inner><div class=book-tabs><input type=radio class=toggle name=tabs-6 id=tabs-6-0 checked>
+<label for=tabs-6-0>Definition</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>components</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>messages</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>myMessage</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>x-go-name</span>: <span style=color:#ae81ff>FooBar</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>description</span>: <span style=color:#ae81ff>MyMessage</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span></code></pre></div></div><input type=radio class=toggle name=tabs-6 id=tabs-6-1>
+<label for=tabs-6-1>Generated message code</label><div class="book-tabs-content markdown-inner"><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#75715e>/*
+</span></span></span><span style=display:flex><span><span style=color:#75715e>FooBarOut --  (Outbound Message)
+</span></span></span><span style=display:flex><span><span style=color:#75715e>MyMessage
+</span></span></span><span style=display:flex><span><span style=color:#75715e>*/</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>FooBarOut</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Payload</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Headers</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#a6e22e>any</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#75715e>/*
+</span></span></span><span style=display:flex><span><span style=color:#75715e>FooBarIn --  (Inbound Message)
+</span></span></span><span style=display:flex><span><span style=color:#75715e>MyMessage
+</span></span></span><span style=display:flex><span><span style=color:#75715e>*/</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>FooBarIn</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Payload</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Headers</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#a6e22e>any</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>//...
+</span></span></span></code></pre></div></div></div></div></details><h2 id=x-go-ignore-1>x-go-ignore
+<a class=anchor href=#x-go-ignore-1>#</a></h2><p>If this extra field is set to <strong>true</strong>, the message will not be generated.
+All references to this message in the generated code (if any) are replaced by Go <code>any</code> type.</p><details><summary>Example</summary><div class=markdown-inner><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>components</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>messages</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>myMessage</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>x-go-ignore</span>: <span style=color:#66d9ef>true</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>description</span>: <span style=color:#ae81ff>MyMessage</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>payload</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>type</span>: <span style=color:#ae81ff>string</span>
+</span></span></code></pre></div></div></details></article><footer class=book-footer><div class="flex flex-wrap justify-between"></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><label for=menu-control class="hidden book-menu-overlay"></label></div></main></body></html>
