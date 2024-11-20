@@ -2,12 +2,12 @@ package amqp
 
 import (
 	"encoding/json"
+	"github.com/bdragon300/go-asyncapi/internal/render/proto"
 	"time"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
-	renderAmqp "github.com/bdragon300/go-asyncapi/internal/render/amqp"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"gopkg.in/yaml.v3"
 )
@@ -48,19 +48,26 @@ type operationBindings struct {
 }
 
 func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, parent *render.Channel) (common.Renderer, error) {
-	baseChan, err := pb.BuildBaseProtoChannel(ctx, channel, parent)
+	golangName := parent.GolangName + pb.ProtoTitle
+	chanStruct, err := asyncapi.BuildProtoChannelStruct(ctx, channel, parent, pb.ProtoName, golangName)
 	if err != nil {
 		return nil, err
 	}
 
-	baseChan.Struct.Fields = append(
-		baseChan.Struct.Fields,
+	chanStruct.Fields = append(
+		chanStruct.Fields,
 		render.GoStructField{Name: "exchange", Type: &render.GoSimple{Name: "string"}},
 		render.GoStructField{Name: "queue", Type: &render.GoSimple{Name: "string"}},
 		render.GoStructField{Name: "routingKey", Type: &render.GoSimple{Name: "string"}},
 	)
 
-	return &renderAmqp.ProtoChannel{BaseProtoChannel: *baseChan}, nil
+	return &proto.ProtoChannel{
+		Channel: parent,
+		GolangNameProto: golangName,
+		Struct: chanStruct,
+		ProtoName: pb.ProtoName,
+		ProtoTitle: pb.ProtoTitle,
+	}, nil
 }
 
 func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *render.GoValue, jsonVals types.OrderedMap[string, string], err error) {

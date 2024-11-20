@@ -69,6 +69,18 @@ func (o OrderedMap[K, V]) GetOr(key K, defaultValue V) V {
 	return defaultValue
 }
 
+func (o OrderedMap[K, V]) GetOrEmpty(key K) (res V) {
+	if v, ok := o.Get(key); ok {
+		return v
+	}
+	return
+}
+
+func (o OrderedMap[K, V]) Has(key K) bool {
+	_, ok := o.data[key]
+	return ok
+}
+
 func (o *OrderedMap[K, V]) Set(key K, value V) {
 	if o.data == nil {
 		o.data = make(map[K]V)

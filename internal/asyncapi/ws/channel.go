@@ -2,11 +2,11 @@ package ws
 
 import (
 	"encoding/json"
+	renderWs "github.com/bdragon300/go-asyncapi/internal/render/ws"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
-	renderWs "github.com/bdragon300/go-asyncapi/internal/render/ws"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"gopkg.in/yaml.v3"
 )
@@ -18,14 +18,21 @@ type channelBindings struct {
 }
 
 func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, parent *render.Channel) (common.Renderer, error) {
-	baseChan, err := pb.BuildBaseProtoChannel(ctx, channel, parent)
+	golangName := parent.GolangName + pb.ProtoTitle
+	chanStruct, err := asyncapi.BuildProtoChannelStruct(ctx, channel, parent, pb.ProtoName, golangName)
 	if err != nil {
 		return nil, err
 	}
 
-	baseChan.Struct.Fields = append(baseChan.Struct.Fields, render.GoStructField{Name: "topic", Type: &render.GoSimple{Name: "string"}})
+	chanStruct.Fields = append(chanStruct.Fields, render.GoStructField{Name: "topic", Type: &render.GoSimple{Name: "string"}})
 
-	return &renderWs.ProtoChannel{BaseProtoChannel: *baseChan}, nil
+	return &renderWs.ProtoChannel{
+		Channel: parent,
+		GolangNameProto: golangName,
+		Struct: chanStruct,
+		ProtoName: pb.ProtoName,
+		ProtoTitle: pb.ProtoTitle,
+	}, nil
 }
 
 func (pb ProtoBuilder) BuildChannelBindings(

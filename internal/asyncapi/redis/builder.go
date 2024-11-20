@@ -1,16 +1,18 @@
 package redis
 
-import (
-	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
-)
-
 type ProtoBuilder struct {
-	asyncapi.BaseProtoBuilder
+	ProtoName, ProtoTitle string
 }
 
 var Builder = ProtoBuilder{
-	BaseProtoBuilder: asyncapi.BaseProtoBuilder{
-		ProtoName:  "redis",
-		ProtoTitle: "Redis",
-	},
+	ProtoName:  "redis",
+	ProtoTitle: "Redis",
+}
+
+func (pb ProtoBuilder) ProtocolName() string {
+	return pb.ProtoName
+}
+
+func (pb ProtoBuilder) ProtocolTitle() string {
+	return pb.ProtoTitle
 }

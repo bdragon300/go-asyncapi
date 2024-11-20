@@ -1,0 +1,13 @@
+{{.Type.D}}
+
+func (p {{.Type.U}}) Name() string {
+    return {{.Name | lit}}
+}
+
+func (p {{.Type.U}}) String() string {
+    {{if .PureString}}
+        return string(p)
+    {{else}}
+        return {{qual "fmt.Sprint"}}(p.Value)
+    {{end}}
+}

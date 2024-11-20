@@ -2,12 +2,12 @@ package kafka
 
 import (
 	"encoding/json"
+	renderKafka "github.com/bdragon300/go-asyncapi/internal/render/kafka"
 	"time"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
-	renderKafka "github.com/bdragon300/go-asyncapi/internal/render/kafka"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
@@ -34,14 +34,21 @@ type operationBindings struct {
 }
 
 func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, parent *render.Channel) (common.Renderer, error) {
-	baseChan, err := pb.BuildBaseProtoChannel(ctx, channel, parent)
+	golangName := parent.GolangName + pb.ProtoTitle
+	chanStruct, err := asyncapi.BuildProtoChannelStruct(ctx, channel, parent, pb.ProtoName, golangName)
 	if err != nil {
 		return nil, err
 	}
 
-	baseChan.Struct.Fields = append(baseChan.Struct.Fields, render.GoStructField{Name: "topic", Type: &render.GoSimple{Name: "string"}})
+	chanStruct.Fields = append(chanStruct.Fields, render.GoStructField{Name: "topic", Type: &render.GoSimple{Name: "string"}})
 
-	return &renderKafka.ProtoChannel{BaseProtoChannel: *baseChan}, nil
+	return &renderKafka.ProtoChannel{
+		Channel: parent,
+		GolangNameProto: golangName,
+		Struct: chanStruct,
+		ProtoName: pb.ProtoName,
+		ProtoTitle: pb.ProtoTitle,
+	}, nil
 }
 
 func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *render.GoValue, jsonVals types.OrderedMap[string, string], err error) {

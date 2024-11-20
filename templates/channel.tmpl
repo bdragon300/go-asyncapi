@@ -1,0 +1,52 @@
+{{if .ParametersStruct}}
+    {{.ParametersStruct.D}}
+{{end}}
+
+{{ if .BindingsStruct}}
+    {{ .BindingsStruct.D }}
+    {{range $proto := .BindingsProtocols}}
+        {{$bindingsValue := .ProtoBindingsValue $proto}}
+        func (c *{{ .BindingStruct.U }}) {{ $proto | title }}() {{$bindingsValue.Type.U}} {
+            b := {{$bindingsValue.U}}
+            {{if .BindingsChannelPromise}}
+                {{$jvals := .BindingsChannelPromise.T.JSONValues.GetOrEmpty $proto}}
+                {{range $jval := $jvals.Entries}}
+                    {{$jval.Key | lowerCamelize }} := {{$jval.Value | lit}}
+                    _ = {{qual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | lowerCamelize }}), &b.{{$jval.Key}})
+                {{end}}
+            {{end}}
+            {{if .BindingsPublishPromise}}
+                {{$jvals := .BindingsPublishPromise.T.JSONValues.GetOrEmpty $proto}}
+                {{range $jval := $jvals.Entries}}
+                    {{$jval.Key | lowerCamelize }}Pub := {{$jval.Value | lit}}
+                    _ = {{qual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | lowerCamelize }}Pub), &b.PublisherBindings.{{$jval.Key}})
+                {{end}}
+            {{end}}
+            {{if .BindingsSubscribePromise}}
+                {{$jvals := .BindingsSubscribePromise.T.JSONValues.GetOrEmpty $proto}}
+                {{range $jval := $jvals.Entries}}
+                    {{$jval.Key | lowerCamelize }}Sub := {{$jval.Value | lit}}
+                    _ = {{qual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | lowerCamelize }}Sub), &b.SubscriberBindings.{{$jval.Key}})
+                {{end}}
+            {{end}}
+            return b
+        }
+    {{end}}
+{{end}}
+
+func {{.GolangName}}Name({{if .ParametersStruct}}params {{.ParametersStruct.U}}{{end}}) {{qualr "" "ParamString"}} {
+    {{if .ParametersStruct}}
+        paramMap := map[string]string{
+        {{range $f := .ParametersStruct.Fields}}params.{{$f.Name}}.Name(): params.{{$f.Name}}.String(),
+        {{end}}
+        }
+        return {{qualr "" "ParamString"}}{
+            Expr: "{{.RawName | lit}}",
+            Parameters: paramMap,
+        }
+    {{else}}
+        return {{qualr "" "ParamString"}}{
+            Expr: "{{.RawName | lit}}",
+        }
+    {{end}}
+}

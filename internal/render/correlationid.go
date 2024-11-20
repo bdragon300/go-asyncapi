@@ -40,18 +40,18 @@ func (c CorrelationID) String() string {
 	return "CorrelationID " + c.Name
 }
 
-func (c CorrelationID) RenderSetterDefinition(ctx *common.RenderContext, message *Message) []*j.Statement {
-	ctx.LogStartRender("CorrelationID.RenderSetterDefinition", "", c.Name, "definition", false)
+func (c CorrelationID) RenderSetterBody(ctx *common.RenderContext, inVar string, inVarType *GoStruct) []*j.Statement {
+	ctx.LogStartRender("CorrelationID.RenderSetterBody", "", c.Name, "definition", false)
 	defer ctx.LogFinishRender()
 
-	f, ok := lo.Find(message.OutStruct.Fields, func(item GoStructField) bool { return item.Name == c.StructField })
+	f, ok := lo.Find(inVarType.Fields, func(item GoStructField) bool { return item.Name == c.StructField })
 	if !ok {
-		panic(fmt.Errorf("field %s not found in OutStruct", c.StructField))
+		panic(fmt.Errorf("field %s not found in inVarType", c.StructField))
 	}
 
 	// Define the first anchor with initial value
 	body := []*j.Statement{
-		j.Op("v0 :=").Id(message.OutStruct.ReceiverName() + "." + c.StructField),
+		j.Op("v0 :=").Id(inVar + "." + c.StructField),
 	}
 
 	// Extract a value from types chain
@@ -75,31 +75,85 @@ func (c CorrelationID) RenderSetterDefinition(ctx *common.RenderContext, message
 		body = append(body, j.Add(bodySteps[i].varValue).Op("=").Add(exprVal.Clone()))
 		exprVal = j.Id(bodySteps[i].varValueVarName)
 	}
-	body = append(body, j.Id(message.OutStruct.ReceiverName()+"."+c.StructField).Op("= v0"))
-
-	receiver := j.Id(message.OutStruct.ReceiverName()).Id(message.OutStruct.Name)
-
-	// Method SetCorrelationID(value any)
-	// TODO: comment from description
-	return []*j.Statement{
-		j.Func().Params(receiver.Clone()).Id("SetCorrelationID").
-			Params(j.Id("value").Add(utils.ToCode(bodySteps[len(bodySteps)-1].varType.RenderUsage(ctx))...)).
-			Block(utils.ToCode(body)...),
-	}
+	return append(body, j.Id(inVar+"."+c.StructField).Op("= v0"))
 }
 
-func (c CorrelationID) RenderGetterDefinition(ctx *common.RenderContext, message *Message) []*j.Statement {
+func (c CorrelationID) TargetVarType(ctx *common.RenderContext, varType *GoStruct) common.GolangType {
+	f, ok := lo.Find(varType.Fields, func(item GoStructField) bool { return item.Name == c.StructField })
+	if !ok {
+		panic(fmt.Errorf("field %s not found in varType", c.StructField))
+	}
+	bodySteps, err := c.renderValueExtractionCode(ctx, c.LocationPath, f.Type, false)
+	if err != nil {
+		panic(fmt.Errorf(
+			"cannot generate CorrelationID value setter code for types chain at location %q: %s",
+			strings.Join(c.LocationPath, "/"),
+			err.Error(),
+		))
+	}
+	return bodySteps[len(bodySteps)-1].varType
+}
+
+//func (c CorrelationID) RenderSetterDefinition(ctx *common.RenderContext, message *Message) []*j.Statement {
+//	ctx.LogStartRender("CorrelationID.RenderSetterDefinition", "", c.Name, "definition", false)
+//	defer ctx.LogFinishRender()
+//
+//	f, ok := lo.Find(message.OutStruct.Fields, func(item GoStructField) bool { return item.Name == c.StructField })
+//	if !ok {
+//		panic(fmt.Errorf("field %s not found in OutStruct", c.StructField))
+//	}
+//
+//	// Define the first anchor with initial value
+//	body := []*j.Statement{
+//		j.Op("v0 :=").Id(message.OutStruct.ReceiverName() + "." + c.StructField),
+//	}
+//
+//	// Extract a value from types chain
+//	bodySteps, err := c.renderValueExtractionCode(ctx, c.LocationPath, f.Type, false)
+//	if err != nil {
+//		panic(fmt.Errorf(
+//			"cannot generate CorrelationID value setter code for types chain at location %q: %s",
+//			strings.Join(c.LocationPath, "/"),
+//			err.Error(),
+//		))
+//	}
+//
+//	// Exclude the last step
+//	body = append(body, lo.FlatMap(bodySteps[:len(bodySteps)-1], func(item correlationIDExpansionStep, _ int) []*j.Statement {
+//		return item.body
+//	})...)
+//
+//	// Collapse the value back
+//	exprVal := j.Id("value")
+//	for i := len(bodySteps) - 1; i >= 0; i-- {
+//		body = append(body, j.Add(bodySteps[i].varValue).Op("=").Add(exprVal.Clone()))
+//		exprVal = j.Id(bodySteps[i].varValueVarName)
+//	}
+//	body = append(body, j.Id(message.OutStruct.ReceiverName()+"."+c.StructField).Op("= v0"))
+//
+//	receiver := j.Id(message.OutStruct.ReceiverName()).Id(message.OutStruct.Name)
+//
+//	// Method SetCorrelationID(value any)
+//	// TODO: comment from description
+//	return []*j.Statement{
+//		j.Func().Params(receiver.Clone()).Id("SetCorrelationID").
+//			Params(j.Id("value").Add(utils.ToCode(bodySteps[len(bodySteps)-1].varType.RenderUsage(ctx))...)).
+//			Block(utils.ToCode(body)...),
+//	}
+//}
+
+func (c CorrelationID) RenderGetterBody(ctx *common.RenderContext, outVar string, outVarType *GoStruct) []*j.Statement {
 	ctx.LogStartRender("CorrelationID.RenderGetterDefinition", "", c.Name, "definition", false)
 	defer ctx.LogFinishRender()
 
-	f, ok := lo.Find(message.InStruct.Fields, func(item GoStructField) bool { return item.Name == c.StructField })
+	f, ok := lo.Find(outVarType.Fields, func(item GoStructField) bool { return item.Name == c.StructField })
 	if !ok {
-		panic(fmt.Errorf("field %s not found in InStruct", c.StructField))
+		panic(fmt.Errorf("field %s not found in outVarType", c.StructField))
 	}
 
 	// Define the first anchor with initial value
 	body := []*j.Statement{
-		j.Id("v0").Op(":=").Id(message.InStruct.ReceiverName() + "." + c.StructField),
+		j.Id("v0").Op(":=").Id(outVarType.ReceiverName() + "." + c.StructField),
 	}
 
 	// Extract a value from types chain
@@ -114,22 +168,52 @@ func (c CorrelationID) RenderGetterDefinition(ctx *common.RenderContext, message
 	body = append(body, lo.FlatMap(bodySteps, func(item correlationIDExpansionStep, _ int) []*j.Statement {
 		return item.body
 	})...)
-	receiver := j.Id(message.InStruct.ReceiverName()).Id(message.InStruct.Name)
 
-	body = append(body,
-		j.Id("value").Op("=").Id(bodySteps[len(bodySteps)-1].varName),
-		j.Return(),
-	)
-
-	// Method CorrelationID() (any, error)
-	// TODO: comment from description
-	return []*j.Statement{
-		j.Func().Params(receiver.Clone()).Id("CorrelationID").
-			Params().
-			Params(j.Id("value").Add(utils.ToCode(bodySteps[len(bodySteps)-1].varType.RenderUsage(ctx))...), j.Err().Error()).
-			Block(utils.ToCode(body)...),
-	}
+	return append(body, j.Id(outVar).Op("=").Id(bodySteps[len(bodySteps)-1].varName))
 }
+
+//func (c CorrelationID) RenderGetterDefinition(ctx *common.RenderContext, message *Message) []*j.Statement {
+//	ctx.LogStartRender("CorrelationID.RenderGetterDefinition", "", c.Name, "definition", false)
+//	defer ctx.LogFinishRender()
+//
+//	f, ok := lo.Find(message.InStruct.Fields, func(item GoStructField) bool { return item.Name == c.StructField })
+//	if !ok {
+//		panic(fmt.Errorf("field %s not found in InStruct", c.StructField))
+//	}
+//
+//	// Define the first anchor with initial value
+//	body := []*j.Statement{
+//		j.Id("v0").Op(":=").Id(message.InStruct.ReceiverName() + "." + c.StructField),
+//	}
+//
+//	// Extract a value from types chain
+//	bodySteps, err := c.renderValueExtractionCode(ctx, c.LocationPath, f.Type, true)
+//	if err != nil {
+//		panic(fmt.Errorf(
+//			"cannot generate CorrelationID value getter code for types chain at location %s: %s",
+//			strings.Join(c.LocationPath, "/"),
+//			err.Error(),
+//		))
+//	}
+//	body = append(body, lo.FlatMap(bodySteps, func(item correlationIDExpansionStep, _ int) []*j.Statement {
+//		return item.body
+//	})...)
+//	receiver := j.Id(message.InStruct.ReceiverName()).Id(message.InStruct.Name)
+//
+//	body = append(body,
+//		j.Id("value").Op("=").Id(bodySteps[len(bodySteps)-1].varName),
+//		j.Return(),
+//	)
+//
+//	// Method CorrelationID() (any, error)
+//	// TODO: comment from description
+//	return []*j.Statement{
+//		j.Func().Params(receiver.Clone()).Id("CorrelationID").
+//			Params().
+//			Params(j.Id("value").Add(utils.ToCode(bodySteps[len(bodySteps)-1].varType.RenderUsage(ctx))...), j.Err().Error()).
+//			Block(utils.ToCode(body)...),
+//	}
+//}
 
 type correlationIDExpansionStep struct {
 	body            []*j.Statement

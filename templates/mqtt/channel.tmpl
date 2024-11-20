@@ -1,0 +1,59 @@
+type {{(print .GolangNameProto "Server") | lowerCamelize}} interface {
+    Open{{.GolangNameProto}}(ctx {{qual "context.Context"}}, {{if .ParametersStruct}}params {{.ParametersStruct.U}}{{end}}) (*{{.Struct.U}}, error)
+    {{if .Publisher}}Producer() {{qualr .ProtoName "Producer"}}{{end}}
+    {{if .Subscriber}}Consumer() {{qualr .ProtoName "Consumer"}}{{end}}
+}
+
+func New{{.Struct.Name}}(
+    {{if .ParametersStruct}}params {{.ParametersStruct.U}},{{end}}
+    {{if .Publisher}}publisher {{qualr .ProtoName "Publisher"}},{{end}}
+    {{if .Subscriber}}subscriber {{qualr .ProtoName "Subscriber"}},{{end}}
+) *{{.Struct.U}} {
+    res := {{.Struct.U}}{
+        name: {{.GolangName}}Name({{if .ParametersStruct}}params{{end}}),
+        {{if .Publisher}}publisher: publisher,{{end}}
+        {{if .Subscriber}}subscriber: subscriber,{{end}}
+    }
+    res.topic = res.name.String()
+    return &res
+}
+
+{{template "proto/channel/openFunction" .}}
+
+{{.Struct.D}}
+
+{{template "proto/channel/commonMethods" .}}
+
+func (c {{.Struct.U}}) Topic() string {
+    return c.topic
+}
+
+{{if .Publisher}}
+    {{template "proto/channel/outputMethods" .}}
+
+    {{$pubMessageType := ptr .FallbackMessageType}}
+    {{if .PubMessagePromise }}
+        {{$pubMessageType = ptr .PubMessagePromise.T.OutStruct}}
+    {{end}}
+
+    func (c {{.Struct.U}}) SealEnvelope(envelope {{qualr .ProtoName "EnvelopeWriter"}}, message {{$pubMessageType.U}}) error {
+        envelope.ResetPayload()
+        {{if .PubMessagePromise /*Message is set for Channel in spec*/ }}
+            if err := message.Marshal{{.ProtoName | title}}Envelope(envelope); err != nil {
+                return err
+            }
+        {{else /*No Message set for Channel in spec*/}}
+            enc := {{qual "encoding/json.NewEncoder"}}(envelope)
+            if err := enc.Encode(message); err != nil {
+                return err
+            }
+        {{end}}
+        envelope.SetTopic(c.topic)
+        {{if and .PubMessagePromise (.PubMessagePromise.T.HasProtoBindings .ProtoName)}}
+            envelope.SetBindings(.PubMessagePromise.T.BindingsStruct.U){}.{{.ProtoName | title}}()
+        {{end}}
+        return nil
+    }
+{{end}}
+
+{{if .Subscriber}}{{template "proto/channel/subscribeMethods" .}}{{end}}
