@@ -2,7 +2,8 @@ package ws
 
 import (
 	"encoding/json"
-	renderWs "github.com/bdragon300/go-asyncapi/internal/render/ws"
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -17,35 +18,34 @@ type channelBindings struct {
 	Headers any    `json:"headers" yaml:"headers"` // jsonschema object
 }
 
-func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, parent *render.Channel) (common.Renderer, error) {
-	golangName := parent.GolangName + pb.ProtoTitle
+func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, parent *render.Channel) (*render.ProtoChannel, error) {
+	golangName := parent.GolangName + utils.TransformInitialisms(pb.ProtoName)
 	chanStruct, err := asyncapi.BuildProtoChannelStruct(ctx, channel, parent, pb.ProtoName, golangName)
 	if err != nil {
 		return nil, err
 	}
 
-	chanStruct.Fields = append(chanStruct.Fields, render.GoStructField{Name: "topic", Type: &render.GoSimple{Name: "string"}})
+	chanStruct.Fields = append(chanStruct.Fields, lang.GoStructField{Name: "topic", Type: &lang.GoSimple{Name: "string"}})
 
-	return &renderWs.ProtoChannel{
-		Channel: parent,
+	return &render.ProtoChannel{
+		Channel:         parent,
 		GolangNameProto: golangName,
-		Struct: chanStruct,
-		ProtoName: pb.ProtoName,
-		ProtoTitle: pb.ProtoTitle,
+		Struct:          chanStruct,
+		ProtoName:       pb.ProtoName,
 	}, nil
 }
 
 func (pb ProtoBuilder) BuildChannelBindings(
 	ctx *common.CompileContext,
 	rawData types.Union2[json.RawMessage, yaml.Node],
-) (vals *render.GoValue, jsonVals types.OrderedMap[string, string], err error) {
+) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	var bindings channelBindings
 	if err = types.UnmarshalRawsUnion2(rawData, &bindings); err != nil {
 		err = types.CompileError{Err: err, Path: ctx.PathStackRef(), Proto: pb.ProtoName}
 		return
 	}
 
-	vals = render.ConstructGoValue(bindings, []string{"Query", "Headers"}, &render.GoSimple{Name: "ChannelBindings", Import: ctx.RuntimeModule(pb.ProtoName)})
+	vals = lang.ConstructGoValue(bindings, []string{"Query", "Headers"}, &lang.GoSimple{Name: "ChannelBindings", Import: ctx.RuntimeModule(pb.ProtoName)})
 	if bindings.Query != nil {
 		v, err2 := json.Marshal(bindings.Query)
 		if err2 != nil {
@@ -66,6 +66,6 @@ func (pb ProtoBuilder) BuildChannelBindings(
 	return
 }
 
-func (pb ProtoBuilder) BuildOperationBindings(_ *common.CompileContext, _ types.Union2[json.RawMessage, yaml.Node]) (vals *render.GoValue, jsonVals types.OrderedMap[string, string], err error) {
+func (pb ProtoBuilder) BuildOperationBindings(_ *common.CompileContext, _ types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	return
 }

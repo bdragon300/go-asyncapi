@@ -1,0 +1,10 @@
+{{define "definition"}}
+    {{ .Name | goid }}
+{{end}}
+{{define "usage"}}
+    {{- if and .Import (ne .Import .ctx.CurrentPackage) -}}
+        {{ qual (print .Import "." .Name) }}
+    {{- else -}}
+        {{ .Name | goid }}
+    {{- end -}}
+{{end}}

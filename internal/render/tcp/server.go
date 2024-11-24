@@ -7,16 +7,16 @@ package tcp
 //	ProtoName, ProtoTitle string
 //}
 //
-//func (ps ProtoServer) DirectRendering() bool {
+//func (ps ProtoServer) Selectable() bool {
 //	return true
 //}
 //
-//func (ps ProtoServer) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
-//	ctx.LogStartRender("Server", "", ps.Parent.Name, "definition", ps.DirectRendering(), "proto", ps.ProtoName)
+//func (ps ProtoServer) D(ctx *common.RenderContext) []*j.Statement {
+//	ctx.LogStartRender("Server", "", ps.Parent.Name, "definition", ps.Selectable(), "proto", ps.ProtoName)
 //	defer ctx.LogFinishRender()
 //	var res []*j.Statement
 //	res = append(res, ps.RenderNewFunc(ctx)...)
-//	res = append(res, ps.Struct.RenderDefinition(ctx)...)
+//	res = append(res, ps.Struct.D(ctx)...)
 //	res = append(res, ps.RenderCommonMethods(ctx)...)
 //	res = append(res, ps.renderChannelMethods(ctx)...)
 //	res = append(res, ps.RenderProducerMethods(ctx)...)
@@ -24,10 +24,10 @@ package tcp
 //	return res
 //}
 //
-//func (ps ProtoServer) RenderUsage(ctx *common.RenderContext) []*j.Statement {
-//	ctx.LogStartRender("Server", "", ps.Parent.Name, "usage", ps.DirectRendering(), "proto", ps.ProtoName)
+//func (ps ProtoServer) U(ctx *common.RenderContext) []*j.Statement {
+//	ctx.LogStartRender("Server", "", ps.Parent.Name, "usage", ps.Selectable(), "proto", ps.ProtoName)
 //	defer ctx.LogFinishRender()
-//	return ps.Struct.RenderUsage(ctx)
+//	return ps.Struct.U(ctx)
 //}
 //
 //func (ps ProtoServer) ID() string {

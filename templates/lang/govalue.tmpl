@@ -1,0 +1,53 @@
+{{define "usage"}}
+    {{if .Type}}
+        {{$pt := .AsPointerWrapperType .Type}}
+        {{if and $pt $pt.IsPointer}}
+            {{if .Empty}}
+                {{if .NilCurlyBrakets /* &{} -> ToPtr({}) */ }}{{qualr "" "ToPtr"}}({}){{else /* &nil -> nil */}}nil{{end}}
+            {{else if .Literal}}
+                {{$t := .AsGolangType $pt}}
+                {{if $t /* &int(123) -> ToPtr(int(123)) */}}
+                    {{qualr "" "ToPtr"}}({{$t.U}}({{template "value_expr" .}}))
+                {{else /* &123 -> ToPtr(123) */}}
+                    {{qualr "" "ToPtr"}}({{template "value_expr" .}})
+                {{end}}
+            {{else /* &AnyType{}; &map[string]int{}; &[]int{} */}}
+                &{{.Type.U}}{{if .Literal /* int(123) */}}({{template "value_expr" .}}){{else}}{{template "value_expr" .}}{{end}}
+            {{end}}
+        {{else}}
+            {{.Type.U}}{{if .Literal /* int(123) */}}({{template "value_expr" .}}){{else}}{{template "value_expr" .}}{{end}}
+        {{end}}
+    {{else}}
+        {{template "value_expr" .}}
+    {{end}}
+{{end}}
+
+{{define "value_expr"}}
+    {{if .Literal /* Literal */}}
+        {{$v := .AsRenderer .Literal}}
+        {{if $v}}{{ $v.U }}{{else}}{{ .Literal | golit }}{{end}}
+    {{else if .DictVals.Len /* Map */}}
+        {
+        {{range .DictVals.Entries}}
+            {{$v := .AsRenderer .Value}}
+            {{.Key | golit }}: {{if $v}}{{ $v.U }}{{else}}{{ .Value | golit }}{{end}},
+        {{end}}
+        }
+    {{else if .StructVals.Len /* Struct */}}
+        {
+        {{range .StructVals.Entries}}
+            {{$v := .AsRenderer .Value}}
+            {{.Key | goid }}: {{if $v}}{{ $v.U }}{{else}}{{ .Value | golit }}{{end}},
+        {{end}}
+        }
+    {{else if .ArrayVals /* Array/slice */}}
+        {
+        {{range .ArrayVals}}
+            {{$v := .AsRenderer .}}
+            {{if $v}}{{ $v.U }}{{else}}{{ . | golit }}{{end}},
+        {{end}}
+        }
+    {{else /*Empty value*/ }}
+        {{if .NilCurlyBrakets}}{}{{else}}nil{{end}}
+    {{end}}
+{{end}}

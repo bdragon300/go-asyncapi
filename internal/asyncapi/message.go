@@ -3,6 +3,7 @@ package asyncapi
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 
 	"github.com/bdragon300/go-asyncapi/internal/specurl"
 	"github.com/bdragon300/go-asyncapi/internal/types"
@@ -41,25 +42,31 @@ type Message struct {
 
 func (m Message) Compile(ctx *common.CompileContext) error {
 	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
-	obj, err := m.build(ctx, ctx.Stack.Top().PathItem)
+	msgs, err := m.build(ctx, ctx.Stack.Top().PathItem)
 	if err != nil {
 		return err
 	}
-	ctx.PutObject(obj)
+	for _, msg := range msgs {
+		ctx.PutObject(msg)
+	}
 	return nil
 }
 
-func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Renderer, error) {
+func (m Message) build(ctx *common.CompileContext, messageKey string) ([]common.Renderer, error) {
+	var res []common.Renderer
+
 	_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagComponent]
 	ignore := m.XIgnore || (isComponent && !ctx.CompileOpts.MessageOpts.IsAllowedName(messageKey))
 	if ignore {
 		ctx.Logger.Debug("Message denoted to be ignored")
-		return &render.Message{Dummy: true}, nil
+		res = append(res, &render.ProtoMessage{Message: &render.Message{Dummy: true}})
+		return res, nil
 	}
 	if m.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", m.Ref)
-		res := render.NewRendererPromise(m.Ref, common.PromiseOriginUser)
-		ctx.PutPromise(res)
+		prm := lang.NewRendererPromise(m.Ref, common.PromiseOriginUser)
+		ctx.PutPromise(prm)
+		res = append(res, prm)
 		return res, nil
 	}
 
@@ -73,88 +80,97 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	}
 	msgName, _ = lo.Coalesce(m.XGoName, msgName)
 
-	obj := render.Message{
+	baseMessage := render.Message{
 		Name: msgName,
-		OutStruct: &render.GoStruct{
-			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(msgName, "Out"),
-				Description:  utils.JoinNonemptyStrings("\n", m.Summary+" (Outbound Message)", m.Description),
-				DirectRender: true,
-				Import:       ctx.CurrentPackage(),
+		OutStruct: &lang.GoStruct{
+			BaseType: lang.BaseType{
+				Name:          ctx.GenerateObjName(msgName, "Out"),
+				Description:   utils.JoinNonemptyStrings("\n", m.Summary+" (Outbound Message)", m.Description),
+				HasDefinition: true,
 			},
 		},
-		InStruct: &render.GoStruct{
-			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(msgName, "In"),
-				Description:  utils.JoinNonemptyStrings("\n", m.Summary+" (Inbound Message)", m.Description),
-				DirectRender: true,
-				Import:       ctx.CurrentPackage(),
+		InStruct: &lang.GoStruct{
+			BaseType: lang.BaseType{
+				Name:          ctx.GenerateObjName(msgName, "In"),
+				Description:   utils.JoinNonemptyStrings("\n", m.Summary+" (Inbound Message)", m.Description),
+				HasDefinition: true,
 			},
 		},
 		PayloadType:         m.getPayloadType(ctx),
-		HeadersFallbackType: &render.GoMap{KeyType: &render.GoSimple{Name: "string"}, ValueType: &render.GoSimple{Name: "any", IsIface: true}},
+		HeadersFallbackType: &lang.GoMap{KeyType: &lang.GoSimple{Name: "string"}, ValueType: &lang.GoSimple{Name: "any", IsIface: true}},
 	}
-	obj.ContentType, _ = lo.Coalesce(m.ContentType, ctx.Storage.DefaultContentType())
-	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", obj.ContentType))
+	baseMessage.ContentType, _ = lo.Coalesce(m.ContentType, ctx.Storage.DefaultContentType())
+	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", baseMessage.ContentType))
 
 	// Lookup servers after linking to figure out all protocols the message is used in
-	prms := lo.Map(ctx.Storage.ActiveServers(), func(item string, _ int) *render.Promise[*render.Server] {
+	prms := lo.Map(ctx.Storage.ActiveServers(), func(item string, _ int) *lang.Promise[*render.Server] {
 		ref := specurl.BuildRef("servers", item)
-		prm := render.NewPromise[*render.Server](ref, common.PromiseOriginInternal)
+		prm := lang.NewPromise[*render.Server](ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
 		return prm
 	})
-	obj.AllServersPromises = prms
+	baseMessage.AllServersPromises = prms
 
 	// Link to Headers struct if any
 	if m.Headers != nil {
 		ctx.Logger.Trace("Message headers")
 		ref := ctx.PathStackRef("headers")
-		obj.HeadersTypePromise = render.NewPromise[*render.GoStruct](ref, common.PromiseOriginInternal)
-		obj.HeadersTypePromise.AssignErrorNote = "Probably the headers schema has type other than of 'object'?"
-		ctx.PutPromise(obj.HeadersTypePromise)
+		baseMessage.HeadersTypePromise = lang.NewPromise[*lang.GoStruct](ref, common.PromiseOriginInternal)
+		baseMessage.HeadersTypePromise.AssignErrorNote = "Probably the headers schema has type other than of 'object'?"
+		ctx.PutPromise(baseMessage.HeadersTypePromise)
 	}
-	m.setStructFields(ctx, &obj)
+	m.setStructFields(ctx, &baseMessage)
 
 	// Bindings
 	if m.Bindings != nil {
 		ctx.Logger.Trace("Message bindings")
-		obj.BindingsStruct = &render.GoStruct{
-			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(msgName, "Bindings"),
-				DirectRender: true,
-				Import:       ctx.CurrentPackage(),
+		baseMessage.BindingsStruct = &lang.GoStruct{
+			BaseType: lang.BaseType{
+				Name:          ctx.GenerateObjName(msgName, "Bindings"),
+				HasDefinition: true,
 			},
 			Fields: nil,
 		}
 
 		ref := ctx.PathStackRef("bindings")
-		obj.BindingsPromise = render.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
-		ctx.PutPromise(obj.BindingsPromise)
+		baseMessage.BindingsPromise = lang.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
+		ctx.PutPromise(baseMessage.BindingsPromise)
 	}
 
 	// Link to CorrelationID if any
 	if m.CorrelationID != nil {
 		ctx.Logger.Trace("Message correlationId")
 		ref := ctx.PathStackRef("correlationId")
-		obj.CorrelationIDPromise = render.NewPromise[*render.CorrelationID](ref, common.PromiseOriginInternal)
-		ctx.PutPromise(obj.CorrelationIDPromise)
+		baseMessage.CorrelationIDPromise = lang.NewPromise[*render.CorrelationID](ref, common.PromiseOriginInternal)
+		ctx.PutPromise(baseMessage.CorrelationIDPromise)
 	}
-	return &obj, nil
+
+	// Build protocol-specific messages for all supported protocols
+	// Here we don't know yet which channels this message is used by, so we don't have the protocols list to compile.
+	ctx.Logger.Trace("Prebuild the messages for every supported protocol")
+	for proto := range ProtocolBuilders {
+		ctx.Logger.Trace("Message", "proto", proto)
+		res = append(res, &render.ProtoMessage{
+			Message:   &baseMessage,
+			ProtoName: proto,
+		})
+	}
+
+	return res, nil
 }
 
 func (m Message) setStructFields(ctx *common.CompileContext, langMessage *render.Message) {
-	fields := []render.GoStructField{
+	fields := []lang.GoStructField{
 		{Name: "Payload", Type: langMessage.PayloadType},
 	}
 	if langMessage.HeadersTypePromise != nil {
 		ctx.Logger.Trace("Message headers has a concrete type")
-		prm := render.NewGolangTypePromise(langMessage.HeadersTypePromise.Ref(), common.PromiseOriginInternal)
+		prm := lang.NewGolangTypePromise(langMessage.HeadersTypePromise.Ref(), common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
-		fields = append(fields, render.GoStructField{Name: "Headers", Type: prm})
+		fields = append(fields, lang.GoStructField{Name: "Headers", Type: prm})
 	} else {
 		ctx.Logger.Trace("Message headers has `any` type")
-		fields = append(fields, render.GoStructField{Name: "Headers", Type: langMessage.HeadersFallbackType})
+		fields = append(fields, lang.GoStructField{Name: "Headers", Type: langMessage.HeadersFallbackType})
 	}
 
 	langMessage.OutStruct.Fields = fields
@@ -165,13 +181,13 @@ func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 	if m.Payload != nil {
 		ctx.Logger.Trace("Message payload has a concrete type")
 		ref := ctx.PathStackRef("payload")
-		prm := render.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+		prm := lang.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
 		return prm
 	}
 
 	ctx.Logger.Trace("Message payload has `any` type")
-	return &render.GoSimple{Name: "any", IsIface: true}
+	return &lang.GoSimple{Name: "any", IsIface: true}
 }
 
 type Tag struct {

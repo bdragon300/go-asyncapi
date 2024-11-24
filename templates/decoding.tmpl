@@ -1,0 +1,29 @@
+type Decoder interface {
+    Decode(v any) error
+}
+var Decoders = map[string]func(w {{qual "io.Reader"}}) Decoder {
+{{range $ct := .MessageContentTypes}}
+    {{$format := .FormatByContentType $ct}}
+    {{if eq $format "json"}}{{$ct | golit}}: {{template "decoder/json"}}{{end}}
+    {{if eq $format "yaml"}}{{$ct | golit}}: {{template "decoder/yaml"}}{{end}}
+    {{if not $format}}{{$ct | golit}}: func(_ {{qual "io.Reader"}}) Decoder { panic("No decoder is set for content type {{$ct}}") }{{end}}
+{{end}}
+
+func NewDecoder(contentType string, r {{qual "io.Reader"}}) Decoder {
+    if v, ok := Decoders[contentType]; ok {
+        return v(r)
+    }
+    panic("Unknown content type " + contentType)
+}
+
+
+{{define "decoder/json"}}
+func(r {{qual "io.Reader"}}) Decoder {
+    return {{qual "encoding/json.NewDecoder"}}(r)
+}
+{{end}}
+{{define "decoder/yaml"}}
+func(r {{qual "io.Reader"}}) Decoder {
+    return {{qual "encoding/yaml.v3.NewDecoder"}}(r)
+}
+{{end}}

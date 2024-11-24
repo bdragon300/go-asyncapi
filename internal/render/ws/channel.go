@@ -8,18 +8,18 @@ package ws
 //	ProtoName, ProtoTitle string
 //}
 //
-//func (pc ProtoChannel) DirectRendering() bool {
+//func (pc ProtoChannel) Selectable() bool {
 //	return true
 //}
 //
-//func (pc ProtoChannel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
-//	ctx.LogStartRender("Channel", "", pc.Parent.Name, "definition", pc.DirectRendering(), "proto", pc.ProtoName)
+//func (pc ProtoChannel) D(ctx *common.RenderContext) []*j.Statement {
+//	ctx.LogStartRender("Channel", "", pc.Parent.Name, "definition", pc.Selectable(), "proto", pc.ProtoName)
 //	defer ctx.LogFinishRender()
 //	var res []*j.Statement
-//	res = append(res, pc.ServerIface.RenderDefinition(ctx)...)
+//	res = append(res, pc.ServerIface.D(ctx)...)
 //	res = append(res, pc.RenderOpenFunc(ctx)...)
 //	res = append(res, pc.renderNewFunc(ctx)...)
-//	res = append(res, pc.Struct.RenderDefinition(ctx)...)
+//	res = append(res, pc.Struct.D(ctx)...)
 //	res = append(res, pc.RenderCommonMethods(ctx)...)
 //	res = append(res, pc.renderProtoMethods(ctx)...)
 //	if pc.Parent.Publisher {
@@ -32,10 +32,10 @@ package ws
 //	return res
 //}
 //
-//func (pc ProtoChannel) RenderUsage(ctx *common.RenderContext) []*j.Statement {
-//	ctx.LogStartRender("Channel", "", pc.Parent.Name, "usage", pc.DirectRendering(), "proto", pc.ProtoName)
+//func (pc ProtoChannel) U(ctx *common.RenderContext) []*j.Statement {
+//	ctx.LogStartRender("Channel", "", pc.Parent.Name, "usage", pc.Selectable(), "proto", pc.ProtoName)
 //	defer ctx.LogFinishRender()
-//	return pc.Struct.RenderUsage(ctx)
+//	return pc.Struct.U(ctx)
 //}
 //
 //func (pc ProtoChannel) ID() string {
@@ -54,7 +54,7 @@ package ws
 //		j.Func().Id(pc.Struct.NewFuncName()).
 //			ParamsFunc(func(g *j.Group) {
 //				if pc.Parent.ParametersStruct != nil {
-//					g.Id("params").Add(utils.ToCode(pc.Parent.ParametersStruct.RenderUsage(ctx))...)
+//					g.Id("params").Add(utils.ToCode(pc.Parent.ParametersStruct.U(ctx))...)
 //				}
 //				if pc.Parent.Publisher {
 //					g.Id("publisher").Qual(ctx.RuntimeModule(pc.ProtoName), "Publisher")
@@ -63,9 +63,9 @@ package ws
 //					g.Id("subscriber").Qual(ctx.RuntimeModule(pc.ProtoName), "Subscriber")
 //				}
 //			}).
-//			Op("*").Add(utils.ToCode(pc.Struct.RenderUsage(ctx))...).
+//			Op("*").Add(utils.ToCode(pc.Struct.U(ctx))...).
 //			BlockFunc(func(bg *j.Group) {
-//				bg.Op("res := ").Add(utils.ToCode(pc.Struct.RenderUsage(ctx))...).Values(j.DictFunc(func(d j.Dict) {
+//				bg.Op("res := ").Add(utils.ToCode(pc.Struct.U(ctx))...).Values(j.DictFunc(func(d j.Dict) {
 //					d[j.Id("name")] = j.Id(pc.Parent.GolangName + "Name").CallFunc(func(g *j.Group) {
 //						if pc.Parent.ParametersStruct != nil {
 //							g.Id("params")
@@ -94,9 +94,9 @@ package ws
 //	rn := pc.Struct.ReceiverName()
 //	receiver := j.Id(rn).Id(pc.Struct.Name)
 //
-//	var msgTyp common.GolangType = render.GoPointer{Type: pc.Parent.FallbackMessageType, DirectRender: true}
+//	var msgTyp common.GolangType = render.GoPointer{Type: pc.Parent.FallbackMessageType, HasDefinition: true}
 //	if pc.Parent.PubMessagePromise != nil {
-//		msgTyp = render.GoPointer{Type: pc.Parent.PubMessagePromise.Target().OutStruct, DirectRender: true}
+//		msgTyp = render.GoPointer{Type: pc.Parent.PubMessagePromise.Target().OutStruct, HasDefinition: true}
 //	}
 //
 //	return []*j.Statement{
@@ -104,7 +104,7 @@ package ws
 //		j.Func().Params(receiver.Clone()).Id("SealEnvelope").
 //			ParamsFunc(func(g *j.Group) {
 //				g.Id("envelope").Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeWriter")
-//				g.Id("message").Add(utils.ToCode(msgTyp.RenderUsage(ctx))...)
+//				g.Id("message").Add(utils.ToCode(msgTyp.U(ctx))...)
 //			}).
 //			Error().
 //			BlockFunc(func(bg *j.Group) {
@@ -124,7 +124,7 @@ package ws
 //				// Message SetBindings
 //				if pc.Parent.PubMessagePromise != nil && pc.Parent.PubMessagePromise.Target().HasProtoBindings(pc.ProtoName) {
 //					bg.Op("envelope.SetBindings").Call(
-//						j.Add(utils.ToCode(pc.Parent.PubMessagePromise.Target().BindingsStruct.RenderUsage(ctx))...).Values().Dot("WS()"),
+//						j.Add(utils.ToCode(pc.Parent.PubMessagePromise.Target().BindingsStruct.U(ctx))...).Values().Dot("WS()"),
 //					)
 //				}
 //				bg.Return(j.Nil())

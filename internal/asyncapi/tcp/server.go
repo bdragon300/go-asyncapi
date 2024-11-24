@@ -2,8 +2,7 @@ package tcp
 
 import (
 	"encoding/json"
-
-	renderTCP "github.com/bdragon300/go-asyncapi/internal/render/tcp"
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -12,14 +11,18 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func (pb ProtoBuilder) BuildServer(ctx *common.CompileContext, server *asyncapi.Server, parent *render.Server) (common.Renderer, error) {
-	baseServer, err := asyncapi.BuildProtoServerStruct(ctx, server, parent, pb.ProtoName, pb.ProtoTitle)
+func (pb ProtoBuilder) BuildServer(ctx *common.CompileContext, server *asyncapi.Server, parent *render.Server) (*render.ProtoServer, error) {
+	baseServer, err := asyncapi.BuildProtoServerStruct(ctx, server, parent, pb.ProtoName)
 	if err != nil {
 		return nil, err
 	}
-	return &renderTCP.ProtoServer{BaseProtoServer: *baseServer}, nil
+	return &render.ProtoServer{
+		Server:    parent,
+		Struct:    baseServer,
+		ProtoName: pb.ProtoName,
+	}, nil
 }
 
-func (pb ProtoBuilder) BuildServerBindings(_ *common.CompileContext, _ types.Union2[json.RawMessage, yaml.Node]) (vals *render.GoValue, jsonVals types.OrderedMap[string, string], err error) {
+func (pb ProtoBuilder) BuildServerBindings(_ *common.CompileContext, _ types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	return
 }

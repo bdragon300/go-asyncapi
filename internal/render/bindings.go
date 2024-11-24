@@ -2,37 +2,44 @@ package render
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/types"
-	j "github.com/dave/jennifer/jen"
 )
 
 // Bindings never renders itself, only as a part of other object
 type Bindings struct {
 	Name   string
-	Values types.OrderedMap[string, *GoValue] // Binding values by protocol
+	// ObjectKindMessageBindings, ObjectKindOperationBindings, ObjectKindChannelBindings, ObjectKindServerBindings
+	ObjectKind common.ObjectKind
+
+	Values types.OrderedMap[string, *lang.GoValue] // Binding values by protocol
 	// Value of jsonschema fields as json marshalled strings
 	JSONValues types.OrderedMap[string, types.OrderedMap[string, string]] // Binbing values by protocol
 }
 
-func (b *Bindings) DirectRendering() bool {
+func (b Bindings) Kind() common.ObjectKind {
+	return b.ObjectKind
+}
+
+func (b Bindings) Selectable() bool {
 	return false
 }
 
-func (b *Bindings) RenderDefinition(_ *common.RenderContext) []*j.Statement {
-	panic("not implemented")
-}
-
-func (b *Bindings) RenderUsage(_ *common.RenderContext) []*j.Statement {
-	panic("not implemented")
-}
-
-func (b *Bindings) ID() string {
-	return b.Name
-}
-
-func (b *Bindings) String() string {
-	return "Bindings " + b.Name
-}
+//func (b *Bindings) D(_ *common.RenderContext) []*j.Statement {
+//	panic("not implemented")
+//}
+//
+//func (b *Bindings) U(_ *common.RenderContext) []*j.Statement {
+//	panic("not implemented")
+//}
+//
+//func (b *Bindings) ID() string {
+//	return b.Name
+//}
+//
+//func (b *Bindings) String() string {
+//	return "Bindings " + b.Name
+//}
 
 //func (b *Bindings) RenderBindingsMethod(
 //	ctx *common.RenderContext,
@@ -42,7 +49,7 @@ func (b *Bindings) String() string {
 //	ctx.LogStartRender("Bindings.RenderBindingsMethod", "", bindingsStruct.Name, "definition", false)
 //	defer ctx.LogFinishRender()
 //
-//	receiver := j.Id(bindingsStruct.ReceiverName()).Add(utils.ToCode(bindingsStruct.RenderUsage(ctx))...)
+//	receiver := j.Id(bindingsStruct.ReceiverName()).Add(utils.ToCode(bindingsStruct.U(ctx))...)
 //	pv, ok := b.Values.Get(protoName)
 //	if !ok {
 //		ctx.Logger.Debug("Skip render bindings method", "name", bindingsStruct.Name, "proto", protoName)
@@ -52,9 +59,9 @@ func (b *Bindings) String() string {
 //	return []*j.Statement{
 //		j.Func().Params(receiver.Clone()).Id(protoTitle).
 //			Params().
-//			Add(utils.ToCode(pv.Type.RenderUsage(ctx))...).
+//			Add(utils.ToCode(pv.Type.U(ctx))...).
 //			BlockFunc(func(bg *j.Group) {
-//				bg.Id("b").Op(":=").Add(utils.ToCode(pv.RenderUsage(ctx))...)
+//				bg.Id("b").Op(":=").Add(utils.ToCode(pv.U(ctx))...)
 //				for _, e := range b.JSONValues.GetOr(protoName, types.OrderedMap[string, string]{}).Entries() {
 //					n := utils.ToLowerFirstLetter(e.Key)
 //					bg.Id(n).Op(":=").Lit(e.Value)
@@ -74,14 +81,14 @@ func (b *Bindings) String() string {
 //	ctx.LogStartRender("renderChannelAndOperationBindingsMethod", "", bindingsStruct.Name, "definition", false)
 //	defer ctx.LogFinishRender()
 //
-//	receiver := j.Id(bindingsStruct.ReceiverName()).Add(utils.ToCode(bindingsStruct.RenderUsage(ctx))...)
+//	receiver := j.Id(bindingsStruct.ReceiverName()).Add(utils.ToCode(bindingsStruct.U(ctx))...)
 //
 //	return []*j.Statement{
 //		j.Func().Params(receiver.Clone()).Id(protoTitle).
 //			Params().
 //			Qual(ctx.RuntimeModule(protoName), "ChannelBindings").
 //			BlockFunc(func(bg *j.Group) {
-//				cb := &GoValue{Type: &GoSimple{Name: "ChannelBindings", Import: ctx.RuntimeModule(protoName)}, NilCurlyBrakets: true}
+//				cb := &GoValue{Type: &GoSimple{Name: "ChannelBindings", Import: ctx.RuntimeModule(protoName)}, NilCurlyBrackets: true}
 //				if channelBindings != nil {
 //					if b, ok := channelBindings.Values.Get(protoName); ok {
 //						ctx.Logger.Debug("Channel bindings", "proto", protoName)
@@ -100,7 +107,7 @@ func (b *Bindings) String() string {
 //						cb.StructVals.Set("SubscriberBindings", v)
 //					}
 //				}
-//				bg.Id("b").Op(":=").Add(utils.ToCode(cb.RenderUsage(ctx))...)
+//				bg.Id("b").Op(":=").Add(utils.ToCode(cb.U(ctx))...)
 //
 //				if channelBindings != nil {
 //					ctx.Logger.Debug("Channel jsonschema bindings", "proto", protoName)

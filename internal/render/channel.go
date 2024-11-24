@@ -1,50 +1,57 @@
 package render
 
 import (
+	"github.com/bdragon300/go-asyncapi/internal/render/context"
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/samber/lo"
 	"sort"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	j "github.com/dave/jennifer/jen"
 )
 
 type Channel struct {
 	Name                string // Channel name, typically equals to Channel key, can get overridden in x-go-name
 	GolangName          string // Name of channel struct
-	DirectRender        bool   // Typically, it's true if channel is defined in `channels` section, false if in `components` section
 	Dummy               bool
 	RawName             string                     // Channel key
 	ExplicitServerNames []string                   // List of servers the channel is linked with. Empty means "all servers"
-	ServersPromises     []*Promise[*Server]        // Servers list this channel is applied to, either explicitly marked or "all servers"
-	AllProtoChannels    map[string]common.Renderer // Proto channels for all supported protocols
+	ServersPromises     []*lang.Promise[*Server]   // Servers list this channel is applied to, either explicitly marked or "all servers"
 
 	Publisher  bool // true if channel has `publish` operation
 	Subscriber bool // true if channel has `subscribe` operation
 
-	ParametersStruct *GoStruct // nil if no parameters
+	ParametersStruct *lang.GoStruct // nil if no parameters
 
-	PubMessagePromise   *Promise[*Message] // nil when message is not set
-	SubMessagePromise   *Promise[*Message] // nil when message is not set
-	FallbackMessageType common.GolangType  // Used in generated code when the message is not set, typically it's `any`
+	PubMessagePromise   *lang.Promise[*Message] // nil when message is not set
+	SubMessagePromise   *lang.Promise[*Message] // nil when message is not set
+	FallbackMessageType common.GolangType       // Used in generated code when the message is not set, typically it's `any`
 
-	BindingsStruct           *GoStruct           // nil if no bindings are set for channel at all
-	BindingsChannelPromise   *Promise[*Bindings] // nil if channel bindings are not set
-	BindingsSubscribePromise *Promise[*Bindings] // nil if subscribe operation bindings are not set
-	BindingsPublishPromise   *Promise[*Bindings] // nil if publish operation bindings are not set
+	BindingsStruct           *lang.GoStruct           // nil if no bindings are set for channel at all
+	BindingsChannelPromise   *lang.Promise[*Bindings] // nil if channel bindings are not set
+	BindingsSubscribePromise *lang.Promise[*Bindings] // nil if subscribe operation bindings are not set
+	BindingsPublishPromise   *lang.Promise[*Bindings] // nil if publish operation bindings are not set
 }
 
-func (c Channel) DirectRendering() bool {
-	return c.DirectRender && !c.Dummy
+func (c Channel) Kind() common.ObjectKind {
+	return common.ObjectKindChannel
 }
 
-//func (c Channel) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
+func (c Channel) Selectable() bool {
+	return !c.Dummy
+}
+
+//func (c Channel) Selectable() bool {
+//	return c.HasDefinition && !c.Dummy
+//}
+
+//func (c Channel) D(ctx *common.RenderContext) []*j.Statement {
 //	var res []*j.Statement
-//	ctx.LogStartRender("Channel", "", c.Name, "definition", c.DirectRendering())
+//	ctx.LogStartRender("Channel", "", c.Name, "definition", c.Selectable())
 //	defer ctx.LogFinishRender()
 //
 //	// Parameters
 //	if c.ParametersStruct != nil {
-//		res = append(res, c.ParametersStruct.RenderDefinition(ctx)...)
+//		res = append(res, c.ParametersStruct.D(ctx)...)
 //	}
 //
 //	protocols := c.ServersProtocols(ctx)
@@ -53,7 +60,7 @@ func (c Channel) DirectRendering() bool {
 //	// Bindings
 //	if c.BindingsStruct != nil {
 //		ctx.Logger.Trace("Channel bindings")
-//		res = append(res, c.BindingsStruct.RenderDefinition(ctx)...)
+//		res = append(res, c.BindingsStruct.D(ctx)...)
 //
 //		var chanBindings, pubBindings, subBindings *Bindings
 //		if c.BindingsChannelPromise != nil {
@@ -84,7 +91,7 @@ func (c Channel) DirectRendering() bool {
 //			ctx.Logger.Warnf("Skip protocol %q since it is not supported", p)
 //			continue
 //		}
-//		res = append(res, r.RenderDefinition(ctx)...)
+//		res = append(res, r.D(ctx)...)
 //	}
 //	if len(protocols) == 0 {
 //		res = append(res, j.Comment(fmt.Sprintf("Channel %q is not assigned to any server with supported protocol, so no code to generate", c.Name)))
@@ -93,17 +100,17 @@ func (c Channel) DirectRendering() bool {
 //	return res
 //}
 
-func (c Channel) RenderUsage(_ *common.RenderContext) []*j.Statement {
-	panic("not implemented")
-}
-
-func (c Channel) ID() string {
-	return c.Name
-}
-
-func (c Channel) String() string {
-	return "Channel " + c.Name
-}
+//func (c Channel) U(_ *common.RenderContext) []*j.Statement {
+//	panic("not implemented")
+//}
+//
+//func (c Channel) ID() string {
+//	return c.Name
+//}
+//
+//func (c Channel) String() string {
+//	return "Channel " + c.Name
+//}
 
 //func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement {
 //	ctx.Logger.Trace("renderChannelNameFunc")
@@ -113,7 +120,7 @@ func (c Channel) String() string {
 //		j.Func().Id(c.GolangName+"Name").
 //			ParamsFunc(func(g *j.Group) {
 //				if c.ParametersStruct != nil {
-//					g.Id("params").Add(utils.ToCode(c.ParametersStruct.RenderUsage(ctx))...)
+//					g.Id("params").Add(utils.ToCode(c.ParametersStruct.U(ctx))...)
 //				}
 //			}).
 //			Qual(ctx.RuntimeModule(""), "ParamString").
@@ -139,8 +146,8 @@ func (c Channel) String() string {
 
 // ServersProtocols returns supported protocol list for the given servers, throwing out unsupported ones
 // TODO: move to top-level template
-func (c Channel) ServersProtocols(ctx *common.RenderContext) []string {
-	res := lo.Uniq(lo.FilterMap(c.ServersPromises, func(item *Promise[*Server], _ int) (string, bool) {
+func (c Channel) ServersProtocols() []string {
+	res := lo.Uniq(lo.FilterMap(c.ServersPromises, func(item *lang.Promise[*Server], _ int) (string, bool) {
 		_, ok := ctx.ProtoRenderers[item.Target().Protocol]
 		if !ok {
 			ctx.Logger.Warnf("Skip protocol %q since it is not supported", item.Target().Protocol)
@@ -151,14 +158,14 @@ func (c Channel) ServersProtocols(ctx *common.RenderContext) []string {
 	return res
 }
 
-func (c Channel) BindingsProtocols(ctx *common.RenderContext) []string {
+func (c Channel) BindingsProtocols() []string {
 	panic("not implemented")
 }
 
-func (c Channel) ProtoBindingsValue(ctx *common.RenderContext, protoName string) common.Renderer {
-	res := &GoValue{
-		Type: &GoSimple{Name: "ChannelBindings", Import: ctx.RuntimeModule(protoName)},
-		NilCurlyBrakets: true,
+func (c Channel) ProtoBindingsValue(protoName string) common.Renderer {
+	res := &lang.GoValue{
+		Type:             &lang.GoSimple{Name: "ChannelBindings", Import: context.Context.RuntimeModule(protoName)},
+		NilCurlyBrackets: true,
 	}
 	if c.BindingsChannelPromise != nil {
 		if b, ok := c.BindingsChannelPromise.Target().Values.Get(protoName); ok {
@@ -184,8 +191,8 @@ func (c Channel) ProtoBindingsValue(ctx *common.RenderContext, protoName string)
 type ProtoChannel struct {
 	*Channel
 	GolangNameProto string // Channel GolangName name concatenated with protocol name, e.g. Channel1Kafka
-	Struct          *GoStruct
+	Struct          *lang.GoStruct
 
-	ProtoName, ProtoTitle string
+	ProtoName string
 }
 

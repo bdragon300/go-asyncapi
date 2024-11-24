@@ -43,17 +43,29 @@ func ToGolangName(rawString string, exported bool) string {
 	// Cut numbers from string start
 	rawString = strings.TrimLeft(rawString, "1234567890")
 
-	var camel []byte
+	var camel string
 	if exported {
-		camel = []byte(strcase.UpperCamelCase(rawString))
+		camel = strcase.UpperCamelCase(rawString)
 	} else {
-		camel = []byte(strcase.LowerCamelCase(rawString))
+		camel = strcase.LowerCamelCase(rawString)
 	}
 
-	// Transform possible initialisms to upper case if they appear in string
-	res := make([]byte, len(camel))
+	str := TransformInitialisms(camel)
+
+	// Avoid conflict with Golang reserved keywords
+	if token.IsKeyword(str) {
+		return str + "_"
+	}
+	return str
+}
+
+// TransformInitialisms transforms possible initialisms to upper case in a name in camel case.
+func TransformInitialisms(name string) string {
+	source := []byte(name)
+	res := make([]byte, len(source))
+
 	var last int64
-	initialismsTrie.Walk(camel, func(end, n, pattern int64) bool {
+	initialismsTrie.Walk(source, func(end, n, pattern int64) bool {
 		// end: index of the last character of the matched pattern
 		// n: length of the matched pattern
 		// pattern: index of the matched pattern in the initialisms slice
@@ -64,7 +76,7 @@ func ToGolangName(rawString string, exported bool) string {
 		// `left` may point before `last` here on the repeated match on the same position. E.g. when "http" and "https"
 		// initialisms found.
 		if left > last {
-			copy(res[last:], camel[last:left])
+			copy(res[last:], source[last:left])
 		}
 
 		// Transform only the whole word, not a part of other word
@@ -73,22 +85,17 @@ func ToGolangName(rawString string, exported bool) string {
 		// 2. On next iteration matches "https" as whole word (next letter is in uppercase), transforms it
 		//    and writes "HTTPS" over "http" from the previous iteration
 		// 3. Matches "id" as whole word (end of string), transforms it to "ID"
-		if right == int64(len(camel)) || unicode.IsUpper(rune(camel[right])) {
+		if right == int64(len(source)) || unicode.IsUpper(rune(source[right])) {
 			copy(res[left:], strings.ToUpper(initialisms[pattern]))
 		} else {
-			copy(res[left:], camel[left:right])
+			copy(res[left:], source[left:right])
 		}
 		last = right
 		return true
 	})
-	copy(res[last:], camel[last:])
-	str := string(res)
+	copy(res[last:], source[last:])
 
-	// Avoid conflict with Golang reserved keywords
-	if token.IsKeyword(str) {
-		return str + "_"
-	}
-	return str
+	return string(res)
 }
 
 func ToLowerFirstLetter(s string) string {

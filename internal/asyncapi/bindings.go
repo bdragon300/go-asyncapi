@@ -3,6 +3,7 @@ package asyncapi
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
@@ -33,7 +34,7 @@ func (b *Bindings) build(
 ) (common.Renderer, error) {
 	if b.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", b.Ref)
-		res := render.NewRendererPromise(b.Ref, common.PromiseOriginUser)
+		res := lang.NewRendererPromise(b.Ref, common.PromiseOriginUser)
 		ctx.PutPromise(res)
 		return res, nil
 	}
@@ -47,7 +48,7 @@ func (b *Bindings) build(
 			continue
 		}
 
-		var vals *render.GoValue
+		var vals *lang.GoValue
 		var jsonVals types.OrderedMap[string, string]
 		var err error
 

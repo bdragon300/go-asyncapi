@@ -18,10 +18,12 @@ const nameWordSep = "_"
 type GolangType interface {
 	Renderer
 	TypeName() string
+	D() string
+	U() string
 }
 
 type CompilationStorage interface {
-	AddObject(pkgName string, stack []string, obj Renderer)
+	AddObject(stack []string, obj Renderer)
 	RegisterProtocol(protoName string)
 	AddExternalSpecPath(specPath *specurl.URL)
 	AddPromise(p ObjectPromise)
@@ -42,7 +44,6 @@ type CompileOpts struct {
 	MessageOpts         ObjectCompileOpts
 	ModelOpts           ObjectCompileOpts
 	ServerOpts          ObjectCompileOpts
-	ReusePackages       map[string]string
 	NoEncodingPackage   bool
 	AllowRemoteRefs     bool
 	RuntimeModule       string
@@ -71,7 +72,6 @@ func (o ObjectCompileOpts) IsAllowedName(name string) bool {
 type ContextStackItem struct {
 	PathItem       string
 	Flags          map[SchemaTag]string
-	PackageName    string
 	RegisteredName string
 }
 
@@ -93,11 +93,7 @@ type CompileContext struct {
 }
 
 func (c *CompileContext) PutObject(obj Renderer) {
-	pkgName := c.Stack.Top().PackageName
-	if pkgName == "" {
-		panic("Package name has not been set")
-	}
-	c.Storage.AddObject(pkgName, c.PathStack(), obj)
+	c.Storage.AddObject(c.PathStack(), obj)
 }
 
 func (c *CompileContext) PutPromise(p ObjectPromise) {
@@ -129,10 +125,6 @@ func (c *CompileContext) RegisterNameTop(n string) {
 	t := c.Stack.Top()
 	t.RegisteredName = n
 	c.Stack.ReplaceTop(t)
-}
-
-func (c *CompileContext) CurrentPackage() string {
-	return c.Stack.Top().PackageName
 }
 
 func (c *CompileContext) RuntimeModule(subPackage string) string {

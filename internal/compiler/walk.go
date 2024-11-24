@@ -8,9 +8,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 )
 
-// DefaultPackage is package where objects will put if current parse package is empty
 const (
-	DefaultPackage = "default"
 	TagName        = "cgen"
 )
 
@@ -125,17 +123,6 @@ func pushStack(ctx *common.CompileContext, pathItem string, flags map[common.Sch
 	if flags == nil {
 		flags = make(map[common.SchemaTag]string)
 	}
-	pkgName := DefaultPackage
-	if len(ctx.Stack.Items()) > 0 {
-		pkgName = ctx.CurrentPackage()
-	}
-	// Inherit `pkgScope` from parent
-	if v, ok := flags[common.SchemaTagPkgScope]; ok {
-		pkgName = v
-	}
-	if reusePkg, ok := ctx.CompileOpts.ReusePackages[pkgName]; ok {
-		pkgName = reusePkg
-	}
 
 	// Inherit `marshal` from parent
 	if len(ctx.Stack.Items()) > 0 {
@@ -146,7 +133,6 @@ func pushStack(ctx *common.CompileContext, pathItem string, flags map[common.Sch
 	item := common.ContextStackItem{
 		PathItem:       pathItem,
 		Flags:          flags,
-		PackageName:    pkgName,
 		RegisteredName: "",
 	}
 	ctx.Stack.Push(item)

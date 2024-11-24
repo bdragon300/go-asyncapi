@@ -1,0 +1,29 @@
+type Encoder interface {
+    Encode(v any) error
+}
+var Encoders = map[string]func(w {{qual "io.Writer"}}) Encoder {
+{{range $ct := .MessageContentTypes}}
+    {{$format := .FormatByContentType $ct}}
+    {{if eq $format "json"}}{{$ct | golit}}: {{template "encoder/json"}}{{end}}
+    {{if eq $format "yaml"}}{{$ct | golit}}: {{template "encoder/yaml"}}{{end}}
+    {{if not $format}}{{$ct | golit}}: func(_ {{qual "io.Writer"}}) Encoder { panic("No encoder is set for content type {{$ct}}") }{{end}}
+{{end}}
+
+func NewEncoder(contentType string, w {{qual "io.Writer"}}) Encoder {
+    if v, ok := Encoders[contentType]; ok {
+        return v(w)
+    }
+    panic("Unknown content type " + contentType)
+}
+
+
+{{define "encoder/json"}}
+func(w {{qual "io.Writer"}}) Encoder {
+    return {{qual "encoding/json.NewEncoder"}}(w)
+}
+{{end}}
+{{define "encoder/yaml"}}
+func(w {{qual "io.Writer"}}) Encoder {
+    return {{qual "encoding/yaml.v3.NewEncoder"}}(w)
+}
+{{end}}

@@ -3,6 +3,7 @@ package asyncapi
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 )
 
@@ -28,7 +29,7 @@ func (sv ServerVariable) Compile(ctx *common.CompileContext) error {
 func (sv ServerVariable) build(ctx *common.CompileContext, serverVariableKey string) (common.Renderer, error) {
 	if sv.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", sv.Ref)
-		res := render.NewRendererPromise(sv.Ref, common.PromiseOriginUser)
+		res := lang.NewRendererPromise(sv.Ref, common.PromiseOriginUser)
 		ctx.PutPromise(res)
 		return res, nil
 	}

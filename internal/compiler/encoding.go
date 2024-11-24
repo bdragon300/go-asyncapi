@@ -3,6 +3,7 @@ package compiler
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 )
 
 const encodingPackageName = "encoding"
@@ -10,13 +11,13 @@ const encodingPackageName = "encoding"
 func EncodingCompile(ctx *common.CompileContext) error {
 	ctx.Logger.Trace("Encoding package")
 	e, d := buildEncoderDecoder(ctx)
-	ctx.Storage.AddObject(encodingPackageName, ctx.PathStack(), e)
-	ctx.Storage.AddObject(encodingPackageName, ctx.PathStack(), d)
+	ctx.Storage.AddObject(ctx.PathStack(), e)
+	ctx.Storage.AddObject(ctx.PathStack(), d)
 	return nil
 }
 
 func buildEncoderDecoder(ctx *common.CompileContext) (*render.EncodingEncode, *render.EncodingDecode) {
-	allMessagesPrm := render.NewListCbPromise[*render.Message](func(item common.Renderer, _ []string) bool {
+	allMessagesPrm := lang.NewListCbPromise[*render.Message](func(item common.Renderer, _ []string) bool {
 		_, ok := item.(*render.Message)
 		return ok
 	})

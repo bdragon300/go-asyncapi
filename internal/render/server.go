@@ -2,6 +2,8 @@ package render
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render/context"
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/samber/lo"
 )
@@ -10,28 +12,30 @@ type Server struct {
 	Name         string
 	RawName      string // Name as it is in the source document, without considering `x-go-name` extension
 	GolangName   string // Name of server struct
-	DirectRender bool   // Typically, it's true if server is defined in `servers` section, false if in `components` section
 	Dummy        bool
 
 	URL             string
 	Protocol        string
 	ProtocolVersion string
-	//ProtoServer     common.Renderer // nil if protocol is not supported by the tool
 
-	Variables           types.OrderedMap[string, *Promise[*ServerVariable]]
-	AllChannelsPromises []*Promise[*Channel]
+	Variables           types.OrderedMap[string, *lang.Promise[*ServerVariable]]
+	AllChannelsPromises []*lang.Promise[*Channel]
 
-	BindingsStruct  *GoStruct           // nil if bindings are not defined for server
-	BindingsPromise *Promise[*Bindings] // nil if bindings are not defined for server as well
+	BindingsStruct  *lang.GoStruct           // nil if bindings are not defined for server
+	BindingsPromise *lang.Promise[*Bindings] // nil if bindings are not defined for server as well
 }
 
-func (s Server) DirectRendering() bool {
-	return s.DirectRender && !s.Dummy
+func (s Server) Kind() common.ObjectKind {
+	return common.ObjectKindServer
 }
 
-//func (s Server) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
+func (s Server) Selectable() bool {
+	return !s.Dummy
+}
+
+//func (s Server) D(ctx *common.RenderContext) []*j.Statement {
 //	var res []*j.Statement
-//	ctx.LogStartRender("Server", "", s.Name, "definition", s.DirectRendering())
+//	ctx.LogStartRender("Server", "", s.Name, "definition", s.Selectable())
 //	defer ctx.LogFinishRender()
 //
 //	if s.ProtocolVersion != "" {
@@ -41,7 +45,7 @@ func (s Server) DirectRendering() bool {
 //
 //	// Bindings struct and its methods according to server protocol
 //	if s.BindingsStruct != nil {
-//		res = append(res, s.BindingsStruct.RenderDefinition(ctx)...)
+//		res = append(res, s.BindingsStruct.D(ctx)...)
 //
 //		if s.BindingsPromise != nil {
 //			tgt := s.BindingsPromise.Target()
@@ -53,12 +57,12 @@ func (s Server) DirectRendering() bool {
 //		}
 //	}
 //	if s.ProtoServer != nil {
-//		res = append(res, s.ProtoServer.RenderDefinition(ctx)...)
+//		res = append(res, s.ProtoServer.D(ctx)...)
 //	}
 //	return res
 //}
 
-//func (s Server) RenderUsage(_ *common.RenderContext) []*j.Statement {
+//func (s Server) U(_ *common.RenderContext) []*j.Statement {
 //	panic("not implemented")
 //}
 
@@ -111,30 +115,30 @@ func (s Server) DirectRendering() bool {
 //	}
 //}
 
-func (s Server) ID() string {
-	return s.Name
-}
-
-func (s Server) String() string {
-	return "Server " + s.Name
-}
+//func (s Server) ID() string {
+//	return s.Name
+//}
+//
+//func (s Server) String() string {
+//	return "Server " + s.Name
+//}
 
 func (s Server) GetRelevantChannels() []*Channel {
-	return lo.FilterMap(s.AllChannelsPromises, func(p *Promise[*Channel], _ int) (*Channel, bool) {
+	return lo.FilterMap(s.AllChannelsPromises, func(p *lang.Promise[*Channel], _ int) (*Channel, bool) {
 		// Empty/omitted servers field in channel means "all servers"
 		ok := len(p.Target().ExplicitServerNames) == 0 || lo.Contains(p.Target().ExplicitServerNames, s.RawName)
 		return p.Target(), ok && !p.Target().Dummy
 	})
 }
 
-func (c Server) BindingsProtocols(ctx *common.RenderContext) []string {
+func (c Server) BindingsProtocols() []string {
 	panic("not implemented")
 }
 
-func (c Server) ProtoBindingsValue(ctx *common.RenderContext, protoName string) common.Renderer {
-	res := &GoValue{
-		Type: &GoSimple{Name: "ServerBindings", Import: ctx.RuntimeModule(protoName)},
-		NilCurlyBrakets: true,
+func (c Server) ProtoBindingsValue(protoName string) common.Renderer {
+	res := &lang.GoValue{
+		Type:             &lang.GoSimple{Name: "ServerBindings", Import: context.Context.RuntimeModule(protoName)},
+		NilCurlyBrackets: true,
 	}
 	if c.BindingsPromise != nil {
 		if b, ok := c.BindingsPromise.Target().Values.Get(protoName); ok {
@@ -147,7 +151,7 @@ func (c Server) ProtoBindingsValue(ctx *common.RenderContext, protoName string) 
 
 type ProtoServer struct {
 	*Server
-	Struct *GoStruct
+	Struct *lang.GoStruct // Nil if server is dummy or has unsupported protocol
 
-	ProtoName, ProtoTitle string
+	ProtoName string
 }

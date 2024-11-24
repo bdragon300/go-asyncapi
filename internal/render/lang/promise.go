@@ -1,10 +1,8 @@
-package render
+package lang
 
 import (
 	"fmt"
-
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/dave/jennifer/jen"
 	"github.com/samber/lo"
 )
 
@@ -67,7 +65,7 @@ func (r *Promise[T]) IsPointer() bool {
 	if !r.assigned {
 		return false
 	}
-	if v, ok := any(r.target).(golangPointerType); ok {
+	if v, ok := any(r.target).(GolangPointerType); ok {
 		return v.IsPointer()
 	}
 	return false
@@ -131,23 +129,20 @@ type RendererPromise struct {
 	DirectRender bool
 }
 
-func (r *RendererPromise) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	return r.target.RenderDefinition(ctx)
+func (r RendererPromise) Kind() common.ObjectKind {
+	return r.target.Kind()
 }
 
-func (r *RendererPromise) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	return r.target.RenderUsage(ctx)
+func (r *RendererPromise) D() string {
+	return r.target.D()
 }
 
-func (r *RendererPromise) DirectRendering() bool {
+func (r *RendererPromise) U() string {
+	return r.target.U()
+}
+
+func (r *RendererPromise) Selectable() bool {
 	return r.DirectRender // Prevent rendering the object we're point to for several times
-}
-
-func (r *RendererPromise) ID() string {
-	if r.Assigned() {
-		return r.target.ID()
-	}
-	return ""
 }
 
 func (r *RendererPromise) String() string {
@@ -168,24 +163,24 @@ type GolangTypePromise struct {
 	DirectRender bool
 }
 
+func (r GolangTypePromise) Kind() common.ObjectKind {
+	return r.target.Kind()
+}
+
 func (r *GolangTypePromise) TypeName() string {
 	return r.target.TypeName()
 }
 
-func (r *GolangTypePromise) DirectRendering() bool {
+func (r *GolangTypePromise) Selectable() bool {
 	return r.DirectRender // Prevent rendering the object we're point to for several times
 }
 
-func (r *GolangTypePromise) RenderDefinition(ctx *common.RenderContext) []*jen.Statement {
-	return r.target.RenderDefinition(ctx)
+func (r *GolangTypePromise) D() string {
+	return r.target.D()
 }
 
-func (r *GolangTypePromise) RenderUsage(ctx *common.RenderContext) []*jen.Statement {
-	return r.target.RenderUsage(ctx)
-}
-
-func (r *GolangTypePromise) ID() string {
-	return "GolangTypePromise"
+func (r *GolangTypePromise) U() string {
+	return r.target.U()
 }
 
 func (r *GolangTypePromise) String() string {

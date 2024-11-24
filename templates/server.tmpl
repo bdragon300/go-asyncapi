@@ -1,28 +1,28 @@
 {{if .ProtocolVersion}}
-const {{.GolangName}}ProtocolVersion = "{{.ProtocolVersion | lit}}"
+const {{.GolangName}}ProtocolVersion = "{{.ProtocolVersion | golit}}"
 {{end}}
 
 func {{.GolangName}}URL(
-    {{range s.Variables.Entries}}{{.Key | id}} string,{{end}}
+    {{range s.Variables.Entries}}{{.Key | goid}} string,{{end}}
 ) {{qualr "" "ParamString"}} {
     {{if gt s.Variables.Len 0}}
         {{range s.Variables.Entries}}
             {{if .Value.T.Default}}
-                if {{.Key | id}} == "" {
-                    {{.Key | id}} = "{{.Value.T.Default}}"
+                if {{.Key | goid}} == "" {
+                    {{.Key | goid}} = "{{.Value.T.Default}}"
                 }
             {{end}}
         {{end}}
         paramMap := map[string]string{
-            {{range s.Variables.Entries}}{{.Key | lit}}: {{.Value.T.Name | id}},{{end}}
+            {{range s.Variables.Entries}}{{.Key | golit}}: {{.Value.T.Name | goid}},{{end}}
         }
         return {{qualr "" "ParamString"}}{
-            Expr: {{.URL | lit}},
+            Expr: {{.URL | golit}},
             Parameters: paramMap,
         }
     {{else}}
         return {{qualr "" "ParamString"}}{
-            Expr: {{.URL | lit}},
+            Expr: {{.URL | golit}},
         }
     {{end}}
 }
@@ -36,7 +36,7 @@ func {{.GolangName}}URL(
             {{if .BindingsPromise}}
                 {{$jvals := .BindingsPromise.T.JSONValues.GetOrEmpty $proto}}
                 {{range $jval := $jvals.Entries}}
-                    {{$jval.Key | lowerCamelize }} := {{$jval.Value | lit}}
+                    {{$jval.Key | lowerCamelize }} := {{$jval.Value | golit}}
                     _ = {{qual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | lowerCamelize }}), &b.{{$jval.Key}})
                 {{end}}
             {{end}}

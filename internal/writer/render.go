@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/bdragon300/go-asyncapi/internal/common"
 	"os"
 	"path"
 	"runtime/debug"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 
-	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/dave/jennifer/jen"
 )
 
@@ -53,11 +53,6 @@ func (e MultilineError) RestLines() string {
 	return bld.String()
 }
 
-type renderSource interface {
-	PackageObjects(pkgName string) []compiler.Object
-	Packages() []string
-}
-
 func RenderPackages(source renderSource, protoRenderers map[string]common.ProtocolRenderer, opts common.RenderOpts) (fileContents map[string]*bytes.Buffer, err error) {
 	fileContents = make(map[string]*bytes.Buffer)
 	logger := types.NewLogger("Rendering 🎨")
@@ -69,9 +64,7 @@ func RenderPackages(source renderSource, protoRenderers map[string]common.Protoc
 	files := make(map[string]*jen.File)
 	for _, pkgName := range source.Packages() {
 		ctx := &common.RenderContext{
-			ProtoRenderers: protoRenderers,
 			CurrentPackage: pkgName,
-			Logger:         logger,
 			RenderOpts:     opts,
 		}
 		items := source.PackageObjects(pkgName)
@@ -79,7 +72,7 @@ func RenderPackages(source renderSource, protoRenderers map[string]common.Protoc
 		if opts.PackageScope == common.PackageScopeAll {
 			targetPkg = opts.TargetPackage
 		}
-		ctx.Logger.Debug("Package", "pkg", targetPkg, "items", len(items))
+		logger.Debug("Package", "pkg", targetPkg, "items", len(items))
 		totalObjects += len(items)
 		for _, item := range items {
 			if !item.Object.DirectRendering() {

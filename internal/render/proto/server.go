@@ -17,9 +17,9 @@ package proto
 //				g.Id("producer").Qual(ctx.RuntimeModule(ps.ProtoName), "Producer")
 //				g.Id("consumer").Qual(ctx.RuntimeModule(ps.ProtoName), "Consumer")
 //			}).
-//			Op("*").Add(utils.ToCode(ps.Struct.RenderUsage(ctx))...).
+//			Op("*").Add(utils.ToCode(ps.Struct.U(ctx))...).
 //			Block(
-//				j.Return(j.Op("&").Add(utils.ToCode(ps.Struct.RenderUsage(ctx))...).Values(j.DictFunc(func(d j.Dict) {
+//				j.Return(j.Op("&").Add(utils.ToCode(ps.Struct.U(ctx))...).Values(j.DictFunc(func(d j.Dict) {
 //					d[j.Id("producer")] = j.Id("producer")
 //					d[j.Id("consumer")] = j.Id("consumer")
 //				}))),
@@ -55,10 +55,10 @@ package proto
 //			ParamsFunc(func(g *j.Group) {
 //				g.Id("ctx").Qual("context", "Context")
 //				if channelParametersStructNoRender != nil {
-//					g.Id("params").Add(utils.ToCode(channelParametersStructNoRender.RenderUsage(ctx))...)
+//					g.Id("params").Add(utils.ToCode(channelParametersStructNoRender.U(ctx))...)
 //				}
 //			}).
-//			Params(j.Op("*").Add(utils.ToCode(channel.RenderUsage(ctx))...), j.Error()).
+//			Params(j.Op("*").Add(utils.ToCode(channel.U(ctx))...), j.Error()).
 //			Block(
 //				j.Return(j.Qual(ctx.GeneratedModule(channelStruct.Import), "Open"+channelStruct.Name).CallFunc(func(g *j.Group) {
 //					g.Id("ctx")

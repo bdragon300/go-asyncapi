@@ -2,7 +2,7 @@ package asyncapi
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/render"
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 )
 
@@ -23,7 +23,7 @@ type xGoType struct {
 }
 
 func buildXGoType(xGoTypeValue *types.Union2[string, xGoType]) (golangType common.GolangType) {
-	t := &render.GoSimple{}
+	t := &lang.GoSimple{}
 
 	switch xGoTypeValue.Selector {
 	case 0:
@@ -34,7 +34,7 @@ func buildXGoType(xGoTypeValue *types.Union2[string, xGoType]) (golangType commo
 		t.IsIface = xGoTypeValue.V1.Hint.Kind == "interface"
 
 		if xGoTypeValue.V1.Hint.Pointer {
-			return &render.GoPointer{Type: t}
+			return &lang.GoPointer{Type: t}
 		}
 	}
 

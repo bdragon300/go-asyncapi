@@ -11,21 +11,21 @@
             {{if .BindingsChannelPromise}}
                 {{$jvals := .BindingsChannelPromise.T.JSONValues.GetOrEmpty $proto}}
                 {{range $jval := $jvals.Entries}}
-                    {{$jval.Key | lowerCamelize }} := {{$jval.Value | lit}}
+                    {{$jval.Key | lowerCamelize }} := {{$jval.Value | golit}}
                     _ = {{qual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | lowerCamelize }}), &b.{{$jval.Key}})
                 {{end}}
             {{end}}
             {{if .BindingsPublishPromise}}
                 {{$jvals := .BindingsPublishPromise.T.JSONValues.GetOrEmpty $proto}}
                 {{range $jval := $jvals.Entries}}
-                    {{$jval.Key | lowerCamelize }}Pub := {{$jval.Value | lit}}
+                    {{$jval.Key | lowerCamelize }}Pub := {{$jval.Value | golit}}
                     _ = {{qual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | lowerCamelize }}Pub), &b.PublisherBindings.{{$jval.Key}})
                 {{end}}
             {{end}}
             {{if .BindingsSubscribePromise}}
                 {{$jvals := .BindingsSubscribePromise.T.JSONValues.GetOrEmpty $proto}}
                 {{range $jval := $jvals.Entries}}
-                    {{$jval.Key | lowerCamelize }}Sub := {{$jval.Value | lit}}
+                    {{$jval.Key | lowerCamelize }}Sub := {{$jval.Value | golit}}
                     _ = {{qual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | lowerCamelize }}Sub), &b.SubscriberBindings.{{$jval.Key}})
                 {{end}}
             {{end}}
@@ -41,12 +41,12 @@ func {{.GolangName}}Name({{if .ParametersStruct}}params {{.ParametersStruct.U}}{
         {{end}}
         }
         return {{qualr "" "ParamString"}}{
-            Expr: "{{.RawName | lit}}",
+            Expr: "{{.RawName | golit}}",
             Parameters: paramMap,
         }
     {{else}}
         return {{qualr "" "ParamString"}}{
-            Expr: "{{.RawName | lit}}",
+            Expr: "{{.RawName | golit}}",
         }
     {{end}}
 }

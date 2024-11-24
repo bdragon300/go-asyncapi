@@ -2,6 +2,7 @@ package asyncapi
 
 import (
 	"errors"
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"strings"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -40,7 +41,7 @@ func (c CorrelationID) build(ctx *common.CompileContext, correlationIDKey string
 	// TODO: move this ref code from everywhere to single place?
 	if c.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", c.Ref)
-		res := render.NewRendererPromise(c.Ref, common.PromiseOriginUser)
+		res := lang.NewRendererPromise(c.Ref, common.PromiseOriginUser)
 		ctx.PutPromise(res)
 		return res, nil
 	}

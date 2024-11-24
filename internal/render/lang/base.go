@@ -1,4 +1,4 @@
-package render
+package lang
 
 import "github.com/bdragon300/go-asyncapi/internal/common"
 
@@ -6,22 +6,21 @@ type BaseType struct {
 	Name        string
 	Description string
 
-	// DirectRender is true if the rendering of this type must be invoked directly on rendering phase. Otherwise, the
-	// rendering of this type is invoked indirectly by another type.
+	// HasDefinition is true if this type has a definition in the generated code. Otherwise, it renders as inline type.
 	// Such as inlined `field struct{...}` and separate `field StructName`, or `field []type` and `field ArrayName`
-	DirectRender bool
-	Import       string // optional generated package name or module to import a type from
+	HasDefinition bool
+	Import        string // optional generated package name or module to import a type from // TODO: replace to "is in runtime module" flag?
 }
 
-func (b *BaseType) DirectRendering() bool {
-	return b.DirectRender
+func (b BaseType) Kind() common.ObjectKind {
+	return common.ObjectKindLang
+}
+
+func (b *BaseType) Selectable() bool {
+	return b.HasDefinition
 }
 
 func (b *BaseType) TypeName() string {
-	return b.Name
-}
-
-func (b *BaseType) ID() string {
 	return b.Name
 }
 
@@ -32,12 +31,12 @@ func (b *BaseType) String() string {
 	return "GoType " + b.Name
 }
 
-type golangTypeWrapperType interface {
+type GolangTypeWrapperType interface {
 	WrappedGolangType() (common.GolangType, bool)
 	String() string
 }
 
-type golangPointerType interface {
+type GolangPointerType interface {
 	IsPointer() bool
 }
 

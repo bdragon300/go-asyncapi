@@ -2,7 +2,8 @@ package udp
 
 import (
 	"encoding/json"
-	renderUDP "github.com/bdragon300/go-asyncapi/internal/render/udp"
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -11,26 +12,25 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, parent *render.Channel) (common.Renderer, error) {
-	golangName := parent.GolangName + pb.ProtoTitle
+func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, parent *render.Channel) (*render.ProtoChannel, error) {
+	golangName := parent.GolangName + utils.TransformInitialisms(pb.ProtoName)
 	chanStruct, err := asyncapi.BuildProtoChannelStruct(ctx, channel, parent, pb.ProtoName, golangName)
 	if err != nil {
 		return nil, err
 	}
 
-	return &renderUDP.ProtoChannel{
-		Channel: parent,
+	return &render.ProtoChannel{
+		Channel:         parent,
 		GolangNameProto: golangName,
-		Struct: chanStruct,
-		ProtoName: pb.ProtoName,
-		ProtoTitle: pb.ProtoTitle,
+		Struct:          chanStruct,
+		ProtoName:       pb.ProtoName,
 	}, nil
 }
 
-func (pb ProtoBuilder) BuildChannelBindings(_ *common.CompileContext, _ types.Union2[json.RawMessage, yaml.Node]) (vals *render.GoValue, jsonVals types.OrderedMap[string, string], err error) {
+func (pb ProtoBuilder) BuildChannelBindings(_ *common.CompileContext, _ types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	return
 }
 
-func (pb ProtoBuilder) BuildOperationBindings(_ *common.CompileContext, _ types.Union2[json.RawMessage, yaml.Node]) (vals *render.GoValue, jsonVals types.OrderedMap[string, string], err error) {
+func (pb ProtoBuilder) BuildOperationBindings(_ *common.CompileContext, _ types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	return
 }

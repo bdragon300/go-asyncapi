@@ -30,7 +30,7 @@ func NewModule(specURL *specurl.URL) *Module {
 	return &Module{
 		logger:             types.NewLogger("Compilation 🔨"),
 		specURL:            specURL,
-		objects:            make(map[string][]Object), // Object by rendered code package
+		objects:            make([]Object, 0),
 		defaultContentType: fallbackContentType,
 		protocols:          make(map[string]int),
 	}
@@ -46,7 +46,7 @@ type Module struct {
 	parsedSpec     compiledObject
 
 	// Set during compilation
-	objects            map[string][]Object // Objects by package
+	objects            []Object
 	defaultContentType string
 	protocols          map[string]int
 	promises           []common.ObjectPromise
@@ -55,8 +55,8 @@ type Module struct {
 	activeChannels     []string // Channels in `channels` document section
 }
 
-func (c *Module) AddObject(pkgName string, stack []string, obj common.Renderer) {
-	c.objects[pkgName] = append(c.objects[pkgName], Object{Object: obj, Path: stack})
+func (c *Module) AddObject(stack []string, obj common.Renderer) {
+	c.objects = append(c.objects, Object{Object: obj, Path: stack})
 }
 
 func (c *Module) RegisterProtocol(protoName string) {
@@ -103,16 +103,8 @@ func (c *Module) DefaultContentType() string {
 	return c.defaultContentType
 }
 
-func (c *Module) PackageObjects(pkgName string) []Object {
-	return c.objects[pkgName]
-}
-
-func (c *Module) Packages() []string {
-	return lo.Keys(c.objects)
-}
-
 func (c *Module) AllObjects() []Object {
-	return lo.Flatten(lo.Values(c.objects))
+	return c.objects
 }
 
 func (c *Module) Promises() []common.ObjectPromise {
@@ -186,8 +178,8 @@ func (c *Module) ExternalSpecs() []*specurl.URL {
 
 func (c *Module) Stats() string {
 	return fmt.Sprintf(
-		"%s(%s): %d objects in %d packages, known protocols: %s",
-		c.specURL, c.parsedSpecKind, len(c.AllObjects()), len(c.Packages()), strings.Join(lo.Keys(c.protocols), ","),
+		"%s(%s): %d objects, known protocols: %s",
+		c.specURL, c.parsedSpecKind, len(c.AllObjects()), strings.Join(lo.Keys(c.protocols), ","),
 	)
 }
 

@@ -38,9 +38,9 @@ func (c {{.Struct.U}}) Topic() string {
 {{if .Publisher}}
     {{template "proto/channel/outputMethods" .}}
 
-    {{$pubMessageType := ptr .FallbackMessageType}}
+    {{$pubMessageType := goptr .FallbackMessageType}}
     {{if .PubMessagePromise }}
-        {{$pubMessageType = ptr .PubMessagePromise.T.OutStruct}}
+        {{$pubMessageType = goptr .PubMessagePromise.T.OutStruct}}
     {{end}}
 
     func (c {{.Struct.U}}) SealEnvelope(envelope {{qualr .ProtoName "EnvelopeWriter"}}, message {{$pubMessageType.U}}) error {

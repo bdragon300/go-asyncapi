@@ -32,9 +32,9 @@ func (c {{.Struct.U}}) Publish(ctx {{qual "context.Context"}}, envelopes ...{{qu
 define "proto/channel/barePublishMethods"}}
     {{template "proto/channel/outputMethods" .}}
 
-    {{$pubMessageType := ptr .FallbackMessageType}}
+    {{$pubMessageType := goptr .FallbackMessageType}}
     {{if .PubMessagePromise }}
-        {{$pubMessageType = ptr .PubMessagePromise.T.OutStruct}}
+        {{$pubMessageType = goptr .PubMessagePromise.T.OutStruct}}
     {{end}}
 
     func (c {{.Struct.U}}) SealEnvelope(envelope {{qualr .ProtoName "EnvelopeWriter"}}, message {{$pubMessageType.U}}) error {
@@ -58,9 +58,9 @@ define "proto/channel/barePublishMethods"}}
 {{end}}
 
 {{define "proto/channel/subscribeMethods"}}
-{{$subMessageType := ptr .FallbackMessageType}}
+{{$subMessageType := goptr .FallbackMessageType}}
 {{if .PubMessagePromise }}
-    {{$subMessageType = ptr .SubMessagePromise.T.InStruct}}
+    {{$subMessageType = goptr .SubMessagePromise.T.InStruct}}
 {{end}}
 func (c {{.Struct.U}}) ExtractEnvelope(envelope {{qualr .ProtoName "EnvelopeReader"}}, message {{$subMessageType.U}}) error {
     {{if .SubMessagePromise}}
@@ -136,14 +136,14 @@ define "proto/channel/bareNewFunction"}}
 
 {{define "proto/message/marshalUnmarshalMethods"}}
 func (m *{{.OutStruct.Name}}) Marshal{{ .ProtoName | title }}Envelope(envelope {{qualr .ProtoName "EnvelopeWriter"}} error {
-    enc := {{qualg "encoding.NewEncoder"}}({{.ContentType | lit}}, envelope)
+    enc := {{qualg "encoding.NewEncoder"}}({{.ContentType | golit}}, envelope)
     if err := enc.Encode(m.Payload); err != nil {
         return err
     }
-    envelope.SetContentType({{.ContentType | lit}})
+    envelope.SetContentType({{.ContentType | golit}})
     {{if .HeadersTypePromise}}
         envelope.SetHeaders({
-        {{range $f := .HeadersTypePromise.T.Fields}}{{$f.Name | lit}}: m.Headers.{{$f.Name}},
+        {{range $f := .HeadersTypePromise.T.Fields}}{{$f.Name | golit}}: m.Headers.{{$f.Name}},
         {{end}}
         })
     {{else}}
@@ -153,7 +153,7 @@ func (m *{{.OutStruct.Name}}) Marshal{{ .ProtoName | title }}Envelope(envelope {
 }
 
 func (m *{{.InStruct.Name}}) Unmarshal{{ .ProtoName | title }}Envelope(envelope {{qualr .ProtoName "EnvelopeReader"}} error {
-    dec := {{qualg "encoding.NewDecoder"}}({{.ContentType | lit}}, envelope)
+    dec := {{qualg "encoding.NewDecoder"}}({{.ContentType | golit}}, envelope)
     if err := dec.Decode(&m.Payload); err != nil {
         return err
     }
@@ -162,7 +162,7 @@ func (m *{{.InStruct.Name}}) Unmarshal{{ .ProtoName | title }}Envelope(envelope 
         {{if gt (len .HeadersTypePromise.T.Fields) 0}}
             headers := envelope.Headers()
             {{range $f := .HeadersTypePromise.T.Fields}}
-                if v, ok := headers[{{$f.Name | lit}}]; ok {
+                if v, ok := headers[{{$f.Name | golit}}]; ok {
                     m.Headers.{{$f.Name}} = v.({{$f.Type.U}})
                 }
             {{end}}

@@ -3,10 +3,8 @@ package common
 type SchemaTag string
 
 const (
-	// SchemaTagDirectRender marks that an object must have directRender=true
-	SchemaTagDirectRender SchemaTag = "directRender"
-	// SchemaTagPkgScope sets the package scope for an object. Inherited by nested objects
-	SchemaTagPkgScope SchemaTag = "pkgScope"
+	// SchemaTagDefinition forces an object to be rendered as a definition instead of inline declaration
+	SchemaTagDefinition SchemaTag = "definition"
 	// SchemaTagComponent marks all top-level objects in `component` section
 	SchemaTagComponent SchemaTag = "components"
 	// SchemaTagMarshal marks that an object is meant to be marshaled/unmarshaled. Inherited by nested objects

@@ -24,9 +24,9 @@ package proto
 //
 //	rn := pc.Struct.ReceiverName()
 //	receiver := j.Id(rn).Id(pc.Struct.Name)
-//	var msgTyp common.GolangType = render.GoPointer{Type: pc.Parent.FallbackMessageType, DirectRender: true}
+//	var msgTyp common.GolangType = render.GoPointer{Type: pc.Parent.FallbackMessageType, HasDefinition: true}
 //	if pc.Parent.SubMessagePromise != nil {
-//		msgTyp = render.GoPointer{Type: pc.Parent.SubMessagePromise.Target().InStruct, DirectRender: true}
+//		msgTyp = render.GoPointer{Type: pc.Parent.SubMessagePromise.Target().InStruct, HasDefinition: true}
 //	}
 //
 //	return []*j.Statement{
@@ -34,7 +34,7 @@ package proto
 //		j.Func().Params(receiver.Clone()).Id("ExtractEnvelope").
 //			Params(
 //				j.Id("envelope").Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeReader"),
-//				j.Id("message").Add(utils.ToCode(msgTyp.RenderUsage(ctx))...),
+//				j.Id("message").Add(utils.ToCode(msgTyp.U(ctx))...),
 //			).
 //			Error().
 //			BlockFunc(func(bg *j.Group) {
@@ -143,11 +143,11 @@ package proto
 //			ParamsFunc(func(g *j.Group) {
 //				g.Id("ctx").Qual("context", "Context")
 //				if pc.Parent.ParametersStruct != nil {
-//					g.Id("params").Add(utils.ToCode(pc.Parent.ParametersStruct.RenderUsage(ctx))...)
+//					g.Id("params").Add(utils.ToCode(pc.Parent.ParametersStruct.U(ctx))...)
 //				}
-//				g.Id("servers").Op("...").Add(utils.ToCode(pc.ServerIface.RenderUsage(ctx))...)
+//				g.Id("servers").Op("...").Add(utils.ToCode(pc.ServerIface.U(ctx))...)
 //			}).
-//			Params(j.Op("*").Ad d(utils.ToCode(pc.Struct.RenderUsage(ctx))...), j.Error()).
+//			Params(j.Op("*").Ad d(utils.ToCode(pc.Struct.U(ctx))...), j.Error()).
 //			BlockFunc(func(bg *j.Group) {
 //				bg.Op("if len(servers) == 0").Block(j.Op("return nil, ").Qual(ctx.RuntimeModule(""), "ErrEmptyServers"))
 //				if pc.Parent.Publisher || pc.Parent.Subscriber {

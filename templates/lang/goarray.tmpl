@@ -1,0 +1,17 @@
+{{define "definition"}}
+    {{- if .Description -}}
+        {{ print (.Name "--" .Description) | gocomment }}
+    {{- end -}}
+    type {{ .Name | goid }} [{{ if .Size }}{{ .Size }}{{ end }}]{{ .ItemsType.U }}
+{{end}}
+{{define "usage"}}
+    {{- if .HasDefinition -}}
+        {{- if and .Import (ne .Import .ctx.CurrentPackage) -}}
+            {{ qualg .Import .Name }}
+        {{- else -}}
+            {{ .Name | goid }}
+        {{- end -}}
+    {{- else -}}
+        [{{ if .Size }}{{ .Size }}{{ end }}]{{.ItemsType.U}}
+    {{- end -}}
+{{end}}

@@ -1,6 +1,7 @@
 package asyncapi
 
 import (
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/samber/lo"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -35,7 +36,7 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 	}
 	if p.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", p.Ref)
-		res := render.NewRendererPromise(p.Ref, common.PromiseOriginUser)
+		res := lang.NewRendererPromise(p.Ref, common.PromiseOriginUser)
 		ctx.PutPromise(res)
 		return res, nil
 	}
@@ -45,27 +46,25 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 
 	if p.Schema != nil {
 		ctx.Logger.Trace("Parameter schema")
-		prm := render.NewGolangTypePromise(ctx.PathStackRef("schema"), common.PromiseOriginInternal)
+		prm := lang.NewGolangTypePromise(ctx.PathStackRef("schema"), common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
-		res.Type = &render.GoStruct{
-			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(parName, ""),
-				Description:  p.Description,
-				DirectRender: true,
-				Import:       ctx.CurrentPackage(),
+		res.Type = &lang.GoStruct{
+			BaseType: lang.BaseType{
+				Name:          ctx.GenerateObjName(parName, ""),
+				Description:   p.Description,
+				HasDefinition: true,
 			},
-			Fields: []render.GoStructField{{Name: "Value", Type: prm}},
+			Fields: []lang.GoStructField{{Name: "Value", Type: prm}},
 		}
 	} else {
 		ctx.Logger.Trace("Parameter has no schema")
-		res.Type = &render.GoTypeAlias{
-			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(parName, ""),
-				Description:  p.Description,
-				DirectRender: true,
-				Import:       ctx.CurrentPackage(),
+		res.Type = &lang.GoTypeAlias{
+			BaseType: lang.BaseType{
+				Name:          ctx.GenerateObjName(parName, ""),
+				Description:   p.Description,
+				HasDefinition: true,
 			},
-			AliasedType: &render.GoSimple{Name: "string"},
+			AliasedType: &lang.GoSimple{Name: "string"},
 		}
 		res.PureString = true
 	}

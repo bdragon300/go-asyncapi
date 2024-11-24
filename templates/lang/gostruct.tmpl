@@ -1,0 +1,31 @@
+{{define "definition"}}
+    {{- if .Description -}}
+        {{ print (.Name "--" .Description) | gocomment }}
+    {{- end -}}
+    type {{ .Name | goid }} struct {
+        {{range .Fields -}}
+            {{- if .Description -}}
+                {{ print (.Name "--" .Description) | gocomment }}
+            {{- end}}
+            {{.Name | goid}} {{.Type.U}} {{.RenderTags}}
+        {{- end}}
+    }
+{{end}}
+{{define "usage"}}
+    {{- if .HasDefinition -}}
+        {{- if and .Import (ne .Import .ctx.CurrentPackage) -}}
+            {{ qualg .Import .Name }}
+        {{- else -}}
+            {{ .Name | goid }}
+        {{- end -}}
+    {{- else -}}
+        struct {
+            {{range .Fields -}}
+                {{- if .Description -}}
+                    {{ print (.Name "--" .Description) | gocomment }}
+                {{- end}}
+                {{.Name | goid}} {{.Type.U}} {{.RenderTags}}
+            {{- end}}
+        }
+    {{- end -}}
+{{end}}

@@ -1,6 +1,7 @@
 package asyncapi
 
 import (
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/specurl"
 	"github.com/samber/lo"
 
@@ -42,11 +43,11 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	ignore := s.XIgnore || !ctx.CompileOpts.ServerOpts.IsAllowedName(serverKey)
 	if ignore {
 		ctx.Logger.Debug("Server denoted to be ignored")
-		return &render.Server{Dummy: true}, nil
+		return &render.ProtoServer{Server: &render.Server{Dummy: true}}, nil
 	}
 	if s.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", s.Ref)
-		prm := render.NewRendererPromise(s.Ref, common.PromiseOriginUser)
+		prm := lang.NewRendererPromise(s.Ref, common.PromiseOriginUser)
 		// Set a server to be rendered if we reference it from `servers` document section
 		prm.DirectRender = !isComponent
 		ctx.PutPromise(prm)
@@ -55,67 +56,70 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 
 	srvName, _ := lo.Coalesce(s.XGoName, serverKey)
 	// Render only the servers defined directly in `servers` document section, not in `components`
-	res := render.Server{
+	baseServer := render.Server{
 		Name:            srvName,
 		RawName:         serverKey,
 		GolangName:      ctx.GenerateObjName(srvName, ""),
-		DirectRender:    !isComponent,
 		URL:             s.URL,
 		Protocol:        s.Protocol,
 		ProtocolVersion: s.ProtocolVersion,
 	}
 
 	// Channels which are connected to this server
-	prms := lo.Map(ctx.Storage.ActiveChannels(), func(item string, _ int) *render.Promise[*render.Channel] {
+	prms := lo.Map(ctx.Storage.ActiveChannels(), func(item string, _ int) *lang.Promise[*render.Channel] {
 		ref := specurl.BuildRef("channels", item)
-		prm := render.NewPromise[*render.Channel](ref, common.PromiseOriginInternal)
+		prm := lang.NewPromise[*render.Channel](ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
 		return prm
 	})
-	res.AllChannelsPromises = prms
+	baseServer.AllChannelsPromises = prms
 
 	// Bindings
 	if s.Bindings != nil {
 		ctx.Logger.Trace("Server bindings")
-		res.BindingsStruct = &render.GoStruct{
-			BaseType: render.BaseType{
-				Name:         ctx.GenerateObjName(srvName, "Bindings"),
-				DirectRender: true,
-				Import:       ctx.CurrentPackage(),
+		baseServer.BindingsStruct = &lang.GoStruct{
+			BaseType: lang.BaseType{
+				Name:          ctx.GenerateObjName(srvName, "Bindings"),
+				HasDefinition: true,
 			},
 			Fields: nil,
 		}
 
 		ref := ctx.PathStackRef("bindings")
-		res.BindingsPromise = render.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
-		ctx.PutPromise(res.BindingsPromise)
+		baseServer.BindingsPromise = lang.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
+		ctx.PutPromise(baseServer.BindingsPromise)
 	}
 
 	// Server variables
 	for _, v := range s.Variables.Entries() {
 		ctx.Logger.Trace("Server variable", "name", v.Key)
 		ref := ctx.PathStackRef("variables", v.Key)
-		prm := render.NewPromise[*render.ServerVariable](ref, common.PromiseOriginInternal)
+		prm := lang.NewPromise[*render.ServerVariable](ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
-		res.Variables.Set(v.Key, prm)
+		baseServer.Variables.Set(v.Key, prm)
 	}
 
 	protoBuilder, ok := ProtocolBuilders[s.Protocol]
 	if !ok {
 		ctx.Logger.Warn("Skip unsupported server protocol", "proto", s.Protocol)
-	} else {
-		var err error
-		ctx.Logger.Trace("Server", "proto", protoBuilder.ProtocolName())
-		res.ProtoServer, err = protoBuilder.BuildServer(ctx, &s, &res)
+		protoStruct, err := BuildProtoServerStruct(ctx, &s, &baseServer, "")
 		if err != nil {
 			return nil, err
 		}
-
-		// Register protocol only for servers in `servers` document section, not in `components`
-		if !isComponent {
-			ctx.Storage.RegisterProtocol(s.Protocol)
-		}
+		return &render.ProtoServer{Server: &baseServer, Struct: protoStruct}, nil
 	}
 
-	return &res, nil
+	ctx.Logger.Trace("Server", "proto", protoBuilder.ProtocolName())
+
+	res, err := protoBuilder.BuildServer(ctx, &s, &baseServer)
+	if err != nil {
+		return nil, err
+	}
+
+	// Register protocol only for servers in `servers` document section, not in `components`
+	if !isComponent {
+		ctx.Storage.RegisterProtocol(s.Protocol)
+	}
+
+	return res, nil
 }

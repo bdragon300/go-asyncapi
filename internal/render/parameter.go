@@ -11,27 +11,31 @@ type Parameter struct {
 	PureString bool
 }
 
-func (p Parameter) DirectRendering() bool {
-	return !p.Dummy && p.Type.DirectRendering()
+func (p Parameter) Kind() common.ObjectKind {
+	return common.ObjectKindParameter
 }
 
-//func (p Parameter) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
+func (p Parameter) Selectable() bool {
+	return !p.Dummy && p.Type.Selectable()
+}
+
+//func (p Parameter) D(ctx *common.RenderContext) []*j.Statement {
 //	var res []*j.Statement
-//	ctx.LogStartRender("Parameter", "", p.Name, "definition", p.DirectRendering())
+//	ctx.LogStartRender("Parameter", "", p.Name, "definition", p.Selectable())
 //	defer ctx.LogFinishRender()
 //
-//	res = append(res, p.Type.RenderDefinition(ctx)...)
+//	res = append(res, p.Type.D(ctx)...)
 //	res = append(res, p.renderMethods(ctx)...)
 //	return res
 //}
 
-func (p Parameter) ID() string {
-	return p.Name
-}
-
-func (p Parameter) String() string {
-	return "Parameter " + p.Name
-}
+//func (p Parameter) ID() string {
+//	return p.Name
+//}
+//
+//func (p Parameter) String() string {
+//	return "Parameter " + p.Name
+//}
 
 //func (p Parameter) renderMethods(ctx *common.RenderContext) []*j.Statement {
 //	ctx.Logger.Trace("renderMethods")
@@ -58,13 +62,13 @@ func (p Parameter) String() string {
 //	}
 //}
 
-//func (p Parameter) RenderUsage(ctx *common.RenderContext) []*j.Statement {
-//	ctx.LogStartRender("Parameter", "", p.Name, "usage", p.DirectRendering())
+//func (p Parameter) U(ctx *common.RenderContext) []*j.Statement {
+//	ctx.LogStartRender("Parameter", "", p.Name, "usage", p.Selectable())
 //	defer ctx.LogFinishRender()
 //
-//	return p.Type.RenderUsage(ctx)
+//	return p.Type.U(ctx)
 //}
 
-func (p Parameter) TypeName() string {
-	return p.Type.TypeName()
-}
+//func (p Parameter) TypeName() string {
+//	return p.Type.TypeName()
+//}
