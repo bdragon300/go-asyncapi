@@ -2,8 +2,8 @@ type Encoder interface {
     Encode(v any) error
 }
 var Encoders = map[string]func(w {{qual "io.Writer"}}) Encoder {
-{{range $ct := .MessageContentTypes}}
-    {{$format := .FormatByContentType $ct}}
+{{range $ct := .SpecEffectiveContentTypes}}
+    {{$format := contentTypeID $ct}}
     {{if eq $format "json"}}{{$ct | golit}}: {{template "encoder/json"}}{{end}}
     {{if eq $format "yaml"}}{{$ct | golit}}: {{template "encoder/yaml"}}{{end}}
     {{if not $format}}{{$ct | golit}}: func(_ {{qual "io.Writer"}}) Encoder { panic("No encoder is set for content type {{$ct}}") }{{end}}

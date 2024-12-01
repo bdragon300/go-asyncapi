@@ -2,6 +2,7 @@ package lang
 
 import (
 	"fmt"
+	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"reflect"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -10,12 +11,12 @@ import (
 )
 
 type GoValue struct {
-	Type             common.GolangType // if not nil then it will be rendered before value
-	Literal          any
-	ArrayVals        []any
-	StructVals       types.OrderedMap[string, any]
-	DictVals         types.OrderedMap[string, any]
-	NilCurlyBrackets bool // If GoValue is empty: `{}` if true, or `nil` otherwise
+	Type               common.GolangType             // if not nil then it will be rendered before value
+	EmptyCurlyBrackets bool                          // If GoValue is empty: `{}` if true, or `nil` otherwise
+	LiteralValue       any                           // Render as literal value
+	ArrayValues        []any                         // Render as array/slice initialization in curly brackets
+	StructValues       types.OrderedMap[string, any] // Render as struct inline definition with following field values in curly brackets
+	MapValues          types.OrderedMap[string, any] // Render as map initialization in curly brackets
 }
 
 type GolangPointerWrapperType interface {
@@ -31,22 +32,26 @@ func (gv GoValue) Selectable() bool {
 	return false
 }
 
+func (gv GoValue) RenderContext() common.RenderContext {
+	return context.Context
+}
+
 func (gv GoValue) U() string {
 	//ctx.LogStartRender("GoValue", "", "", "usage", gv.IsDefinition(), "type", gv.Type)
 	//defer ctx.LogFinishRender()
 	//
 	//var valueStmt *j.Statement
 	//switch {
-	//case gv.Literal != nil:
-	//	ctx.Logger.Trace("Literal", "value", gv.Literal)
-	//	valueStmt = j.Lit(gv.Literal)
-	//	if v, ok := gv.Literal.(common.Renderer); ok {
+	//case gv.LiteralValue != nil:
+	//	ctx.Logger.Trace("LiteralValue", "value", gv.LiteralValue)
+	//	valueStmt = j.Lit(gv.LiteralValue)
+	//	if v, ok := gv.LiteralValue.(common.Renderer); ok {
 	//		valueStmt = j.Add(utils.ToCode(v.RenderUsage())...)
 	//	}
-	//case gv.DictVals.Len() > 0:
-	//	ctx.Logger.Trace("DictVals", "value", gv.DictVals)
+	//case gv.MapValues.Len() > 0:
+	//	ctx.Logger.Trace("MapValues", "value", gv.MapValues)
 	//	valueStmt = j.Values(j.DictFunc(func(d j.Dict) {
-	//		for _, e := range gv.DictVals.Entries() {
+	//		for _, e := range gv.MapValues.Entries() {
 	//			l := []j.Code{j.Lit(e.Value)}
 	//			if v, ok := e.Value.(common.Renderer); ok {
 	//				l = utils.ToCode(v.RenderUsage())
@@ -54,10 +59,10 @@ func (gv GoValue) U() string {
 	//			d[j.Lit(e.Key)] = j.Add(l...)
 	//		}
 	//	}))
-	//case gv.StructVals.Len() > 0:
-	//	ctx.Logger.Trace("StructVals", "value", gv.StructVals)
+	//case gv.StructValues.Len() > 0:
+	//	ctx.Logger.Trace("StructValues", "value", gv.StructValues)
 	//	valueStmt = j.Values(j.DictFunc(func(d j.Dict) {
-	//		for _, e := range gv.StructVals.Entries() {
+	//		for _, e := range gv.StructValues.Entries() {
 	//			l := []j.Code{j.Lit(e.Value)}
 	//			if v, ok := e.Value.(common.Renderer); ok {
 	//				l = utils.ToCode(v.RenderUsage())
@@ -65,10 +70,10 @@ func (gv GoValue) U() string {
 	//			d[j.Id(e.Key)] = j.Add(l...)
 	//		}
 	//	}))
-	//case gv.ArrayVals != nil:
-	//	ctx.Logger.Trace("ArrayVals", "value", gv.ArrayVals)
+	//case gv.ArrayValues != nil:
+	//	ctx.Logger.Trace("ArrayValues", "value", gv.ArrayValues)
 	//	valueStmt = j.ValuesFunc(func(g *j.Group) {
-	//		for _, v := range gv.ArrayVals {
+	//		for _, v := range gv.ArrayValues {
 	//			l := []j.Code{j.Lit(v)}
 	//			if v, ok := v.(common.Renderer); ok {
 	//				l = utils.ToCode(v.RenderUsage())
@@ -77,8 +82,8 @@ func (gv GoValue) U() string {
 	//		}
 	//	})
 	//default:
-	//	ctx.Logger.Trace("Empty", "value", lo.Ternary(gv.NilCurlyBrackets, "{}", "nil"))
-	//	valueStmt = lo.Ternary(gv.NilCurlyBrackets, j.Values(), j.Nil())
+	//	ctx.Logger.Trace("Empty", "value", lo.Ternary(gv.EmptyCurlyBrackets, "{}", "nil"))
+	//	valueStmt = lo.Ternary(gv.EmptyCurlyBrackets, j.Values(), j.Nil())
 	//}
 	//
 	//if gv.Type == nil {
@@ -89,14 +94,14 @@ func (gv GoValue) U() string {
 	//if v, ok := gv.Type.(GolangPointerWrapperType); ok && v.IsPointer() {
 	//	ctx.Logger.Trace("pointer")
 	//	if gv.Empty() {
-	//		if gv.NilCurlyBrackets {
+	//		if gv.EmptyCurlyBrackets {
 	//			// &{} -> ToPtr({})
 	//			return []*j.Statement{j.Qual(context.Context.RuntimeModule(""), "ToPtr").Call(j.Values())}
 	//		}
 	//		// &nil -> nil
 	//		return []*j.Statement{j.Nil()}
 	//	}
-	//	if gv.Literal != nil {
+	//	if gv.LiteralValue != nil {
 	//		if t, hasType := v.WrappedGolangType(); hasType {
 	//			// &int(123) -> ToPtr(int(123))
 	//			return []*j.Statement{j.Qual(context.Context.RuntimeModule(""), "ToPtr").Call(
@@ -113,7 +118,7 @@ func (gv GoValue) U() string {
 	//	stmt = stmt.Op("&")
 	//}
 	//stmt = stmt.Add(utils.ToCode(gv.Type.U())...)
-	//if gv.Literal != nil {
+	//if gv.LiteralValue != nil {
 	//	// int(123)
 	//	return []*j.Statement{stmt.Call(j.Add(valueStmt))}
 	//}
@@ -143,19 +148,19 @@ func (gv GoValue) AsGolangType(v GolangPointerWrapperType) common.GolangType {
 }
 
 func (gv GoValue) Empty() bool {
-	return gv.Literal == nil && gv.StructVals.Len() == 0 && gv.DictVals.Len() == 0 && gv.ArrayVals == nil
+	return gv.LiteralValue == nil && gv.StructValues.Len() == 0 && gv.MapValues.Len() == 0 && gv.ArrayValues == nil
 }
 
 func (gv GoValue) String() string {
 	switch {
-	case gv.Literal != nil:
-		return fmt.Sprintf("GoValue %v", gv.Literal)
-	case gv.StructVals.Len() > 0:
-		return fmt.Sprintf("GoValue {%v...}", lo.Slice(gv.StructVals.Entries(), 0, 2))
-	case gv.DictVals.Len() > 0:
-		return fmt.Sprintf("GoValue {%v...}", lo.Slice(gv.DictVals.Entries(), 0, 2))
-	case gv.ArrayVals != nil:
-		return fmt.Sprintf("GoValue {%v...}", lo.Slice(gv.ArrayVals, 0, 2))
+	case gv.LiteralValue != nil:
+		return fmt.Sprintf("GoValue %v", gv.LiteralValue)
+	case gv.StructValues.Len() > 0:
+		return fmt.Sprintf("GoValue {%v...}", lo.Slice(gv.StructValues.Entries(), 0, 2))
+	case gv.MapValues.Len() > 0:
+		return fmt.Sprintf("GoValue {%v...}", lo.Slice(gv.MapValues.Entries(), 0, 2))
+	case gv.ArrayValues != nil:
+		return fmt.Sprintf("GoValue {%v...}", lo.Slice(gv.ArrayValues, 0, 2))
 	}
 	return "GoValue nil"
 }
@@ -173,7 +178,7 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 	switch v := value.(type) {
 	case stringAnyMap:
 		for _, e := range v.Entries() {
-			res.StructVals.Set(e.Key, ConstructGoValue(e.Value, excludeFields, nil))
+			res.StructValues.Set(e.Key, ConstructGoValue(e.Value, excludeFields, nil))
 		}
 		return &res
 	case *GoValue:
@@ -196,17 +201,17 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 			res.Type = &GoArray{
 				BaseType: BaseType{Name: rtyp.Name(), Import: rtyp.PkgPath()},
 				ItemsType: &GoSimple{
-					Name:    elemType.Name(),
-					IsIface: elemType.Kind() == reflect.Interface,
-					Import:  elemType.PkgPath(),
+					Name:        elemType.Name(),
+					IsInterface: elemType.Kind() == reflect.Interface,
+					Import:      elemType.PkgPath(),
 				},
 				Size: elemSize,
 			}
 		}
-		res.NilCurlyBrackets = true
+		res.EmptyCurlyBrackets = true
 
 		for i := 0; i < rval.Len(); i++ {
-			res.ArrayVals = append(res.ArrayVals, ConstructGoValue(rval.Index(i).Interface(), excludeFields, nil))
+			res.ArrayValues = append(res.ArrayValues, ConstructGoValue(rval.Index(i).Interface(), excludeFields, nil))
 		}
 		return &res
 	case reflect.Map:
@@ -216,21 +221,21 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 			res.Type = &GoMap{
 				BaseType: BaseType{Name: rtyp.Name(), Import: rtyp.PkgPath()},
 				KeyType: &GoSimple{
-					Name:    keyType.Name(),
-					IsIface: keyType.Kind() == reflect.Interface,
-					Import:  keyType.PkgPath(),
+					Name:        keyType.Name(),
+					IsInterface: keyType.Kind() == reflect.Interface,
+					Import:      keyType.PkgPath(),
 				},
 				ValueType: &GoSimple{
-					Name:    elemType.Name(),
-					IsIface: elemType.Kind() == reflect.Interface,
-					Import:  elemType.PkgPath(),
+					Name:        elemType.Name(),
+					IsInterface: elemType.Kind() == reflect.Interface,
+					Import:      elemType.PkgPath(),
 				},
 			}
 		}
-		res.NilCurlyBrackets = true
+		res.EmptyCurlyBrackets = true
 
 		for _, k := range rval.MapKeys() {
-			res.DictVals.Set(k.String(), ConstructGoValue(rval.MapIndex(k).Interface(), excludeFields, nil))
+			res.MapValues.Set(k.String(), ConstructGoValue(rval.MapIndex(k).Interface(), excludeFields, nil))
 		}
 		return &res
 	case reflect.Struct:
@@ -239,7 +244,7 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 				BaseType: BaseType{Name: rtyp.Name(), Import: rtyp.PkgPath()},
 			}
 		}
-		res.NilCurlyBrackets = true
+		res.EmptyCurlyBrackets = true
 
 		for i := 0; i < rval.NumField(); i++ {
 			ftyp := rtyp.Field(i)
@@ -247,16 +252,16 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 			if fval.IsZero() || lo.Contains(excludeFields, ftyp.Name) {
 				continue // Skip empty values in struct initializations, or if it excluded
 			}
-			res.StructVals.Set(ftyp.Name, ConstructGoValue(fval.Interface(), excludeFields, nil))
+			res.StructValues.Set(ftyp.Name, ConstructGoValue(fval.Interface(), excludeFields, nil))
 		}
 		return &res
 	case reflect.Pointer, reflect.Interface:
 		pval := reflect.Indirect(rval)
 		val := ConstructGoValue(pval.Interface(), excludeFields, nil)
-		return &GoValue{Literal: val, Type: &GoPointer{Type: overrideType}}
+		return &GoValue{LiteralValue: val, Type: &GoPointer{Type: overrideType}}
 	case reflect.String, reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Float32, reflect.Float64:
-		return &GoValue{Literal: rval.Interface(), Type: overrideType}
+		return &GoValue{LiteralValue: rval.Interface(), Type: overrideType}
 	}
 
 	panic(fmt.Errorf("cannot construct Value from a value of type %T", value))

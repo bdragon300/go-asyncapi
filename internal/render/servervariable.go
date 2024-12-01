@@ -1,12 +1,15 @@
 package render
 
-import "github.com/bdragon300/go-asyncapi/internal/common"
+import (
+	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render/context"
+)
 
 type ServerVariable struct {
 	Name        string
+	Description string // TODO
 	Enum        []string // TODO: implement validation
 	Default     string
-	Description string // TODO
 }
 
 func (s ServerVariable) Kind() common.ObjectKind {
@@ -15,6 +18,10 @@ func (s ServerVariable) Kind() common.ObjectKind {
 
 func (s ServerVariable) Selectable() bool {
 	return false
+}
+
+func (s ServerVariable) RenderContext() common.RenderContext {
+	return context.Context
 }
 //
 //func (s ServerVariable) D(_ *common.RenderContext) []*j.Statement {

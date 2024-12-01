@@ -2,7 +2,6 @@ package lang
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/render/context"
 )
 
 type GoArray struct {

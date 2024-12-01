@@ -135,7 +135,7 @@ func resolvePromise(p common.ObjectPromise, srcSpecID string, sources map[string
 	if qcb := p.FindCallback(); qcb != nil {
 		cb = qcb
 	}
-	found := lo.Filter(srcObjects, func(obj compiler.Object, _ int) bool { return cb(obj.Object, obj.Path) })
+	found := lo.Filter(srcObjects, func(obj compiler.Object, _ int) bool { return cb(obj.Object, obj.ModuleURL.Pointer) })
 	if len(found) != 1 {
 		panic(fmt.Sprintf("Ref %q must point to one object, but %d objects found", p.Ref(), len(found)))
 	}
@@ -165,7 +165,7 @@ func resolveListPromise(p common.ObjectListPromise, srcSpecID string, sources ma
 	}
 	srcObjects := sources[srcSpecID].AllObjects()
 	found := lo.Filter(srcObjects, func(obj compiler.Object, _ int) bool {
-		return cb(obj.Object, obj.Path)
+		return cb(obj.Object, obj.ModuleURL.Pointer)
 	})
 
 	var results []common.Renderer

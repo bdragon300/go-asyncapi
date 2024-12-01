@@ -49,7 +49,7 @@ type operationBindings struct {
 }
 
 func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, parent *render.Channel) (*render.ProtoChannel, error) {
-	golangName := parent.GolangName + utils.TransformInitialisms(pb.ProtoName)
+	golangName := parent.TypeNamePrefix + utils.TransformInitialisms(pb.ProtoName)
 	chanStruct, err := asyncapi.BuildProtoChannelStruct(ctx, channel, parent, pb.ProtoName, golangName)
 	if err != nil {
 		return nil, err
@@ -77,12 +77,12 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 		return
 	}
 
-	vals = &lang.GoValue{Type: &lang.GoSimple{Name: "ChannelBindings", Import: ctx.RuntimeModule(pb.ProtoName)}, NilCurlyBrackets: true}
+	vals = &lang.GoValue{Type: &lang.GoSimple{Name: "ChannelBindings", Import: ctx.RuntimeModule(pb.ProtoName)}, EmptyCurlyBrackets: true}
 	switch bindings.Is {
 	case "queue":
-		vals.StructVals.Set("ChannelType", &lang.GoSimple{Name: "ChannelTypeQueue", Import: ctx.RuntimeModule(pb.ProtoName)})
+		vals.StructValues.Set("ChannelType", &lang.GoSimple{Name: "ChannelTypeQueue", Import: ctx.RuntimeModule(pb.ProtoName)})
 	default: // routingKey and any other value
-		vals.StructVals.Set("ChannelType", &lang.GoSimple{Name: "ChannelTypeRoutingKey", Import: ctx.RuntimeModule(pb.ProtoName)})
+		vals.StructValues.Set("ChannelType", &lang.GoSimple{Name: "ChannelTypeRoutingKey", Import: ctx.RuntimeModule(pb.ProtoName)})
 	}
 	if bindings.Exchange != nil {
 		ecVals := lang.ConstructGoValue(
@@ -90,22 +90,22 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 		)
 		switch bindings.Exchange.Type {
 		case "default":
-			ecVals.StructVals.Set("Type", &lang.GoSimple{Name: "ExchangeTypeDefault", Import: ctx.RuntimeModule(pb.ProtoName)})
+			ecVals.StructValues.Set("Type", &lang.GoSimple{Name: "ExchangeTypeDefault", Import: ctx.RuntimeModule(pb.ProtoName)})
 		case "topic":
-			ecVals.StructVals.Set("Type", &lang.GoSimple{Name: "ExchangeTypeTopic", Import: ctx.RuntimeModule(pb.ProtoName)})
+			ecVals.StructValues.Set("Type", &lang.GoSimple{Name: "ExchangeTypeTopic", Import: ctx.RuntimeModule(pb.ProtoName)})
 		case "direct":
-			ecVals.StructVals.Set("Type", &lang.GoSimple{Name: "ExchangeTypeDirect", Import: ctx.RuntimeModule(pb.ProtoName)})
+			ecVals.StructValues.Set("Type", &lang.GoSimple{Name: "ExchangeTypeDirect", Import: ctx.RuntimeModule(pb.ProtoName)})
 		case "fanout":
-			ecVals.StructVals.Set("Type", &lang.GoSimple{Name: "ExchangeTypeFanout", Import: ctx.RuntimeModule(pb.ProtoName)})
+			ecVals.StructValues.Set("Type", &lang.GoSimple{Name: "ExchangeTypeFanout", Import: ctx.RuntimeModule(pb.ProtoName)})
 		case "headers":
-			ecVals.StructVals.Set("Type", &lang.GoSimple{Name: "ExchangeTypeHeaders", Import: ctx.RuntimeModule(pb.ProtoName)})
+			ecVals.StructValues.Set("Type", &lang.GoSimple{Name: "ExchangeTypeHeaders", Import: ctx.RuntimeModule(pb.ProtoName)})
 		}
-		vals.StructVals.Set("ExchangeConfiguration", ecVals)
+		vals.StructValues.Set("ExchangeConfiguration", ecVals)
 	}
 	qVals := lang.ConstructGoValue(
 		*bindings.Queue, nil, &lang.GoSimple{Name: "QueueConfiguration", Import: ctx.RuntimeModule(pb.ProtoName)},
 	)
-	vals.StructVals.Set("QueueConfiguration", qVals)
+	vals.StructValues.Set("QueueConfiguration", qVals)
 
 	return
 }
@@ -124,13 +124,13 @@ func (pb ProtoBuilder) BuildOperationBindings(ctx *common.CompileContext, rawDat
 		v := lang.ConstructGoValue(
 			bindings.Expiration*int(time.Millisecond), nil, &lang.GoSimple{Name: "Duration", Import: "time"},
 		)
-		vals.StructVals.Set("Expiration", v)
+		vals.StructValues.Set("Expiration", v)
 	}
 	switch bindings.DeliveryMode {
 	case 1:
-		vals.StructVals.Set("DeliveryMode", &lang.GoSimple{Name: "DeliveryModeTransient", Import: ctx.RuntimeModule(pb.ProtoName)})
+		vals.StructValues.Set("DeliveryMode", &lang.GoSimple{Name: "DeliveryModeTransient", Import: ctx.RuntimeModule(pb.ProtoName)})
 	case 2:
-		vals.StructVals.Set("DeliveryMode", &lang.GoSimple{Name: "DeliveryModePersistent", Import: ctx.RuntimeModule(pb.ProtoName)})
+		vals.StructValues.Set("DeliveryMode", &lang.GoSimple{Name: "DeliveryModePersistent", Import: ctx.RuntimeModule(pb.ProtoName)})
 	}
 
 	return

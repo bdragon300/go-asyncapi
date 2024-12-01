@@ -2,6 +2,7 @@ package lang
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render/context"
 )
 
 type GoPointer struct {
@@ -16,6 +17,10 @@ func (p GoPointer) Kind() common.ObjectKind {
 
 func (p GoPointer) Selectable() bool {
 	return p.HasDefinition
+}
+
+func (p GoPointer) RenderContext() common.RenderContext {
+	return context.Context
 }
 
 func (p GoPointer) D() string {
@@ -34,7 +39,7 @@ func (p GoPointer) U() string {
 	case GolangPointerType:
 		isPtr = !v.IsPointer() // Prevent appearing pointer to pointer
 	case *GoSimple:
-		isPtr = !v.IsIface
+		isPtr = !v.IsInterface
 	}
 	if isPtr {
 		return "*" + p.Type.U()

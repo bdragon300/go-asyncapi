@@ -46,7 +46,7 @@ func (pb ProtoBuilder) BuildServerBindings(ctx *common.CompileContext, rawData t
 		bindings, []string{"LastWill"}, &lang.GoSimple{Name: "ServerBindings", Import: ctx.RuntimeModule(pb.ProtoName)},
 	)
 	if bindings.LastWill != nil {
-		vals.StructVals.Set("LastWill", lang.ConstructGoValue(
+		vals.StructValues.Set("LastWill", lang.ConstructGoValue(
 			*bindings.LastWill, []string{}, &lang.GoSimple{Name: "LastWill", Import: ctx.RuntimeModule(pb.ProtoName)},
 		))
 	}

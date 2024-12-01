@@ -87,7 +87,7 @@ func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]str
 	ignore := o.XIgnore || (isComponent && !ctx.CompileOpts.ModelOpts.IsAllowedName(objectKey))
 	if ignore {
 		ctx.Logger.Debug("Object denoted to be ignored")
-		return &lang.GoSimple{Name: "any", IsIface: true}, nil
+		return &lang.GoSimple{Name: "any", IsInterface: true}, nil
 	}
 	if o.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", o.Ref)
@@ -187,7 +187,7 @@ func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.Sch
 		}
 	case "null", "":
 		ctx.Logger.Trace("Object is any")
-		golangType = &lang.GoSimple{Name: "any", IsIface: true}
+		golangType = &lang.GoSimple{Name: "any", IsInterface: true}
 	case "boolean":
 		ctx.Logger.Trace("Object is bool")
 		aliasedType = &lang.GoSimple{Name: "bool"}
@@ -329,7 +329,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 						Description:   "",
 						HasDefinition: false,
 					},
-					AliasedType: &lang.GoSimple{Name: "any", IsIface: true},
+					AliasedType: &lang.GoSimple{Name: "any", IsInterface: true},
 				}
 				f := lang.GoStructField{
 					Name: "AdditionalProperties",
@@ -379,7 +379,7 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 				Description:   "",
 				HasDefinition: false,
 			},
-			AliasedType: &lang.GoSimple{Name: "any", IsIface: true},
+			AliasedType: &lang.GoSimple{Name: "any", IsInterface: true},
 		}
 		res.ItemsType = &lang.GoMap{
 			BaseType: lang.BaseType{

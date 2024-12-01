@@ -2,7 +2,7 @@
     {{ .Name | goid }}
 {{end}}
 {{define "usage"}}
-    {{- if and .Import (ne .Import .ctx.CurrentPackage) -}}
+    {{- if and .Import (ne .Import .RenderContext.CurrentPackage) -}}
         {{ qual (print .Import "." .Name) }}
     {{- else -}}
         {{ .Name | goid }}

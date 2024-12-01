@@ -3,6 +3,7 @@ package lang
 import (
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/samber/lo"
 )
 
@@ -129,7 +130,7 @@ type RendererPromise struct {
 	DirectRender bool
 }
 
-func (r RendererPromise) Kind() common.ObjectKind {
+func (r *RendererPromise) Kind() common.ObjectKind {
 	return r.target.Kind()
 }
 
@@ -143,6 +144,10 @@ func (r *RendererPromise) U() string {
 
 func (r *RendererPromise) Selectable() bool {
 	return r.DirectRender // Prevent rendering the object we're point to for several times
+}
+
+func (r *RendererPromise) RenderContext() common.RenderContext {
+	return context.Context
 }
 
 func (r *RendererPromise) String() string {
@@ -160,10 +165,10 @@ type GolangTypePromise struct {
 	// DirectRender marks the promise to be rendered directly, even if object it points to not marked to do so.
 	// Be careful, in order to avoid duplicated object appearing in the output, this flag should be set only for
 	// objects which are not marked to be rendered directly
-	DirectRender bool
+	DirectRender bool  // TODO: rework or remove
 }
 
-func (r GolangTypePromise) Kind() common.ObjectKind {
+func (r *GolangTypePromise) Kind() common.ObjectKind {
 	return r.target.Kind()
 }
 
@@ -173,6 +178,10 @@ func (r *GolangTypePromise) TypeName() string {
 
 func (r *GolangTypePromise) Selectable() bool {
 	return r.DirectRender // Prevent rendering the object we're point to for several times
+}
+
+func (r *GolangTypePromise) RenderContext() common.RenderContext {
+	return context.Context
 }
 
 func (r *GolangTypePromise) D() string {

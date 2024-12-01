@@ -1,14 +1,14 @@
-{{ if .BindingsStruct}}
-    {{ .BindingsStruct.D }}
+{{ if .BindingsType}}
+    {{ .BindingsType.D }}
     {{range $proto := .BindingsProtocols}}
         {{$bindingsValue := .ProtoBindingsValue $proto}}
-        func (c *{{ .BindingStruct.U }}) {{ $proto | title }}() {{$bindingsValue.Type.U}} {
+        func (c *{{ .BindingStruct.U }}) {{ $proto | capitalize }}() {{$bindingsValue.Type.U}} {
         b := {{$bindingsValue.U}}
         {{if .BindingsPromise}}
             {{$jvals := .BindingsPromise.T.JSONValues.GetOrEmpty $proto}}
             {{range $jval := $jvals.Entries}}
-                {{$jval.Key | lowerCamelize }} := {{$jval.Value | golit}}
-                _ = {{qual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | lowerCamelize }}), &b.{{$jval.Key}})
+                {{$jval.Key | toCamelCase }} := {{$jval.Value | golit}}
+                _ = {{qual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})
             {{end}}
         {{end}}
         return b
@@ -21,45 +21,45 @@
     {{$headersType := .HeadersTypePromise.T}}
 {{end}}
 
-func New{{ .OutStruct.Name }}() *{{ .OutStruct.U }} {
-    return &{{ .OutStruct.U }}{}
+func New{{ .OutType.Name }}() *{{ .OutType.U }} {
+    return &{{ .OutType.U }}{}
 }
 
-{{.OutStruct.D}}
+{{.OutType.D}}
 
-func (m *{{.OutStruct.Name}}) WithPayload(payload {{.PayloadType.U}}) *{{.OutStruct.Name}} {
+func (m *{{.OutType.Name}}) WithPayload(payload {{.PayloadType.U}}) *{{.OutType.Name}} {
     m.Payload = payload
     return m
 }
 
-func (m *{{.OutStruct.Name}}) WithHeaders(headers {{$headersType.U}}) *{{.OutStruct.Name}} {
+func (m *{{.OutType.Name}}) WithHeaders(headers {{$headersType.U}}) *{{.OutType.Name}} {
     m.Headers = headers
     return m
 }
 
 {{if .CorrelationIDPromise}}
-func (m {{.OutStruct.Name}}) SetCorrelationID(value {{(.CorrelationIDPromise.T.TargetVarType .OutStruct).U}}) {
-    {{(.CorrelationIDPromise.T.RenderSetterBody "value" .OutStruct).U}}
+func (m {{.OutType.Name}}) SetCorrelationID(value {{(.CorrelationIDPromise.T.TargetVarType .OutType).U}}) {
+    {{(.CorrelationIDPromise.T.RenderSetterBody "value" .OutType).U}}
 }
 {{end}}
 
-func New{{ .InStruct.Name }}() *{{ .InStruct.U }} {
-    return &{{ .InStruct.U }}{}
+func New{{ .InType.Name }}() *{{ .InType.U }} {
+    return &{{ .InType.U }}{}
 }
 
-{{.InStruct.D}}
+{{.InType.D}}
 
-func (m *{{.InStruct.Name}}) MessagePayload() {{.PayloadType.U}} {
+func (m *{{.InType.Name}}) MessagePayload() {{.PayloadType.U}} {
     return m.Payload
 }
 
-func (m *{{.InStruct.Name}}) MessageHeaders() {{$headersType.U}} {
+func (m *{{.InType.Name}}) MessageHeaders() {{$headersType.U}} {
     return m.Headers
 }
 
 {{if .CorrelationIDPromise}}
-func (m {{.InStruct.Name}}) CorrelationID() (value {{(.CorrelationIDPromise.T.TargetVarType .InStruct).U}}}, err error) {
-    {{(.CorrelationIDPromise.T.RenderGetterBody "value" .InStruct).U}}
+func (m {{.InType.Name}}) CorrelationID() (value {{(.CorrelationIDPromise.T.TargetVarType .InType).U}}}, err error) {
+    {{(.CorrelationIDPromise.T.RenderGetterBody "value" .InType).U}}
     return
 }
 {{end}}

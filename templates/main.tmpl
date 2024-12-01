@@ -1,24 +1,28 @@
-{{range .SelectSchemas}}
+{{if .SelectAsyncAPI}}
+    {{template "encoding" .SelectAsyncAPI}}
+{{end}}
+
+{{range .Selections.SelectSchemas}}
     {{template "schema" .}}
 {{end}}
 
-{{range .SelectServers}}
+{{range .Selections.SelectServers}}
     {{template "server" .}}
     {{runTemplate (print .ProtoName "/" "server") .}}
 {{end}}
 
-{{range .SelectParameters}}
+{{range .Selections.SelectParameters}}
     {{template "parameter" .}}
 {{end}}
 
-{{$channels := .SelectChannels}}
+{{$channels := .Selections.SelectChannels}}
 {{if $channels}}{{template "channel" $channels.0}}{{end}}
 
 {{range $channels}}
     {{runTemplate (print .ProtoName "/" "channel") .}}
 {{end}}
 
-{{$messages := .SelectMessages}}
+{{$messages := .Selections.SelectMessages}}
 {{if $messages}}{{template "message" $messages.0}}{{end}}
 
 {{range $messages}}

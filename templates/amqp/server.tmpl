@@ -22,13 +22,13 @@ func (s {{.Struct.U}}) Consumer() {{qualr .ProtoName "Consumer"}} {
 {{range $channel := .GetRelevantChannels}}
 func (s {{.Struct.D}}) Open{{$channel.Struct.Name}}(
     ctx {{qual "context.Context"}},
-    {{if $channel.ParametersStruct}}params {{$channel.ParametersStruct.U}},{{end}}
+    {{if $channel.ParametersType}}params {{$channel.ParametersType.U}},{{end}}
 ) (ch *{{$channel.Struct.U}}, err error) {
     return {{qualg $channel.Struct.Import (print "Open" $channel.Struct.Name)}}(
         ctx,
-        {{if $channel.ParametersStruct}}params,{{end}}
-        {{if $channel.Publisher}}s.producer,{{end}}
-        {{if $channel.Subscriber}}s.consumer,{{end}}
+        {{if $channel.ParametersType}}params,{{end}}
+        {{if $channel.IsPublisher}}s.producer,{{end}}
+        {{if $channel.IsSubscriber}}s.consumer,{{end}}
     )
 }
 {{end}}

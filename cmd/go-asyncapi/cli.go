@@ -9,7 +9,6 @@ import (
 	"github.com/charmbracelet/log"
 
 	"github.com/alexflint/go-arg"
-	"github.com/bdragon300/go-asyncapi/internal/writer"
 )
 
 var ErrWrongCliArgs = errors.New("cli args")
@@ -54,12 +53,9 @@ func main() {
 
 	cmd := cliArgs.GenerateCmd
 	if err := generate(cmd); err != nil {
-		var multilineErr writer.MultilineError
 		switch {
 		case errors.Is(err, ErrWrongCliArgs):
 			cliParser.WriteHelp(os.Stderr)
-		case log.GetLevel() <= log.DebugLevel && errors.As(err, &multilineErr):
-			log.Error(err.Error(), "details", multilineErr.RestLines())
 		}
 
 		log.Error(err.Error())

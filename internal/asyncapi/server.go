@@ -2,7 +2,6 @@ package asyncapi
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
-	"github.com/bdragon300/go-asyncapi/internal/specurl"
 	"github.com/samber/lo"
 
 	"github.com/bdragon300/go-asyncapi/internal/types"
@@ -58,26 +57,28 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	// Render only the servers defined directly in `servers` document section, not in `components`
 	baseServer := render.Server{
 		Name:            srvName,
-		RawName:         serverKey,
-		GolangName:      ctx.GenerateObjName(srvName, ""),
+		SpecKey:         serverKey,
+		TypeNamePrefix:  ctx.GenerateObjName(srvName, ""),
 		URL:             s.URL,
 		Protocol:        s.Protocol,
 		ProtocolVersion: s.ProtocolVersion,
 	}
 
 	// Channels which are connected to this server
-	prms := lo.Map(ctx.Storage.ActiveChannels(), func(item string, _ int) *lang.Promise[*render.Channel] {
-		ref := specurl.BuildRef("channels", item)
-		prm := lang.NewPromise[*render.Channel](ref, common.PromiseOriginInternal)
-		ctx.PutPromise(prm)
-		return prm
+	prm := lang.NewListCbPromise[*render.Channel](func(item common.Renderer, path []string) bool {
+		_, ok := item.(*render.Channel)
+		if !ok {
+			return false
+		}
+		return len(path) >= 2 && path[0] == "channels"
 	})
-	baseServer.AllChannelsPromises = prms
+	ctx.PutListPromise(prm)
+	baseServer.AllChannelsPromise = prm
 
 	// Bindings
 	if s.Bindings != nil {
 		ctx.Logger.Trace("Server bindings")
-		baseServer.BindingsStruct = &lang.GoStruct{
+		baseServer.BindingsType = &lang.GoStruct{
 			BaseType: lang.BaseType{
 				Name:          ctx.GenerateObjName(srvName, "Bindings"),
 				HasDefinition: true,
@@ -96,7 +97,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		ref := ctx.PathStackRef("variables", v.Key)
 		prm := lang.NewPromise[*render.ServerVariable](ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
-		baseServer.Variables.Set(v.Key, prm)
+		baseServer.VariablesPromises.Set(v.Key, prm)
 	}
 
 	protoBuilder, ok := ProtocolBuilders[s.Protocol]

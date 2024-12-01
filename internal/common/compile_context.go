@@ -28,15 +28,6 @@ type CompilationStorage interface {
 	AddExternalSpecPath(specPath *specurl.URL)
 	AddPromise(p ObjectPromise)
 	AddListPromise(p ObjectListPromise)
-
-	SetDefaultContentType(contentType string)
-	DefaultContentType() string
-
-	SetActiveServers(servers []string)
-	ActiveServers() []string
-
-	SetActiveChannels(channels []string)
-	ActiveChannels() []string
 }
 
 type CompileOpts struct {

@@ -2,12 +2,13 @@ package lang
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render/context"
 )
 
 type GoSimple struct {
-	Name            string            // type name
-	IsIface         bool              // true if type is interface, which means it cannot be rendered as pointer
-	Import          string            // optional generated package name or module to import a type from
+	Name        string // type name
+	IsInterface bool   // true if type is interface, which means it cannot be rendered as pointer
+	Import      string // optional generated package name or module to import a type from
 }
 
 func (p GoSimple) Kind() common.ObjectKind {
@@ -16,6 +17,10 @@ func (p GoSimple) Kind() common.ObjectKind {
 
 func (p GoSimple) Selectable() bool {
 	return false
+}
+
+func (p GoSimple) RenderContext() common.RenderContext {
+	return context.Context
 }
 
 func (p GoSimple) D() string {

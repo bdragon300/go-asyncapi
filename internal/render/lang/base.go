@@ -1,23 +1,31 @@
 package lang
 
-import "github.com/bdragon300/go-asyncapi/internal/common"
+import (
+	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render/context"
+)
 
 type BaseType struct {
 	Name        string
 	Description string
 
-	// HasDefinition is true if this type has a definition in the generated code. Otherwise, it renders as inline type.
-	// Such as inlined `field struct{...}` and separate `field StructName`, or `field []type` and `field ArrayName`
+	// HasDefinition is true if this type should have a definition in the generated code. Otherwise, it renders as
+	// inline type. Such as inlined `field struct{...}` and separate `field StructName`, or `field []type`
+	// and `field ArrayName`
 	HasDefinition bool
-	Import        string // optional generated package name or module to import a type from // TODO: replace to "is in runtime module" flag?
+	Import        string // optional module to import a type from
 }
 
-func (b BaseType) Kind() common.ObjectKind {
+func (b *BaseType) Kind() common.ObjectKind {
 	return common.ObjectKindLang
 }
 
 func (b *BaseType) Selectable() bool {
 	return b.HasDefinition
+}
+
+func (b *BaseType) RenderContext() common.RenderContext {
+	return context.Context
 }
 
 func (b *BaseType) TypeName() string {

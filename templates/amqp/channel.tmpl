@@ -1,21 +1,21 @@
-type {{(print .GolangNameProto "Server") | lowerCamelize}} interface {
-    Open{{.GolangNameProto}}(ctx {{qual "context.Context"}}, {{if .ParametersStruct}}params {{.ParametersStruct.U}}{{end}}) (*{{.Struct.U}}, error)
-    {{if .Publisher}}Producer() {{qualr .ProtoName "Producer"}}{{end}}
-    {{if .Subscriber}}Consumer() {{qualr .ProtoName "Consumer"}}{{end}}
+type {{(print ..RenderContextProto "Server") | toCamelCase}} interface {
+    Open{{..RenderContextProto}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType.U}}{{end}}) (*{{.Struct.U}}, error)
+    {{if .IsPublisher}}Producer() {{qualr .ProtoName "Producer"}}{{end}}
+    {{if .IsSubscriber}}Consumer() {{qualr .ProtoName "Consumer"}}{{end}}
 }
 
 func New{{.Struct.Name}}(
-    {{if .ParametersStruct}}params {{.ParametersStruct.U}},{{end}}
-    {{if .Publisher}}publisher {{qualr .ProtoName "Publisher"}},{{end}}
-    {{if .Subscriber}}subscriber {{qualr .ProtoName "Subscriber"}},{{end}}
+    {{if .ParametersType}}params {{.ParametersType.U}},{{end}}
+    {{if .IsPublisher}}publisher {{qualr .ProtoName "Publisher"}},{{end}}
+    {{if .IsSubscriber}}subscriber {{qualr .ProtoName "Subscriber"}},{{end}}
 ) *{{.Struct.U}} {
     res := {{.Struct.U}}{
-        name: {{.GolangName}}Name({{if .ParametersStruct}}params{{end}}),
-        {{if .Publisher}}publisher: publisher,{{end}}
-        {{if .Subscriber}}subscriber: subscriber,{{end}}
+        name: {{..RenderContext}}Name({{if .ParametersType}}params{{end}}),
+        {{if .IsPublisher}}publisher: publisher,{{end}}
+        {{if .IsSubscriber}}subscriber: subscriber,{{end}}
     }
-    {{if .BindingsStruct}}
-        bindings := {{.BindingsStruct.U}}{}.{{.ProtoName | title}}()
+    {{if .BindingsType}}
+        bindings := {{.BindingsType.U}}{}.{{.ProtoName | capitalize}}()
         switch bindings.ChannelType {
         case {{qualr .ProtoName "ChannelTypeQueue"}}:
             res.queue = res.name.String()
@@ -51,18 +51,18 @@ func (c {{.Struct.U}}) RoutingKey() string {
     return c.routingKey
 }
 
-{{if .Publisher}}
+{{if .IsPublisher}}
     {{template "proto/channel/outputMethods" .}}
 
-    {{$pubMessageType := goptr .FallbackMessageType}}
-    {{if .PubMessagePromise }}
-        {{$pubMessageType = goptr .PubMessagePromise.T.OutStruct}}
+    {{$pubMessageType := goptr "any"}}
+    {{if .PublisherMessageTypePromise }}
+        {{$pubMessageType = goptr .PublisherMessageTypePromise.T.OutType}}
     {{end}}
 
     func (c {{.Struct.U}}) SealEnvelope(envelope {{qualr .ProtoName "EnvelopeWriter"}}, message {{$pubMessageType.U}}) error {
         envelope.ResetPayload()
-        {{if .PubMessagePromise /*Message is set for Channel in spec*/ }}
-            if err := message.Marshal{{.ProtoName | title}}Envelope(envelope); err != nil {
+        {{if .PublisherMessageTypePromise /*Message is set for Channel in spec*/ }}
+            if err := message.Marshal{{.ProtoName | capitalize}}Envelope(envelope); err != nil {
                 return err
             }
         {{else /*No Message set for Channel in spec*/}}
@@ -72,11 +72,11 @@ func (c {{.Struct.U}}) RoutingKey() string {
             }
         {{end}}
         envelope.SetRoutingKey(c.RoutingKey())
-        {{if and .PubMessagePromise (.PubMessagePromise.T.HasProtoBindings .ProtoName)}}
-            envelope.SetBindings(.PubMessagePromise.T.BindingsStruct.U){}.{{.ProtoName | title}}()
+        {{if and .PublisherMessageTypePromise (.PublisherMessageTypePromise.T.HasProtoBindings .ProtoName)}}
+            envelope.SetBindings(.PublisherMessageTypePromise.T.BindingsType.U){}.{{.ProtoName | capitalize}}()
         {{end}}
         return nil
     }
 {{end}}
 
-{{if .Subscriber}}{{template "proto/channel/subscribeMethods" .}}{{end}}
+{{if .IsSubscriber}}{{template "proto/channel/subscribeMethods" .}}{{end}}

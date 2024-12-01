@@ -1,6 +1,7 @@
 package render
 
 import (
+	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/samber/lo"
 	"sort"
@@ -11,16 +12,17 @@ import (
 type Message struct {
 	Name                 string
 	Dummy                bool
-	OutStruct            *lang.GoStruct
-	InStruct             *lang.GoStruct
+	OutType              *lang.GoStruct
+	InType               *lang.GoStruct
 	PayloadType          common.GolangType // `any` or a particular type
 	HeadersFallbackType  *lang.GoMap
 	HeadersTypePromise   *lang.Promise[*lang.GoStruct]
-	AllServersPromises   []*lang.Promise[*Server]      // For extracting all using protocols
-	BindingsStruct       *lang.GoStruct                // nil if message bindings are not defined for message
+	AllServersPromise    *lang.ListPromise[*Server]    // For extracting all using protocols
+	BindingsType         *lang.GoStruct                // nil if message bindings are not defined for message
 	BindingsPromise      *lang.Promise[*Bindings]      // nil if message bindings are not defined for message as well
-	ContentType          string                        // Message's content type or default from schema or fallback
+	ContentType          string                        // Message's content type
 	CorrelationIDPromise *lang.Promise[*CorrelationID] // nil if correlationID is not defined for message
+	AsyncAPIPromise *lang.Promise[*AsyncAPI]
 }
 
 func (m Message) Kind() common.ObjectKind {
@@ -29,6 +31,15 @@ func (m Message) Kind() common.ObjectKind {
 
 func (m Message) Selectable() bool {
 	return !m.Dummy
+}
+
+func (m Message) RenderContext() common.RenderContext {
+	return context.Context
+}
+
+func (m Message) EffectiveContentType() string {
+	res, _ := lo.Coalesce(m.ContentType, m.AsyncAPIPromise.Target().EffectiveDefaultContentType())
+	return res
 }
 
 //func (m Message) Selectable() bool {
@@ -41,8 +52,8 @@ func (m Message) Selectable() bool {
 	//defer ctx.LogFinishRender()
 	//
 	//// Bindings struct and its methods according to protocols of channels where the message is used
-	//if m.BindingsStruct != nil {
-	//	res = append(res, m.BindingsStruct.D(ctx)...)
+	//if m.BindingsType != nil {
+	//	res = append(res, m.BindingsType.D(ctx)...)
 	//
 	//	if m.BindingsPromise != nil {
 	//		tgt := m.BindingsPromise.Target()
@@ -50,7 +61,7 @@ func (m Message) Selectable() bool {
 	//		ctx.Logger.Debug("Message protocols", "protocols", protocols)
 	//		for _, p := range protocols {
 	//			protoTitle := ctx.ProtoRenderers[p].ProtocolTitle()
-	//			res = append(res, tgt.RenderBindingsMethod(ctx, m.BindingsStruct, p, protoTitle)...)
+	//			res = append(res, tgt.RenderBindingsMethod(ctx, m.BindingsType, p, protoTitle)...)
 	//		}
 	//	}
 	//}
@@ -86,10 +97,10 @@ func (m Message) HasProtoBindings(protoName string) bool {
 //	ctx.Logger.Trace("renderPublishMessageStruct")
 //
 //	var res []*j.Statement
-//	res = append(res, j.Func().Id(m.OutStruct.NewFuncName()).Params().Op("*").Add(utils.ToCode(m.OutStruct.U(ctx))...).Block(
-//		j.Return(j.Op("&").Add(utils.ToCode(m.OutStruct.U(ctx))...).Values()),
+//	res = append(res, j.Func().Id(m.OutType.NewFuncName()).Params().Op("*").Add(utils.ToCode(m.OutType.U(ctx))...).Block(
+//		j.Return(j.Op("&").Add(utils.ToCode(m.OutType.U(ctx))...).Values()),
 //	))
-//	res = append(res, m.OutStruct.D(ctx)...)
+//	res = append(res, m.OutType.D(ctx)...)
 //
 //	for _, p := range m.ServersProtocols(ctx) {
 //		res = append(res, m.renderMarshalEnvelopeMethod(ctx, p, ctx.ProtoRenderers[p].ProtocolTitle())...)
@@ -102,8 +113,8 @@ func (m Message) HasProtoBindings(protoName string) bool {
 //func (m Message) renderPublishCommonMethods(ctx *common.RenderContext) []*j.Statement {
 //	ctx.Logger.Trace("renderPublishCommonMethods")
 //
-//	structName := m.OutStruct.Name
-//	rn := m.OutStruct.ReceiverName()
+//	structName := m.OutType.Name
+//	rn := m.OutType.ReceiverName()
 //	receiver := j.Id(rn).Op("*").Id(structName)
 //	payloadFieldType := utils.ToCode(m.PayloadType.U(ctx))
 //	headersFieldType := utils.ToCode(m.HeadersFallbackType.U(ctx))
@@ -141,8 +152,8 @@ func (m Message) HasProtoBindings(protoName string) bool {
 //func (m Message) renderMarshalEnvelopeMethod(ctx *common.RenderContext, protoName, protoTitle string) []*j.Statement {
 //	ctx.Logger.Trace("renderMarshalEnvelopeMethod")
 //
-//	rn := m.OutStruct.ReceiverName()
-//	receiver := j.Id(rn).Op("*").Id(m.OutStruct.Name)
+//	rn := m.OutType.ReceiverName()
+//	receiver := j.Id(rn).Op("*").Id(m.OutType.Name)
 //
 //	return []*j.Statement{
 //		// Method MarshalProtoEnvelope(envelope proto.EnvelopeWriter) error
@@ -181,10 +192,10 @@ func (m Message) HasProtoBindings(protoName string) bool {
 //	ctx.Logger.Trace("renderSubscribeMessageStruct")
 //
 //	var res []*j.Statement
-//	res = append(res, j.Func().Id(m.InStruct.NewFuncName()).Params().Op("*").Add(utils.ToCode(m.InStruct.U(ctx))...).Block(
-//		j.Return(j.Op("&").Add(utils.ToCode(m.InStruct.U(ctx))...).Values()),
+//	res = append(res, j.Func().Id(m.InType.NewFuncName()).Params().Op("*").Add(utils.ToCode(m.InType.U(ctx))...).Block(
+//		j.Return(j.Op("&").Add(utils.ToCode(m.InType.U(ctx))...).Values()),
 //	))
-//	res = append(res, m.InStruct.D(ctx)...)
+//	res = append(res, m.InType.D(ctx)...)
 //
 //	for _, p := range m.ServersProtocols(ctx) {
 //		res = append(res, m.renderUnmarshalEnvelopeMethod(ctx, p, ctx.ProtoRenderers[p].ProtocolTitle())...)
@@ -197,8 +208,8 @@ func (m Message) HasProtoBindings(protoName string) bool {
 //func (m Message) renderSubscribeCommonMethods(ctx *common.RenderContext) []*j.Statement {
 //	ctx.Logger.Trace("renderSubscribeCommonMethods")
 //
-//	structName := m.InStruct.Name
-//	rn := m.InStruct.ReceiverName()
+//	structName := m.InType.Name
+//	rn := m.InType.ReceiverName()
 //	receiver := j.Id(rn).Op("*").Id(structName)
 //	payloadFieldType := utils.ToCode(m.PayloadType.U(ctx))
 //	headersFieldType := utils.ToCode(m.HeadersFallbackType.U(ctx))
@@ -232,8 +243,8 @@ func (m Message) HasProtoBindings(protoName string) bool {
 //func (m Message) renderUnmarshalEnvelopeMethod(ctx *common.RenderContext, protoName, protoTitle string) []*j.Statement {
 //	ctx.Logger.Trace("renderUnmarshalEnvelopeMethod")
 //
-//	rn := m.InStruct.ReceiverName()
-//	receiver := j.Id(rn).Op("*").Id(m.InStruct.Name)
+//	rn := m.InType.ReceiverName()
+//	receiver := j.Id(rn).Op("*").Id(m.InType.Name)
 //
 //	return []*j.Statement{
 //		// Method UnmarshalProtoEnvelope(envelope proto.EnvelopeReader) error
@@ -271,12 +282,12 @@ func (m Message) HasProtoBindings(protoName string) bool {
 // ServerProtocols returns supported protocol list for the given servers, throwing out unsupported ones
 // TODO: move to top-level template
 func (m Message) ServerProtocols() []string {
-	res := lo.Uniq(lo.FilterMap(m.AllServersPromises, func(item *lang.Promise[*Server], _ int) (string, bool) {
-		_, ok := ctx.ProtoRenderers[item.Target().Protocol]
+	res := lo.Uniq(lo.FilterMap(m.AllServersPromise.Targets(), func(item *Server, _ int) (string, bool) {
+		_, ok := ctx.ProtoRenderers[item.Protocol]
 		if !ok {
-			ctx.Logger.Warnf("Skip protocol %q since it is not supported", item.Target().Protocol)
+			ctx.Logger.Warnf("Skip protocol %q since it is not supported", item.Protocol)
 		}
-		return item.Target().Protocol, ok && !item.Target().Dummy
+		return item.Protocol, ok && !item.Dummy
 	}))
 	sort.Strings(res)
 	return res

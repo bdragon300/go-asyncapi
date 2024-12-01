@@ -45,8 +45,8 @@ package amqp
 //		// NewChannel1Proto(params Channel1Parameters, publisher proto.Publisher, subscriber proto.Subscriber) *Channel1Proto
 //		j.Func().Id(pc.Struct.NewFuncName()).
 //			ParamsFunc(func(g *j.Group) {
-//				if pc.Parent.ParametersStruct != nil {
-//					g.Id("params").Add(utils.ToCode(pc.Parent.ParametersStruct.U(ctx))...)
+//				if pc.Parent.ParametersType != nil {
+//					g.Id("params").Add(utils.ToCode(pc.Parent.ParametersType.U(ctx))...)
 //				}
 //				if pc.Parent.Publisher {
 //					g.Id("publisher").Qual(ctx.RuntimeModule(pc.ProtoName), "Publisher")
@@ -58,8 +58,8 @@ package amqp
 //			Op("*").Add(utils.ToCode(pc.Struct.U(ctx))...).
 //			BlockFunc(func(bg *j.Group) {
 //				bg.Op("res := ").Add(utils.ToCode(pc.Struct.U(ctx))...).Values(j.DictFunc(func(d j.Dict) {
-//					d[j.Id("name")] = j.Id(pc.Parent.GolangName + "Name").CallFunc(func(g *j.Group) {
-//						if pc.Parent.ParametersStruct != nil {
+//					d[j.Id("name")] = j.Id(pc.Parent.TypeNamePrefix + "Name").CallFunc(func(g *j.Group) {
+//						if pc.Parent.ParametersType != nil {
 //							g.Id("params")
 //						}
 //					})
@@ -71,9 +71,9 @@ package amqp
 //					}
 //				}))
 //
-//				if pc.Parent.BindingsStruct != nil {
+//				if pc.Parent.BindingsType != nil {
 //					bg.Id("bindings").Op(":=").Add(
-//						utils.ToCode(pc.Parent.BindingsStruct.U(ctx))...,
+//						utils.ToCode(pc.Parent.BindingsType.U(ctx))...,
 //					).Values().Dot(pc.ProtoTitle).Call()
 //					bg.Switch(j.Id("bindings.ChannelType")).BlockFunc(func(bg2 *j.Group) {
 //						bg2.Case(j.Qual(ctx.RuntimeModule(pc.ProtoName), "ChannelTypeQueue")).Block(
@@ -134,8 +134,8 @@ package amqp
 //	receiver := j.Id(rn).Id(pc.Struct.Name)
 //
 //	var msgTyp common.GolangType = render.GoPointer{Type: pc.FallbackMessageType, HasDefinition: true}
-//	if pc.PubMessagePromise != nil {
-//		msgTyp = render.GoPointer{Type: pc.PubMessagePromise.Target().OutStruct, HasDefinition: true}
+//	if pc.PublisherMessageTypePromise != nil {
+//		msgTyp = render.GoPointer{Type: pc.PublisherMessageTypePromise.Target().OutType, HasDefinition: true}
 //	}
 //
 //	return []*j.Statement{
@@ -148,7 +148,7 @@ package amqp
 //			Error().
 //			BlockFunc(func(bg *j.Group) {
 //				bg.Op("envelope.ResetPayload()")
-//				if pc.PubMessagePromise == nil { // No Message set for Channel in spec
+//				if pc.PublisherMessageTypePromise == nil { // No Message set for Channel in spec
 //					bg.Empty().Add(utils.QualSprintf(`
 //						enc := %Q(encoding/json,NewEncoder)(envelope)
 //						if err := enc.Encode(message); err != nil {
@@ -162,9 +162,9 @@ package amqp
 //				}
 //				bg.Id("envelope").Dot("SetRoutingKey").Call(j.Id(rn).Dot("routingKey"))
 //				// Message SetBindings
-//				if pc.PubMessagePromise != nil && pc.PubMessagePromise.Target().HasProtoBindings(pc.ProtoName) {
+//				if pc.PublisherMessageTypePromise != nil && pc.PublisherMessageTypePromise.Target().HasProtoBindings(pc.ProtoName) {
 //					bg.Op("envelope.SetBindings").Call(
-//						j.Add(utils.ToCode(pc.PubMessagePromise.Target().BindingsStruct.U(ctx))...).Values().Dot(pc.ProtoTitle).Call(),
+//						j.Add(utils.ToCode(pc.PublisherMessageTypePromise.Target().BindingsType.U(ctx))...).Values().Dot(pc.ProtoTitle).Call(),
 //					)
 //				}
 //				bg.Return(j.Nil())

@@ -6,7 +6,7 @@
 {{end}}
 {{define "usage"}}
     {{- if .HasDefinition -}}
-        {{- if and .Import (ne .Import .ctx.CurrentPackage) -}}
+        {{- if and .Import (ne .Import .RenderContext.CurrentPackage) -}}
             {{ qualg .Import .Name }}
         {{- else -}}
             {{ .Name | goid }}

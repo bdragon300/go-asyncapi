@@ -2,7 +2,7 @@ package http
 
 //type ProtoChannel struct {
 //	*render.Channel
-//	GolangNameProto string // Channel GolangName name concatenated with protocol name, e.g. Channel1Kafka
+//	GolangNameProto string // Channel TypeNamePrefix name concatenated with protocol name, e.g. Channel1Kafka
 //	Struct          *render.GoStruct
 //
 //	ProtoName, ProtoTitle string
@@ -53,8 +53,8 @@ package http
 //		// NewChannel1Proto(params Channel1Parameters, publisher proto.Publisher, subscriber proto.Subscriber) *Channel1Proto
 //		j.Func().Id(pc.Struct.NewFuncName()).
 //			ParamsFunc(func(g *j.Group) {
-//				if pc.Parent.ParametersStruct != nil {
-//					g.Id("params").Add(utils.ToCode(pc.Parent.ParametersStruct.U(ctx))...)
+//				if pc.Parent.ParametersType != nil {
+//					g.Id("params").Add(utils.ToCode(pc.Parent.ParametersType.U(ctx))...)
 //				}
 //				if pc.Parent.Publisher {
 //					g.Id("publisher").Qual(ctx.RuntimeModule(pc.ProtoName), "Publisher")
@@ -66,8 +66,8 @@ package http
 //			Op("*").Add(utils.ToCode(pc.Struct.U(ctx))...).
 //			BlockFunc(func(bg *j.Group) {
 //				bg.Op("res := ").Add(utils.ToCode(pc.Struct.U(ctx))...).Values(j.DictFunc(func(d j.Dict) {
-//					d[j.Id("name")] = j.Id(pc.Parent.GolangName + "Name").CallFunc(func(g *j.Group) {
-//						if pc.Parent.ParametersStruct != nil {
+//					d[j.Id("name")] = j.Id(pc.Parent.TypeNamePrefix + "Name").CallFunc(func(g *j.Group) {
+//						if pc.Parent.ParametersType != nil {
 //							g.Id("params")
 //						}
 //					})
@@ -94,8 +94,8 @@ package http
 //	receiver := j.Id(rn).Id(pc.Struct.Name)
 //
 //	var msgTyp common.GolangType = render.GoPointer{Type: pc.Parent.FallbackMessageType, HasDefinition: true}
-//	if pc.Parent.PubMessagePromise != nil {
-//		msgTyp = render.GoPointer{Type: pc.Parent.PubMessagePromise.Target().OutStruct, HasDefinition: true}
+//	if pc.Parent.PublisherMessageTypePromise != nil {
+//		msgTyp = render.GoPointer{Type: pc.Parent.PublisherMessageTypePromise.Target().OutType, HasDefinition: true}
 //	}
 //
 //	return []*j.Statement{
@@ -108,7 +108,7 @@ package http
 //			Error().
 //			BlockFunc(func(bg *j.Group) {
 //				bg.Op("envelope.ResetPayload()")
-//				if pc.Parent.PubMessagePromise == nil { // No Message set for Channel in spec
+//				if pc.Parent.PublisherMessageTypePromise == nil { // No Message set for Channel in spec
 //					bg.Empty().Add(utils.QualSprintf(`
 //						enc := %Q(encoding/json,NewEncoder)(envelope)
 //						if err := enc.Encode(message); err != nil {
@@ -121,9 +121,9 @@ package http
 //						}`)
 //				}
 //				// Message SetBindings
-//				if pc.Parent.PubMessagePromise != nil && pc.Parent.PubMessagePromise.Target().HasProtoBindings(pc.ProtoName) {
+//				if pc.Parent.PublisherMessageTypePromise != nil && pc.Parent.PublisherMessageTypePromise.Target().HasProtoBindings(pc.ProtoName) {
 //					bg.Op("envelope.SetBindings").Call(
-//						j.Add(utils.ToCode(pc.Parent.PubMessagePromise.Target().BindingsStruct.U(ctx))...).Values().Dot(pc.ProtoTitle).Call(),
+//						j.Add(utils.ToCode(pc.Parent.PublisherMessageTypePromise.Target().BindingsType.U(ctx))...).Values().Dot(pc.ProtoTitle).Call(),
 //					)
 //				}
 //				bg.Return(j.Nil())

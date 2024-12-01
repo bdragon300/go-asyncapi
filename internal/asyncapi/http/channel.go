@@ -19,7 +19,7 @@ type operationBindings struct {
 }
 
 func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, parent *render.Channel) (*render.ProtoChannel, error) {
-	golangName := parent.GolangName + utils.TransformInitialisms(pb.ProtoName)
+	golangName := parent.TypeNamePrefix + utils.TransformInitialisms(pb.ProtoName)
 	chanStruct, err := asyncapi.BuildProtoChannelStruct(ctx, channel, parent, pb.ProtoName, golangName)
 	if err != nil {
 		return nil, err

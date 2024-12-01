@@ -54,8 +54,9 @@ type generatePubSubArgs struct {
 
 	ProjectModule string `arg:"-M,--project-module" help:"Project module name to use [default: extracted from go.mod file in the current working directory]" placeholder:"MODULE"`
 	TargetPackage string `arg:"-T,--target-package" help:"Package for generated code [default: {target-dir-name}]" placeholder:"PACKAGE"`
-	PackageScope  string `arg:"--package-scope" default:"type" help:"How to split up the generated code on packages. Possible values: type, all" placeholder:"SCOPE"`
-	FileScope     string `arg:"--file-scope" default:"name" help:"How to split up the generated code on files inside packages. Possible values: name, type" placeholder:"SCOPE"`
+	//PackageScope  string `arg:"--package-scope" default:"type" help:"How to split up the generated code on packages. Possible values: type, all" placeholder:"SCOPE"`
+	//FileScope     string `arg:"--file-scope" default:"name" help:"How to split up the generated code on files inside packages. Possible values: name, type" placeholder:"SCOPE"`
+	TemplateDir string `arg:"--template-dir" help:"Directory with custom templates" placeholder:"DIR"`
 	generateObjectSelectionOpts
 	ImplementationsOpts
 	AllowRemoteRefs bool `arg:"--allow-remote-refs" help:"Allow fetching spec files from remote $ref URLs"`
@@ -150,8 +151,7 @@ func generate(cmd *GenerateCmd) error {
 	}
 
 	// Rendering
-	protoRenderers := lo.MapValues(protocolBuilders(), func(value asyncapi.ProtocolBuilder, _ string) common.ProtocolRenderer { return value })
-	files, err := writer.RenderPackages(mainModule, protoRenderers, renderOpts)
+	files, err := writer.RenderPackages(mainModule, renderOpts)
 	if err != nil {
 		return fmt.Errorf("schema render: %w", err)
 	}
@@ -345,7 +345,6 @@ func getPubSubVariant(cmd *GenerateCmd) (pub bool, sub bool, variant *generatePu
 func getCompileOpts(opts generatePubSubArgs, isPub, isSub bool) (common.CompileOpts, error) {
 	var err error
 	res := common.CompileOpts{
-		ReusePackages:       nil,
 		NoEncodingPackage:   opts.NoEncoding,
 		AllowRemoteRefs:     opts.AllowRemoteRefs,
 		RuntimeModule:       opts.RuntimeModule,
@@ -372,27 +371,27 @@ func getCompileOpts(opts generatePubSubArgs, isPub, isSub bool) (common.CompileO
 	if res.ChannelOpts, err = f(opts.SelectChannelsAll, opts.IgnoreChannelsAll, opts.SelectChannelsRe, opts.IgnoreChannelsRe); err != nil {
 		return res, err
 	}
-	if opts.ReuseChannelsModule != "" {
-		res.ReusePackages[asyncapi.PackageScopeChannels] = opts.ReuseChannelsModule
-	}
+	//if opts.ReuseChannelsModule != "" {
+	//	res.ReusePackages[asyncapi.PackageScopeChannels] = opts.ReuseChannelsModule
+	//}
 	if res.MessageOpts, err = f(opts.SelectMessagesAll, opts.IgnoreMessagesAll, opts.SelectMessagesRe, opts.IgnoreMessagesRe); err != nil {
 		return res, err
 	}
-	if opts.ReuseMessagesModule != "" {
-		res.ReusePackages[asyncapi.PackageScopeMessages] = opts.ReuseMessagesModule
-	}
+	//if opts.ReuseMessagesModule != "" {
+	//	res.ReusePackages[asyncapi.PackageScopeMessages] = opts.ReuseMessagesModule
+	//}
 	if res.ModelOpts, err = f(opts.SelectModelsAll, opts.IgnoreModelsAll, opts.SelectModelsRe, opts.IgnoreModelsRe); err != nil {
 		return res, err
 	}
-	if opts.ReuseModelsModule != "" {
-		res.ReusePackages[asyncapi.PackageScopeModels] = opts.ReuseModelsModule
-	}
+	//if opts.ReuseModelsModule != "" {
+	//	res.ReusePackages[asyncapi.PackageScopeModels] = opts.ReuseModelsModule
+	//}
 	if res.ServerOpts, err = f(opts.SelectServersAll, opts.IgnoreServersAll, opts.SelectServersRe, opts.IgnoreServersRe); err != nil {
 		return res, err
 	}
-	if opts.ReuseServersModule != "" {
-		res.ReusePackages[asyncapi.PackageScopeServers] = opts.ReuseServersModule
-	}
+	//if opts.ReuseServersModule != "" {
+	//	res.ReusePackages[asyncapi.PackageScopeServers] = opts.ReuseServersModule
+	//}
 
 	return res, nil
 }
@@ -419,6 +418,7 @@ func getRenderOpts(opts generatePubSubArgs, targetDir, targetPkg string) (common
 		RuntimeModule: opts.RuntimeModule,
 		TargetPackage: targetPkg,
 		TargetDir:     targetDir,
+		TemplateDir: opts.TemplateDir,
 	}
 
 	importBase := opts.ProjectModule
@@ -432,24 +432,6 @@ func getRenderOpts(opts generatePubSubArgs, targetDir, targetPkg string) (common
 	importBase = path.Join(importBase, targetPkg)
 	mainLogger.Debugf("Target import base is %s", importBase)
 	res.ImportBase = importBase
-
-	switch opts.PackageScope {
-	case "all":
-		res.PackageScope = common.PackageScopeAll
-	case "type":
-		res.PackageScope = common.PackageScopeType
-	default:
-		return res, fmt.Errorf("%w: unknown package scope: %q", ErrWrongCliArgs, opts.PackageScope)
-	}
-
-	switch opts.FileScope {
-	case "type":
-		res.FileScope = common.FileScopeType
-	case "name":
-		res.FileScope = common.FileScopeName
-	default:
-		return res, fmt.Errorf("%w: unknown file scope: %q", ErrWrongCliArgs, opts.FileScope)
-	}
 
 	return res, nil
 }

@@ -46,7 +46,7 @@ package udp
 //	for _, ch := range ps.Parent.GetRelevantChannels() {
 //		protoChan := ch.AllProtoChannels[ps.ProtoName].(*ProtoChannel)
 //		res = append(res,
-//			ps.RenderOpenChannelMethod(ctx, protoChan.Struct, protoChan, protoChan.Parent.ParametersStruct)...,
+//			ps.RenderOpenChannelMethod(ctx, protoChan.Struct, protoChan, protoChan.Parent.ParametersType)...,
 //		)
 //	}
 //	return res

@@ -2,8 +2,8 @@ type Decoder interface {
     Decode(v any) error
 }
 var Decoders = map[string]func(w {{qual "io.Reader"}}) Decoder {
-{{range $ct := .MessageContentTypes}}
-    {{$format := .FormatByContentType $ct}}
+{{range $ct := .SpecEffectiveContentTypes}}
+    {{$format := contentTypeID $ct}}
     {{if eq $format "json"}}{{$ct | golit}}: {{template "decoder/json"}}{{end}}
     {{if eq $format "yaml"}}{{$ct | golit}}: {{template "decoder/yaml"}}{{end}}
     {{if not $format}}{{$ct | golit}}: func(_ {{qual "io.Reader"}}) Decoder { panic("No decoder is set for content type {{$ct}}") }{{end}}

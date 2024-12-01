@@ -8,16 +8,15 @@ import (
 var Context common.RenderContext
 
 // TODO: add object path?
-type TemplateRenderContext struct {
-	CurrentPackage string
+type RenderContextImpl struct {
 	RenderOpts     common.RenderOpts
 }
 
-func (c *TemplateRenderContext) RuntimeModule(subPackage string) string {
+func (c *RenderContextImpl) RuntimeModule(subPackage string) string {
 	return path.Join(c.RenderOpts.RuntimeModule, subPackage)
 }
 
-func (c *TemplateRenderContext) GeneratedModule(subPackage string) string {
+func (c *RenderContextImpl) GeneratedModule(subPackage string) string {
 	//switch c.RenderOpts.PackageScope {
 	//case PackageScopeAll:
 	//	return c.RenderOpts.ImportBase // Everything in one package
@@ -28,19 +27,19 @@ func (c *TemplateRenderContext) GeneratedModule(subPackage string) string {
 	panic("not implemented")
 }
 
-func (c *TemplateRenderContext) QualifiedName(packageExpr string) string  {
+func (c *RenderContextImpl) QualifiedName(packageExpr string) string  {
 	panic("not implemented")
 }
 
-func (c *TemplateRenderContext) QualifiedGeneratedName(subPackage, name string) string {
+func (c *RenderContextImpl) QualifiedGeneratedName(subPackage, name string) string {
 	panic("not implemented")
 }
 
-func (c *TemplateRenderContext) QualifiedRuntimeName(subPackage, name string) string {
+func (c *RenderContextImpl) QualifiedRuntimeName(subPackage, name string) string {
 	panic("not implemented")
 }
 
-func (c *TemplateRenderContext) SpecProtocols() []string {
+func (c *RenderContextImpl) SpecProtocols() []string {
 	panic("not implemented")
 }
 
@@ -71,11 +70,3 @@ func (c *TemplateRenderContext) SpecProtocols() []string {
 //		c.logCallLvl--
 //	}
 //}
-
-func TplGoLit(val any) string {
-	panic("not implemented")
-}
-
-func TplGoID(val any) string {
-	panic("not implemented")
-}

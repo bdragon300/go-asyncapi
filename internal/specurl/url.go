@@ -44,12 +44,16 @@ func (r URL) IsRemote() bool {
 
 func (r URL) String() (s string) {
 	if len(r.Pointer) > 0 {
-		s = "#/" + strings.Join(r.Pointer, "/")
+		s = r.PointerRef()
 	}
 	if r.IsExternal() {
 		s = r.SpecID + s
 	}
 	return
+}
+
+func (r URL) PointerRef() string {
+	return "#/" + strings.Join(r.Pointer, "/")
 }
 
 func parseRef(ref string) (specFile, pointer string, isRemote bool) {

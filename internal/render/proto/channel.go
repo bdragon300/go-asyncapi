@@ -2,7 +2,7 @@ package proto
 
 //type ProtoChannel struct {
 //	*render.Channel
-//	GolangNameProto string // Channel GolangName name concatenated with protocol name, e.g. Channel1Kafka
+//	GolangNameProto string // Channel TypeNamePrefix name concatenated with protocol name, e.g. Channel1Kafka
 //	Struct          *render.GoStruct
 //
 //	ProtoName, ProtoTitle string
@@ -12,7 +12,7 @@ package proto
 
 //type BaseProtoChannel struct {
 //	Parent          *render.Channel
-//	GolangNameProto string // Channel GolangName name concatenated with protocol name, e.g. Channel1Kafka
+//	GolangNameProto string // Channel TypeNamePrefix name concatenated with protocol name, e.g. Channel1Kafka
 //	Struct          *render.GoStruct
 //	//ServerIface     *render.GoInterface
 //
@@ -25,8 +25,8 @@ package proto
 //	rn := pc.Struct.ReceiverName()
 //	receiver := j.Id(rn).Id(pc.Struct.Name)
 //	var msgTyp common.GolangType = render.GoPointer{Type: pc.Parent.FallbackMessageType, HasDefinition: true}
-//	if pc.Parent.SubMessagePromise != nil {
-//		msgTyp = render.GoPointer{Type: pc.Parent.SubMessagePromise.Target().InStruct, HasDefinition: true}
+//	if pc.Parent.SubscribeMessageTypePromise != nil {
+//		msgTyp = render.GoPointer{Type: pc.Parent.SubscribeMessageTypePromise.Target().InType, HasDefinition: true}
 //	}
 //
 //	return []*j.Statement{
@@ -38,7 +38,7 @@ package proto
 //			).
 //			Error().
 //			BlockFunc(func(bg *j.Group) {
-//				if pc.Parent.SubMessagePromise == nil {
+//				if pc.Parent.SubscribeMessageTypePromise == nil {
 //					bg.Empty().Add(utils.QualSprintf(`
 //						enc := %Q(encoding/json,NewDecoder)(envelope)
 //						if err := enc.Decode(message); err != nil {
@@ -142,8 +142,8 @@ package proto
 //		j.Func().Id("Open"+pc.GolangNameProto).
 //			ParamsFunc(func(g *j.Group) {
 //				g.Id("ctx").Qual("context", "Context")
-//				if pc.Parent.ParametersStruct != nil {
-//					g.Id("params").Add(utils.ToCode(pc.Parent.ParametersStruct.U(ctx))...)
+//				if pc.Parent.ParametersType != nil {
+//					g.Id("params").Add(utils.ToCode(pc.Parent.ParametersType.U(ctx))...)
 //				}
 //				g.Id("servers").Op("...").Add(utils.ToCode(pc.ServerIface.U(ctx))...)
 //			}).
@@ -151,13 +151,13 @@ package proto
 //			BlockFunc(func(bg *j.Group) {
 //				bg.Op("if len(servers) == 0").Block(j.Op("return nil, ").Qual(ctx.RuntimeModule(""), "ErrEmptyServers"))
 //				if pc.Parent.Publisher || pc.Parent.Subscriber {
-//					bg.Id("name").Op(":=").Id(pc.Parent.GolangName + "Name").CallFunc(func(g *j.Group) {
-//						if pc.Parent.ParametersStruct != nil {
+//					bg.Id("name").Op(":=").Id(pc.Parent.TypeNamePrefix + "Name").CallFunc(func(g *j.Group) {
+//						if pc.Parent.ParametersType != nil {
 //							g.Id("params")
 //						}
 //					})
-//					if pc.Parent.BindingsStruct != nil {
-//						bg.Id("bindings").Op(":=").Id(pc.Parent.BindingsStruct.Name).Values().Dot(pc.ProtoTitle).Call()
+//					if pc.Parent.BindingsType != nil {
+//						bg.Id("bindings").Op(":=").Id(pc.Parent.BindingsType.Name).Values().Dot(pc.ProtoTitle).Call()
 //					}
 //					if pc.Parent.Publisher {
 //						bg.Var().Id("prod").Index().Qual(ctx.RuntimeModule(pc.ProtoName), "Producer")
@@ -191,7 +191,7 @@ package proto
 //						CallFunc(func(g *j.Group) {
 //							g.Id("ctx")
 //							g.Id("name")
-//							g.Id(lo.Ternary(pc.Parent.BindingsStruct != nil, "&bindings", "nil"))
+//							g.Id(lo.Ternary(pc.Parent.BindingsType != nil, "&bindings", "nil"))
 //							g.Id("prod")
 //						})
 //					bg.Op(`
@@ -213,7 +213,7 @@ package proto
 //						CallFunc(func(g *j.Group) {
 //							g.Id("ctx")
 //							g.Id("name")
-//							g.Id(lo.Ternary(pc.Parent.BindingsStruct != nil, "&bindings", "nil"))
+//							g.Id(lo.Ternary(pc.Parent.BindingsType != nil, "&bindings", "nil"))
 //							g.Id("cons")
 //						})
 //					bg.Op("if err != nil").BlockFunc(func(g *j.Group) {
@@ -227,7 +227,7 @@ package proto
 //						Op("{Subscribers: subs}")
 //				}
 //				bg.Op("ch := ").Id(pc.Struct.NewFuncName()).CallFunc(func(g *j.Group) {
-//					if pc.Parent.ParametersStruct != nil {
+//					if pc.Parent.ParametersType != nil {
 //						g.Id("params")
 //					}
 //					if pc.Parent.Publisher {

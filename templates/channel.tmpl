@@ -1,32 +1,32 @@
-{{if .ParametersStruct}}
-    {{.ParametersStruct.D}}
+{{if .ParametersType}}
+    {{.ParametersType.D}}
 {{end}}
 
-{{ if .BindingsStruct}}
-    {{ .BindingsStruct.D }}
+{{ if .BindingsType}}
+    {{ .BindingsType.D }}
     {{range $proto := .BindingsProtocols}}
         {{$bindingsValue := .ProtoBindingsValue $proto}}
-        func (c *{{ .BindingStruct.U }}) {{ $proto | title }}() {{$bindingsValue.Type.U}} {
+        func (c *{{ .BindingStruct.U }}) {{ $proto | capitalize }}() {{$bindingsValue.Type.U}} {
             b := {{$bindingsValue.U}}
             {{if .BindingsChannelPromise}}
                 {{$jvals := .BindingsChannelPromise.T.JSONValues.GetOrEmpty $proto}}
                 {{range $jval := $jvals.Entries}}
-                    {{$jval.Key | lowerCamelize }} := {{$jval.Value | golit}}
-                    _ = {{qual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | lowerCamelize }}), &b.{{$jval.Key}})
+                    {{$jval.Key | toCamelCase }} := {{$jval.Value | golit}}
+                    _ = {{qual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})
                 {{end}}
             {{end}}
             {{if .BindingsPublishPromise}}
                 {{$jvals := .BindingsPublishPromise.T.JSONValues.GetOrEmpty $proto}}
                 {{range $jval := $jvals.Entries}}
-                    {{$jval.Key | lowerCamelize }}Pub := {{$jval.Value | golit}}
-                    _ = {{qual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | lowerCamelize }}Pub), &b.PublisherBindings.{{$jval.Key}})
+                    {{$jval.Key | toCamelCase }}Pub := {{$jval.Value | golit}}
+                    _ = {{qual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}Pub), &b.PublisherBindings.{{$jval.Key}})
                 {{end}}
             {{end}}
             {{if .BindingsSubscribePromise}}
                 {{$jvals := .BindingsSubscribePromise.T.JSONValues.GetOrEmpty $proto}}
                 {{range $jval := $jvals.Entries}}
-                    {{$jval.Key | lowerCamelize }}Sub := {{$jval.Value | golit}}
-                    _ = {{qual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | lowerCamelize }}Sub), &b.SubscriberBindings.{{$jval.Key}})
+                    {{$jval.Key | toCamelCase }}Sub := {{$jval.Value | golit}}
+                    _ = {{qual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}Sub), &b.SubscriberBindings.{{$jval.Key}})
                 {{end}}
             {{end}}
             return b
@@ -34,19 +34,19 @@
     {{end}}
 {{end}}
 
-func {{.GolangName}}Name({{if .ParametersStruct}}params {{.ParametersStruct.U}}{{end}}) {{qualr "" "ParamString"}} {
-    {{if .ParametersStruct}}
+func {{..RenderContext}}Name({{if .ParametersType}}params {{.ParametersType.U}}{{end}}) {{qualr "" "ParamString"}} {
+    {{if .ParametersType}}
         paramMap := map[string]string{
-        {{range $f := .ParametersStruct.Fields}}params.{{$f.Name}}.Name(): params.{{$f.Name}}.String(),
+        {{range $f := .ParametersType.Fields}}params.{{$f.Name}}.Name(): params.{{$f.Name}}.String(),
         {{end}}
         }
         return {{qualr "" "ParamString"}}{
-            Expr: "{{.RawName | golit}}",
+            Expr: "{{.SpecKey | golit}}",
             Parameters: paramMap,
         }
     {{else}}
         return {{qualr "" "ParamString"}}{
-            Expr: "{{.RawName | golit}}",
+            Expr: "{{.SpecKey | golit}}",
         }
     {{end}}
 }

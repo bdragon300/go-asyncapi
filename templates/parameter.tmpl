@@ -5,7 +5,7 @@ func (p {{.Type.U}}) Name() string {
 }
 
 func (p {{.Type.U}}) String() string {
-    {{if .PureString}}
+    {{if .IsStringType}}
         return string(p)
     {{else}}
         return {{qual "fmt.Sprint"}}(p.Value)

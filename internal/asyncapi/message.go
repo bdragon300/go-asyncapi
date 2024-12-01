@@ -82,14 +82,14 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) ([]common.
 
 	baseMessage := render.Message{
 		Name: msgName,
-		OutStruct: &lang.GoStruct{
+		OutType: &lang.GoStruct{
 			BaseType: lang.BaseType{
 				Name:          ctx.GenerateObjName(msgName, "Out"),
 				Description:   utils.JoinNonemptyStrings("\n", m.Summary+" (Outbound Message)", m.Description),
 				HasDefinition: true,
 			},
 		},
-		InStruct: &lang.GoStruct{
+		InType: &lang.GoStruct{
 			BaseType: lang.BaseType{
 				Name:          ctx.GenerateObjName(msgName, "In"),
 				Description:   utils.JoinNonemptyStrings("\n", m.Summary+" (Inbound Message)", m.Description),
@@ -97,19 +97,17 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) ([]common.
 			},
 		},
 		PayloadType:         m.getPayloadType(ctx),
-		HeadersFallbackType: &lang.GoMap{KeyType: &lang.GoSimple{Name: "string"}, ValueType: &lang.GoSimple{Name: "any", IsIface: true}},
+		HeadersFallbackType: &lang.GoMap{KeyType: &lang.GoSimple{Name: "string"}, ValueType: &lang.GoSimple{Name: "any", IsInterface: true}},
+		ContentType: m.ContentType,
 	}
-	baseMessage.ContentType, _ = lo.Coalesce(m.ContentType, ctx.Storage.DefaultContentType())
 	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", baseMessage.ContentType))
 
 	// Lookup servers after linking to figure out all protocols the message is used in
-	prms := lo.Map(ctx.Storage.ActiveServers(), func(item string, _ int) *lang.Promise[*render.Server] {
-		ref := specurl.BuildRef("servers", item)
-		prm := lang.NewPromise[*render.Server](ref, common.PromiseOriginInternal)
-		ctx.PutPromise(prm)
-		return prm
+	prm := lang.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
+		_, ok := item.(*render.Server)
+		return ok
 	})
-	baseMessage.AllServersPromises = prms
+	baseMessage.AllServersPromise = prm
 
 	// Link to Headers struct if any
 	if m.Headers != nil {
@@ -124,7 +122,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) ([]common.
 	// Bindings
 	if m.Bindings != nil {
 		ctx.Logger.Trace("Message bindings")
-		baseMessage.BindingsStruct = &lang.GoStruct{
+		baseMessage.BindingsType = &lang.GoStruct{
 			BaseType: lang.BaseType{
 				Name:          ctx.GenerateObjName(msgName, "Bindings"),
 				HasDefinition: true,
@@ -173,8 +171,8 @@ func (m Message) setStructFields(ctx *common.CompileContext, langMessage *render
 		fields = append(fields, lang.GoStructField{Name: "Headers", Type: langMessage.HeadersFallbackType})
 	}
 
-	langMessage.OutStruct.Fields = fields
-	langMessage.InStruct.Fields = fields
+	langMessage.OutType.Fields = fields
+	langMessage.InType.Fields = fields
 }
 
 func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
@@ -187,7 +185,7 @@ func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 	}
 
 	ctx.Logger.Trace("Message payload has `any` type")
-	return &lang.GoSimple{Name: "any", IsIface: true}
+	return &lang.GoSimple{Name: "any", IsInterface: true}
 }
 
 type Tag struct {

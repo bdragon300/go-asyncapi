@@ -4,12 +4,12 @@ func (c {{.Struct.U}}) Name() {{qualr "" "ParamString"}} {
 }
 
 func (c {{.Struct.U}}) Close() (err error) {
-    {{if .Publisher}}
+    {{if .IsPublisher}}
         if c.publisher != nil {
             err = {{qual "errors.Join"}}(err, c.publisher.Close())
         }
     {{end}}
-    {{if .Subscriber}}
+    {{if .IsSubscriber}}
         if c.subscriber != nil {
             err = {{qual "errors.Join"}}(err, c.subscriber.Close())
         }
@@ -32,15 +32,15 @@ func (c {{.Struct.U}}) Publish(ctx {{qual "context.Context"}}, envelopes ...{{qu
 define "proto/channel/barePublishMethods"}}
     {{template "proto/channel/outputMethods" .}}
 
-    {{$pubMessageType := goptr .FallbackMessageType}}
-    {{if .PubMessagePromise }}
-        {{$pubMessageType = goptr .PubMessagePromise.T.OutStruct}}
+    {{$pubMessageType := "any"}}
+    {{if .PublisherMessageTypePromise }}
+        {{$pubMessageType = goptr .PublisherMessageTypePromise.T.OutType}}
     {{end}}
 
     func (c {{.Struct.U}}) SealEnvelope(envelope {{qualr .ProtoName "EnvelopeWriter"}}, message {{$pubMessageType.U}}) error {
         envelope.ResetPayload()
-        {{if .PubMessagePromise /*Message is set for Channel in spec*/ }}
-            if err := message.Marshal{{.ProtoName | title}}Envelope(envelope); err != nil {
+        {{if .PublisherMessageTypePromise /*Message is set for Channel in spec*/ }}
+            if err := message.Marshal{{.ProtoName | capitalize}}Envelope(envelope); err != nil {
                 return err
             }
         {{else /*No Message set for Channel in spec*/}}
@@ -50,22 +50,22 @@ define "proto/channel/barePublishMethods"}}
             }
         {{end}}
 
-        {{if and .PubMessagePromise (.PubMessagePromise.T.HasProtoBindings .ProtoName)}}
-            envelope.SetBindings(.PubMessagePromise.T.BindingsStruct.U){}.{{.ProtoName | title}}()
+        {{if and .PublisherMessageTypePromise (.PublisherMessageTypePromise.T.HasProtoBindings .ProtoName)}}
+            envelope.SetBindings(.PublisherMessageTypePromise.T.BindingsType.U){}.{{.ProtoName | capitalize}}()
         {{end}}
         return nil
     }
 {{end}}
 
 {{define "proto/channel/subscribeMethods"}}
-{{$subMessageType := goptr .FallbackMessageType}}
-{{if .PubMessagePromise }}
-    {{$subMessageType = goptr .SubMessagePromise.T.InStruct}}
+{{$subMessageType := "any"}}
+{{if .PublisherMessageTypePromise }}
+    {{$subMessageType = goptr .SubscriberMessageTypePromise.T.InType}}
 {{end}}
 func (c {{.Struct.U}}) ExtractEnvelope(envelope {{qualr .ProtoName "EnvelopeReader"}}, message {{$subMessageType.U}}) error {
-    {{if .SubMessagePromise}}
+    {{if .SubscriberMessageTypePromise}}
         {{/*Message set for Channel in spec*/}}
-        return message.Unmarshal{{.ProtoName | title}}Envelope(envelope)
+        return message.Unmarshal{{.ProtoName | capitalize}}Envelope(envelope)
     {{else}}
         {{/*No Message set for Channel in spec*/}}
         dec := {{qual "encoding/json.NewDecoder"}}(envelope)
@@ -73,7 +73,7 @@ func (c {{.Struct.U}}) ExtractEnvelope(envelope {{qualr .ProtoName "EnvelopeRead
     {{end}}
 }
 
-func (c {{.Struct.U}}) Subscriber() {{qualr .ProtoName "Subscriber"}} {
+func (c {{.Struct.U}}) IsSubscriber() {{qualr .ProtoName "Subscriber"}} {
     return c.subscriber
 }
 
@@ -86,25 +86,25 @@ func (c {{.Struct.U}}) Subscribe(ctx {{qual "context.Context"}}, cb func(envelop
 define "proto/channel/openFunction"}}
     func Open{{.Struct.Name}}(
         ctx {{qual "context.Context"}},
-        {{if .ParametersStruct}}params {{.ParametersStruct.U}},{{end}}
-        {{if .Publisher}}producer {{qualr .ProtoName "Producer"}},{{end}}
-        {{if .Subscriber}}consumer {{qualr .ProtoName "Consumer"}},{{end}}
+        {{if .ParametersType}}params {{.ParametersType.U}},{{end}}
+        {{if .IsPublisher}}producer {{qualr .ProtoName "Producer"}},{{end}}
+        {{if .IsSubscriber}}consumer {{qualr .ProtoName "Consumer"}},{{end}}
     ) (ch *{{.Struct.U}}, err error) {
-        name := {{.GolangName}}Name({{if .ParametersStruct}}params{{end}})
-        bindings := {{.BindingsStruct.U}}{}.{{.ProtoName | title}}()
+        name := {{..RenderContext}}Name({{if .ParametersType}}params{{end}})
+        bindings := {{.BindingsType.U}}{}.{{.ProtoName | capitalize}}()
 
-        {{if .Publisher}}
+        {{if .IsPublisher}}
             var publisher {{qualr .ProtoName "Publisher"}}
             if producer != nil {
-                if publisher, err = producer.Publisher(ctx, name, {{if .BindingsStruct}}&bindings{{else}}nil{{end}}); err != nil {
+                if publisher, err = producer.Publisher(ctx, name, {{if .BindingsType}}&bindings{{else}}nil{{end}}); err != nil {
                     return nil, err
                 }
             }
         {{end}}
-        {{if .Subscriber}}
+        {{if .IsSubscriber}}
             var subscriber {{qualr .ProtoName "Subscriber"}}
             if consumer != nil {
-                if subscriber, err = consumer.Consumer(ctx, name, {{if .BindingsStruct}}&bindings{{else}}nil{{end}}); err != nil {
+                if subscriber, err = consumer.Consumer(ctx, name, {{if .BindingsType}}&bindings{{else}}nil{{end}}); err != nil {
                     return nil, err
                 }
             }
@@ -112,8 +112,8 @@ define "proto/channel/openFunction"}}
 
         return &{{.Struct.U}}{
             name: name,
-            {{if .Publisher}}publisher: publisher,{{end}}
-            {{if .Subscriber}}subscriber: subscriber,{{end}}
+            {{if .IsPublisher}}publisher: publisher,{{end}}
+            {{if .IsSubscriber}}subscriber: subscriber,{{end}}
         }
     }
 {{end}}
@@ -121,21 +121,21 @@ define "proto/channel/openFunction"}}
 {{ /* Common template for channel NewChannel function that doesn't contain protocol-specific bindings manipulations */
 define "proto/channel/bareNewFunction"}}
     func New{{.Struct.Name}}(
-        {{if .ParametersStruct}}params {{.ParametersStruct.U}},{{end}}
-        {{if .Publisher}}publisher {{qualr .ProtoName "Publisher"}},{{end}}
-        {{if .Subscriber}}subscriber {{qualr .ProtoName "Subscriber"}},{{end}}
+        {{if .ParametersType}}params {{.ParametersType.U}},{{end}}
+        {{if .IsPublisher}}publisher {{qualr .ProtoName "Publisher"}},{{end}}
+        {{if .IsSubscriber}}subscriber {{qualr .ProtoName "Subscriber"}},{{end}}
     ) *{{.Struct.U}} {
         res := {{.Struct.U}}{
-            name: {{.GolangName}}Name({{if .ParametersStruct}}params{{end}}),
-            {{if .Publisher}}publisher: publisher,{{end}}
-            {{if .Subscriber}}subscriber: subscriber,{{end}}
+            name: {{..RenderContext}}Name({{if .ParametersType}}params{{end}}),
+            {{if .IsPublisher}}publisher: publisher,{{end}}
+            {{if .IsSubscriber}}subscriber: subscriber,{{end}}
         }
         return &res
     }
 {{end}}
 
 {{define "proto/message/marshalUnmarshalMethods"}}
-func (m *{{.OutStruct.Name}}) Marshal{{ .ProtoName | title }}Envelope(envelope {{qualr .ProtoName "EnvelopeWriter"}} error {
+func (m *{{.OutType.Name}}) Marshal{{ .ProtoName | capitalize }}Envelope(envelope {{qualr .ProtoName "EnvelopeWriter"}} error {
     enc := {{qualg "encoding.NewEncoder"}}({{.ContentType | golit}}, envelope)
     if err := enc.Encode(m.Payload); err != nil {
         return err
@@ -152,7 +152,7 @@ func (m *{{.OutStruct.Name}}) Marshal{{ .ProtoName | title }}Envelope(envelope {
     return nil
 }
 
-func (m *{{.InStruct.Name}}) Unmarshal{{ .ProtoName | title }}Envelope(envelope {{qualr .ProtoName "EnvelopeReader"}} error {
+func (m *{{.InType.Name}}) Unmarshal{{ .ProtoName | capitalize }}Envelope(envelope {{qualr .ProtoName "EnvelopeReader"}} error {
     dec := {{qualg "encoding.NewDecoder"}}({{.ContentType | golit}}, envelope)
     if err := dec.Decode(&m.Payload); err != nil {
         return err

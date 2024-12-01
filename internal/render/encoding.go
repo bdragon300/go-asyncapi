@@ -1,12 +1,5 @@
 package render
 
-import (
-	"github.com/bdragon300/go-asyncapi/internal/render/lang"
-	"strings"
-
-	"github.com/samber/lo"
-)
-
 //var encodingEncoders = map[string]j.Code{
 //	"json": j.Op(`func(w io.Writer) Encoder`).Block(j.Return(j.Qual("encoding/json", "NewEncoder").Call(j.Id("w")))),
 //	"yaml": j.Op(`func(w io.Writer) Encoder`).Block(j.Return(j.Qual("gopkg.in/yaml.v3", "NewEncoder").Call(j.Id("w")))),
@@ -19,10 +12,10 @@ import (
 //	// TODO: add other decoders: protobuf, avro, etc.
 //}
 
-type EncodingEncode struct {
-	AllMessages        *lang.ListPromise[*Message]
-	DefaultContentType string
-}
+//type EncodingEncode struct {
+//	AllMessages        *lang.ListPromise[*Message]
+//	DefaultContentType string
+//}
 
 //func (e EncodingEncode) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 //	ctx.LogStartRender("EncodingEncode", "", "", "definition", e.DirectRendering())
@@ -60,32 +53,41 @@ type EncodingEncode struct {
 //	}
 //}
 
-func (m EncodingEncode) Selectable() bool {
-	return true
-}
-
-func (e EncodingEncode) MessageContentTypes() []string {
-	return lo.Uniq(lo.FilterMap(e.AllMessages.Targets(), func(item *Message, _ int) (string, bool) {
-		return item.ContentType, item.ContentType != ""
-	}))
-}
-
-func (e EncodingEncode) FormatByContentType(contentType string) string {
-	return getFormatByContentType(contentType)
-}
-
-func (e EncodingEncode) ID() string {
-	return "Encode"
-}
-
-func (e EncodingEncode) String() string {
-	return "EncodingEncode"
-}
-
-type EncodingDecode struct {
-	AllMessages        *lang.ListPromise[*Message]
-	DefaultContentType string
-}
+//func (m EncodingEncode) Kind() common.ObjectKind {
+//	return common.ObjectKindAsyncAPI
+//}
+//
+//
+//func (m EncodingEncode) Selectable() bool {
+//	return true
+//}
+//
+//func (e EncodingEncode) RenderContext() common.RenderContext {
+//	return context.Context
+//}
+//
+//func (e EncodingEncode) SpecEffectiveContentTypes() []string {
+//	return lo.Uniq(lo.FilterMap(e.AllMessages.Targets(), func(item *Message, _ int) (string, bool) {
+//		return item.ContentType, item.ContentType != ""
+//	}))
+//}
+//
+//func (e EncodingEncode) FormatByContentType(contentType string) string {
+//	return getFormatByContentType(contentType)
+//}
+//
+//func (e EncodingEncode) ID() string {
+//	return "Encode"
+//}
+//
+//func (e EncodingEncode) String() string {
+//	return "EncodingEncode"
+//}
+//
+//type EncodingDecode struct {
+//	AllMessages        *lang.ListPromise[*Message]
+//	DefaultContentType string
+//}
 
 //func (e EncodingDecode) RenderDefinition(ctx *common.RenderContext) []*j.Statement {
 //	ctx.LogStartRender("EncodingDecode", "", "", "definition", e.DirectRendering())
@@ -123,31 +125,34 @@ type EncodingDecode struct {
 //	}
 //}
 
-func (e EncodingDecode) MessageContentTypes() []string {
-	return lo.Uniq(lo.FilterMap(e.AllMessages.Targets(), func(item *Message, _ int) (string, bool) {
-		return item.ContentType, item.ContentType != ""
-	}))
-}
-
-func (e EncodingDecode) FormatByContentType(contentType string) string {
-	return getFormatByContentType(contentType)
-}
-
-func (e EncodingDecode) ID() string {
-	return "Decode"
-}
-
-func (e EncodingDecode) String() string {
-	return "EncodingDecode"
-}
-
-func getFormatByContentType(contentType string) string {
-	// TODO: add other formats: protobuf, avro, etc.
-	switch {
-	case strings.HasSuffix(contentType, "json"):
-		return "json"
-	case strings.HasSuffix(contentType, "yaml"):
-		return "yaml"
-	}
-	return ""
-}
+//func (e EncodingDecode) SpecEffectiveContentTypes() []string {
+//	return lo.Uniq(lo.FilterMap(e.AllMessages.Targets(), func(item *Message, _ int) (string, bool) {
+//		return item.ContentType, item.ContentType != ""
+//	}))
+//}
+//
+//func (e EncodingDecode) FormatByContentType(contentType string) string {
+//	return getFormatByContentType(contentType)
+//}
+//
+//func (e EncodingDecode) Kind() common.ObjectKind {
+//	return common.ObjectKindAsyncAPI
+//}
+//
+//
+//func (e EncodingDecode) Selectable() bool {
+//	return true
+//}
+//
+//func (e EncodingDecode) RenderContext() common.RenderContext {
+//	return context.Context
+//}
+//
+//func (e EncodingDecode) ID() string {
+//	return "Decode"
+//}
+//
+//func (e EncodingDecode) String() string {
+//	return "EncodingDecode"
+//}
+//

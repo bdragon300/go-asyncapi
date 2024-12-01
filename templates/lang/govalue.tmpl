@@ -3,8 +3,8 @@
         {{$pt := .AsPointerWrapperType .Type}}
         {{if and $pt $pt.IsPointer}}
             {{if .Empty}}
-                {{if .NilCurlyBrakets /* &{} -> ToPtr({}) */ }}{{qualr "" "ToPtr"}}({}){{else /* &nil -> nil */}}nil{{end}}
-            {{else if .Literal}}
+                {{if .EmptyCurlyBrakets /* &{} -> ToPtr({}) */ }}{{qualr "" "ToPtr"}}({}){{else /* &nil -> nil */}}nil{{end}}
+            {{else if .LiteralValue}}
                 {{$t := .AsGolangType $pt}}
                 {{if $t /* &int(123) -> ToPtr(int(123)) */}}
                     {{qualr "" "ToPtr"}}({{$t.U}}({{template "value_expr" .}}))
@@ -12,10 +12,10 @@
                     {{qualr "" "ToPtr"}}({{template "value_expr" .}})
                 {{end}}
             {{else /* &AnyType{}; &map[string]int{}; &[]int{} */}}
-                &{{.Type.U}}{{if .Literal /* int(123) */}}({{template "value_expr" .}}){{else}}{{template "value_expr" .}}{{end}}
+                &{{.Type.U}}{{if .LiteralValue /* int(123) */}}({{template "value_expr" .}}){{else}}{{template "value_expr" .}}{{end}}
             {{end}}
         {{else}}
-            {{.Type.U}}{{if .Literal /* int(123) */}}({{template "value_expr" .}}){{else}}{{template "value_expr" .}}{{end}}
+            {{.Type.U}}{{if .LiteralValue /* int(123) */}}({{template "value_expr" .}}){{else}}{{template "value_expr" .}}{{end}}
         {{end}}
     {{else}}
         {{template "value_expr" .}}
@@ -23,31 +23,31 @@
 {{end}}
 
 {{define "value_expr"}}
-    {{if .Literal /* Literal */}}
-        {{$v := .AsRenderer .Literal}}
-        {{if $v}}{{ $v.U }}{{else}}{{ .Literal | golit }}{{end}}
-    {{else if .DictVals.Len /* Map */}}
+    {{if .LiteralValue /* Literal */}}
+        {{$v := .AsRenderer .LiteralValue}}
+        {{if $v}}{{ $v.U }}{{else}}{{ .LiteralValue | golit }}{{end}}
+    {{else if .MapValues.Len /* Map */}}
         {
-        {{range .DictVals.Entries}}
+        {{range .MapValues.Entries}}
             {{$v := .AsRenderer .Value}}
             {{.Key | golit }}: {{if $v}}{{ $v.U }}{{else}}{{ .Value | golit }}{{end}},
         {{end}}
         }
-    {{else if .StructVals.Len /* Struct */}}
+    {{else if .StructValues.Len /* Struct */}}
         {
-        {{range .StructVals.Entries}}
+        {{range .StructValues.Entries}}
             {{$v := .AsRenderer .Value}}
             {{.Key | goid }}: {{if $v}}{{ $v.U }}{{else}}{{ .Value | golit }}{{end}},
         {{end}}
         }
-    {{else if .ArrayVals /* Array/slice */}}
+    {{else if .ArrayValues /* Array/slice */}}
         {
-        {{range .ArrayVals}}
+        {{range .ArrayValues}}
             {{$v := .AsRenderer .}}
             {{if $v}}{{ $v.U }}{{else}}{{ . | golit }}{{end}},
         {{end}}
         }
     {{else /*Empty value*/ }}
-        {{if .NilCurlyBrakets}}{}{{else}}nil{{end}}
+        {{if .EmptyCurlyBrakets}}{}{{else}}nil{{end}}
     {{end}}
 {{end}}

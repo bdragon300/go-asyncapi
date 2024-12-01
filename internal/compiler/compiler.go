@@ -19,11 +19,10 @@ import (
 	"github.com/samber/lo"
 )
 
-const fallbackContentType = "application/json" // Default content type if it omitted in spec
 
 type Object struct {
 	Object common.Renderer
-	Path   []string
+	ModuleURL specurl.URL
 }
 
 func NewModule(specURL *specurl.URL) *Module {
@@ -31,7 +30,6 @@ func NewModule(specURL *specurl.URL) *Module {
 		logger:             types.NewLogger("Compilation 🔨"),
 		specURL:            specURL,
 		objects:            make([]Object, 0),
-		defaultContentType: fallbackContentType,
 		protocols:          make(map[string]int),
 	}
 }
@@ -47,16 +45,15 @@ type Module struct {
 
 	// Set during compilation
 	objects            []Object
-	defaultContentType string
 	protocols          map[string]int
 	promises           []common.ObjectPromise
 	listPromises       []common.ObjectListPromise
-	activeServers      []string // Servers in `servers` document section
-	activeChannels     []string // Channels in `channels` document section
 }
 
 func (c *Module) AddObject(stack []string, obj common.Renderer) {
-	c.objects = append(c.objects, Object{Object: obj, Path: stack})
+	u := *c.specURL
+	u.Pointer = stack
+	c.objects = append(c.objects, Object{Object: obj, ModuleURL: u})
 }
 
 func (c *Module) RegisterProtocol(protoName string) {
@@ -77,30 +74,6 @@ func (c *Module) AddListPromise(p common.ObjectListPromise) {
 
 func (c *Module) Protocols() []string {
 	return lo.Keys(c.protocols)
-}
-
-func (c *Module) SetDefaultContentType(contentType string) {
-	c.defaultContentType = contentType
-}
-
-func (c *Module) SetActiveServers(servers []string) {
-	c.activeServers = servers
-}
-
-func (c *Module) ActiveServers() []string {
-	return c.activeServers
-}
-
-func (c *Module) SetActiveChannels(channels []string) {
-	c.activeChannels = channels
-}
-
-func (c *Module) ActiveChannels() []string {
-	return c.activeChannels
-}
-
-func (c *Module) DefaultContentType() string {
-	return c.defaultContentType
 }
 
 func (c *Module) AllObjects() []Object {

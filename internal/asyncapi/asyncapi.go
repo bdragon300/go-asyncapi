@@ -1,11 +1,12 @@
 package asyncapi
 
 import (
-	"fmt"
-
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render"
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 )
+
 
 type AsyncAPI struct {
 	Asyncapi           string                            `json:"asyncapi" yaml:"asyncapi"`
@@ -21,17 +22,24 @@ type AsyncAPI struct {
 
 // TODO: make AsyncAPI as one of object kinds
 func (a AsyncAPI) Compile(ctx *common.CompileContext) error {
-	if a.DefaultContentType != "" {
-		ctx.Storage.SetDefaultContentType(a.DefaultContentType)
-	}
-	ctx.Logger.Trace(fmt.Sprintf("Default content type set to %s", ctx.Storage.DefaultContentType()))
-
-	ctx.Storage.SetActiveServers(a.Servers.Keys())
-	ctx.Logger.Trace("Active servers list", "servers", ctx.Storage.ActiveServers())
-
-	ctx.Storage.SetActiveChannels(a.Channels.Keys())
-	ctx.Logger.Trace("Active channels list", "channels", ctx.Storage.ActiveChannels())
+	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
+	obj := a.build(ctx)
+	ctx.PutObject(obj)
 	return nil
+}
+
+func (a AsyncAPI) build(ctx *common.CompileContext) *render.AsyncAPI {
+	allMessagesPrm := lang.NewListCbPromise[*render.Message](func(item common.Renderer, _ []string) bool {
+		_, ok := item.(*render.Message)
+		return ok
+	})
+	ctx.PutListPromise(allMessagesPrm)
+
+	res := &render.AsyncAPI{
+		AllMessages:        allMessagesPrm,
+		DefaultContentType: a.DefaultContentType,
+	}
+	return res
 }
 
 type InfoItem struct {

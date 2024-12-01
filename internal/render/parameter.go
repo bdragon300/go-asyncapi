@@ -2,13 +2,14 @@ package render
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render/context"
 )
 
 type Parameter struct {
 	Name       string
 	Dummy      bool
-	Type       common.GolangType
-	PureString bool
+	Type         common.GolangType
+	IsStringType bool  // true if Type contains a type alias to built-in string type
 }
 
 func (p Parameter) Kind() common.ObjectKind {
@@ -17,6 +18,10 @@ func (p Parameter) Kind() common.ObjectKind {
 
 func (p Parameter) Selectable() bool {
 	return !p.Dummy && p.Type.Selectable()
+}
+
+func (p Parameter) RenderContext() common.RenderContext {
+	return context.Context
 }
 
 //func (p Parameter) D(ctx *common.RenderContext) []*j.Statement {
@@ -44,7 +49,7 @@ func (p Parameter) Selectable() bool {
 //	receiver := j.Id(rn).Id(p.Type.TypeName())
 //
 //	stringBody := j.Return(j.String().Call(j.Id(rn)))
-//	if !p.PureString {
+//	if !p.IsStringType {
 //		stringBody = j.Return(j.Qual("fmt", "Sprint").Call(j.Id(rn).Dot("Value")))
 //	}
 //	return []*j.Statement{

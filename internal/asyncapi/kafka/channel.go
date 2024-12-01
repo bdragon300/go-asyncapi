@@ -35,7 +35,7 @@ type operationBindings struct {
 }
 
 func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, parent *render.Channel) (*render.ProtoChannel, error) {
-	golangName := parent.GolangName + utils.TransformInitialisms(pb.ProtoName)
+	golangName := parent.TypeNamePrefix + utils.TransformInitialisms(pb.ProtoName)
 	chanStruct, err := asyncapi.BuildProtoChannelStruct(ctx, channel, parent, pb.ProtoName, golangName)
 	if err != nil {
 		return nil, err
@@ -62,10 +62,10 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 		bindings, []string{"Partitions", "Replicas", "TopicConfiguration"}, &lang.GoSimple{Name: "ChannelBindings", Import: ctx.RuntimeModule(pb.ProtoName)},
 	)
 	if bindings.Partitions != nil {
-		vals.StructVals.Set("Partitions", *bindings.Partitions)
+		vals.StructValues.Set("Partitions", *bindings.Partitions)
 	}
 	if bindings.Replicas != nil {
-		vals.StructVals.Set("Replicas", *bindings.Replicas)
+		vals.StructValues.Set("Replicas", *bindings.Replicas)
 	}
 	if bindings.TopicConfiguration != nil {
 		tcVals := lang.ConstructGoValue(
@@ -76,15 +76,15 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 
 		// TopicConfiguration->CleanupPolicy
 		if len(bindings.TopicConfiguration.CleanupPolicy) > 0 {
-			cpVal := &lang.GoValue{Type: &lang.GoSimple{Name: "TopicCleanupPolicy", Import: ctx.RuntimeModule(pb.ProtoName)}, NilCurlyBrackets: true}
+			cpVal := &lang.GoValue{Type: &lang.GoSimple{Name: "TopicCleanupPolicy", Import: ctx.RuntimeModule(pb.ProtoName)}, EmptyCurlyBrackets: true}
 			switch {
 			case lo.Contains(bindings.TopicConfiguration.CleanupPolicy, "delete"):
-				cpVal.StructVals.Set("Delete", true)
+				cpVal.StructValues.Set("Delete", true)
 			case lo.Contains(bindings.TopicConfiguration.CleanupPolicy, "compact"):
-				cpVal.StructVals.Set("Compact", true)
+				cpVal.StructValues.Set("Compact", true)
 			}
-			if cpVal.StructVals.Len() > 0 {
-				tcVals.StructVals.Set("CleanupPolicy", cpVal)
+			if cpVal.StructValues.Len() > 0 {
+				tcVals.StructValues.Set("CleanupPolicy", cpVal)
 			}
 		}
 		// TopicConfiguration->RetentionMs
@@ -94,7 +94,7 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 				nil,
 				&lang.GoSimple{Name: "Duration", Import: "time"},
 			)
-			tcVals.StructVals.Set("RetentionMs", v)
+			tcVals.StructValues.Set("RetentionMs", v)
 		}
 		// TopicConfiguration->DeleteRetentionMs
 		if bindings.TopicConfiguration.DeleteRetentionMs > 0 {
@@ -103,9 +103,9 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 				nil,
 				&lang.GoSimple{Name: "Duration", Import: "time"},
 			)
-			tcVals.StructVals.Set("DeleteRetentionMs", v)
+			tcVals.StructValues.Set("DeleteRetentionMs", v)
 		}
-		vals.StructVals.Set("TopicConfiguration", tcVals)
+		vals.StructValues.Set("TopicConfiguration", tcVals)
 	}
 
 	return

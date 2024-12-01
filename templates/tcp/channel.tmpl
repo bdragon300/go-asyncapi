@@ -1,7 +1,7 @@
-type {{(print .GolangNameProto "Server") | lowerCamelize}} interface {
-    Open{{.GolangNameProto}}(ctx {{qual "context.Context"}}, {{if .ParametersStruct}}params {{.ParametersStruct.U}}{{end}}) (*{{.Struct.U}}, error)
-    {{if .Publisher}}Producer() {{qualr .ProtoName "Producer"}}{{end}}
-    {{if .Subscriber}}Consumer() {{qualr .ProtoName "Consumer"}}{{end}}
+type {{(print ..RenderContextProto "Server") | toCamelCase}} interface {
+    Open{{..RenderContextProto}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType.U}}{{end}}) (*{{.Struct.U}}, error)
+    {{if .IsPublisher}}Producer() {{qualr .ProtoName "Producer"}}{{end}}
+    {{if .IsSubscriber}}Consumer() {{qualr .ProtoName "Consumer"}}{{end}}
 }
 
 {{template "proto/channel/bareNewFunction" .}}
@@ -12,6 +12,6 @@ type {{(print .GolangNameProto "Server") | lowerCamelize}} interface {
 
 {{template "proto/channel/commonMethods" .}}
 
-{{if .Publisher}}{{template "proto/channel/barePublishMethods" .}}{{end}}
+{{if .IsPublisher}}{{template "proto/channel/barePublishMethods" .}}{{end}}
 
-{{if .Subscriber}}{{template "proto/channel/subscribeMethods" .}}{{end}}
+{{if .IsSubscriber}}{{template "proto/channel/subscribeMethods" .}}{{end}}

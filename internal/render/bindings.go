@@ -2,6 +2,7 @@ package render
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 )
@@ -23,6 +24,10 @@ func (b Bindings) Kind() common.ObjectKind {
 
 func (b Bindings) Selectable() bool {
 	return false
+}
+
+func (b Bindings) RenderContext() common.RenderContext {
+	return context.Context
 }
 
 //func (b *Bindings) D(_ *common.RenderContext) []*j.Statement {
@@ -88,7 +93,7 @@ func (b Bindings) Selectable() bool {
 //			Params().
 //			Qual(ctx.RuntimeModule(protoName), "ChannelBindings").
 //			BlockFunc(func(bg *j.Group) {
-//				cb := &GoValue{Type: &GoSimple{Name: "ChannelBindings", Import: ctx.RuntimeModule(protoName)}, NilCurlyBrackets: true}
+//				cb := &GoValue{Type: &GoSimple{Name: "ChannelBindings", Import: ctx.RuntimeModule(protoName)}, EmptyCurlyBrackets: true}
 //				if channelBindings != nil {
 //					if b, ok := channelBindings.Values.Get(protoName); ok {
 //						ctx.Logger.Debug("Channel bindings", "proto", protoName)
@@ -98,13 +103,13 @@ func (b Bindings) Selectable() bool {
 //				if publishBindings != nil {
 //					if v, ok := publishBindings.Values.Get(protoName); ok {
 //						ctx.Logger.Debug("Publish operation bindings", "proto", protoName)
-//						cb.StructVals.Set("PublisherBindings", v)
+//						cb.StructValues.Set("PublisherBindings", v)
 //					}
 //				}
 //				if subscribeBindings != nil {
 //					if v, ok := subscribeBindings.Values.Get(protoName); ok {
 //						ctx.Logger.Debug("Subscribe operation bindings", "proto", protoName)
-//						cb.StructVals.Set("SubscriberBindings", v)
+//						cb.StructValues.Set("SubscriberBindings", v)
 //					}
 //				}
 //				bg.Id("b").Op(":=").Add(utils.ToCode(cb.U(ctx))...)

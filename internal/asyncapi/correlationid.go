@@ -51,12 +51,12 @@ func (c CorrelationID) build(ctx *common.CompileContext, correlationIDKey string
 		return nil, types.CompileError{Err: errors.New("no fragment part in location"), Path: ctx.PathStackRef()}
 	}
 
-	var structField string
+	var structField render.CorrelationIDStructField
 	switch {
 	case strings.HasSuffix(locationParts[0], "header"):
-		structField = "Headers"
+		structField = render.CorrelationIDStructFieldHeaders
 	case strings.HasSuffix(locationParts[0], "payload"):
-		structField = "Payload"
+		structField = render.CorrelationIDStructFieldPayload
 	default:
 		return nil, types.CompileError{
 			Err:  errors.New("location source must point only to header or payload"),

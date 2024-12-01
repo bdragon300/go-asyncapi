@@ -66,7 +66,7 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 			},
 			AliasedType: &lang.GoSimple{Name: "string"},
 		}
-		res.PureString = true
+		res.IsStringType = true
 	}
 
 	return res, nil

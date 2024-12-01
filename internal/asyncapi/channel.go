@@ -2,7 +2,6 @@ package asyncapi
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
-	"github.com/bdragon300/go-asyncapi/internal/specurl"
 	"github.com/samber/lo"
 
 	"github.com/bdragon300/go-asyncapi/internal/types"
@@ -64,16 +63,15 @@ func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) ([
 	// Render only the channels defined directly in `channels` document section, not in `components`
 	baseChan := &render.Channel{
 		Name:                chName,
-		GolangName:          ctx.GenerateObjName(chName, ""),
-		RawName:             channelKey,
-		FallbackMessageType: &lang.GoSimple{Name: "any", IsIface: true},
+		TypeNamePrefix:      ctx.GenerateObjName(chName, ""),
+		SpecKey:             channelKey,
 	}
 
 	// Channel parameters
 	if c.Parameters.Len() > 0 {
 		ctx.Logger.Trace("Channel parameters")
 		ctx.Logger.NextCallLevel()
-		baseChan.ParametersStruct = &lang.GoStruct{
+		baseChan.ParametersType = &lang.GoStruct{
 			BaseType: lang.BaseType{
 				Name:          ctx.GenerateObjName(chName, "Parameters"),
 				HasDefinition: true,
@@ -84,7 +82,7 @@ func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) ([
 			ref := ctx.PathStackRef("parameters", paramName)
 			prm := lang.NewGolangTypePromise(ref, common.PromiseOriginInternal)
 			ctx.PutPromise(prm)
-			baseChan.ParametersStruct.Fields = append(baseChan.ParametersStruct.Fields, lang.GoStructField{
+			baseChan.ParametersType.Fields = append(baseChan.ParametersType.Fields, lang.GoStructField{
 				Name: utils.ToGolangName(paramName, true),
 				Type: prm,
 			})
@@ -96,27 +94,22 @@ func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) ([
 	// Empty servers field means "no servers", omitted servers field means "all servers"
 	if c.Servers != nil {
 		ctx.Logger.Trace("Channel servers", "names", *c.Servers)
-		baseChan.ExplicitServerNames = *c.Servers
-		prms := lo.FilterMap(ctx.Storage.ActiveServers(), func(item string, _ int) (*lang.Promise[*render.Server], bool) {
-			if lo.Contains(*c.Servers, item) {
-				ref := specurl.BuildRef("servers", item)
-				prm := lang.NewPromise[*render.Server](ref, common.PromiseOriginInternal)
-				ctx.PutPromise(prm)
-				return prm, true
+		baseChan.SpecServerNames = *c.Servers
+		prm := lang.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
+			srv, ok := item.(*render.Server)
+			if !ok {
+				return false
 			}
-			return nil, false
+			return lo.Contains(*c.Servers, srv.Name)
 		})
-		baseChan.ServersPromises = prms
+		baseChan.ServersPromise = prm
 	} else {
 		ctx.Logger.Trace("Channel for all servers")
-		prms := lo.Map(ctx.Storage.ActiveServers(), func(item string, _ int) *lang.Promise[*render.Server] {
-			ref := specurl.BuildRef("servers", item)
-			prm := lang.NewPromise[*render.Server](ref, common.PromiseOriginInternal)
-			ctx.PutPromise(prm)
-			return prm
+		prm := lang.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
+			_, ok := item.(*render.Server)
+			return ok
 		})
-
-		baseChan.ServersPromises = prms
+		baseChan.ServersPromise = prm
 	}
 
 	// Channel/operation bindings
@@ -133,7 +126,7 @@ func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) ([
 	genPub := c.Publish != nil && ctx.CompileOpts.GeneratePublishers
 	genSub := c.Subscribe != nil && ctx.CompileOpts.GenerateSubscribers
 	if genPub && !c.Publish.XIgnore {
-		baseChan.Publisher = true
+		baseChan.IsPublisher = true
 		if c.Publish.Bindings != nil {
 			ctx.Logger.Trace("Found publish operation bindings")
 			hasBindings = true
@@ -145,12 +138,12 @@ func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) ([
 		if c.Publish.Message != nil {
 			ctx.Logger.Trace("Found publish operation message")
 			ref := ctx.PathStackRef("publish", "message")
-			baseChan.PubMessagePromise = lang.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
-			ctx.PutPromise(baseChan.PubMessagePromise)
+			baseChan.PublisherMessageTypePromise = lang.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
+			ctx.PutPromise(baseChan.PublisherMessageTypePromise)
 		}
 	}
 	if genSub && !c.Subscribe.XIgnore {
-		baseChan.Subscriber = true
+		baseChan.IsSubscriber = true
 		if c.Subscribe.Bindings != nil {
 			ctx.Logger.Trace("Found subscribe operation bindings")
 			hasBindings = true
@@ -162,12 +155,12 @@ func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) ([
 		if c.Subscribe.Message != nil {
 			ctx.Logger.Trace("Channel subscribe operation message")
 			ref := ctx.PathStackRef("subscribe", "message")
-			baseChan.SubMessagePromise = lang.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
-			ctx.PutPromise(baseChan.SubMessagePromise)
+			baseChan.SubscribeMessageTypePromise = lang.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
+			ctx.PutPromise(baseChan.SubscribeMessageTypePromise)
 		}
 	}
 	if hasBindings {
-		baseChan.BindingsStruct = &lang.GoStruct{
+		baseChan.BindingsType = &lang.GoStruct{
 			BaseType: lang.BaseType{
 				Name:          ctx.GenerateObjName(chName, "Bindings"),
 				HasDefinition: true,

@@ -42,29 +42,29 @@ func BuildProtoChannelStruct(
 	}
 
 	// Publisher stuff
-	if target.Publisher {
+	if target.IsPublisher {
 		ctx.Logger.Trace("Channel publish operation", "proto", protoName)
 		chanStruct.Fields = append(chanStruct.Fields, lang.GoStructField{
 			Name:        "publisher",
 			Description: source.Publish.Description,
 			Type: &lang.GoSimple{
-				Name:    "Publisher",
-				Import:  ctx.RuntimeModule(protoName),
-				IsIface: true,
+				Name:        "Publisher",
+				Import:      ctx.RuntimeModule(protoName),
+				IsInterface: true,
 			},
 		})
 	}
 
 	// Subscriber stuff
-	if target.Subscriber {
+	if target.IsSubscriber {
 		ctx.Logger.Trace("Channel subscribe operation", "proto", protoName)
 		chanStruct.Fields = append(chanStruct.Fields, lang.GoStructField{
 			Name:        "subscriber",
 			Description: source.Subscribe.Description,
 			Type: &lang.GoSimple{
-				Name:    "Subscriber",
-				Import:  ctx.RuntimeModule(protoName),
-				IsIface: true,
+				Name:        "Subscriber",
+				Import:      ctx.RuntimeModule(protoName),
+				IsInterface: true,
 			},
 		})
 	}
@@ -80,7 +80,7 @@ func BuildProtoServerStruct(
 ) (*lang.GoStruct, error) {
 	srvStruct := lang.GoStruct{
 		BaseType: lang.BaseType{
-			Name:          target.GolangName,
+			Name:          target.TypeNamePrefix,
 			Description:   source.Description,
 			HasDefinition: true,
 		},
@@ -90,14 +90,14 @@ func BuildProtoServerStruct(
 	ctx.Logger.Trace("Server producer", "proto", protoName)
 	fld := lang.GoStructField{
 		Name: "producer",
-		Type: &lang.GoSimple{Name: "Producer", Import: ctx.RuntimeModule(protoName), IsIface: true},
+		Type: &lang.GoSimple{Name: "Producer", Import: ctx.RuntimeModule(protoName), IsInterface: true},
 	}
 	srvStruct.Fields = append(srvStruct.Fields, fld)
 
 	ctx.Logger.Trace("Server consumer", "proto", protoName)
 	fld = lang.GoStructField{
 		Name: "consumer",
-		Type: &lang.GoSimple{Name: "Consumer", Import: ctx.RuntimeModule(protoName), IsIface: true},
+		Type: &lang.GoSimple{Name: "Consumer", Import: ctx.RuntimeModule(protoName), IsInterface: true},
 	}
 	srvStruct.Fields = append(srvStruct.Fields, fld)
 
