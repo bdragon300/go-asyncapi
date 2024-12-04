@@ -1,7 +1,7 @@
-type {{(print ..RenderContextProto "Server") | toCamelCase}} interface {
-    Open{{..RenderContextProto}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType.U}}{{end}}) (*{{.Struct.U}}, error)
-    {{if .IsPublisher}}Producer() {{qualr .ProtoName "Producer"}}{{end}}
-    {{if .IsSubscriber}}Consumer() {{qualr .ProtoName "Consumer"}}{{end}}
+type {{(print .Type.Name "Server") | toCamelCase}} interface {
+    Open{{.Type.Name}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType.U}}{{end}}) (*{{.Struct.U}}, error)
+    {{if .IsPublisher}}Producer() {{qualrun .ProtoName "Producer"}}{{end}}
+    {{if .IsSubscriber}}Consumer() {{qualrun .ProtoName "Consumer"}}{{end}}
 }
 
 {{template "proto/channel/bareNewFunction" .}}

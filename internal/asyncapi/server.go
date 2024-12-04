@@ -37,7 +37,7 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 	return nil
 }
 
-func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Renderer, error) {
+func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Renderable, error) {
 	_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagComponent]
 	ignore := s.XIgnore || !ctx.CompileOpts.ServerOpts.IsAllowedName(serverKey)
 	if ignore {
@@ -46,7 +46,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	}
 	if s.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", s.Ref)
-		prm := lang.NewRendererPromise(s.Ref, common.PromiseOriginUser)
+		prm := lang.NewRenderablePromise(s.Ref, common.PromiseOriginUser)
 		// Set a server to be rendered if we reference it from `servers` document section
 		prm.DirectRender = !isComponent
 		ctx.PutPromise(prm)
@@ -65,7 +65,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	}
 
 	// Channels which are connected to this server
-	prm := lang.NewListCbPromise[*render.Channel](func(item common.Renderer, path []string) bool {
+	prm := lang.NewListCbPromise[*render.Channel](func(item common.Renderable, path []string) bool {
 		_, ok := item.(*render.Channel)
 		if !ok {
 			return false
@@ -107,7 +107,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		if err != nil {
 			return nil, err
 		}
-		return &render.ProtoServer{Server: &baseServer, Struct: protoStruct}, nil
+		return &render.ProtoServer{Server: &baseServer, Type: protoStruct}, nil
 	}
 
 	ctx.Logger.Trace("Server", "proto", protoBuilder.ProtocolName())

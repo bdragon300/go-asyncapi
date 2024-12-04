@@ -3,6 +3,7 @@ package lang
 import (
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/render"
+	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"slices"
 	"strconv"
 	"strings"
@@ -37,9 +38,10 @@ func (s GoStruct) D() string {
 	//code := lo.FlatMap(s.Fields, func(item GoStructField, _ int) []*jen.Statement {
 	//	return item.renderDefinition(ctx)
 	//})
-	//res = append(res, jen.Type().Id(s.Name).Struct(utils.ToCode(code)...))
+	//res = append(res, jen.Type().Id(s.Name).Type(utils.ToCode(code)...))
 	//return res
-	panic("not implemented")
+	s.definitionInfo = context.Context.CurrentDefinitionInfo()
+	return renderTemplate("lang/gostruct/definition", &s)
 }
 
 func (s GoStruct) U() string {
@@ -57,8 +59,8 @@ func (s GoStruct) U() string {
 	//	return item.renderDefinition()
 	//})
 	//
-	//return []*jen.Statement{jen.Struct(utils.ToCode(code)...)}
-	panic("not implemented")
+	//return []*jen.Statement{jen.Type(utils.ToCode(code)...)}
+	return renderTemplate("lang/gostruct/usage", &s)
 }
 
 //func (s GoStruct) NewFuncName() string {

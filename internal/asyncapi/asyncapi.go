@@ -29,7 +29,7 @@ func (a AsyncAPI) Compile(ctx *common.CompileContext) error {
 }
 
 func (a AsyncAPI) build(ctx *common.CompileContext) *render.AsyncAPI {
-	allMessagesPrm := lang.NewListCbPromise[*render.Message](func(item common.Renderer, _ []string) bool {
+	allMessagesPrm := lang.NewListCbPromise[*render.Message](func(item common.Renderable, _ []string) bool {
 		_, ok := item.(*render.Message)
 		return ok
 	})

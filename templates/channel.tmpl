@@ -34,18 +34,18 @@
     {{end}}
 {{end}}
 
-func {{..RenderContext}}Name({{if .ParametersType}}params {{.ParametersType.U}}{{end}}) {{qualr "" "ParamString"}} {
+func {{.TypeNamePrefix}}Name({{if .ParametersType}}params {{.ParametersType.U}}{{end}}) {{qualrun "ParamString"}} {
     {{if .ParametersType}}
         paramMap := map[string]string{
         {{range $f := .ParametersType.Fields}}params.{{$f.Name}}.Name(): params.{{$f.Name}}.String(),
         {{end}}
         }
-        return {{qualr "" "ParamString"}}{
+        return {{qualrun "ParamString"}}{
             Expr: "{{.SpecKey | golit}}",
             Parameters: paramMap,
         }
     {{else}}
-        return {{qualr "" "ParamString"}}{
+        return {{qualrun "ParamString"}}{
             Expr: "{{.SpecKey | golit}}",
         }
     {{end}}

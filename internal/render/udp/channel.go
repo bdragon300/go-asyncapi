@@ -3,7 +3,7 @@ package udp
 //type ProtoChannel struct {
 //	*render.Channel
 //	GolangNameProto string // Channel TypeNamePrefix name concatenated with protocol name, e.g. Channel1Kafka
-//	Struct          *render.GoStruct
+//	Type          *render.GoStruct
 //
 //	ProtoName, ProtoTitle string
 //}
@@ -19,7 +19,7 @@ package udp
 //	res = append(res, pc.ServerIface.D(ctx)...)
 //	res = append(res, pc.RenderOpenFunc(ctx)...)
 //	res = append(res, pc.renderNewFunc(ctx)...)
-//	res = append(res, pc.Struct.D(ctx)...)
+//	res = append(res, pc.Type.D(ctx)...)
 //	res = append(res, pc.RenderCommonMethods(ctx)...)
 //	res = append(res, pc.renderProtoMethods(ctx)...)
 //	if pc.Parent.Publisher {
@@ -35,7 +35,7 @@ package udp
 //func (pc ProtoChannel) U(ctx *common.RenderContext) []*j.Statement {
 //	ctx.LogStartRender("Channel", "", pc.Parent.Name, "usage", pc.Selectable(), "proto", pc.ProtoName)
 //	defer ctx.LogFinishRender()
-//	return pc.Struct.U(ctx)
+//	return pc.Type.U(ctx)
 //}
 //
 //func (pc ProtoChannel) ID() string {
@@ -51,7 +51,7 @@ package udp
 //
 //	return []*j.Statement{
 //		// NewChannel1Proto(params Channel1Parameters, publisher proto.Publisher, subscriber proto.Subscriber) *Channel1Proto
-//		j.Func().Id(pc.Struct.NewFuncName()).
+//		j.Func().Id(pc.Type.NewFuncName()).
 //			ParamsFunc(func(g *j.Group) {
 //				if pc.Parent.ParametersType != nil {
 //					g.Id("params").Add(utils.ToCode(pc.Parent.ParametersType.U(ctx))...)
@@ -63,9 +63,9 @@ package udp
 //					g.Id("subscriber").Qual(ctx.RuntimeModule(pc.ProtoName), "Subscriber")
 //				}
 //			}).
-//			Op("*").Add(utils.ToCode(pc.Struct.U(ctx))...).
+//			Op("*").Add(utils.ToCode(pc.Type.U(ctx))...).
 //			BlockFunc(func(bg *j.Group) {
-//				bg.Op("res := ").Add(utils.ToCode(pc.Struct.U(ctx))...).Values(j.DictFunc(func(d j.Dict) {
+//				bg.Op("res := ").Add(utils.ToCode(pc.Type.U(ctx))...).Values(j.DictFunc(func(d j.Dict) {
 //					d[j.Id("name")] = j.Id(pc.Parent.TypeNamePrefix + "Name").CallFunc(func(g *j.Group) {
 //						if pc.Parent.ParametersType != nil {
 //							g.Id("params")
@@ -90,8 +90,8 @@ package udp
 //func (pc ProtoChannel) renderProtoPublisherMethods(ctx *common.RenderContext) []*j.Statement {
 //	ctx.Logger.Trace("renderProtoPublisherMethods", "proto", pc.ProtoName)
 //
-//	rn := pc.Struct.ReceiverName()
-//	receiver := j.Id(rn).Id(pc.Struct.Name)
+//	rn := pc.Type.ReceiverName()
+//	receiver := j.Id(rn).Id(pc.Type.Name)
 //
 //	var msgTyp common.GolangType = render.GoPointer{Type: pc.Parent.FallbackMessageType, HasDefinition: true}
 //	if pc.Parent.PublisherMessageTypePromise != nil {

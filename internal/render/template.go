@@ -1,14 +1,17 @@
 package render
 
 import (
+	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
-	"github.com/bdragon300/go-asyncapi/templates"
+	"github.com/bdragon300/go-asyncapi/internal/tpl"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/go-sprout/sprout"
 	"github.com/samber/lo"
 	"strings"
 	"text/template"
+	"unicode"
 )
 
 var templateFunctions sprout.FunctionMap
@@ -19,11 +22,11 @@ func init() {
 }
 
 type TemplateSelections struct {
-	Objects []common.Renderer
+	Objects []common.Renderable
 }
 
-func (r TemplateSelections) SelectLangs() []common.Renderer {
-	return lo.Filter(r.Objects, func(item common.Renderer, _ int) bool {
+func (r TemplateSelections) SelectLangs() []common.Renderable {
+	return lo.Filter(r.Objects, func(item common.Renderable, _ int) bool {
 		return item.Kind() == common.ObjectKindLang
 	})
 }
@@ -80,6 +83,7 @@ func (r TemplateSelections) SelectAsyncAPI() *AsyncAPI {
 	return res[0]
 }
 
+
 func NewTemplateContext(renderContext *context.RenderContextImpl, selections TemplateSelections) TemplateContext {
 	return TemplateContext{
 		renderContext: renderContext,
@@ -88,7 +92,7 @@ func NewTemplateContext(renderContext *context.RenderContextImpl, selections Tem
 }
 
 type TemplateContext struct {
-	renderContext *context.RenderContextImpl
+	renderContext    *context.RenderContextImpl
 	objectSelections TemplateSelections
 }
 
@@ -96,62 +100,126 @@ func (t TemplateContext) Selections() TemplateSelections {
 	return t.objectSelections
 }
 
-func (t TemplateContext) RenderContext() common.RenderContext {
-	return t.renderContext
-}
 
-// TODO: make just functions?
-func (t TemplateContext) templateGoLit(val any) string {
-	panic("not implemented")
-}
-
-func (t TemplateContext) templateGoPtr(val any) string {
-	panic("not implemented")
-}
-
-func (t TemplateContext) templateGoID(val any) string {
-	panic("not implemented")
-}
-
-func (t TemplateContext) templateGoComment(text string) string {
-	panic("not implemented")
-}
-
-func GetTemplateFunctions(t *TemplateContext) template.FuncMap {
+func GetTemplateFunctions(ctx common.RenderContext) template.FuncMap {
 	extraFuncs := template.FuncMap{
-		"golit": func(val any) string { return t.templateGoLit(val) },
-		"goptr": func(val any) string { return t.templateGoPtr(val) },
-		"goid": func(val any) string { return t.templateGoID(val) },
-		"gocomment": func(text string) string { return t.templateGoComment(text) },
-		"qual": func(pkgExpr string) string { return t.renderContext.QualifiedName(pkgExpr) },
-		"qualg": func(subPkg, name string) string { return t.renderContext.QualifiedGeneratedName(subPkg, name) },
-		"qualr": func(subPkg, name string) string { return t.renderContext.QualifiedRuntimeName(subPkg, name) },
+		"golit": func(val any) string { return templateGoLit(val) },
+		"goptr": func(val common.GolangType) (*lang.GoPointer, error) { return templateGoPtr(val) },
+		"unwrapgoptr": func(val common.GolangType) common.GolangType {
+			if v, ok := any(val).(lang.GolangTypeWrapperType); ok {
+				if wt, ok := v.UnwrapGolangType(); ok {
+					return wt
+				}
+			}
+			return nil
+		},
+		"goid": func(name string) string { return templateGoID(name) },
+		"gocomment": func(text string) (string, error) { return templateGoComment(text) },
+		"qual": func(parts ...string) string { return ctx.QualifiedName(parts...) },
+		"qualgenpkg": func(obj common.GolangType) (string, error) {
+			pkg, err := ctx.QualifiedGeneratedPackage(obj)
+			if pkg == "" {
+				return "", err
+			}
+			return pkg + ".", err
+		},
+		"qualrun": func(parts ...string) string { return ctx.QualifiedRuntimeName(parts...) }, // TODO: check if .Import and qual is enough
 		"runTemplate": func(templateName string, ctx any) (string, error) {
-			// TODO: template dir
-			tpl := template.Must(template.ParseFS(templates.Templates))
+			tmpl := tpl.LoadTemplate(templateName)
 			var bld strings.Builder
-			if err := tpl.Execute(&bld, ctx); err != nil {
+			if err := tmpl.Execute(&bld, ctx); err != nil {
 				return "", err
 			}
 			return bld.String(), nil
-		},
-		"contentTypeID": func(contentType string) string {
-			// TODO: add other formats: protobuf, avro, etc.
-			switch {
-			case strings.HasSuffix(contentType, "json"):
-				return "json"
-			case strings.HasSuffix(contentType, "yaml"):
-				return "yaml"
-			}
-			return ""
 		},
 	}
 
 	return lo.Assign(templateFunctions, extraFuncs)
 }
 
-func selectObjects[T common.Renderer](selections []common.Renderer, kind common.ObjectKind) []T {
-	return lo.FilterMap(selections, func(item common.Renderer, _ int) (T, bool) {
+
+func templateGoLit(val any) string {
+	type usageDrawable interface {
+		U() string
+	}
+
+	var res string
+	switch val.(type) {
+	case usageDrawable:
+		return val.(usageDrawable).U()
+	case bool, string, int, complex128:
+		// default constant types can be left bare
+		return fmt.Sprintf("%#v", val)
+	case float64:
+		res = fmt.Sprintf("%#v", val)
+		if !strings.Contains(res, ".") && !strings.Contains(res, "e") {
+			// If the formatted value is not in scientific notation, and does not have a dot, then
+			// we add ".0". Otherwise, it will be interpreted as an int.
+			// See:
+			// https://github.com/dave/jennifer/issues/39
+			// https://github.com/golang/go/issues/26363
+			res += ".0"
+		}
+		return res
+	case float32, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr:
+		// other built-in types need specific type info
+		return fmt.Sprintf("%T(%#v)", val, val)
+	case complex64:
+		// fmt package already renders parenthesis for complex64
+		return fmt.Sprintf("%T%#v", val, val)
+	}
+
+	panic(fmt.Sprintf("unsupported type for literal: %T", val))
+}
+
+func templateGoPtr(val common.GolangType) (*lang.GoPointer, error) {
+	if val == nil {
+		return nil, fmt.Errorf("cannot get a pointer to nil")
+	}
+	return &lang.GoPointer{Type: val}, nil
+}
+
+func templateGoID(val string) string {
+	if val == "" {
+		return ""
+	}
+	return utils.ToGolangName(val, unicode.IsUpper(rune(val[0])))
+}
+
+func templateGoComment(text string) (string, error) {
+	if strings.HasPrefix(text, "//") || strings.HasPrefix(text, "/*") {
+		// automatic formatting disabled.
+		return text, nil
+	}
+
+	var b strings.Builder
+	if strings.Contains(text, "\n") {
+		if _, err := b.WriteString("/*\n"); err != nil {
+			return "", err
+		}
+	} else {
+		if _, err := b.WriteString("// "); err != nil {
+			return "", err
+		}
+	}
+	if _, err := b.WriteString(text); err != nil {
+		return "", err
+	}
+	if strings.Contains(text, "\n") {
+		if !strings.HasSuffix(text, "\n") {
+			if _, err := b.WriteString("\n"); err != nil {
+				return "", err
+			}
+		}
+		if _, err := b.WriteString("*/"); err != nil {
+			return "", err
+		}
+	}
+	return b.String(), nil
+}
+
+func selectObjects[T common.Renderable](selections []common.Renderable, kind common.ObjectKind) []T {
+	return lo.FilterMap(selections, func(item common.Renderable, _ int) (T, bool) {
 		if item.Kind() == kind {
 			return item.(T), true
 		}

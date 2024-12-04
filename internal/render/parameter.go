@@ -2,7 +2,6 @@ package render
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/render/context"
 )
 
 type Parameter struct {
@@ -18,10 +17,6 @@ func (p Parameter) Kind() common.ObjectKind {
 
 func (p Parameter) Selectable() bool {
 	return !p.Dummy && p.Type.Selectable()
-}
-
-func (p Parameter) RenderContext() common.RenderContext {
-	return context.Context
 }
 
 //func (p Parameter) D(ctx *common.RenderContext) []*j.Statement {

@@ -21,7 +21,7 @@ import (
 
 
 type Object struct {
-	Object common.Renderer
+	Object common.Renderable
 	ModuleURL specurl.URL
 }
 
@@ -50,7 +50,7 @@ type Module struct {
 	listPromises       []common.ObjectListPromise
 }
 
-func (c *Module) AddObject(stack []string, obj common.Renderer) {
+func (c *Module) AddObject(stack []string, obj common.Renderable) {
 	u := *c.specURL
 	u.Pointer = stack
 	c.objects = append(c.objects, Object{Object: obj, ModuleURL: u})

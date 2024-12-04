@@ -2,6 +2,7 @@ package lang
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render/context"
 )
 
 type GoTypeAlias struct {
@@ -21,7 +22,8 @@ func (p GoTypeAlias) D() string {
 	//aliasedStmt := utils.ToCode(p.AliasedType.D())
 	//res = append(res, jen.Type().Id(p.Name).Add(aliasedStmt...))
 	//return res
-	panic("not implemented")
+	p.definitionInfo = context.Context.CurrentDefinitionInfo()
+	return renderTemplate("lang/gotypealias/definition", &p)
 }
 
 func (p GoTypeAlias) U() string {
@@ -39,10 +41,13 @@ func (p GoTypeAlias) U() string {
 	//// Just use the underlying type then
 	//aliasedStmt := utils.ToCode(p.AliasedType.U())
 	//return []*jen.Statement{jen.Add(aliasedStmt...)}
-	panic("not implemented")
+	return renderTemplate("lang/gotypealias/usage", &p)
 }
 
-func (p GoTypeAlias) WrappedGolangType() (common.GolangType, bool) {
+func (p GoTypeAlias) UnwrapGolangType() (common.GolangType, bool) {
+	if v, ok := p.AliasedType.(GolangTypeWrapperType); ok {
+		return v.UnwrapGolangType()
+	}
 	return p.AliasedType, p.AliasedType != nil
 }
 

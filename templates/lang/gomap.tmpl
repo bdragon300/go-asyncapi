@@ -6,10 +6,10 @@
 {{end}}
 {{define "usage"}}
     {{- if .HasDefinition -}}
-        {{- if and .Import (ne .Import .RenderContext.CurrentPackage) -}}
-            {{ qualg .Import .Name }}
+        {{if .Import -}}
+            {{ qual .Import .Name }}
         {{- else -}}
-            {{ .Name | goid }}
+            {{ qualgenpkg . }}{{.Name | goid}}
         {{- end -}}
     {{- else -}}
         map[{{.KeyType.U}}]{{.ValueType.U}}

@@ -1,10 +1,10 @@
 {{if .ProtocolVersion}}
-const {{..RenderContext}}ProtocolVersion = "{{.ProtocolVersion | golit}}"
+const {{.TypeNamePrefix}}ProtocolVersion = "{{.ProtocolVersion | golit}}"
 {{end}}
 
-func {{..RenderContext}}URL(
+func {{.TypeNamePrefix}}URL(
     {{range s.VariablesPromises.Entries}}{{.Key | goid}} string,{{end}}
-) {{qualr "" "ParamString"}} {
+) {{qualrun "ParamString"}} {
     {{if gt s.VariablesPromises.Len 0}}
         {{range s.VariablesPromises.Entries}}
             {{if .Value.T.Default}}
@@ -16,12 +16,12 @@ func {{..RenderContext}}URL(
         paramMap := map[string]string{
             {{range s.VariablesPromises.Entries}}{{.Key | golit}}: {{.Value.T.Name | goid}},{{end}}
         }
-        return {{qualr "" "ParamString"}}{
+        return {{qualrun "ParamString"}}{
             Expr: {{.URL | golit}},
             Parameters: paramMap,
         }
     {{else}}
-        return {{qualr "" "ParamString"}}{
+        return {{qualrun "ParamString"}}{
             Expr: {{.URL | golit}},
         }
     {{end}}

@@ -1,16 +1,16 @@
-type {{(print ..RenderContextProto "Server") | toCamelCase}} interface {
-    Open{{..RenderContextProto}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType.U}}{{end}}) (*{{.Struct.U}}, error)
-    {{if .IsPublisher}}Producer() {{qualr .ProtoName "Producer"}}{{end}}
-    {{if .IsSubscriber}}Consumer() {{qualr .ProtoName "Consumer"}}{{end}}
+type {{(print .Type.Name "Server") | toCamelCase}} interface {
+    Open{{.Type.Name}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType.U}}{{end}}) (*{{.Struct.U}}, error)
+    {{if .IsPublisher}}Producer() {{qualrun .ProtoName "Producer"}}{{end}}
+    {{if .IsSubscriber}}Consumer() {{qualrun .ProtoName "Consumer"}}{{end}}
 }
 
 func New{{.Struct.Name}}(
     {{if .ParametersType}}params {{.ParametersType.U}},{{end}}
-    {{if .IsPublisher}}publisher {{qualr .ProtoName "Publisher"}},{{end}}
-    {{if .IsSubscriber}}subscriber {{qualr .ProtoName "Subscriber"}},{{end}}
+    {{if .IsPublisher}}publisher {{qualrun .ProtoName "Publisher"}},{{end}}
+    {{if .IsSubscriber}}subscriber {{qualrun .ProtoName "Subscriber"}},{{end}}
 ) *{{.Struct.U}} {
     res := {{.Struct.U}}{
-        name: {{..RenderContext}}Name({{if .ParametersType}}params{{end}}),
+        name: {{.TypeNamePrefix}}Name({{if .ParametersType}}params{{end}}),
         {{if .IsPublisher}}publisher: publisher,{{end}}
         {{if .IsSubscriber}}subscriber: subscriber,{{end}}
     }
@@ -30,13 +30,7 @@ func (c {{.Struct.U}}) Topic() string {
 
 {{if .IsPublisher}}
     {{template "proto/channel/outputMethods" .}}
-
-    {{$pubMessageType := goptr "any"}}
-    {{if .PublisherMessageTypePromise }}
-        {{$pubMessageType = goptr .PublisherMessageTypePromise.T.OutType}}
-    {{end}}
-
-    func (c {{.Struct.U}}) SealEnvelope(envelope {{qualr .ProtoName "EnvelopeWriter"}}, message {{$pubMessageType.U}}) error {
+    func (c {{.Struct.U}}) SealEnvelope(envelope {{qualrun .ProtoName "EnvelopeWriter"}}, message {{if .PublisherMessageTypePromise}}{{goptr .PublisherMessageTypePromise.T.OutType.U}}{{else}}any{{end}}) error {
         envelope.ResetPayload()
         {{if .PublisherMessageTypePromise /*Message is set for Channel in spec*/ }}
             if err := message.Marshal{{.ProtoName | capitalize}}Envelope(envelope); err != nil {

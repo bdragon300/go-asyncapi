@@ -26,10 +26,10 @@ func (sv ServerVariable) Compile(ctx *common.CompileContext) error {
 	return nil
 }
 
-func (sv ServerVariable) build(ctx *common.CompileContext, serverVariableKey string) (common.Renderer, error) {
+func (sv ServerVariable) build(ctx *common.CompileContext, serverVariableKey string) (common.Renderable, error) {
 	if sv.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", sv.Ref)
-		res := lang.NewRendererPromise(sv.Ref, common.PromiseOriginUser)
+		res := lang.NewRenderablePromise(sv.Ref, common.PromiseOriginUser)
 		ctx.PutPromise(res)
 		return res, nil
 	}

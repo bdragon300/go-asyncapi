@@ -2,6 +2,7 @@ package lang
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render/context"
 )
 
 type GoMap struct {
@@ -25,7 +26,8 @@ func (m GoMap) D() string {
 	//res = append(res, stmt.Map((&jen.Statement{}).Add(keyType...)).Add(valueType...))
 	//
 	//return res
-	panic("not implemented")
+	m.definitionInfo = context.Context.CurrentDefinitionInfo()
+	return renderTemplate("lang/gomap/definition", &m)
 }
 
 func (m GoMap) U() string {
@@ -42,5 +44,5 @@ func (m GoMap) U() string {
 	//keyType := utils.ToCode(m.KeyType.U())
 	//valueType := utils.ToCode(m.ValueType.U())
 	//return []*jen.Statement{jen.Map((&jen.Statement{}).Add(keyType...)).Add(valueType...)}
-	panic("not implemented")
+	return renderTemplate("lang/gomap/usage", &m)
 }

@@ -52,8 +52,8 @@ func (m Message) Compile(ctx *common.CompileContext) error {
 	return nil
 }
 
-func (m Message) build(ctx *common.CompileContext, messageKey string) ([]common.Renderer, error) {
-	var res []common.Renderer
+func (m Message) build(ctx *common.CompileContext, messageKey string) ([]common.Renderable, error) {
+	var res []common.Renderable
 
 	_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagComponent]
 	ignore := m.XIgnore || (isComponent && !ctx.CompileOpts.MessageOpts.IsAllowedName(messageKey))
@@ -64,7 +64,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) ([]common.
 	}
 	if m.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", m.Ref)
-		prm := lang.NewRendererPromise(m.Ref, common.PromiseOriginUser)
+		prm := lang.NewRenderablePromise(m.Ref, common.PromiseOriginUser)
 		ctx.PutPromise(prm)
 		res = append(res, prm)
 		return res, nil
@@ -103,7 +103,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) ([]common.
 	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", baseMessage.ContentType))
 
 	// Lookup servers after linking to figure out all protocols the message is used in
-	prm := lang.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
+	prm := lang.NewListCbPromise[*render.Server](func(item common.Renderable, path []string) bool {
 		_, ok := item.(*render.Server)
 		return ok
 	})

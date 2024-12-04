@@ -7,12 +7,12 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/render"
 	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/selector"
+	"github.com/bdragon300/go-asyncapi/internal/tpl"
 	"github.com/bdragon300/go-asyncapi/internal/types"
-	"github.com/bdragon300/go-asyncapi/templates"
 	"github.com/samber/lo"
-	"html/template"
 	"os"
 	"path"
+	"text/template"
 
 	"github.com/bdragon300/go-asyncapi/internal/compiler"
 )
@@ -55,8 +55,6 @@ type renderSource interface {
 
 func RenderPackages(source renderSource, opts common.RenderOpts) (fileContents map[string]*bytes.Buffer, err error) {
 	fileContents = make(map[string]*bytes.Buffer)
-	tmpl := template.Must(template.ParseFS(templates.Templates))
-	// TODO: template dir
 	// TODO: logging
 	for _, selection := range opts.Selections {
 		objects := selector.SelectObjects(source.AllObjects(), selection.RenderSelectionFilterConfig)
@@ -64,22 +62,30 @@ func RenderPackages(source renderSource, opts common.RenderOpts) (fileContents m
 			continue
 		}
 
-		ctx := &context.RenderContextImpl{
-			RenderOpts:     opts,
-		}
-		selectionObjects := lo.Map(objects, func(item compiler.Object, _ int) common.Renderer { return item.Object})
+		ctx := &context.RenderContextImpl{RenderOpts: opts}
+		selectionObjects := lo.Map(objects, func(item compiler.Object, _ int) common.Renderable { return item.Object})
 		tplCtx := render.NewTemplateContext(ctx, render.TemplateSelections{Objects: selectionObjects})
-		tmpl = tmpl.Funcs(render.GetTemplateFunctions(&tplCtx))
 		context.Context = ctx
 		// TODO: template in file name
 		if _, ok := fileContents[selection.File]; !ok {
 			fileContents[selection.File] = &bytes.Buffer{}
 		}
+
 		// TODO: redefinition preambule in config/cli args
-		if err = tmpl.ExecuteTemplate(fileContents[selection.File], "preamble", tplCtx); err != nil {
+		var tmpl *template.Template
+		if tmpl = tpl.LoadTemplate("preamble"); tmpl == nil {
+			return nil, fmt.Errorf("template not found: preamble")
+		}
+		tmpl = tmpl.Funcs(render.GetTemplateFunctions(ctx))
+		if err = tmpl.Execute(fileContents[selection.File], tplCtx); err != nil {
 			return
 		}
-		if err = tmpl.ExecuteTemplate(fileContents[selection.File], selection.Template, tplCtx); err != nil {
+
+		if tmpl = tpl.LoadTemplate(selection.Template); tmpl == nil {
+			return nil, fmt.Errorf("template not found: %s", selection.Template)
+		}
+		tmpl = tmpl.Funcs(render.GetTemplateFunctions(ctx))
+		if err = tmpl.Execute(fileContents[selection.File], tplCtx); err != nil {
 			return
 		}
 	}

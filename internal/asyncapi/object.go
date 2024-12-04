@@ -120,8 +120,7 @@ func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]str
 	nullable = nullable || lo.FromPtr(o.XNullable)
 	if nullable {
 		ctx.Logger.Trace("Object is nullable, make it pointer")
-		_, hasDefinition := flags[common.SchemaTagDefinition]
-		golangType = &lang.GoPointer{Type: golangType, HasDefinition: hasDefinition}
+		golangType = &lang.GoPointer{Type: golangType}
 	}
 	return golangType, nil
 }
@@ -251,7 +250,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 	var messagesPrm *lang.ListPromise[*render.Message]
 	_, isMarshal := flags[common.SchemaTagMarshal]
 	if isMarshal {
-		messagesPrm = lang.NewListCbPromise[*render.Message](func(item common.Renderer, _ []string) bool {
+		messagesPrm = lang.NewListCbPromise[*render.Message](func(item common.Renderable, _ []string) bool {
 			_, ok := item.(*render.Message)
 			return ok
 		})
@@ -409,7 +408,7 @@ func (o Object) buildUnionStruct(ctx *common.CompileContext, flags map[common.Sc
 	}
 
 	// Collect all messages to retrieve struct field tags
-	messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.Renderer, _ []string) bool {
+	messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.Renderable, _ []string) bool {
 		_, ok := item.(*render.Message)
 		return ok
 	})

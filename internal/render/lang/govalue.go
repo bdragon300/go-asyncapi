@@ -2,7 +2,6 @@ package lang
 
 import (
 	"fmt"
-	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"reflect"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -32,119 +31,8 @@ func (gv GoValue) Selectable() bool {
 	return false
 }
 
-func (gv GoValue) RenderContext() common.RenderContext {
-	return context.Context
-}
-
 func (gv GoValue) U() string {
-	//ctx.LogStartRender("GoValue", "", "", "usage", gv.IsDefinition(), "type", gv.Type)
-	//defer ctx.LogFinishRender()
-	//
-	//var valueStmt *j.Statement
-	//switch {
-	//case gv.LiteralValue != nil:
-	//	ctx.Logger.Trace("LiteralValue", "value", gv.LiteralValue)
-	//	valueStmt = j.Lit(gv.LiteralValue)
-	//	if v, ok := gv.LiteralValue.(common.Renderer); ok {
-	//		valueStmt = j.Add(utils.ToCode(v.RenderUsage())...)
-	//	}
-	//case gv.MapValues.Len() > 0:
-	//	ctx.Logger.Trace("MapValues", "value", gv.MapValues)
-	//	valueStmt = j.Values(j.DictFunc(func(d j.Dict) {
-	//		for _, e := range gv.MapValues.Entries() {
-	//			l := []j.Code{j.Lit(e.Value)}
-	//			if v, ok := e.Value.(common.Renderer); ok {
-	//				l = utils.ToCode(v.RenderUsage())
-	//			}
-	//			d[j.Lit(e.Key)] = j.Add(l...)
-	//		}
-	//	}))
-	//case gv.StructValues.Len() > 0:
-	//	ctx.Logger.Trace("StructValues", "value", gv.StructValues)
-	//	valueStmt = j.Values(j.DictFunc(func(d j.Dict) {
-	//		for _, e := range gv.StructValues.Entries() {
-	//			l := []j.Code{j.Lit(e.Value)}
-	//			if v, ok := e.Value.(common.Renderer); ok {
-	//				l = utils.ToCode(v.RenderUsage())
-	//			}
-	//			d[j.Id(e.Key)] = j.Add(l...)
-	//		}
-	//	}))
-	//case gv.ArrayValues != nil:
-	//	ctx.Logger.Trace("ArrayValues", "value", gv.ArrayValues)
-	//	valueStmt = j.ValuesFunc(func(g *j.Group) {
-	//		for _, v := range gv.ArrayValues {
-	//			l := []j.Code{j.Lit(v)}
-	//			if v, ok := v.(common.Renderer); ok {
-	//				l = utils.ToCode(v.RenderUsage())
-	//			}
-	//			g.Add(l...)
-	//		}
-	//	})
-	//default:
-	//	ctx.Logger.Trace("Empty", "value", lo.Ternary(gv.EmptyCurlyBrackets, "{}", "nil"))
-	//	valueStmt = lo.Ternary(gv.EmptyCurlyBrackets, j.Values(), j.Nil())
-	//}
-	//
-	//if gv.Type == nil {
-	//	return []*j.Statement{valueStmt}
-	//}
-	//
-	//stmt := &j.Statement{}
-	//if v, ok := gv.Type.(GolangPointerWrapperType); ok && v.IsPointer() {
-	//	ctx.Logger.Trace("pointer")
-	//	if gv.Empty() {
-	//		if gv.EmptyCurlyBrackets {
-	//			// &{} -> ToPtr({})
-	//			return []*j.Statement{j.Qual(context.Context.RuntimeModule(""), "ToPtr").Call(j.Values())}
-	//		}
-	//		// &nil -> nil
-	//		return []*j.Statement{j.Nil()}
-	//	}
-	//	if gv.LiteralValue != nil {
-	//		if t, hasType := v.WrappedGolangType(); hasType {
-	//			// &int(123) -> ToPtr(int(123))
-	//			return []*j.Statement{j.Qual(context.Context.RuntimeModule(""), "ToPtr").Call(
-	//				j.Add(utils.ToCode(t.U())...).Call(valueStmt),
-	//			)}
-	//		}
-	//		// &123 -> ToPtr(123)
-	//		return []*j.Statement{j.Qual(context.Context.RuntimeModule(""), "ToPtr").Call(valueStmt)}
-	//	}
-	//
-	//	// &AnyType{}
-	//	// &map[string]int{}
-	//	// &[]int{}
-	//	stmt = stmt.Op("&")
-	//}
-	//stmt = stmt.Add(utils.ToCode(gv.Type.U())...)
-	//if gv.LiteralValue != nil {
-	//	// int(123)
-	//	return []*j.Statement{stmt.Call(j.Add(valueStmt))}
-	//}
-	//return []*j.Statement{stmt.Add(valueStmt)}
-	panic("not implemented")
-}
-
-func (gv GoValue) AsRenderer(v any) common.Renderer {
-	if r, ok := v.(common.Renderer); ok {
-		return r
-	}
-	return nil
-}
-
-func (gv GoValue) AsPointerWrapperType(v any) GolangPointerWrapperType {
-	if r, ok := v.(GolangPointerWrapperType); ok {
-		return r
-	}
-	return nil
-}
-
-func (gv GoValue) AsGolangType(v GolangPointerWrapperType) common.GolangType {
-	if r, ok := v.WrappedGolangType(); ok {
-		return r
-	}
-	return nil
+	return renderTemplate("lang/govalue/usage", &gv)
 }
 
 func (gv GoValue) Empty() bool {
@@ -165,11 +53,12 @@ func (gv GoValue) String() string {
 	return "GoValue nil"
 }
 
-type stringAnyMap interface {
-	Entries() []lo.Entry[string, any]
-}
 
 func ConstructGoValue(value any, excludeFields []string, overrideType common.GolangType) *GoValue {
+	type stringAnyMap interface {
+		Entries() []lo.Entry[string, any]
+	}
+
 	res := GoValue{Type: overrideType}
 	if value == nil {
 		return &res

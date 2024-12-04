@@ -31,10 +31,10 @@ func (b *Bindings) build(
 	ctx *common.CompileContext,
 	bindingsKind int,
 	bindingsKey string,
-) (common.Renderer, error) {
+) (common.Renderable, error) {
 	if b.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", b.Ref)
-		res := lang.NewRendererPromise(b.Ref, common.PromiseOriginUser)
+		res := lang.NewRenderablePromise(b.Ref, common.PromiseOriginUser)
 		ctx.PutPromise(res)
 		return res, nil
 	}

@@ -1,7 +1,6 @@
 package render
 
 import (
-	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/samber/lo"
 	"sort"
@@ -33,14 +32,19 @@ func (m Message) Selectable() bool {
 	return !m.Dummy
 }
 
-func (m Message) RenderContext() common.RenderContext {
-	return context.Context
-}
-
 func (m Message) EffectiveContentType() string {
 	res, _ := lo.Coalesce(m.ContentType, m.AsyncAPIPromise.Target().EffectiveDefaultContentType())
 	return res
 }
+
+func (m Message) BindingsProtocols() (res []string) {
+	if m.BindingsPromise != nil {
+		res = append(res, m.BindingsPromise.Target().Values.Keys()...)
+		res = append(res, m.BindingsPromise.Target().JSONValues.Keys()...)
+	}
+	return lo.Uniq(res)
+}
+
 
 //func (m Message) Selectable() bool {
 //	return !m.Dummy

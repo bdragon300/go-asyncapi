@@ -33,10 +33,6 @@ func (s Server) Selectable() bool {
 	return !s.Dummy
 }
 
-func (s Server) RenderContext() common.RenderContext {
-	return context.Context
-}
-
 //func (s Server) D(ctx *common.RenderContext) []*j.Statement {
 //	var res []*j.Statement
 //	ctx.LogStartRender("Server", "", s.Name, "definition", s.Selectable())
@@ -135,11 +131,15 @@ func (s Server) GetRelevantChannels() []*Channel {
 	})
 }
 
-func (c Server) BindingsProtocols() []string {
-	panic("not implemented")
+func (c Server) BindingsProtocols() (res []string) {
+	if c.BindingsPromise != nil {
+		res = append(res, c.BindingsPromise.Target().Values.Keys()...)
+		res = append(res, c.BindingsPromise.Target().JSONValues.Keys()...)
+	}
+	return lo.Uniq(res)
 }
 
-func (c Server) ProtoBindingsValue(protoName string) common.Renderer {
+func (c Server) ProtoBindingsValue(protoName string) common.Renderable {
 	res := &lang.GoValue{
 		Type:               &lang.GoSimple{Name: "ServerBindings", Import: context.Context.RuntimeModule(protoName)},
 		EmptyCurlyBrackets: true,
@@ -155,7 +155,7 @@ func (c Server) ProtoBindingsValue(protoName string) common.Renderer {
 
 type ProtoServer struct {
 	*Server
-	Struct *lang.GoStruct // Nil if server is dummy or has unsupported protocol
+	Type *lang.GoStruct // Nil if server is dummy or has unsupported protocol
 
 	ProtoName string
 }

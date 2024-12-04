@@ -2,7 +2,6 @@ package render
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/samber/lo"
 )
@@ -24,20 +23,16 @@ func (a AsyncAPI) Selectable() bool {
 	return true
 }
 
-func (a AsyncAPI) RenderContext() common.RenderContext {
-	return context.Context
-}
-
 func (a AsyncAPI) EffectiveDefaultContentType() string {
 	res, _ := lo.Coalesce(a.DefaultContentType, fallbackContentType)
 	return res
 }
 
-// SpecEffectiveContentTypes returns a list of all unique content types used in the spec. This includes all content
-// types from all messages and the default content type.
-func (a AsyncAPI) SpecEffectiveContentTypes() []string {
-	return lo.Uniq(lo.Map(a.AllMessages.Targets(), func(item *Message, _ int) string {
-		contentType, _ := lo.Coalesce(item.ContentType, a.EffectiveDefaultContentType())
-		return contentType
-	}))
-}
+//// SpecEffectiveContentTypes returns a list of all unique content types used in the spec. This includes all content
+//// types from all messages and the default content type.
+//func (a AsyncAPI) SpecEffectiveContentTypes() []string {
+//	return lo.Uniq(lo.Map(a.AllMessages.Targets(), func(item *Message, _ int) string {
+//		contentType, _ := lo.Coalesce(item.ContentType, a.EffectiveDefaultContentType())
+//		return contentType
+//	}))
+//}

@@ -19,11 +19,10 @@ const (
 	ObjectKindAsyncAPI          ObjectKind = "asyncapi" // Utility object represents the entire AsyncAPI document
 )
 
-type Renderer interface {
+type Renderable interface {
 	Kind() ObjectKind
 	// Selectable returns true if object can be selected to pass to the templates for rendering.
 	Selectable() bool
-	RenderContext() RenderContext
 }
 
 type RenderOpts struct {
@@ -67,9 +66,8 @@ type (
 
 type RenderContext interface {
 	RuntimeModule(subPackage string) string
-	GeneratedModule(subPackage string) string
-	QualifiedName(packageExpr string) string
-	QualifiedGeneratedName(subPackage, name string) string
-	QualifiedRuntimeName(subPackage, name string) string
-	SpecProtocols() []string
+	QualifiedName(parts ...string) string
+	QualifiedRuntimeName(parts ...string) string
+	QualifiedGeneratedPackage(obj GolangType) (string, error)
+	CurrentDefinitionInfo() *GolangTypeDefinitionInfo
 }

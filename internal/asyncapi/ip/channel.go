@@ -21,8 +21,7 @@ func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncap
 
 	return &render.ProtoChannel{
 		Channel:         parent,
-		GolangNameProto: golangName,
-		Struct:          chanStruct,
+		Type:            chanStruct,
 		ProtoName:       pb.ProtoName,
 	}, nil
 }

@@ -2,7 +2,6 @@ package lang
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/render/context"
 )
 
 type GoSimple struct {
@@ -19,8 +18,8 @@ func (p GoSimple) Selectable() bool {
 	return false
 }
 
-func (p GoSimple) RenderContext() common.RenderContext {
-	return context.Context
+func (p GoSimple) IsPointer() bool {
+	return false
 }
 
 func (p GoSimple) D() string {
@@ -29,7 +28,7 @@ func (p GoSimple) D() string {
 	//
 	//stmt := jen.Id(p.Name)
 	//return []*jen.Statement{stmt}
-	panic("not implemented")
+	return renderTemplate("lang/gosimple/definition", &p)
 }
 
 func (p GoSimple) U() string {
@@ -45,7 +44,7 @@ func (p GoSimple) U() string {
 	//}
 	//
 	//return []*jen.Statement{stmt}
-	panic("not implemented")
+	return renderTemplate("lang/gosimple/usage", &p)
 }
 
 func (p GoSimple) TypeName() string {
@@ -59,3 +58,6 @@ func (p GoSimple) String() string {
 	return "GoSimple " + p.Name
 }
 
+func (p GoSimple) DefinitionInfo() (*common.GolangTypeDefinitionInfo, error) {
+	return nil, nil
+}

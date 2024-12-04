@@ -2,6 +2,7 @@ package lang
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render/context"
 )
 
 type GoArray struct {
@@ -29,7 +30,8 @@ func (a GoArray) D() string {
 	//res = append(res, stmt.Add(items...))
 	//
 	//return res
-	panic("not implemented")
+	a.definitionInfo = context.Context.CurrentDefinitionInfo()
+	return renderTemplate("lang/goarray/definition", &a)
 }
 
 func (a GoArray) U() string {
@@ -49,5 +51,5 @@ func (a GoArray) U() string {
 	//}
 	//
 	//return []*jen.Statement{jen.Index().Add(items...)}
-	panic("not implemented")
+	return renderTemplate("lang/goarray/usage", &a)
 }

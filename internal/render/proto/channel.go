@@ -3,7 +3,7 @@ package proto
 //type ProtoChannel struct {
 //	*render.Channel
 //	GolangNameProto string // Channel TypeNamePrefix name concatenated with protocol name, e.g. Channel1Kafka
-//	Struct          *render.GoStruct
+//	Type          *render.GoStruct
 //
 //	ProtoName, ProtoTitle string
 //}
@@ -13,7 +13,7 @@ package proto
 //type BaseProtoChannel struct {
 //	Parent          *render.Channel
 //	GolangNameProto string // Channel TypeNamePrefix name concatenated with protocol name, e.g. Channel1Kafka
-//	Struct          *render.GoStruct
+//	Type          *render.GoStruct
 //	//ServerIface     *render.GoInterface
 //
 //	ProtoName, ProtoTitle string
@@ -22,8 +22,8 @@ package proto
 //func (pc BaseProtoChannel) RenderCommonSubscriberMethods(ctx *common.RenderContext) []*j.Statement {
 //	ctx.Logger.Trace("RenderCommonSubscriberMethods", "proto", pc.ProtoName)
 //
-//	rn := pc.Struct.ReceiverName()
-//	receiver := j.Id(rn).Id(pc.Struct.Name)
+//	rn := pc.Type.ReceiverName()
+//	receiver := j.Id(rn).Id(pc.Type.Name)
 //	var msgTyp common.GolangType = render.GoPointer{Type: pc.Parent.FallbackMessageType, HasDefinition: true}
 //	if pc.Parent.SubscribeMessageTypePromise != nil {
 //		msgTyp = render.GoPointer{Type: pc.Parent.SubscribeMessageTypePromise.Target().InType, HasDefinition: true}
@@ -74,8 +74,8 @@ package proto
 //func (pc BaseProtoChannel) RenderCommonPublisherMethods(ctx *common.RenderContext) []*j.Statement {
 //	ctx.Logger.Trace("RenderCommonPublisherMethods", "proto", pc.ProtoName)
 //
-//	rn := pc.Struct.ReceiverName()
-//	receiver := j.Id(rn).Id(pc.Struct.Name)
+//	rn := pc.Type.ReceiverName()
+//	receiver := j.Id(rn).Id(pc.Type.Name)
 //
 //	return []*j.Statement{
 //		// Method Publisher() proto.Publisher
@@ -102,8 +102,8 @@ package proto
 //func (pc BaseProtoChannel) RenderCommonMethods(ctx *common.RenderContext) []*j.Statement {
 //	ctx.Logger.Trace("RenderCommonMethods", "proto", pc.ProtoName)
 //
-//	rn := pc.Struct.ReceiverName()
-//	receiver := j.Id(rn).Id(pc.Struct.Name)
+//	rn := pc.Type.ReceiverName()
+//	receiver := j.Id(rn).Id(pc.Type.Name)
 //
 //	return []*j.Statement{
 //		// Method Name() string
@@ -147,7 +147,7 @@ package proto
 //				}
 //				g.Id("servers").Op("...").Add(utils.ToCode(pc.ServerIface.U(ctx))...)
 //			}).
-//			Params(j.Op("*").Ad d(utils.ToCode(pc.Struct.U(ctx))...), j.Error()).
+//			Params(j.Op("*").Ad d(utils.ToCode(pc.Type.U(ctx))...), j.Error()).
 //			BlockFunc(func(bg *j.Group) {
 //				bg.Op("if len(servers) == 0").Block(j.Op("return nil, ").Qual(ctx.RuntimeModule(""), "ErrEmptyServers"))
 //				if pc.Parent.Publisher || pc.Parent.Subscriber {
@@ -226,7 +226,7 @@ package proto
 //						Types(j.Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeReader"), j.Qual(ctx.RuntimeModule(pc.ProtoName), "Subscriber")).
 //						Op("{Subscribers: subs}")
 //				}
-//				bg.Op("ch := ").Id(pc.Struct.NewFuncName()).CallFunc(func(g *j.Group) {
+//				bg.Op("ch := ").Id(pc.Type.NewFuncName()).CallFunc(func(g *j.Group) {
 //					if pc.Parent.ParametersType != nil {
 //						g.Id("params")
 //					}

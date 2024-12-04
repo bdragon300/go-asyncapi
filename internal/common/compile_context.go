@@ -1,6 +1,7 @@
 package common
 
 import (
+	"errors"
 	"path"
 	"regexp"
 	"strings"
@@ -15,15 +16,23 @@ import (
 
 const nameWordSep = "_"
 
+var ErrDefinitionIsNotAssignedYet = errors.New("definition is not assigned yet")
+
+type GolangTypeDefinitionInfo struct {
+	Selection RenderSelectionConfig
+}
+
 type GolangType interface {
-	Renderer
-	TypeName() string
+	Renderable
+	TypeName() string  // TODO: remove?
 	D() string
 	U() string
+	IsPointer() bool
+	DefinitionInfo() (*GolangTypeDefinitionInfo, error)
 }
 
 type CompilationStorage interface {
-	AddObject(stack []string, obj Renderer)
+	AddObject(stack []string, obj Renderable)
 	RegisterProtocol(protoName string)
 	AddExternalSpecPath(specPath *specurl.URL)
 	AddPromise(p ObjectPromise)
@@ -35,7 +44,7 @@ type CompileOpts struct {
 	MessageOpts         ObjectCompileOpts
 	ModelOpts           ObjectCompileOpts
 	ServerOpts          ObjectCompileOpts
-	NoEncodingPackage   bool
+	NoEncodingPackage   bool  // TODO: remove in favor of selections
 	AllowRemoteRefs     bool
 	RuntimeModule       string
 	GeneratePublishers  bool
@@ -83,7 +92,7 @@ type CompileContext struct {
 	specRef     *specurl.URL
 }
 
-func (c *CompileContext) PutObject(obj Renderer) {
+func (c *CompileContext) PutObject(obj Renderable) {
 	c.Storage.AddObject(c.PathStack(), obj)
 }
 

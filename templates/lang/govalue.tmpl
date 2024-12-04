@@ -1,15 +1,14 @@
 {{define "usage"}}
     {{if .Type}}
-        {{$pt := .AsPointerWrapperType .Type}}
-        {{if and $pt $pt.IsPointer}}
+        {{if .Type.IsPointer}}
             {{if .Empty}}
-                {{if .EmptyCurlyBrakets /* &{} -> ToPtr({}) */ }}{{qualr "" "ToPtr"}}({}){{else /* &nil -> nil */}}nil{{end}}
+                {{if .EmptyCurlyBrakets /* &{} -> ToPtr({}) */ }}{{qualrun "ToPtr"}}({}){{else /* &nil -> nil */}}nil{{end}}
             {{else if .LiteralValue}}
-                {{$t := .AsGolangType $pt}}
+                {{$t := unwrapgoptr .Type}}
                 {{if $t /* &int(123) -> ToPtr(int(123)) */}}
-                    {{qualr "" "ToPtr"}}({{$t.U}}({{template "value_expr" .}}))
+                    {{qualrun "ToPtr"}}({{$t.U}}({{template "value_expr" .}}))
                 {{else /* &123 -> ToPtr(123) */}}
-                    {{qualr "" "ToPtr"}}({{template "value_expr" .}})
+                    {{qualrun "ToPtr"}}({{template "value_expr" .}})
                 {{end}}
             {{else /* &AnyType{}; &map[string]int{}; &[]int{} */}}
                 &{{.Type.U}}{{if .LiteralValue /* int(123) */}}({{template "value_expr" .}}){{else}}{{template "value_expr" .}}{{end}}
@@ -24,27 +23,23 @@
 
 {{define "value_expr"}}
     {{if .LiteralValue /* Literal */}}
-        {{$v := .AsRenderer .LiteralValue}}
-        {{if $v}}{{ $v.U }}{{else}}{{ .LiteralValue | golit }}{{end}}
+        {{ .LiteralValue | golit }}
     {{else if .MapValues.Len /* Map */}}
         {
         {{range .MapValues.Entries}}
-            {{$v := .AsRenderer .Value}}
-            {{.Key | golit }}: {{if $v}}{{ $v.U }}{{else}}{{ .Value | golit }}{{end}},
+            {{.Key | golit }}: {{ .Value | golit }},
         {{end}}
         }
     {{else if .StructValues.Len /* Struct */}}
         {
         {{range .StructValues.Entries}}
-            {{$v := .AsRenderer .Value}}
-            {{.Key | goid }}: {{if $v}}{{ $v.U }}{{else}}{{ .Value | golit }}{{end}},
+            {{.Key | goid }}: {{ .Value | golit }},
         {{end}}
         }
     {{else if .ArrayValues /* Array/slice */}}
         {
         {{range .ArrayValues}}
-            {{$v := .AsRenderer .}}
-            {{if $v}}{{ $v.U }}{{else}}{{ . | golit }}{{end}},
+            {{ . | golit }},
         {{end}}
         }
     {{else /*Empty value*/ }}

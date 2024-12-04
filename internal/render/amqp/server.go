@@ -2,7 +2,7 @@ package amqp
 
 //type ProtoServer struct {
 //	*render.Server
-//	Struct *lang.GoStruct
+//	Type *lang.GoStruct
 //
 //	ProtoName, ProtoTitle string
 //}
@@ -17,7 +17,7 @@ package amqp
 //
 //	var res []*j.Statement
 //	res = append(res, ps.RenderNewFunc(ctx)...)
-//	res = append(res, ps.Struct.D(ctx)...)
+//	res = append(res, ps.Type.D(ctx)...)
 //	res = append(res, ps.RenderCommonMethods(ctx)...)
 //	res = append(res, ps.renderChannelMethods(ctx)...)
 //	res = append(res, ps.RenderProducerMethods(ctx)...)
@@ -28,7 +28,7 @@ package amqp
 //func (ps ProtoServer) U(ctx *common.RenderContext) []*j.Statement {
 //	ctx.LogStartRender("Server", "", ps.Parent.Name, "usage", ps.Selectable(), "proto", ps.ProtoName)
 //	defer ctx.LogFinishRender()
-//	return ps.Struct.U(ctx)
+//	return ps.Type.U(ctx)
 //}
 //
 //func (ps ProtoServer) ID() string {
@@ -47,7 +47,7 @@ package amqp
 //	for _, ch := range ps.Parent.GetRelevantChannels() {
 //		protoChan := ch.AllProtoChannels[ps.ProtoName].(*ProtoChannel)
 //		res = append(res,
-//			ps.RenderOpenChannelMethod(ctx, protoChan.Struct, protoChan, protoChan.Parent.ParametersType)...,
+//			ps.RenderOpenChannelMethod(ctx, protoChan.Type, protoChan, protoChan.Parent.ParametersType)...,
 //		)
 //	}
 //	return res

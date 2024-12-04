@@ -32,7 +32,7 @@ func (pb ProtoBuilder) BuildServer(ctx *common.CompileContext, server *asyncapi.
 	}
 	return &render.ProtoServer{
 		Server:    parent,
-		Struct:    baseServer,
+		Type:      baseServer,
 		ProtoName: pb.ProtoName,
 	}, nil
 }

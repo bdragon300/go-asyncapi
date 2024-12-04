@@ -39,10 +39,6 @@ func (c Channel) Selectable() bool {
 	return !c.Dummy
 }
 
-func (c Channel) RenderContext() common.RenderContext {
-	return context.Context
-}
-
 //func (c Channel) Selectable() bool {
 //	return c.HasDefinition && !c.Dummy
 //}
@@ -161,11 +157,23 @@ func (c Channel) ServersProtocols() []string {
 	return res
 }
 
-func (c Channel) BindingsProtocols() []string {
-	panic("not implemented")
+func (c Channel) BindingsProtocols() (res []string) {
+	if c.BindingsChannelPromise != nil {
+		res = append(res, c.BindingsChannelPromise.Target().Values.Keys()...)
+		res = append(res, c.BindingsChannelPromise.Target().JSONValues.Keys()...)
+	}
+	if c.BindingsPublishPromise != nil {
+		res = append(res, c.BindingsPublishPromise.Target().Values.Keys()...)
+		res = append(res, c.BindingsPublishPromise.Target().JSONValues.Keys()...)
+	}
+	if c.BindingsSubscribePromise != nil {
+		res = append(res, c.BindingsSubscribePromise.Target().Values.Keys()...)
+		res = append(res, c.BindingsSubscribePromise.Target().JSONValues.Keys()...)
+	}
+	return lo.Uniq(res)
 }
 
-func (c Channel) ProtoBindingsValue(protoName string) common.Renderer {
+func (c Channel) ProtoBindingsValue(protoName string) common.Renderable {
 	res := &lang.GoValue{
 		Type:               &lang.GoSimple{Name: "ChannelBindings", Import: context.Context.RuntimeModule(protoName)},
 		EmptyCurlyBrackets: true,
@@ -193,9 +201,7 @@ func (c Channel) ProtoBindingsValue(protoName string) common.Renderer {
 
 type ProtoChannel struct {
 	*Channel
-	GolangNameProto string // Channel TypeNamePrefix name concatenated with protocol name, e.g. Channel1Kafka
-	Struct          *lang.GoStruct
+	Type *lang.GoStruct
 
 	ProtoName string
 }
-

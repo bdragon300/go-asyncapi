@@ -37,8 +37,8 @@ func (c Channel) Compile(ctx *common.CompileContext) error {
 	return nil
 }
 
-func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) ([]common.Renderer, error) {
-	var res []common.Renderer
+func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) ([]common.Renderable, error) {
+	var res []common.Renderable
 
 	_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagComponent]
 	ignore := c.XIgnore ||
@@ -51,7 +51,7 @@ func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) ([
 	}
 	if c.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", c.Ref)
-		prm := lang.NewRendererPromise(c.Ref, common.PromiseOriginUser)
+		prm := lang.NewRenderablePromise(c.Ref, common.PromiseOriginUser)
 		// Set a channel to be rendered if we reference it from `channels` document section
 		prm.DirectRender = !isComponent
 		ctx.PutPromise(prm)
@@ -95,7 +95,7 @@ func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) ([
 	if c.Servers != nil {
 		ctx.Logger.Trace("Channel servers", "names", *c.Servers)
 		baseChan.SpecServerNames = *c.Servers
-		prm := lang.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
+		prm := lang.NewListCbPromise[*render.Server](func(item common.Renderable, path []string) bool {
 			srv, ok := item.(*render.Server)
 			if !ok {
 				return false
@@ -105,7 +105,7 @@ func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) ([
 		baseChan.ServersPromise = prm
 	} else {
 		ctx.Logger.Trace("Channel for all servers")
-		prm := lang.NewListCbPromise[*render.Server](func(item common.Renderer, path []string) bool {
+		prm := lang.NewListCbPromise[*render.Server](func(item common.Renderable, path []string) bool {
 			_, ok := item.(*render.Server)
 			return ok
 		})

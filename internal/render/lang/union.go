@@ -33,7 +33,7 @@ func (s UnionStruct) D() string {
 	//	res = append(res, s.renderMethods()...)
 	//}
 	//return res
-	panic("not implemented")
+	return renderTemplate("lang/union/definition", &s)
 }
 
 func (s UnionStruct) UnionStruct() common.GolangType {
@@ -93,19 +93,12 @@ func (s UnionStruct) UnionStruct() common.GolangType {
 //	return res
 //}
 
-func (s UnionStruct) AsGolangPointerType(v any) GolangPointerType {
-	if r, ok := v.(GolangPointerType); ok {
-		return r
-	}
-	return nil
-}
-
 func isTypeStruct(typ common.GolangType) bool {
 	switch v := typ.(type) {
 	case golangStructType:
 		return v.IsStruct()
 	case GolangTypeWrapperType:
-		t, ok := v.WrappedGolangType()
+		t, ok := v.UnwrapGolangType()
 		return !ok || isTypeStruct(t)
 	}
 	return false

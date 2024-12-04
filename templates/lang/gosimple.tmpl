@@ -2,9 +2,9 @@
     {{ .Name | goid }}
 {{end}}
 {{define "usage"}}
-    {{- if and .Import (ne .Import .RenderContext.CurrentPackage) -}}
-        {{ qual (print .Import "." .Name) }}
+    {{if .Import -}}
+        {{ qual .Import .Name }}
     {{- else -}}
-        {{ .Name | goid }}
+        {{ qualgenpkg . }}{{.Name | goid}}
     {{- end -}}
 {{end}}

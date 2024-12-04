@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
+	"github.com/bdragon300/go-asyncapi/internal/tpl"
 	"net/url"
 	"strconv"
 	"strings"
@@ -25,7 +26,7 @@ const (
 type CorrelationID struct {
 	Name         string
 	Description  string
-	StructField  CorrelationIDStructField // Struct field name to store the value to or to load the value from
+	StructField  CorrelationIDStructField // Type field name to store the value to or to load the value from
 	LocationPath []string                 // JSONPointer path to the field in the message, should be non-empty
 }
 
@@ -35,10 +36,6 @@ func (c CorrelationID) Kind() common.ObjectKind {
 
 func (c CorrelationID) Selectable() bool {
 	return false
-}
-
-func (c CorrelationID) RenderContext() common.RenderContext {
-	return context.Context
 }
 
 //func (c CorrelationID) D(_ *common.RenderContext) []*j.Statement {
@@ -284,7 +281,7 @@ func (c CorrelationID) renderValueExtractionCode(
 		case *lang.GoMap:
 			// TODO: x-parameter in correlationIDs spec section to set numbers as "0" for string keys or 0 for int keys
 			ctx.Logger.Trace("In GoMap", "path", path[:pathIdx], "name", typ.ID(), "member", memberName)
-			varValueStmts = fmt.Sprintf("%s[%s]", anchor, TemplateGoLit(memberName))
+			varValueStmts = fmt.Sprintf("%s[%s]", anchor, tpl.templateGoLit(memberName))
 			baseType = typ.ValueType
 			varExpr := fmt.Sprintf("var %s %s", nextAnchor, typ.ValueType.U())
 			if t, ok := typ.ValueType.(lang.GolangPointerType); ok && t.IsPointer() {
@@ -300,7 +297,7 @@ func (c CorrelationID) renderValueExtractionCode(
 				ifExpr += fmt.Sprintf(` else {
 					err = %s("key %%q not found in map on path /%s", %s)
 					return
-				}`, fmtErrorf, strings.Join(path[:pathIdx], "/"), TemplateGoLit(memberName))
+				}`, fmtErrorf, strings.Join(path[:pathIdx], "/"), tpl.templateGoLit(memberName))
 			}
 			body = []string{
 				fmt.Sprintf(`if %s == nil { 
@@ -325,9 +322,9 @@ func (c CorrelationID) renderValueExtractionCode(
 				body = append(body, fmt.Sprintf(`if len(%s) <= %s {
 					err = %s("index %%q is out of range in array of length %%d on path /%s", %s, len(%s))
 					return
-				}`, anchor, TemplateGoLit(memberName), fmtErrorf, strings.Join(path[:pathIdx], "/"), TemplateGoLit(memberName), anchor))
+				}`, anchor, tpl.templateGoLit(memberName), fmtErrorf, strings.Join(path[:pathIdx], "/"), tpl.templateGoLit(memberName), anchor))
 			}
-			varValueStmts = fmt.Sprintf("%s[%s]", anchor, TemplateGoLit(memberName))
+			varValueStmts = fmt.Sprintf("%s[%s]", anchor, tpl.templateGoLit(memberName))
 			baseType = typ.ItemsType
 			body = append(body, fmt.Sprintf("%s := %s", nextAnchor, varValueStmts))
 		case *lang.GoSimple: // Should be a terminal type in chain, raise error otherwise (if any path parts left to resolve)
@@ -346,7 +343,7 @@ func (c CorrelationID) renderValueExtractionCode(
 				"In wrapper type",
 				"path", path[:pathIdx], "name", typ.String(), "type", fmt.Sprintf("%T", typ), "member", memberName,
 			)
-			t, ok := typ.WrappedGolangType()
+			t, ok := typ.UnwrapGolangType()
 			if !ok {
 				err = fmt.Errorf(
 					"wrapped type %T does not contain a wrapped GolangType, path: /%s",

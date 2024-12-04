@@ -1,4 +1,4 @@
-func New{{.Struct.Name}}(producer {{qualr .ProtoName "Producer"}}, consumer {{qualr .ProtoName "Consumer"}}) *{{.Struct.U}} {
+func New{{.Struct.Name}}(producer {{qualrun .ProtoName "Producer"}}, consumer {{qualrun .ProtoName "Consumer"}}) *{{.Struct.U}} {
     return &{{.Struct.U}}{
         producer: producer,
         consumer: consumer,
@@ -11,11 +11,11 @@ func (s {{.Struct.U}}) Name() string {
     return "{{.Name}}"
 }
 
-func (s {{.Struct.U}}) Producer() {{qualr .ProtoName "Producer"}} {
+func (s {{.Struct.U}}) Producer() {{qualrun .ProtoName "Producer"}} {
     return s.producer
 }
 
-func (s {{.Struct.U}}) Consumer() {{qualr .ProtoName "Consumer"}} {
+func (s {{.Struct.U}}) Consumer() {{qualrun .ProtoName "Consumer"}} {
     return s.consumer
 }
 
@@ -24,7 +24,7 @@ func (s {{.Struct.D}}) Open{{$channel.Struct.Name}}(
     ctx {{qual "context.Context"}},
     {{if $channel.ParametersType}}params {{$channel.ParametersType.U}},{{end}}
 ) (ch *{{$channel.Struct.U}}, err error) {
-    return {{qualg $channel.Struct.Import (print "Open" $channel.Struct.Name)}}(
+    return {{qualgenpkg $channel.Struct}}{{print "Open" $channel.Struct.Name | goid}}(
         ctx,
         {{if $channel.ParametersType}}params,{{end}}
         {{if $channel.IsPublisher}}s.producer,{{end}}

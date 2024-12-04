@@ -28,7 +28,7 @@ func (p Parameter) Compile(ctx *common.CompileContext) error {
 	return nil
 }
 
-func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (common.Renderer, error) {
+func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (common.Renderable, error) {
 	ignore := !ctx.CompileOpts.ChannelOpts.Enable
 	if ignore {
 		ctx.Logger.Debug("Parameter denoted to be ignored along with all channels")
@@ -36,7 +36,7 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 	}
 	if p.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", p.Ref)
-		res := lang.NewRendererPromise(p.Ref, common.PromiseOriginUser)
+		res := lang.NewRenderablePromise(p.Ref, common.PromiseOriginUser)
 		ctx.PutPromise(res)
 		return res, nil
 	}

@@ -32,7 +32,7 @@ func (c CorrelationID) Compile(ctx *common.CompileContext) error {
 	return nil
 }
 
-func (c CorrelationID) build(ctx *common.CompileContext, correlationIDKey string) (common.Renderer, error) {
+func (c CorrelationID) build(ctx *common.CompileContext, correlationIDKey string) (common.Renderable, error) {
 	ignore := c.XIgnore || !ctx.CompileOpts.MessageOpts.Enable
 	if ignore {
 		ctx.Logger.Debug("CorrelationID denoted to be ignored")
@@ -41,7 +41,7 @@ func (c CorrelationID) build(ctx *common.CompileContext, correlationIDKey string
 	// TODO: move this ref code from everywhere to single place?
 	if c.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", c.Ref)
-		res := lang.NewRendererPromise(c.Ref, common.PromiseOriginUser)
+		res := lang.NewRenderablePromise(c.Ref, common.PromiseOriginUser)
 		ctx.PutPromise(res)
 		return res, nil
 	}

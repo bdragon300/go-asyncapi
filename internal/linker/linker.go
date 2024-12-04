@@ -67,7 +67,7 @@ func AssignListPromises(sources map[string]ObjectSource) {
 				}
 				if res, ok := resolveListPromise(p, srcSpecID, sources); ok {
 					targets := strings.Join(
-						lo.Map(lo.Slice(res, 0, 2), func(item common.Renderer, _ int) string { return item.String() }),
+						lo.Map(lo.Slice(res, 0, 2), func(item common.Renderable, _ int) string { return item.String() }),
 						", ",
 					)
 					if len(res) > 2 {
@@ -119,7 +119,7 @@ func Stats(sources map[string]ObjectSource) string {
 
 // TODO: detect ref loops to avoid infinite recursion
 // TODO: external refs can not be resolved at first time -- leave them unresolved
-func resolvePromise(p common.ObjectPromise, srcSpecID string, sources map[string]ObjectSource) (common.Renderer, bool) {
+func resolvePromise(p common.ObjectPromise, srcSpecID string, sources map[string]ObjectSource) (common.Renderable, bool) {
 	tgtSpecID := srcSpecID
 
 	ref := specurl.Parse(p.Ref())
@@ -131,7 +131,7 @@ func resolvePromise(p common.ObjectPromise, srcSpecID string, sources map[string
 	}
 
 	srcObjects := sources[tgtSpecID].AllObjects()
-	cb := func(_ common.Renderer, path []string) bool { return ref.MatchPointer(path) }
+	cb := func(_ common.Renderable, path []string) bool { return ref.MatchPointer(path) }
 	if qcb := p.FindCallback(); qcb != nil {
 		cb = qcb
 	}
@@ -149,7 +149,7 @@ func resolvePromise(p common.ObjectPromise, srcSpecID string, sources map[string
 		return resolvePromise(v, tgtSpecID, sources)
 	case common.ObjectListPromise:
 		panic(fmt.Sprintf("Ref %q must point to one object, but it points to a another list promise", p.Ref()))
-	case common.Renderer:
+	case common.Renderable:
 		return v, true
 	default:
 		panic(fmt.Sprintf("Ref %q points to an object of unexpected type %T", p.Ref(), v))
@@ -157,9 +157,9 @@ func resolvePromise(p common.ObjectPromise, srcSpecID string, sources map[string
 }
 
 // TODO: detect ref loops to avoid infinite recursion
-func resolveListPromise(p common.ObjectListPromise, srcSpecID string, sources map[string]ObjectSource) ([]common.Renderer, bool) {
+func resolveListPromise(p common.ObjectListPromise, srcSpecID string, sources map[string]ObjectSource) ([]common.Renderable, bool) {
 	// Exclude links from selection in order to avoid duplicates in list
-	cb := func(obj common.Renderer, _ []string) bool { return !isPromise(obj) }
+	cb := func(obj common.Renderable, _ []string) bool { return !isPromise(obj) }
 	if qcb := p.FindCallback(); qcb != nil {
 		cb = qcb
 	}
@@ -168,7 +168,7 @@ func resolveListPromise(p common.ObjectListPromise, srcSpecID string, sources ma
 		return cb(obj.Object, obj.ModuleURL.Pointer)
 	})
 
-	var results []common.Renderer
+	var results []common.Renderable
 	for _, obj := range found {
 		switch v := obj.Object.(type) {
 		case common.ObjectPromise:
@@ -189,7 +189,7 @@ func resolveListPromise(p common.ObjectListPromise, srcSpecID string, sources ma
 				return results, false
 			}
 			results = append(results, resolved...)
-		case common.Renderer:
+		case common.Renderable:
 			results = append(results, v)
 		default:
 			panic(fmt.Sprintf("Found an object of unexpected type %T", v))

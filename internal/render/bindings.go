@@ -2,7 +2,6 @@ package render
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 )
@@ -26,18 +25,7 @@ func (b Bindings) Selectable() bool {
 	return false
 }
 
-func (b Bindings) RenderContext() common.RenderContext {
-	return context.Context
-}
 
-//func (b *Bindings) D(_ *common.RenderContext) []*j.Statement {
-//	panic("not implemented")
-//}
-//
-//func (b *Bindings) U(_ *common.RenderContext) []*j.Statement {
-//	panic("not implemented")
-//}
-//
 //func (b *Bindings) ID() string {
 //	return b.Name
 //}

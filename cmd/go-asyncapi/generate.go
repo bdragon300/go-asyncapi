@@ -54,8 +54,6 @@ type generatePubSubArgs struct {
 
 	ProjectModule string `arg:"-M,--project-module" help:"Project module name to use [default: extracted from go.mod file in the current working directory]" placeholder:"MODULE"`
 	TargetPackage string `arg:"-T,--target-package" help:"Package for generated code [default: {target-dir-name}]" placeholder:"PACKAGE"`
-	//PackageScope  string `arg:"--package-scope" default:"type" help:"How to split up the generated code on packages. Possible values: type, all" placeholder:"SCOPE"`
-	//FileScope     string `arg:"--file-scope" default:"name" help:"How to split up the generated code on files inside packages. Possible values: name, type" placeholder:"SCOPE"`
 	TemplateDir string `arg:"--template-dir" help:"Directory with custom templates" placeholder:"DIR"`
 	generateObjectSelectionOpts
 	ImplementationsOpts
