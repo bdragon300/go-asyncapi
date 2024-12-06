@@ -119,12 +119,12 @@ func (s Server) Selectable() bool {
 //	return s.Name
 //}
 //
-//func (s Server) String() string {
-//	return "Server " + s.Name
-//}
+func (s Server) String() string {
+	return "Server " + s.Name
+}
 
 func (s Server) GetRelevantChannels() []*Channel {
-	return lo.FilterMap(s.AllChannelsPromise.Targets(), func(p *Channel, _ int) (*Channel, bool) {
+	return lo.FilterMap(s.AllChannelsPromise.T(), func(p *Channel, _ int) (*Channel, bool) {
 		// Empty/omitted servers field in channel means "all servers"
 		ok := len(p.SpecServerNames) == 0 || lo.Contains(p.SpecServerNames, s.SpecKey)
 		return p, ok && !p.Dummy
@@ -133,8 +133,8 @@ func (s Server) GetRelevantChannels() []*Channel {
 
 func (c Server) BindingsProtocols() (res []string) {
 	if c.BindingsPromise != nil {
-		res = append(res, c.BindingsPromise.Target().Values.Keys()...)
-		res = append(res, c.BindingsPromise.Target().JSONValues.Keys()...)
+		res = append(res, c.BindingsPromise.T().Values.Keys()...)
+		res = append(res, c.BindingsPromise.T().JSONValues.Keys()...)
 	}
 	return lo.Uniq(res)
 }
@@ -145,8 +145,8 @@ func (c Server) ProtoBindingsValue(protoName string) common.Renderable {
 		EmptyCurlyBrackets: true,
 	}
 	if c.BindingsPromise != nil {
-		if b, ok := c.BindingsPromise.Target().Values.Get(protoName); ok {
-			ctx.Logger.Debug("Server bindings", "proto", protoName)
+		if b, ok := c.BindingsPromise.T().Values.Get(protoName); ok {
+			//ctx.Logger.Debug("Server bindings", "proto", protoName)
 			res = b
 		}
 	}
@@ -158,4 +158,8 @@ type ProtoServer struct {
 	Type *lang.GoStruct // Nil if server is dummy or has unsupported protocol
 
 	ProtoName string
+}
+
+func (p ProtoServer) String() string {
+	return "ProtoServer " + p.Name
 }

@@ -32,6 +32,6 @@ func (s ServerVariable) Selectable() bool {
 //	return s.Name
 //}
 //
-//func (s ServerVariable) String() string {
-//	return "ServerVariable " + s.Name
-//}
+func (s ServerVariable) String() string {
+	return "ServerVariable " + s.Name
+}

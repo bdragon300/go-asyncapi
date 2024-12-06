@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
-	"github.com/bdragon300/go-asyncapi/run/http"
+	"slices"
 	"strconv"
 
 	"github.com/bdragon300/go-asyncapi/internal/types"
@@ -84,7 +84,7 @@ func (o Object) Compile(ctx *common.CompileContext) error {
 
 func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]string, objectKey string) (common.GolangType, error) {
 	_, isComponent := flags[common.SchemaTagComponent]
-	ignore := o.XIgnore || (isComponent && !ctx.CompileOpts.ModelOpts.IsAllowedName(objectKey))
+	ignore := o.XIgnore || isComponent //&& !ctx.CompileOpts.ModelOpts.IsAllowedName(objectKey))
 	if ignore {
 		ctx.Logger.Debug("Object denoted to be ignored")
 		return &lang.GoSimple{Name: "any", IsInterface: true}, nil
@@ -237,6 +237,7 @@ func (o Object) getDefaultObjectType(ctx *common.CompileContext) *types.Union2[s
 
 func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.SchemaTag]string) (*lang.GoStruct, error) {
 	_, hasDefinition := flags[common.SchemaTagDefinition]
+	_, isComponent := flags[common.SchemaTagComponent]
 	objName, _ := lo.Coalesce(o.XGoName, o.Title)
 	res := lang.GoStruct{
 		BaseType: lang.BaseType{
@@ -244,17 +245,25 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 			Description:   o.Description,
 			HasDefinition: hasDefinition,
 		},
+		ObjectKind: lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
 	}
 	// TODO: cache the object name in case any sub-schemas recursively reference it
 
-	var messagesPrm *lang.ListPromise[*render.Message]
+	var contentTypesFunc func() []string
 	_, isMarshal := flags[common.SchemaTagMarshal]
 	if isMarshal {
-		messagesPrm = lang.NewListCbPromise[*render.Message](func(item common.Renderable, _ []string) bool {
+		messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.Renderable, _ []string) bool {
 			_, ok := item.(*render.Message)
 			return ok
 		})
 		ctx.PutListPromise(messagesPrm)
+		contentTypesFunc = func() []string {
+			tagNames := lo.Uniq(lo.Map(messagesPrm.T(), func(item *render.Message, _ int) string {
+				return item.EffectiveContentType()
+			}))
+			slices.Sort(tagNames)
+			return tagNames
+		}
 	}
 
 	// Embed external type into the current one, if x-go-type->embedded == true
@@ -279,14 +288,14 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 		propName, _ := lo.Coalesce(entry.Value.XGoName, entry.Key)
 		xTags, xTagNames, xTagVals := entry.Value.xGoTagsInfo(ctx)
 		f := lang.GoStructField{
-			Name:           utils.ToGolangName(propName, true),
-			MarshalName:    entry.Key,
-			Description:    entry.Value.Description,
-			Type:           langObj,
-			TagsSource:     messagesPrm,
-			ExtraTags:      xTags,
-			ExtraTagNames:  xTagNames,
-			ExtraTagValues: xTagVals,
+			Name:             utils.ToGolangName(propName, true),
+			MarshalName:      entry.Key,
+			Description:      entry.Value.Description,
+			Type:             langObj,
+			ContentTypesFunc: contentTypesFunc,
+			ExtraTags:        xTags,
+			ExtraTagNames:    xTagNames,
+			ExtraTagValues:   xTagVals,
 		}
 		res.Fields = append(res.Fields, f)
 	}
@@ -341,7 +350,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 						KeyType:   &lang.GoSimple{Name: "string"},
 						ValueType: &valTyp,
 					},
-					TagsSource: messagesPrm,
+					ContentTypesFunc: contentTypesFunc,
 				}
 				res.Fields = append(res.Fields, f)
 			}
@@ -396,6 +405,7 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 
 func (o Object) buildUnionStruct(ctx *common.CompileContext, flags map[common.SchemaTag]string) (*lang.UnionStruct, error) {
 	_, hasDefinition := flags[common.SchemaTagDefinition]
+	_, isComponent := flags[common.SchemaTagComponent]
 	objName, _ := lo.Coalesce(o.XGoName, o.Title)
 	res := lang.UnionStruct{
 		GoStruct: lang.GoStruct{
@@ -404,6 +414,7 @@ func (o Object) buildUnionStruct(ctx *common.CompileContext, flags map[common.Sc
 				Description:   o.Description,
 				HasDefinition: hasDefinition,
 			},
+			ObjectKind: lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
 		},
 	}
 

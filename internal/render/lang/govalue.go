@@ -24,7 +24,7 @@ type GolangPointerWrapperType interface {
 }
 
 func (gv GoValue) Kind() common.ObjectKind {
-	return common.ObjectKindLang
+	return common.ObjectKindOther
 }
 
 func (gv GoValue) Selectable() bool {

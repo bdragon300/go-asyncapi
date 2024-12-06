@@ -41,7 +41,7 @@ func (r *Promise[T]) FindCallback() func(item common.Renderable, path []string) 
 	return r.findCb
 }
 
-func (r *Promise[T]) Target() T {
+func (r *Promise[T]) T() T {
 	return r.target
 }
 
@@ -114,7 +114,7 @@ func (r *ListPromise[T]) FindCallback() func(item common.Renderable, path []stri
 	return r.findCb
 }
 
-func (r *ListPromise[T]) Targets() []T {
+func (r *ListPromise[T]) T() []T {
 	return r.targets
 }
 
@@ -126,26 +126,15 @@ func NewRenderablePromise(ref string, origin common.PromiseOrigin) *RenderablePr
 
 type RenderablePromise struct {
 	Promise[common.Renderable]
-	// DirectRender marks the promise to be rendered directly, even if object it points to not marked to do so.
-	// Be careful, in order to avoid duplicated object appearing in the output, this flag should be set only for
-	// objects which are not marked to be rendered directly
-	DirectRender bool
 }
 
 func (r *RenderablePromise) Kind() common.ObjectKind {
 	return r.target.Kind()
 }
 
-func (r *RenderablePromise) D() string {
-	return r.target.D()
-}
-
-func (r *RenderablePromise) U() string {
-	return r.target.U()
-}
-
+// TODO: return always false
 func (r *RenderablePromise) Selectable() bool {
-	return r.DirectRender // Prevent rendering the object we're point to for several times
+	return r.origin == common.PromiseOriginUser && r.target.Selectable()
 }
 
 func (r *RenderablePromise) String() string {
@@ -160,10 +149,6 @@ func NewGolangTypePromise(ref string, origin common.PromiseOrigin) *GolangTypePr
 
 type GolangTypePromise struct {
 	Promise[common.GolangType]
-	// DirectRender marks the promise to be rendered directly, even if object it points to not marked to do so.
-	// Be careful, in order to avoid duplicated object appearing in the output, this flag should be set only for
-	// objects which are not marked to be rendered directly
-	DirectRender bool  // TODO: rework or remove
 }
 
 func (r *GolangTypePromise) Kind() common.ObjectKind {
@@ -175,7 +160,7 @@ func (r *GolangTypePromise) TypeName() string {
 }
 
 func (r *GolangTypePromise) Selectable() bool {
-	return r.DirectRender // Prevent rendering the object we're point to for several times
+	return r.origin == common.PromiseOriginUser && r.target.Selectable()
 }
 
 func (r *GolangTypePromise) IsPointer() bool {

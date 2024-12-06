@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/samber/lo"
-	"golang.org/x/exp/slices"
+	"slices"
 )
 
 func Parse(ref string) *URL {

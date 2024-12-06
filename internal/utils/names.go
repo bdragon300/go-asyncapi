@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"crypto/md5"
-	"encoding/base32"
 	"go/token"
 	"regexp"
 	"strings"
@@ -98,30 +96,30 @@ func TransformInitialisms(name string) string {
 	return string(res)
 }
 
-func ToLowerFirstLetter(s string) string {
-	if s == "" {
-		return ""
-	}
-	return strings.ToLower(string(s[0])) + s[1:]
-}
+//func ToLowerFirstLetter(s string) string {
+//	if s == "" {
+//		return ""
+//	}
+//	return strings.ToLower(string(s[0])) + s[1:]
+//}
 
 func JoinNonemptyStrings(sep string, s ...string) string {
 	return strings.Join(lo.Compact(s), sep)
 }
 
-func ToFileName(rawString string) string {
-	// Replace everything except alphanumerics to underscores
-	newString := string(fileNameReplaceRe.ReplaceAll([]byte(rawString), []byte("_")))
-
-	// Cut underscores that may appear at string endings
-	newString = strings.Trim(newString, "_")
-
-	// newString may left empty after normalization, because rawString is empty or has "/", "_", or smth
-	// So, the filename will be the md5 hash from rawString in base32 form
-	if newString == "" {
-		hsh := md5.New()
-		newString = ToFileName(base32.StdEncoding.EncodeToString(hsh.Sum([]byte(rawString))))
-	}
-
-	return strcase.SnakeCase(newString)
-}
+//func ToFileName(rawString string) string {
+//	// Replace everything except alphanumerics to underscores
+//	newString := string(fileNameReplaceRe.ReplaceAll([]byte(rawString), []byte("_")))
+//
+//	// Cut underscores that may appear at string endings
+//	newString = strings.Trim(newString, "_")
+//
+//	// newString may left empty after normalization, because rawString is empty or has "/", "_", or smth
+//	// So, the filename will be the md5 hash from rawString in base32 form
+//	if newString == "" {
+//		hsh := md5.New()
+//		newString = ToFileName(base32.StdEncoding.EncodeToString(hsh.Sum([]byte(rawString))))
+//	}
+//
+//	return strcase.SnakeCase(newString)
+//}

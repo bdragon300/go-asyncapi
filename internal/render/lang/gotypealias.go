@@ -64,3 +64,10 @@ func (p GoTypeAlias) IsStruct() bool {
 	}
 	return false
 }
+
+func (p GoTypeAlias) String() string {
+	if p.Import != "" {
+		return "GoTypeAlias /" + p.Import + "." + p.Name
+	}
+	return "GoTypeAlias " + p.Name
+}

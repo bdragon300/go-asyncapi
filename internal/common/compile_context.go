@@ -3,7 +3,6 @@ package common
 import (
 	"errors"
 	"path"
-	"regexp"
 	"strings"
 
 	"github.com/bdragon300/go-asyncapi/internal/specurl"
@@ -16,7 +15,10 @@ import (
 
 const nameWordSep = "_"
 
-var ErrDefinitionIsNotAssignedYet = errors.New("definition is not assigned yet")
+// ErrObjectDefinitionUnknownYet is returned when some template tries to get a package in the generated code for an
+// object, but the definition of this object has not been rendered, therefore the package is unknown yet. When this
+// error is returned, a template caused this error goes to the end of the rendering queue.
+var ErrObjectDefinitionUnknownYet = errors.New("object definition is unknown yet")
 
 type GolangTypeDefinitionInfo struct {
 	Selection RenderSelectionConfig
@@ -40,34 +42,34 @@ type CompilationStorage interface {
 }
 
 type CompileOpts struct {
-	ChannelOpts         ObjectCompileOpts
-	MessageOpts         ObjectCompileOpts
-	ModelOpts           ObjectCompileOpts
-	ServerOpts          ObjectCompileOpts
-	NoEncodingPackage   bool  // TODO: remove in favor of selections
+	//ChannelOpts         ObjectCompileOpts
+	//MessageOpts         ObjectCompileOpts
+	//ModelOpts           ObjectCompileOpts
+	//ServerOpts          ObjectCompileOpts
+	//NoEncodingPackage   bool  // TODO: remove in favor of selections
 	AllowRemoteRefs     bool
 	RuntimeModule       string
 	GeneratePublishers  bool
 	GenerateSubscribers bool
 }
 
-type ObjectCompileOpts struct {
-	Enable       bool
-	IncludeRegex *regexp.Regexp
-	ExcludeRegex *regexp.Regexp
-}
-
-func (o ObjectCompileOpts) IsAllowedName(name string) bool {
-	switch {
-	case !o.Enable:
-		return false
-	case o.ExcludeRegex != nil && o.ExcludeRegex.MatchString(name):
-		return false
-	case o.IncludeRegex != nil:
-		return o.IncludeRegex.MatchString(name)
-	}
-	return true
-}
+//type ObjectCompileOpts struct {
+//	Enable       bool
+//	IncludeRegex *regexp.Regexp
+//	ExcludeRegex *regexp.Regexp
+//}
+//
+//func (o ObjectCompileOpts) IsAllowedName(name string) bool {
+//	switch {
+//	case !o.Enable:
+//		return false
+//	case o.ExcludeRegex != nil && o.ExcludeRegex.MatchString(name):
+//		return false
+//	case o.IncludeRegex != nil:
+//		return o.IncludeRegex.MatchString(name)
+//	}
+//	return true
+//}
 
 type ContextStackItem struct {
 	PathItem       string

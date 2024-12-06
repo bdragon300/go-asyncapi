@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 
-	"github.com/bdragon300/go-asyncapi/internal/specurl"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 
 	yaml "gopkg.in/yaml.v3"
@@ -56,7 +55,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) ([]common.
 	var res []common.Renderable
 
 	_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagComponent]
-	ignore := m.XIgnore || (isComponent && !ctx.CompileOpts.MessageOpts.IsAllowedName(messageKey))
+	ignore := m.XIgnore || isComponent //&& !ctx.CompileOpts.MessageOpts.IsAllowedName(messageKey))
 	if ignore {
 		ctx.Logger.Debug("Message denoted to be ignored")
 		res = append(res, &render.ProtoMessage{Message: &render.Message{Dummy: true}})
@@ -70,12 +69,11 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) ([]common.
 		return res, nil
 	}
 
+	// Being defined in "channels" section, we use the message key as the message name. Otherwise, generate a name,
+	// because the key will always be "message".
 	msgName := messageKey
-	// If the message is not a component, but inlined in a channel (i.e. in channels package), the messageKey always
-	// will be "message". So, we need to generate a unique name for the message, considering if it's
-	// publish/subscribe message, because we don't generate a separate code object for a channel operation,
-	// therefore a channel can have two identical messages.
-	if ctx.CurrentPackage() == PackageScopeChannels {
+	pathStack := ctx.Stack.Items()
+	if pathStack[0].PathItem == "channels" {
 		msgName = ctx.GenerateObjName(m.XGoName, "")
 	}
 	msgName, _ = lo.Coalesce(m.XGoName, msgName)
@@ -127,7 +125,6 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) ([]common.
 				Name:          ctx.GenerateObjName(msgName, "Bindings"),
 				HasDefinition: true,
 			},
-			Fields: nil,
 		}
 
 		ref := ctx.PathStackRef("bindings")

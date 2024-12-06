@@ -9,19 +9,17 @@ import (
 // Bindings never renders itself, only as a part of other object
 type Bindings struct {
 	Name   string
-	// ObjectKindMessageBindings, ObjectKindOperationBindings, ObjectKindChannelBindings, ObjectKindServerBindings
-	ObjectKind common.ObjectKind
 
 	Values types.OrderedMap[string, *lang.GoValue] // Binding values by protocol
 	// Value of jsonschema fields as json marshalled strings
 	JSONValues types.OrderedMap[string, types.OrderedMap[string, string]] // Binbing values by protocol
 }
 
-func (b Bindings) Kind() common.ObjectKind {
-	return b.ObjectKind
+func (b *Bindings) Kind() common.ObjectKind {
+	return common.ObjectKindOther  // TODO: separate Bindings from Channel, leaving only the Promise, and make its own 4 ObjectKinds
 }
 
-func (b Bindings) Selectable() bool {
+func (b *Bindings) Selectable() bool {
 	return false
 }
 
@@ -29,10 +27,10 @@ func (b Bindings) Selectable() bool {
 //func (b *Bindings) ID() string {
 //	return b.Name
 //}
-//
-//func (b *Bindings) String() string {
-//	return "Bindings " + b.Name
-//}
+
+func (b *Bindings) String() string {
+	return "Bindings " + b.Name
+}
 
 //func (b *Bindings) RenderBindingsMethod(
 //	ctx *common.RenderContext,

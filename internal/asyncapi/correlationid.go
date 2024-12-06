@@ -33,7 +33,7 @@ func (c CorrelationID) Compile(ctx *common.CompileContext) error {
 }
 
 func (c CorrelationID) build(ctx *common.CompileContext, correlationIDKey string) (common.Renderable, error) {
-	ignore := c.XIgnore || !ctx.CompileOpts.MessageOpts.Enable
+	ignore := c.XIgnore //|| !ctx.CompileOpts.MessageOpts.Enable
 	if ignore {
 		ctx.Logger.Debug("CorrelationID denoted to be ignored")
 		return &render.CorrelationID{}, nil

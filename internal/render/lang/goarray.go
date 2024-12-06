@@ -53,3 +53,10 @@ func (a GoArray) U() string {
 	//return []*jen.Statement{jen.Index().Add(items...)}
 	return renderTemplate("lang/goarray/usage", &a)
 }
+
+func (a GoArray) String() string {
+	if a.Import != "" {
+		return "GoArray /" + a.Import + "." + a.Name
+	}
+	return "GoArray " + a.Name
+}

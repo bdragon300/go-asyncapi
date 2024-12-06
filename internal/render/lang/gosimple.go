@@ -11,7 +11,7 @@ type GoSimple struct {
 }
 
 func (p GoSimple) Kind() common.ObjectKind {
-	return common.ObjectKindLang
+	return common.ObjectKindOther
 }
 
 func (p GoSimple) Selectable() bool {

@@ -40,10 +40,9 @@ func (c Channel) Compile(ctx *common.CompileContext) error {
 func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) ([]common.Renderable, error) {
 	var res []common.Renderable
 
-	_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagComponent]
 	ignore := c.XIgnore ||
-		(!ctx.CompileOpts.GeneratePublishers && !ctx.CompileOpts.GenerateSubscribers) ||
-		!ctx.CompileOpts.ChannelOpts.IsAllowedName(channelKey)
+		(!ctx.CompileOpts.GeneratePublishers && !ctx.CompileOpts.GenerateSubscribers) // ||
+		//!ctx.CompileOpts.ChannelOpts.IsAllowedName(channelKey)
 	if ignore {
 		ctx.Logger.Debug("Channel denoted to be ignored")
 		res = append(res, &render.ProtoChannel{Channel: &render.Channel{Dummy: true}})
@@ -53,7 +52,6 @@ func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) ([
 		ctx.Logger.Trace("Ref", "$ref", c.Ref)
 		prm := lang.NewRenderablePromise(c.Ref, common.PromiseOriginUser)
 		// Set a channel to be rendered if we reference it from `channels` document section
-		prm.DirectRender = !isComponent
 		ctx.PutPromise(prm)
 		res = append(res, prm)
 		return res, nil

@@ -56,6 +56,13 @@ func (s UnionStruct) UnionStruct() common.GolangType {
 	return &strct
 }
 
+func (s UnionStruct) String() string {
+	if s.Import != "" {
+		return "UnionStruct /" + s.Import + "." + s.Name
+	}
+	return "UnionStruct " + s.Name
+}
+
 //func (s UnionStruct) renderMethods() []*jen.Statement {
 //	ctx.Logger.Trace("renderMethods")
 //

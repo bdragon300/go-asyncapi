@@ -1,12 +1,10 @@
 package render
 
 import (
+	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/samber/lo"
-	"sort"
-
-	"github.com/bdragon300/go-asyncapi/internal/common"
 )
 
 type Channel struct {
@@ -107,9 +105,9 @@ func (c Channel) Selectable() bool {
 //	return c.Name
 //}
 //
-//func (c Channel) String() string {
-//	return "Channel " + c.Name
-//}
+func (c Channel) String() string {
+	return "Channel " + c.Name
+}
 
 //func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement {
 //	ctx.Logger.Trace("renderChannelNameFunc")
@@ -144,31 +142,30 @@ func (c Channel) Selectable() bool {
 //}
 
 // ServersProtocols returns supported protocol list for the given servers, throwing out unsupported ones
-// TODO: move to top-level template
-func (c Channel) ServersProtocols() []string {
-	res := lo.Uniq(lo.FilterMap(c.ServersPromise.Targets(), func(item *Server, _ int) (string, bool) {
-		_, ok := ctx.ProtoRenderers[item.Protocol]
-		if !ok {
-			ctx.Logger.Warnf("Skip protocol %q since it is not supported", item.Protocol)
-		}
-		return item.Protocol, ok && !item.Dummy
-	}))
-	sort.Strings(res)
-	return res
-}
+//func (c Channel) ServersProtocols() []string {
+//	res := lo.Uniq(lo.FilterMap(c.ServersPromise.T(), func(item *Server, _ int) (string, bool) {
+//		_, ok := ctx.ProtoRenderers[item.Protocol]
+//		if !ok {
+//			ctx.Logger.Warnf("Skip protocol %q since it is not supported", item.Protocol)
+//		}
+//		return item.Protocol, ok && !item.Dummy
+//	}))
+//	sort.Strings(res)
+//	return res
+//}
 
 func (c Channel) BindingsProtocols() (res []string) {
 	if c.BindingsChannelPromise != nil {
-		res = append(res, c.BindingsChannelPromise.Target().Values.Keys()...)
-		res = append(res, c.BindingsChannelPromise.Target().JSONValues.Keys()...)
+		res = append(res, c.BindingsChannelPromise.T().Values.Keys()...)
+		res = append(res, c.BindingsChannelPromise.T().JSONValues.Keys()...)
 	}
 	if c.BindingsPublishPromise != nil {
-		res = append(res, c.BindingsPublishPromise.Target().Values.Keys()...)
-		res = append(res, c.BindingsPublishPromise.Target().JSONValues.Keys()...)
+		res = append(res, c.BindingsPublishPromise.T().Values.Keys()...)
+		res = append(res, c.BindingsPublishPromise.T().JSONValues.Keys()...)
 	}
 	if c.BindingsSubscribePromise != nil {
-		res = append(res, c.BindingsSubscribePromise.Target().Values.Keys()...)
-		res = append(res, c.BindingsSubscribePromise.Target().JSONValues.Keys()...)
+		res = append(res, c.BindingsSubscribePromise.T().Values.Keys()...)
+		res = append(res, c.BindingsSubscribePromise.T().JSONValues.Keys()...)
 	}
 	return lo.Uniq(res)
 }
@@ -179,20 +176,20 @@ func (c Channel) ProtoBindingsValue(protoName string) common.Renderable {
 		EmptyCurlyBrackets: true,
 	}
 	if c.BindingsChannelPromise != nil {
-		if b, ok := c.BindingsChannelPromise.Target().Values.Get(protoName); ok {
-			ctx.Logger.Debug("Channel bindings", "proto", protoName)
+		if b, ok := c.BindingsChannelPromise.T().Values.Get(protoName); ok {
+			//ctx.Logger.Debug("Channel bindings", "proto", protoName)
 			res = b
 		}
 	}
 	if c.BindingsPublishPromise != nil {
-		if v, ok := c.BindingsPublishPromise.Target().Values.Get(protoName); ok {
-			ctx.Logger.Debug("Publish operation bindings", "proto", protoName)
+		if v, ok := c.BindingsPublishPromise.T().Values.Get(protoName); ok {
+			//ctx.Logger.Debug("Publish operation bindings", "proto", protoName)
 			res.StructValues.Set("PublisherBindings", v)
 		}
 	}
 	if c.BindingsSubscribePromise != nil {
-		if v, ok := c.BindingsSubscribePromise.Target().Values.Get(protoName); ok {
-			ctx.Logger.Debug("Subscribe operation bindings", "proto", protoName)
+		if v, ok := c.BindingsSubscribePromise.T().Values.Get(protoName); ok {
+			//ctx.Logger.Debug("Subscribe operation bindings", "proto", protoName)
 			res.StructValues.Set("SubscriberBindings", v)
 		}
 	}
@@ -204,4 +201,8 @@ type ProtoChannel struct {
 	Type *lang.GoStruct
 
 	ProtoName string
+}
+
+func (p ProtoChannel) String() string {
+	return "ProtoChannel " + p.Name
 }

@@ -3,10 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"io"
 	"os"
 	"path"
-	"regexp"
 	"strings"
 	"time"
 
@@ -53,8 +53,8 @@ type generatePubSubArgs struct {
 	Spec string `arg:"required,positional" help:"AsyncAPI specification file path or url" placeholder:"PATH"`
 
 	ProjectModule string `arg:"-M,--project-module" help:"Project module name to use [default: extracted from go.mod file in the current working directory]" placeholder:"MODULE"`
-	TargetPackage string `arg:"-T,--target-package" help:"Package for generated code [default: {target-dir-name}]" placeholder:"PACKAGE"`
 	TemplateDir string `arg:"--template-dir" help:"Directory with custom templates" placeholder:"DIR"`
+	ConfigFile string `arg:"--config-file" help:"YAML configuration file path" placeholder:"PATH"`
 	generateObjectSelectionOpts
 	ImplementationsOpts
 	AllowRemoteRefs bool `arg:"--allow-remote-refs" help:"Allow fetching spec files from remote $ref URLs"`
@@ -83,32 +83,32 @@ type ImplementationsOpts struct {
 }
 
 type generateObjectSelectionOpts struct {
-	SelectChannelsAll   bool   `arg:"--select-channels-all" help:"Select all channels to be generated"`
-	SelectChannelsRe    string `arg:"--select-channels-re" help:"Select channels whose name in document matches the regex" placeholder:"REGEX"`
-	IgnoreChannelsAll   bool   `arg:"--ignore-channels-all" help:"Ignore all channels to be generated"`
-	IgnoreChannelsRe    string `arg:"--ignore-channels-re" help:"Ignore channels whose name in document matches the regex" placeholder:"REGEX"`
-	ReuseChannelsModule string `arg:"--reuse-channels-module" help:"Reuse the module with channels code" placeholder:"MODULE"`
-
-	SelectMessagesAll   bool   `arg:"--select-messages-all" help:"Select all messages to be generated"`
-	SelectMessagesRe    string `arg:"--select-messages-re" help:"Select messages whose name in document matches the regex" placeholder:"REGEX"`
-	IgnoreMessagesAll   bool   `arg:"--ignore-messages-all" help:"Ignore all messages to be generated"`
-	IgnoreMessagesRe    string `arg:"--ignore-messages-re" help:"Ignore messages whose name in document matches the regex" placeholder:"REGEX"`
-	ReuseMessagesModule string `arg:"--reuse-messages-module" help:"Reuse the module with messages code" placeholder:"MODULE"`
-
-	SelectModelsAll   bool   `arg:"--select-models-all" help:"Select all models to be generated"`
-	SelectModelsRe    string `arg:"--select-models-re" help:"Select models whose name in document matches the regex" placeholder:"REGEX"`
-	IgnoreModelsAll   bool   `arg:"--ignore-models-all" help:"Ignore all models to be generated"`
-	IgnoreModelsRe    string `arg:"--ignore-models-re" help:"Ignore models whose name in document matches the regex" placeholder:"REGEX"`
-	ReuseModelsModule string `arg:"--reuse-models-module" help:"Reuse the module with models code" placeholder:"MODULE"`
-
-	SelectServersAll   bool   `arg:"--select-servers=all" help:"Select all servers to be generated"`
-	SelectServersRe    string `arg:"--select-servers-re" help:"Select servers whose name in document matches the regex" placeholder:"REGEX"`
-	IgnoreServersAll   bool   `arg:"--ignore-servers-all" help:"Ignore all servers to be generated"`
-	IgnoreServersRe    string `arg:"--ignore-servers-re" help:"Ignore servers whose name in document matches the regex" placeholder:"REGEX"`
-	ReuseServersModule string `arg:"--reuse-servers-module" help:"Reuse the module with servers code" placeholder:"MODULE"`
+	//SelectChannelsAll   bool   `arg:"--select-channels-all" help:"Select all channels to be generated"`
+	//SelectChannelsRe    string `arg:"--select-channels-re" help:"Select channels whose name in document matches the regex" placeholder:"REGEX"`
+	//IgnoreChannelsAll   bool   `arg:"--ignore-channels-all" help:"Ignore all channels to be generated"`
+	//IgnoreChannelsRe    string `arg:"--ignore-channels-re" help:"Ignore channels whose name in document matches the regex" placeholder:"REGEX"`
+	//ReuseChannelsModule string `arg:"--reuse-channels-module" help:"Reuse the module with channels code" placeholder:"MODULE"`
+	//
+	//SelectMessagesAll   bool   `arg:"--select-messages-all" help:"Select all messages to be generated"`
+	//SelectMessagesRe    string `arg:"--select-messages-re" help:"Select messages whose name in document matches the regex" placeholder:"REGEX"`
+	//IgnoreMessagesAll   bool   `arg:"--ignore-messages-all" help:"Ignore all messages to be generated"`
+	//IgnoreMessagesRe    string `arg:"--ignore-messages-re" help:"Ignore messages whose name in document matches the regex" placeholder:"REGEX"`
+	//ReuseMessagesModule string `arg:"--reuse-messages-module" help:"Reuse the module with messages code" placeholder:"MODULE"`
+	//
+	//SelectModelsAll   bool   `arg:"--select-models-all" help:"Select all models to be generated"`
+	//SelectModelsRe    string `arg:"--select-models-re" help:"Select models whose name in document matches the regex" placeholder:"REGEX"`
+	//IgnoreModelsAll   bool   `arg:"--ignore-models-all" help:"Ignore all models to be generated"`
+	//IgnoreModelsRe    string `arg:"--ignore-models-re" help:"Ignore models whose name in document matches the regex" placeholder:"REGEX"`
+	//ReuseModelsModule string `arg:"--reuse-models-module" help:"Reuse the module with models code" placeholder:"MODULE"`
+	//
+	//SelectServersAll   bool   `arg:"--select-servers=all" help:"Select all servers to be generated"`
+	//SelectServersRe    string `arg:"--select-servers-re" help:"Select servers whose name in document matches the regex" placeholder:"REGEX"`
+	//IgnoreServersAll   bool   `arg:"--ignore-servers-all" help:"Ignore all servers to be generated"`
+	//IgnoreServersRe    string `arg:"--ignore-servers-re" help:"Ignore servers whose name in document matches the regex" placeholder:"REGEX"`
+	//ReuseServersModule string `arg:"--reuse-servers-module" help:"Reuse the module with servers code" placeholder:"MODULE"`
 
 	NoImplementations bool `arg:"--no-implementations" help:"Do not generate any protocol implementation"`
-	NoEncoding        bool `arg:"--no-encoding" help:"Do not generate encoders/decoders code"`
+	//NoEncoding        bool `arg:"--no-encoding" help:"Do not generate encoders/decoders code"`
 }
 
 func generate(cmd *GenerateCmd) error {
@@ -117,8 +117,6 @@ func generate(cmd *GenerateCmd) error {
 	}
 
 	isPub, isSub, pubSubOpts := getPubSubVariant(cmd)
-	targetPkg, _ := lo.Coalesce(pubSubOpts.TargetPackage, path.Base(cmd.TargetDir))
-	mainLogger.Debugf("Target package name is %s", targetPkg)
 	if !isSub && !isPub {
 		return fmt.Errorf("%w: no publisher or subscriber set to generate", ErrWrongCliArgs)
 	}
@@ -126,7 +124,7 @@ func generate(cmd *GenerateCmd) error {
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
 	}
-	renderOpts, err := getRenderOpts(*pubSubOpts, cmd.TargetDir, targetPkg)
+	renderOpts, err := getRenderOpts(*pubSubOpts, cmd.TargetDir)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
 	}
@@ -152,6 +150,11 @@ func generate(cmd *GenerateCmd) error {
 	files, err := writer.RenderPackages(mainModule, renderOpts)
 	if err != nil {
 		return fmt.Errorf("schema render: %w", err)
+	}
+
+	// Formatting
+	if err = writer.FormatFiles(files); err != nil {
+		return fmt.Errorf("formatting code: %w", err)
 	}
 
 	// Writing
@@ -341,52 +344,52 @@ func getPubSubVariant(cmd *GenerateCmd) (pub bool, sub bool, variant *generatePu
 }
 
 func getCompileOpts(opts generatePubSubArgs, isPub, isSub bool) (common.CompileOpts, error) {
-	var err error
+	//var err error
 	res := common.CompileOpts{
-		NoEncodingPackage:   opts.NoEncoding,
+		//NoEncodingPackage:   opts.NoEncoding,
 		AllowRemoteRefs:     opts.AllowRemoteRefs,
 		RuntimeModule:       opts.RuntimeModule,
 		GeneratePublishers:  isPub,
 		GenerateSubscribers: isSub,
 	}
 
-	includeAll := !opts.SelectChannelsAll && !opts.SelectMessagesAll && !opts.SelectModelsAll && !opts.SelectServersAll
-	f := func(all, ignoreAll bool, re, ignoreRe string) (r common.ObjectCompileOpts, e error) {
-		r.Enable = (includeAll || all) && !ignoreAll
-		if re != "" {
-			if r.IncludeRegex, e = regexp.Compile(re); e != nil {
-				return
-			}
-		}
-		if ignoreRe != "" {
-			if r.ExcludeRegex, e = regexp.Compile(ignoreRe); e != nil {
-				return
-			}
-		}
-		return
-	}
+	//includeAll := !opts.SelectChannelsAll && !opts.SelectMessagesAll && !opts.SelectModelsAll && !opts.SelectServersAll
+	//f := func(all, ignoreAll bool, re, ignoreRe string) (r common.ObjectCompileOpts, e error) {
+	//	r.Enable = (includeAll || all) && !ignoreAll
+	//	if re != "" {
+	//		if r.IncludeRegex, e = regexp.Compile(re); e != nil {
+	//			return
+	//		}
+	//	}
+	//	if ignoreRe != "" {
+	//		if r.ExcludeRegex, e = regexp.Compile(ignoreRe); e != nil {
+	//			return
+	//		}
+	//	}
+	//	return
+	//}
 
-	if res.ChannelOpts, err = f(opts.SelectChannelsAll, opts.IgnoreChannelsAll, opts.SelectChannelsRe, opts.IgnoreChannelsRe); err != nil {
-		return res, err
-	}
+	//if res.ChannelOpts, err = f(opts.SelectChannelsAll, opts.IgnoreChannelsAll, opts.SelectChannelsRe, opts.IgnoreChannelsRe); err != nil {
+	//	return res, err
+	//}
 	//if opts.ReuseChannelsModule != "" {
 	//	res.ReusePackages[asyncapi.PackageScopeChannels] = opts.ReuseChannelsModule
 	//}
-	if res.MessageOpts, err = f(opts.SelectMessagesAll, opts.IgnoreMessagesAll, opts.SelectMessagesRe, opts.IgnoreMessagesRe); err != nil {
-		return res, err
-	}
+	//if res.MessageOpts, err = f(opts.SelectMessagesAll, opts.IgnoreMessagesAll, opts.SelectMessagesRe, opts.IgnoreMessagesRe); err != nil {
+	//	return res, err
+	//}
 	//if opts.ReuseMessagesModule != "" {
 	//	res.ReusePackages[asyncapi.PackageScopeMessages] = opts.ReuseMessagesModule
 	//}
-	if res.ModelOpts, err = f(opts.SelectModelsAll, opts.IgnoreModelsAll, opts.SelectModelsRe, opts.IgnoreModelsRe); err != nil {
-		return res, err
-	}
+	//if res.ModelOpts, err = f(opts.SelectModelsAll, opts.IgnoreModelsAll, opts.SelectModelsRe, opts.IgnoreModelsRe); err != nil {
+	//	return res, err
+	//}
 	//if opts.ReuseModelsModule != "" {
 	//	res.ReusePackages[asyncapi.PackageScopeModels] = opts.ReuseModelsModule
 	//}
-	if res.ServerOpts, err = f(opts.SelectServersAll, opts.IgnoreServersAll, opts.SelectServersRe, opts.IgnoreServersRe); err != nil {
-		return res, err
-	}
+	//if res.ServerOpts, err = f(opts.SelectServersAll, opts.IgnoreServersAll, opts.SelectServersRe, opts.IgnoreServersRe); err != nil {
+	//	return res, err
+	//}
 	//if opts.ReuseServersModule != "" {
 	//	res.ReusePackages[asyncapi.PackageScopeServers] = opts.ReuseServersModule
 	//}
@@ -411,14 +414,37 @@ func getResolver(opts generatePubSubArgs) compiler.SpecFileResolver {
 	}
 }
 
-func getRenderOpts(opts generatePubSubArgs, targetDir, targetPkg string) (common.RenderOpts, error) {
+func getRenderOpts(opts generatePubSubArgs, targetDir string) (common.RenderOpts, error) {
 	res := common.RenderOpts{
 		RuntimeModule: opts.RuntimeModule,
-		TargetPackage: targetPkg,
 		TargetDir:     targetDir,
 		TemplateDir: opts.TemplateDir,
 	}
 
+	// TODO: logging
+	// Selections
+	if opts.ConfigFile == "" {
+		conf, err := loadConfig(opts.ConfigFile)
+		if err != nil {
+			return res, err
+		}
+		for _, item := range conf.Render.Selections {
+			pkg, _ := lo.Coalesce(item.Package, lo.Ternary(targetDir != "", path.Base(targetDir), "main"))
+			templateName, _ := lo.Coalesce(item.Template, "main")
+			sel := common.RenderSelectionConfig{
+				Template:     templateName,
+				File:         item.File,
+				Package:      pkg,
+				TemplateArgs: item.TemplateArgs,
+				ObjectKindRe: item.ObjectKindRe,
+				ModuleURLRe:  item.ModuleURLRe,
+				PathRe:       item.PathRe,
+			}
+			res.Selections = append(res.Selections, sel)
+		}
+	}
+
+	// ImportBase
 	importBase := opts.ProjectModule
 	if importBase == "" {
 		b, err := getImportBase()
@@ -427,11 +453,30 @@ func getRenderOpts(opts generatePubSubArgs, targetDir, targetPkg string) (common
 		}
 		importBase = b
 	}
-	importBase = path.Join(importBase, targetPkg)
 	mainLogger.Debugf("Target import base is %s", importBase)
 	res.ImportBase = importBase
 
 	return res, nil
+}
+
+func loadConfig(fileName string) (toolConfig, error) {
+	var conf toolConfig
+
+	f, err := os.Open(fileName)
+	if err != nil {
+		return conf, fmt.Errorf("cannot open config file: %w", err)
+	}
+	defer f.Close()
+
+	buf, err := io.ReadAll(f)
+	if err != nil {
+		return conf, fmt.Errorf("cannot read config file: %w", err)
+	}
+
+	if err = yaml.Unmarshal(buf, &conf); err != nil {
+		return conf, fmt.Errorf("cannot parse YAML config file: %w", err)
+	}
+	return conf, nil
 }
 
 func protocolBuilders() map[string]asyncapi.ProtocolBuilder {

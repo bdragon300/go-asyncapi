@@ -1,11 +1,9 @@
 package render
 
 import (
+	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/samber/lo"
-	"sort"
-
-	"github.com/bdragon300/go-asyncapi/internal/common"
 )
 
 type Message struct {
@@ -33,14 +31,14 @@ func (m Message) Selectable() bool {
 }
 
 func (m Message) EffectiveContentType() string {
-	res, _ := lo.Coalesce(m.ContentType, m.AsyncAPIPromise.Target().EffectiveDefaultContentType())
+	res, _ := lo.Coalesce(m.ContentType, m.AsyncAPIPromise.T().EffectiveDefaultContentType())
 	return res
 }
 
 func (m Message) BindingsProtocols() (res []string) {
 	if m.BindingsPromise != nil {
-		res = append(res, m.BindingsPromise.Target().Values.Keys()...)
-		res = append(res, m.BindingsPromise.Target().JSONValues.Keys()...)
+		res = append(res, m.BindingsPromise.T().Values.Keys()...)
+		res = append(res, m.BindingsPromise.T().JSONValues.Keys()...)
 	}
 	return lo.Uniq(res)
 }
@@ -84,16 +82,16 @@ func (m Message) BindingsProtocols() (res []string) {
 //	return m.Name
 //}
 //
-//func (m Message) String() string {
-//	return "Message " + m.Name
-//}
+func (m Message) String() string {
+	return "Message " + m.Name
+}
 
 func (m Message) HasProtoBindings(protoName string) bool {
 	if m.BindingsPromise == nil {
 		return false
 	}
-	_, ok1 := m.BindingsPromise.Target().Values.Get(protoName)
-	_, ok2 := m.BindingsPromise.Target().JSONValues.Get(protoName)
+	_, ok1 := m.BindingsPromise.T().Values.Get(protoName)
+	_, ok2 := m.BindingsPromise.T().JSONValues.Get(protoName)
 	return ok1 || ok2
 }
 
@@ -284,20 +282,23 @@ func (m Message) HasProtoBindings(protoName string) bool {
 //}
 
 // ServerProtocols returns supported protocol list for the given servers, throwing out unsupported ones
-// TODO: move to top-level template
-func (m Message) ServerProtocols() []string {
-	res := lo.Uniq(lo.FilterMap(m.AllServersPromise.Targets(), func(item *Server, _ int) (string, bool) {
-		_, ok := ctx.ProtoRenderers[item.Protocol]
-		if !ok {
-			ctx.Logger.Warnf("Skip protocol %q since it is not supported", item.Protocol)
-		}
-		return item.Protocol, ok && !item.Dummy
-	}))
-	sort.Strings(res)
-	return res
-}
+//func (m Message) ServerProtocols() []string {
+//	res := lo.Uniq(lo.FilterMap(m.AllServersPromise.T(), func(item *Server, _ int) (string, bool) {
+//		_, ok := ctx.ProtoRenderers[item.Protocol]
+//		if !ok {
+//			ctx.Logger.Warnf("Skip protocol %q since it is not supported", item.Protocol)
+//		}
+//		return item.Protocol, ok && !item.Dummy
+//	}))
+//	sort.Strings(res)
+//	return res
+//}
 
 type ProtoMessage struct {
 	*Message
 	ProtoName string
+}
+
+func (p ProtoMessage) String() string {
+	return "Message " + p.Name
 }

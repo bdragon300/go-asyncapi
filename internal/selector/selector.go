@@ -7,8 +7,8 @@ import (
 	"regexp"
 )
 
-func SelectObjects(objects []compiler.Object, filters common.RenderSelectionFilterConfig) []compiler.Object {
-	filterChain := getFiltersChain(filters)
+func SelectObjects(objects []compiler.Object, selection common.RenderSelectionConfig) []compiler.Object {
+	filterChain := getFiltersChain(selection)
 
 	return lo.Filter(objects, func(object compiler.Object, _ int) bool {
 		for _, filter := range filterChain {
@@ -36,25 +36,25 @@ func SelectObjects(objects []compiler.Object, filters common.RenderSelectionFilt
 
 type filterFunc func(compiler.Object) bool
 
-func getFiltersChain(filters common.RenderSelectionFilterConfig) []filterFunc {
+func getFiltersChain(selection common.RenderSelectionConfig) []filterFunc {
 	var filterChain []filterFunc
 	filterChain = append(filterChain, func(object compiler.Object) bool {
 		return object.Object.Selectable()
 	})
-	if filters.ObjectKindRe != "" {
-		re := regexp.MustCompile(filters.ObjectKindRe) // TODO: compile 1 time (and below)
+	if selection.ObjectKindRe != "" {
+		re := regexp.MustCompile(selection.ObjectKindRe) // TODO: compile 1 time (and below)
 		filterChain = append(filterChain, func(object compiler.Object) bool {
 			return re.MatchString(string(object.Object.Kind()))
 		})
 	}
-	if filters.ModuleURLRe != "" {
-		re := regexp.MustCompile(filters.ModuleURLRe)
+	if selection.ModuleURLRe != "" {
+		re := regexp.MustCompile(selection.ModuleURLRe)
 		filterChain = append(filterChain, func(object compiler.Object) bool {
 			return re.MatchString(object.ModuleURL.SpecID)
 		})
 	}
-	if filters.PathRe != "" {
-		re := regexp.MustCompile(filters.PathRe)
+	if selection.PathRe != "" {
+		re := regexp.MustCompile(selection.PathRe)
 		filterChain = append(filterChain, func(object compiler.Object) bool {
 			return re.MatchString(object.ModuleURL.PointerRef())
 		})

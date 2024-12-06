@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
-	"github.com/bdragon300/go-asyncapi/internal/tpl"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"net/url"
 	"strconv"
 	"strings"
@@ -18,8 +18,8 @@ const structReceiverName = "m"
 type CorrelationIDStructField string
 
 const (
-	CorrelationIDStructFieldPayload CorrelationIDStructField = "Payload"
-	CorrelationIDStructFieldHeaders CorrelationIDStructField = "Headers"
+	CorrelationIDStructFieldPayload CorrelationIDStructField = "payload"
+	CorrelationIDStructFieldHeaders CorrelationIDStructField = "headers"
 )
 
 // CorrelationID never renders itself, only as a part of message struct
@@ -49,16 +49,16 @@ func (c CorrelationID) Selectable() bool {
 //func (c CorrelationID) ID() string {
 //	return c.Name
 //}
-//
-//func (c CorrelationID) String() string {
-//	return "CorrelationID " + c.Name
-//}
+
+func (c CorrelationID) String() string {
+	return "CorrelationID " + c.Name
+}
 
 func (c CorrelationID) RenderSetterBody(inVar string, inVarType *lang.GoStruct) string {
-	ctx.LogStartRender("CorrelationID.RenderSetterBody", "", c.Name, "definition", false)
-	defer ctx.LogFinishRender()
+	//ctx.LogStartRender("CorrelationID.RenderSetterBody", "", c.Name, "definition", false)
+	//defer ctx.LogFinishRender()
 
-	f, ok := lo.Find(inVarType.Fields, func(item lang.GoStructField) bool { return item.Name == c.StructField })
+	f, ok := lo.Find(inVarType.Fields, func(item lang.GoStructField) bool { return item.Name == string(c.StructField) })
 	if !ok {
 		panic(fmt.Errorf("field %s not found in inVarType", c.StructField))
 	}
@@ -95,7 +95,7 @@ func (c CorrelationID) RenderSetterBody(inVar string, inVarType *lang.GoStruct) 
 }
 
 func (c CorrelationID) TargetVarType(varType *lang.GoStruct) common.GolangType {
-	f, ok := lo.Find(varType.Fields, func(item lang.GoStructField) bool { return item.Name == c.StructField })
+	f, ok := lo.Find(varType.Fields, func(item lang.GoStructField) bool { return item.Name == string(c.StructField) })
 	if !ok {
 		panic(fmt.Errorf("field %s not found in varType", c.StructField))
 	}
@@ -159,10 +159,10 @@ func (c CorrelationID) TargetVarType(varType *lang.GoStruct) common.GolangType {
 //}
 
 func (c CorrelationID) RenderGetterBody(outVar string, outVarType *lang.GoStruct) string {
-	ctx.LogStartRender("CorrelationID.RenderGetterDefinition", "", c.Name, "definition", false)
-	defer ctx.LogFinishRender()
+	//ctx.LogStartRender("CorrelationID.RenderGetterDefinition", "", c.Name, "definition", false)
+	//defer ctx.LogFinishRender()
 
-	f, ok := lo.Find(outVarType.Fields, func(item lang.GoStructField) bool { return item.Name == c.StructField })
+	f, ok := lo.Find(outVarType.Fields, func(item lang.GoStructField) bool { return item.Name == string(c.StructField) })
 	if !ok {
 		panic(fmt.Errorf("field %s not found in outVarType", c.StructField))
 	}
@@ -246,7 +246,7 @@ func (c CorrelationID) renderValueExtractionCode(
 	validationCode bool,
 ) (items []correlationIDExpansionStep, err error) {
 	// TODO: consider also AdditionalProperties in object
-	ctx.Logger.Trace("Render correlationId extraction code", "path", path, "initialType", initialType.String())
+	//ctx.Logger.Trace("Render correlationId extraction code", "path", path, "initialType", initialType.String())
 	pathIdx := 0
 
 	baseType := initialType
@@ -266,7 +266,7 @@ func (c CorrelationID) renderValueExtractionCode(
 
 		switch typ := baseType.(type) {
 		case *lang.GoStruct:
-			ctx.Logger.Trace("In GoStruct", "path", path[:pathIdx], "name", typ.ID(), "member", memberName)
+			//ctx.Logger.Trace("In GoStruct", "path", path[:pathIdx], "name", typ.ID(), "member", memberName)
 			fld, ok := lo.Find(typ.Fields, func(item lang.GoStructField) bool { return item.MarshalName == memberName })
 			if !ok {
 				err = fmt.Errorf(
@@ -280,8 +280,8 @@ func (c CorrelationID) renderValueExtractionCode(
 			body = []string{fmt.Sprintf("%s := %s", nextAnchor, varValueStmts)}
 		case *lang.GoMap:
 			// TODO: x-parameter in correlationIDs spec section to set numbers as "0" for string keys or 0 for int keys
-			ctx.Logger.Trace("In GoMap", "path", path[:pathIdx], "name", typ.ID(), "member", memberName)
-			varValueStmts = fmt.Sprintf("%s[%s]", anchor, tpl.templateGoLit(memberName))
+			//ctx.Logger.Trace("In GoMap", "path", path[:pathIdx], "name", typ.ID(), "member", memberName)
+			varValueStmts = fmt.Sprintf("%s[%s]", anchor, utils.ToGoLiteral(memberName))
 			baseType = typ.ValueType
 			varExpr := fmt.Sprintf("var %s %s", nextAnchor, typ.ValueType.U())
 			if t, ok := typ.ValueType.(lang.GolangPointerType); ok && t.IsPointer() {
@@ -297,7 +297,7 @@ func (c CorrelationID) renderValueExtractionCode(
 				ifExpr += fmt.Sprintf(` else {
 					err = %s("key %%q not found in map on path /%s", %s)
 					return
-				}`, fmtErrorf, strings.Join(path[:pathIdx], "/"), tpl.templateGoLit(memberName))
+				}`, fmtErrorf, strings.Join(path[:pathIdx], "/"), utils.ToGoLiteral(memberName))
 			}
 			body = []string{
 				fmt.Sprintf(`if %s == nil { 
@@ -307,7 +307,7 @@ func (c CorrelationID) renderValueExtractionCode(
 				ifExpr,
 			}
 		case *lang.GoArray:
-			ctx.Logger.Trace("In GoArray", "path", path[:pathIdx], "name", typ.ID(), "member", memberName)
+			//ctx.Logger.Trace("In GoArray", "path", path[:pathIdx], "name", typ.ID(), "member", memberName)
 			if _, ok := memberName.(string); ok {
 				err = fmt.Errorf(
 					"index %q is not a number, array %s, path: /%s",
@@ -322,13 +322,13 @@ func (c CorrelationID) renderValueExtractionCode(
 				body = append(body, fmt.Sprintf(`if len(%s) <= %s {
 					err = %s("index %%q is out of range in array of length %%d on path /%s", %s, len(%s))
 					return
-				}`, anchor, tpl.templateGoLit(memberName), fmtErrorf, strings.Join(path[:pathIdx], "/"), tpl.templateGoLit(memberName), anchor))
+				}`, anchor, utils.ToGoLiteral(memberName), fmtErrorf, strings.Join(path[:pathIdx], "/"), utils.ToGoLiteral(memberName), anchor))
 			}
-			varValueStmts = fmt.Sprintf("%s[%s]", anchor, tpl.templateGoLit(memberName))
+			varValueStmts = fmt.Sprintf("%s[%s]", anchor, utils.ToGoLiteral(memberName))
 			baseType = typ.ItemsType
 			body = append(body, fmt.Sprintf("%s := %s", nextAnchor, varValueStmts))
 		case *lang.GoSimple: // Should be a terminal type in chain, raise error otherwise (if any path parts left to resolve)
-			ctx.Logger.Trace("In GoSimple", "path", path[:pathIdx], "name", typ.ID(), "member", memberName)
+			//ctx.Logger.Trace("In GoSimple", "path", path[:pathIdx], "name", typ.ID(), "member", memberName)
 			if pathIdx >= len(path)-1 { // Primitive types should get addressed by the last path item
 				err = fmt.Errorf(
 					"type %q cannot be resolved further, path: /%s",
@@ -339,10 +339,10 @@ func (c CorrelationID) renderValueExtractionCode(
 			}
 			baseType = typ
 		case lang.GolangTypeWrapperType:
-			ctx.Logger.Trace(
-				"In wrapper type",
-				"path", path[:pathIdx], "name", typ.String(), "type", fmt.Sprintf("%T", typ), "member", memberName,
-			)
+			//ctx.Logger.Trace(
+			//	"In wrapper type",
+			//	"path", path[:pathIdx], "name", typ.String(), "type", fmt.Sprintf("%T", typ), "member", memberName,
+			//)
 			t, ok := typ.UnwrapGolangType()
 			if !ok {
 				err = fmt.Errorf(
@@ -355,7 +355,7 @@ func (c CorrelationID) renderValueExtractionCode(
 			baseType = t
 			continue
 		default:
-			ctx.Logger.Trace("Unknown type", "path", path[:pathIdx], "name", typ.String(), "type", fmt.Sprintf("%T", typ))
+			//ctx.Logger.Trace("Unknown type", "path", path[:pathIdx], "name", typ.String(), "type", fmt.Sprintf("%T", typ))
 			err = fmt.Errorf(
 				"type %s is not addressable, path: /%s",
 				typ.TypeName(),

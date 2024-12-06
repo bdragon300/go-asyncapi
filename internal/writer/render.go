@@ -2,14 +2,16 @@ package writer
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/render"
 	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/selector"
 	"github.com/bdragon300/go-asyncapi/internal/tpl"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/samber/lo"
+	"go/format"
+	"io"
 	"os"
 	"path"
 	"text/template"
@@ -53,44 +55,113 @@ type renderSource interface {
 	AllObjects() []compiler.Object
 }
 
-func RenderPackages(source renderSource, opts common.RenderOpts) (fileContents map[string]*bytes.Buffer, err error) {
-	fileContents = make(map[string]*bytes.Buffer)
+type renderQueueItem struct {
+	selection common.RenderSelectionConfig
+	object    compiler.Object
+	index     int
+}
+
+func RenderPackages(source renderSource, opts common.RenderOpts) (map[string]*bytes.Buffer, error) {
+	files := make(map[string]*bytes.Buffer)
 	// TODO: logging
-	for _, selection := range opts.Selections {
-		objects := selector.SelectObjects(source.AllObjects(), selection.RenderSelectionFilterConfig)
-		if len(objects) == 0 {
-			continue
-		}
+	queue := buildRenderQueue(source, opts.Selections)
+	var deferred []renderQueueItem
 
-		ctx := &context.RenderContextImpl{RenderOpts: opts}
-		selectionObjects := lo.Map(objects, func(item compiler.Object, _ int) common.Renderable { return item.Object})
-		tplCtx := render.NewTemplateContext(ctx, render.TemplateSelections{Objects: selectionObjects})
-		context.Context = ctx
-		// TODO: template in file name
-		if _, ok := fileContents[selection.File]; !ok {
-			fileContents[selection.File] = &bytes.Buffer{}
-		}
+	for len(queue) > 0 {
+		for _, item := range queue {
+			ctx := &context.RenderContextImpl{RenderOpts: opts, CurrentSelectionConfig: item.selection}
+			tplCtx := tpl.NewTemplateContext(ctx, item.object.Object, item.index)
+			context.Context = ctx
 
-		// TODO: redefinition preambule in config/cli args
-		var tmpl *template.Template
-		if tmpl = tpl.LoadTemplate("preamble"); tmpl == nil {
-			return nil, fmt.Errorf("template not found: preamble")
-		}
-		tmpl = tmpl.Funcs(render.GetTemplateFunctions(ctx))
-		if err = tmpl.Execute(fileContents[selection.File], tplCtx); err != nil {
-			return
-		}
+			rd, err := renderFile(ctx, tplCtx, item.selection.Template)
+			switch {
+			case errors.Is(err, common.ErrObjectDefinitionUnknownYet):
+				// Template can't be rendered right now due to unknown object definition, defer it
+				deferred = append(deferred, item)
+				continue
+			case err != nil:
+				return nil, err
+			}
 
-		if tmpl = tpl.LoadTemplate(selection.Template); tmpl == nil {
-			return nil, fmt.Errorf("template not found: %s", selection.Template)
+			fileName, err := renderInlineTemplate(ctx, tplCtx, item.selection.File)
+			switch {
+			case errors.Is(err, common.ErrObjectDefinitionUnknownYet):
+				// Template can't be rendered right now due to unknown object definition, defer it
+				deferred = append(deferred, item)
+				continue
+			case err != nil:
+				return nil, err
+			}
+
+			if _, ok := files[fileName]; !ok {
+				files[fileName] = &bytes.Buffer{}
+			}
+
+			if _, err = files[fileName].ReadFrom(rd); err != nil {
+				return nil, err
+			}
 		}
-		tmpl = tmpl.Funcs(render.GetTemplateFunctions(ctx))
-		if err = tmpl.Execute(fileContents[selection.File], tplCtx); err != nil {
-			return
+		if len(deferred) == len(queue) {
+			return nil, fmt.Errorf(
+				"cyclic dependencies detected in templates: %v",
+				lo.Map(deferred, func(item renderQueueItem, _ int) string { return item.selection.Template }),
+			)
 		}
+		queue, deferred = deferred, nil
 	}
 
+	return files, nil
+}
+
+func buildRenderQueue(source renderSource, selections []common.RenderSelectionConfig) (res []renderQueueItem) {
+	for _, selection := range selections {
+		objects := selector.SelectObjects(source.AllObjects(), selection)
+		for ind, obj := range objects {
+			res = append(res, renderQueueItem{selection, obj, ind})
+		}
+	}
 	return
+}
+
+func renderFile(renderCtx *context.RenderContextImpl, tplCtx tpl.TemplateContext, templateName string) (io.Reader, error) {
+	var res bytes.Buffer
+	var tmpl *template.Template
+
+	// Execute the main template first to accumulate imports and other data, that will be rendered in preamble
+	var buf bytes.Buffer
+	if tmpl = tpl.LoadTemplate(templateName); tmpl == nil {
+		return nil, fmt.Errorf("template %q not found", templateName)
+	}
+	tmpl = tmpl.Funcs(tpl.GetTemplateFunctions(renderCtx))
+	if err := tmpl.Execute(&buf, tplCtx); err != nil {
+		return nil, err
+	}
+
+	// TODO: redefinition preambule in config/cli args
+	if tmpl = tpl.LoadTemplate("preamble"); tmpl == nil {
+		return nil, fmt.Errorf("template %q not found", "preamble")
+	}
+	tmpl = tmpl.Funcs(tpl.GetTemplateFunctions(renderCtx))
+	if err := tmpl.Execute(&res, tplCtx); err != nil {
+		return nil, err
+	}
+	if _, err := res.ReadFrom(&buf); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+func renderInlineTemplate(renderCtx *context.RenderContextImpl, tplCtx tpl.TemplateContext, text string) (string, error) {
+	var res bytes.Buffer
+	tmpl, err := template.New("").Funcs(tpl.GetTemplateFunctions(renderCtx)).Parse(text)
+	if err != nil {
+		return "", err
+	}
+	if err := tmpl.Execute(&res, tplCtx); err != nil {
+		return "", err
+	}
+	return res.String(), nil
 }
 
 //func RenderPackages(source renderSource, opts common.RenderOpts) (fileContents map[string]*bytes.Buffer, err error) {
@@ -176,6 +247,26 @@ func RenderPackages(source renderSource, opts common.RenderOpts) (fileContents m
 //	logger.Info("Rendering completed", "objects", rendered)
 //	return
 //}
+
+// FormatFiles formats the files in-place in the map using gofmt
+func FormatFiles(files map[string]*bytes.Buffer) error {
+	logger := types.NewLogger("Formatting 📐")
+	logger.Info("Run formatting")
+
+	for fileName, buf := range files {
+		logger.Debug("File", "name", fileName)
+		formatted, err := format.Source(buf.Bytes())
+		if err != nil {
+			return err
+		}
+		buf.Reset()
+		buf.Write(formatted)
+		logger.Debug("File formatted", "name", fileName, "bytes", buf.Len())
+	}
+
+	logger.Info("Formatting completed", "files", len(files))
+	return nil
+}
 
 func WriteToFiles(files map[string]*bytes.Buffer, baseDir string) error {
 	logger := types.NewLogger("Writing 📝")

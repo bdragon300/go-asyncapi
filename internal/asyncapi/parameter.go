@@ -29,11 +29,11 @@ func (p Parameter) Compile(ctx *common.CompileContext) error {
 }
 
 func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (common.Renderable, error) {
-	ignore := !ctx.CompileOpts.ChannelOpts.Enable
-	if ignore {
-		ctx.Logger.Debug("Parameter denoted to be ignored along with all channels")
-		return &render.Parameter{Dummy: true}, nil
-	}
+	//ignore := !ctx.CompileOpts.ChannelOpts.Enable
+	//if ignore {
+	//	ctx.Logger.Debug("Parameter denoted to be ignored along with all channels")
+	//	return &render.Parameter{Dummy: true}, nil
+	//}
 	if p.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", p.Ref)
 		res := lang.NewRenderablePromise(p.Ref, common.PromiseOriginUser)

@@ -1,30 +1,22 @@
-{{if .SelectAsyncAPI}}
-    {{template "encoding" .SelectAsyncAPI}}
-{{end}}
-
-{{range .Selections.SelectSchemas}}
+{{if .SchemaObj}}
     {{template "schema" .}}
 {{end}}
 
-{{range .Selections.SelectServers}}
-    {{template "server" .}}
-    {{runTemplate (print .ProtoName "/" "server") .}}
+{{if .ServerObj}}
+    {{template "server" .ServerObj }}
+    {{execTemplate (print .ServerObj.ProtoName "/" "server") .ServerObj }}
 {{end}}
 
-{{range .Selections.SelectParameters}}
-    {{template "parameter" .}}
+{{if .ParameterObj}}
+    {{template "parameter" .ParameterObj}}
 {{end}}
 
-{{$channels := .Selections.SelectChannels}}
-{{if $channels}}{{template "channel" $channels.0}}{{end}}
-
-{{range $channels}}
-    {{runTemplate (print .ProtoName "/" "channel") .}}
+{{if .ChannelObj}}
+    {{if eq .Index 0}}{{template "channel" .ChannelObj}}{{end}}
+    {{execTemplate (print .ChannelObj.ProtoName "/" "channel") .}}
 {{end}}
 
-{{$messages := .Selections.SelectMessages}}
-{{if $messages}}{{template "message" $messages.0}}{{end}}
-
-{{range $messages}}
-    {{runTemplate (print .ProtoName "/" "message") .}}
+{{if .MessageObj}}
+    {{if eq .Index 0}}{{template "message" .MessageObj}}{{end}}
+    {{execTemplate (print .MessageObj.ProtoName "/" "message") .}}
 {{end}}

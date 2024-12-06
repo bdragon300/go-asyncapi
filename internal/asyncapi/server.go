@@ -39,7 +39,7 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 
 func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Renderable, error) {
 	_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagComponent]
-	ignore := s.XIgnore || !ctx.CompileOpts.ServerOpts.IsAllowedName(serverKey)
+	ignore := s.XIgnore //|| !ctx.CompileOpts.ServerOpts.IsAllowedName(serverKey)
 	if ignore {
 		ctx.Logger.Debug("Server denoted to be ignored")
 		return &render.ProtoServer{Server: &render.Server{Dummy: true}}, nil
@@ -48,7 +48,6 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		ctx.Logger.Trace("Ref", "$ref", s.Ref)
 		prm := lang.NewRenderablePromise(s.Ref, common.PromiseOriginUser)
 		// Set a server to be rendered if we reference it from `servers` document section
-		prm.DirectRender = !isComponent
 		ctx.PutPromise(prm)
 		return prm, nil
 	}
@@ -83,7 +82,6 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 				Name:          ctx.GenerateObjName(srvName, "Bindings"),
 				HasDefinition: true,
 			},
-			Fields: nil,
 		}
 
 		ref := ctx.PathStackRef("bindings")

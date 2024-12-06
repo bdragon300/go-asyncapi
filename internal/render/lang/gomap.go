@@ -46,3 +46,10 @@ func (m GoMap) U() string {
 	//return []*jen.Statement{jen.Map((&jen.Statement{}).Add(keyType...)).Add(valueType...)}
 	return renderTemplate("lang/gomap/usage", &m)
 }
+
+func (m GoMap) String() string {
+	if m.Import != "" {
+		return "GoMap /" + m.Import + "." + m.Name
+	}
+	return "GoMap " + m.Name
+}

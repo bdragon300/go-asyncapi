@@ -1,25 +1,24 @@
 package context
 
 import (
+	"cmp"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 	"path"
+	"slices"
 	"strings"
+	"unicode"
 )
 
 var Context common.RenderContext
-
-type ImportItem struct {
-	Alias       string
-	PackageName string
-}
 
 // TODO: add object path?
 type RenderContextImpl struct {
 	RenderOpts     common.RenderOpts
 	CurrentSelectionConfig common.RenderSelectionConfig
-	imports map[string]ImportItem // Key: package path
+	imports map[string]common.ImportItem // Key: package path
 }
 
 func (c *RenderContextImpl) RuntimeModule(subPackage string) string {
@@ -27,8 +26,8 @@ func (c *RenderContextImpl) RuntimeModule(subPackage string) string {
 }
 
 func (c *RenderContextImpl) QualifiedName(parts ...string) string {
-	name, pkgPath, pkgName := qualifiedToImport(parts)
-	return fmt.Sprintf("%s.%s", c.importPackage(pkgPath, pkgName), name)
+	pkgPath, pkgName, name := qualifiedToImport(parts)
+	return fmt.Sprintf("%s.%s", c.importPackage(pkgPath, pkgName), utils.ToGolangName(name, unicode.IsUpper(rune(name[0]))))
 }
 
 // QualifiedGeneratedPackage checks if the object is in the generated package of CurrentSelectionConfig and returns
@@ -53,15 +52,31 @@ func (c *RenderContextImpl) QualifiedGeneratedPackage(obj common.GolangType) (st
 
 func (c *RenderContextImpl) QualifiedRuntimeName(parts ...string) string {
 	p := append([]string{c.RenderOpts.ImportBase}, parts...)
-	name, pkgPath, pkgName := qualifiedToImport(p)
-	return fmt.Sprintf("%s.%s", c.importPackage(pkgPath, pkgName), name)
+	pkgPath, pkgName, name := qualifiedToImport(p)
+	return fmt.Sprintf("%s.%s", c.importPackage(pkgPath, pkgName), utils.ToGolangName(name, unicode.IsUpper(rune(name[0]))))
+}
+
+func (c *RenderContextImpl) CurrentDefinitionInfo() *common.GolangTypeDefinitionInfo {
+	return &common.GolangTypeDefinitionInfo{Selection: c.CurrentSelectionConfig}
+}
+
+func (c *RenderContextImpl) CurrentSelection() common.RenderSelectionConfig {
+	return c.CurrentSelectionConfig
+}
+
+func (c *RenderContextImpl) Imports() []common.ImportItem {
+	res := lo.Values(c.imports)
+	slices.SortFunc(res, func(a, b common.ImportItem) int {
+		return cmp.Compare(a.PackagePath, b.PackagePath)
+	})
+	return res
 }
 
 func (c *RenderContextImpl) importPackage(pkgPath string, pkgName string) string {
 	if _, ok := c.imports[pkgPath]; !ok {
-		res := ImportItem{PackageName: pkgName}
+		res := common.ImportItem{PackageName: pkgName, PackagePath: pkgPath}
 		// Find imports with the same package name
-		namesakes := lo.Filter(lo.Entries(c.imports), func(item lo.Entry[string, ImportItem], _ int) bool {
+		namesakes := lo.Filter(lo.Entries(c.imports), func(item lo.Entry[string, common.ImportItem], _ int) bool {
 			return item.Key != pkgPath && item.Value.PackageName == pkgName
 		})
 		if len(namesakes) > 0 {
@@ -74,10 +89,6 @@ func (c *RenderContextImpl) importPackage(pkgPath string, pkgName string) string
 		return v.Alias // Return alias
 	}
 	return pkgName
-}
-
-func (c *RenderContextImpl) CurrentDefinitionInfo() *common.GolangTypeDefinitionInfo {
-	return &common.GolangTypeDefinitionInfo{Selection: c.CurrentSelectionConfig}
 }
 
 //// LogStartRender is typically called at the beginning of a D or U method and logs that the
@@ -110,14 +121,14 @@ func (c *RenderContextImpl) CurrentDefinitionInfo() *common.GolangTypeDefinition
 
 // qualifiedToImport converts the qual* template function parameters to qualified name and import package path.
 // And also it returns the package name (the last part of the package path).
-func qualifiedToImport(parts []string) (name string, pkgPath string, pkgName string) {
-	// parts["a"] -> ["", "a", "a"]
-	// parts["", "a"] -> ["a", "", ""]
-	// parts["a.x"] -> ["x", "a", "a"]
-	// parts["a/b/c"] -> ["", "a/b/c", "c"]
-	// parts["a", "x"] -> ["x", "a", "a"]
-	// parts["a/b.c", "x"] -> ["x", "a/b.c", "bc"]
-	// parts["n", "d", "a/b.c", "x"] -> ["x", "n/d/a/b.c", "bc"]
+func qualifiedToImport(parts []string) (pkgPath string, pkgName string, name string) {
+	// parts["a"] -> ["a", "a", ""]
+	// parts["", "a"] -> ["", "", "a"]
+	// parts["a.x"] -> ["a", "a", "x"]
+	// parts["a/b/c"] -> ["a/b/c", "c", ""]
+	// parts["a", "x"] -> ["a", "a", "x"]
+	// parts["a/b.c", "x"] -> ["a/b.c", "bc", "x"]
+	// parts["n", "d", "a/b.c", "x"] -> ["n/d/a/b.c", "bc", "x"]
 	switch len(parts) {
 	case 0:
 		panic("Empty parameters, at least one is required")

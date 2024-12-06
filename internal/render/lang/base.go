@@ -2,7 +2,6 @@ package lang
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/render"
 	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/tpl"
 	"strings"
@@ -21,7 +20,7 @@ type BaseType struct {
 }
 
 func (b *BaseType) Kind() common.ObjectKind {
-	return common.ObjectKindLang
+	return common.ObjectKindOther
 }
 
 func (b *BaseType) Selectable() bool {
@@ -32,27 +31,20 @@ func (b *BaseType) TypeName() string {
 	return b.Name
 }
 
-func (b *BaseType) String() string {
-	if b.Import != "" {
-		return "GoType /" + b.Import + "." + b.Name
-	}
-	return "GoType " + b.Name
-}
-
 func (b *BaseType) IsPointer() bool {
 	return false
 }
 
 func (b *BaseType) DefinitionInfo() (*common.GolangTypeDefinitionInfo, error) {
 	if b.definitionInfo == nil {
-		return nil, common.ErrDefinitionIsNotAssignedYet
+		return nil, common.ErrObjectDefinitionUnknownYet
 	}
 	return b.definitionInfo, nil
 }
 
 type GolangTypeWrapperType interface {
 	UnwrapGolangType() (common.GolangType, bool)
-	String() string
+	//String() string
 }
 
 type GolangPointerType interface {  // TODO: replace with common.GolangType? or move where it is used
@@ -70,7 +62,7 @@ func renderTemplate[T common.Renderable](name string, obj T) string {
 		panic("template not found: " + name)
 	}
 
-	tmpl = tmpl.Funcs(render.GetTemplateFunctions(context.Context))
+	tmpl = tmpl.Funcs(tpl.GetTemplateFunctions(context.Context))
 	if err := tmpl.Execute(&b, obj); err != nil {
 		panic(err)
 	}
