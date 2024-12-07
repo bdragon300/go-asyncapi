@@ -46,8 +46,6 @@ func (pb ProtoBuilder) BuildOperationBindings(
 		err = types.CompileError{Err: err, Path: ctx.PathStackRef(), Proto: pb.ProtoName}
 		return
 	}
-	vals = lang.ConstructGoValue(
-		bindings, nil, &lang.GoSimple{Name: "OperationBindings", Import: ctx.RuntimeModule(pb.ProtoName)},
-	)
+	vals = lang.ConstructGoValue(bindings, nil, &lang.GoSimple{Name: "OperationBindings", Import: ctx.RuntimeModule(pb.ProtoName)})
 	return
 }

@@ -41,32 +41,26 @@ type Message struct {
 
 func (m Message) Compile(ctx *common.CompileContext) error {
 	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
-	msgs, err := m.build(ctx, ctx.Stack.Top().PathItem)
+	obj, err := m.build(ctx, ctx.Stack.Top().PathItem)
 	if err != nil {
 		return err
 	}
-	for _, msg := range msgs {
-		ctx.PutObject(msg)
-	}
+	ctx.PutObject(obj)
 	return nil
 }
 
-func (m Message) build(ctx *common.CompileContext, messageKey string) ([]common.Renderable, error) {
-	var res []common.Renderable
-
+func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Renderable, error) {
 	_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagComponent]
 	ignore := m.XIgnore || isComponent //&& !ctx.CompileOpts.MessageOpts.IsAllowedName(messageKey))
 	if ignore {
 		ctx.Logger.Debug("Message denoted to be ignored")
-		res = append(res, &render.ProtoMessage{Message: &render.Message{Dummy: true}})
-		return res, nil
+		return &render.Message{Dummy: true}, nil
 	}
 	if m.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", m.Ref)
 		prm := lang.NewRenderablePromise(m.Ref, common.PromiseOriginUser)
 		ctx.PutPromise(prm)
-		res = append(res, prm)
-		return res, nil
+		return prm, nil
 	}
 
 	// Being defined in "channels" section, we use the message key as the message name. Otherwise, generate a name,
@@ -78,7 +72,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) ([]common.
 	}
 	msgName, _ = lo.Coalesce(m.XGoName, msgName)
 
-	baseMessage := render.Message{
+	res := render.Message{
 		Name: msgName,
 		OutType: &lang.GoStruct{
 			BaseType: lang.BaseType{
@@ -98,29 +92,29 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) ([]common.
 		HeadersFallbackType: &lang.GoMap{KeyType: &lang.GoSimple{Name: "string"}, ValueType: &lang.GoSimple{Name: "any", IsInterface: true}},
 		ContentType: m.ContentType,
 	}
-	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", baseMessage.ContentType))
+	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", res.ContentType))
 
 	// Lookup servers after linking to figure out all protocols the message is used in
 	prm := lang.NewListCbPromise[*render.Server](func(item common.Renderable, path []string) bool {
 		_, ok := item.(*render.Server)
 		return ok
 	})
-	baseMessage.AllServersPromise = prm
+	res.AllServersPromise = prm
 
 	// Link to Headers struct if any
 	if m.Headers != nil {
 		ctx.Logger.Trace("Message headers")
 		ref := ctx.PathStackRef("headers")
-		baseMessage.HeadersTypePromise = lang.NewPromise[*lang.GoStruct](ref, common.PromiseOriginInternal)
-		baseMessage.HeadersTypePromise.AssignErrorNote = "Probably the headers schema has type other than of 'object'?"
-		ctx.PutPromise(baseMessage.HeadersTypePromise)
+		res.HeadersTypePromise = lang.NewPromise[*lang.GoStruct](ref, common.PromiseOriginInternal)
+		res.HeadersTypePromise.AssignErrorNote = "Probably the headers schema has type other than of 'object'?"
+		ctx.PutPromise(res.HeadersTypePromise)
 	}
-	m.setStructFields(ctx, &baseMessage)
+	m.setStructFields(ctx, &res)
 
 	// Bindings
 	if m.Bindings != nil {
 		ctx.Logger.Trace("Message bindings")
-		baseMessage.BindingsType = &lang.GoStruct{
+		res.BindingsType = &lang.GoStruct{
 			BaseType: lang.BaseType{
 				Name:          ctx.GenerateObjName(msgName, "Bindings"),
 				HasDefinition: true,
@@ -128,28 +122,30 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) ([]common.
 		}
 
 		ref := ctx.PathStackRef("bindings")
-		baseMessage.BindingsPromise = lang.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
-		ctx.PutPromise(baseMessage.BindingsPromise)
+		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
+		ctx.PutPromise(res.BindingsPromise)
 	}
 
 	// Link to CorrelationID if any
 	if m.CorrelationID != nil {
 		ctx.Logger.Trace("Message correlationId")
 		ref := ctx.PathStackRef("correlationId")
-		baseMessage.CorrelationIDPromise = lang.NewPromise[*render.CorrelationID](ref, common.PromiseOriginInternal)
-		ctx.PutPromise(baseMessage.CorrelationIDPromise)
+		res.CorrelationIDPromise = lang.NewPromise[*render.CorrelationID](ref, common.PromiseOriginInternal)
+		ctx.PutPromise(res.CorrelationIDPromise)
 	}
 
 	// Build protocol-specific messages for all supported protocols
 	// Here we don't know yet which channels this message is used by, so we don't have the protocols list to compile.
 	ctx.Logger.Trace("Prebuild the messages for every supported protocol")
+	var protoMessages []*render.ProtoMessage
 	for proto := range ProtocolBuilders {
 		ctx.Logger.Trace("Message", "proto", proto)
-		res = append(res, &render.ProtoMessage{
-			Message:   &baseMessage,
+		protoMessages = append(protoMessages, &render.ProtoMessage{
+			Message:   &res,
 			ProtoName: proto,
 		})
 	}
+	res.ProtoMessages = protoMessages
 
 	return res, nil
 }

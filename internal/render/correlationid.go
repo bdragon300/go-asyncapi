@@ -2,7 +2,6 @@ package render
 
 import (
 	"fmt"
-	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"net/url"
@@ -293,7 +292,7 @@ func (c CorrelationID) renderValueExtractionCode(
 				%s = v
 			}`, varValueStmts, nextAnchor)
 			if validationCode {
-				fmtErrorf := context.Context.QualifiedName("fmt.Errorf")
+				fmtErrorf := common.GetContext().QualifiedName("fmt.Errorf")
 				ifExpr += fmt.Sprintf(` else {
 					err = %s("key %%q not found in map on path /%s", %s)
 					return
@@ -318,7 +317,7 @@ func (c CorrelationID) renderValueExtractionCode(
 				return
 			}
 			if validationCode {
-				fmtErrorf := context.Context.QualifiedName("fmt.Errorf")
+				fmtErrorf := common.GetContext().QualifiedName("fmt.Errorf")
 				body = append(body, fmt.Sprintf(`if len(%s) <= %s {
 					err = %s("index %%q is out of range in array of length %%d on path /%s", %s, len(%s))
 					return

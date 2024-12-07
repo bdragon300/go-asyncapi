@@ -15,8 +15,6 @@ import (
 	"os"
 	"path"
 	"text/template"
-
-	"github.com/bdragon300/go-asyncapi/internal/compiler"
 )
 
 //type MultilineError struct {
@@ -52,12 +50,12 @@ import (
 //}
 
 type renderSource interface {
-	AllObjects() []compiler.Object
+	AllObjects() []common.CompileObject
 }
 
 type renderQueueItem struct {
 	selection common.RenderSelectionConfig
-	object    compiler.Object
+	object    common.CompileObject
 	index     int
 }
 
@@ -70,10 +68,10 @@ func RenderPackages(source renderSource, opts common.RenderOpts) (map[string]*by
 	for len(queue) > 0 {
 		for _, item := range queue {
 			ctx := &context.RenderContextImpl{RenderOpts: opts, CurrentSelectionConfig: item.selection}
-			tplCtx := tpl.NewTemplateContext(ctx, item.object.Object, item.index)
-			context.Context = ctx
+			tplCtx := tpl.NewTemplateContext(ctx, item.object, item.index)
+			common.SetContext(ctx)
 
-			rd, err := renderFile(ctx, tplCtx, item.selection.Template)
+			rd, err := renderFile(tplCtx, item.selection.Template)
 			switch {
 			case errors.Is(err, common.ErrObjectDefinitionUnknownYet):
 				// Template can't be rendered right now due to unknown object definition, defer it
@@ -83,7 +81,7 @@ func RenderPackages(source renderSource, opts common.RenderOpts) (map[string]*by
 				return nil, err
 			}
 
-			fileName, err := renderInlineTemplate(ctx, tplCtx, item.selection.File)
+			fileName, err := renderInlineTemplate(tplCtx, item.selection.File)
 			switch {
 			case errors.Is(err, common.ErrObjectDefinitionUnknownYet):
 				// Template can't be rendered right now due to unknown object definition, defer it
@@ -123,7 +121,7 @@ func buildRenderQueue(source renderSource, selections []common.RenderSelectionCo
 	return
 }
 
-func renderFile(renderCtx *context.RenderContextImpl, tplCtx tpl.TemplateContext, templateName string) (io.Reader, error) {
+func renderFile(tplCtx tpl.TemplateContext, templateName string) (io.Reader, error) {
 	var res bytes.Buffer
 	var tmpl *template.Template
 
@@ -132,7 +130,6 @@ func renderFile(renderCtx *context.RenderContextImpl, tplCtx tpl.TemplateContext
 	if tmpl = tpl.LoadTemplate(templateName); tmpl == nil {
 		return nil, fmt.Errorf("template %q not found", templateName)
 	}
-	tmpl = tmpl.Funcs(tpl.GetTemplateFunctions(renderCtx))
 	if err := tmpl.Execute(&buf, tplCtx); err != nil {
 		return nil, err
 	}
@@ -141,7 +138,6 @@ func renderFile(renderCtx *context.RenderContextImpl, tplCtx tpl.TemplateContext
 	if tmpl = tpl.LoadTemplate("preamble"); tmpl == nil {
 		return nil, fmt.Errorf("template %q not found", "preamble")
 	}
-	tmpl = tmpl.Funcs(tpl.GetTemplateFunctions(renderCtx))
 	if err := tmpl.Execute(&res, tplCtx); err != nil {
 		return nil, err
 	}
@@ -152,9 +148,9 @@ func renderFile(renderCtx *context.RenderContextImpl, tplCtx tpl.TemplateContext
 	return &res, nil
 }
 
-func renderInlineTemplate(renderCtx *context.RenderContextImpl, tplCtx tpl.TemplateContext, text string) (string, error) {
+func renderInlineTemplate(tplCtx tpl.TemplateContext, text string) (string, error) {
 	var res bytes.Buffer
-	tmpl, err := template.New("").Funcs(tpl.GetTemplateFunctions(renderCtx)).Parse(text)
+	tmpl, err := template.New("").Funcs(tpl.GetTemplateFunctions()).Parse(text)
 	if err != nil {
 		return "", err
 	}

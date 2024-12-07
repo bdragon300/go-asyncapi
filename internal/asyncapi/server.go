@@ -42,7 +42,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	ignore := s.XIgnore //|| !ctx.CompileOpts.ServerOpts.IsAllowedName(serverKey)
 	if ignore {
 		ctx.Logger.Debug("Server denoted to be ignored")
-		return &render.ProtoServer{Server: &render.Server{Dummy: true}}, nil
+		return &render.Server{Dummy: true}, nil
 	}
 	if s.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", s.Ref)
@@ -54,7 +54,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 
 	srvName, _ := lo.Coalesce(s.XGoName, serverKey)
 	// Render only the servers defined directly in `servers` document section, not in `components`
-	baseServer := render.Server{
+	res := render.Server{
 		Name:            srvName,
 		SpecKey:         serverKey,
 		TypeNamePrefix:  ctx.GenerateObjName(srvName, ""),
@@ -72,12 +72,12 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		return len(path) >= 2 && path[0] == "channels"
 	})
 	ctx.PutListPromise(prm)
-	baseServer.AllChannelsPromise = prm
+	res.AllChannelsPromise = prm
 
 	// Bindings
 	if s.Bindings != nil {
 		ctx.Logger.Trace("Server bindings")
-		baseServer.BindingsType = &lang.GoStruct{
+		res.BindingsType = &lang.GoStruct{
 			BaseType: lang.BaseType{
 				Name:          ctx.GenerateObjName(srvName, "Bindings"),
 				HasDefinition: true,
@@ -85,8 +85,8 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		}
 
 		ref := ctx.PathStackRef("bindings")
-		baseServer.BindingsPromise = lang.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
-		ctx.PutPromise(baseServer.BindingsPromise)
+		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
+		ctx.PutPromise(res.BindingsPromise)
 	}
 
 	// Server variables
@@ -95,25 +95,26 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		ref := ctx.PathStackRef("variables", v.Key)
 		prm := lang.NewPromise[*render.ServerVariable](ref, common.PromiseOriginInternal)
 		ctx.PutPromise(prm)
-		baseServer.VariablesPromises.Set(v.Key, prm)
+		res.VariablesPromises.Set(v.Key, prm)
 	}
 
 	protoBuilder, ok := ProtocolBuilders[s.Protocol]
 	if !ok {
 		ctx.Logger.Warn("Skip unsupported server protocol", "proto", s.Protocol)
-		protoStruct, err := BuildProtoServerStruct(ctx, &s, &baseServer, "")
+		protoStruct, err := BuildProtoServerStruct(ctx, &s, &res, "")
 		if err != nil {
 			return nil, err
 		}
-		return &render.ProtoServer{Server: &baseServer, Type: protoStruct}, nil
+		return &render.ProtoServer{Server: &res, Type: protoStruct}, nil
 	}
 
 	ctx.Logger.Trace("Server", "proto", protoBuilder.ProtocolName())
 
-	res, err := protoBuilder.BuildServer(ctx, &s, &baseServer)
+	protoServer, err := protoBuilder.BuildServer(ctx, &s, &res)
 	if err != nil {
 		return nil, err
 	}
+	res.ProtoServer = protoServer
 
 	// Register protocol only for servers in `servers` document section, not in `components`
 	if !isComponent {

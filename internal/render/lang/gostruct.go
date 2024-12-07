@@ -2,7 +2,6 @@ package lang
 
 import (
 	"fmt"
-	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"slices"
 	"strconv"
 	"strings"
@@ -37,7 +36,7 @@ func (s GoStruct) D() string {
 	//})
 	//res = append(res, jen.Type().Id(s.Name).Type(utils.ToCode(code)...))
 	//return res
-	s.definitionInfo = context.Context.CurrentDefinitionInfo()
+	s.definitionInfo = common.GetContext().CurrentDefinitionInfo()
 	return renderTemplate("lang/gostruct/definition", &s)
 }
 

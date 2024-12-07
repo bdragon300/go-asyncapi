@@ -84,9 +84,7 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 		vals.StructValues.Set("ChannelType", &lang.GoSimple{Name: "ChannelTypeRoutingKey", Import: ctx.RuntimeModule(pb.ProtoName)})
 	}
 	if bindings.Exchange != nil {
-		ecVals := lang.ConstructGoValue(
-			*bindings.Exchange, []string{"Type"}, &lang.GoSimple{Name: "ExchangeConfiguration", Import: ctx.RuntimeModule(pb.ProtoName)},
-		)
+		ecVals := lang.ConstructGoValue(*bindings.Exchange, []string{"Type"}, &lang.GoSimple{Name: "ExchangeConfiguration", Import: ctx.RuntimeModule(pb.ProtoName)})
 		switch bindings.Exchange.Type {
 		case "default":
 			ecVals.StructValues.Set("Type", &lang.GoSimple{Name: "ExchangeTypeDefault", Import: ctx.RuntimeModule(pb.ProtoName)})
@@ -101,9 +99,7 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 		}
 		vals.StructValues.Set("ExchangeConfiguration", ecVals)
 	}
-	qVals := lang.ConstructGoValue(
-		*bindings.Queue, nil, &lang.GoSimple{Name: "QueueConfiguration", Import: ctx.RuntimeModule(pb.ProtoName)},
-	)
+	qVals := lang.ConstructGoValue(*bindings.Queue, nil, &lang.GoSimple{Name: "QueueConfiguration", Import: ctx.RuntimeModule(pb.ProtoName)})
 	vals.StructValues.Set("QueueConfiguration", qVals)
 
 	return
@@ -116,13 +112,9 @@ func (pb ProtoBuilder) BuildOperationBindings(ctx *common.CompileContext, rawDat
 		return
 	}
 
-	vals = lang.ConstructGoValue(
-		bindings, []string{"Expiration", "DeliveryMode"}, &lang.GoSimple{Name: "OperationBindings", Import: ctx.RuntimeModule(pb.ProtoName)},
-	)
+	vals = lang.ConstructGoValue(bindings, []string{"Expiration", "DeliveryMode"}, &lang.GoSimple{Name: "OperationBindings", Import: ctx.RuntimeModule(pb.ProtoName)})
 	if bindings.Expiration > 0 {
-		v := lang.ConstructGoValue(
-			bindings.Expiration*int(time.Millisecond), nil, &lang.GoSimple{Name: "Duration", Import: "time"},
-		)
+		v := lang.ConstructGoValue(bindings.Expiration*int(time.Millisecond), nil, &lang.GoSimple{Name: "Duration", Import: "time"})
 		vals.StructValues.Set("Expiration", v)
 	}
 	switch bindings.DeliveryMode {

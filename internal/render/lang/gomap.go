@@ -2,7 +2,6 @@ package lang
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/render/context"
 )
 
 type GoMap struct {
@@ -26,7 +25,7 @@ func (m GoMap) D() string {
 	//res = append(res, stmt.Map((&jen.Statement{}).Add(keyType...)).Add(valueType...))
 	//
 	//return res
-	m.definitionInfo = context.Context.CurrentDefinitionInfo()
+	m.definitionInfo = common.GetContext().CurrentDefinitionInfo()
 	return renderTemplate("lang/gomap/definition", &m)
 }
 

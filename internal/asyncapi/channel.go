@@ -27,39 +27,33 @@ type Channel struct {
 
 func (c Channel) Compile(ctx *common.CompileContext) error {
 	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
-	chans, err := c.buildChannels(ctx, ctx.Stack.Top().PathItem)
+	obj, err := c.buildChannels(ctx, ctx.Stack.Top().PathItem)
 	if err != nil {
 		return err
 	}
-	for _, ch := range chans {
-		ctx.PutObject(ch)
-	}
+	ctx.PutObject(obj)
 	return nil
 }
 
-func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) ([]common.Renderable, error) {
-	var res []common.Renderable
-
+func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) (common.Renderable, error) {
 	ignore := c.XIgnore ||
 		(!ctx.CompileOpts.GeneratePublishers && !ctx.CompileOpts.GenerateSubscribers) // ||
 		//!ctx.CompileOpts.ChannelOpts.IsAllowedName(channelKey)
 	if ignore {
 		ctx.Logger.Debug("Channel denoted to be ignored")
-		res = append(res, &render.ProtoChannel{Channel: &render.Channel{Dummy: true}})
-		return res, nil
+		return &render.Channel{Dummy: true}, nil
 	}
 	if c.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", c.Ref)
 		prm := lang.NewRenderablePromise(c.Ref, common.PromiseOriginUser)
 		// Set a channel to be rendered if we reference it from `channels` document section
 		ctx.PutPromise(prm)
-		res = append(res, prm)
-		return res, nil
+		return prm, nil
 	}
 
 	chName, _ := lo.Coalesce(c.XGoName, channelKey)
 	// Render only the channels defined directly in `channels` document section, not in `components`
-	baseChan := &render.Channel{
+	res := &render.Channel{
 		Name:                chName,
 		TypeNamePrefix:      ctx.GenerateObjName(chName, ""),
 		SpecKey:             channelKey,
@@ -69,7 +63,7 @@ func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) ([
 	if c.Parameters.Len() > 0 {
 		ctx.Logger.Trace("Channel parameters")
 		ctx.Logger.NextCallLevel()
-		baseChan.ParametersType = &lang.GoStruct{
+		res.ParametersType = &lang.GoStruct{
 			BaseType: lang.BaseType{
 				Name:          ctx.GenerateObjName(chName, "Parameters"),
 				HasDefinition: true,
@@ -78,9 +72,11 @@ func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) ([
 		for _, paramName := range c.Parameters.Keys() {
 			ctx.Logger.Trace("Channel parameter", "name", paramName)
 			ref := ctx.PathStackRef("parameters", paramName)
-			prm := lang.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+			prm := lang.NewGolangTypeAssignCbPromise(ref, common.PromiseOriginInternal, func(obj any) common.GolangType {
+				return obj.(*render.Parameter).Type
+			})
 			ctx.PutPromise(prm)
-			baseChan.ParametersType.Fields = append(baseChan.ParametersType.Fields, lang.GoStructField{
+			res.ParametersType.Fields = append(res.ParametersType.Fields, lang.GoStructField{
 				Name: utils.ToGolangName(paramName, true),
 				Type: prm,
 			})
@@ -92,7 +88,7 @@ func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) ([
 	// Empty servers field means "no servers", omitted servers field means "all servers"
 	if c.Servers != nil {
 		ctx.Logger.Trace("Channel servers", "names", *c.Servers)
-		baseChan.SpecServerNames = *c.Servers
+		res.SpecServerNames = *c.Servers
 		prm := lang.NewListCbPromise[*render.Server](func(item common.Renderable, path []string) bool {
 			srv, ok := item.(*render.Server)
 			if !ok {
@@ -100,14 +96,14 @@ func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) ([
 			}
 			return lo.Contains(*c.Servers, srv.Name)
 		})
-		baseChan.ServersPromise = prm
+		res.ServersPromise = prm
 	} else {
 		ctx.Logger.Trace("Channel for all servers")
 		prm := lang.NewListCbPromise[*render.Server](func(item common.Renderable, path []string) bool {
 			_, ok := item.(*render.Server)
 			return ok
 		})
-		baseChan.ServersPromise = prm
+		res.ServersPromise = prm
 	}
 
 	// Channel/operation bindings
@@ -117,48 +113,48 @@ func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) ([
 		hasBindings = true
 
 		ref := ctx.PathStackRef("bindings")
-		baseChan.BindingsChannelPromise = lang.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
-		ctx.PutPromise(baseChan.BindingsChannelPromise)
+		res.BindingsChannelPromise = lang.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
+		ctx.PutPromise(res.BindingsChannelPromise)
 	}
 
 	genPub := c.Publish != nil && ctx.CompileOpts.GeneratePublishers
 	genSub := c.Subscribe != nil && ctx.CompileOpts.GenerateSubscribers
 	if genPub && !c.Publish.XIgnore {
-		baseChan.IsPublisher = true
+		res.IsPublisher = true
 		if c.Publish.Bindings != nil {
 			ctx.Logger.Trace("Found publish operation bindings")
 			hasBindings = true
 
 			ref := ctx.PathStackRef("publish", "bindings")
-			baseChan.BindingsPublishPromise = lang.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
-			ctx.PutPromise(baseChan.BindingsPublishPromise)
+			res.BindingsPublishPromise = lang.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
+			ctx.PutPromise(res.BindingsPublishPromise)
 		}
 		if c.Publish.Message != nil {
 			ctx.Logger.Trace("Found publish operation message")
 			ref := ctx.PathStackRef("publish", "message")
-			baseChan.PublisherMessageTypePromise = lang.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
-			ctx.PutPromise(baseChan.PublisherMessageTypePromise)
+			res.PublisherMessageTypePromise = lang.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
+			ctx.PutPromise(res.PublisherMessageTypePromise)
 		}
 	}
 	if genSub && !c.Subscribe.XIgnore {
-		baseChan.IsSubscriber = true
+		res.IsSubscriber = true
 		if c.Subscribe.Bindings != nil {
 			ctx.Logger.Trace("Found subscribe operation bindings")
 			hasBindings = true
 
 			ref := ctx.PathStackRef("subscribe", "bindings")
-			baseChan.BindingsSubscribePromise = lang.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
-			ctx.PutPromise(baseChan.BindingsSubscribePromise)
+			res.BindingsSubscribePromise = lang.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
+			ctx.PutPromise(res.BindingsSubscribePromise)
 		}
 		if c.Subscribe.Message != nil {
 			ctx.Logger.Trace("Channel subscribe operation message")
 			ref := ctx.PathStackRef("subscribe", "message")
-			baseChan.SubscribeMessageTypePromise = lang.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
-			ctx.PutPromise(baseChan.SubscribeMessageTypePromise)
+			res.SubscribeMessageTypePromise = lang.NewPromise[*render.Message](ref, common.PromiseOriginInternal)
+			ctx.PutPromise(res.SubscribeMessageTypePromise)
 		}
 	}
 	if hasBindings {
-		baseChan.BindingsType = &lang.GoStruct{
+		res.BindingsType = &lang.GoStruct{
 			BaseType: lang.BaseType{
 				Name:          ctx.GenerateObjName(chName, "Bindings"),
 				HasDefinition: true,
@@ -172,16 +168,18 @@ func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) ([
 	// channels to be compiled for certain protocols we want to render.
 	// As a solution, here we just build the proto channels for all supported protocols
 	ctx.Logger.Trace("Prebuild the channels for every supported protocol")
+	var protoChannels []*render.ProtoChannel
 	for proto, b := range ProtocolBuilders {
 		ctx.Logger.Trace("Channel", "proto", proto)
 		ctx.Logger.NextCallLevel()
-		obj, err := b.BuildChannel(ctx, &c, baseChan)
+		obj, err := b.BuildChannel(ctx, &c, res)
 		ctx.Logger.PrevCallLevel()
 		if err != nil {
 			return nil, err
 		}
-		res = append(res, obj)
+		protoChannels = append(protoChannels, obj)
 	}
+	res.ProtoChannels = protoChannels
 
 	return res, nil
 }

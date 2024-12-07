@@ -20,6 +20,8 @@ type Message struct {
 	ContentType          string                        // Message's content type
 	CorrelationIDPromise *lang.Promise[*CorrelationID] // nil if correlationID is not defined for message
 	AsyncAPIPromise *lang.Promise[*AsyncAPI]
+
+	ProtoMessages []*ProtoMessage
 }
 
 func (m Message) Kind() common.ObjectKind {
@@ -28,6 +30,12 @@ func (m Message) Kind() common.ObjectKind {
 
 func (m Message) Selectable() bool {
 	return !m.Dummy
+}
+
+func (m Message) ProtoObjects() []common.Renderable {
+	return lo.FilterMap(m.ProtoMessages, func(p *ProtoMessage, _ int) (common.Renderable, bool) {
+		return p, p.Selectable()
+	})
 }
 
 func (m Message) EffectiveContentType() string {
@@ -299,6 +307,19 @@ type ProtoMessage struct {
 	ProtoName string
 }
 
+func (p ProtoMessage) Selectable() bool {
+	return !p.Dummy && p.isBound()
+}
+
 func (p ProtoMessage) String() string {
 	return "Message " + p.Name
+}
+
+
+// isBound returns true if the message is bound to the protocol
+func (p ProtoMessage) isBound() bool {
+	return lo.Contains(
+		lo.Map(p.AllServersPromise.T(), func(s *Server, _ int) string { return s.Protocol }),
+		p.ProtoName,
+	)
 }

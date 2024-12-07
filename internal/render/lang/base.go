@@ -2,7 +2,6 @@ package lang
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/tpl"
 	"strings"
 )
@@ -62,7 +61,7 @@ func renderTemplate[T common.Renderable](name string, obj T) string {
 		panic("template not found: " + name)
 	}
 
-	tmpl = tmpl.Funcs(tpl.GetTemplateFunctions(context.Context))
+	//tmpl = tmpl.Funcs(tpl.GetTemplateFunctions(context.GetContext()))
 	if err := tmpl.Execute(&b, obj); err != nil {
 		panic(err)
 	}

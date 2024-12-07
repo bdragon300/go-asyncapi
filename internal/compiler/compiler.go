@@ -19,17 +19,11 @@ import (
 	"github.com/samber/lo"
 )
 
-
-type Object struct {
-	Object common.Renderable
-	ModuleURL specurl.URL
-}
-
 func NewModule(specURL *specurl.URL) *Module {
 	return &Module{
 		logger:             types.NewLogger("Compilation 🔨"),
 		specURL:            specURL,
-		objects:            make([]Object, 0),
+		objects:            make([]common.CompileObject, 0),
 		protocols:          make(map[string]int),
 	}
 }
@@ -44,16 +38,14 @@ type Module struct {
 	parsedSpec     compiledObject
 
 	// Set during compilation
-	objects            []Object
+	objects            []common.CompileObject
 	protocols          map[string]int
 	promises           []common.ObjectPromise
 	listPromises       []common.ObjectListPromise
 }
 
-func (c *Module) AddObject(stack []string, obj common.Renderable) {
-	u := *c.specURL
-	u.Pointer = stack
-	c.objects = append(c.objects, Object{Object: obj, ModuleURL: u})
+func (c *Module) AddObject(obj common.CompileObject) {
+	c.objects = append(c.objects, obj)
 }
 
 func (c *Module) RegisterProtocol(protoName string) {
@@ -72,11 +64,15 @@ func (c *Module) AddListPromise(p common.ObjectListPromise) {
 	c.listPromises = append(c.listPromises, p)
 }
 
+func (c *Module) SpecObjectURL() specurl.URL {
+	return *c.specURL
+}
+
 func (c *Module) Protocols() []string {
 	return lo.Keys(c.protocols)
 }
 
-func (c *Module) AllObjects() []Object {
+func (c *Module) AllObjects() []common.CompileObject {
 	return c.objects
 }
 

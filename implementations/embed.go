@@ -5,7 +5,7 @@ import (
 )
 
 //go:embed *
-var Implementations embed.FS
+var ImplementationsFS embed.FS
 
 type ImplManifestItem struct {
 	URL string `json:"url"`

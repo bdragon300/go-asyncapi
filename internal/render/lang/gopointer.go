@@ -5,7 +5,7 @@ import (
 )
 
 type GoPointer struct {
-	Type          common.GolangType
+	Type   common.GolangType
 }
 
 func (p GoPointer) Kind() common.ObjectKind {

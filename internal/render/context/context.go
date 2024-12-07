@@ -12,8 +12,6 @@ import (
 	"unicode"
 )
 
-var Context common.RenderContext
-
 // TODO: add object path?
 type RenderContextImpl struct {
 	RenderOpts     common.RenderOpts

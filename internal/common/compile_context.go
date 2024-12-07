@@ -20,6 +20,11 @@ const nameWordSep = "_"
 // error is returned, a template caused this error goes to the end of the rendering queue.
 var ErrObjectDefinitionUnknownYet = errors.New("object definition is unknown yet")
 
+type CompileObject struct {
+	Renderable
+	ObjectURL specurl.URL
+}
+
 type GolangTypeDefinitionInfo struct {
 	Selection RenderSelectionConfig
 }
@@ -34,11 +39,12 @@ type GolangType interface {
 }
 
 type CompilationStorage interface {
-	AddObject(stack []string, obj Renderable)
+	AddObject(obj CompileObject)
 	RegisterProtocol(protoName string)
 	AddExternalSpecPath(specPath *specurl.URL)
 	AddPromise(p ObjectPromise)
 	AddListPromise(p ObjectListPromise)
+	SpecObjectURL() specurl.URL
 }
 
 type CompileOpts struct {
@@ -95,7 +101,7 @@ type CompileContext struct {
 }
 
 func (c *CompileContext) PutObject(obj Renderable) {
-	c.Storage.AddObject(c.PathStack(), obj)
+	c.Storage.AddObject(CompileObject{Renderable: obj, ObjectURL: c.CurrentObjectURL()})
 }
 
 func (c *CompileContext) PutPromise(p ObjectPromise) {
@@ -112,18 +118,24 @@ func (c *CompileContext) PutListPromise(p ObjectListPromise) {
 
 // PathStackRef returns a path to the current stack as a reference. NOTE: the reference is URL-encoded.
 func (c *CompileContext) PathStackRef(joinParts ...string) string {
-	parts := c.PathStack()
+	parts := c.pathStack()
 	if len(joinParts) > 0 {
 		parts = append(parts, joinParts...)
 	}
 	return specurl.BuildRef(parts...)
 }
 
-func (c *CompileContext) PathStack() []string {
+func (c *CompileContext) pathStack() []string {
 	return lo.Map(c.Stack.Items(), func(item ContextStackItem, _ int) string { return item.PathItem })
 }
 
-func (c *CompileContext) RegisterNameTop(n string) {
+func (c *CompileContext) CurrentObjectURL() specurl.URL {
+	u := c.Storage.SpecObjectURL()
+	u.Pointer = c.pathStack()
+	return u
+}
+
+func (c *CompileContext) RegisterNameTop(n string) {  // TODO: rework and remove this method?
 	t := c.Stack.Top()
 	t.RegisteredName = n
 	c.Stack.ReplaceTop(t)
@@ -141,7 +153,7 @@ func (c *CompileContext) GenerateObjName(name, suffix string) string {
 		})
 		// Otherwise if no registered objects in stack, just use path
 		if len(items) == 0 {
-			items = c.PathStack()
+			items = c.pathStack()
 		}
 		name = strings.Join(items, nameWordSep)
 	}

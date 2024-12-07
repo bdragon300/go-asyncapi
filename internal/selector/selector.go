@@ -2,15 +2,35 @@ package selector
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/compiler"
 	"github.com/samber/lo"
 	"regexp"
 )
 
-func SelectObjects(objects []compiler.Object, selection common.RenderSelectionConfig) []compiler.Object {
+type protoSelectable interface {
+	ProtoObjects() []common.Renderable
+}
+
+func SelectObjects(objects []common.CompileObject, selection common.RenderSelectionConfig) []common.CompileObject {
+	var allObjects []common.CompileObject
 	filterChain := getFiltersChain(selection)
 
-	return lo.Filter(objects, func(object compiler.Object, _ int) bool {
+	// Enumerate all objects and replace (unwind) them with their proto objects if they have any.
+	// This is needed because a channel, message, server are presented in spec as one object, therefore any $ref points
+	// to the whole object. But in templates we pass every proto part of the object separately.
+	for _, object := range objects {
+		if selectable, ok := object.Renderable.(protoSelectable); ok {
+			allObjects = append(allObjects, lo.Map(selectable.ProtoObjects(), func(obj common.Renderable, _ int) common.CompileObject {
+				return common.CompileObject{
+					Renderable: obj,
+					ObjectURL:  object.ObjectURL,
+				}
+			})...)
+		} else {
+			allObjects = append(allObjects, object)
+		}
+	}
+
+	return lo.Filter(objects, func(object common.CompileObject, _ int) bool {
 		for _, filter := range filterChain {
 			if !filter(object) {
 				return false
@@ -34,29 +54,29 @@ func SelectObjects(objects []compiler.Object, selection common.RenderSelectionCo
 //	return nil
 //}
 
-type filterFunc func(compiler.Object) bool
+type filterFunc func(common.CompileObject) bool
 
 func getFiltersChain(selection common.RenderSelectionConfig) []filterFunc {
 	var filterChain []filterFunc
-	filterChain = append(filterChain, func(object compiler.Object) bool {
-		return object.Object.Selectable()
+	filterChain = append(filterChain, func(object common.CompileObject) bool {
+		return object.Selectable()
 	})
 	if selection.ObjectKindRe != "" {
 		re := regexp.MustCompile(selection.ObjectKindRe) // TODO: compile 1 time (and below)
-		filterChain = append(filterChain, func(object compiler.Object) bool {
-			return re.MatchString(string(object.Object.Kind()))
+		filterChain = append(filterChain, func(object common.CompileObject) bool {
+			return re.MatchString(string(object.Kind()))
 		})
 	}
 	if selection.ModuleURLRe != "" {
 		re := regexp.MustCompile(selection.ModuleURLRe)
-		filterChain = append(filterChain, func(object compiler.Object) bool {
-			return re.MatchString(object.ModuleURL.SpecID)
+		filterChain = append(filterChain, func(object common.CompileObject) bool {
+			return re.MatchString(object.ObjectURL.SpecID)
 		})
 	}
 	if selection.PathRe != "" {
 		re := regexp.MustCompile(selection.PathRe)
-		filterChain = append(filterChain, func(object compiler.Object) bool {
-			return re.MatchString(object.ModuleURL.PointerRef())
+		filterChain = append(filterChain, func(object common.CompileObject) bool {
+			return re.MatchString(object.ObjectURL.PointerRef())
 		})
 	}
 	return filterChain

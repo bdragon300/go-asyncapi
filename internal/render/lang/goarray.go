@@ -2,7 +2,6 @@ package lang
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/render/context"
 )
 
 type GoArray struct {
@@ -30,7 +29,7 @@ func (a GoArray) D() string {
 	//res = append(res, stmt.Add(items...))
 	//
 	//return res
-	a.definitionInfo = context.Context.CurrentDefinitionInfo()
+	a.definitionInfo = common.GetContext().CurrentDefinitionInfo()
 	return renderTemplate("lang/goarray/definition", &a)
 }
 

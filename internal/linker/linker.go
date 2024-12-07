@@ -8,15 +8,13 @@ import (
 
 	"github.com/bdragon300/go-asyncapi/internal/types"
 
-	"github.com/bdragon300/go-asyncapi/internal/compiler"
-
 	"github.com/samber/lo"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 )
 
 type ObjectSource interface {
-	AllObjects() []compiler.Object // TODO: make this as interface and move promise.go to linker
+	AllObjects() []common.CompileObject // TODO: make this as interface and move promise.go to linker
 	Promises() []common.ObjectPromise
 	ListPromises() []common.ObjectListPromise
 }
@@ -132,16 +130,13 @@ func resolvePromise(p common.ObjectPromise, srcSpecID string, sources map[string
 
 	srcObjects := sources[tgtSpecID].AllObjects()
 	cb := func(_ common.Renderable, path []string) bool { return ref.MatchPointer(path) }
-	if qcb := p.FindCallback(); qcb != nil {
-		cb = qcb
-	}
-	found := lo.Filter(srcObjects, func(obj compiler.Object, _ int) bool { return cb(obj.Object, obj.ModuleURL.Pointer) })
+	found := lo.Filter(srcObjects, func(obj common.CompileObject, _ int) bool { return cb(obj, obj.ObjectURL.Pointer) })
 	if len(found) != 1 {
 		panic(fmt.Sprintf("Ref %q must point to one object, but %d objects found", p.Ref(), len(found)))
 	}
 
 	obj := found[0]
-	switch v := obj.Object.(type) {
+	switch v := obj.Renderable.(type) {
 	case common.ObjectPromise:
 		if !v.Assigned() {
 			return nil, false
@@ -164,13 +159,13 @@ func resolveListPromise(p common.ObjectListPromise, srcSpecID string, sources ma
 		cb = qcb
 	}
 	srcObjects := sources[srcSpecID].AllObjects()
-	found := lo.Filter(srcObjects, func(obj compiler.Object, _ int) bool {
-		return cb(obj.Object, obj.ModuleURL.Pointer)
+	found := lo.Filter(srcObjects, func(obj common.CompileObject, _ int) bool {
+		return cb(obj, obj.ObjectURL.Pointer)
 	})
 
 	var results []common.Renderable
 	for _, obj := range found {
-		switch v := obj.Object.(type) {
+		switch v := obj.Renderable.(type) {
 		case common.ObjectPromise:
 			if !v.Assigned() {
 				return results, false

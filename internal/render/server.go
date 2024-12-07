@@ -2,7 +2,6 @@ package render
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/samber/lo"
@@ -14,7 +13,7 @@ type Server struct {
 	TypeNamePrefix string // Name of server struct
 	Dummy          bool
 
-	URL             string
+	URL             string // TODO
 	Protocol        string
 	ProtocolVersion string
 
@@ -23,6 +22,8 @@ type Server struct {
 
 	BindingsType    *lang.GoStruct           // nil if bindings are not defined for server
 	BindingsPromise *lang.Promise[*Bindings] // nil if bindings are not defined for server as well
+
+	ProtoServer *ProtoServer // nil if server is dummy or has unsupported protocol
 }
 
 func (s Server) Kind() common.ObjectKind {
@@ -31,6 +32,10 @@ func (s Server) Kind() common.ObjectKind {
 
 func (s Server) Selectable() bool {
 	return !s.Dummy
+}
+
+func (s Server) ProtoObjects() []common.Renderable {
+	return []common.Renderable{s.ProtoServer}
 }
 
 //func (s Server) D(ctx *common.RenderContext) []*j.Statement {
@@ -141,7 +146,7 @@ func (c Server) BindingsProtocols() (res []string) {
 
 func (c Server) ProtoBindingsValue(protoName string) common.Renderable {
 	res := &lang.GoValue{
-		Type:               &lang.GoSimple{Name: "ServerBindings", Import: context.Context.RuntimeModule(protoName)},
+		Type:               &lang.GoSimple{Name: "ServerBindings", Import: common.GetContext().RuntimeModule(protoName)},
 		EmptyCurlyBrackets: true,
 	}
 	if c.BindingsPromise != nil {

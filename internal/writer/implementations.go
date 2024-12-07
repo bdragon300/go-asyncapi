@@ -19,7 +19,7 @@ func WriteImplementation(implDir, baseDir string) (int, error) {
 		return 0, fmt.Errorf("create directory %q: %w", baseDir, err)
 	}
 
-	subDir, err := fs.Sub(implementations.Implementations, implDir)
+	subDir, err := fs.Sub(implementations.ImplementationsFS, implDir)
 	if err != nil {
 		return 0, err
 	}

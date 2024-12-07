@@ -6,28 +6,41 @@ import (
 	"github.com/samber/lo"
 )
 
-func NewPromise[T any](ref string, origin common.PromiseOrigin) *Promise[T] {
-	return &Promise[T]{ref: ref, origin: origin}
+func defaultAssignCb[T any](obj any) T {
+	t, ok := obj.(T)
+	if !ok {
+		panic(fmt.Sprintf("Object %+v is not a type %T", obj, new(T)))
+	}
+	return t
 }
 
-func NewCbPromise[T any](findCb func(item common.Renderable, path []string) bool, origin common.PromiseOrigin) *Promise[T] {
-	return &Promise[T]{findCb: findCb, origin: origin}
+func NewPromise[T any](ref string, origin common.PromiseOrigin) *Promise[T] {
+	return &Promise[T]{ref: ref, origin: origin, assignCb: defaultAssignCb[T]}
+}
+
+func NewAssignCbPromise[T any](ref string, origin common.PromiseOrigin, assignCb func(obj any) T) *Promise[T] {
+	return &Promise[T]{ref: ref, origin: origin, assignCb: assignCb}
 }
 
 type Promise[T any] struct {
 	AssignErrorNote string // Optional error message additional note to be shown when assignment fails
 	ref             string
 	origin          common.PromiseOrigin
-	findCb          func(item common.Renderable, path []string) bool
+	assignCb        func(obj any) T
 
 	target   T
 	assigned bool
 }
 
 func (r *Promise[T]) Assign(obj any) {
+	if r.assignCb != nil {
+		r.target = r.assignCb(obj)
+		r.assigned = true
+		return
+	}
 	t, ok := obj.(T)
 	if !ok {
-		panic(fmt.Sprintf("Cannot assign an object %+v to a promise of type %T. %s", obj, r.target, r.AssignErrorNote))
+		panic(fmt.Sprintf("Object %+v is not a type %T in promise %q. %s", obj, new(T), r.ref, r.AssignErrorNote))
 	}
 	r.target = t
 	r.assigned = true
@@ -35,10 +48,6 @@ func (r *Promise[T]) Assign(obj any) {
 
 func (r *Promise[T]) Assigned() bool {
 	return r.assigned
-}
-
-func (r *Promise[T]) FindCallback() func(item common.Renderable, path []string) bool {
-	return r.findCb
 }
 
 func (r *Promise[T]) T() T {
@@ -84,13 +93,13 @@ func (r *Promise[T]) IsStruct() bool {
 	return false
 }
 
-// List links can only be PromiseOriginInternal, no way to set a callback in spec
 func NewListCbPromise[T any](findCb func(item common.Renderable, path []string) bool) *ListPromise[T] {
 	return &ListPromise[T]{findCb: findCb}
 }
 
 type ListPromise[T any] struct {
 	AssignErrorNote string // Optional error message additional note to be shown when assignment fails
+	ref             string
 	findCb          func(item common.Renderable, path []string) bool
 
 	targets  []T
@@ -118,6 +127,10 @@ func (r *ListPromise[T]) T() []T {
 	return r.targets
 }
 
+func (r *ListPromise[T]) Ref() string {
+	return r.ref
+}
+
 func NewRenderablePromise(ref string, origin common.PromiseOrigin) *RenderablePromise {
 	return &RenderablePromise{
 		Promise: *NewPromise[common.Renderable](ref, origin),
@@ -132,7 +145,6 @@ func (r *RenderablePromise) Kind() common.ObjectKind {
 	return r.target.Kind()
 }
 
-// TODO: return always false
 func (r *RenderablePromise) Selectable() bool {
 	return r.origin == common.PromiseOriginUser && r.target.Selectable()
 }
@@ -144,6 +156,12 @@ func (r *RenderablePromise) String() string {
 func NewGolangTypePromise(ref string, origin common.PromiseOrigin) *GolangTypePromise {
 	return &GolangTypePromise{
 		Promise: *NewPromise[common.GolangType](ref, origin),
+	}
+}
+
+func NewGolangTypeAssignCbPromise(ref string, origin common.PromiseOrigin, assignCb func(obj any) common.GolangType) *GolangTypePromise {
+	return &GolangTypePromise{
+		Promise: *NewAssignCbPromise[common.GolangType](ref, origin, assignCb),
 	}
 }
 

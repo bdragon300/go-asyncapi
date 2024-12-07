@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bdragon300/go-asyncapi/assets"
 	"gopkg.in/yaml.v3"
 	"io"
 	"os"
@@ -38,6 +39,8 @@ import (
 	"github.com/samber/lo"
 	"golang.org/x/mod/modfile"
 )
+
+const defaultConfigFileName = "default_config.yaml"
 
 type GenerateCmd struct {
 	Pub            *generatePubSubArgs         `arg:"subcommand:pub" help:"Generate only the publisher code"`
@@ -462,9 +465,18 @@ func getRenderOpts(opts generatePubSubArgs, targetDir string) (common.RenderOpts
 func loadConfig(fileName string) (toolConfig, error) {
 	var conf toolConfig
 
-	f, err := os.Open(fileName)
-	if err != nil {
-		return conf, fmt.Errorf("cannot open config file: %w", err)
+	var f io.ReadCloser
+	var err error
+	if fileName == "" {
+		f, err = assets.AssetsFS.Open(defaultConfigFileName)
+		if err != nil {
+			return conf, fmt.Errorf("cannot open default config file in assets, this is a programming error: %w", err)
+		}
+	} else {
+		f, err = os.Open(fileName)
+		if err != nil {
+			return conf, fmt.Errorf("cannot open config file: %w", err)
+		}
 	}
 	defer f.Close()
 
@@ -494,7 +506,7 @@ func protocolBuilders() map[string]asyncapi.ProtocolBuilder {
 }
 
 func getImplementationsManifest() (implementations.ImplManifest, error) {
-	f, err := implementations.Implementations.Open("manifest.json")
+	f, err := implementations.ImplementationsFS.Open("manifest.json")
 	if err != nil {
 		return nil, fmt.Errorf("cannot open manifest.json: %w", err)
 	}

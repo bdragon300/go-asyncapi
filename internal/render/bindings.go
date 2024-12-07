@@ -23,7 +23,6 @@ func (b *Bindings) Selectable() bool {
 	return false
 }
 
-
 //func (b *Bindings) ID() string {
 //	return b.Name
 //}

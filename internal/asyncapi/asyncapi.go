@@ -22,7 +22,6 @@ type AsyncAPI struct {
 
 // TODO: make AsyncAPI as one of object kinds
 func (a AsyncAPI) Compile(ctx *common.CompileContext) error {
-	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
 	obj := a.build(ctx)
 	ctx.PutObject(obj)
 	return nil

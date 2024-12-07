@@ -2,7 +2,6 @@ package render
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/samber/lo"
 )
@@ -27,6 +26,8 @@ type Channel struct {
 	BindingsChannelPromise   *lang.Promise[*Bindings] // nil if channel bindings are not set
 	BindingsSubscribePromise *lang.Promise[*Bindings] // nil if subscribe operation bindings are not set
 	BindingsPublishPromise   *lang.Promise[*Bindings] // nil if publish operation bindings are not set
+
+	ProtoChannels []*ProtoChannel // Proto channels for each supported protocol
 }
 
 func (c Channel) Kind() common.ObjectKind {
@@ -36,6 +37,19 @@ func (c Channel) Kind() common.ObjectKind {
 func (c Channel) Selectable() bool {
 	return !c.Dummy
 }
+
+//ServersProtocols returns supported protocol list for the given servers, throwing out unsupported ones
+//func (c Channel) serversProtocols() []string {
+//	res := lo.Uniq(lo.FilterMap(c.ServersPromise.T(), func(item *Server, _ int) (string, bool) {
+//		_, ok := ctx.ProtoRenderers[item.Protocol]
+//		if !ok {
+//			ctx.Logger.Warnf("Skip protocol %q since it is not supported", item.Protocol)
+//		}
+//		return item.Protocol, ok && !item.Dummy
+//	}))
+//	sort.Strings(res)
+//	return res
+//}
 
 //func (c Channel) Selectable() bool {
 //	return c.HasDefinition && !c.Dummy
@@ -109,6 +123,12 @@ func (c Channel) String() string {
 	return "Channel " + c.Name
 }
 
+func (c Channel) ProtoObjects() []common.Renderable {
+	return lo.FilterMap(c.ProtoChannels, func(p *ProtoChannel, _ int) (common.Renderable, bool) {
+		return p, p.Selectable()
+	})
+}
+
 //func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement {
 //	ctx.Logger.Trace("renderChannelNameFunc")
 //
@@ -141,19 +161,6 @@ func (c Channel) String() string {
 //	}
 //}
 
-// ServersProtocols returns supported protocol list for the given servers, throwing out unsupported ones
-//func (c Channel) ServersProtocols() []string {
-//	res := lo.Uniq(lo.FilterMap(c.ServersPromise.T(), func(item *Server, _ int) (string, bool) {
-//		_, ok := ctx.ProtoRenderers[item.Protocol]
-//		if !ok {
-//			ctx.Logger.Warnf("Skip protocol %q since it is not supported", item.Protocol)
-//		}
-//		return item.Protocol, ok && !item.Dummy
-//	}))
-//	sort.Strings(res)
-//	return res
-//}
-
 func (c Channel) BindingsProtocols() (res []string) {
 	if c.BindingsChannelPromise != nil {
 		res = append(res, c.BindingsChannelPromise.T().Values.Keys()...)
@@ -172,7 +179,7 @@ func (c Channel) BindingsProtocols() (res []string) {
 
 func (c Channel) ProtoBindingsValue(protoName string) common.Renderable {
 	res := &lang.GoValue{
-		Type:               &lang.GoSimple{Name: "ChannelBindings", Import: context.Context.RuntimeModule(protoName)},
+		Type:               &lang.GoSimple{Name: "ChannelBindings", Import: common.GetContext().RuntimeModule(protoName)},
 		EmptyCurlyBrackets: true,
 	}
 	if c.BindingsChannelPromise != nil {
@@ -203,6 +210,18 @@ type ProtoChannel struct {
 	ProtoName string
 }
 
+func (p ProtoChannel) Selectable() bool {
+	return !p.Dummy && p.isBound()
+}
+
 func (p ProtoChannel) String() string {
 	return "ProtoChannel " + p.Name
+}
+
+// isBound returns true if channel is bound to at least one server with supported protocol
+func (p ProtoChannel) isBound() bool {
+	return lo.Contains(
+		lo.Map(p.ServersPromise.T(), func(s *Server, _ int) string { return s.Protocol }),
+		p.ProtoName,
+	)
 }

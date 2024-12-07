@@ -2,7 +2,6 @@ package lang
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/render/context"
 )
 
 type GoTypeAlias struct {
@@ -22,7 +21,7 @@ func (p GoTypeAlias) D() string {
 	//aliasedStmt := utils.ToCode(p.AliasedType.D())
 	//res = append(res, jen.Type().Id(p.Name).Add(aliasedStmt...))
 	//return res
-	p.definitionInfo = context.Context.CurrentDefinitionInfo()
+	p.definitionInfo = common.GetContext().CurrentDefinitionInfo()
 	return renderTemplate("lang/gotypealias/definition", &p)
 }
 

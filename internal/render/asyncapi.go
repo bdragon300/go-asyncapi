@@ -8,7 +8,6 @@ import (
 
 const fallbackContentType = "application/json" // Default content type if it omitted in spec
 
-
 type AsyncAPI struct {
 	AllMessages        *lang.ListPromise[*Message]
 	DefaultContentType string
@@ -17,7 +16,6 @@ type AsyncAPI struct {
 func (a AsyncAPI) Kind() common.ObjectKind {
 	return common.ObjectKindAsyncAPI
 }
-
 
 func (a AsyncAPI) Selectable() bool {
 	return true

@@ -1,21 +1,21 @@
 package common
 
 // ObjectKind is an enumeration of all possible object kinds used in the AsyncAPI specification.
-type ObjectKind int
+type ObjectKind string
 
 const (
-	ObjectKindOther ObjectKind = iota // Utility language object, not intended for selection (type, value, interface, etc.)
-	ObjectKindSchema
-	ObjectKindServer
-	ObjectKindServerVariable
-	ObjectKindChannel
-	ObjectKindMessage
-	ObjectKindParameter
-	ObjectKindCorrelationID
-	ObjectKindAsyncAPI         // Utility object represents the entire AsyncAPI document
+	ObjectKindOther ObjectKind = ""// Utility language object, not intended for selection (type, value, interface, etc.)
+	ObjectKindSchema = "schema"
+	ObjectKindServer = "server"
+	ObjectKindServerVariable = "serverVariable"
+	ObjectKindChannel = "channel"
+	ObjectKindMessage = "message"
+	ObjectKindParameter = "parameter"
+	ObjectKindCorrelationID = "correlationID"
+	ObjectKindAsyncAPI = "asyncapi"	         // Utility object represents the entire AsyncAPI document
 )
 
-type Renderable interface {
+type Renderable interface {  // TODO: rename
 	Kind() ObjectKind
 	// Selectable returns true if object can be selected to pass to the templates for rendering.
 	Selectable() bool
@@ -56,3 +56,12 @@ type ImportItem struct {
 	PackagePath string
 }
 
+var context RenderContext
+
+func GetContext() RenderContext {
+	return context
+}
+
+func SetContext(c RenderContext) {
+	context = c
+}
