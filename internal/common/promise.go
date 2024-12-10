@@ -12,11 +12,12 @@ type ObjectPromise interface {
 	Assigned() bool
 	Ref() string
 	Origin() PromiseOrigin
+	FindCallback() func(item CompileObject, path []string) bool
 }
 
 type ObjectListPromise interface {
 	AssignList(objs []any)
 	Assigned() bool
-	FindCallback() func(item Renderable, path []string) bool
+	FindCallback() func(item CompileObject, path []string) bool
 	Ref() string
 }

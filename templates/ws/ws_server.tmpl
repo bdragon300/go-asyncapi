@@ -1,0 +1,35 @@
+{{localobj .Type}}
+func New{{.Type.Name}}(producer {{qualrun .ProtoName "Producer"}}, consumer {{qualrun .ProtoName "Consumer"}}) *{{.Type.U}} {
+    return &{{.Type.U}}{
+        producer: producer,
+        consumer: consumer,
+    }
+}
+
+{{.Type.D}}
+
+func (s {{.Type.U}}) Name() string {
+    return "{{.Name}}"
+}
+
+func (s {{.Type.U}}) Producer() {{qualrun .ProtoName "Producer"}} {
+    return s.producer
+}
+
+func (s {{.Type.U}}) Consumer() {{qualrun .ProtoName "Consumer"}} {
+    return s.consumer
+}
+
+{{range .GetRelevantProtoChannels .ProtoName}}
+func (s {{$.Type.U}}) Open{{.Type.Name}}(
+    ctx {{qual "context.Context"}},
+    {{if .ParametersType}}params {{.ParametersType.U}},{{end}}
+) (ch *{{.Type.U}}, err error) {
+    return {{qualgenpkg .Type}}{{print "Open" .Type.Name | goid}}(
+        ctx,
+        {{if .ParametersType}}params,{{end}}
+        {{if .IsPublisher}}s.producer,{{end}}
+        {{if .IsSubscriber}}s.consumer,{{end}}
+    )
+}
+{{end}}

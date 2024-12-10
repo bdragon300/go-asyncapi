@@ -33,7 +33,7 @@ func (c *RenderContextImpl) QualifiedName(parts ...string) string {
 func (c *RenderContextImpl) QualifiedGeneratedPackage(obj common.GolangType) (string, error) {
 	defInfo, err := obj.DefinitionInfo()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("object %s: %w", obj, err)
 	}
 	if defInfo == nil {
 		return "", nil // Object has no definition (e.g. Go built-in types)
@@ -71,6 +71,9 @@ func (c *RenderContextImpl) Imports() []common.ImportItem {
 }
 
 func (c *RenderContextImpl) importPackage(pkgPath string, pkgName string) string {
+	if c.imports == nil {
+		c.imports = make(map[string]common.ImportItem)
+	}
 	if _, ok := c.imports[pkgPath]; !ok {
 		res := common.ImportItem{PackageName: pkgName, PackagePath: pkgPath}
 		// Find imports with the same package name

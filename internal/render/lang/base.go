@@ -36,9 +36,13 @@ func (b *BaseType) IsPointer() bool {
 
 func (b *BaseType) DefinitionInfo() (*common.GolangTypeDefinitionInfo, error) {
 	if b.definitionInfo == nil {
-		return nil, common.ErrObjectDefinitionUnknownYet
+		return nil, common.ErrDefinitionNotRendered
 	}
 	return b.definitionInfo, nil
+}
+
+func (b *BaseType) SetDefinitionInfo(info *common.GolangTypeDefinitionInfo) {
+	b.definitionInfo = info
 }
 
 type GolangTypeWrapperType interface {

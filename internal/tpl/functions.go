@@ -4,19 +4,11 @@ import (
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
-	"github.com/go-sprout/sprout"
 	"github.com/samber/lo"
 	"strings"
 	"text/template"
 	"unicode"
 )
-
-var sproutFunctions sprout.FunctionMap
-
-func init() {
-	handler := sprout.New()
-	sproutFunctions = handler.Build()
-}
 
 func GetTemplateFunctions() template.FuncMap {
 	type golangTypeWrapperType interface {
@@ -52,6 +44,17 @@ func GetTemplateFunctions() template.FuncMap {
 				return "", err
 			}
 			return bld.String(), nil
+		},
+		"debug": func(params ...any) string {
+			params = append([]any{"DEBUG: "}, params...)
+			fmt.Print(params...)
+			return ""
+		},
+		"localobj": func(obj ...common.GolangType) string {
+			for _, o := range obj {
+				o.SetDefinitionInfo(common.GetContext().CurrentDefinitionInfo())
+			}
+			return ""
 		},
 		// TODO: function to run external command
 	}

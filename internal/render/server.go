@@ -26,15 +26,15 @@ type Server struct {
 	ProtoServer *ProtoServer // nil if server is dummy or has unsupported protocol
 }
 
-func (s Server) Kind() common.ObjectKind {
+func (s *Server) Kind() common.ObjectKind {
 	return common.ObjectKindServer
 }
 
-func (s Server) Selectable() bool {
+func (s *Server) Selectable() bool {
 	return !s.Dummy
 }
 
-func (s Server) ProtoObjects() []common.Renderable {
+func (s *Server) ProtoObjects() []common.Renderable {
 	return []common.Renderable{s.ProtoServer}
 }
 
@@ -124,19 +124,23 @@ func (s Server) ProtoObjects() []common.Renderable {
 //	return s.Name
 //}
 //
-func (s Server) String() string {
+func (s *Server) String() string {
 	return "Server " + s.Name
 }
 
-func (s Server) GetRelevantChannels() []*Channel {
-	return lo.FilterMap(s.AllChannelsPromise.T(), func(p *Channel, _ int) (*Channel, bool) {
-		// Empty/omitted servers field in channel means "all servers"
-		ok := len(p.SpecServerNames) == 0 || lo.Contains(p.SpecServerNames, s.SpecKey)
-		return p, ok && !p.Dummy
+func (s *Server) GetRelevantProtoChannels(protoName string) []*ProtoChannel {
+	r := lo.FlatMap(s.AllChannelsPromise.T(), func(ch *Channel, _ int) []*ProtoChannel {
+		return lo.FilterMap(ch.ProtoObjects(), func(r common.Renderable, _ int) (*ProtoChannel, bool) {
+			pch := r.(*ProtoChannel)
+			// Empty/omitted servers field in channel means "all servers"
+			ok := len(pch.SpecServerNames) == 0 || lo.Contains(pch.SpecServerNames, s.SpecKey)
+			return pch, ok && !pch.Dummy && pch.ProtoName == protoName
+		})
 	})
+	return r
 }
 
-func (c Server) BindingsProtocols() (res []string) {
+func (c *Server) BindingsProtocols() (res []string) {
 	if c.BindingsPromise != nil {
 		res = append(res, c.BindingsPromise.T().Values.Keys()...)
 		res = append(res, c.BindingsPromise.T().JSONValues.Keys()...)
@@ -144,7 +148,7 @@ func (c Server) BindingsProtocols() (res []string) {
 	return lo.Uniq(res)
 }
 
-func (c Server) ProtoBindingsValue(protoName string) common.Renderable {
+func (c *Server) ProtoBindingsValue(protoName string) common.Renderable {
 	res := &lang.GoValue{
 		Type:               &lang.GoSimple{Name: "ServerBindings", Import: common.GetContext().RuntimeModule(protoName)},
 		EmptyCurlyBrackets: true,
@@ -165,6 +169,10 @@ type ProtoServer struct {
 	ProtoName string
 }
 
-func (p ProtoServer) String() string {
+func (p *ProtoServer) String() string {
 	return "ProtoServer " + p.Name
+}
+
+func (p *ProtoServer) Kind() common.ObjectKind {
+	return common.ObjectKindProtoServer
 }

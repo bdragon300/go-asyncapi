@@ -18,6 +18,10 @@ func NewPromise[T any](ref string, origin common.PromiseOrigin) *Promise[T] {
 	return &Promise[T]{ref: ref, origin: origin, assignCb: defaultAssignCb[T]}
 }
 
+func NewCbPromise[T any](findCb func(item common.CompileObject, path []string) bool) *Promise[T] {
+	return &Promise[T]{origin: common.PromiseOriginInternal, findCb: findCb}
+}
+
 func NewAssignCbPromise[T any](ref string, origin common.PromiseOrigin, assignCb func(obj any) T) *Promise[T] {
 	return &Promise[T]{ref: ref, origin: origin, assignCb: assignCb}
 }
@@ -26,6 +30,7 @@ type Promise[T any] struct {
 	AssignErrorNote string // Optional error message additional note to be shown when assignment fails
 	ref             string
 	origin          common.PromiseOrigin
+	findCb          func(item common.CompileObject, path []string) bool
 	assignCb        func(obj any) T
 
 	target   T
@@ -62,6 +67,10 @@ func (r *Promise[T]) Origin() common.PromiseOrigin {
 	return r.origin
 }
 
+func (r *Promise[T]) FindCallback() func(item common.CompileObject, path []string) bool {
+	return r.findCb
+}
+
 func (r *Promise[T]) UnwrapGolangType() (common.GolangType, bool) {
 	if !r.assigned {
 		return nil, false
@@ -93,14 +102,14 @@ func (r *Promise[T]) IsStruct() bool {
 	return false
 }
 
-func NewListCbPromise[T any](findCb func(item common.Renderable, path []string) bool) *ListPromise[T] {
+func NewListCbPromise[T any](findCb func(item common.CompileObject, path []string) bool) *ListPromise[T] {
 	return &ListPromise[T]{findCb: findCb}
 }
 
 type ListPromise[T any] struct {
 	AssignErrorNote string // Optional error message additional note to be shown when assignment fails
 	ref             string
-	findCb          func(item common.Renderable, path []string) bool
+	findCb          func(item common.CompileObject, path []string) bool
 
 	targets  []T
 	assigned bool
@@ -119,7 +128,7 @@ func (r *ListPromise[T]) Assigned() bool {
 	return r.assigned
 }
 
-func (r *ListPromise[T]) FindCallback() func(item common.Renderable, path []string) bool {
+func (r *ListPromise[T]) FindCallback() func(item common.CompileObject, path []string) bool {
 	return r.findCb
 }
 
@@ -195,6 +204,10 @@ func (r *GolangTypePromise) U() string {
 
 func (r *GolangTypePromise) DefinitionInfo() (*common.GolangTypeDefinitionInfo, error) {
 	return r.target.DefinitionInfo()
+}
+
+func (r *GolangTypePromise) SetDefinitionInfo(info *common.GolangTypeDefinitionInfo) {
+	r.target.SetDefinitionInfo(info)
 }
 
 func (r *GolangTypePromise) String() string {

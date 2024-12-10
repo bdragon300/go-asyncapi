@@ -13,20 +13,20 @@ type AsyncAPI struct {
 	DefaultContentType string
 }
 
-func (a AsyncAPI) Kind() common.ObjectKind {
+func (a *AsyncAPI) Kind() common.ObjectKind {
 	return common.ObjectKindAsyncAPI
 }
 
-func (a AsyncAPI) Selectable() bool {
+func (a *AsyncAPI) Selectable() bool {
 	return true
 }
 
-func (a AsyncAPI) EffectiveDefaultContentType() string {
+func (a *AsyncAPI) EffectiveDefaultContentType() string {
 	res, _ := lo.Coalesce(a.DefaultContentType, fallbackContentType)
 	return res
 }
 
-func (a AsyncAPI) String() string {
+func (a *AsyncAPI) String() string {
 	return "AsyncAPI"
 }
 

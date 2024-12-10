@@ -1,0 +1,12 @@
+{{define "lang/gounion/definition"}}
+{{.UnionStruct.D}}
+
+func (u *{{.Name}}) UnmarshalJSON(data []byte) (err error) {
+{{range .Fields}}
+    if err = {{qual "encoding/json.Unmarshal"}}(bytes, {{if not .Type.IsPointer}}&{{end}}u{{.Type.TypeName}}; err == nil {
+        return
+    }
+{{end}}
+    return
+}
+{{end}}

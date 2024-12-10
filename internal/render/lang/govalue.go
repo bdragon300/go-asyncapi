@@ -23,23 +23,23 @@ type GolangPointerWrapperType interface {
 	GolangPointerType
 }
 
-func (gv GoValue) Kind() common.ObjectKind {
+func (gv *GoValue) Kind() common.ObjectKind {
 	return common.ObjectKindOther
 }
 
-func (gv GoValue) Selectable() bool {
+func (gv *GoValue) Selectable() bool {
 	return false
 }
 
-func (gv GoValue) U() string {
-	return renderTemplate("lang/govalue/usage", &gv)
+func (gv *GoValue) U() string {
+	return renderTemplate("lang/govalue/usage", gv)
 }
 
-func (gv GoValue) Empty() bool {
+func (gv *GoValue) Empty() bool {
 	return gv.LiteralValue == nil && gv.StructValues.Len() == 0 && gv.MapValues.Len() == 0 && gv.ArrayValues == nil
 }
 
-func (gv GoValue) String() string {
+func (gv *GoValue) String() string {
 	switch {
 	case gv.LiteralValue != nil:
 		return fmt.Sprintf("GoValue %v", gv.LiteralValue)

@@ -11,11 +11,11 @@ type ServerVariable struct {
 	Default     string
 }
 
-func (s ServerVariable) Kind() common.ObjectKind {
+func (s *ServerVariable) Kind() common.ObjectKind {
 	return common.ObjectKindServerVariable
 }
 
-func (s ServerVariable) Selectable() bool {
+func (s *ServerVariable) Selectable() bool {
 	return false
 }
 
@@ -32,6 +32,6 @@ func (s ServerVariable) Selectable() bool {
 //	return s.Name
 //}
 //
-func (s ServerVariable) String() string {
+func (s *ServerVariable) String() string {
 	return "ServerVariable " + s.Name
 }

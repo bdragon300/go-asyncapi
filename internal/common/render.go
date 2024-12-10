@@ -7,9 +7,12 @@ const (
 	ObjectKindOther ObjectKind = ""// Utility language object, not intended for selection (type, value, interface, etc.)
 	ObjectKindSchema = "schema"
 	ObjectKindServer = "server"
+	ObjectKindProtoServer = "protoServer"
 	ObjectKindServerVariable = "serverVariable"
 	ObjectKindChannel = "channel"
+	ObjectKindProtoChannel = "protoChannel"
 	ObjectKindMessage = "message"
+	ObjectKindProtoMessage = "protoMessage"
 	ObjectKindParameter = "parameter"
 	ObjectKindCorrelationID = "correlationID"
 	ObjectKindAsyncAPI = "asyncapi"	         // Utility object represents the entire AsyncAPI document

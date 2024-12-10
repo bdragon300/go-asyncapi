@@ -40,7 +40,11 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
-const defaultConfigFileName = "default_config.yaml"
+const (
+	defaultConfigFileName = "default_config.yaml"
+	defaultPackage 	  = "main"
+	defaultTemplate 	  = "main.tmpl"
+)
 
 type GenerateCmd struct {
 	Pub            *generatePubSubArgs         `arg:"subcommand:pub" help:"Generate only the publisher code"`
@@ -155,10 +159,11 @@ func generate(cmd *GenerateCmd) error {
 		return fmt.Errorf("schema render: %w", err)
 	}
 
+	// TODO: uncomment
 	// Formatting
-	if err = writer.FormatFiles(files); err != nil {
-		return fmt.Errorf("formatting code: %w", err)
-	}
+	//if err = writer.FormatFiles(files); err != nil {
+	//	return fmt.Errorf("formatting code: %w", err)
+	//}
 
 	// Writing
 	if err = writer.WriteToFiles(files, cmd.TargetDir); err != nil {
@@ -432,8 +437,8 @@ func getRenderOpts(opts generatePubSubArgs, targetDir string) (common.RenderOpts
 			return res, err
 		}
 		for _, item := range conf.Render.Selections {
-			pkg, _ := lo.Coalesce(item.Package, lo.Ternary(targetDir != "", path.Base(targetDir), "main"))
-			templateName, _ := lo.Coalesce(item.Template, "main")
+			pkg, _ := lo.Coalesce(item.Package, lo.Ternary(targetDir != "", path.Base(targetDir), defaultPackage))
+			templateName, _ := lo.Coalesce(item.Template,defaultTemplate)
 			sel := common.RenderSelectionConfig{
 				Template:     templateName,
 				File:         item.File,
@@ -468,7 +473,7 @@ func loadConfig(fileName string) (toolConfig, error) {
 	var f io.ReadCloser
 	var err error
 	if fileName == "" {
-		f, err = assets.AssetsFS.Open(defaultConfigFileName)
+		f, err = assets.AssetFS.Open(defaultConfigFileName)
 		if err != nil {
 			return conf, fmt.Errorf("cannot open default config file in assets, this is a programming error: %w", err)
 		}
@@ -506,7 +511,7 @@ func protocolBuilders() map[string]asyncapi.ProtocolBuilder {
 }
 
 func getImplementationsManifest() (implementations.ImplManifest, error) {
-	f, err := implementations.ImplementationsFS.Open("manifest.json")
+	f, err := implementations.ImplementationFS.Open("manifest.json")
 	if err != nil {
 		return nil, fmt.Errorf("cannot open manifest.json: %w", err)
 	}

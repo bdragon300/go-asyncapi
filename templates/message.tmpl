@@ -1,11 +1,11 @@
 {{ if .BindingsType}}
     {{ .BindingsType.D }}
     {{range $proto := .BindingsProtocols}}
-        {{$bindingsValue := .ProtoBindingsValue $proto}}
-        func (c *{{ .BindingStruct.U }}) {{ $proto | capitalize }}() {{$bindingsValue.Type.U}} {
+        {{$bindingsValue := $.ProtoBindingsValue $proto}}
+        func (c *{{ $.BindingsType.U }}) {{ $proto | capitalize }}() {{$bindingsValue.Type.U}} {
         b := {{$bindingsValue.U}}
-        {{if .BindingsPromise}}
-            {{$jvals := .BindingsPromise.T.JSONValues.GetOrEmpty $proto}}
+        {{if $.BindingsPromise}}
+            {{$jvals := $.BindingsPromise.T.JSONValues.GetOrEmpty $proto}}
             {{range $jval := $jvals.Entries}}
                 {{$jval.Key | toCamelCase }} := {{$jval.Value | golit}}
                 _ = {{qual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})
@@ -21,6 +21,7 @@
     {{$headersType := .HeadersTypePromise.T}}
 {{end}}
 
+{{localobj .OutType}}
 func New{{ .OutType.Name }}() *{{ .OutType.U }} {
     return &{{ .OutType.U }}{}
 }
@@ -43,6 +44,7 @@ func (m {{.OutType.Name}}) SetCorrelationID(value {{(.CorrelationIDPromise.T.Tar
 }
 {{end}}
 
+{{localobj .InType}}
 func New{{ .InType.Name }}() *{{ .InType.U }} {
     return &{{ .InType.U }}{}
 }

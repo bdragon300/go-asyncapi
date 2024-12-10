@@ -11,11 +11,11 @@ type Parameter struct {
 	IsStringType bool  // true if Type contains a type alias to built-in string type
 }
 
-func (p Parameter) Kind() common.ObjectKind {
+func (p *Parameter) Kind() common.ObjectKind {
 	return common.ObjectKindParameter
 }
 
-func (p Parameter) Selectable() bool {
+func (p *Parameter) Selectable() bool {
 	return !p.Dummy && p.Type.Selectable()
 }
 
@@ -33,7 +33,7 @@ func (p Parameter) Selectable() bool {
 //	return p.Name
 //}
 //
-func (p Parameter) String() string {
+func (p *Parameter) String() string {
 	return "Parameter " + p.Name
 }
 

@@ -83,8 +83,8 @@ func (o Object) Compile(ctx *common.CompileContext) error {
 }
 
 func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]string, objectKey string) (common.GolangType, error) {
-	_, isComponent := flags[common.SchemaTagComponent]
-	ignore := o.XIgnore || isComponent //&& !ctx.CompileOpts.ModelOpts.IsAllowedName(objectKey))
+	//_, isComponent := flags[common.SchemaTagComponent]
+	ignore := o.XIgnore //|| (isComponent && !ctx.CompileOpts.ModelOpts.IsAllowedName(objectKey))
 	if ignore {
 		ctx.Logger.Debug("Object denoted to be ignored")
 		return &lang.GoSimple{Name: "any", IsInterface: true}, nil
@@ -252,8 +252,8 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 	var contentTypesFunc func() []string
 	_, isMarshal := flags[common.SchemaTagMarshal]
 	if isMarshal {
-		messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.Renderable, _ []string) bool {
-			_, ok := item.(*render.Message)
+		messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.CompileObject, _ []string) bool {
+			_, ok := item.Renderable.(*render.Message)
 			return ok
 		})
 		ctx.PutListPromise(messagesPrm)
@@ -419,8 +419,8 @@ func (o Object) buildUnionStruct(ctx *common.CompileContext, flags map[common.Sc
 	}
 
 	// Collect all messages to retrieve struct field tags
-	messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.Renderable, _ []string) bool {
-		_, ok := item.(*render.Message)
+	messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.CompileObject, _ []string) bool {
+		_, ok := item.Renderable.(*render.Message)
 		return ok
 	})
 	ctx.PutListPromise(messagesPrm)

@@ -10,7 +10,7 @@ type GoArray struct {
 	Size      int
 }
 
-func (a GoArray) D() string {
+func (a *GoArray) D() string {
 	//ctx.LogStartRender("GoArray", a.Import, a.Name, "definition", a.Selectable())
 	//defer ctx.LogFinishRender()
 	//
@@ -29,11 +29,11 @@ func (a GoArray) D() string {
 	//res = append(res, stmt.Add(items...))
 	//
 	//return res
-	a.definitionInfo = common.GetContext().CurrentDefinitionInfo()
-	return renderTemplate("lang/goarray/definition", &a)
+	a.SetDefinitionInfo(common.GetContext().CurrentDefinitionInfo())
+	return renderTemplate("lang/goarray/definition", a)
 }
 
-func (a GoArray) U() string {
+func (a *GoArray) U() string {
 	//ctx.LogStartRender("GoArray", a.Import, a.Name, "usage", a.Selectable())
 	//defer ctx.LogFinishRender()
 	//
@@ -50,10 +50,10 @@ func (a GoArray) U() string {
 	//}
 	//
 	//return []*jen.Statement{jen.Index().Add(items...)}
-	return renderTemplate("lang/goarray/usage", &a)
+	return renderTemplate("lang/goarray/usage", a)
 }
 
-func (a GoArray) String() string {
+func (a *GoArray) String() string {
 	if a.Import != "" {
 		return "GoArray /" + a.Import + "." + a.Name
 	}

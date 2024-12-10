@@ -49,14 +49,18 @@ import (
 //	return bld.String()
 //}
 
+const defaultPreambuleTemplateName = "preambule.tmpl"
+
 type renderSource interface {
 	AllObjects() []common.CompileObject
 }
 
 type renderQueueItem struct {
 	selection common.RenderSelectionConfig
-	object    common.CompileObject
-	index     int
+	object         common.CompileObject
+	selectionIndex int
+	overallIndex   int
+	err            error
 }
 
 func RenderPackages(source renderSource, opts common.RenderOpts) (map[string]*bytes.Buffer, error) {
@@ -68,13 +72,14 @@ func RenderPackages(source renderSource, opts common.RenderOpts) (map[string]*by
 	for len(queue) > 0 {
 		for _, item := range queue {
 			ctx := &context.RenderContextImpl{RenderOpts: opts, CurrentSelectionConfig: item.selection}
-			tplCtx := tpl.NewTemplateContext(ctx, item.object, item.index)
+			tplCtx := tpl.NewTemplateContext(ctx, item.object, item.selectionIndex, item.overallIndex)
 			common.SetContext(ctx)
 
 			rd, err := renderFile(tplCtx, item.selection.Template)
 			switch {
-			case errors.Is(err, common.ErrObjectDefinitionUnknownYet):
+			case errors.Is(err, common.ErrDefinitionNotRendered):
 				// Template can't be rendered right now due to unknown object definition, defer it
+				item.err = err
 				deferred = append(deferred, item)
 				continue
 			case err != nil:
@@ -83,7 +88,7 @@ func RenderPackages(source renderSource, opts common.RenderOpts) (map[string]*by
 
 			fileName, err := renderInlineTemplate(tplCtx, item.selection.File)
 			switch {
-			case errors.Is(err, common.ErrObjectDefinitionUnknownYet):
+			case errors.Is(err, common.ErrDefinitionNotRendered):
 				// Template can't be rendered right now due to unknown object definition, defer it
 				deferred = append(deferred, item)
 				continue
@@ -101,8 +106,8 @@ func RenderPackages(source renderSource, opts common.RenderOpts) (map[string]*by
 		}
 		if len(deferred) == len(queue) {
 			return nil, fmt.Errorf(
-				"cyclic dependencies detected in templates: %v",
-				lo.Map(deferred, func(item renderQueueItem, _ int) string { return item.selection.Template }),
+				"missed object definitions, please ensure they are rendered by .D method: %w",
+				errors.Join(lo.Map(deferred, func(item renderQueueItem, _ int) error { return item.err })...),
 			)
 		}
 		queue, deferred = deferred, nil
@@ -112,10 +117,12 @@ func RenderPackages(source renderSource, opts common.RenderOpts) (map[string]*by
 }
 
 func buildRenderQueue(source renderSource, selections []common.RenderSelectionConfig) (res []renderQueueItem) {
+	var c int
 	for _, selection := range selections {
 		objects := selector.SelectObjects(source.AllObjects(), selection)
 		for ind, obj := range objects {
-			res = append(res, renderQueueItem{selection, obj, ind})
+			res = append(res, renderQueueItem{selection: selection, object: obj, selectionIndex: ind, overallIndex: c})
+			c++
 		}
 	}
 	return
@@ -135,8 +142,8 @@ func renderFile(tplCtx tpl.TemplateContext, templateName string) (io.Reader, err
 	}
 
 	// TODO: redefinition preambule in config/cli args
-	if tmpl = tpl.LoadTemplate("preamble"); tmpl == nil {
-		return nil, fmt.Errorf("template %q not found", "preamble")
+	if tmpl = tpl.LoadTemplate(defaultPreambuleTemplateName); tmpl == nil {
+		return nil, fmt.Errorf("template %q not found", defaultPreambuleTemplateName)
 	}
 	if err := tmpl.Execute(&res, tplCtx); err != nil {
 		return nil, err
@@ -154,7 +161,7 @@ func renderInlineTemplate(tplCtx tpl.TemplateContext, text string) (string, erro
 	if err != nil {
 		return "", err
 	}
-	if err := tmpl.Execute(&res, tplCtx); err != nil {
+	if err := tmpl.Execute(&res, tplCtx.Object()); err != nil {
 		return "", err
 	}
 	return res.String(), nil

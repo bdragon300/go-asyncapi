@@ -28,17 +28,19 @@ func (c {{.Struct.U}}) Publish(ctx {{qual "context.Context"}}, envelopes ...{{qu
 }
 {{end}}
 
-{{ /* Common template for channel publish methods that doesn't contain protocol-specific bindings manipulations */
-define "proto/channel/barePublishMethods"}}
+{{- /* Common template for channel publish methods that doesn't contain protocol-specific bindings manipulations */ -}}
+{{define "proto/channel/barePublishMethods"}}
     {{template "proto/channel/outputMethods" .}}
 
     func (c {{.Struct.U}}) SealEnvelope(envelope {{qualrun .ProtoName "EnvelopeWriter"}}, message {{if .PublisherMessageTypePromise}}{{goptr .PublisherMessageTypePromise.T.OutType.U}}{{else}}any{{end}}) error {
         envelope.ResetPayload()
-        {{if .PublisherMessageTypePromise /*Message is set for Channel in spec*/ }}
+        {{if .PublisherMessageTypePromise}}
+            {{- /*Message is set for Channel in spec*/ -}}
             if err := message.Marshal{{.ProtoName | capitalize}}Envelope(envelope); err != nil {
                 return err
             }
-        {{else /*No Message set for Channel in spec*/}}
+        {{else}}
+            {{- /* No Message set for Channel in spec */ -}}
             enc := {{qual "encoding/json.NewEncoder"}}(envelope)
             if err := enc.Encode(message); err != nil {
                 return err
@@ -55,10 +57,10 @@ define "proto/channel/barePublishMethods"}}
 {{define "proto/channel/subscribeMethods"}}
 func (c {{.Struct.U}}) ExtractEnvelope(envelope {{qualrun .ProtoName "EnvelopeReader"}}, message {{if .SubscriberMessageTypePromise}}{{goptr .SubscriberMessageTypePromise.T.InType.U}}{{else}}any{{end}}) error {
     {{if .SubscriberMessageTypePromise}}
-        {{/*Message set for Channel in spec*/}}
+        {{- /* Message set for Channel in spec */ -}}
         return message.Unmarshal{{.ProtoName | capitalize}}Envelope(envelope)
     {{else}}
-        {{/*No Message set for Channel in spec*/}}
+        {{- /* No Message set for Channel in spec */ -}}
         dec := {{qual "encoding/json.NewDecoder"}}(envelope)
         return dec.Decode(message)
     {{end}}
@@ -73,8 +75,8 @@ func (c {{.Struct.U}}) Subscribe(ctx {{qual "context.Context"}}, cb func(envelop
 }
 {{end}}
 
-{{ /* Common template for channel OpenChannel function that doesn't contain protocol-specific bindings manipulations */
-define "proto/channel/openFunction"}}
+{{- /* Common template for channel OpenChannel function that doesn't contain protocol-specific bindings manipulations */ -}}
+{{define "proto/channel/openFunction"}}
     func Open{{.Struct.Name}}(
         ctx {{qual "context.Context"}},
         {{if .ParametersType}}params {{.ParametersType.U}},{{end}}
@@ -109,8 +111,8 @@ define "proto/channel/openFunction"}}
     }
 {{end}}
 
-{{ /* Common template for channel NewChannel function that doesn't contain protocol-specific bindings manipulations */
-define "proto/channel/bareNewFunction"}}
+{{- /* Common template for channel NewChannel function that doesn't contain protocol-specific bindings manipulations */ -}}
+{{define "proto/channel/bareNewFunction"}}
     func New{{.Struct.Name}}(
         {{if .ParametersType}}params {{.ParametersType.U}},{{end}}
         {{if .IsPublisher}}publisher {{qualrun .ProtoName "Publisher"}},{{end}}
@@ -131,7 +133,7 @@ func (m *{{.OutType.Name}}) Marshal{{ .ProtoName | capitalize }}Envelope(envelop
     envelope.SetContentType({{.ContentType | golit}})
     {{if .HeadersTypePromise}}
         envelope.SetHeaders({
-        {{range $f := .HeadersTypePromise.T.Fields}}{{$f.Name | golit}}: m.Headers.{{$f.Name}},
+        {{range .HeadersTypePromise.T.Fields}}{{.Name | golit}}: m.Headers.{{.Name}},
         {{end}}
         })
     {{else}}
@@ -143,12 +145,12 @@ func (m *{{.OutType.Name}}) Marshal{{ .ProtoName | capitalize }}Envelope(envelop
 func (m *{{.InType.Name}}) Unmarshal{{ .ProtoName | capitalize }}Envelope(envelope {{qualrun .ProtoName "EnvelopeReader"}} error {
     {{template "proto/message/decodeExpr" .}}
     {{if .HeadersTypePromise }}
-        {{/* Empty headers should not generate code */}}
+        {{- /* Empty headers should not generate code */ -}}
         {{if gt (len .HeadersTypePromise.T.Fields) 0}}
             headers := envelope.Headers()
-            {{range $f := .HeadersTypePromise.T.Fields}}
-                if v, ok := headers[{{$f.Name | golit}}]; ok {
-                    m.Headers.{{$f.Name}} = v.({{$f.Type.U}})
+            {{range .HeadersTypePromise.T.Fields}}
+                if v, ok := headers[{{.Name | golit}}]; ok {
+                    m.Headers.{{.Name}} = v.({{.Type.U}})
                 }
             {{end}}
         {{end}}
@@ -165,7 +167,8 @@ func (m *{{.InType.Name}}) Unmarshal{{ .ProtoName | capitalize }}Envelope(envelo
     if err := enc.Encode(m.Payload); err != nil {
         return err
     }
-{{else /*Use json even we dealing with unknown content type*/}}
+{{else}}
+    {{- /* Use json even we dealing with unknown content type */ -}}
     enc := {{qual "encoding/json.NewEncoder"}}(envelope)
     if err := enc.Encode(m.Payload); err != nil {
         return err
@@ -179,7 +182,8 @@ func (m *{{.InType.Name}}) Unmarshal{{ .ProtoName | capitalize }}Envelope(envelo
     if err := dec.Decode(&m.Payload); err != nil {
         return err
     }
-{{else /*Use json even we dealing with unknown content type*/}}
+{{else}}
+    {{- /* Use json even we dealing with unknown content type */ -}}
     dec := {{qual "encoding/json.NewDecoder"}}(envelope)
     if err := dec.Decode(&m.Payload); err != nil {
         return err

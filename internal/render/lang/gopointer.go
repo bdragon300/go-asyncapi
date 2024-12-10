@@ -8,22 +8,21 @@ type GoPointer struct {
 	Type   common.GolangType
 }
 
-func (p GoPointer) Kind() common.ObjectKind {
+func (p *GoPointer) Kind() common.ObjectKind {
 	return p.Type.Kind()
 }
 
-func (p GoPointer) Selectable() bool {
-	return p.Selectable()
+func (p *GoPointer) Selectable() bool {
+	return p.Type.Selectable()
 }
 
-func (p GoPointer) D() string {
+func (p *GoPointer) D() string {
 	//ctx.LogStartRender("GoPointer", "", "", "definition", p.IsDefinition())
 	//defer ctx.LogFinishRender()
-
 	return p.Type.D()
 }
 
-func (p GoPointer) U() string {
+func (p *GoPointer) U() string {
 	//ctx.LogStartRender("GoPointer", "", "", "usage", p.IsDefinition())
 	//defer ctx.LogFinishRender()
 
@@ -37,25 +36,29 @@ func (p GoPointer) U() string {
 	return p.Type.U()
 }
 
-func (p GoPointer) TypeName() string {
+func (p *GoPointer) TypeName() string {
 	return p.Type.TypeName()
 }
 
-func (p GoPointer) String() string {
+func (p *GoPointer) String() string {
 	return "GoPointer -> " + p.Type.String()
 }
 
-func (p GoPointer) UnwrapGolangType() (common.GolangType, bool) {
+func (p *GoPointer) UnwrapGolangType() (common.GolangType, bool) {
 	if v, ok := p.Type.(GolangTypeWrapperType); ok {
 		return v.UnwrapGolangType()
 	}
 	return p.Type, p.Type != nil
 }
 
-func (p GoPointer) IsPointer() bool {
+func (p *GoPointer) IsPointer() bool {
 	return true
 }
 
-func (p GoPointer) DefinitionInfo() (*common.GolangTypeDefinitionInfo, error) {
+func (p *GoPointer) DefinitionInfo() (*common.GolangTypeDefinitionInfo, error) {
 	return p.Type.DefinitionInfo()
+}
+
+func (p *GoPointer) SetDefinitionInfo(info *common.GolangTypeDefinitionInfo) {
+	p.Type.SetDefinitionInfo(info)
 }

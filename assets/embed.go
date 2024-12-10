@@ -5,4 +5,4 @@ import (
 )
 
 //go:embed *
-var AssetsFS embed.FS
+var AssetFS embed.FS

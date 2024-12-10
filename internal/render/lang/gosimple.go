@@ -6,32 +6,32 @@ import (
 
 type GoSimple struct {
 	Name        string // type name
-	IsInterface bool   // true if type is interface, which means it cannot be rendered as pointer
+	IsInterface bool   // true if type is interface, which means it cannot be rendered as pointer  // TODO: use or remove
 	Import      string // optional generated package name or module to import a type from
 }
 
-func (p GoSimple) Kind() common.ObjectKind {
+func (p *GoSimple) Kind() common.ObjectKind {
 	return common.ObjectKindOther
 }
 
-func (p GoSimple) Selectable() bool {
+func (p *GoSimple) Selectable() bool {
 	return false
 }
 
-func (p GoSimple) IsPointer() bool {
+func (p *GoSimple) IsPointer() bool {
 	return false
 }
 
-func (p GoSimple) D() string {
+func (p *GoSimple) D() string {
 	//ctx.LogStartRender("GoSimple", p.Import, p.Name, "definition", p.Selectable())
 	//defer ctx.LogFinishRender()
 	//
 	//stmt := jen.Id(p.Name)
 	//return []*jen.Statement{stmt}
-	return renderTemplate("lang/gosimple/definition", &p)
+	return renderTemplate("lang/gosimple/definition", p)
 }
 
-func (p GoSimple) U() string {
+func (p *GoSimple) U() string {
 	//ctx.LogStartRender("GoSimple", p.Import, p.Name, "usage", p.Selectable())
 	//defer ctx.LogFinishRender()
 	//
@@ -44,20 +44,24 @@ func (p GoSimple) U() string {
 	//}
 	//
 	//return []*jen.Statement{stmt}
-	return renderTemplate("lang/gosimple/usage", &p)
+	return renderTemplate("lang/gosimple/usage", p)
 }
 
-func (p GoSimple) TypeName() string {
+func (p *GoSimple) TypeName() string {
 	return p.Name
 }
 
-func (p GoSimple) String() string {
+func (p *GoSimple) String() string {
 	if p.Import != "" {
 		return "GoSimple /" + p.Import + "." + p.Name
 	}
 	return "GoSimple " + p.Name
 }
 
-func (p GoSimple) DefinitionInfo() (*common.GolangTypeDefinitionInfo, error) {
+func (p *GoSimple) DefinitionInfo() (*common.GolangTypeDefinitionInfo, error) {
 	return nil, nil
+}
+
+func (p *GoSimple) SetDefinitionInfo(_ *common.GolangTypeDefinitionInfo) {
+	// do nothing
 }

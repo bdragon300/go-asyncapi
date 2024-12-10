@@ -1,17 +1,17 @@
-{{define "definition"}}
+{{define "lang/gostruct/definition"}}
     {{- if .Description -}}
-        {{ print (.Name "--" .Description) | gocomment }}
+        {{ print .Name "--" .Description | gocomment }}
     {{- end -}}
     type {{ .Name | goid }} struct {
         {{range .Fields -}}
             {{- if .Description -}}
-                {{ print (.Name "--" .Description) | gocomment }}
+                {{ print .Name "--" .Description | gocomment }}
             {{- end}}
             {{.Name | goid}} {{.Type.U}} {{.RenderTags}}
         {{- end}}
     }
 {{end}}
-{{define "usage"}}
+{{define "lang/gostruct/usage"}}
     {{- if .HasDefinition -}}
         {{if .Import -}}
             {{ qual .Import .Name }}
@@ -22,7 +22,7 @@
         struct {
             {{range .Fields -}}
                 {{- if .Description -}}
-                    {{ print (.Name "--" .Description) | gocomment }}
+                    {{ print .Name "--" .Description | gocomment }}
                 {{- end}}
                 {{.Name | goid}} {{.Type.U}} {{.RenderTags}}
             {{- end}}

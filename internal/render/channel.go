@@ -30,11 +30,11 @@ type Channel struct {
 	ProtoChannels []*ProtoChannel // Proto channels for each supported protocol
 }
 
-func (c Channel) Kind() common.ObjectKind {
+func (c *Channel) Kind() common.ObjectKind {
 	return common.ObjectKindChannel
 }
 
-func (c Channel) Selectable() bool {
+func (c *Channel) Selectable() bool {
 	return !c.Dummy
 }
 
@@ -119,14 +119,15 @@ func (c Channel) Selectable() bool {
 //	return c.Name
 //}
 //
-func (c Channel) String() string {
+func (c *Channel) String() string {
 	return "Channel " + c.Name
 }
 
-func (c Channel) ProtoObjects() []common.Renderable {
-	return lo.FilterMap(c.ProtoChannels, func(p *ProtoChannel, _ int) (common.Renderable, bool) {
+func (c *Channel) ProtoObjects() []common.Renderable {
+	k := lo.FilterMap(c.ProtoChannels, func(p *ProtoChannel, _ int) (common.Renderable, bool) {
 		return p, p.Selectable()
 	})
+	return k
 }
 
 //func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement {
@@ -161,7 +162,7 @@ func (c Channel) ProtoObjects() []common.Renderable {
 //	}
 //}
 
-func (c Channel) BindingsProtocols() (res []string) {
+func (c *Channel) BindingsProtocols() (res []string) {
 	if c.BindingsChannelPromise != nil {
 		res = append(res, c.BindingsChannelPromise.T().Values.Keys()...)
 		res = append(res, c.BindingsChannelPromise.T().JSONValues.Keys()...)
@@ -177,7 +178,7 @@ func (c Channel) BindingsProtocols() (res []string) {
 	return lo.Uniq(res)
 }
 
-func (c Channel) ProtoBindingsValue(protoName string) common.Renderable {
+func (c *Channel) ProtoBindingsValue(protoName string) common.Renderable {
 	res := &lang.GoValue{
 		Type:               &lang.GoSimple{Name: "ChannelBindings", Import: common.GetContext().RuntimeModule(protoName)},
 		EmptyCurlyBrackets: true,
@@ -210,18 +211,23 @@ type ProtoChannel struct {
 	ProtoName string
 }
 
-func (p ProtoChannel) Selectable() bool {
+func (p *ProtoChannel) Selectable() bool {
 	return !p.Dummy && p.isBound()
 }
 
-func (p ProtoChannel) String() string {
+func (p *ProtoChannel) Kind() common.ObjectKind {
+	return common.ObjectKindProtoChannel
+}
+
+func (p *ProtoChannel) String() string {
 	return "ProtoChannel " + p.Name
 }
 
 // isBound returns true if channel is bound to at least one server with supported protocol
-func (p ProtoChannel) isBound() bool {
-	return lo.Contains(
+func (p *ProtoChannel) isBound() bool {
+	r := lo.Contains(
 		lo.Map(p.ServersPromise.T(), func(s *Server, _ int) string { return s.Protocol }),
 		p.ProtoName,
 	)
+	return r
 }

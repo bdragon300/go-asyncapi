@@ -85,7 +85,7 @@ func BuildProtoServerStruct(
 			HasDefinition: true,
 		},
 	}
-	// TODO: handle when protoName is empty
+	// TODO: handle when protoName is empty (it appears when we build ProtoServer for unsupported protocol)
 	// Producer/consumer
 	ctx.Logger.Trace("Server producer", "proto", protoName)
 	fld := lang.GoStructField{

@@ -5,13 +5,20 @@ import (
 	"text/template"
 )
 
-var loadedTemplates map[string]*template.Template
+const mainTemplateName = "main.tmpl"
+
+var mainTemplate *template.Template
 
 func LoadTemplate(name string) *template.Template {
 	// TODO: user template dir
-	if t, ok := loadedTemplates[name]; ok {
-		return t
+	if mainTemplate == nil {
+		mainTemplate = template.Must(
+			template.New(mainTemplateName).Funcs(GetTemplateFunctions()).ParseFS(templates.TemplateFS, "*/*.tmpl","*.tmpl"),
+		)
 	}
-	loadedTemplates[name] = template.Must(template.New(name).Funcs(GetTemplateFunctions()).ParseFS(templates.TemplateFS, name + ".tmpl"))
-	return loadedTemplates[name]
+	t := mainTemplate.Lookup(name)
+	if t == nil {
+		panic("template not found: " + name)
+	}
+	return t
 }

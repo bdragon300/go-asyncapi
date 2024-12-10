@@ -29,11 +29,11 @@ type CorrelationID struct {
 	LocationPath []string                 // JSONPointer path to the field in the message, should be non-empty
 }
 
-func (c CorrelationID) Kind() common.ObjectKind {
+func (c *CorrelationID) Kind() common.ObjectKind {
 	return common.ObjectKindCorrelationID
 }
 
-func (c CorrelationID) Selectable() bool {
+func (c *CorrelationID) Selectable() bool {
 	return false
 }
 
@@ -49,11 +49,11 @@ func (c CorrelationID) Selectable() bool {
 //	return c.Name
 //}
 
-func (c CorrelationID) String() string {
+func (c *CorrelationID) String() string {
 	return "CorrelationID " + c.Name
 }
 
-func (c CorrelationID) RenderSetterBody(inVar string, inVarType *lang.GoStruct) string {
+func (c *CorrelationID) RenderSetterBody(inVar string, inVarType *lang.GoStruct) string {
 	//ctx.LogStartRender("CorrelationID.RenderSetterBody", "", c.Name, "definition", false)
 	//defer ctx.LogFinishRender()
 
@@ -93,7 +93,7 @@ func (c CorrelationID) RenderSetterBody(inVar string, inVarType *lang.GoStruct) 
 	return strings.Join(body, "\n")
 }
 
-func (c CorrelationID) TargetVarType(varType *lang.GoStruct) common.GolangType {
+func (c *CorrelationID) TargetVarType(varType *lang.GoStruct) common.GolangType {
 	f, ok := lo.Find(varType.Fields, func(item lang.GoStructField) bool { return item.Name == string(c.StructField) })
 	if !ok {
 		panic(fmt.Errorf("field %s not found in varType", c.StructField))
@@ -157,7 +157,7 @@ func (c CorrelationID) TargetVarType(varType *lang.GoStruct) common.GolangType {
 //	}
 //}
 
-func (c CorrelationID) RenderGetterBody(outVar string, outVarType *lang.GoStruct) string {
+func (c *CorrelationID) RenderGetterBody(outVar string, outVarType *lang.GoStruct) string {
 	//ctx.LogStartRender("CorrelationID.RenderGetterDefinition", "", c.Name, "definition", false)
 	//defer ctx.LogFinishRender()
 
@@ -239,7 +239,7 @@ type correlationIDExpansionStep struct {
 	varType         common.GolangType
 }
 
-func (c CorrelationID) renderValueExtractionCode(
+func (c *CorrelationID) renderValueExtractionCode(
 	path []string,
 	initialType common.GolangType,
 	validationCode bool,

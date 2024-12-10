@@ -10,7 +10,7 @@ type UnionStruct struct {
 	GoStruct
 }
 
-func (s UnionStruct) D() string {
+func (s *UnionStruct) D() string {
 	//var res []*jen.Statement
 	//ctx.LogStartRender("UnionStruct", s.Import, s.Name, "definition", s.IsDefinition())
 	//defer ctx.LogFinishRender()
@@ -33,10 +33,10 @@ func (s UnionStruct) D() string {
 	//	res = append(res, s.renderMethods()...)
 	//}
 	//return res
-	return renderTemplate("lang/union/definition", &s)
+	return renderTemplate("lang/gounion/definition", s)
 }
 
-func (s UnionStruct) UnionStruct() common.GolangType {
+func (s *UnionStruct) UnionStruct() common.GolangType {
 	onlyStructs := lo.EveryBy(s.Fields, func(item GoStructField) bool {
 		return isTypeStruct(item.Type)
 	})
@@ -56,7 +56,7 @@ func (s UnionStruct) UnionStruct() common.GolangType {
 	return &strct
 }
 
-func (s UnionStruct) String() string {
+func (s *UnionStruct) String() string {
 	if s.Import != "" {
 		return "UnionStruct /" + s.Import + "." + s.Name
 	}

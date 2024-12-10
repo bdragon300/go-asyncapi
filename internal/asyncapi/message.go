@@ -46,12 +46,18 @@ func (m Message) Compile(ctx *common.CompileContext) error {
 		return err
 	}
 	ctx.PutObject(obj)
+	if v, ok := obj.(*render.ProtoMessage); ok {
+		ctx.Logger.Trace("ProtoObjects", "object", obj)
+		for _, protoObj := range v.ProtoMessages {
+			ctx.PutObject(protoObj)
+		}
+	}
 	return nil
 }
 
 func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Renderable, error) {
-	_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagComponent]
-	ignore := m.XIgnore || isComponent //&& !ctx.CompileOpts.MessageOpts.IsAllowedName(messageKey))
+	//_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagComponent]
+	ignore := m.XIgnore //|| (isComponent && !ctx.CompileOpts.MessageOpts.IsAllowedName(messageKey))
 	if ignore {
 		ctx.Logger.Debug("Message denoted to be ignored")
 		return &render.Message{Dummy: true}, nil
@@ -95,11 +101,19 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", res.ContentType))
 
 	// Lookup servers after linking to figure out all protocols the message is used in
-	prm := lang.NewListCbPromise[*render.Server](func(item common.Renderable, path []string) bool {
-		_, ok := item.(*render.Server)
+	prm := lang.NewListCbPromise[*render.Server](func(item common.CompileObject, path []string) bool {
+		_, ok := item.Renderable.(*render.Server)
 		return ok
 	})
 	res.AllServersPromise = prm
+	ctx.PutListPromise(prm)
+
+	prm2 := lang.NewCbPromise[*render.AsyncAPI](func(item common.CompileObject, path []string) bool {
+		_, ok := item.Renderable.(*render.AsyncAPI)
+		return ok
+	})
+	res.AsyncAPIPromise = prm2
+	ctx.PutPromise(prm2)
 
 	// Link to Headers struct if any
 	if m.Headers != nil {
@@ -147,7 +161,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	}
 	res.ProtoMessages = protoMessages
 
-	return res, nil
+	return &res, nil
 }
 
 func (m Message) setStructFields(ctx *common.CompileContext, langMessage *render.Message) {

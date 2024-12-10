@@ -15,10 +15,9 @@ import (
 
 const nameWordSep = "_"
 
-// ErrObjectDefinitionUnknownYet is returned when some template tries to get a package in the generated code for an
-// object, but the definition of this object has not been rendered, therefore the package is unknown yet. When this
-// error is returned, a template caused this error goes to the end of the rendering queue.
-var ErrObjectDefinitionUnknownYet = errors.New("object definition is unknown yet")
+// ErrDefinitionNotRendered is returned when we try to get a package in the generated code for an object, but the
+// definition of this object has not been rendered, therefore its location is unknown yet.
+var ErrDefinitionNotRendered = errors.New("definition is not rendered")
 
 type CompileObject struct {
 	Renderable
@@ -36,6 +35,7 @@ type GolangType interface {
 	U() string
 	IsPointer() bool
 	DefinitionInfo() (*GolangTypeDefinitionInfo, error)
+	SetDefinitionInfo(info *GolangTypeDefinitionInfo)
 }
 
 type CompilationStorage interface {

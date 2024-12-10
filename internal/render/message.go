@@ -24,26 +24,26 @@ type Message struct {
 	ProtoMessages []*ProtoMessage
 }
 
-func (m Message) Kind() common.ObjectKind {
+func (m *Message) Kind() common.ObjectKind {
 	return common.ObjectKindMessage
 }
 
-func (m Message) Selectable() bool {
+func (m *Message) Selectable() bool {
 	return !m.Dummy
 }
 
-func (m Message) ProtoObjects() []common.Renderable {
+func (m *Message) ProtoObjects() []common.Renderable {
 	return lo.FilterMap(m.ProtoMessages, func(p *ProtoMessage, _ int) (common.Renderable, bool) {
 		return p, p.Selectable()
 	})
 }
 
-func (m Message) EffectiveContentType() string {
+func (m *Message) EffectiveContentType() string {
 	res, _ := lo.Coalesce(m.ContentType, m.AsyncAPIPromise.T().EffectiveDefaultContentType())
 	return res
 }
 
-func (m Message) BindingsProtocols() (res []string) {
+func (m *Message) BindingsProtocols() (res []string) {
 	if m.BindingsPromise != nil {
 		res = append(res, m.BindingsPromise.T().Values.Keys()...)
 		res = append(res, m.BindingsPromise.T().JSONValues.Keys()...)
@@ -90,17 +90,31 @@ func (m Message) BindingsProtocols() (res []string) {
 //	return m.Name
 //}
 //
-func (m Message) String() string {
+func (m *Message) String() string {
 	return "Message " + m.Name
 }
 
-func (m Message) HasProtoBindings(protoName string) bool {
+func (m *Message) HasProtoBindings(protoName string) bool {
 	if m.BindingsPromise == nil {
 		return false
 	}
 	_, ok1 := m.BindingsPromise.T().Values.Get(protoName)
 	_, ok2 := m.BindingsPromise.T().JSONValues.Get(protoName)
 	return ok1 || ok2
+}
+
+func (m *Message) ProtoBindingsValue(protoName string) common.Renderable {
+	res := &lang.GoValue{
+		Type:               &lang.GoSimple{Name: "ServerBindings", Import: common.GetContext().RuntimeModule(protoName)},
+		EmptyCurlyBrackets: true,
+	}
+	if m.BindingsPromise != nil {
+		if b, ok := m.BindingsPromise.T().Values.Get(protoName); ok {
+			//ctx.Logger.Debug("Server bindings", "proto", protoName)
+			res = b
+		}
+	}
+	return res
 }
 
 //func (m Message) renderPublishMessageStruct(ctx *common.RenderContext) []*j.Statement {
@@ -307,17 +321,21 @@ type ProtoMessage struct {
 	ProtoName string
 }
 
-func (p ProtoMessage) Selectable() bool {
+func (p *ProtoMessage) Selectable() bool {
 	return !p.Dummy && p.isBound()
 }
 
-func (p ProtoMessage) String() string {
+func (p *ProtoMessage) String() string {
 	return "Message " + p.Name
+}
+
+func (p *ProtoMessage) Kind() common.ObjectKind {
+	return common.ObjectKindProtoMessage
 }
 
 
 // isBound returns true if the message is bound to the protocol
-func (p ProtoMessage) isBound() bool {
+func (p *ProtoMessage) isBound() bool {
 	return lo.Contains(
 		lo.Map(p.AllServersPromise.T(), func(s *Server, _ int) string { return s.Protocol }),
 		p.ProtoName,

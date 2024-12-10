@@ -1,5 +1,5 @@
 type {{(print .Type.Name "Server") | toCamelCase}} interface {
-    Open{{.Type.Name}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType.U}}{{end}}) (*{{.Struct.U}}, error)
+    Open{{.Type.Name}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType.U}}{{end}}) (*{{.Type.U}}, error)
     {{if .IsPublisher}}Producer() {{qualrun .ProtoName "Producer"}}{{end}}
     {{if .IsSubscriber}}Consumer() {{qualrun .ProtoName "Consumer"}}{{end}}
 }
@@ -8,7 +8,7 @@ type {{(print .Type.Name "Server") | toCamelCase}} interface {
 
 {{template "proto/channel/openFunction" .}}
 
-{{.Struct.D}}
+{{.Type.D}}
 
 {{template "proto/channel/commonMethods" .}}
 

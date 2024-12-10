@@ -32,6 +32,12 @@ func (c Channel) Compile(ctx *common.CompileContext) error {
 		return err
 	}
 	ctx.PutObject(obj)
+	if v, ok := obj.(*render.ProtoChannel); ok {
+		ctx.Logger.Trace("ProtoObjects", "object", obj)
+		for _, protoObj := range v.ProtoChannels {
+			ctx.PutObject(protoObj)
+		}
+	}
 	return nil
 }
 
@@ -89,21 +95,23 @@ func (c Channel) buildChannels(ctx *common.CompileContext, channelKey string) (c
 	if c.Servers != nil {
 		ctx.Logger.Trace("Channel servers", "names", *c.Servers)
 		res.SpecServerNames = *c.Servers
-		prm := lang.NewListCbPromise[*render.Server](func(item common.Renderable, path []string) bool {
-			srv, ok := item.(*render.Server)
+		prm := lang.NewListCbPromise[*render.Server](func(item common.CompileObject, path []string) bool {
+			srv, ok := item.Renderable.(*render.Server)
 			if !ok {
 				return false
 			}
 			return lo.Contains(*c.Servers, srv.Name)
 		})
 		res.ServersPromise = prm
+		ctx.PutListPromise(prm)
 	} else {
 		ctx.Logger.Trace("Channel for all servers")
-		prm := lang.NewListCbPromise[*render.Server](func(item common.Renderable, path []string) bool {
-			_, ok := item.(*render.Server)
+		prm := lang.NewListCbPromise[*render.Server](func(item common.CompileObject, path []string) bool {
+			_, ok := item.Renderable.(*render.Server)
 			return ok
 		})
 		res.ServersPromise = prm
+		ctx.PutListPromise(prm)
 	}
 
 	// Channel/operation bindings

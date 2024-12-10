@@ -28,8 +28,8 @@ func (a AsyncAPI) Compile(ctx *common.CompileContext) error {
 }
 
 func (a AsyncAPI) build(ctx *common.CompileContext) *render.AsyncAPI {
-	allMessagesPrm := lang.NewListCbPromise[*render.Message](func(item common.Renderable, _ []string) bool {
-		_, ok := item.(*render.Message)
+	allMessagesPrm := lang.NewListCbPromise[*render.Message](func(item common.CompileObject, _ []string) bool {
+		_, ok := item.Renderable.(*render.Message)
 		return ok
 	})
 	ctx.PutListPromise(allMessagesPrm)

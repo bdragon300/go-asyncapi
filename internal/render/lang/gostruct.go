@@ -19,11 +19,11 @@ type GoStruct struct {
 	ObjectKind common.ObjectKind
 }
 
-func (s GoStruct) Kind() common.ObjectKind {
+func (s *GoStruct) Kind() common.ObjectKind {
 	return s.ObjectKind
 }
 
-func (s GoStruct) D() string {
+func (s *GoStruct) D() string {
 	//var res []*jen.Statement
 	//ctx.LogStartRender("GoStruct", s.Import, s.Name, "definition", s.Selectable())
 	//defer ctx.LogFinishRender()
@@ -36,11 +36,11 @@ func (s GoStruct) D() string {
 	//})
 	//res = append(res, jen.Type().Id(s.Name).Type(utils.ToCode(code)...))
 	//return res
-	s.definitionInfo = common.GetContext().CurrentDefinitionInfo()
-	return renderTemplate("lang/gostruct/definition", &s)
+	s.SetDefinitionInfo(common.GetContext().CurrentDefinitionInfo())
+	return renderTemplate("lang/gostruct/definition", s)
 }
 
-func (s GoStruct) U() string {
+func (s *GoStruct) U() string {
 	//ctx.LogStartRender("GoStruct", s.Import, s.Name, "usage", s.IsDefinition())
 	//defer ctx.LogFinishRender()
 	//
@@ -56,7 +56,7 @@ func (s GoStruct) U() string {
 	//})
 	//
 	//return []*jen.Statement{jen.Type(utils.ToCode(code)...)}
-	return renderTemplate("lang/gostruct/usage", &s)
+	return renderTemplate("lang/gostruct/usage", s)
 }
 
 //func (s GoStruct) NewFuncName() string {
@@ -77,11 +77,11 @@ func (s GoStruct) U() string {
 //	return f
 //}
 
-func (s GoStruct) IsStruct() bool {
+func (s *GoStruct) IsStruct() bool {
 	return true
 }
 
-func (s GoStruct) String() string {
+func (s *GoStruct) String() string {
 	if s.Import != "" {
 		return "GoStruct /" + s.Import + "." + s.Name
 	}
@@ -134,7 +134,7 @@ type GoStructField struct {
 //	return res
 //}
 
-func(f GoStructField) RenderTags() string {
+func(f *GoStructField) RenderTags() string {
 	tags := f.getTags()
 
 	var b strings.Builder
@@ -155,7 +155,7 @@ func(f GoStructField) RenderTags() string {
 	return str
 }
 
-func (f GoStructField) getTags() types.OrderedMap[string, string] {
+func (f *GoStructField) getTags() types.OrderedMap[string, string] {
 	tagValues := append([]string{f.MarshalName}, f.ExtraTagValues...)
 	var tagNames []string
 	if f.ContentTypesFunc != nil {

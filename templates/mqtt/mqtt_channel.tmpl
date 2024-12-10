@@ -1,71 +1,50 @@
 type {{(print .Type.Name "Server") | toCamelCase}} interface {
-    Open{{.Type.Name}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType.U}}{{end}}) (*{{.Struct.U}}, error)
+    Open{{.Type.Name}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType.U}}{{end}}) (*{{.Type.U}}, error)
     {{if .IsPublisher}}Producer() {{qualrun .ProtoName "Producer"}}{{end}}
     {{if .IsSubscriber}}Consumer() {{qualrun .ProtoName "Consumer"}}{{end}}
 }
 
-func New{{.Struct.Name}}(
+func New{{.Type.Name}}(
     {{if .ParametersType}}params {{.ParametersType.U}},{{end}}
     {{if .IsPublisher}}publisher {{qualrun .ProtoName "Publisher"}},{{end}}
     {{if .IsSubscriber}}subscriber {{qualrun .ProtoName "Subscriber"}},{{end}}
-) *{{.Struct.U}} {
-    res := {{.Struct.U}}{
+) *{{.Type.U}} {
+    res := {{.Type.U}}{
         name: {{.TypeNamePrefix}}Name({{if .ParametersType}}params{{end}}),
         {{if .IsPublisher}}publisher: publisher,{{end}}
         {{if .IsSubscriber}}subscriber: subscriber,{{end}}
     }
-    {{if .BindingsType}}
-        bindings := {{.BindingsType.U}}{}.{{.ProtoName | capitalize}}()
-        switch bindings.ChannelType {
-        case {{qualrun .ProtoName "ChannelTypeQueue"}}:
-            res.queue = res.name.String()
-        default:
-            res.routingKey = res.name.String()
-        }
-        if bindings.ExchangeConfiguration.Name != nil {
-            res.exchange = *bindings.ExchangeConfiguration.Name
-        }
-        if bindings.QueueConfiguration.Name != "" {
-            res.queue = bindings.QueueConfiguration.Name
-        }
-    {{end}}
-
+    res.topic = res.name.String()
     return &res
 }
 
 {{template "proto/channel/openFunction" .}}
 
-{{.Struct.D}}
+{{.Type.D}}
 
 {{template "proto/channel/commonMethods" .}}
 
-func (c {{.Struct.U}}) Exchange() string {
-    return c.exchange
-}
-
-func (c {{.Struct.U}}) Queue() string {
-    return c.queue
-}
-
-func (c {{.Struct.U}}) RoutingKey() string {
-    return c.routingKey
+func (c {{.Type.U}}) Topic() string {
+    return c.topic
 }
 
 {{if .IsPublisher}}
     {{template "proto/channel/outputMethods" .}}
-    func (c {{.Struct.U}}) SealEnvelope(envelope {{qualrun .ProtoName "EnvelopeWriter"}}, message {{if .PublisherMessageTypePromise}}{{goptr .PublisherMessageTypePromise.T.OutType.U}}{{else}}any{{end}}) error {
+    func (c {{.Type.U}}) SealEnvelope(envelope {{qualrun .ProtoName "EnvelopeWriter"}}, message {{if .PublisherMessageTypePromise}}{{goptr .PublisherMessageTypePromise.T.OutType.U}}{{else}}any{{end}}) error {
         envelope.ResetPayload()
-        {{if .PublisherMessageTypePromise /*Message is set for Channel in spec*/ }}
+        {{if .PublisherMessageTypePromise }}
+            {{- /*Message is set for Channel in spec*/ -}}
             if err := message.Marshal{{.ProtoName | capitalize}}Envelope(envelope); err != nil {
                 return err
             }
-        {{else /*No Message set for Channel in spec*/}}
+        {{else}}
+            {{- /*No Message set for Channel in spec*/ -}}
             enc := {{qual "encoding/json.NewEncoder"}}(envelope)
             if err := enc.Encode(message); err != nil {
                 return err
             }
         {{end}}
-        envelope.SetRoutingKey(c.RoutingKey())
+        envelope.SetTopic(c.topic)
         {{if and .PublisherMessageTypePromise (.PublisherMessageTypePromise.T.HasProtoBindings .ProtoName)}}
             envelope.SetBindings(.PublisherMessageTypePromise.T.BindingsType.U){}.{{.ProtoName | capitalize}}()
         {{end}}

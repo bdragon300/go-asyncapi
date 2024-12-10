@@ -1,7 +1,7 @@
-{{define "definition"}}
+{{define "lang/gosimple/definition"}}
     {{ .Name | goid }}
 {{end}}
-{{define "usage"}}
+{{define "lang/gosimple/usage"}}
     {{if .Import -}}
         {{ qual .Import .Name }}
     {{- else -}}

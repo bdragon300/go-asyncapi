@@ -3,34 +3,30 @@ package selector
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/samber/lo"
+	"reflect"
 	"regexp"
 )
 
-type protoSelectable interface {
-	ProtoObjects() []common.Renderable
-}
 
 func SelectObjects(objects []common.CompileObject, selection common.RenderSelectionConfig) []common.CompileObject {
-	var allObjects []common.CompileObject
+	var res []common.CompileObject
 	filterChain := getFiltersChain(selection)
+	// TODO: logging
 
-	// Enumerate all objects and replace (unwind) them with their proto objects if they have any.
-	// This is needed because a channel, message, server are presented in spec as one object, therefore any $ref points
-	// to the whole object. But in templates we pass every proto part of the object separately.
+	// Unwrap promise(s) until we get the actual object
 	for _, object := range objects {
-		if selectable, ok := object.Renderable.(protoSelectable); ok {
-			allObjects = append(allObjects, lo.Map(selectable.ProtoObjects(), func(obj common.Renderable, _ int) common.CompileObject {
-				return common.CompileObject{
-					Renderable: obj,
-					ObjectURL:  object.ObjectURL,
-				}
-			})...)
-		} else {
-			allObjects = append(allObjects, object)
+		r := object.Renderable
+		for {
+			v, ok := r.(common.ObjectPromise)
+			if !ok {
+				break
+			}
+			r = reflect.ValueOf(v).MethodByName("T").Call(nil)[0].Interface().(common.Renderable)
 		}
+		res = append(res, common.CompileObject{Renderable: r, ObjectURL: object.ObjectURL})
 	}
 
-	return lo.Filter(objects, func(object common.CompileObject, _ int) bool {
+	return lo.Filter(res, func(object common.CompileObject, _ int) bool {
 		for _, filter := range filterChain {
 			if !filter(object) {
 				return false

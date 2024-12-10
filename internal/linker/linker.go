@@ -129,7 +129,10 @@ func resolvePromise(p common.ObjectPromise, srcSpecID string, sources map[string
 	}
 
 	srcObjects := sources[tgtSpecID].AllObjects()
-	cb := func(_ common.Renderable, path []string) bool { return ref.MatchPointer(path) }
+	cb := func(_ common.CompileObject, path []string) bool { return ref.MatchPointer(path) }
+	if qcb := p.FindCallback(); qcb != nil {
+		cb = qcb
+	}
 	found := lo.Filter(srcObjects, func(obj common.CompileObject, _ int) bool { return cb(obj, obj.ObjectURL.Pointer) })
 	if len(found) != 1 {
 		panic(fmt.Sprintf("Ref %q must point to one object, but %d objects found", p.Ref(), len(found)))
@@ -154,7 +157,7 @@ func resolvePromise(p common.ObjectPromise, srcSpecID string, sources map[string
 // TODO: detect ref loops to avoid infinite recursion
 func resolveListPromise(p common.ObjectListPromise, srcSpecID string, sources map[string]ObjectSource) ([]common.Renderable, bool) {
 	// Exclude links from selection in order to avoid duplicates in list
-	cb := func(obj common.Renderable, _ []string) bool { return !isPromise(obj) }
+	cb := func(obj common.CompileObject, _ []string) bool { return !isPromise(obj) }
 	if qcb := p.FindCallback(); qcb != nil {
 		cb = qcb
 	}

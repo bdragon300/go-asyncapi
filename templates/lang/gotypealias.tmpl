@@ -1,10 +1,10 @@
-{{define "definition"}}
+{{define "lang/gotypealias/definition"}}
     {{- if .Description -}}
-        {{ print (.Name "--" .Description) | gocomment }}
+        {{ print .Name "--" .Description | gocomment }}
     {{- end -}}
     type {{ .Name | goid }} {{.AliasedType.D}}
 {{end}}
-{{define "usage"}}
+{{define "lang/gotypealias/usage"}}
     {{- if .HasDefinition -}}
         {{if .Import -}}
             {{ qual .Import .Name }}

@@ -1,10 +1,10 @@
-{{define "definition"}}
+{{define "lang/gomap/definition"}}
     {{- if .Description -}}
-        {{ print (.Name "--" .Description) | gocomment }}
+        {{ print .Name "--" .Description | gocomment }}
     {{- end -}}
     type {{ .Name | goid }} map[{{.KeyType.U}}]{{.ValueType.U}}
 {{end}}
-{{define "usage"}}
+{{define "lang/gomap/usage"}}
     {{- if .HasDefinition -}}
         {{if .Import -}}
             {{ qual .Import .Name }}

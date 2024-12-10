@@ -33,7 +33,9 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 		return err
 	}
 	ctx.PutObject(obj)
-
+	if v, ok := obj.(*render.ProtoServer); ok {
+		ctx.PutObject(v.ProtoServer)
+	}
 	return nil
 }
 
@@ -64,8 +66,8 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	}
 
 	// Channels which are connected to this server
-	prm := lang.NewListCbPromise[*render.Channel](func(item common.Renderable, path []string) bool {
-		_, ok := item.(*render.Channel)
+	prm := lang.NewListCbPromise[*render.Channel](func(item common.CompileObject, path []string) bool {
+		_, ok := item.Renderable.(*render.Channel)
 		if !ok {
 			return false
 		}
@@ -105,7 +107,8 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		if err != nil {
 			return nil, err
 		}
-		return &render.ProtoServer{Server: &res, Type: protoStruct}, nil
+		res.ProtoServer = &render.ProtoServer{Server: &res, Type: protoStruct}
+		return &res, nil
 	}
 
 	ctx.Logger.Trace("Server", "proto", protoBuilder.ProtocolName())
@@ -121,5 +124,5 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		ctx.Storage.RegisterProtocol(s.Protocol)
 	}
 
-	return res, nil
+	return &res, nil
 }
