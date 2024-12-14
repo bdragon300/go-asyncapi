@@ -3,6 +3,7 @@ package render
 import (
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
+	"github.com/bdragon300/go-asyncapi/internal/tmpl"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"net/url"
 	"strconv"
@@ -23,7 +24,7 @@ const (
 
 // CorrelationID never renders itself, only as a part of message struct
 type CorrelationID struct {
-	Name         string
+	OriginalName string
 	Description  string
 	StructField  CorrelationIDStructField // Type field name to store the value to or to load the value from
 	LocationPath []string                 // JSONPointer path to the field in the message, should be non-empty
@@ -37,6 +38,10 @@ func (c *CorrelationID) Selectable() bool {
 	return false
 }
 
+func (c *CorrelationID) GetOriginalName() string {
+	return c.OriginalName
+}
+
 //func (c CorrelationID) D(_ *common.RenderContext) []*j.Statement {
 //	panic("not implemented")
 //}
@@ -46,15 +51,15 @@ func (c *CorrelationID) Selectable() bool {
 //}
 //
 //func (c CorrelationID) ID() string {
-//	return c.Name
+//	return c.GetOriginalName
 //}
 
 func (c *CorrelationID) String() string {
-	return "CorrelationID " + c.Name
+	return "CorrelationID " + c.OriginalName
 }
 
 func (c *CorrelationID) RenderSetterBody(inVar string, inVarType *lang.GoStruct) string {
-	//ctx.LogStartRender("CorrelationID.RenderSetterBody", "", c.Name, "definition", false)
+	//ctx.LogStartRender("CorrelationID.RenderSetterBody", "", c.GetOriginalName, "definition", false)
 	//defer ctx.LogFinishRender()
 
 	f, ok := lo.Find(inVarType.Fields, func(item lang.GoStructField) bool { return item.Name == string(c.StructField) })
@@ -110,10 +115,10 @@ func (c *CorrelationID) TargetVarType(varType *lang.GoStruct) common.GolangType 
 }
 
 //func (c CorrelationID) RenderSetterDefinition(ctx *common.RenderContext, message *Message) []*j.Statement {
-//	ctx.LogStartRender("CorrelationID.RenderSetterDefinition", "", c.Name, "definition", false)
+//	ctx.LogStartRender("CorrelationID.RenderSetterDefinition", "", c.GetOriginalName, "definition", false)
 //	defer ctx.LogFinishRender()
 //
-//	f, ok := lo.Find(message.OutType.Fields, func(item GoStructField) bool { return item.Name == c.StructField })
+//	f, ok := lo.Find(message.OutType.Fields, func(item GoStructField) bool { return item.GetOriginalName == c.StructField })
 //	if !ok {
 //		panic(fmt.Errorf("field %s not found in OutType", c.StructField))
 //	}
@@ -146,7 +151,7 @@ func (c *CorrelationID) TargetVarType(varType *lang.GoStruct) common.GolangType 
 //	}
 //	codeLines = append(codeLines, j.Id(message.OutType.ReceiverName()+"."+c.StructField).Op("= v0"))
 //
-//	receiver := j.Id(message.OutType.ReceiverName()).Id(message.OutType.Name)
+//	receiver := j.Id(message.OutType.ReceiverName()).Id(message.OutType.GetOriginalName)
 //
 //	// Method SetCorrelationID(value any)
 //	// TODO: comment from description
@@ -158,7 +163,7 @@ func (c *CorrelationID) TargetVarType(varType *lang.GoStruct) common.GolangType 
 //}
 
 func (c *CorrelationID) RenderGetterBody(outVar string, outVarType *lang.GoStruct) string {
-	//ctx.LogStartRender("CorrelationID.RenderGetterDefinition", "", c.Name, "definition", false)
+	//ctx.LogStartRender("CorrelationID.RenderGetterDefinition", "", c.GetOriginalName, "definition", false)
 	//defer ctx.LogFinishRender()
 
 	f, ok := lo.Find(outVarType.Fields, func(item lang.GoStructField) bool { return item.Name == string(c.StructField) })
@@ -189,10 +194,10 @@ func (c *CorrelationID) RenderGetterBody(outVar string, outVarType *lang.GoStruc
 }
 
 //func (c CorrelationID) RenderGetterDefinition(ctx *common.RenderContext, message *Message) []*j.Statement {
-//	ctx.LogStartRender("CorrelationID.RenderGetterDefinition", "", c.Name, "definition", false)
+//	ctx.LogStartRender("CorrelationID.RenderGetterDefinition", "", c.GetOriginalName, "definition", false)
 //	defer ctx.LogFinishRender()
 //
-//	f, ok := lo.Find(message.InType.Fields, func(item GoStructField) bool { return item.Name == c.StructField })
+//	f, ok := lo.Find(message.InType.Fields, func(item GoStructField) bool { return item.GetOriginalName == c.StructField })
 //	if !ok {
 //		panic(fmt.Errorf("field %s not found in InType", c.StructField))
 //	}
@@ -214,7 +219,7 @@ func (c *CorrelationID) RenderGetterBody(outVar string, outVarType *lang.GoStruc
 //	codeLines = append(codeLines, lo.FlatMap(bodySteps, func(item correlationIDExpansionStep, _ int) []*j.Statement {
 //		return item.codeLines
 //	})...)
-//	receiver := j.Id(message.InType.ReceiverName()).Id(message.InType.Name)
+//	receiver := j.Id(message.InType.ReceiverName()).Id(message.InType.GetOriginalName)
 //
 //	codeLines = append(codeLines,
 //		j.Id("value").Op("=").Id(bodySteps[len(bodySteps)-1].varName),
@@ -270,7 +275,7 @@ func (c *CorrelationID) renderValueExtractionCode(
 			if !ok {
 				err = fmt.Errorf(
 					"field %q not found in struct %s, path: /%s",
-					memberName, typ.Name, strings.Join(path[:pathIdx], "/"),
+					memberName, typ.OriginalName, strings.Join(path[:pathIdx], "/"),
 				)
 				return
 			}
@@ -282,10 +287,10 @@ func (c *CorrelationID) renderValueExtractionCode(
 			//ctx.Logger.Trace("In GoMap", "path", path[:pathIdx], "name", typ.ID(), "member", memberName)
 			varValueStmts = fmt.Sprintf("%s[%s]", anchor, utils.ToGoLiteral(memberName))
 			baseType = typ.ValueType
-			varExpr := fmt.Sprintf("var %s %s", nextAnchor, typ.ValueType.U())
-			if t, ok := typ.ValueType.(lang.GolangPointerType); ok && t.IsPointer() {
+			varExpr := fmt.Sprintf("var %s %s", nextAnchor, lo.Must(tmpl.TemplateGoUsage(typ.ValueType)))
+			if typ.ValueType.IsPointer() {
 				// Append ` = new(TYPE)` to initialize a pointer
-				varExpr += fmt.Sprintf(" = new(%s)", typ.ValueType.U())
+				varExpr += fmt.Sprintf(" = new(%s)", lo.Must(tmpl.TemplateGoUsage(typ.ValueType)))
 			}
 
 			ifExpr := fmt.Sprintf(`if v, ok := %s; ok {
@@ -301,7 +306,7 @@ func (c *CorrelationID) renderValueExtractionCode(
 			body = []string{
 				fmt.Sprintf(`if %s == nil { 
 					%s = make(%s) 
-				}`, anchor, anchor, typ.U()),
+				}`, anchor, anchor, lo.Must(tmpl.TemplateGoUsage(typ))),
 				varExpr,
 				ifExpr,
 			}
@@ -311,7 +316,7 @@ func (c *CorrelationID) renderValueExtractionCode(
 				err = fmt.Errorf(
 					"index %q is not a number, array %s, path: /%s",
 					memberName,
-					typ.Name,
+					typ.OriginalName,
 					strings.Join(path[:pathIdx], "/"),
 				)
 				return
@@ -331,7 +336,7 @@ func (c *CorrelationID) renderValueExtractionCode(
 			if pathIdx >= len(path)-1 { // Primitive types should get addressed by the last path item
 				err = fmt.Errorf(
 					"type %q cannot be resolved further, path: /%s",
-					typ.TypeName(),
+					typ.GetOriginalName(),  // TODO: check if this is correct
 					strings.Join(path[:pathIdx], "/"),
 				)
 				return
@@ -357,7 +362,7 @@ func (c *CorrelationID) renderValueExtractionCode(
 			//ctx.Logger.Trace("Unknown type", "path", path[:pathIdx], "name", typ.String(), "type", fmt.Sprintf("%T", typ))
 			err = fmt.Errorf(
 				"type %s is not addressable, path: /%s",
-				typ.TypeName(),
+				typ.GetOriginalName(),  // TODO: check if this is correct
 				strings.Join(path[:pathIdx], "/"),
 			)
 			return

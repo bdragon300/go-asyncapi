@@ -16,32 +16,16 @@ func (p *GoPointer) Selectable() bool {
 	return p.Type.Selectable()
 }
 
-func (p *GoPointer) D() string {
-	//ctx.LogStartRender("GoPointer", "", "", "definition", p.IsDefinition())
-	//defer ctx.LogFinishRender()
-	return p.Type.D()
-}
-
-func (p *GoPointer) U() string {
-	//ctx.LogStartRender("GoPointer", "", "", "usage", p.IsDefinition())
-	//defer ctx.LogFinishRender()
-
-	drawPtr := true
-	if v, ok := p.Type.(GolangPointerType); ok {
-		drawPtr = !v.IsPointer() // Prevent appearing pointer to pointer
-	}
-	if drawPtr {
-		return "*" + p.Type.U()
-	}
-	return p.Type.U()
-}
-
-func (p *GoPointer) TypeName() string {
-	return p.Type.TypeName()
+func (p *GoPointer) GoTemplate() string {
+	return "lang/gopointer"
 }
 
 func (p *GoPointer) String() string {
 	return "GoPointer -> " + p.Type.String()
+}
+
+func (p *GoPointer) GetOriginalName() string {
+	return ""
 }
 
 func (p *GoPointer) UnwrapGolangType() (common.GolangType, bool) {

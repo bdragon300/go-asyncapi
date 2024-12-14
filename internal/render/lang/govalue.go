@@ -18,11 +18,6 @@ type GoValue struct {
 	MapValues          types.OrderedMap[string, any] // Render as map initialization in curly brackets
 }
 
-type GolangPointerWrapperType interface {
-	GolangTypeWrapperType
-	GolangPointerType
-}
-
 func (gv *GoValue) Kind() common.ObjectKind {
 	return common.ObjectKindOther
 }
@@ -31,8 +26,22 @@ func (gv *GoValue) Selectable() bool {
 	return false
 }
 
-func (gv *GoValue) U() string {
-	return renderTemplate("lang/govalue/usage", gv)
+func (gv *GoValue) GoTemplate() string {
+	return "lang/govalue"
+}
+
+func (gv *GoValue) IsPointer() bool {
+	return gv.Type != nil && gv.Type.IsPointer()
+}
+
+func (gv *GoValue) DefinitionInfo() (*common.GolangTypeDefinitionInfo, error) {
+	return nil, nil
+}
+
+func (gv *GoValue) SetDefinitionInfo(_ *common.GolangTypeDefinitionInfo) {}
+
+func (gv *GoValue) GetOriginalName() string {
+	return ""
 }
 
 func (gv *GoValue) Empty() bool {
@@ -88,11 +97,11 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 		}
 		if res.Type == nil {
 			res.Type = &GoArray{
-				BaseType: BaseType{Name: rtyp.Name(), Import: rtyp.PkgPath()},
+				BaseType: BaseType{OriginalName: rtyp.Name(), Import: rtyp.PkgPath()},
 				ItemsType: &GoSimple{
-					Name:        elemType.Name(),
-					IsInterface: elemType.Kind() == reflect.Interface,
-					Import:      elemType.PkgPath(),
+					OriginalName: elemType.Name(),
+					IsInterface:  elemType.Kind() == reflect.Interface,
+					Import:       elemType.PkgPath(),
 				},
 				Size: elemSize,
 			}
@@ -108,16 +117,16 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 		elemType := rtyp.Elem()
 		if res.Type == nil {
 			res.Type = &GoMap{
-				BaseType: BaseType{Name: rtyp.Name(), Import: rtyp.PkgPath()},
+				BaseType: BaseType{OriginalName: rtyp.Name(), Import: rtyp.PkgPath()},
 				KeyType: &GoSimple{
-					Name:        keyType.Name(),
-					IsInterface: keyType.Kind() == reflect.Interface,
-					Import:      keyType.PkgPath(),
+					OriginalName: keyType.Name(),
+					IsInterface:  keyType.Kind() == reflect.Interface,
+					Import:       keyType.PkgPath(),
 				},
 				ValueType: &GoSimple{
-					Name:        elemType.Name(),
-					IsInterface: elemType.Kind() == reflect.Interface,
-					Import:      elemType.PkgPath(),
+					OriginalName: elemType.Name(),
+					IsInterface:  elemType.Kind() == reflect.Interface,
+					Import:       elemType.PkgPath(),
 				},
 			}
 		}
@@ -130,7 +139,7 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 	case reflect.Struct:
 		if res.Type == nil {
 			res.Type = &GoStruct{
-				BaseType: BaseType{Name: rtyp.Name(), Import: rtyp.PkgPath()},
+				BaseType: BaseType{OriginalName: rtyp.Name(), Import: rtyp.PkgPath()},
 			}
 		}
 		res.EmptyCurlyBrackets = true

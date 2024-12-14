@@ -7,18 +7,23 @@ import (
 )
 
 type Message struct {
-	Name                 string
-	Dummy                bool
-	OutType              *lang.GoStruct
+	OriginalName string
+	OutType      *lang.GoStruct
 	InType               *lang.GoStruct
-	PayloadType          common.GolangType // `any` or a particular type
+	Dummy                bool
+	IsComponent bool // true if message is defined in `components` section
+
 	HeadersFallbackType  *lang.GoMap
 	HeadersTypePromise   *lang.Promise[*lang.GoStruct]
+
 	AllServersPromise    *lang.ListPromise[*Server]    // For extracting all using protocols
+
 	BindingsType         *lang.GoStruct                // nil if message bindings are not defined for message
 	BindingsPromise      *lang.Promise[*Bindings]      // nil if message bindings are not defined for message as well
+
 	ContentType          string                        // Message's content type
 	CorrelationIDPromise *lang.Promise[*CorrelationID] // nil if correlationID is not defined for message
+	PayloadType          common.GolangType // `any` or a particular type
 	AsyncAPIPromise *lang.Promise[*AsyncAPI]
 
 	ProtoMessages []*ProtoMessage
@@ -29,13 +34,15 @@ func (m *Message) Kind() common.ObjectKind {
 }
 
 func (m *Message) Selectable() bool {
-	return !m.Dummy
+	return !m.Dummy && !m.IsComponent // Select only the messages defined in the `channels` section`
 }
 
 func (m *Message) ProtoObjects() []common.Renderable {
-	return lo.FilterMap(m.ProtoMessages, func(p *ProtoMessage, _ int) (common.Renderable, bool) {
-		return p, p.Selectable()
-	})
+	return lo.Map(m.ProtoMessages, func(p *ProtoMessage, _ int) common.Renderable { return p })
+}
+
+func (m *Message) GetOriginalName() string {
+	return m.OriginalName
 }
 
 func (m *Message) EffectiveContentType() string {
@@ -58,7 +65,7 @@ func (m *Message) BindingsProtocols() (res []string) {
 
 //func (m Message) D(ctx *common.RenderContext) []*j.Statement {
 	//var res []*j.Statement
-	//ctx.LogStartRender("Message", "", m.Name, "definition", m.Selectable())
+	//ctx.LogStartRender("Message", "", m.GetOriginalName, "definition", m.Selectable())
 	//defer ctx.LogFinishRender()
 	//
 	//// Bindings struct and its methods according to protocols of channels where the message is used
@@ -87,11 +94,11 @@ func (m *Message) BindingsProtocols() (res []string) {
 //}
 //
 //func (m Message) ID() string {
-//	return m.Name
+//	return m.GetOriginalName
 //}
 //
 func (m *Message) String() string {
-	return "Message " + m.Name
+	return "Message " + m.OriginalName
 }
 
 func (m *Message) HasProtoBindings(protoName string) bool {
@@ -105,7 +112,7 @@ func (m *Message) HasProtoBindings(protoName string) bool {
 
 func (m *Message) ProtoBindingsValue(protoName string) common.Renderable {
 	res := &lang.GoValue{
-		Type:               &lang.GoSimple{Name: "ServerBindings", Import: common.GetContext().RuntimeModule(protoName)},
+		Type:               &lang.GoSimple{OriginalName: "ServerBindings", Import: common.GetContext().RuntimeModule(protoName)},
 		EmptyCurlyBrackets: true,
 	}
 	if m.BindingsPromise != nil {
@@ -137,7 +144,7 @@ func (m *Message) ProtoBindingsValue(protoName string) common.Renderable {
 //func (m Message) renderPublishCommonMethods(ctx *common.RenderContext) []*j.Statement {
 //	ctx.Logger.Trace("renderPublishCommonMethods")
 //
-//	structName := m.OutType.Name
+//	structName := m.OutType.GetOriginalName
 //	rn := m.OutType.ReceiverName()
 //	receiver := j.Id(rn).Op("*").Id(structName)
 //	payloadFieldType := utils.ToCode(m.PayloadType.U(ctx))
@@ -177,7 +184,7 @@ func (m *Message) ProtoBindingsValue(protoName string) common.Renderable {
 //	ctx.Logger.Trace("renderMarshalEnvelopeMethod")
 //
 //	rn := m.OutType.ReceiverName()
-//	receiver := j.Id(rn).Op("*").Id(m.OutType.Name)
+//	receiver := j.Id(rn).Op("*").Id(m.OutType.GetOriginalName)
 //
 //	return []*j.Statement{
 //		// Method MarshalProtoEnvelope(envelope proto.EnvelopeWriter) error
@@ -198,7 +205,7 @@ func (m *Message) ProtoBindingsValue(protoName string) common.Renderable {
 //					bg.Id("envelope").Dot("SetHeaders").Call(
 //						j.Qual(ctx.RuntimeModule(""), "Headers").Values(j.DictFunc(func(d j.Dict) {
 //							for _, f := range m.HeadersTypePromise.Target().Fields {
-//								d[j.Lit(f.Name)] = j.Id(rn).Dot("Headers").Dot(f.Name)
+//								d[j.Lit(f.GetOriginalName)] = j.Id(rn).Dot("Headers").Dot(f.GetOriginalName)
 //							}
 //						})),
 //					)
@@ -232,7 +239,7 @@ func (m *Message) ProtoBindingsValue(protoName string) common.Renderable {
 //func (m Message) renderSubscribeCommonMethods(ctx *common.RenderContext) []*j.Statement {
 //	ctx.Logger.Trace("renderSubscribeCommonMethods")
 //
-//	structName := m.InType.Name
+//	structName := m.InType.GetOriginalName
 //	rn := m.InType.ReceiverName()
 //	receiver := j.Id(rn).Op("*").Id(structName)
 //	payloadFieldType := utils.ToCode(m.PayloadType.U(ctx))
@@ -268,7 +275,7 @@ func (m *Message) ProtoBindingsValue(protoName string) common.Renderable {
 //	ctx.Logger.Trace("renderUnmarshalEnvelopeMethod")
 //
 //	rn := m.InType.ReceiverName()
-//	receiver := j.Id(rn).Op("*").Id(m.InType.Name)
+//	receiver := j.Id(rn).Op("*").Id(m.InType.GetOriginalName)
 //
 //	return []*j.Statement{
 //		// Method UnmarshalProtoEnvelope(envelope proto.EnvelopeReader) error
@@ -289,8 +296,8 @@ func (m *Message) ProtoBindingsValue(protoName string) common.Renderable {
 //						bg.Op("headers := envelope.Headers()")
 //						for _, f := range m.HeadersTypePromise.Target().Fields {
 //							fType := j.Add(utils.ToCode(f.Type.U(ctx))...)
-//							bg.If(j.Op("v, ok := headers").Index(j.Lit(f.Name)), j.Id("ok")).
-//								Block(j.Id(rn).Dot("Headers").Dot(f.Name).Op("=").Id("v").Assert(fType))
+//							bg.If(j.Op("v, ok := headers").Index(j.Lit(f.GetOriginalName)), j.Id("ok")).
+//								Block(j.Id(rn).Dot("Headers").Dot(f.GetOriginalName).Op("=").Id("v").Assert(fType))
 //						}
 //					}
 //				} else {
@@ -326,7 +333,7 @@ func (p *ProtoMessage) Selectable() bool {
 }
 
 func (p *ProtoMessage) String() string {
-	return "Message " + p.Name
+	return "Message " + p.OriginalName
 }
 
 func (p *ProtoMessage) Kind() common.ObjectKind {

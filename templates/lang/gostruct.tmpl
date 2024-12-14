@@ -1,31 +1,31 @@
 {{define "lang/gostruct/definition"}}
-    {{- if .Description -}}
-        {{ print .Name "--" .Description | gocomment }}
-    {{- end -}}
-    type {{ .Name | goid }} struct {
-        {{range .Fields -}}
-            {{- if .Description -}}
-                {{ print .Name "--" .Description | gocomment }}
-            {{- end}}
-            {{.Name | goid}} {{.Type.U}} {{.RenderTags}}
-        {{- end}}
+    {{- if .Description }}
+        {{- print (goid .) "--" .Description | gocomment }}
+    {{- end }}
+    type {{ . | goid }} struct {
+        {{- range .Fields }}
+            {{- if .Description }}
+                {{ print (goid .) "--" .Description | gocomment }}
+            {{- end }}
+            {{ .Name }} {{ .Type | gousage }} {{.RenderTags}}
+        {{- end }}
     }
-{{end}}
+{{- end}}
 {{define "lang/gostruct/usage"}}
-    {{- if .HasDefinition -}}
-        {{if .Import -}}
-            {{ qual .Import .Name }}
-        {{- else -}}
-            {{ qualgenpkg . }}{{.Name | goid}}
-        {{- end -}}
-    {{- else -}}
+    {{- if .HasDefinition }}
+        {{- if .Import }}
+            {{- qual .Import (goid .) }}
+        {{- else }}
+            {{- qualgenpkg . }}{{ . | goid }}
+        {{- end }}
+    {{- else }}
         struct {
-            {{range .Fields -}}
-                {{- if .Description -}}
+            {{- range .Fields }}
+                {{- if .Description }}
                     {{ print .Name "--" .Description | gocomment }}
-                {{- end}}
-                {{.Name | goid}} {{.Type.U}} {{.RenderTags}}
-            {{- end}}
+                {{- end }}
+                {{ .Name }} {{ .Type | gousage }} {{.RenderTags}}
+            {{- end }}
         }
-    {{- end -}}
-{{end}}
+    {{- end }}
+{{- end}}

@@ -15,9 +15,9 @@ import (
 
 const nameWordSep = "_"
 
-// ErrDefinitionNotRendered is returned when we try to get a package in the generated code for an object, but the
+// ErrDefinitionLocationUnknown is returned when we try to get a package in the generated code for an object, but the
 // definition of this object has not been rendered, therefore its location is unknown yet.
-var ErrDefinitionNotRendered = errors.New("definition is not rendered")
+var ErrDefinitionLocationUnknown = errors.New("definition location is unknown")
 
 type CompileObject struct {
 	Renderable
@@ -30,9 +30,7 @@ type GolangTypeDefinitionInfo struct {
 
 type GolangType interface {
 	Renderable
-	TypeName() string  // TODO: remove?
-	D() string
-	U() string
+	GoTemplate() string
 	IsPointer() bool
 	DefinitionInfo() (*GolangTypeDefinitionInfo, error)
 	SetDefinitionInfo(info *GolangTypeDefinitionInfo)

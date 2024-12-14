@@ -1,4 +1,4 @@
-package tpl
+package tmpl
 
 import (
 	"github.com/bdragon300/go-asyncapi/templates"

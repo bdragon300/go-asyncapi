@@ -5,7 +5,7 @@ package amqp
 //}
 
 //func (pc ProtoChannel) D(ctx *common.RenderContext) []*j.Statement {
-//	ctx.LogStartRender("Channel", "", pc.Parent.Name, "definition", pc.Selectable(), "proto", pc.ProtoName)
+//	ctx.LogStartRender("Channel", "", pc.Parent.GetOriginalName, "definition", pc.Selectable(), "proto", pc.ProtoName)
 //	defer ctx.LogFinishRender()
 //
 //	var res []*j.Statement
@@ -26,17 +26,17 @@ package amqp
 //}
 
 //func (pc ProtoChannel) U(ctx *common.RenderContext) []*j.Statement {
-//	ctx.LogStartRender("Channel", "", pc.Parent.Name, "usage", pc.Selectable(), "proto", pc.ProtoName)
+//	ctx.LogStartRender("Channel", "", pc.Parent.GetOriginalName, "usage", pc.Selectable(), "proto", pc.ProtoName)
 //	defer ctx.LogFinishRender()
 //	return pc.Type.U(ctx)
 //}
 
 //func (pc ProtoChannel) ID() string {
-//	return pc.Parent.Name
+//	return pc.Parent.GetOriginalName
 //}
 //
 //func (pc ProtoChannel) String() string {
-//	return "AMQP ProtoChannel " + pc.Parent.Name
+//	return "AMQP ProtoChannel " + pc.Parent.GetOriginalName
 //}
 
 //func (pc ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {
@@ -58,7 +58,7 @@ package amqp
 //			Op("*").Add(utils.ToCode(pc.Type.U(ctx))...).
 //			BlockFunc(func(bg *j.Group) {
 //				bg.Op("res := ").Add(utils.ToCode(pc.Type.U(ctx))...).Values(j.DictFunc(func(d j.Dict) {
-//					d[j.Id("name")] = j.Id(pc.Parent.TypeNamePrefix + "Name").CallFunc(func(g *j.Group) {
+//					d[j.Id("name")] = j.Id(pc.Parent.TypeNamePrefix + "GetOriginalName").CallFunc(func(g *j.Group) {
 //						if pc.Parent.ParametersType != nil {
 //							g.Id("params")
 //						}
@@ -84,11 +84,11 @@ package amqp
 //						)
 //					})
 //					bg.Op(`
-//						if bindings.ExchangeConfiguration.Name != nil {
-//							res.exchange = *bindings.ExchangeConfiguration.Name
+//						if bindings.ExchangeConfiguration.GetOriginalName != nil {
+//							res.exchange = *bindings.ExchangeConfiguration.GetOriginalName
 //						}
-//						if bindings.QueueConfiguration.Name != "" {
-//							res.queue = bindings.QueueConfiguration.Name
+//						if bindings.QueueConfiguration.GetOriginalName != "" {
+//							res.queue = bindings.QueueConfiguration.GetOriginalName
 //						}`)
 //				}
 //				bg.Op(`return &res`)
@@ -99,7 +99,7 @@ package amqp
 //func (pc ProtoChannel) renderProtoMethods(ctx *common.RenderContext) []*j.Statement {
 //	ctx.Logger.Trace("renderProtoMethods", "proto", pc.ProtoName)
 //	rn := pc.Type.ReceiverName()
-//	receiver := j.Id(rn).Id(pc.Type.Name)
+//	receiver := j.Id(rn).Id(pc.Type.GetOriginalName)
 //
 //	return []*j.Statement{
 //		// Method Exchange() string
@@ -131,7 +131,7 @@ package amqp
 //func (pc ProtoChannel) renderProtoPublisherMethods(ctx *common.RenderContext) []*j.Statement {
 //	ctx.Logger.Trace("renderProtoPublisherMethods", "proto", pc.ProtoName)
 //	rn := pc.Type.ReceiverName()
-//	receiver := j.Id(rn).Id(pc.Type.Name)
+//	receiver := j.Id(rn).Id(pc.Type.GetOriginalName)
 //
 //	var msgTyp common.GolangType = render.GoPointer{Type: pc.FallbackMessageType, HasDefinition: true}
 //	if pc.PublisherMessageTypePromise != nil {

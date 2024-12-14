@@ -23,10 +23,10 @@ package proto
 //	ctx.Logger.Trace("RenderCommonSubscriberMethods", "proto", pc.ProtoName)
 //
 //	rn := pc.Type.ReceiverName()
-//	receiver := j.Id(rn).Id(pc.Type.Name)
+//	receiver := j.Id(rn).Id(pc.Type.GetOriginalName)
 //	var msgTyp common.GolangType = render.GoPointer{Type: pc.Parent.FallbackMessageType, HasDefinition: true}
-//	if pc.Parent.SubscribeMessageTypePromise != nil {
-//		msgTyp = render.GoPointer{Type: pc.Parent.SubscribeMessageTypePromise.Target().InType, HasDefinition: true}
+//	if pc.Parent.SubscriberMessageTypePromise != nil {
+//		msgTyp = render.GoPointer{Type: pc.Parent.SubscriberMessageTypePromise.Target().InType, HasDefinition: true}
 //	}
 //
 //	return []*j.Statement{
@@ -38,7 +38,7 @@ package proto
 //			).
 //			Error().
 //			BlockFunc(func(bg *j.Group) {
-//				if pc.Parent.SubscribeMessageTypePromise == nil {
+//				if pc.Parent.SubscriberMessageTypePromise == nil {
 //					bg.Empty().Add(utils.QualSprintf(`
 //						enc := %Q(encoding/json,NewDecoder)(envelope)
 //						if err := enc.Decode(message); err != nil {
@@ -75,7 +75,7 @@ package proto
 //	ctx.Logger.Trace("RenderCommonPublisherMethods", "proto", pc.ProtoName)
 //
 //	rn := pc.Type.ReceiverName()
-//	receiver := j.Id(rn).Id(pc.Type.Name)
+//	receiver := j.Id(rn).Id(pc.Type.GetOriginalName)
 //
 //	return []*j.Statement{
 //		// Method Publisher() proto.Publisher
@@ -103,11 +103,11 @@ package proto
 //	ctx.Logger.Trace("RenderCommonMethods", "proto", pc.ProtoName)
 //
 //	rn := pc.Type.ReceiverName()
-//	receiver := j.Id(rn).Id(pc.Type.Name)
+//	receiver := j.Id(rn).Id(pc.Type.GetOriginalName)
 //
 //	return []*j.Statement{
-//		// Method Name() string
-//		j.Func().Params(receiver.Clone()).Id("Name").
+//		// Method GetOriginalName() string
+//		j.Func().Params(receiver.Clone()).Id("GetOriginalName").
 //			Params().
 //			Qual(ctx.RuntimeModule(""), "ParamString").
 //			Block(
@@ -151,13 +151,13 @@ package proto
 //			BlockFunc(func(bg *j.Group) {
 //				bg.Op("if len(servers) == 0").Block(j.Op("return nil, ").Qual(ctx.RuntimeModule(""), "ErrEmptyServers"))
 //				if pc.Parent.Publisher || pc.Parent.Subscriber {
-//					bg.Id("name").Op(":=").Id(pc.Parent.TypeNamePrefix + "Name").CallFunc(func(g *j.Group) {
+//					bg.Id("name").Op(":=").Id(pc.Parent.TypeNamePrefix + "GetOriginalName").CallFunc(func(g *j.Group) {
 //						if pc.Parent.ParametersType != nil {
 //							g.Id("params")
 //						}
 //					})
 //					if pc.Parent.BindingsType != nil {
-//						bg.Id("bindings").Op(":=").Id(pc.Parent.BindingsType.Name).Values().Dot(pc.ProtoTitle).Call()
+//						bg.Id("bindings").Op(":=").Id(pc.Parent.BindingsType.GetOriginalName).Values().Dot(pc.ProtoTitle).Call()
 //					}
 //					if pc.Parent.Publisher {
 //						bg.Var().Id("prod").Index().Qual(ctx.RuntimeModule(pc.ProtoName), "Producer")

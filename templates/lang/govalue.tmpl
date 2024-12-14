@@ -1,72 +1,65 @@
 {{define "lang/govalue/usage"}}
-    {{if .Type}}
-        {{if .Type.IsPointer}}
-            {{- if .Empty -}}
-                {{- if .EmptyCurlyBrackets -}}
-                    {{- /* &{} -> ToPtr({}) */ -}}
-                    {{- qualrun "ToPtr"}}({})
-                {{- else -}}
-                    {{- /* &nil -> nil */ -}}
-                    nil
-                {{- end -}}
-            {{- else if .LiteralValue -}}
-                {{$t := unwrapgoptr .Type}}
-                {{- if $t -}}
-                    {{- /* &int(123) -> ToPtr(int(123)) */ -}}
-                    {{- qualrun "ToPtr"}}({{$t.U}}({{template "lang/gotypealias/value_expr" .}}))
-                {{- else -}}
-                    {{- /* &123 -> ToPtr(123) */ -}}
+    {{- if .Type }}
+        {{- if .Type.IsPointer }}
+            {{- if .Empty }}
+                {{- if .EmptyCurlyBrackets }}
+                    {{- /* &{} -> ToPtr({}) */}}{{ qualrun "ToPtr"}}({})
+                {{- else }}
+                    {{- /* &nil -> nil */}}nil
+                {{- end }}
+            {{- else if .LiteralValue }}
+                {{- $t := unwrapgoptr .Type }}
+                {{- if $t }}
+                    {{- /* &int(123) -> ToPtr(int(123)) */}}
+                    {{- qualrun "ToPtr"}}({{ $t | gousage }}({{template "lang/gotypealias/value_expr" .}}))
+                {{- else }}
+                    {{- /* &123 -> ToPtr(123) */}}
                     {{- qualrun "ToPtr"}}({{template "lang/gotypealias/value_expr" .}})
-                {{- end -}}
-            {{- else -}}
-                {{- /* &AnyType{}; &map[string]int{}; &[]int{} */ -}}
-                &{{.Type.U}}
-                {{- if .LiteralValue -}}
-                    {{- /* int(123) */ -}}({{template "lang/gotypealias/value_expr" .}})
-                {{- else -}}
-                    {{- template "lang/gotypealias/value_expr" . -}}
-                {{- end -}}
-            {{- end -}}
-        {{else}}
-            {{.Type.U}}
-            {{- if .LiteralValue -}}
-                {{- /* int(123) */ -}}({{template "lang/gotypealias/value_expr" .}})
-            {{- else -}}
-                {{- template "lang/gotypealias/value_expr" . -}}
-            {{- end -}}
-        {{end}}
-    {{else}}
-        {{template "lang/gotypealias/value_expr" .}}
-    {{end}}
-{{end}}
+                {{- end }}
+            {{- else }}
+                {{- /* &AnyType{}; &map[string]int{}; &[]int{} */}}&{{- .Type | gousage }}
+                {{- if .LiteralValue }}
+                    {{- /* int(123) */}}({{template "lang/gotypealias/value_expr" .}})
+                {{- else }}
+                    {{- template "lang/gotypealias/value_expr" . }}
+                {{- end }}
+            {{- end }}
+        {{- else }}
+            {{- .Type | gousage }}
+            {{- if .LiteralValue }}
+                {{- /* int(123) */}}({{template "lang/gotypealias/value_expr" .}})
+            {{- else }}
+                {{- template "lang/gotypealias/value_expr" . }}
+            {{- end }}
+        {{- end }}
+    {{- else }}
+        {{- template "lang/gotypealias/value_expr" .}}
+    {{- end }}
+{{- end}}
 
 {{define "lang/gotypealias/value_expr"}}
-    {{- if .LiteralValue -}}
-        {{- /* Literal */ -}}
-        {{- .LiteralValue | golit -}}
-    {{- else if .MapValues.Len -}}
-        {{- /* Map */ -}}
-        {
-        {{range .MapValues.Entries}}
+    {{- if .LiteralValue }}
+        {{- /* Literal */}}{{  .LiteralValue | golit }}
+    {{- else if .MapValues.Len }}
+        {{- /* Map */}}{
+        {{- range .MapValues.Entries }}
             {{.Key | golit }}: {{ .Value | golit }},
-        {{end}}
+        {{- end }}
         }
-    {{- else if .StructValues.Len -}}
-        {{- /* Struct */ -}}
-        {
-        {{range .StructValues.Entries}}
+    {{- else if .StructValues.Len }}
+        {{- /* Struct */}}{
+        {{- range .StructValues.Entries }}
             {{.Key | goid }}: {{ .Value | golit }},
-        {{end}}
+        {{- end }}
         }
-    {{- else if .ArrayValues -}}
-        {{- /* Array/slice */ -}}
-        {
-        {{range .ArrayValues}}
+    {{- else if .ArrayValues }}
+        {{- /* Array/slice */}}{
+        {{- range .ArrayValues }}
             {{ . | golit }},
-        {{end}}
+        {{- end }}
         }
-    {{- else -}}
-        {{- /* Empty value */ -}}
-        {{if .EmptyCurlyBrackets}}{}{{else}}nil{{end}}
-    {{- end -}}
-{{end}}
+    {{- else }}
+        {{- /* Empty value */}}
+        {{- if .EmptyCurlyBrackets}}{}{{else}}nil{{end}}
+    {{- end }}
+{{- end}}

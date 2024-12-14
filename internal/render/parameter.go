@@ -5,8 +5,8 @@ import (
 )
 
 type Parameter struct {
-	Name       string
-	Dummy      bool
+	OriginalName string
+	Dummy        bool
 	Type         common.GolangType
 	IsStringType bool  // true if Type contains a type alias to built-in string type
 }
@@ -19,9 +19,13 @@ func (p *Parameter) Selectable() bool {
 	return !p.Dummy && p.Type.Selectable()
 }
 
+func (p *Parameter) GetOriginalName() string {
+	return p.OriginalName
+}
+
 //func (p Parameter) D(ctx *common.RenderContext) []*j.Statement {
 //	var res []*j.Statement
-//	ctx.LogStartRender("Parameter", "", p.Name, "definition", p.Selectable())
+//	ctx.LogStartRender("Parameter", "", p.GetOriginalName, "definition", p.Selectable())
 //	defer ctx.LogFinishRender()
 //
 //	res = append(res, p.Type.D(ctx)...)
@@ -30,29 +34,29 @@ func (p *Parameter) Selectable() bool {
 //}
 
 //func (p Parameter) ID() string {
-//	return p.Name
+//	return p.GetOriginalName
 //}
 //
 func (p *Parameter) String() string {
-	return "Parameter " + p.Name
+	return "Parameter " + p.OriginalName
 }
 
 //func (p Parameter) renderMethods(ctx *common.RenderContext) []*j.Statement {
 //	ctx.Logger.Trace("renderMethods")
 //
-//	rn := strings.ToLower(string(p.Type.TypeName()[0]))
-//	receiver := j.Id(rn).Id(p.Type.TypeName())
+//	rn := strings.ToLower(string(p.Type.IsPromise()[0]))
+//	receiver := j.Id(rn).Id(p.Type.IsPromise())
 //
 //	stringBody := j.Return(j.String().Call(j.Id(rn)))
 //	if !p.IsStringType {
 //		stringBody = j.Return(j.Qual("fmt", "Sprint").Call(j.Id(rn).Dot("Value")))
 //	}
 //	return []*j.Statement{
-//		j.Func().Params(receiver.Clone()).Id("Name").
+//		j.Func().Params(receiver.Clone()).Id("GetOriginalName").
 //			Params().
 //			String().
 //			Block(
-//				j.Return(j.Lit(p.Name)),
+//				j.Return(j.Lit(p.GetOriginalName)),
 //			),
 //
 //		j.Func().Params(receiver.Clone()).Id("String").
@@ -63,12 +67,12 @@ func (p *Parameter) String() string {
 //}
 
 //func (p Parameter) U(ctx *common.RenderContext) []*j.Statement {
-//	ctx.LogStartRender("Parameter", "", p.Name, "usage", p.Selectable())
+//	ctx.LogStartRender("Parameter", "", p.GetOriginalName, "usage", p.Selectable())
 //	defer ctx.LogFinishRender()
 //
 //	return p.Type.U(ctx)
 //}
 
-//func (p Parameter) TypeName() string {
-//	return p.Type.TypeName()
+//func (p Parameter) IsPromise() string {
+//	return p.Type.IsPromise()
 //}

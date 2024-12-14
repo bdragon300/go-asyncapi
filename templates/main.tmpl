@@ -1,17 +1,17 @@
-{{if eq .Object.Kind "schema" }}
-    {{template "schema.tmpl" .}}
-{{else if eq .Object.Kind "server"}}
-    {{template "server.tmpl" .Object }}
-{{else if eq .Object.Kind "protoServer"}}
-    {{execTemplate (print .Object.ProtoName "_" "server.tmpl") .Object }}
-{{else if eq .Object.Kind "parameter"}}
-    {{template "parameter.tmpl" .Object}}
-{{else if eq .Object.Kind "channel"}}
-    {{template "channel.tmpl" .Object}}
-{{else if eq .Object.Kind "protoChannel"}}
-    {{execTemplate (print .Object.ProtoName "_" "channel.tmpl") .Object}}
-{{else if eq .Object.Kind "message"}}
-    {{template "message.tmpl" .Object}}
-{{else if eq .Object.Kind "protoMessage"}}
-    {{execTemplate (print .Object.ProtoName "_" "message.tmpl") .Object}}
-{{end}}
+{{- if eq .Object.Kind "schema" }}
+    {{- template "schema.tmpl" .}}
+{{- else if eq .Object.Kind "server"}}
+    {{- template "server.tmpl" .Object }}
+{{- else if eq .Object.Kind "protoServer"}}
+    {{- execTemplate (print .Object.ProtoName "_" "server.tmpl") .Object }}
+{{- else if eq .Object.Kind "parameter"}}
+    {{- template "parameter.tmpl" .Object}}
+{{- else if eq .Object.Kind "channel"}}
+    {{- template "channel.tmpl" .Object}}
+{{- else if eq .Object.Kind "protoChannel"}}
+    {{- execTemplate (print .Object.ProtoName "_" "channel.tmpl") .Object}}
+{{- else if eq .Object.Kind "message"}}
+    {{- template "message.tmpl" .Object}}
+{{- else if eq .Object.Kind "protoMessage"}}
+    {{- execTemplate (print .Object.ProtoName "_" "message.tmpl") .Object}}
+{{- end}}

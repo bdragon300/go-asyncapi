@@ -30,6 +30,10 @@ func (a *AsyncAPI) String() string {
 	return "AsyncAPI"
 }
 
+func (a *AsyncAPI) GetOriginalName() string {
+	return ""
+}
+
 //// SpecEffectiveContentTypes returns a list of all unique content types used in the spec. This includes all content
 //// types from all messages and the default content type.
 //func (a AsyncAPI) SpecEffectiveContentTypes() []string {

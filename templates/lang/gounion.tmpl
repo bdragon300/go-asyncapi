@@ -1,12 +1,12 @@
 {{define "lang/gounion/definition"}}
-{{.UnionStruct.D}}
+{{ .UnionStruct | godef }}
 
-func (u *{{.Name}}) UnmarshalJSON(data []byte) (err error) {
-{{range .Fields}}
+func (u *{{ . | goid }}) UnmarshalJSON(data []byte) (err error) {
+{{- range .Fields}}
     if err = {{qual "encoding/json.Unmarshal"}}(bytes, {{if not .Type.IsPointer}}&{{end}}u{{.Type.TypeName}}; err == nil {
         return
     }
-{{end}}
+{{- end}}
     return
 }
-{{end}}
+{{- end}}

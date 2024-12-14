@@ -1,14 +1,15 @@
-type {{(print .Type.Name "Server") | toCamelCase}} interface {
-    Open{{.Type.Name}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType.U}}{{end}}) (*{{.Type.U}}, error)
-    {{if .IsPublisher}}Producer() {{qualrun .ProtoName "Producer"}}{{end}}
-    {{if .IsSubscriber}}Consumer() {{qualrun .ProtoName "Consumer"}}{{end}}
+{{- localobj .Type}}
+type {{ .Type | goid }}Server interface {
+    Open{{.Type | goid}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType| gousage}}{{end}}) (*{{.Type| gousage}}, error)
+    {{- if .IsPublisher}}Producer() {{qualrun .ProtoName "Producer"}}{{end}}
+    {{- if .IsSubscriber}}Consumer() {{qualrun .ProtoName "Consumer"}}{{end}}
 }
 
 {{template "proto/channel/bareNewFunction" .}}
 
 {{template "proto/channel/openFunction" .}}
 
-{{.Type.D}}
+{{.Type| godef}}
 
 {{template "proto/channel/commonMethods" .}}
 

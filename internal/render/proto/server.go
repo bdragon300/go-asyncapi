@@ -30,15 +30,15 @@ package proto
 //func (ps BaseProtoServer) RenderCommonMethods(ctx *common.RenderContext) []*j.Statement {
 //	ctx.Logger.Trace("RenderCommonMethods", "proto", ps.ProtoName)
 //
-//	receiver := j.Id(ps.Type.ReceiverName()).Id(ps.Type.Name)
+//	receiver := j.Id(ps.Type.ReceiverName()).Id(ps.Type.GetOriginalName)
 //
 //	return []*j.Statement{
-//		// Method Name() string
-//		j.Func().Params(receiver.Clone()).Id("Name").
+//		// Method GetOriginalName() string
+//		j.Func().Params(receiver.Clone()).Id("GetOriginalName").
 //			Params().
 //			String().
 //			Block(
-//				j.Return(j.Lit(ps.Parent.Name)),
+//				j.Return(j.Lit(ps.Parent.GetOriginalName)),
 //			),
 //	}
 //}
@@ -47,11 +47,11 @@ package proto
 //	ctx.Logger.Trace("RenderOpenChannelMethod", "proto", ps.ProtoName)
 //
 //	rn := ps.Type.ReceiverName()
-//	receiver := j.Id(rn).Id(ps.Type.Name)
+//	receiver := j.Id(rn).Id(ps.Type.GetOriginalName)
 //
 //	return []*j.Statement{
 //		// Method OpenChannel1Proto(ctx context.Context, params Channel1Parameters) (*Channel1Proto, error)
-//		j.Func().Params(receiver.Clone()).Id("Open"+channelStruct.Name).
+//		j.Func().Params(receiver.Clone()).Id("Open"+channelStruct.GetOriginalName).
 //			ParamsFunc(func(g *j.Group) {
 //				g.Id("ctx").Qual("context", "Context")
 //				if channelParametersStructNoRender != nil {
@@ -60,7 +60,7 @@ package proto
 //			}).
 //			Params(j.Op("*").Add(utils.ToCode(channel.U(ctx))...), j.Error()).
 //			Block(
-//				j.Return(j.Qual(ctx.GeneratedModule(channelStruct.Import), "Open"+channelStruct.Name).CallFunc(func(g *j.Group) {
+//				j.Return(j.Qual(ctx.GeneratedModule(channelStruct.Import), "Open"+channelStruct.GetOriginalName).CallFunc(func(g *j.Group) {
 //					g.Id("ctx")
 //					if channelParametersStructNoRender != nil {
 //						g.Id("params")
@@ -75,7 +75,7 @@ package proto
 //	ctx.Logger.Trace("RenderProducerMethods", "proto", ps.ProtoName)
 //
 //	rn := ps.Type.ReceiverName()
-//	receiver := j.Id(rn).Id(ps.Type.Name)
+//	receiver := j.Id(rn).Id(ps.Type.GetOriginalName)
 //
 //	return []*j.Statement{
 //		// Method Producer() proto.Producer
@@ -92,7 +92,7 @@ package proto
 //	ctx.Logger.Trace("RenderConsumerMethods", "proto", ps.ProtoName)
 //
 //	rn := ps.Type.ReceiverName()
-//	receiver := j.Id(rn).Id(ps.Type.Name)
+//	receiver := j.Id(rn).Id(ps.Type.GetOriginalName)
 //
 //	return []*j.Statement{
 //		// Method Consumer() proto.Consumer

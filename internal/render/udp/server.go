@@ -12,7 +12,7 @@ package udp
 //}
 //
 //func (ps ProtoServer) D(ctx *common.RenderContext) []*j.Statement {
-//	ctx.LogStartRender("Server", "", ps.Parent.Name, "definition", ps.Selectable(), "proto", ps.ProtoName)
+//	ctx.LogStartRender("Server", "", ps.Parent.GetOriginalName, "definition", ps.Selectable(), "proto", ps.ProtoName)
 //	defer ctx.LogFinishRender()
 //	var res []*j.Statement
 //	res = append(res, ps.RenderNewFunc(ctx)...)
@@ -25,17 +25,17 @@ package udp
 //}
 //
 //func (ps ProtoServer) U(ctx *common.RenderContext) []*j.Statement {
-//	ctx.LogStartRender("Server", "", ps.Parent.Name, "usage", ps.Selectable(), "proto", ps.ProtoName)
+//	ctx.LogStartRender("Server", "", ps.Parent.GetOriginalName, "usage", ps.Selectable(), "proto", ps.ProtoName)
 //	defer ctx.LogFinishRender()
 //	return ps.Type.U(ctx)
 //}
 //
 //func (ps ProtoServer) ID() string {
-//	return ps.Parent.Name
+//	return ps.Parent.GetOriginalName
 //}
 //
 //func (ps ProtoServer) String() string {
-//	return "UDP ProtoServer " + ps.Parent.Name
+//	return "UDP ProtoServer " + ps.Parent.GetOriginalName
 //}
 //
 //func (ps ProtoServer) renderChannelMethods(ctx *common.RenderContext) []*j.Statement {

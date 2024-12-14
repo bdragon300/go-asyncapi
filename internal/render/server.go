@@ -8,12 +8,13 @@ import (
 )
 
 type Server struct {
-	Name           string
-	SpecKey        string // Name as it is in the source document, without considering `x-go-name` extension
+	OriginalName string
+	SpecKey      string // Name as it is in the source document, without considering `x-go-name` extension
 	TypeNamePrefix string // Name of server struct
 	Dummy          bool
+	IsComponent bool // true if server is defined in `components` section
 
-	URL             string // TODO
+	URL             string
 	Protocol        string
 	ProtocolVersion string
 
@@ -31,16 +32,20 @@ func (s *Server) Kind() common.ObjectKind {
 }
 
 func (s *Server) Selectable() bool {
-	return !s.Dummy
+	return !s.Dummy && !s.IsComponent // Select only the servers defined in the `channels` section`
 }
 
 func (s *Server) ProtoObjects() []common.Renderable {
 	return []common.Renderable{s.ProtoServer}
 }
 
+func (s *Server) GetOriginalName() string {
+	return s.OriginalName
+}
+
 //func (s Server) D(ctx *common.RenderContext) []*j.Statement {
 //	var res []*j.Statement
-//	ctx.LogStartRender("Server", "", s.Name, "definition", s.Selectable())
+//	ctx.LogStartRender("Server", "", s.GetOriginalName, "definition", s.Selectable())
 //	defer ctx.LogFinishRender()
 //
 //	if s.ProtocolVersion != "" {
@@ -104,7 +109,7 @@ func (s *Server) ProtoObjects() []common.Renderable {
 //					}
 //					bg.Op("paramMap := map[string]string").Values(j.DictFunc(func(d j.Dict) {
 //						for _, entry := range s.VariablesPromises.Entries() {
-//							d[j.Lit(entry.Key)] = j.Id(entry.Value.Target().Name)
+//							d[j.Lit(entry.Key)] = j.Id(entry.Value.Target().GetOriginalName)
 //						}
 //					}))
 //					bg.Return(j.Qual(ctx.RuntimeModule(""), "ParamString").Values(j.Dict{
@@ -121,11 +126,11 @@ func (s *Server) ProtoObjects() []common.Renderable {
 //}
 
 //func (s Server) ID() string {
-//	return s.Name
+//	return s.GetOriginalName
 //}
 //
 func (s *Server) String() string {
-	return "Server " + s.Name
+	return "Server " + s.OriginalName
 }
 
 func (s *Server) GetRelevantProtoChannels(protoName string) []*ProtoChannel {
@@ -150,7 +155,7 @@ func (c *Server) BindingsProtocols() (res []string) {
 
 func (c *Server) ProtoBindingsValue(protoName string) common.Renderable {
 	res := &lang.GoValue{
-		Type:               &lang.GoSimple{Name: "ServerBindings", Import: common.GetContext().RuntimeModule(protoName)},
+		Type:               &lang.GoSimple{OriginalName: "ServerBindings", Import: common.GetContext().RuntimeModule(protoName)},
 		EmptyCurlyBrackets: true,
 	}
 	if c.BindingsPromise != nil {
@@ -170,7 +175,7 @@ type ProtoServer struct {
 }
 
 func (p *ProtoServer) String() string {
-	return "ProtoServer " + p.Name
+	return "ProtoServer " + p.OriginalName
 }
 
 func (p *ProtoServer) Kind() common.ObjectKind {

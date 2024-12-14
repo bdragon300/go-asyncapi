@@ -10,52 +10,13 @@ type GoArray struct {
 	Size      int
 }
 
-func (a *GoArray) D() string {
-	//ctx.LogStartRender("GoArray", a.Import, a.Name, "definition", a.Selectable())
-	//defer ctx.LogFinishRender()
-	//
-	//var b strings.Builder
-	//if a.Description != "" {
-	//	res = append(res, jen.Comment(a.Name+" -- "+utils.ToLowerFirstLetter(a.Description)))
-	//}
-	//
-	//stmt := jen.Type().Id(a.Name)
-	//if a.Size > 0 {
-	//	stmt = stmt.Index(jen.Lit(a.Size))
-	//} else {
-	//	stmt = stmt.Index()
-	//}
-	//items := utils.ToCode(a.ItemsType.U())
-	//res = append(res, stmt.Add(items...))
-	//
-	//return res
-	a.SetDefinitionInfo(common.GetContext().CurrentDefinitionInfo())
-	return renderTemplate("lang/goarray/definition", a)
-}
-
-func (a *GoArray) U() string {
-	//ctx.LogStartRender("GoArray", a.Import, a.Name, "usage", a.Selectable())
-	//defer ctx.LogFinishRender()
-	//
-	//if a.HasDefinition {
-	//	if a.Import != "" && a.Import != context.Context.CurrentPackage {
-	//		return []*jen.Statement{jen.Qual(context.Context.GeneratedModule(a.Import), a.Name)}
-	//	}
-	//	return []*jen.Statement{jen.Id(a.Name)}
-	//}
-	//
-	//items := utils.ToCode(a.ItemsType.U())
-	//if a.Size > 0 {
-	//	return []*jen.Statement{jen.Index(jen.Lit(a.Size)).Add(items...)}
-	//}
-	//
-	//return []*jen.Statement{jen.Index().Add(items...)}
-	return renderTemplate("lang/goarray/usage", a)
+func (a *GoArray) GoTemplate() string {
+	return "lang/goarray"
 }
 
 func (a *GoArray) String() string {
 	if a.Import != "" {
-		return "GoArray /" + a.Import + "." + a.Name
+		return "GoArray /" + a.Import + "." + a.OriginalName
 	}
-	return "GoArray " + a.Name
+	return "GoArray " + a.OriginalName
 }

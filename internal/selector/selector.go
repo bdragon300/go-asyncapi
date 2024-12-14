@@ -3,27 +3,28 @@ package selector
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/samber/lo"
-	"reflect"
 	"regexp"
 )
 
+type protoObjectContainer interface {
+	ProtoObjects() []common.Renderable
+}
 
 func SelectObjects(objects []common.CompileObject, selection common.RenderSelectionConfig) []common.CompileObject {
 	var res []common.CompileObject
 	filterChain := getFiltersChain(selection)
 	// TODO: logging
 
-	// Unwrap promise(s) until we get the actual object
 	for _, object := range objects {
 		r := object.Renderable
-		for {
-			v, ok := r.(common.ObjectPromise)
-			if !ok {
-				break
-			}
-			r = reflect.ValueOf(v).MethodByName("T").Call(nil)[0].Interface().(common.Renderable)
-		}
 		res = append(res, common.CompileObject{Renderable: r, ObjectURL: object.ObjectURL})
+
+		// Extract proto objects and add it to the result
+		if po, ok := r.(protoObjectContainer); ok {
+			for _, o := range po.ProtoObjects() {
+				res = append(res, common.CompileObject{Renderable: o, ObjectURL: object.ObjectURL})
+			}
+		}
 	}
 
 	return lo.Filter(res, func(object common.CompileObject, _ int) bool {

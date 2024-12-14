@@ -1,4 +1,4 @@
-package tpl
+package tmpl
 
 import (
 	"github.com/go-sprout/sprout"

@@ -1,17 +1,17 @@
 {{define "lang/gomap/definition"}}
-    {{- if .Description -}}
-        {{ print .Name "--" .Description | gocomment }}
-    {{- end -}}
-    type {{ .Name | goid }} map[{{.KeyType.U}}]{{.ValueType.U}}
+    {{- if .Description }}
+        {{ print (goid .) "--" .Description | gocomment }}
+    {{- end }}
+    type {{ . | goid }} map[{{ .KeyType | gousage }}]{{ .ValueType | gousage }}
 {{end}}
 {{define "lang/gomap/usage"}}
-    {{- if .HasDefinition -}}
-        {{if .Import -}}
-            {{ qual .Import .Name }}
-        {{- else -}}
-            {{ qualgenpkg . }}{{.Name | goid}}
-        {{- end -}}
-    {{- else -}}
-        map[{{.KeyType.U}}]{{.ValueType.U}}
-    {{- end -}}
-{{end}}
+    {{- if .HasDefinition }}
+        {{if .Import }}
+            {{ qual .Import (goid .) }}
+        {{- else }}
+            {{ qualgenpkg . }}{{ . | goid }}
+        {{- end }}
+    {{- else }}
+        map[{{ .KeyType | gousage }}]{{ .ValueType | gousage }}
+    {{- end }}
+{{- end}}

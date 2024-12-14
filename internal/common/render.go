@@ -23,6 +23,7 @@ type Renderable interface {  // TODO: rename
 	// Selectable returns true if object can be selected to pass to the templates for rendering.
 	Selectable() bool
 	String() string
+	GetOriginalName() string
 }
 
 type (
@@ -51,6 +52,7 @@ type RenderContext interface {
 	QualifiedRuntimeName(parts ...string) string
 	QualifiedGeneratedPackage(obj GolangType) (string, error)
 	CurrentDefinitionInfo() *GolangTypeDefinitionInfo
+	CurrentObject() CompileObject
 }
 
 type ImportItem struct {

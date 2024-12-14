@@ -23,7 +23,7 @@ func (pb ProtoBuilder) BuildMessageBindings(ctx *common.CompileContext, rawData 
 		return
 	}
 
-	vals = lang.ConstructGoValue(bindings, []string{"Key"}, &lang.GoSimple{Name: "MessageBindings", Import: ctx.RuntimeModule(pb.ProtoName)})
+	vals = lang.ConstructGoValue(bindings, []string{"Key"}, &lang.GoSimple{OriginalName: "MessageBindings", Import: ctx.RuntimeModule(pb.ProtoName)})
 	if bindings.Key != nil {
 		v, err2 := json.Marshal(bindings.Key)
 		if err2 != nil {

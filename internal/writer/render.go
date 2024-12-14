@@ -7,11 +7,10 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/selector"
-	"github.com/bdragon300/go-asyncapi/internal/tpl"
+	"github.com/bdragon300/go-asyncapi/internal/tmpl"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/samber/lo"
 	"go/format"
-	"io"
 	"os"
 	"path"
 	"text/template"
@@ -49,46 +48,34 @@ import (
 //	return bld.String()
 //}
 
-const defaultPreambuleTemplateName = "preambule.tmpl"
+const defaultPreambleTemplateName = "preamble.tmpl"
 
 type renderSource interface {
 	AllObjects() []common.CompileObject
 }
 
+type fileRenderState struct {
+	fileHeader *context.RenderFileHeader
+	buf        *bytes.Buffer
+}
+
 type renderQueueItem struct {
 	selection common.RenderSelectionConfig
 	object         common.CompileObject
-	selectionIndex int
-	overallIndex   int
 	err            error
 }
 
-func RenderPackages(source renderSource, opts common.RenderOpts) (map[string]*bytes.Buffer, error) {
-	files := make(map[string]*bytes.Buffer)
+func RenderFiles(source renderSource, opts common.RenderOpts) (map[string]*bytes.Buffer, error) {
+	files := make(map[string]fileRenderState)
 	// TODO: logging
 	queue := buildRenderQueue(source, opts.Selections)
 	var deferred []renderQueueItem
 
 	for len(queue) > 0 {
 		for _, item := range queue {
-			ctx := &context.RenderContextImpl{RenderOpts: opts, CurrentSelectionConfig: item.selection}
-			tplCtx := tpl.NewTemplateContext(ctx, item.object, item.selectionIndex, item.overallIndex)
-			common.SetContext(ctx)
-
-			rd, err := renderFile(tplCtx, item.selection.Template)
+			fileName, err := renderInlineTemplate(item, opts, item.selection.File)
 			switch {
-			case errors.Is(err, common.ErrDefinitionNotRendered):
-				// Template can't be rendered right now due to unknown object definition, defer it
-				item.err = err
-				deferred = append(deferred, item)
-				continue
-			case err != nil:
-				return nil, err
-			}
-
-			fileName, err := renderInlineTemplate(tplCtx, item.selection.File)
-			switch {
-			case errors.Is(err, common.ErrDefinitionNotRendered):
+			case errors.Is(err, common.ErrDefinitionLocationUnknown):
 				// Template can't be rendered right now due to unknown object definition, defer it
 				deferred = append(deferred, item)
 				continue
@@ -97,10 +84,17 @@ func RenderPackages(source renderSource, opts common.RenderOpts) (map[string]*by
 			}
 
 			if _, ok := files[fileName]; !ok {
-				files[fileName] = &bytes.Buffer{}
+				files[fileName] = fileRenderState{fileHeader: context.NewRenderFileHeader(item.selection.Package), buf: &bytes.Buffer{}}
 			}
 
-			if _, err = files[fileName].ReadFrom(rd); err != nil {
+			err = renderObject(item, opts, item.selection.Template, files[fileName])
+			switch {
+			case errors.Is(err, common.ErrDefinitionLocationUnknown):
+				// Template can't be rendered right now due to unknown object definition, defer it
+				item.err = err
+				deferred = append(deferred, item)
+				continue
+			case err != nil:
 				return nil, err
 			}
 		}
@@ -113,61 +107,123 @@ func RenderPackages(source renderSource, opts common.RenderOpts) (map[string]*by
 		queue, deferred = deferred, nil
 	}
 
-	return files, nil
+	res, err := renderFiles(files, opts)
+	if err != nil {
+		return res, err
+	}
+
+	return res, nil
 }
 
 func buildRenderQueue(source renderSource, selections []common.RenderSelectionConfig) (res []renderQueueItem) {
-	var c int
 	for _, selection := range selections {
 		objects := selector.SelectObjects(source.AllObjects(), selection)
-		for ind, obj := range objects {
-			res = append(res, renderQueueItem{selection: selection, object: obj, selectionIndex: ind, overallIndex: c})
-			c++
+		for _, obj := range objects {
+			res = append(res, renderQueueItem{selection: selection, object: obj})
 		}
 	}
 	return
 }
 
-func renderFile(tplCtx tpl.TemplateContext, templateName string) (io.Reader, error) {
+type renderablePromise interface {
+	RenderableT() common.Renderable
+}
+
+func unwrapPromise(obj common.CompileObject) common.Renderable {
+	// Unwrap promise(s) until we get the actual object
+	r := obj.Renderable
+	v, ok := r.(renderablePromise)
+	for ok {
+		r = v.RenderableT()
+		v, ok = r.(renderablePromise)
+	}
+	return r
+}
+
+func renderInlineTemplate(item renderQueueItem, opts common.RenderOpts, text string) (string, error) {
+	ctx := &context.RenderContextImpl{
+		RenderOpts:             opts,
+		CurrentSelectionConfig: item.selection,
+		FileHeader:             context.NewRenderFileHeader(""),
+		Object:        item.object,
+	}
+	common.SetContext(ctx)
+	tplCtx := tmpl.NewTemplateContext(ctx, unwrapPromise(item.object), ctx.FileHeader)
+
 	var res bytes.Buffer
-	var tmpl *template.Template
+	tpl, err := template.New("").Funcs(tmpl.GetTemplateFunctions()).Parse(text)
+	if err != nil {
+		return "", err
+	}
+	if err = tpl.Execute(&res, tplCtx.Object()); err != nil {
+		return "", err
+	}
+	return res.String(), nil
+}
+
+func renderObject(item renderQueueItem, opts common.RenderOpts, templateName string, renderState fileRenderState) error {
+	var tpl *template.Template
+
+	ctx := &context.RenderContextImpl{
+		RenderOpts: opts,
+		CurrentSelectionConfig: item.selection,
+		FileHeader: renderState.fileHeader,
+		Object: item.object,
+	}
+	common.SetContext(ctx)
+	tplCtx := tmpl.NewTemplateContext(ctx, unwrapPromise(item.object), renderState.fileHeader)
 
 	// Execute the main template first to accumulate imports and other data, that will be rendered in preamble
-	var buf bytes.Buffer
-	if tmpl = tpl.LoadTemplate(templateName); tmpl == nil {
-		return nil, fmt.Errorf("template %q not found", templateName)
+	if tpl = tmpl.LoadTemplate(templateName); tpl == nil {
+		return fmt.Errorf("template %q not found", templateName)
 	}
-	if err := tmpl.Execute(&buf, tplCtx); err != nil {
-		return nil, err
+	if err := tpl.Execute(renderState.buf, tplCtx); err != nil {
+		return err
+	}
+	renderState.buf.WriteRune('\n')  // Separate writes following each other (if any)
+
+	return nil
+}
+
+func renderFiles(files map[string]fileRenderState, opts common.RenderOpts) (map[string]*bytes.Buffer, error) {
+	var res = make(map[string]*bytes.Buffer, len(files))
+
+	// TODO: redefinition preamble in config/cli args
+	tpl := tmpl.LoadTemplate(defaultPreambleTemplateName)
+	if tpl == nil {
+		return nil, fmt.Errorf("template %q not found", defaultPreambleTemplateName)
 	}
 
-	// TODO: redefinition preambule in config/cli args
-	if tmpl = tpl.LoadTemplate(defaultPreambuleTemplateName); tmpl == nil {
-		return nil, fmt.Errorf("template %q not found", defaultPreambuleTemplateName)
+	for fileName, state := range files {
+		b, err := renderFile(tpl, opts, state)
+		if err != nil {
+			return nil, err
+		}
+		res[fileName] = b
 	}
-	if err := tmpl.Execute(&res, tplCtx); err != nil {
+
+	return res, nil
+}
+
+func renderFile(preambleTpl *template.Template, opts common.RenderOpts, renderState fileRenderState) (*bytes.Buffer, error) {
+	var res bytes.Buffer
+
+	ctx := &context.RenderContextImpl{RenderOpts: opts, FileHeader: renderState.fileHeader}
+	common.SetContext(ctx)
+	tplCtx := tmpl.NewTemplateContext(ctx, nil, renderState.fileHeader)
+
+	if err := preambleTpl.Execute(&res, tplCtx); err != nil {
 		return nil, err
 	}
-	if _, err := res.ReadFrom(&buf); err != nil {
+	res.WriteRune('\n')
+	if _, err := res.ReadFrom(renderState.buf); err != nil {
 		return nil, err
 	}
 
 	return &res, nil
 }
 
-func renderInlineTemplate(tplCtx tpl.TemplateContext, text string) (string, error) {
-	var res bytes.Buffer
-	tmpl, err := template.New("").Funcs(tpl.GetTemplateFunctions()).Parse(text)
-	if err != nil {
-		return "", err
-	}
-	if err := tmpl.Execute(&res, tplCtx.Object()); err != nil {
-		return "", err
-	}
-	return res.String(), nil
-}
-
-//func RenderPackages(source renderSource, opts common.RenderOpts) (fileContents map[string]*bytes.Buffer, err error) {
+//func RenderFiles(source renderSource, opts common.RenderOpts) (fileContents map[string]*bytes.Buffer, err error) {
 //	fileContents = make(map[string]*bytes.Buffer)
 //	logger := types.NewLogger("Rendering 🎨")
 //	rendered := 0

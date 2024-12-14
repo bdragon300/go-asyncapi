@@ -29,16 +29,16 @@ func (sv ServerVariable) Compile(ctx *common.CompileContext) error {
 func (sv ServerVariable) build(ctx *common.CompileContext, serverVariableKey string) (common.Renderable, error) {
 	if sv.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", sv.Ref)
-		res := lang.NewRenderablePromise(sv.Ref, common.PromiseOriginUser)
+		res := lang.NewUserPromise(sv.Ref, serverVariableKey, nil)
 		ctx.PutPromise(res)
 		return res, nil
 	}
 
 	res := &render.ServerVariable{
-		Name:        utils.ToGolangName(serverVariableKey, false),
-		Enum:        sv.Enum,
-		Default:     sv.Default,
-		Description: sv.Description,
+		OriginalName: utils.ToGolangName(serverVariableKey, false),
+		Enum:         sv.Enum,
+		Default:      sv.Default,
+		Description:  sv.Description,
 	}
 
 	return res, nil

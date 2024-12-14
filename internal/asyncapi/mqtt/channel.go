@@ -24,7 +24,7 @@ func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncap
 		return nil, err
 	}
 
-	chanStruct.Fields = append(chanStruct.Fields, lang.GoStructField{Name: "topic", Type: &lang.GoSimple{Name: "string"}})
+	chanStruct.Fields = append(chanStruct.Fields, lang.GoStructField{Name: "topic", Type: &lang.GoSimple{OriginalName: "string"}})
 
 	return &render.ProtoChannel{
 		Channel:         parent,
@@ -46,6 +46,6 @@ func (pb ProtoBuilder) BuildOperationBindings(
 		err = types.CompileError{Err: err, Path: ctx.PathStackRef(), Proto: pb.ProtoName}
 		return
 	}
-	vals = lang.ConstructGoValue(bindings, nil, &lang.GoSimple{Name: "OperationBindings", Import: ctx.RuntimeModule(pb.ProtoName)})
+	vals = lang.ConstructGoValue(bindings, nil, &lang.GoSimple{OriginalName: "OperationBindings", Import: ctx.RuntimeModule(pb.ProtoName)})
 	return
 }

@@ -5,8 +5,8 @@ import (
 )
 
 type ServerVariable struct {
-	Name        string
-	Description string // TODO
+	OriginalName string
+	Description  string // TODO
 	Enum        []string // TODO: implement validation
 	Default     string
 }
@@ -19,6 +19,10 @@ func (s *ServerVariable) Selectable() bool {
 	return false
 }
 
+func (s *ServerVariable) GetOriginalName() string {
+	return s.OriginalName
+}
+
 //
 //func (s ServerVariable) D(_ *common.RenderContext) []*j.Statement {
 //	panic("not implemented")
@@ -29,9 +33,9 @@ func (s *ServerVariable) Selectable() bool {
 //}
 //
 //func (s ServerVariable) ID() string {
-//	return s.Name
+//	return s.GetOriginalName
 //}
 //
 func (s *ServerVariable) String() string {
-	return "ServerVariable " + s.Name
+	return "ServerVariable " + s.OriginalName
 }

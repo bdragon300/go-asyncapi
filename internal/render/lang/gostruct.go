@@ -23,56 +23,24 @@ func (s *GoStruct) Kind() common.ObjectKind {
 	return s.ObjectKind
 }
 
-func (s *GoStruct) D() string {
-	//var res []*jen.Statement
-	//ctx.LogStartRender("GoStruct", s.Import, s.Name, "definition", s.Selectable())
-	//defer ctx.LogFinishRender()
-	//
-	//if s.Description != "" {
-	//	res = append(res, jen.Comment(s.Name+" -- "+utils.ToLowerFirstLetter(s.Description)))
-	//}
-	//code := lo.FlatMap(s.Fields, func(item GoStructField, _ int) []*jen.Statement {
-	//	return item.renderDefinition(ctx)
-	//})
-	//res = append(res, jen.Type().Id(s.Name).Type(utils.ToCode(code)...))
-	//return res
-	s.SetDefinitionInfo(common.GetContext().CurrentDefinitionInfo())
-	return renderTemplate("lang/gostruct/definition", s)
-}
-
-func (s *GoStruct) U() string {
-	//ctx.LogStartRender("GoStruct", s.Import, s.Name, "usage", s.IsDefinition())
-	//defer ctx.LogFinishRender()
-	//
-	//if s.HasDefinition {
-	//	if s.Import != "" && s.Import != context.Context.CurrentPackage {
-	//		return []*jen.Statement{jen.Qual(context.Context.GeneratedModule(s.Import), s.Name)}
-	//	}
-	//	return []*jen.Statement{jen.Id(s.Name)}
-	//}
-	//
-	//code := lo.FlatMap(s.Fields, func(item GoStructField, _ int) []*jen.Statement {
-	//	return item.renderDefinition()
-	//})
-	//
-	//return []*jen.Statement{jen.Type(utils.ToCode(code)...)}
-	return renderTemplate("lang/gostruct/usage", s)
+func (s *GoStruct) GoTemplate() string {
+	return "lang/gostruct"
 }
 
 //func (s GoStruct) NewFuncName() string {
-//	return "New" + s.Name
+//	return "New" + s.GetOriginalName
 //}
 
 //func (s GoStruct) ReceiverName() string {
-//	return strings.ToLower(string(s.Name[0]))
+//	return strings.ToLower(string(s.GetOriginalName[0]))
 //}
 
 //func (s GoStruct) MustGetField(name string) GoStructField {
 //	f, ok := lo.Find(s.Fields, func(item GoStructField) bool {
-//		return item.Name == name
+//		return item.GetOriginalName == name
 //	})
 //	if !ok {
-//		panic(fmt.Errorf("field %s.%s not found", s.Name, name))
+//		panic(fmt.Errorf("field %s.%s not found", s.GetOriginalName, name))
 //	}
 //	return f
 //}
@@ -83,15 +51,15 @@ func (s *GoStruct) IsStruct() bool {
 
 func (s *GoStruct) String() string {
 	if s.Import != "" {
-		return "GoStruct /" + s.Import + "." + s.Name
+		return "GoStruct /" + s.Import + "." + s.OriginalName
 	}
-	return "GoStruct " + s.Name
+	return "GoStruct " + s.OriginalName
 }
 
 // GoStructField defines the data required to generate a field in Go.
 type GoStructField struct {
-	Name             string
-	MarshalName      string
+	Name        string
+	MarshalName string
 	Description      string
 	Type             common.GolangType
 	ContentTypesFunc func() []string // Returns list of content types associated with the struct
@@ -102,14 +70,14 @@ type GoStructField struct {
 
 //func (f GoStructField) renderDefinition() []*jen.Statement {
 //	var res []*jen.Statement
-//	ctx.LogStartRender("GoStructField", "", f.Name, "definition", false)
+//	ctx.LogStartRender("GoStructField", "", f.GetOriginalName, "definition", false)
 //	defer ctx.LogFinishRender()
 //
 //	if f.Description != "" {
-//		res = append(res, jen.Comment(f.Name+" -- "+utils.ToLowerFirstLetter(f.Description)))
+//		res = append(res, jen.Comment(f.GetOriginalName+" -- "+utils.ToLowerFirstLetter(f.Description)))
 //	}
 //
-//	stmt := jen.Id(f.Name)
+//	stmt := jen.Id(f.GetOriginalName)
 //
 //	items := utils.ToCode(f.Type.U())
 //	stmt = stmt.Add(items...)
@@ -136,6 +104,9 @@ type GoStructField struct {
 
 func(f *GoStructField) RenderTags() string {
 	tags := f.getTags()
+	if tags.Len() == 0 {
+		return ""
+	}
 
 	var b strings.Builder
 	for _, e := range tags.Entries() {

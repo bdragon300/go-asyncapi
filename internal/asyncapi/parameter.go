@@ -36,21 +36,21 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 	//}
 	if p.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", p.Ref)
-		res := lang.NewRenderablePromise(p.Ref, common.PromiseOriginUser)
+		res := lang.NewUserPromise(p.Ref, parameterKey, nil)
 		ctx.PutPromise(res)
 		return res, nil
 	}
 
 	parName, _ := lo.Coalesce(p.XGoName, parameterKey)
-	res := &render.Parameter{Name: parName}
+	res := &render.Parameter{OriginalName: parName}
 
 	if p.Schema != nil {
 		ctx.Logger.Trace("Parameter schema")
-		prm := lang.NewGolangTypePromise(ctx.PathStackRef("schema"), common.PromiseOriginInternal)
+		prm := lang.NewInternalGolangTypePromise(ctx.PathStackRef("schema"))
 		ctx.PutPromise(prm)
 		res.Type = &lang.GoStruct{
 			BaseType: lang.BaseType{
-				Name:          ctx.GenerateObjName(parName, ""),
+				OriginalName:  ctx.GenerateObjName(parName, ""),
 				Description:   p.Description,
 				HasDefinition: true,
 			},
@@ -60,11 +60,11 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 		ctx.Logger.Trace("Parameter has no schema")
 		res.Type = &lang.GoTypeAlias{
 			BaseType: lang.BaseType{
-				Name:          ctx.GenerateObjName(parName, ""),
+				OriginalName:  ctx.GenerateObjName(parName, ""),
 				Description:   p.Description,
 				HasDefinition: true,
 			},
-			AliasedType: &lang.GoSimple{Name: "string"},
+			AliasedType: &lang.GoSimple{OriginalName: "string"},
 		}
 		res.IsStringType = true
 	}

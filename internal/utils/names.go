@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/iancoleman/strcase"
 	"go/token"
 	"regexp"
 	"strings"
@@ -9,8 +10,6 @@ import (
 	ahocorasick "github.com/BobuSumisu/aho-corasick"
 
 	"github.com/samber/lo"
-
-	"github.com/stoewer/go-strcase"
 )
 
 var (
@@ -43,9 +42,11 @@ func ToGolangName(rawString string, exported bool) string {
 
 	var camel string
 	if exported {
-		camel = strcase.UpperCamelCase(rawString)
+		//camel = strcase.UpperCamelCase(rawString)
+		camel = strcase.ToCamel(rawString)
 	} else {
-		camel = strcase.LowerCamelCase(rawString)
+		camel = strcase.ToLowerCamel(rawString)
+		//camel = strcase.LowerCamelCase(rawString)
 	}
 
 	str := TransformInitialisms(camel)

@@ -1,192 +1,193 @@
 {{define "proto/channel/commonMethods"}}
-func (c {{.Struct.U}}) Name() {{qualrun "ParamString"}} {
+func (c {{.Type| gousage}}) Name() {{qualrun "ParamString"}} {
     return c.name
 }
 
-func (c {{.Struct.U}}) Close() (err error) {
-    {{if .IsPublisher}}
+func (c {{.Type| gousage}}) Close() (err error) {
+    {{- if .IsPublisher}}
         if c.publisher != nil {
             err = {{qual "errors.Join"}}(err, c.publisher.Close())
         }
-    {{end}}
-    {{if .IsSubscriber}}
+    {{- end}}
+    {{- if .IsSubscriber}}
         if c.subscriber != nil {
             err = {{qual "errors.Join"}}(err, c.subscriber.Close())
         }
-    {{end}}
+    {{- end}}
     return
 }
-{{end}}
+{{- end}}
 
 {{define "proto/channel/outputMethods"}}
-func (c {{.Struct.U}}) Publisher() {{qualrun .ProtoName "Producer"}} {
+func (c {{.Type| gousage}}) Publisher() {{qualrun .ProtoName "Producer"}} {
     return c.publisher
 }
 
-func (c {{.Struct.U}}) Publish(ctx {{qual "context.Context"}}, envelopes ...{{qualrun .ProtoName "EnvelopeWriter"}}) error {
+func (c {{.Type| gousage}}) Publish(ctx {{qual "context.Context"}}, envelopes ...{{qualrun .ProtoName "EnvelopeWriter"}}) error {
     return c.publisher.Publish(ctx, envelopes...)
 }
-{{end}}
+{{- end}}
 
-{{- /* Common template for channel publish methods that doesn't contain protocol-specific bindings manipulations */ -}}
+{{- /* Common template for channel publish methods that doesn't contain protocol-specific bindings manipulations */}}
 {{define "proto/channel/barePublishMethods"}}
     {{template "proto/channel/outputMethods" .}}
 
-    func (c {{.Struct.U}}) SealEnvelope(envelope {{qualrun .ProtoName "EnvelopeWriter"}}, message {{if .PublisherMessageTypePromise}}{{goptr .PublisherMessageTypePromise.T.OutType.U}}{{else}}any{{end}}) error {
+    func (c {{.Type| gousage}}) SealEnvelope(envelope {{qualrun .ProtoName "EnvelopeWriter"}}, message {{if .PublisherMessageTypePromise}}{{goptr .PublisherMessageTypePromise.T.OutType}}{{else}}any{{end}}) error {
         envelope.ResetPayload()
-        {{if .PublisherMessageTypePromise}}
+        {{- if .PublisherMessageTypePromise}}
             {{- /*Message is set for Channel in spec*/ -}}
             if err := message.Marshal{{.ProtoName | capitalize}}Envelope(envelope); err != nil {
                 return err
             }
-        {{else}}
+        {{- else}}
             {{- /* No Message set for Channel in spec */ -}}
             enc := {{qual "encoding/json.NewEncoder"}}(envelope)
             if err := enc.Encode(message); err != nil {
                 return err
             }
-        {{end}}
+        {{- end}}
 
-        {{if and .PublisherMessageTypePromise (.PublisherMessageTypePromise.T.HasProtoBindings .ProtoName)}}
-            envelope.SetBindings(.PublisherMessageTypePromise.T.BindingsType.U){}.{{.ProtoName | capitalize}}()
-        {{end}}
+        {{- if and .PublisherMessageTypePromise (.PublisherMessageTypePromise.T.HasProtoBindings .ProtoName)}}
+            envelope.SetBindings(.PublisherMessageTypePromise.T.BindingsType| gousage){}.{{.ProtoName | capitalize}}()
+        {{- end}}
         return nil
     }
-{{end}}
+{{- end}}
 
 {{define "proto/channel/subscribeMethods"}}
-func (c {{.Struct.U}}) ExtractEnvelope(envelope {{qualrun .ProtoName "EnvelopeReader"}}, message {{if .SubscriberMessageTypePromise}}{{goptr .SubscriberMessageTypePromise.T.InType.U}}{{else}}any{{end}}) error {
-    {{if .SubscriberMessageTypePromise}}
+func (c {{.Type| gousage}}) ExtractEnvelope(envelope {{qualrun .ProtoName "EnvelopeReader"}}, message {{if .SubscriberMessageTypePromise}}{{goptr .SubscriberMessageTypePromise.T.InType}}{{else}}any{{end}}) error {
+    {{- if .SubscriberMessageTypePromise}}
         {{- /* Message set for Channel in spec */ -}}
         return message.Unmarshal{{.ProtoName | capitalize}}Envelope(envelope)
-    {{else}}
+    {{- else}}
         {{- /* No Message set for Channel in spec */ -}}
         dec := {{qual "encoding/json.NewDecoder"}}(envelope)
         return dec.Decode(message)
-    {{end}}
+    {{- end}}
 }
 
-func (c {{.Struct.U}}) IsSubscriber() {{qualrun .ProtoName "Subscriber"}} {
+func (c {{.Type| gousage}}) IsSubscriber() {{qualrun .ProtoName "Subscriber"}} {
     return c.subscriber
 }
 
-func (c {{.Struct.U}}) Subscribe(ctx {{qual "context.Context"}}, cb func(envelope {{qualrun .ProtoName "EnvelopeReader"}})) error {
+func (c {{.Type| gousage}}) Subscribe(ctx {{qual "context.Context"}}, cb func(envelope {{qualrun .ProtoName "EnvelopeReader"}})) error {
     return c.subscriber.Receive(ctx, cb)
 }
-{{end}}
+{{- end}}
 
-{{- /* Common template for channel OpenChannel function that doesn't contain protocol-specific bindings manipulations */ -}}
+{{- /* Common template for channel OpenChannel function that doesn't contain protocol-specific bindings manipulations */}}
 {{define "proto/channel/openFunction"}}
-    func Open{{.Struct.Name}}(
+    func Open{{ .Type | goid }}(
         ctx {{qual "context.Context"}},
-        {{if .ParametersType}}params {{.ParametersType.U}},{{end}}
-        {{if .IsPublisher}}producer {{qualrun .ProtoName "Producer"}},{{end}}
-        {{if .IsSubscriber}}consumer {{qualrun .ProtoName "Consumer"}},{{end}}
-    ) (ch *{{.Struct.U}}, err error) {
+        {{- if .ParametersType}}params {{.ParametersType| gousage}},{{end}}
+        {{- if .IsPublisher}}producer {{qualrun .ProtoName "Producer"}},{{end}}
+        {{- if .IsSubscriber}}consumer {{qualrun .ProtoName "Consumer"}},{{end}}
+    ) (ch *{{.Type| gousage}}, err error) {
         name := {{.TypeNamePrefix}}Name({{if .ParametersType}}params{{end}})
-        bindings := {{.BindingsType.U}}{}.{{.ProtoName | capitalize}}()
+        {{- if .BindingsType}}bindings := {{.BindingsType| gousage}}{}.{{.ProtoName | capitalize}}(){{ end }}
 
-        {{if .IsPublisher}}
+        {{- if .IsPublisher}}
             var publisher {{qualrun .ProtoName "Publisher"}}
             if producer != nil {
                 if publisher, err = producer.Publisher(ctx, name, {{if .BindingsType}}&bindings{{else}}nil{{end}}); err != nil {
                     return nil, err
                 }
             }
-        {{end}}
-        {{if .IsSubscriber}}
+        {{- end}}
+        {{- if .IsSubscriber}}
             var subscriber {{qualrun .ProtoName "Subscriber"}}
             if consumer != nil {
                 if subscriber, err = consumer.Consumer(ctx, name, {{if .BindingsType}}&bindings{{else}}nil{{end}}); err != nil {
                     return nil, err
                 }
             }
-        {{end}}
+        {{- end}}
 
-        return &{{.Struct.U}}{
+        return &{{.Type| gousage}}{
             name: name,
-            {{if .IsPublisher}}publisher: publisher,{{end}}
-            {{if .IsSubscriber}}subscriber: subscriber,{{end}}
+            {{- if .IsPublisher}}publisher: publisher,{{end}}
+            {{- if .IsSubscriber}}subscriber: subscriber,{{end}}
         }
     }
-{{end}}
+{{- end}}
 
-{{- /* Common template for channel NewChannel function that doesn't contain protocol-specific bindings manipulations */ -}}
+{{- /* Common template for channel NewChannel function that doesn't contain protocol-specific bindings manipulations */}}
 {{define "proto/channel/bareNewFunction"}}
-    func New{{.Struct.Name}}(
-        {{if .ParametersType}}params {{.ParametersType.U}},{{end}}
-        {{if .IsPublisher}}publisher {{qualrun .ProtoName "Publisher"}},{{end}}
-        {{if .IsSubscriber}}subscriber {{qualrun .ProtoName "Subscriber"}},{{end}}
-    ) *{{.Struct.U}} {
-        res := {{.Struct.U}}{
+    func New{{ .Type | goid }}(
+        {{- if .ParametersType}}params {{.ParametersType| gousage}},{{end}}
+        {{- if .IsPublisher}}publisher {{qualrun .ProtoName "Publisher"}},{{end}}
+        {{- if .IsSubscriber}}subscriber {{qualrun .ProtoName "Subscriber"}},{{end}}
+    ) *{{.Type| gousage}} {
+        res := {{.Type| gousage}}{
             name: {{.TypeNamePrefix}}Name({{if .ParametersType}}params{{end}}),
-            {{if .IsPublisher}}publisher: publisher,{{end}}
-            {{if .IsSubscriber}}subscriber: subscriber,{{end}}
+            {{- if .IsPublisher}}publisher: publisher,{{end}}
+            {{- if .IsSubscriber}}subscriber: subscriber,{{end}}
         }
         return &res
     }
-{{end}}
+{{- end}}
 
 {{define "proto/message/marshalUnmarshalMethods"}}
-func (m *{{.OutType.Name}}) Marshal{{ .ProtoName | capitalize }}Envelope(envelope {{qualrun .ProtoName "EnvelopeWriter"}} error {
+func (m *{{ .OutType | goid }}) Marshal{{ .ProtoName | capitalize }}Envelope(envelope {{qualrun .ProtoName "EnvelopeWriter"}} error {
     {{template "proto/message/encodeExpr" .}}
     envelope.SetContentType({{.ContentType | golit}})
-    {{if .HeadersTypePromise}}
+    {{- if .HeadersTypePromise}}
         envelope.SetHeaders({
-        {{range .HeadersTypePromise.T.Fields}}{{.Name | golit}}: m.Headers.{{.Name}},
-        {{end}}
+        {{- range .HeadersTypePromise.T.Fields}}
+            {{ .Name | golit}}: m.Headers.{{.Name}},
+        {{- end}}
         })
-    {{else}}
+    {{- else}}
         envelope.SetHeaders({{qualrun "Headers"}}(m.Headers))
-    {{end}}
+    {{- end}}
     return nil
 }
 
-func (m *{{.InType.Name}}) Unmarshal{{ .ProtoName | capitalize }}Envelope(envelope {{qualrun .ProtoName "EnvelopeReader"}} error {
+func (m *{{ .InType | goid }}) Unmarshal{{ .ProtoName | capitalize }}Envelope(envelope {{qualrun .ProtoName "EnvelopeReader"}} error {
     {{template "proto/message/decodeExpr" .}}
-    {{if .HeadersTypePromise }}
-        {{- /* Empty headers should not generate code */ -}}
-        {{if gt (len .HeadersTypePromise.T.Fields) 0}}
+    {{- if .HeadersTypePromise }}
+        {{- /* Empty headers should not generate code */}}
+        {{- if gt (len .HeadersTypePromise.T.Fields) 0}}
             headers := envelope.Headers()
-            {{range .HeadersTypePromise.T.Fields}}
+            {{- range .HeadersTypePromise.T.Fields}}
                 if v, ok := headers[{{.Name | golit}}]; ok {
-                    m.Headers.{{.Name}} = v.({{.Type.U}})
+                    m.Headers.{{.Name}} = v.({{.Type| gousage}})
                 }
-            {{end}}
-        {{end}}
-    {{else}}
-        m.Headers = {{.HeadersFallbackType.U}}(envelope.Headers())
-    {{end}}
+            {{- end}}
+        {{- end}}
+    {{- else}}
+        m.Headers = {{.HeadersFallbackType| gousage}}(envelope.Headers())
+    {{- end}}
     return nil
 }
-{{end}}
+{{- end}}
 
 {{define "proto/message/encodeExpr"}}
-{{if .EffectiveContentType | hasSuffix "yaml"}}
+{{- if .EffectiveContentType | hasSuffix "yaml"}}
     enc := {{qual "encoding/yaml.v3.NewEncoder"}}(envelope)
     if err := enc.Encode(m.Payload); err != nil {
         return err
     }
-{{else}}
-    {{- /* Use json even we dealing with unknown content type */ -}}
+{{- else}}
+    {{- /* Use json even we dealing with unknown content type */}}
     enc := {{qual "encoding/json.NewEncoder"}}(envelope)
     if err := enc.Encode(m.Payload); err != nil {
         return err
     }
-{{end}}
-{{end}}
+{{- end}}
+{{- end}}
 
 {{define "proto/message/decodeExpr"}}
-{{if .EffectiveContentType | hasSuffix "yaml"}}
+{{- if .EffectiveContentType | hasSuffix "yaml"}}
     dec := {{qual "encoding/yaml.v3.NewDecoder"}}(envelope)
     if err := dec.Decode(&m.Payload); err != nil {
         return err
     }
-{{else}}
-    {{- /* Use json even we dealing with unknown content type */ -}}
+{{- else}}
+    {{- /* Use json even we dealing with unknown content type */}}
     dec := {{qual "encoding/json.NewDecoder"}}(envelope)
     if err := dec.Decode(&m.Payload); err != nil {
         return err
     }
-{{end}}
-{{end}}
+{{- end}}
+{{- end}}

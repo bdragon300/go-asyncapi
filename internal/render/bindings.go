@@ -8,7 +8,7 @@ import (
 
 // Bindings never renders itself, only as a part of other object
 type Bindings struct {
-	Name   string
+	OriginalName string
 
 	Values types.OrderedMap[string, *lang.GoValue] // Binding values by protocol
 	// Value of jsonschema fields as json marshalled strings
@@ -24,11 +24,15 @@ func (b *Bindings) Selectable() bool {
 }
 
 //func (b *Bindings) ID() string {
-//	return b.Name
+//	return b.GetOriginalName
 //}
 
 func (b *Bindings) String() string {
-	return "Bindings " + b.Name
+	return "Bindings " + b.OriginalName
+}
+
+func (b *Bindings) GetOriginalName() string {
+	return b.OriginalName
 }
 
 //func (b *Bindings) RenderBindingsMethod(
@@ -36,13 +40,13 @@ func (b *Bindings) String() string {
 //	bindingsStruct *GoStruct,
 //	protoName, protoTitle string,
 //) []*j.Statement {
-//	ctx.LogStartRender("Bindings.RenderBindingsMethod", "", bindingsStruct.Name, "definition", false)
+//	ctx.LogStartRender("Bindings.RenderBindingsMethod", "", bindingsStruct.GetOriginalName, "definition", false)
 //	defer ctx.LogFinishRender()
 //
 //	receiver := j.Id(bindingsStruct.ReceiverName()).Add(utils.ToCode(bindingsStruct.U(ctx))...)
 //	pv, ok := b.Values.Get(protoName)
 //	if !ok {
-//		ctx.Logger.Debug("Skip render bindings method", "name", bindingsStruct.Name, "proto", protoName)
+//		ctx.Logger.Debug("Skip render bindings method", "name", bindingsStruct.GetOriginalName, "proto", protoName)
 //		return nil
 //	}
 //
@@ -68,7 +72,7 @@ func (b *Bindings) String() string {
 //	channelBindings, publishBindings, subscribeBindings *Bindings,
 //	protoName, protoTitle string,
 //) []*j.Statement {
-//	ctx.LogStartRender("renderChannelAndOperationBindingsMethod", "", bindingsStruct.Name, "definition", false)
+//	ctx.LogStartRender("renderChannelAndOperationBindingsMethod", "", bindingsStruct.GetOriginalName, "definition", false)
 //	defer ctx.LogFinishRender()
 //
 //	receiver := j.Id(bindingsStruct.ReceiverName()).Add(utils.ToCode(bindingsStruct.U(ctx))...)
@@ -78,7 +82,7 @@ func (b *Bindings) String() string {
 //			Params().
 //			Qual(ctx.RuntimeModule(protoName), "ChannelBindings").
 //			BlockFunc(func(bg *j.Group) {
-//				cb := &GoValue{Type: &GoSimple{Name: "ChannelBindings", Import: ctx.RuntimeModule(protoName)}, EmptyCurlyBrackets: true}
+//				cb := &GoValue{Type: &GoSimple{GetOriginalName: "ChannelBindings", Import: ctx.RuntimeModule(protoName)}, EmptyCurlyBrackets: true}
 //				if channelBindings != nil {
 //					if b, ok := channelBindings.Values.Get(protoName); ok {
 //						ctx.Logger.Debug("Channel bindings", "proto", protoName)

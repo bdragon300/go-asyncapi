@@ -7,7 +7,7 @@ import (
 )
 
 type Channel struct {
-	Name            string // Channel name, typically equals to Channel key, can get overridden in x-go-name
+	OriginalName    string // Channel name, typically equals to Channel key, can get overridden in x-go-name
 	TypeNamePrefix  string // Prefix for a proto channel type name
 	Dummy           bool
 	SpecKey         string                     // Key in the source document
@@ -16,11 +16,12 @@ type Channel struct {
 
 	IsPublisher  bool // true if channel has `publish` operation
 	IsSubscriber bool // true if channel has `subscribe` operation
+	IsComponent bool // true if channel is defined in `components` section
 
 	ParametersType *lang.GoStruct // nil if no parameters
 
-	PublisherMessageTypePromise *lang.Promise[*Message] // nil when message is not set
-	SubscribeMessageTypePromise *lang.Promise[*Message] // nil when message is not set
+	PublisherMessageTypePromise  *lang.Promise[*Message] // nil when message is not set
+	SubscriberMessageTypePromise *lang.Promise[*Message] // nil when message is not set
 
 	BindingsType             *lang.GoStruct           // nil if no bindings are set for channel at all
 	BindingsChannelPromise   *lang.Promise[*Bindings] // nil if channel bindings are not set
@@ -35,7 +36,11 @@ func (c *Channel) Kind() common.ObjectKind {
 }
 
 func (c *Channel) Selectable() bool {
-	return !c.Dummy
+	return !c.Dummy && !c.IsComponent // Select only the channels defined in the `channels` section`
+}
+
+func (c *Channel) GetOriginalName() string {
+	return c.OriginalName
 }
 
 //ServersProtocols returns supported protocol list for the given servers, throwing out unsupported ones
@@ -57,7 +62,7 @@ func (c *Channel) Selectable() bool {
 
 //func (c Channel) D(ctx *common.RenderContext) []*j.Statement {
 //	var res []*j.Statement
-//	ctx.LogStartRender("Channel", "", c.Name, "definition", c.Selectable())
+//	ctx.LogStartRender("Channel", "", c.GetOriginalName, "definition", c.Selectable())
 //	defer ctx.LogFinishRender()
 //
 //	// Parameters
@@ -105,8 +110,8 @@ func (c *Channel) Selectable() bool {
 //		res = append(res, r.D(ctx)...)
 //	}
 //	if len(protocols) == 0 {
-//		res = append(res, j.Comment(fmt.Sprintf("Channel %q is not assigned to any server with supported protocol, so no code to generate", c.Name)))
-//		ctx.Logger.Info("Channel is not assigned to any server with supported protocol, so no code to generate", "channel", c.Name)
+//		res = append(res, j.Comment(fmt.Sprintf("Channel %q is not assigned to any server with supported protocol, so no code to generate", c.GetOriginalName)))
+//		ctx.Logger.Info("Channel is not assigned to any server with supported protocol, so no code to generate", "channel", c.GetOriginalName)
 //	}
 //	return res
 //}
@@ -116,18 +121,15 @@ func (c *Channel) Selectable() bool {
 //}
 //
 //func (c Channel) ID() string {
-//	return c.Name
+//	return c.GetOriginalName
 //}
 //
 func (c *Channel) String() string {
-	return "Channel " + c.Name
+	return "Channel " + c.OriginalName
 }
 
 func (c *Channel) ProtoObjects() []common.Renderable {
-	k := lo.FilterMap(c.ProtoChannels, func(p *ProtoChannel, _ int) (common.Renderable, bool) {
-		return p, p.Selectable()
-	})
-	return k
+	return lo.Map(c.ProtoChannels, func(p *ProtoChannel, _ int) common.Renderable { return p })
 }
 
 //func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement {
@@ -135,7 +137,7 @@ func (c *Channel) ProtoObjects() []common.Renderable {
 //
 //	// Channel1Name(params Chan1Parameters) runtime.ParamString
 //	return []*j.Statement{
-//		j.Func().Id(c.TypeNamePrefix+"Name").
+//		j.Func().Id(c.TypeNamePrefix+"GetOriginalName").
 //			ParamsFunc(func(g *j.Group) {
 //				if c.ParametersType != nil {
 //					g.Id("params").Add(utils.ToCode(c.ParametersType.U(ctx))...)
@@ -150,7 +152,7 @@ func (c *Channel) ProtoObjects() []common.Renderable {
 //				} else {
 //					bg.Op("paramMap := map[string]string").Values(j.DictFunc(func(d j.Dict) {
 //						for _, f := range c.ParametersType.Fields {
-//							d[j.Id("params").Dot(f.Name).Dot("Name").Call()] = j.Id("params").Dot(f.Name).Dot("String").Call()
+//							d[j.Id("params").Dot(f.GetOriginalName).Dot("GetOriginalName").Call()] = j.Id("params").Dot(f.GetOriginalName).Dot("String").Call()
 //						}
 //					}))
 //					bg.Return(j.Qual(ctx.RuntimeModule(""), "ParamString").Values(j.Dict{
@@ -180,7 +182,7 @@ func (c *Channel) BindingsProtocols() (res []string) {
 
 func (c *Channel) ProtoBindingsValue(protoName string) common.Renderable {
 	res := &lang.GoValue{
-		Type:               &lang.GoSimple{Name: "ChannelBindings", Import: common.GetContext().RuntimeModule(protoName)},
+		Type:               &lang.GoSimple{OriginalName: "ChannelBindings", Import: common.GetContext().RuntimeModule(protoName)},
 		EmptyCurlyBrackets: true,
 	}
 	if c.BindingsChannelPromise != nil {
@@ -220,13 +222,14 @@ func (p *ProtoChannel) Kind() common.ObjectKind {
 }
 
 func (p *ProtoChannel) String() string {
-	return "ProtoChannel " + p.Name
+	return "ProtoChannel " + p.OriginalName
 }
 
 // isBound returns true if channel is bound to at least one server with supported protocol
 func (p *ProtoChannel) isBound() bool {
+	protos := lo.Map(p.ServersPromise.T(), func(s *Server, _ int) string { return s.Protocol })
 	r := lo.Contains(
-		lo.Map(p.ServersPromise.T(), func(s *Server, _ int) string { return s.Protocol }),
+		protos,
 		p.ProtoName,
 	)
 	return r

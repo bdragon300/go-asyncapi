@@ -32,12 +32,12 @@ func BuildProtoChannelStruct(
 ) (*lang.GoStruct, error) {
 	chanStruct := lang.GoStruct{
 		BaseType: lang.BaseType{
-			Name:          golangName,
+			OriginalName:  golangName,
 			Description:   source.Description,
 			HasDefinition: true,
 		},
 		Fields: []lang.GoStructField{
-			{Name: "name", Type: &lang.GoSimple{Name: "ParamString", Import: ctx.RuntimeModule("")}},
+			{Name: "name", Type: &lang.GoSimple{OriginalName: "ParamString", Import: ctx.RuntimeModule("")}},
 		},
 	}
 
@@ -48,9 +48,9 @@ func BuildProtoChannelStruct(
 			Name:        "publisher",
 			Description: source.Publish.Description,
 			Type: &lang.GoSimple{
-				Name:        "Publisher",
-				Import:      ctx.RuntimeModule(protoName),
-				IsInterface: true,
+				OriginalName: "Publisher",
+				Import:       ctx.RuntimeModule(protoName),
+				IsInterface:  true,
 			},
 		})
 	}
@@ -62,9 +62,9 @@ func BuildProtoChannelStruct(
 			Name:        "subscriber",
 			Description: source.Subscribe.Description,
 			Type: &lang.GoSimple{
-				Name:        "Subscriber",
-				Import:      ctx.RuntimeModule(protoName),
-				IsInterface: true,
+				OriginalName: "Subscriber",
+				Import:       ctx.RuntimeModule(protoName),
+				IsInterface:  true,
 			},
 		})
 	}
@@ -80,7 +80,7 @@ func BuildProtoServerStruct(
 ) (*lang.GoStruct, error) {
 	srvStruct := lang.GoStruct{
 		BaseType: lang.BaseType{
-			Name:          target.TypeNamePrefix,
+			OriginalName:  target.TypeNamePrefix,
 			Description:   source.Description,
 			HasDefinition: true,
 		},
@@ -90,14 +90,14 @@ func BuildProtoServerStruct(
 	ctx.Logger.Trace("Server producer", "proto", protoName)
 	fld := lang.GoStructField{
 		Name: "producer",
-		Type: &lang.GoSimple{Name: "Producer", Import: ctx.RuntimeModule(protoName), IsInterface: true},
+		Type: &lang.GoSimple{OriginalName: "Producer", Import: ctx.RuntimeModule(protoName), IsInterface: true},
 	}
 	srvStruct.Fields = append(srvStruct.Fields, fld)
 
 	ctx.Logger.Trace("Server consumer", "proto", protoName)
 	fld = lang.GoStructField{
 		Name: "consumer",
-		Type: &lang.GoSimple{Name: "Consumer", Import: ctx.RuntimeModule(protoName), IsInterface: true},
+		Type: &lang.GoSimple{OriginalName: "Consumer", Import: ctx.RuntimeModule(protoName), IsInterface: true},
 	}
 	srvStruct.Fields = append(srvStruct.Fields, fld)
 

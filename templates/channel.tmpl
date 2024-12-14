@@ -1,52 +1,53 @@
-{{if .ParametersType}}
-    {{.ParametersType.D}}
-{{end}}
+{{- if .ParametersType }}
+    {{ .ParametersType| godef }}
+{{- end }}
 
-{{ if .BindingsType}}
-    {{ .BindingsType.D }}
-    {{range $proto := .BindingsProtocols}}
-        {{$bindingsValue := $.ProtoBindingsValue $proto}}
-        func (c *{{ $.BindingsType.U }}) {{ $proto | capitalize }}() {{$bindingsValue.Type.U}} {
-            b := {{$bindingsValue.U}}
-            {{if $.BindingsChannelPromise}}
-                {{$jvals := $.BindingsChannelPromise.T.JSONValues.GetOrEmpty $proto}}
-                {{range $jvals.Entries}}
+{{- if .BindingsType }}
+    {{ .BindingsType| godef }}
+    {{- range $proto := .BindingsProtocols }}
+        {{- $bindingsValue := $.ProtoBindingsValue $proto }}
+        func (c *{{ $.BindingsType | gousage }}) {{ $proto | capitalize }}() {{$bindingsValue.Type | gousage}} {
+            b := {{$bindingsValue | gousage}}
+            {{- if $.BindingsChannelPromise }}
+                {{- $jvals := $.BindingsChannelPromise.T.JSONValues.GetOrEmpty $proto }}
+                {{- range $jvals.Entries}}
                     {{.Key | toCamelCase }} := {{.Value | golit}}
                     _ = {{qual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}), &b.{{.Key}})
-                {{end}}
-            {{end}}
-            {{if $.BindingsPublishPromise}}
-                {{$jvals := $.BindingsPublishPromise.T.JSONValues.GetOrEmpty $proto}}
-                {{range $jvals.Entries}}
+                {{- end}}
+            {{- end}}
+            {{- if $.BindingsPublishPromise}}
+                {{- $jvals := $.BindingsPublishPromise.T.JSONValues.GetOrEmpty $proto}}
+                {{- range $jvals.Entries}}
                     {{.Key | toCamelCase }}Pub := {{.Value | golit}}
                     _ = {{qual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}Pub), &b.PublisherBindings.{{.Key}})
-                {{end}}
-            {{end}}
-            {{if $.BindingsSubscribePromise}}
-                {{$jvals := $.BindingsSubscribePromise.T.JSONValues.GetOrEmpty $proto}}
-                {{range $jvals.Entries}}
+                {{- end}}
+            {{- end}}
+            {{- if $.BindingsSubscribePromise}}
+                {{- $jvals := $.BindingsSubscribePromise.T.JSONValues.GetOrEmpty $proto}}
+                {{- range $jvals.Entries}}
                     {{.Key | toCamelCase }}Sub := {{.Value | golit}}
                     _ = {{qual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}Sub), &b.SubscriberBindings.{{.Key}})
-                {{end}}
-            {{end}}
+                {{- end}}
+            {{- end}}
             return b
         }
-    {{end}}
-{{end}}
+    {{- end}}
+{{- end}}
 
-func {{.TypeNamePrefix}}Name({{if .ParametersType}}params {{.ParametersType.U}}{{end}}) {{qualrun "ParamString"}} {
-    {{if .ParametersType}}
+func {{.TypeNamePrefix}}Name({{if .ParametersType}}params {{.ParametersType| gousage}}{{end}}) {{qualrun "ParamString"}} {
+    {{- if .ParametersType}}
         paramMap := map[string]string{
-        {{range .ParametersType.Fields}}params.{{.Name}}.Name(): params.{{.Name}}.String(),
-        {{end}}
+        {{- range .ParametersType.Fields}}
+            params.{{.Name}}.Name(): params.{{.Name}}.String(),
+        {{- end}}
         }
         return {{qualrun "ParamString"}}{
-            Expr: "{{.SpecKey | golit}}",
+            Expr: {{.SpecKey | golit}},
             Parameters: paramMap,
         }
-    {{else}}
+    {{- else}}
         return {{qualrun "ParamString"}}{
-            Expr: "{{.SpecKey | golit}}",
+            Expr: {{.SpecKey | golit}},
         }
-    {{end}}
+    {{- end}}
 }

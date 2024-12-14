@@ -10,30 +10,8 @@ type UnionStruct struct {
 	GoStruct
 }
 
-func (s *UnionStruct) D() string {
-	//var res []*jen.Statement
-	//ctx.LogStartRender("UnionStruct", s.Import, s.Name, "definition", s.IsDefinition())
-	//defer ctx.LogFinishRender()
-	//
-	//onlyStructs := lo.EveryBy(s.Fields, func(item GoStructField) bool {
-	//	return isTypeStruct(item.Type)
-	//})
-	//if onlyStructs { // Draw simplified union with embedded fields
-	//	res = s.GoStruct.D()
-	//} else { // Draw union with named fields and methods
-	//	strct := s.GoStruct
-	//	strct.Fields = lo.Map(strct.Fields, func(item GoStructField, _ int) GoStructField {
-	//		item.Name = item.Type.TypeName()
-	//		return item
-	//	})
-	//	if reflect.DeepEqual(strct.Fields, s.Fields) { // TODO: move this check to unit tests
-	//		panic("Must not happen")
-	//	}
-	//	res = strct.D()
-	//	res = append(res, s.renderMethods()...)
-	//}
-	//return res
-	return renderTemplate("lang/gounion/definition", s)
+func (s *UnionStruct) GoTemplate() string {
+	return "lang/gounion"
 }
 
 func (s *UnionStruct) UnionStruct() common.GolangType {
@@ -47,7 +25,7 @@ func (s *UnionStruct) UnionStruct() common.GolangType {
 	// Draw union with named fields and methods
 	strct := s.GoStruct
 	strct.Fields = lo.Map(strct.Fields, func(item GoStructField, _ int) GoStructField {
-		item.Name = item.Type.TypeName()
+		item.Name = item.Type.GetOriginalName()  // FIXME: check if this is will be correct
 		return item
 	})
 	if reflect.DeepEqual(strct.Fields, s.Fields) { // TODO: move this check to unit tests
@@ -58,16 +36,16 @@ func (s *UnionStruct) UnionStruct() common.GolangType {
 
 func (s *UnionStruct) String() string {
 	if s.Import != "" {
-		return "UnionStruct /" + s.Import + "." + s.Name
+		return "UnionStruct /" + s.Import + "." + s.OriginalName
 	}
-	return "UnionStruct " + s.Name
+	return "UnionStruct " + s.OriginalName
 }
 
 //func (s UnionStruct) renderMethods() []*jen.Statement {
 //	ctx.Logger.Trace("renderMethods")
 //
 //	var res []*jen.Statement
-//	receiverName := strings.ToLower(string(s.GoStruct.Name[0]))
+//	receiverName := strings.ToLower(string(s.GoStruct.GetOriginalName[0]))
 //
 //	// Method UnmarshalJSON(bytes []byte) error
 //	body := []jen.Code{jen.Var().Err().Error()}
@@ -78,7 +56,7 @@ func (s *UnionStruct) String() string {
 //			op = "&"
 //		}
 //		stmt = stmt.If(
-//			jen.Err().Op("=").Qual("encoding/json", "Unmarshal").Call(jen.Id("bytes"), jen.Op(op).Id(receiverName).Dot(f.Type.TypeName())),
+//			jen.Err().Op("=").Qual("encoding/json", "Unmarshal").Call(jen.Id("bytes"), jen.Op(op).Id(receiverName).Dot(f.Type.IsPromise())),
 //			jen.Err().Op("!=").Nil(),
 //		).
 //			Block(jen.Return(jen.Nil())).
@@ -91,7 +69,7 @@ func (s *UnionStruct) String() string {
 //	}
 //	body = append(body, stmt)
 //
-//	res = append(res, jen.Func().Params(jen.Id(receiverName).Op("*").Id(s.GoStruct.Name)).Id("UnmarshalJSON").
+//	res = append(res, jen.Func().Params(jen.Id(receiverName).Op("*").Id(s.GoStruct.GetOriginalName)).Id("UnmarshalJSON").
 //		Params(jen.Id("bytes").Index().Byte()).
 //		Error().
 //		Block(body...),

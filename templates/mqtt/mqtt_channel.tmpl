@@ -1,18 +1,19 @@
-type {{(print .Type.Name "Server") | toCamelCase}} interface {
-    Open{{.Type.Name}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType.U}}{{end}}) (*{{.Type.U}}, error)
-    {{if .IsPublisher}}Producer() {{qualrun .ProtoName "Producer"}}{{end}}
-    {{if .IsSubscriber}}Consumer() {{qualrun .ProtoName "Consumer"}}{{end}}
+{{- localobj .Type}}
+type {{ .Type | goid }}Server interface {
+    Open{{.Type | goid}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType| gousage}}{{end}}) (*{{.Type| gousage}}, error)
+    {{- if .IsPublisher}}Producer() {{qualrun .ProtoName "Producer"}}{{end}}
+    {{- if .IsSubscriber}}Consumer() {{qualrun .ProtoName "Consumer"}}{{end}}
 }
 
-func New{{.Type.Name}}(
-    {{if .ParametersType}}params {{.ParametersType.U}},{{end}}
-    {{if .IsPublisher}}publisher {{qualrun .ProtoName "Publisher"}},{{end}}
-    {{if .IsSubscriber}}subscriber {{qualrun .ProtoName "Subscriber"}},{{end}}
-) *{{.Type.U}} {
-    res := {{.Type.U}}{
+func New{{ .Type | goid }}(
+    {{- if .ParametersType}}params {{.ParametersType| gousage}},{{end}}
+    {{- if .IsPublisher}}publisher {{qualrun .ProtoName "Publisher"}},{{end}}
+    {{- if .IsSubscriber}}subscriber {{qualrun .ProtoName "Subscriber"}},{{end}}
+) *{{.Type| gousage}} {
+    res := {{.Type| gousage}}{
         name: {{.TypeNamePrefix}}Name({{if .ParametersType}}params{{end}}),
-        {{if .IsPublisher}}publisher: publisher,{{end}}
-        {{if .IsSubscriber}}subscriber: subscriber,{{end}}
+        {{- if .IsPublisher}}publisher: publisher,{{end}}
+        {{- if .IsSubscriber}}subscriber: subscriber,{{end}}
     }
     res.topic = res.name.String()
     return &res
@@ -20,36 +21,36 @@ func New{{.Type.Name}}(
 
 {{template "proto/channel/openFunction" .}}
 
-{{.Type.D}}
+{{.Type| godef}}
 
 {{template "proto/channel/commonMethods" .}}
 
-func (c {{.Type.U}}) Topic() string {
+func (c {{.Type| gousage}}) Topic() string {
     return c.topic
 }
 
-{{if .IsPublisher}}
+{{- if .IsPublisher}}
     {{template "proto/channel/outputMethods" .}}
-    func (c {{.Type.U}}) SealEnvelope(envelope {{qualrun .ProtoName "EnvelopeWriter"}}, message {{if .PublisherMessageTypePromise}}{{goptr .PublisherMessageTypePromise.T.OutType.U}}{{else}}any{{end}}) error {
+    func (c {{.Type| gousage}}) SealEnvelope(envelope {{qualrun .ProtoName "EnvelopeWriter"}}, message {{if .PublisherMessageTypePromise}}{{goptr .PublisherMessageTypePromise.T.OutType}}{{else}}any{{end}}) error {
         envelope.ResetPayload()
-        {{if .PublisherMessageTypePromise }}
+        {{- if .PublisherMessageTypePromise }}
             {{- /*Message is set for Channel in spec*/ -}}
             if err := message.Marshal{{.ProtoName | capitalize}}Envelope(envelope); err != nil {
                 return err
             }
-        {{else}}
+        {{- else}}
             {{- /*No Message set for Channel in spec*/ -}}
             enc := {{qual "encoding/json.NewEncoder"}}(envelope)
             if err := enc.Encode(message); err != nil {
                 return err
             }
-        {{end}}
+        {{- end}}
         envelope.SetTopic(c.topic)
-        {{if and .PublisherMessageTypePromise (.PublisherMessageTypePromise.T.HasProtoBindings .ProtoName)}}
-            envelope.SetBindings(.PublisherMessageTypePromise.T.BindingsType.U){}.{{.ProtoName | capitalize}}()
-        {{end}}
+        {{- if and .PublisherMessageTypePromise (.PublisherMessageTypePromise.T.HasProtoBindings .ProtoName)}}
+            envelope.SetBindings({{.PublisherMessageTypePromise.T.BindingsType | gousage }}){}.{{.ProtoName | capitalize}}()
+        {{- end}}
         return nil
     }
-{{end}}
+{{- end}}
 
 {{if .IsSubscriber}}{{template "proto/channel/subscribeMethods" .}}{{end}}

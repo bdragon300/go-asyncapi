@@ -1,17 +1,17 @@
 {{define "lang/goarray/definition"}}
-    {{- if .Description -}}
-        {{ print .Name "--" .Description | gocomment }}
-    {{- end -}}
-    type {{ .Name | goid }} [{{ if .Size }}{{ .Size }}{{ end }}]{{ .ItemsType.U }}
-{{end}}
+    {{- if .Description }}
+        {{- print (goid .) "--" .Description | gocomment }}
+    {{- end }}
+    type {{ . | goid }} [{{ if .Size }}{{ .Size }}{{ end }}]{{ .ItemsType | gousage }}
+{{- end}}
 {{define "lang/goarray/usage"}}
-    {{- if .HasDefinition -}}
-        {{if .Import -}}
-            {{ qual .Import .Name }}
-        {{- else -}}
-            {{ qualgenpkg . }}{{.Name | goid}}
-        {{- end -}}
-    {{- else -}}
-        [{{ if .Size }}{{ .Size }}{{ end }}]{{.ItemsType.U}}
-    {{- end -}}
-{{end}}
+    {{- if .HasDefinition }}
+        {{- if .Import }}
+            {{- qual .Import (goid .) }}
+        {{- else }}
+            {{- qualgenpkg . }}{{ . | goid }}
+        {{- end }}
+    {{- else }}
+        [{{ if .Size }}{{ .Size }}{{ end }}]{{ .ItemsType | gousage }}
+    {{- end }}
+{{- end}}

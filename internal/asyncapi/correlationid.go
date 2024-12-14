@@ -41,7 +41,7 @@ func (c CorrelationID) build(ctx *common.CompileContext, correlationIDKey string
 	// TODO: move this ref code from everywhere to single place?
 	if c.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", c.Ref)
-		res := lang.NewRenderablePromise(c.Ref, common.PromiseOriginUser)
+		res := lang.NewUserPromise(c.Ref, correlationIDKey, nil)
 		ctx.PutPromise(res)
 		return res, nil
 	}
@@ -75,7 +75,7 @@ func (c CorrelationID) build(ctx *common.CompileContext, correlationIDKey string
 	ctx.Logger.Trace("CorrelationID object", "messageField", structField, "path", locationPath)
 
 	return &render.CorrelationID{
-		Name:         correlationIDKey,
+		OriginalName: correlationIDKey,
 		Description:  c.Description,
 		StructField:  structField,
 		LocationPath: locationPath,

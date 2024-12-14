@@ -33,9 +33,9 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 		return err
 	}
 	ctx.PutObject(obj)
-	if v, ok := obj.(*render.ProtoServer); ok {
-		ctx.PutObject(v.ProtoServer)
-	}
+	//if v, ok := obj.(*render.Server); ok {
+	//	ctx.PutObject(v.ProtoServer)
+	//}
 	return nil
 }
 
@@ -48,8 +48,8 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	}
 	if s.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", s.Ref)
-		prm := lang.NewRenderablePromise(s.Ref, common.PromiseOriginUser)
-		// Set a server to be rendered if we reference it from `servers` document section
+		// Always draw the promises that are located in the `servers` section
+		prm := lang.NewUserPromise(s.Ref, serverKey, lo.Ternary(isComponent, nil, lo.ToPtr(true)))
 		ctx.PutPromise(prm)
 		return prm, nil
 	}
@@ -57,12 +57,13 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	srvName, _ := lo.Coalesce(s.XGoName, serverKey)
 	// Render only the servers defined directly in `servers` document section, not in `components`
 	res := render.Server{
-		Name:            srvName,
+		OriginalName:    srvName,
 		SpecKey:         serverKey,
 		TypeNamePrefix:  ctx.GenerateObjName(srvName, ""),
 		URL:             s.URL,
 		Protocol:        s.Protocol,
 		ProtocolVersion: s.ProtocolVersion,
+		IsComponent:     isComponent,
 	}
 
 	// Channels which are connected to this server
@@ -81,13 +82,13 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		ctx.Logger.Trace("Server bindings")
 		res.BindingsType = &lang.GoStruct{
 			BaseType: lang.BaseType{
-				Name:          ctx.GenerateObjName(srvName, "Bindings"),
+				OriginalName:  ctx.GenerateObjName(srvName, "Bindings"),
 				HasDefinition: true,
 			},
 		}
 
 		ref := ctx.PathStackRef("bindings")
-		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
+		res.BindingsPromise = lang.NewInternalPromise[*render.Bindings](ref)
 		ctx.PutPromise(res.BindingsPromise)
 	}
 
@@ -95,7 +96,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	for _, v := range s.Variables.Entries() {
 		ctx.Logger.Trace("Server variable", "name", v.Key)
 		ref := ctx.PathStackRef("variables", v.Key)
-		prm := lang.NewPromise[*render.ServerVariable](ref, common.PromiseOriginInternal)
+		prm := lang.NewInternalPromise[*render.ServerVariable](ref)
 		ctx.PutPromise(prm)
 		res.VariablesPromises.Set(v.Key, prm)
 	}

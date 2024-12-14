@@ -14,16 +14,20 @@ func defaultAssignCb[T any](obj any) T {
 	return t
 }
 
-func NewPromise[T any](ref string, origin common.PromiseOrigin) *Promise[T] {
-	return &Promise[T]{ref: ref, origin: origin, assignCb: defaultAssignCb[T]}
+func newPromise[T any](ref string, origin common.PromiseOrigin) *Promise[T] {
+	return &Promise[T]{ref: ref, origin: origin}
 }
 
-func NewCbPromise[T any](findCb func(item common.CompileObject, path []string) bool) *Promise[T] {
-	return &Promise[T]{origin: common.PromiseOriginInternal, findCb: findCb}
-}
-
-func NewAssignCbPromise[T any](ref string, origin common.PromiseOrigin, assignCb func(obj any) T) *Promise[T] {
+func newAssignCbPromise[T any](ref string, origin common.PromiseOrigin, assignCb func(obj any) T) *Promise[T] {
 	return &Promise[T]{ref: ref, origin: origin, assignCb: assignCb}
+}
+
+func NewInternalPromise[T any](ref string) *Promise[T] {
+	return &Promise[T]{ref: ref, origin: common.PromiseOriginInternal, assignCb: defaultAssignCb[T]}
+}
+
+func NewInternalCbPromise[T any](findCb func(item common.CompileObject, path []string) bool) *Promise[T] {
+	return &Promise[T]{origin: common.PromiseOriginInternal, findCb: findCb}
 }
 
 type Promise[T any] struct {
@@ -86,7 +90,7 @@ func (r *Promise[T]) IsPointer() bool {
 	if !r.assigned {
 		return false
 	}
-	if v, ok := any(r.target).(GolangPointerType); ok {
+	if v, ok := any(r.target).(common.GolangType); ok {
 		return v.IsPointer()
 	}
 	return false
@@ -140,14 +144,18 @@ func (r *ListPromise[T]) Ref() string {
 	return r.ref
 }
 
-func NewRenderablePromise(ref string, origin common.PromiseOrigin) *RenderablePromise {
+func NewUserPromise(ref string, name string, selectable *bool) *RenderablePromise {
 	return &RenderablePromise{
-		Promise: *NewPromise[common.Renderable](ref, origin),
+		Promise: *newPromise[common.Renderable](ref, common.PromiseOriginUser),
+		selectable: selectable,
+		name: name,
 	}
 }
 
 type RenderablePromise struct {
 	Promise[common.Renderable]
+	selectable *bool
+	name string
 }
 
 func (r *RenderablePromise) Kind() common.ObjectKind {
@@ -155,22 +163,34 @@ func (r *RenderablePromise) Kind() common.ObjectKind {
 }
 
 func (r *RenderablePromise) Selectable() bool {
-	return r.origin == common.PromiseOriginUser && r.target.Selectable()
+	if r.selectable == nil {
+		return r.origin == common.PromiseOriginUser && r.target.Selectable()
+	}
+	return r.origin == common.PromiseOriginUser && *r.selectable
 }
 
 func (r *RenderablePromise) String() string {
 	return "RenderablePromise -> " + r.ref
 }
 
-func NewGolangTypePromise(ref string, origin common.PromiseOrigin) *GolangTypePromise {
+func (r *RenderablePromise) GetOriginalName() string {
+	n, _ := lo.Coalesce(r.name, r.target.GetOriginalName())
+	return n
+}
+
+func (r *RenderablePromise) RenderableT() common.Renderable {
+	return r.target
+}
+
+func NewInternalGolangTypePromise(ref string) *GolangTypePromise {
 	return &GolangTypePromise{
-		Promise: *NewPromise[common.GolangType](ref, origin),
+		Promise: *newPromise[common.GolangType](ref, common.PromiseOriginInternal),
 	}
 }
 
-func NewGolangTypeAssignCbPromise(ref string, origin common.PromiseOrigin, assignCb func(obj any) common.GolangType) *GolangTypePromise {
+func NewInternalGolangTypeAssignCbPromise(ref string, assignCb func(obj any) common.GolangType) *GolangTypePromise {
 	return &GolangTypePromise{
-		Promise: *NewAssignCbPromise[common.GolangType](ref, origin, assignCb),
+		Promise: *newAssignCbPromise[common.GolangType](ref, common.PromiseOriginInternal, assignCb),
 	}
 }
 
@@ -182,24 +202,24 @@ func (r *GolangTypePromise) Kind() common.ObjectKind {
 	return r.target.Kind()
 }
 
-func (r *GolangTypePromise) TypeName() string {
-	return r.target.TypeName()
-}
-
 func (r *GolangTypePromise) Selectable() bool {
 	return r.origin == common.PromiseOriginUser && r.target.Selectable()
+}
+
+func (r *GolangTypePromise) GetOriginalName() string {
+	return r.target.GetOriginalName()
+}
+
+func (r *GolangTypePromise) GolangTypeT() common.GolangType {
+	return r.target
 }
 
 func (r *GolangTypePromise) IsPointer() bool {
 	return r.target.IsPointer()
 }
 
-func (r *GolangTypePromise) D() string {
-	return r.target.D()
-}
-
-func (r *GolangTypePromise) U() string {
-	return r.target.U()
+func (r *GolangTypePromise) GoTemplate() string {
+	return r.target.GoTemplate()
 }
 
 func (r *GolangTypePromise) DefinitionInfo() (*common.GolangTypeDefinitionInfo, error) {

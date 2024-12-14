@@ -1,13 +1,13 @@
-{{.Type.D}}
+{{.Type | godef}}
 
-func (p {{.Type.U}}) Name() string {
-    return {{.Name | golit}}
+func (p {{.Type| gousage}}) Name() string {
+    return {{  . | goid | golit }}
 }
 
-func (p {{.Type.U}}) String() string {
-    {{if .IsStringType}}
+func (p {{.Type| gousage}}) String() string {
+    {{- if .IsStringType}}
         return string(p)
-    {{else}}
+    {{- else}}
         return {{qual "fmt.Sprint"}}(p.Value)
-    {{end}}
+    {{- end}}
 }

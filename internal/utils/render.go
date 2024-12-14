@@ -49,9 +49,7 @@ func ToGoLiteral(val any) string {
 		if !strings.Contains(res, ".") && !strings.Contains(res, "e") {
 			// If the formatted value is not in scientific notation, and does not have a dot, then
 			// we add ".0". Otherwise, it will be interpreted as an int.
-			// See:
-			// https://github.com/dave/jennifer/issues/39
-			// https://github.com/golang/go/issues/26363
+			// See: https://github.com/golang/go/issues/26363
 			res += ".0"
 		}
 		return res

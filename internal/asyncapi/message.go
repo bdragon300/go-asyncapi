@@ -46,17 +46,17 @@ func (m Message) Compile(ctx *common.CompileContext) error {
 		return err
 	}
 	ctx.PutObject(obj)
-	if v, ok := obj.(*render.ProtoMessage); ok {
-		ctx.Logger.Trace("ProtoObjects", "object", obj)
-		for _, protoObj := range v.ProtoMessages {
-			ctx.PutObject(protoObj)
-		}
-	}
+	//if v, ok := obj.(*render.Message); ok {
+	//	ctx.Logger.Trace("ProtoObjects", "object", obj)
+	//	for _, protoObj := range v.ProtoMessages {
+	//		ctx.PutObject(protoObj)
+	//	}
+	//}
 	return nil
 }
 
 func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Renderable, error) {
-	//_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagComponent]
+	_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagComponent]
 	ignore := m.XIgnore //|| (isComponent && !ctx.CompileOpts.MessageOpts.IsAllowedName(messageKey))
 	if ignore {
 		ctx.Logger.Debug("Message denoted to be ignored")
@@ -64,7 +64,8 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	}
 	if m.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", m.Ref)
-		prm := lang.NewRenderablePromise(m.Ref, common.PromiseOriginUser)
+		// Always draw the promises that are located in the `messages` section
+		prm := lang.NewUserPromise(m.Ref, messageKey, lo.Ternary(isComponent, nil, lo.ToPtr(true)))
 		ctx.PutPromise(prm)
 		return prm, nil
 	}
@@ -79,24 +80,25 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	msgName, _ = lo.Coalesce(m.XGoName, msgName)
 
 	res := render.Message{
-		Name: msgName,
+		OriginalName: msgName,
 		OutType: &lang.GoStruct{
 			BaseType: lang.BaseType{
-				Name:          ctx.GenerateObjName(msgName, "Out"),
+				OriginalName:  ctx.GenerateObjName(msgName, "Out"),
 				Description:   utils.JoinNonemptyStrings("\n", m.Summary+" (Outbound Message)", m.Description),
 				HasDefinition: true,
 			},
 		},
 		InType: &lang.GoStruct{
 			BaseType: lang.BaseType{
-				Name:          ctx.GenerateObjName(msgName, "In"),
+				OriginalName:  ctx.GenerateObjName(msgName, "In"),
 				Description:   utils.JoinNonemptyStrings("\n", m.Summary+" (Inbound Message)", m.Description),
 				HasDefinition: true,
 			},
 		},
 		PayloadType:         m.getPayloadType(ctx),
-		HeadersFallbackType: &lang.GoMap{KeyType: &lang.GoSimple{Name: "string"}, ValueType: &lang.GoSimple{Name: "any", IsInterface: true}},
+		HeadersFallbackType: &lang.GoMap{KeyType: &lang.GoSimple{OriginalName: "string"}, ValueType: &lang.GoSimple{OriginalName: "any", IsInterface: true}},
 		ContentType: m.ContentType,
+		IsComponent: isComponent,
 	}
 	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", res.ContentType))
 
@@ -108,7 +110,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	res.AllServersPromise = prm
 	ctx.PutListPromise(prm)
 
-	prm2 := lang.NewCbPromise[*render.AsyncAPI](func(item common.CompileObject, path []string) bool {
+	prm2 := lang.NewInternalCbPromise[*render.AsyncAPI](func(item common.CompileObject, path []string) bool {
 		_, ok := item.Renderable.(*render.AsyncAPI)
 		return ok
 	})
@@ -119,7 +121,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	if m.Headers != nil {
 		ctx.Logger.Trace("Message headers")
 		ref := ctx.PathStackRef("headers")
-		res.HeadersTypePromise = lang.NewPromise[*lang.GoStruct](ref, common.PromiseOriginInternal)
+		res.HeadersTypePromise = lang.NewInternalPromise[*lang.GoStruct](ref)
 		res.HeadersTypePromise.AssignErrorNote = "Probably the headers schema has type other than of 'object'?"
 		ctx.PutPromise(res.HeadersTypePromise)
 	}
@@ -130,13 +132,13 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		ctx.Logger.Trace("Message bindings")
 		res.BindingsType = &lang.GoStruct{
 			BaseType: lang.BaseType{
-				Name:          ctx.GenerateObjName(msgName, "Bindings"),
+				OriginalName:  ctx.GenerateObjName(msgName, "Bindings"),
 				HasDefinition: true,
 			},
 		}
 
 		ref := ctx.PathStackRef("bindings")
-		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, common.PromiseOriginInternal)
+		res.BindingsPromise = lang.NewInternalPromise[*render.Bindings](ref)
 		ctx.PutPromise(res.BindingsPromise)
 	}
 
@@ -144,7 +146,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	if m.CorrelationID != nil {
 		ctx.Logger.Trace("Message correlationId")
 		ref := ctx.PathStackRef("correlationId")
-		res.CorrelationIDPromise = lang.NewPromise[*render.CorrelationID](ref, common.PromiseOriginInternal)
+		res.CorrelationIDPromise = lang.NewInternalPromise[*render.CorrelationID](ref)
 		ctx.PutPromise(res.CorrelationIDPromise)
 	}
 
@@ -170,7 +172,7 @@ func (m Message) setStructFields(ctx *common.CompileContext, langMessage *render
 	}
 	if langMessage.HeadersTypePromise != nil {
 		ctx.Logger.Trace("Message headers has a concrete type")
-		prm := lang.NewGolangTypePromise(langMessage.HeadersTypePromise.Ref(), common.PromiseOriginInternal)
+		prm := lang.NewInternalGolangTypePromise(langMessage.HeadersTypePromise.Ref())
 		ctx.PutPromise(prm)
 		fields = append(fields, lang.GoStructField{Name: "Headers", Type: prm})
 	} else {
@@ -186,13 +188,13 @@ func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 	if m.Payload != nil {
 		ctx.Logger.Trace("Message payload has a concrete type")
 		ref := ctx.PathStackRef("payload")
-		prm := lang.NewGolangTypePromise(ref, common.PromiseOriginInternal)
+		prm := lang.NewInternalGolangTypePromise(ref)
 		ctx.PutPromise(prm)
 		return prm
 	}
 
 	ctx.Logger.Trace("Message payload has `any` type")
-	return &lang.GoSimple{Name: "any", IsInterface: true}
+	return &lang.GoSimple{OriginalName: "any", IsInterface: true}
 }
 
 type Tag struct {

@@ -59,7 +59,7 @@ type GenerateCmd struct {
 type generatePubSubArgs struct {
 	Spec string `arg:"required,positional" help:"AsyncAPI specification file path or url" placeholder:"PATH"`
 
-	ProjectModule string `arg:"-M,--project-module" help:"Project module name to use [default: extracted from go.mod file in the current working directory]" placeholder:"MODULE"`
+	ProjectModule string `arg:"-M,--module" help:"Module path to use [default: extracted from go.mod file in the current working directory concatenated with target dir]" placeholder:"MODULE"`
 	TemplateDir string `arg:"--template-dir" help:"Directory with custom templates" placeholder:"DIR"`
 	ConfigFile string `arg:"--config-file" help:"YAML configuration file path" placeholder:"PATH"`
 	generateObjectSelectionOpts
@@ -154,7 +154,7 @@ func generate(cmd *GenerateCmd) error {
 	}
 
 	// Rendering
-	files, err := writer.RenderPackages(mainModule, renderOpts)
+	files, err := writer.RenderFiles(mainModule, renderOpts)
 	if err != nil {
 		return fmt.Errorf("schema render: %w", err)
 	}
@@ -304,7 +304,7 @@ func generationWriteImplementations(selectedImpls map[string]string, protocols [
 	return nil
 }
 
-func getImportBase() (string, error) {
+func getProjectModule() (string, error) {
 	pwd, err := os.Getwd()
 	if err != nil {
 		return "", fmt.Errorf("cannot get current working directory: %w", err)
@@ -437,7 +437,12 @@ func getRenderOpts(opts generatePubSubArgs, targetDir string) (common.RenderOpts
 			return res, err
 		}
 		for _, item := range conf.Render.Selections {
-			pkg, _ := lo.Coalesce(item.Package, lo.Ternary(targetDir != "", path.Base(targetDir), defaultPackage))
+			pkg, _ := lo.Coalesce(
+				item.Package,
+				lo.Ternary(path.Dir(item.File) != ".", path.Dir(item.File), ""),
+				lo.Ternary(targetDir != "", path.Base(targetDir), ""),
+				defaultPackage,
+			)
 			templateName, _ := lo.Coalesce(item.Template,defaultTemplate)
 			sel := common.RenderSelectionConfig{
 				Template:     templateName,
@@ -453,16 +458,20 @@ func getRenderOpts(opts generatePubSubArgs, targetDir string) (common.RenderOpts
 	}
 
 	// ImportBase
-	importBase := opts.ProjectModule
-	if importBase == "" {
-		b, err := getImportBase()
+	res.ImportBase = opts.ProjectModule
+	if res.ImportBase == "" {
+		m, err := getProjectModule()
 		if err != nil {
-			return res, fmt.Errorf("determine project's module (use -M arg to override): %w", err)
+			return res, fmt.Errorf("getting project module from ./go.mod (use -M arg to override): %w", err)
 		}
-		importBase = b
+		// Clean path and remove empty, current and parent directories, leaving only names
+		// This is not a best solution, however, it should work for most cases. Moreover, user can always override it.
+		parts := lo.Filter(strings.Split(path.Clean(targetDir), string(os.PathSeparator)), func(s string, _ int) bool {
+			return !lo.Contains([]string{"", ".", ".."}, s)
+		})
+		res.ImportBase = path.Join(m, path.Join(parts...))
 	}
-	mainLogger.Debugf("Target import base is %s", importBase)
-	res.ImportBase = importBase
+	mainLogger.Debugf("Target import base is %s", res.ImportBase)
 
 	return res, nil
 }

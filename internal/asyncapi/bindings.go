@@ -34,12 +34,12 @@ func (b *Bindings) build(
 ) (common.Renderable, error) {
 	if b.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", b.Ref)
-		res := lang.NewRenderablePromise(b.Ref, common.PromiseOriginUser)
+		res := lang.NewUserPromise(b.Ref, bindingsKey, nil)
 		ctx.PutPromise(res)
 		return res, nil
 	}
 
-	res := render.Bindings{Name: bindingsKey}
+	res := render.Bindings{OriginalName: bindingsKey}
 	for _, e := range b.ProtocolValues.Entries() {
 		ctx.Logger.Trace("Bindings", "proto", e.Key)
 		builder, ok := ProtocolBuilders[e.Key]

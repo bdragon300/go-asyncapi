@@ -6,6 +6,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
+	"go/token"
 	"path"
 	"slices"
 	"strings"
@@ -16,7 +17,8 @@ import (
 type RenderContextImpl struct {
 	RenderOpts     common.RenderOpts
 	CurrentSelectionConfig common.RenderSelectionConfig
-	imports map[string]common.ImportItem // Key: package path
+	FileHeader *RenderFileHeader
+	Object     common.CompileObject
 }
 
 func (c *RenderContextImpl) RuntimeModule(subPackage string) string {
@@ -24,8 +26,12 @@ func (c *RenderContextImpl) RuntimeModule(subPackage string) string {
 }
 
 func (c *RenderContextImpl) QualifiedName(parts ...string) string {
-	pkgPath, pkgName, name := qualifiedToImport(parts)
-	return fmt.Sprintf("%s.%s", c.importPackage(pkgPath, pkgName), utils.ToGolangName(name, unicode.IsUpper(rune(name[0]))))
+	pkgPath, pkgName, n := qualifiedToImport(parts)
+	var name string
+	if n != "" {
+		name = utils.ToGolangName(n, unicode.IsUpper(rune(n[0])))
+	}
+	return fmt.Sprintf("%s.%s", c.FileHeader.addImport(pkgPath, pkgName), name)
 }
 
 // QualifiedGeneratedPackage checks if the object is in the generated package of CurrentSelectionConfig and returns
@@ -38,20 +44,25 @@ func (c *RenderContextImpl) QualifiedGeneratedPackage(obj common.GolangType) (st
 	if defInfo == nil {
 		return "", nil // Object has no definition (e.g. Go built-in types)
 	}
-	d := path.Dir(defInfo.Selection.File)
-	if d == path.Dir(c.CurrentSelectionConfig.File) {
-		return "", nil // Object is defined in the current package, it name doesn't require a package name
+	// Check if the object is defined in the same directory (assuming the directory is equal to package)
+	fileDir := path.Dir(defInfo.Selection.File)
+	if fileDir == path.Dir(c.CurrentSelectionConfig.File) {
+		return "", nil // Object is defined in the current package, its name doesn't require a package name
 	}
 
-	b, _ := path.Split(d)
-	pkgPath := path.Join(c.RenderOpts.ImportBase, b, defInfo.Selection.Package)
-	return c.importPackage(pkgPath, defInfo.Selection.Package), nil
+	parentDir := path.Dir(fileDir)
+	pkgPath := path.Join(c.RenderOpts.ImportBase, parentDir, defInfo.Selection.Package)
+	return c.FileHeader.addImport(pkgPath, defInfo.Selection.Package), nil
 }
 
 func (c *RenderContextImpl) QualifiedRuntimeName(parts ...string) string {
-	p := append([]string{c.RenderOpts.ImportBase}, parts...)
-	pkgPath, pkgName, name := qualifiedToImport(p)
-	return fmt.Sprintf("%s.%s", c.importPackage(pkgPath, pkgName), utils.ToGolangName(name, unicode.IsUpper(rune(name[0]))))
+	p := append([]string{c.RenderOpts.RuntimeModule}, parts...)
+	pkgPath, pkgName, n := qualifiedToImport(p)
+	var name string
+	if n != "" {
+		name = utils.ToGolangName(n, unicode.IsUpper(rune(n[0])))
+	}
+	return fmt.Sprintf("%s.%s", c.FileHeader.addImport(pkgPath, pkgName), name)
 }
 
 func (c *RenderContextImpl) CurrentDefinitionInfo() *common.GolangTypeDefinitionInfo {
@@ -62,31 +73,50 @@ func (c *RenderContextImpl) CurrentSelection() common.RenderSelectionConfig {
 	return c.CurrentSelectionConfig
 }
 
-func (c *RenderContextImpl) Imports() []common.ImportItem {
-	res := lo.Values(c.imports)
+func (c *RenderContextImpl) CurrentObject() common.CompileObject {
+	return c.Object
+}
+
+
+func NewRenderFileHeader(packageName string) *RenderFileHeader {
+	return &RenderFileHeader{packageName: packageName}
+}
+
+type RenderFileHeader struct {
+	packageName string
+	imports map[string]common.ImportItem
+}
+
+func (s *RenderFileHeader) Imports() []common.ImportItem {
+	res := lo.Values(s.imports)
 	slices.SortFunc(res, func(a, b common.ImportItem) int {
 		return cmp.Compare(a.PackagePath, b.PackagePath)
 	})
 	return res
 }
 
-func (c *RenderContextImpl) importPackage(pkgPath string, pkgName string) string {
-	if c.imports == nil {
-		c.imports = make(map[string]common.ImportItem)
+func (s *RenderFileHeader) PackageName() string {
+	return s.packageName
+}
+
+func (s *RenderFileHeader) addImport(pkgPath string, pkgName string) string {
+	if s.imports == nil {
+		s.imports = make(map[string]common.ImportItem)
 	}
-	if _, ok := c.imports[pkgPath]; !ok {
+	if _, ok := s.imports[pkgPath]; !ok {
 		res := common.ImportItem{PackageName: pkgName, PackagePath: pkgPath}
-		// Find imports with the same package name
-		namesakes := lo.Filter(lo.Entries(c.imports), func(item lo.Entry[string, common.ImportItem], _ int) bool {
+		// Generate alias if the package with the same name already imported, or its name is not a valid Go identifier (e.g. "go-asyncapi")
+		namesakes := lo.Filter(lo.Entries(s.imports), func(item lo.Entry[string, common.ImportItem], _ int) bool {
 			return item.Key != pkgPath && item.Value.PackageName == pkgName
 		})
-		if len(namesakes) > 0 {
-			res.Alias = fmt.Sprintf("%s%d", pkgName, len(namesakes)+1)  // Generate a new alias to avoid package name conflict
+		if len(namesakes) > 0 || !token.IsIdentifier(pkgName) {
+			// Generate a new alias to avoid package name conflict
+			res.Alias = fmt.Sprintf("%s%d", utils.ToGolangName(pkgName, false), len(namesakes)+1)
 		}
-		c.imports[pkgPath] = res
+		s.imports[pkgPath] = res
 	}
 
-	if v := c.imports[pkgPath]; v.Alias != "" {
+	if v := s.imports[pkgPath]; v.Alias != "" {
 		return v.Alias // Return alias
 	}
 	return pkgName
@@ -129,7 +159,7 @@ func qualifiedToImport(parts []string) (pkgPath string, pkgName string, name str
 	// parts["a/b/c"] -> ["a/b/c", "c", ""]
 	// parts["a", "x"] -> ["a", "a", "x"]
 	// parts["a/b.c", "x"] -> ["a/b.c", "bc", "x"]
-	// parts["n", "d", "a/b.c", "x"] -> ["n/d/a/b.c", "bc", "x"]
+	// parts["n", "d", "a/b.c", "x"] -> ["n/d/a/b.c-e", "b.c-e", "x"]
 	switch len(parts) {
 	case 0:
 		panic("Empty parameters, at least one is required")
@@ -146,6 +176,5 @@ func qualifiedToImport(parts []string) (pkgPath string, pkgName string, name str
 	if pos := strings.LastIndex(pkgPath, "/"); pos >= 0 {
 		pkgName = pkgPath[pos+1:]
 	}
-	pkgName = strings.ReplaceAll(pkgName, ".", "")
 	return
 }
