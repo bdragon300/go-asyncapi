@@ -5,7 +5,7 @@ import (
 )
 
 type ComponentsItem struct {
-	Schemas types.OrderedMap[string, Object] `json:"schemas" yaml:"schemas" cgen:"components,marshal"`
+	Schemas types.OrderedMap[string, Object] `json:"schemas" yaml:"schemas" cgen:"components,marshal,definition"`
 	Servers types.OrderedMap[string, Server] `json:"servers" yaml:"servers" cgen:"components"`
 	// ServerVariables don't get rendered directly, only as a part of other object. However, they have to be compiled as separate objects
 	ServerVariables types.OrderedMap[string, ServerVariable] `json:"serverVariables" yaml:"serverVariables" cgen:"components"`

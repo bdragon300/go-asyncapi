@@ -23,6 +23,10 @@ func (b *Bindings) Selectable() bool {
 	return false
 }
 
+func (b *Bindings) Visible() bool {
+	return true
+}
+
 //func (b *Bindings) ID() string {
 //	return b.GetOriginalName
 //}

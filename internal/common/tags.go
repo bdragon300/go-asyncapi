@@ -7,6 +7,6 @@ const (
 	SchemaTagDefinition SchemaTag = "definition"
 	// SchemaTagComponent marks all top-level objects in `component` section
 	SchemaTagComponent SchemaTag = "components"
-	// SchemaTagMarshal marks that an object is meant to be marshaled/unmarshaled. Inherited by nested objects
+	// SchemaTagMarshal marks that an object is meant to be marshaled/unmarshaled. Inherited to the nested objects
 	SchemaTagMarshal SchemaTag = "marshal"
 )

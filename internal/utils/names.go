@@ -1,8 +1,11 @@
 package utils
 
 import (
-	"github.com/iancoleman/strcase"
+	"crypto/md5"
+	"encoding/base32"
 	"go/token"
+	"os"
+	"path"
 	"regexp"
 	"strings"
 	"unicode"
@@ -42,11 +45,9 @@ func ToGolangName(rawString string, exported bool) string {
 
 	var camel string
 	if exported {
-		//camel = strcase.UpperCamelCase(rawString)
-		camel = strcase.ToCamel(rawString)
+		camel = lo.PascalCase(rawString)
 	} else {
-		camel = strcase.ToLowerCamel(rawString)
-		//camel = strcase.LowerCamelCase(rawString)
+		camel = lo.CamelCase(rawString)
 	}
 
 	str := TransformInitialisms(camel)
@@ -58,7 +59,7 @@ func ToGolangName(rawString string, exported bool) string {
 	return str
 }
 
-// TransformInitialisms transforms possible initialisms to upper case in a name in camel case.
+// TransformInitialisms transforms possible initialisms to upper case in a name in camel case or pascal case.
 func TransformInitialisms(name string) string {
 	source := []byte(name)
 	res := make([]byte, len(source))
@@ -71,19 +72,19 @@ func TransformInitialisms(name string) string {
 
 		right := end + 1 // `end` is inclusive, so we need to add 1
 		left := right - n
-		// Write everything before the matched pattern
+		// Write everything before the matched pattern.
 		// `left` may point before `last` here on the repeated match on the same position. E.g. when "http" and "https"
 		// initialisms found.
 		if left > last {
 			copy(res[last:], source[last:left])
 		}
 
-		// Transform only the whole word, not a part of other word
-		// For example, "httpsSmthId":
-		// 1. First matches "http", it's written without transform since it's not a whole word
-		// 2. On next iteration matches "https" as whole word (next letter is in uppercase), transforms it
-		//    and writes "HTTPS" over "http" from the previous iteration
-		// 3. Matches "id" as whole word (end of string), transforms it to "ID"
+		// Determine if the matched pattern is a word and transform it to uppercase if it is.
+		// For example, the transformation of string "httpsSmthId" gives "HTTPSSmthID" as a result of the following:
+		// 1. First match is "http". It's not a word (next letter is lowercase), write without transformation.
+		// 2. On next iteration the match is "https". It's a word (next letter is in uppercase). Transform it
+		//    and write "HTTPS" over "http" from the previous iteration
+		// 3. Final match is "id". It's a word (end of string). Transform it to "ID" and write over "id".
 		if right == int64(len(source)) || unicode.IsUpper(rune(source[right])) {
 			copy(res[left:], strings.ToUpper(initialisms[pattern]))
 		} else {
@@ -97,30 +98,40 @@ func TransformInitialisms(name string) string {
 	return string(res)
 }
 
-//func ToLowerFirstLetter(s string) string {
-//	if s == "" {
-//		return ""
-//	}
-//	return strings.ToLower(string(s[0])) + s[1:]
-//}
-
 func JoinNonemptyStrings(sep string, s ...string) string {
 	return strings.Join(lo.Compact(s), sep)
 }
 
-//func ToFileName(rawString string) string {
-//	// Replace everything except alphanumerics to underscores
-//	newString := string(fileNameReplaceRe.ReplaceAll([]byte(rawString), []byte("_")))
-//
-//	// Cut underscores that may appear at string endings
-//	newString = strings.Trim(newString, "_")
-//
-//	// newString may left empty after normalization, because rawString is empty or has "/", "_", or smth
-//	// So, the filename will be the md5 hash from rawString in base32 form
-//	if newString == "" {
-//		hsh := md5.New()
-//		newString = ToFileName(base32.StdEncoding.EncodeToString(hsh.Sum([]byte(rawString))))
-//	}
-//
-//	return strcase.SnakeCase(newString)
-//}
+func NormalizePath(rawPath string) string {
+	if rawPath == "" {
+		hsh := md5.New()
+		return "empty" + normalizePathItem(base32.StdEncoding.EncodeToString(hsh.Sum([]byte(rawPath))))
+	}
+
+	directory, file := path.Split(path.Clean(rawPath))
+	dirs := strings.Split(path.Clean(directory), string(os.PathSeparator))
+	normDirs := lo.Map(dirs, func(s string, _ int) string {
+		return normalizePathItem(s)
+	})
+	fileName := strings.TrimSuffix(file, path.Ext(file))
+	normFile := normalizePathItem(fileName)
+
+	return path.Join(path.Join(normDirs...), normFile + ".go")
+}
+
+func normalizePathItem(name string) string {
+	// Replace everything except alphanumerics to underscores
+	newString := string(fileNameReplaceRe.ReplaceAll([]byte(name), []byte("_")))
+
+	// Cut underscores that may appear at string endings
+	newString = strings.Trim(newString, "_")
+
+	// newString may left empty after normalization, because rawPath is empty or has "/", "_", or smth
+	// So, the filename will be the md5 hash from rawPath in base32 form
+	if newString == "" {
+		hsh := md5.New()
+		newString = "empty" + normalizePathItem(base32.StdEncoding.EncodeToString(hsh.Sum([]byte(name))))
+	}
+
+	return lo.SnakeCase(newString)
+}

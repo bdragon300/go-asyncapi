@@ -33,7 +33,7 @@ func (pb ProtoBuilder) BuildServerBindings(ctx *common.CompileContext, rawData t
 	if err = types.UnmarshalRawsUnion2(rawData, &bindings); err != nil {
 		return vals, jsonVals, types.CompileError{Err: err, Path: ctx.PathStackRef(), Proto: pb.ProtoName}
 	}
-	vals = lang.ConstructGoValue(bindings, nil, &lang.GoSimple{OriginalName: "ServerBindings", Import: ctx.RuntimeModule(pb.ProtoName)})
+	vals = lang.ConstructGoValue(bindings, nil, &lang.GoSimple{Name: "ServerBindings", Import: ctx.RuntimeModule(pb.ProtoName)})
 
 	return
 }

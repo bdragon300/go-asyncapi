@@ -1,7 +1,6 @@
 package common
 
 import (
-	"errors"
 	"path"
 	"strings"
 
@@ -15,25 +14,15 @@ import (
 
 const nameWordSep = "_"
 
-// ErrDefinitionLocationUnknown is returned when we try to get a package in the generated code for an object, but the
-// definition of this object has not been rendered, therefore its location is unknown yet.
-var ErrDefinitionLocationUnknown = errors.New("definition location is unknown")
-
 type CompileObject struct {
 	Renderable
 	ObjectURL specurl.URL
-}
-
-type GolangTypeDefinitionInfo struct {
-	Selection RenderSelectionConfig
 }
 
 type GolangType interface {
 	Renderable
 	GoTemplate() string
 	IsPointer() bool
-	DefinitionInfo() (*GolangTypeDefinitionInfo, error)
-	SetDefinitionInfo(info *GolangTypeDefinitionInfo)
 }
 
 type CompilationStorage interface {

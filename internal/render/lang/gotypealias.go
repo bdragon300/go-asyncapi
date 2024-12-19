@@ -1,12 +1,14 @@
 package lang
 
 import (
+	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 )
 
 type GoTypeAlias struct {
 	BaseType
 	AliasedType common.GolangType
+	ObjectKind common.ObjectKind
 }
 
 func (p *GoTypeAlias) GoTemplate() string {
@@ -18,6 +20,10 @@ func (p *GoTypeAlias) UnwrapGolangType() (common.GolangType, bool) {
 		return v.UnwrapGolangType()
 	}
 	return p.AliasedType, p.AliasedType != nil
+}
+
+func (b *GoTypeAlias) Kind() common.ObjectKind {
+	return b.ObjectKind
 }
 
 func (p *GoTypeAlias) IsPointer() bool {
@@ -33,7 +39,7 @@ func (p *GoTypeAlias) IsStruct() bool {
 
 func (p *GoTypeAlias) String() string {
 	if p.Import != "" {
-		return "GoTypeAlias /" + p.Import + "." + p.OriginalName
+		return fmt.Sprintf("GoTypeAlias /%s.%s -> %s", p.Import, p.OriginalName, p.AliasedType)
 	}
-	return "GoTypeAlias " + p.OriginalName
+	return fmt.Sprintf("GoTypeAlias %s -> %s", p.OriginalName, p.AliasedType)
 }

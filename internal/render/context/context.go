@@ -2,6 +2,7 @@ package context
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
@@ -13,11 +14,21 @@ import (
 	"unicode"
 )
 
+// ErrDefinitionLocationUnknown is returned when we try to get a package in the generated code for an object, but the
+// definition of this object has not been rendered, therefore its location is unknown yet.
+var ErrDefinitionLocationUnknown = errors.New("definition location is unknown")
+
+type definable interface {
+	ObjectHasDefinition() bool
+}
+
 // TODO: add object path?
 type RenderContextImpl struct {
 	RenderOpts     common.RenderOpts
 	CurrentSelectionConfig common.RenderSelectionConfig
-	FileHeader *RenderFileHeader
+	PackageName      string
+	Imports          *ImportsList
+	PackageNamespace *RenderNamespace
 	Object     common.CompileObject
 }
 
@@ -31,19 +42,20 @@ func (c *RenderContextImpl) QualifiedName(parts ...string) string {
 	if n != "" {
 		name = utils.ToGolangName(n, unicode.IsUpper(rune(n[0])))
 	}
-	return fmt.Sprintf("%s.%s", c.FileHeader.addImport(pkgPath, pkgName), name)
+	return fmt.Sprintf("%s.%s", c.Imports.addImport(pkgPath, pkgName), name)
 }
 
 // QualifiedGeneratedPackage checks if the object is in the generated package of CurrentSelectionConfig and returns
 // the package name if it is. If the object is not in the generated package, it returns an empty string.
 func (c *RenderContextImpl) QualifiedGeneratedPackage(obj common.GolangType) (string, error) {
-	defInfo, err := obj.DefinitionInfo()
-	if err != nil {
-		return "", fmt.Errorf("object %s: %w", obj, err)
+	defInfo, defined := c.PackageNamespace.FindObject(obj)
+	if !defined {
+		if v, ok := obj.(definable); ok && v.ObjectHasDefinition() {
+			return "", ErrDefinitionLocationUnknown
+		}
+		return "", nil // Type is not supposed to be defined in the generated code (including Go built-in types)
 	}
-	if defInfo == nil {
-		return "", nil // Object has no definition (e.g. Go built-in types)
-	}
+
 	// Check if the object is defined in the same directory (assuming the directory is equal to package)
 	fileDir := path.Dir(defInfo.Selection.File)
 	if fileDir == path.Dir(c.CurrentSelectionConfig.File) {
@@ -52,7 +64,7 @@ func (c *RenderContextImpl) QualifiedGeneratedPackage(obj common.GolangType) (st
 
 	parentDir := path.Dir(fileDir)
 	pkgPath := path.Join(c.RenderOpts.ImportBase, parentDir, defInfo.Selection.Package)
-	return c.FileHeader.addImport(pkgPath, defInfo.Selection.Package), nil
+	return c.Imports.addImport(pkgPath, defInfo.Selection.Package), nil
 }
 
 func (c *RenderContextImpl) QualifiedRuntimeName(parts ...string) string {
@@ -62,32 +74,58 @@ func (c *RenderContextImpl) QualifiedRuntimeName(parts ...string) string {
 	if n != "" {
 		name = utils.ToGolangName(n, unicode.IsUpper(rune(n[0])))
 	}
-	return fmt.Sprintf("%s.%s", c.FileHeader.addImport(pkgPath, pkgName), name)
-}
-
-func (c *RenderContextImpl) CurrentDefinitionInfo() *common.GolangTypeDefinitionInfo {
-	return &common.GolangTypeDefinitionInfo{Selection: c.CurrentSelectionConfig}
+	return fmt.Sprintf("%s.%s", c.Imports.addImport(pkgPath, pkgName), name)
 }
 
 func (c *RenderContextImpl) CurrentSelection() common.RenderSelectionConfig {
 	return c.CurrentSelectionConfig
 }
 
-func (c *RenderContextImpl) CurrentObject() common.CompileObject {
-	return c.Object
+func (c *RenderContextImpl) GetObjectName(obj common.Renderable) string {
+	type renderableUnwrapper interface {
+		UnwrapRenderable() common.Renderable
+	}
+
+	res := obj.GetOriginalName()
+	// Take the alternate name from CurrentObject (if any), if the CurrentObject is the RenderablePromise,
+	// and it points to the same object as the one was passed as argument.
+	currentObj := c.Object.Renderable
+	if p, ok := currentObj.(renderableUnwrapper); ok {
+		currentObj = p.UnwrapRenderable()
+	}
+	if currentObj == obj {
+		res = c.Object.GetOriginalName()
+	}
+
+	return res
 }
 
-
-func NewRenderFileHeader(packageName string) *RenderFileHeader {
-	return &RenderFileHeader{packageName: packageName}
+func (c *RenderContextImpl) Package() string {
+	return c.PackageName
 }
 
-type RenderFileHeader struct {
-	packageName string
+func (c *RenderContextImpl) DefineTypeInNamespace(obj common.GolangType, selection common.RenderSelectionConfig, actual bool) {
+	c.PackageNamespace.AddObject(obj, selection, actual)
+}
+
+func (c *RenderContextImpl) TypeDefinedInNamespace(obj common.GolangType) bool {
+	v, found := c.PackageNamespace.FindObject(obj)
+	return found && v.Actual
+}
+
+func (c *RenderContextImpl) DefineNameInNamespace(name string) {
+	c.PackageNamespace.AddName(name)
+}
+
+func (c *RenderContextImpl) NameDefinedInNamespace(name string) bool {
+	return c.PackageNamespace.FindName(name)
+}
+
+type ImportsList struct { //TODO: rename
 	imports map[string]common.ImportItem
 }
 
-func (s *RenderFileHeader) Imports() []common.ImportItem {
+func (s *ImportsList) Imports() []common.ImportItem {
 	res := lo.Values(s.imports)
 	slices.SortFunc(res, func(a, b common.ImportItem) int {
 		return cmp.Compare(a.PackagePath, b.PackagePath)
@@ -95,11 +133,7 @@ func (s *RenderFileHeader) Imports() []common.ImportItem {
 	return res
 }
 
-func (s *RenderFileHeader) PackageName() string {
-	return s.packageName
-}
-
-func (s *RenderFileHeader) addImport(pkgPath string, pkgName string) string {
+func (s *ImportsList) addImport(pkgPath string, pkgName string) string {
 	if s.imports == nil {
 		s.imports = make(map[string]common.ImportItem)
 	}
@@ -120,6 +154,63 @@ func (s *RenderFileHeader) addImport(pkgPath string, pkgName string) string {
 		return v.Alias // Return alias
 	}
 	return pkgName
+}
+
+type RenderNameDefinition struct {
+	Object common.GolangType
+	Selection common.RenderSelectionConfig
+	// Actual is true when this definition is the actual definition of the object, and false when it is a deferred definition.
+	Actual bool
+}
+
+
+type RenderNamespace struct {
+	definitions []RenderNameDefinition
+	names []string
+}
+
+func (s *RenderNamespace) AddObject(obj common.GolangType, selection common.RenderSelectionConfig, actual bool) {
+	found := lo.ContainsBy(s.definitions, func(def RenderNameDefinition) bool {
+		return def.Object == obj && def.Actual == actual
+	})
+	if !found {
+		s.definitions = append(s.definitions, RenderNameDefinition{Object: obj, Selection: selection, Actual: actual})
+	}
+}
+
+func (s *RenderNamespace) AddName(name string) {
+	if !lo.Contains(s.names, name) {
+		s.names = append(s.names, name)
+	}
+}
+
+func (s *RenderNamespace) FindObject(obj common.GolangType) (RenderNameDefinition, bool) {
+	found := lo.Filter(s.definitions, func(def RenderNameDefinition, _ int) bool {
+		return def.Object == obj
+	})
+	// Return the "actual" definition first, if any
+	slices.SortFunc(found, func(a, b RenderNameDefinition) int {
+		switch {
+		case a.Actual && !b.Actual:
+			return 1
+		case !a.Actual && b.Actual:
+			return -1
+		}
+		return 0
+	})
+
+	return lo.Last(found)
+}
+
+func (s *RenderNamespace) FindName(name string) bool {
+	return lo.Contains(s.names, name)
+}
+
+func (s *RenderNamespace) Clone() *RenderNamespace {
+	return &RenderNamespace{
+		definitions: append([]RenderNameDefinition(nil), s.definitions...),
+		names: append([]string(nil), s.names...),
+	}
 }
 
 //// LogStartRender is typically called at the beginning of a D or U method and logs that the

@@ -169,6 +169,10 @@ func (r *RenderablePromise) Selectable() bool {
 	return r.origin == common.PromiseOriginUser && *r.selectable
 }
 
+func (r *RenderablePromise) Visible() bool {
+	return r.origin == common.PromiseOriginUser && r.target.Visible()
+}
+
 func (r *RenderablePromise) String() string {
 	return "RenderablePromise -> " + r.ref
 }
@@ -178,8 +182,8 @@ func (r *RenderablePromise) GetOriginalName() string {
 	return n
 }
 
-func (r *RenderablePromise) RenderableT() common.Renderable {
-	return r.target
+func (r *RenderablePromise) UnwrapRenderable() common.Renderable {
+	return unwrapRenderablePromise(r.target)
 }
 
 func NewInternalGolangTypePromise(ref string) *GolangTypePromise {
@@ -206,12 +210,20 @@ func (r *GolangTypePromise) Selectable() bool {
 	return r.origin == common.PromiseOriginUser && r.target.Selectable()
 }
 
+func (r *GolangTypePromise) Visible() bool {
+	return r.origin == common.PromiseOriginUser && r.target.Visible()
+}
+
 func (r *GolangTypePromise) GetOriginalName() string {
 	return r.target.GetOriginalName()
 }
 
-func (r *GolangTypePromise) GolangTypeT() common.GolangType {
-	return r.target
+func (r *GolangTypePromise) UnwrapGolangType() common.GolangType {
+	return unwrapGolangPromise(r.target)
+}
+
+func (r *GolangTypePromise) UnwrapRenderable() common.Renderable {
+	return unwrapRenderablePromise(r.target)
 }
 
 func (r *GolangTypePromise) IsPointer() bool {
@@ -222,14 +234,29 @@ func (r *GolangTypePromise) GoTemplate() string {
 	return r.target.GoTemplate()
 }
 
-func (r *GolangTypePromise) DefinitionInfo() (*common.GolangTypeDefinitionInfo, error) {
-	return r.target.DefinitionInfo()
-}
-
-func (r *GolangTypePromise) SetDefinitionInfo(info *common.GolangTypeDefinitionInfo) {
-	r.target.SetDefinitionInfo(info)
-}
-
 func (r *GolangTypePromise) String() string {
 	return "GolangTypePromise -> " + r.ref
+}
+
+func unwrapRenderablePromise(val common.Renderable) common.Renderable {
+	type renderableUnwrapper interface {
+		UnwrapRenderable() common.Renderable
+	}
+
+	if o, ok := val.(renderableUnwrapper); ok {
+		return o.UnwrapRenderable()
+	}
+	return val
+}
+
+
+func unwrapGolangPromise(val common.GolangType) common.GolangType {
+	type golangTypeUnwrapper interface {
+		UnwrapGolangType() common.GolangType
+	}
+
+	if o, ok := val.(golangTypeUnwrapper); ok {
+		val = o.UnwrapGolangType()
+	}
+	return val
 }

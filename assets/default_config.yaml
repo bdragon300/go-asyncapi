@@ -1,18 +1,12 @@
 render:
   selections:
     - objectKindRe: schema
-      file: schemas/{{. | goid | toSnakeCase}}.go
+      file: schemas/{{. | goid }}.go
     - objectKindRe: parameter
-      file: parameters/{{. | goid | toSnakeCase}}.go
+      file: parameters/{{. | goid }}.go
     - objectKindRe: channel
-      file: channels/{{. | goid | toSnakeCase}}.go
-    - objectKindRe: protoChannel
-      file: channels/{{. | goid | toSnakeCase}}.go
+      file: channels/{{. | goid }}.go
     - objectKindRe: server
-      file: servers/{{. | goid | toSnakeCase}}.go
-    - objectKindRe: protoServer
-      file: servers/{{. | goid | toSnakeCase}}.go
+      file: servers/{{. | goid }}.go
     - objectKindRe: message
-      file: messages/{{. | goid | toSnakeCase}}.go
-    - objectKindRe: protoMessage
-      file: messages/{{. | goid | toSnakeCase}}.go
+      file: messages/{{. | goid }}.go

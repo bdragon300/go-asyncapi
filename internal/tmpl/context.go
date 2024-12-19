@@ -6,35 +6,34 @@ import (
 
 type renderContext interface {
 	CurrentSelection() common.RenderSelectionConfig
+	Package() string
 }
 
-type fileHeaderStorage interface {
+type importsProvider interface {
 	Imports() []common.ImportItem
-	PackageName() string
 }
 
-func NewTemplateContext(renderContext renderContext, object common.Renderable, headerStorage fileHeaderStorage) *TemplateContext {
+func NewTemplateContext(renderContext renderContext, object common.Renderable, importsProvider importsProvider) *TemplateContext {
 	return &TemplateContext{
-		renderContext:     renderContext,
-		fileHeaderStorage: headerStorage,
-		object:            object,
+		renderContext:   renderContext,
+		importsProvider: importsProvider,
+		object:          object,
 	}
 }
 
 // TemplateContext is passed as value to the root template on selections processing.
 type TemplateContext struct {
 	renderContext renderContext
-	// object contains an actual object to be rendered, without any promises.
-	object            common.Renderable
-	fileHeaderStorage fileHeaderStorage
+	object          common.Renderable
+	importsProvider importsProvider
 }
 
 func (t TemplateContext) Imports() []common.ImportItem {
-	return t.fileHeaderStorage.Imports()
+	return t.importsProvider.Imports()
 }
 
 func (t TemplateContext) PackageName() string {
-	return t.fileHeaderStorage.PackageName()
+	return t.renderContext.Package()
 }
 
 func (t TemplateContext) CurrentSelection() common.RenderSelectionConfig {
@@ -42,8 +41,5 @@ func (t TemplateContext) CurrentSelection() common.RenderSelectionConfig {
 }
 
 func (t TemplateContext) Object() common.Renderable {
-	if t.object == nil {
-		return nil
-	}
 	return t.object
 }

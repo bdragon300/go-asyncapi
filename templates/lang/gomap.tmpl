@@ -3,7 +3,7 @@
         {{ print (goid .) "--" .Description | gocomment }}
     {{- end }}
     type {{ . | goid }} map[{{ .KeyType | gousage }}]{{ .ValueType | gousage }}
-{{end}}
+{{- end}}
 {{define "lang/gomap/usage"}}
     {{- if .HasDefinition }}
         {{if .Import }}
@@ -11,7 +11,7 @@
         {{- else }}
             {{ qualgenpkg . }}{{ . | goid }}
         {{- end }}
-    {{- else }}
+    {{- else -}}
         map[{{ .KeyType | gousage }}]{{ .ValueType | gousage }}
     {{- end }}
 {{- end}}

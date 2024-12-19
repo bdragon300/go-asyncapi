@@ -9,10 +9,7 @@ import (
 )
 
 func listImplementations() {
-	manifest, err := getImplementationsManifest()
-	if err != nil {
-		panic(err.Error())
-	}
+	manifest := lo.Must(getImplementationsManifest())
 	protos := lo.Keys(manifest)
 	slices.Sort(protos)
 	for _, proto := range protos {

@@ -1,6 +1,6 @@
 {{define "lang/gotypealias/definition"}}
     {{- if .Description }}
-        {{- print (goid .) "--" .Description | gocomment }}
+        {{ print (goid .) "--" .Description | gocomment }}
     {{- end }}
     type {{ . | goid }} {{.AliasedType | godef }}
 {{- end}}

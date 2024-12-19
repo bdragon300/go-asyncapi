@@ -8,9 +8,7 @@ import (
 
 type Channel struct {
 	OriginalName    string // Channel name, typically equals to Channel key, can get overridden in x-go-name
-	TypeNamePrefix  string // Prefix for a proto channel type name
 	Dummy           bool
-	SpecKey         string                     // Key in the source document
 	SpecServerNames []string                   // List of servers the channel is linked with. Empty means "all servers"
 	ServersPromise  *lang.ListPromise[*Server] // Servers list this channel is applied to, either explicitly marked or "all servers"
 
@@ -37,6 +35,10 @@ func (c *Channel) Kind() common.ObjectKind {
 
 func (c *Channel) Selectable() bool {
 	return !c.Dummy && !c.IsComponent // Select only the channels defined in the `channels` section`
+}
+
+func (c *Channel) Visible() bool {
+	return !c.Dummy
 }
 
 func (c *Channel) GetOriginalName() string {
@@ -128,8 +130,14 @@ func (c *Channel) String() string {
 	return "Channel " + c.OriginalName
 }
 
-func (c *Channel) ProtoObjects() []common.Renderable {
-	return lo.Map(c.ProtoChannels, func(p *ProtoChannel, _ int) common.Renderable { return p })
+func (c *Channel) SelectProtoObject(protocol string) common.Renderable {
+	res := lo.Filter(c.ProtoChannels, func(p *ProtoChannel, _ int) bool {
+		return p.Selectable() && p.ProtoName == protocol
+	})
+	if len(res) > 0 {
+		return res[0]
+	}
+	return nil
 }
 
 //func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement {
@@ -182,7 +190,7 @@ func (c *Channel) BindingsProtocols() (res []string) {
 
 func (c *Channel) ProtoBindingsValue(protoName string) common.Renderable {
 	res := &lang.GoValue{
-		Type:               &lang.GoSimple{OriginalName: "ChannelBindings", Import: common.GetContext().RuntimeModule(protoName)},
+		Type:               &lang.GoSimple{Name: "ChannelBindings", Import: common.GetContext().RuntimeModule(protoName)},
 		EmptyCurlyBrackets: true,
 	}
 	if c.BindingsChannelPromise != nil {
@@ -215,10 +223,6 @@ type ProtoChannel struct {
 
 func (p *ProtoChannel) Selectable() bool {
 	return !p.Dummy && p.isBound()
-}
-
-func (p *ProtoChannel) Kind() common.ObjectKind {
-	return common.ObjectKindProtoChannel
 }
 
 func (p *ProtoChannel) String() string {

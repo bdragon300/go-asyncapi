@@ -62,23 +62,31 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		ctx.Logger.Debug("Message denoted to be ignored")
 		return &render.Message{Dummy: true}, nil
 	}
+
 	if m.Ref != "" {
+		// Message is the only type of objects, that has their own root key, the key in components and can be used
+		// as ref in other objects at the same time (at channel.[publish|subscribe].message).
+		// Therefore, a message object may get to selections more than once, it's needed to handle in templates.
+		refName := messageKey
+		pathStack := ctx.Stack.Items()
+		makeSelectable := !isComponent
+		// Check if message is used in a channel messageKey always be "message" in this case.
+		if messageKey == "message" && len(pathStack) > 3 {
+			// Use the OriginalName of message instead.
+			refName = ""
+			// And force make the message selectable if it was defined in `components.messages` section.
+			// TODO: force make selectable only if the channel it refers to is also visible
+			makeSelectable = true
+		}
+
 		ctx.Logger.Trace("Ref", "$ref", m.Ref)
 		// Always draw the promises that are located in the `messages` section
-		prm := lang.NewUserPromise(m.Ref, messageKey, lo.Ternary(isComponent, nil, lo.ToPtr(true)))
+		prm := lang.NewUserPromise(m.Ref, refName, lo.Ternary(makeSelectable, lo.ToPtr(true), nil))
 		ctx.PutPromise(prm)
 		return prm, nil
 	}
 
-	// Being defined in "channels" section, we use the message key as the message name. Otherwise, generate a name,
-	// because the key will always be "message".
-	msgName := messageKey
-	pathStack := ctx.Stack.Items()
-	if pathStack[0].PathItem == "channels" {
-		msgName = ctx.GenerateObjName(m.XGoName, "")
-	}
-	msgName, _ = lo.Coalesce(m.XGoName, msgName)
-
+	msgName, _ := lo.Coalesce(m.XGoName, messageKey)
 	res := render.Message{
 		OriginalName: msgName,
 		OutType: &lang.GoStruct{
@@ -96,7 +104,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 			},
 		},
 		PayloadType:         m.getPayloadType(ctx),
-		HeadersFallbackType: &lang.GoMap{KeyType: &lang.GoSimple{OriginalName: "string"}, ValueType: &lang.GoSimple{OriginalName: "any", IsInterface: true}},
+		HeadersFallbackType: &lang.GoMap{KeyType: &lang.GoSimple{Name: "string"}, ValueType: &lang.GoSimple{Name: "any", IsInterface: true}},
 		ContentType: m.ContentType,
 		IsComponent: isComponent,
 	}
@@ -194,7 +202,7 @@ func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 	}
 
 	ctx.Logger.Trace("Message payload has `any` type")
-	return &lang.GoSimple{OriginalName: "any", IsInterface: true}
+	return &lang.GoSimple{Name: "any", IsInterface: true}
 }
 
 type Tag struct {

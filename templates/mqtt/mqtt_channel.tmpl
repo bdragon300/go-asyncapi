@@ -1,27 +1,22 @@
 {{- localobj .Type}}
-type {{ .Type | goid }}Server interface {
-    Open{{.Type | goid}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType| gousage}}{{end}}) (*{{.Type| gousage}}, error)
-    {{- if .IsPublisher}}Producer() {{qualrun .ProtoName "Producer"}}{{end}}
-    {{- if .IsSubscriber}}Consumer() {{qualrun .ProtoName "Consumer"}}{{end}}
-}
+{{template "proto/channel/openFunction" .}}
 
-func New{{ .Type | goid }}(
-    {{- if .ParametersType}}params {{.ParametersType| gousage}},{{end}}
-    {{- if .IsPublisher}}publisher {{qualrun .ProtoName "Publisher"}},{{end}}
-    {{- if .IsSubscriber}}subscriber {{qualrun .ProtoName "Subscriber"}},{{end}}
-) *{{.Type| gousage}} {
+func New{{ .Channel | goid }}(
+    {{ if .ParametersType}}params {{.ParametersType| gousage}},{{end}}
+    {{ if .IsPublisher}}publisher {{qualrun .ProtoName "Publisher"}},{{end}}
+    {{ if .IsSubscriber}}subscriber {{qualrun .ProtoName "Subscriber"}},{{end}}
+) *{{.Type | gousage}} {
     res := {{.Type| gousage}}{
-        name: {{.TypeNamePrefix}}Name({{if .ParametersType}}params{{end}}),
-        {{- if .IsPublisher}}publisher: publisher,{{end}}
-        {{- if .IsSubscriber}}subscriber: subscriber,{{end}}
+        name: {{.Channel | goid}}Name({{if .ParametersType}}params{{end}}),
+        {{ if .IsPublisher}}publisher: publisher,{{end}}
+        {{ if .IsSubscriber}}subscriber: subscriber,{{end}}
     }
     res.topic = res.name.String()
     return &res
 }
 
-{{template "proto/channel/openFunction" .}}
-
-{{.Type| godef}}
+{{- if gondefined .Type}}
+{{ .Type | godef }}
 
 {{template "proto/channel/commonMethods" .}}
 
@@ -35,7 +30,7 @@ func (c {{.Type| gousage}}) Topic() string {
         envelope.ResetPayload()
         {{- if .PublisherMessageTypePromise }}
             {{- /*Message is set for Channel in spec*/ -}}
-            if err := message.Marshal{{.ProtoName | capitalize}}Envelope(envelope); err != nil {
+            if err := message.Marshal{{.ProtoName | capitalize | goid}}Envelope(envelope); err != nil {
                 return err
             }
         {{- else}}
@@ -47,10 +42,17 @@ func (c {{.Type| gousage}}) Topic() string {
         {{- end}}
         envelope.SetTopic(c.topic)
         {{- if and .PublisherMessageTypePromise (.PublisherMessageTypePromise.T.HasProtoBindings .ProtoName)}}
-            envelope.SetBindings({{.PublisherMessageTypePromise.T.BindingsType | gousage }}){}.{{.ProtoName | capitalize}}()
+            envelope.SetBindings({{.PublisherMessageTypePromise.T.BindingsType | gousage }}){}.{{.ProtoName | capitalize | goid}}()
         {{- end}}
         return nil
     }
 {{- end}}
 
 {{if .IsSubscriber}}{{template "proto/channel/subscribeMethods" .}}{{end}}
+
+type {{ .Type | goid }}Server interface {
+    Open{{.Type | goid}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType| gousage}}{{end}}) (*{{.Type| gousage}}, error)
+    {{if .IsPublisher}}Producer() {{qualrun .ProtoName "Producer"}}{{end}}
+    {{if .IsSubscriber}}Consumer() {{qualrun .ProtoName "Consumer"}}{{end}}
+}
+{{- end}}

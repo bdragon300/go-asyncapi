@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"slices"
 	"strings"
 	"time"
 
@@ -123,6 +124,7 @@ func generate(cmd *GenerateCmd) error {
 		return generateImplementation(cmd)
 	}
 
+	asyncapi.ProtocolBuilders = protocolBuilders()
 	isPub, isSub, pubSubOpts := getPubSubVariant(cmd)
 	if !isSub && !isPub {
 		return fmt.Errorf("%w: no publisher or subscriber set to generate", ErrWrongCliArgs)
@@ -197,7 +199,6 @@ func generateImplementation(cmd *GenerateCmd) error {
 
 func generationCompile(specURL *specurl.URL, compileOpts common.CompileOpts, resolver compiler.SpecFileResolver) (map[string]*compiler.Module, error) {
 	logger := types.NewLogger("Compilation 🔨")
-	asyncapi.ProtocolBuilders = protocolBuilders()
 	compileQueue := []*specurl.URL{specURL}      // Queue of specIDs to compile
 	modules := make(map[string]*compiler.Module) // Compilers by spec id
 	for len(compileQueue) > 0 {
@@ -266,10 +267,7 @@ func generationLinking(objSources map[string]linker.ObjectSource) error {
 func generationWriteImplementations(selectedImpls map[string]string, protocols []string, implDir string) error {
 	logger := types.NewLogger("Writing 📝")
 	logger.Info("Writing implementations")
-	implManifest, err := getImplementationsManifest()
-	if err != nil {
-		panic(err.Error())
-	}
+	implManifest := lo.Must(getImplementationsManifest())
 
 	var totalBytes int
 	var writtenProtocols []string
@@ -444,10 +442,17 @@ func getRenderOpts(opts generatePubSubArgs, targetDir string) (common.RenderOpts
 				defaultPackage,
 			)
 			templateName, _ := lo.Coalesce(item.Template,defaultTemplate)
+			protocols := item.Protocols
+			if len(protocols) == 0 {
+				protocols = lo.Keys(asyncapi.ProtocolBuilders)
+				slices.Sort(protocols)
+			}
 			sel := common.RenderSelectionConfig{
 				Template:     templateName,
 				File:         item.File,
 				Package:      pkg,
+				Protocols: protocols,
+				IgnoreCommon: item.IgnoreCommon,  // TODO: rename
 				TemplateArgs: item.TemplateArgs,
 				ObjectKindRe: item.ObjectKindRe,
 				ModuleURLRe:  item.ModuleURLRe,
@@ -465,7 +470,7 @@ func getRenderOpts(opts generatePubSubArgs, targetDir string) (common.RenderOpts
 			return res, fmt.Errorf("getting project module from ./go.mod (use -M arg to override): %w", err)
 		}
 		// Clean path and remove empty, current and parent directories, leaving only names
-		// This is not a best solution, however, it should work for most cases. Moreover, user can always override it.
+		// This is not the best solution, however, it should work for most cases. Moreover, user can always override it.
 		parts := lo.Filter(strings.Split(path.Clean(targetDir), string(os.PathSeparator)), func(s string, _ int) bool {
 			return !lo.Contains([]string{"", ".", ".."}, s)
 		})

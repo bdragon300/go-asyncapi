@@ -16,6 +16,10 @@ func (p *GoPointer) Selectable() bool {
 	return p.Type.Selectable()
 }
 
+func (p *GoPointer) Visible() bool {
+	return p.Type.Visible()
+}
+
 func (p *GoPointer) GoTemplate() string {
 	return "lang/gopointer"
 }
@@ -25,7 +29,7 @@ func (p *GoPointer) String() string {
 }
 
 func (p *GoPointer) GetOriginalName() string {
-	return ""
+	return p.Type.GetOriginalName()
 }
 
 func (p *GoPointer) UnwrapGolangType() (common.GolangType, bool) {
@@ -37,12 +41,4 @@ func (p *GoPointer) UnwrapGolangType() (common.GolangType, bool) {
 
 func (p *GoPointer) IsPointer() bool {
 	return true
-}
-
-func (p *GoPointer) DefinitionInfo() (*common.GolangTypeDefinitionInfo, error) {
-	return p.Type.DefinitionInfo()
-}
-
-func (p *GoPointer) SetDefinitionInfo(info *common.GolangTypeDefinitionInfo) {
-	p.Type.SetDefinitionInfo(info)
 }

@@ -18,13 +18,14 @@ import (
 	"github.com/go-sprout/sprout/registry/strings"
 	"github.com/go-sprout/sprout/registry/time"
 	"github.com/go-sprout/sprout/registry/uniqueid"
+	"github.com/samber/lo"
 )
 
 var sproutFunctions sprout.FunctionMap
 
 func init() {
 	handler := sprout.New()
-	err := handler.AddRegistries(
+	lo.Must0(handler.AddRegistries(
 		checksum.NewRegistry(),
 		conversion.NewRegistry(),
 		encoding.NewRegistry(),
@@ -41,9 +42,6 @@ func init() {
 		strings.NewRegistry(),
 		time.NewRegistry(),
 		uniqueid.NewRegistry(),
-	)
-	if err != nil {
-		panic(err)
-	}
+	))
 	sproutFunctions = handler.Build()
 }

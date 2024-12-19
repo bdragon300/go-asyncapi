@@ -5,7 +5,7 @@
     type {{ . | goid }} struct {
         {{- range .Fields }}
             {{- if .Description }}
-                {{ print (goid .) "--" .Description | gocomment }}
+                {{ print .Name "--" .Description | gocomment }}
             {{- end }}
             {{ .Name }} {{ .Type | gousage }} {{.RenderTags}}
         {{- end }}
@@ -18,7 +18,7 @@
         {{- else }}
             {{- qualgenpkg . }}{{ . | goid }}
         {{- end }}
-    {{- else }}
+    {{- else -}}
         struct {
             {{- range .Fields }}
                 {{- if .Description }}

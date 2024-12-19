@@ -38,6 +38,10 @@ func (c *CorrelationID) Selectable() bool {
 	return false
 }
 
+func (c *CorrelationID) Visible() bool {
+	return true
+}
+
 func (c *CorrelationID) GetOriginalName() string {
 	return c.OriginalName
 }

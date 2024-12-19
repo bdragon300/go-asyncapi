@@ -6,28 +6,15 @@ import (
 	"regexp"
 )
 
-type protoObjectContainer interface {
-	ProtoObjects() []common.Renderable
-}
-
 func SelectObjects(objects []common.CompileObject, selection common.RenderSelectionConfig) []common.CompileObject {
-	var res []common.CompileObject
 	filterChain := getFiltersChain(selection)
 	// TODO: logging
 
-	for _, object := range objects {
-		r := object.Renderable
-		res = append(res, common.CompileObject{Renderable: r, ObjectURL: object.ObjectURL})
+	allObjects := lo.Map(objects, func(object common.CompileObject, _ int) common.CompileObject {
+		return common.CompileObject{Renderable: object.Renderable, ObjectURL: object.ObjectURL}
+	})
 
-		// Extract proto objects and add it to the result
-		if po, ok := r.(protoObjectContainer); ok {
-			for _, o := range po.ProtoObjects() {
-				res = append(res, common.CompileObject{Renderable: o, ObjectURL: object.ObjectURL})
-			}
-		}
-	}
-
-	return lo.Filter(res, func(object common.CompileObject, _ int) bool {
+	res := lo.Filter(allObjects, func(object common.CompileObject, _ int) bool {
 		for _, filter := range filterChain {
 			if !filter(object) {
 				return false
@@ -35,6 +22,7 @@ func SelectObjects(objects []common.CompileObject, selection common.RenderSelect
 		}
 		return true
 	})
+	return res
 }
 
 //func FindSelectionByObject(object compiler.Object, selections []common.RenderSelectionConfig) *common.RenderSelectionConfig {

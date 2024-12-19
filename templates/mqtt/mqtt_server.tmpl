@@ -1,11 +1,12 @@
 {{- localobj .Type}}
-func New{{.Type | goid}}(producer {{qualrun .ProtoName "Producer"}}, consumer {{qualrun .ProtoName "Consumer"}}) *{{.Type| gousage}} {
+func New{{.Server | goid}}(producer {{qualrun .ProtoName "Producer"}}, consumer {{qualrun .ProtoName "Consumer"}}) *{{.Type| gousage}} {
     return &{{.Type| gousage}}{
         producer: producer,
         consumer: consumer,
     }
 }
 
+{{- if gondefined .Type}}
 {{.Type| godef}}
 
 func (s {{.Type| gousage}}) Name() string {
@@ -20,16 +21,22 @@ func (s {{.Type| gousage}}) Consumer() {{qualrun .ProtoName "Consumer"}} {
     return s.consumer
 }
 
-{{- range .GetRelevantProtoChannels .ProtoName}}
-func (s {{$.Type| gousage}}) Open{{ .Type | goid }}(
-    ctx {{qual "context.Context"}},
-    {{- if .ParametersType}}params {{.ParametersType| gousage}},{{end}}
-) (ch *{{.Type| gousage}}, err error) {
-    return {{qualgenpkg .Type}}Open{{ .Type | goid }}(
-        ctx,
-        {{- if .ParametersType}}params,{{end}}
-        {{- if .IsPublisher}}s.producer,{{end}}
-        {{- if .IsSubscriber}}s.consumer,{{end}}
-    )
-}
+{{- range $ch := .GetBoundChannels}}
+    {{- with deref .}}
+        {{- with .SelectProtoObject $.ProtoName }}
+            func (s {{ $.Type | gousage }}) Open{{ $ch | goid }}(
+                ctx {{qual "context.Context"}},
+                {{- if .ParametersType}}params {{ .ParametersType | gousage }},{{end}}
+            ) (ch *{{ .Type | gousage }}, err error) {
+                return {{qualgenpkg .Type}}Open{{ $ch | goid }}(
+                    ctx,
+                    {{- if .ParametersType}}params,{{end}}
+                    {{- if .IsPublisher}}s.producer,{{end}}
+                    {{- if .IsSubscriber}}s.consumer,{{end}}
+                )
+            }
+        {{- end}}
+    {{- end}}
+{{- end}}
+
 {{- end}}

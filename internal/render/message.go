@@ -37,8 +37,18 @@ func (m *Message) Selectable() bool {
 	return !m.Dummy && !m.IsComponent // Select only the messages defined in the `channels` section`
 }
 
-func (m *Message) ProtoObjects() []common.Renderable {
-	return lo.Map(m.ProtoMessages, func(p *ProtoMessage, _ int) common.Renderable { return p })
+func (m *Message) Visible() bool {
+	return !m.Dummy
+}
+
+func (m *Message) SelectProtoObject(protocol string) common.Renderable {
+	res := lo.Filter(m.ProtoMessages, func(p *ProtoMessage, _ int) bool {
+		return p.Selectable() && p.ProtoName == protocol
+	})
+	if len(res) > 0 {
+		return res[0]
+	}
+	return nil
 }
 
 func (m *Message) GetOriginalName() string {
@@ -112,7 +122,7 @@ func (m *Message) HasProtoBindings(protoName string) bool {
 
 func (m *Message) ProtoBindingsValue(protoName string) common.Renderable {
 	res := &lang.GoValue{
-		Type:               &lang.GoSimple{OriginalName: "ServerBindings", Import: common.GetContext().RuntimeModule(protoName)},
+		Type:               &lang.GoSimple{Name: "ServerBindings", Import: common.GetContext().RuntimeModule(protoName)},
 		EmptyCurlyBrackets: true,
 	}
 	if m.BindingsPromise != nil {
@@ -334,10 +344,6 @@ func (p *ProtoMessage) Selectable() bool {
 
 func (p *ProtoMessage) String() string {
 	return "Message " + p.OriginalName
-}
-
-func (p *ProtoMessage) Kind() common.ObjectKind {
-	return common.ObjectKindProtoMessage
 }
 
 

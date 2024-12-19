@@ -1,17 +1,38 @@
 {{- if eq .Object.Kind "schema" }}
-    {{- template "schema.tmpl" .}}
+    {{- template "schema.tmpl" .Object }}
+
 {{- else if eq .Object.Kind "server"}}
-    {{- template "server.tmpl" .Object }}
-{{- else if eq .Object.Kind "protoServer"}}
-    {{- execTemplate (print .Object.ProtoName "_" "server.tmpl") .Object }}
+    {{- if not .CurrentSelection.IgnoreCommon}}
+        {{- template "server.tmpl" deref .Object }}
+    {{- end}}
+
+    {{- range .CurrentSelection.Protocols}}
+        {{- with (deref $.Object).SelectProtoObject . }}
+            {{- deref . | tmpl (print .ProtoName "_server.tmpl") }}
+        {{- end}}
+    {{- end}}
+
 {{- else if eq .Object.Kind "parameter"}}
-    {{- template "parameter.tmpl" .Object}}
+    {{- template "parameter.tmpl" deref .Object}}
+
 {{- else if eq .Object.Kind "channel"}}
-    {{- template "channel.tmpl" .Object}}
-{{- else if eq .Object.Kind "protoChannel"}}
-    {{- execTemplate (print .Object.ProtoName "_" "channel.tmpl") .Object}}
-{{- else if eq .Object.Kind "message"}}
-    {{- template "message.tmpl" .Object}}
-{{- else if eq .Object.Kind "protoMessage"}}
-    {{- execTemplate (print .Object.ProtoName "_" "message.tmpl") .Object}}
+    {{- if not .CurrentSelection.IgnoreCommon}}
+        {{- template "channel.tmpl" .Object}}
+    {{- end}}
+    {{- range .CurrentSelection.Protocols}}
+        {{- with (deref $.Object).SelectProtoObject . }}
+            {{- tmpl (print .ProtoName "_channel.tmpl") . }}
+        {{- end}}
+    {{- end}}
+
+{{- else if eq .Object.Kind "message" }}
+    {{- if not .CurrentSelection.IgnoreCommon}}
+        {{- template "message.tmpl" .Object}}
+    {{- end}}
+
+    {{- range .CurrentSelection.Protocols}}
+        {{- with (deref $.Object).SelectProtoObject . }}
+            {{- tmpl (print .ProtoName "_message.tmpl") . }}
+        {{- end}}
+    {{- end}}
 {{- end}}

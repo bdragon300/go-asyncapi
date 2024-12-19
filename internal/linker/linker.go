@@ -130,8 +130,9 @@ func resolvePromise(p common.ObjectPromise, srcSpecID string, sources map[string
 
 	srcObjects := sources[tgtSpecID].AllObjects()
 	cb := func(_ common.CompileObject, path []string) bool { return ref.MatchPointer(path) }
-	if qcb := p.FindCallback(); qcb != nil {
-		cb = qcb
+	userCallback := p.FindCallback()
+	if userCallback != nil {
+		cb = userCallback
 	}
 	found := lo.Filter(srcObjects, func(obj common.CompileObject, _ int) bool { return cb(obj, obj.ObjectURL.Pointer) })
 	if len(found) != 1 {
@@ -139,6 +140,12 @@ func resolvePromise(p common.ObjectPromise, srcSpecID string, sources map[string
 	}
 
 	obj := found[0]
+
+	// If we set a callback, let it decide which objects should get to promise, don't do recursive resolving
+	if userCallback != nil {
+		return obj.Renderable, true
+	}
+
 	switch v := obj.Renderable.(type) {
 	case common.ObjectPromise:
 		if !v.Assigned() {
@@ -158,13 +165,19 @@ func resolvePromise(p common.ObjectPromise, srcSpecID string, sources map[string
 func resolveListPromise(p common.ObjectListPromise, srcSpecID string, sources map[string]ObjectSource) ([]common.Renderable, bool) {
 	// Exclude links from selection in order to avoid duplicates in list
 	cb := func(obj common.CompileObject, _ []string) bool { return !isPromise(obj) }
-	if qcb := p.FindCallback(); qcb != nil {
-		cb = qcb
+	userCallback := p.FindCallback()
+	if userCallback != nil {
+		cb = userCallback
 	}
 	srcObjects := sources[srcSpecID].AllObjects()
 	found := lo.Filter(srcObjects, func(obj common.CompileObject, _ int) bool {
 		return cb(obj, obj.ObjectURL.Pointer)
 	})
+
+	// If we set a callback, let it decide which objects should get to promise, don't do recursive resolving
+	if userCallback != nil {
+		return lo.Map(found, func(item common.CompileObject, _ int) common.Renderable { return item.Renderable }), true
+	}
 
 	var results []common.Renderable
 	for _, obj := range found {

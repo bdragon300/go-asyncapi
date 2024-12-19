@@ -87,7 +87,7 @@ func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]str
 	ignore := o.XIgnore //|| (isComponent && !ctx.CompileOpts.ModelOpts.IsAllowedName(objectKey))
 	if ignore {
 		ctx.Logger.Debug("Object denoted to be ignored")
-		return &lang.GoSimple{OriginalName: "any", IsInterface: true}, nil
+		return &lang.GoSimple{Name: "any", IsInterface: true}, nil
 	}
 	if o.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", o.Ref)
@@ -186,26 +186,27 @@ func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.Sch
 		}
 	case "null", "":
 		ctx.Logger.Trace("Object is any")
-		golangType = &lang.GoSimple{OriginalName: "any", IsInterface: true}
+		golangType = &lang.GoSimple{Name: "any", IsInterface: true}
 	case "boolean":
 		ctx.Logger.Trace("Object is bool")
-		aliasedType = &lang.GoSimple{OriginalName: "bool"}
+		aliasedType = &lang.GoSimple{Name: "bool"}
 	case "integer":
 		// TODO: "format:"
 		ctx.Logger.Trace("Object is int")
-		aliasedType = &lang.GoSimple{OriginalName: "int"}
+		aliasedType = &lang.GoSimple{Name: "int"}
 	case "number":
 		// TODO: "format:"
 		ctx.Logger.Trace("Object is float64")
-		aliasedType = &lang.GoSimple{OriginalName: "float64"}
+		aliasedType = &lang.GoSimple{Name: "float64"}
 	case "string":
 		ctx.Logger.Trace("Object is string")
-		aliasedType = &lang.GoSimple{OriginalName: "string"}
+		aliasedType = &lang.GoSimple{Name: "string"}
 	default:
 		return nil, types.CompileError{Err: fmt.Errorf("unknown jsonschema type %q", typeName), Path: ctx.PathStackRef()}
 	}
 
 	if aliasedType != nil {
+		_, isComponent := flags[common.SchemaTagComponent]
 		_, hasDefinition := flags[common.SchemaTagDefinition]
 		golangType = &lang.GoTypeAlias{
 			BaseType: lang.BaseType{
@@ -214,6 +215,7 @@ func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.Sch
 				HasDefinition: hasDefinition,
 			},
 			AliasedType: aliasedType,
+			ObjectKind: lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
 		}
 	}
 
@@ -320,7 +322,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 						Description:   o.AdditionalProperties.V0.Description,
 						HasDefinition: false,
 					},
-					KeyType:   &lang.GoSimple{OriginalName: "string"},
+					KeyType:   &lang.GoSimple{Name: "string"},
 					ValueType: prm,
 				},
 				ExtraTags:      xTags,
@@ -337,7 +339,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 						Description:   "",
 						HasDefinition: false,
 					},
-					AliasedType: &lang.GoSimple{OriginalName: "any", IsInterface: true},
+					AliasedType: &lang.GoSimple{Name: "any", IsInterface: true},
 				}
 				f := lang.GoStructField{
 					Name: "AdditionalProperties",
@@ -347,7 +349,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 							Description:   "",
 							HasDefinition: false,
 						},
-						KeyType:   &lang.GoSimple{OriginalName: "string"},
+						KeyType:   &lang.GoSimple{Name: "string"},
 						ValueType: &valTyp,
 					},
 					ContentTypesFunc: contentTypesFunc,
@@ -387,7 +389,7 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 				Description:   "",
 				HasDefinition: false,
 			},
-			AliasedType: &lang.GoSimple{OriginalName: "any", IsInterface: true},
+			AliasedType: &lang.GoSimple{Name: "any", IsInterface: true},
 		}
 		res.ItemsType = &lang.GoMap{
 			BaseType: lang.BaseType{
@@ -395,7 +397,7 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 				Description:   "",
 				HasDefinition: false,
 			},
-			KeyType:   &lang.GoSimple{OriginalName: "string"},
+			KeyType:   &lang.GoSimple{Name: "string"},
 			ValueType: &valTyp,
 		}
 	}

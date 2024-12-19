@@ -26,6 +26,10 @@ func (gv *GoValue) Selectable() bool {
 	return false
 }
 
+func (gv *GoValue) Visible() bool {
+	return true
+}
+
 func (gv *GoValue) GoTemplate() string {
 	return "lang/govalue"
 }
@@ -33,12 +37,6 @@ func (gv *GoValue) GoTemplate() string {
 func (gv *GoValue) IsPointer() bool {
 	return gv.Type != nil && gv.Type.IsPointer()
 }
-
-func (gv *GoValue) DefinitionInfo() (*common.GolangTypeDefinitionInfo, error) {
-	return nil, nil
-}
-
-func (gv *GoValue) SetDefinitionInfo(_ *common.GolangTypeDefinitionInfo) {}
 
 func (gv *GoValue) GetOriginalName() string {
 	return ""
@@ -99,9 +97,9 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 			res.Type = &GoArray{
 				BaseType: BaseType{OriginalName: rtyp.Name(), Import: rtyp.PkgPath()},
 				ItemsType: &GoSimple{
-					OriginalName: elemType.Name(),
-					IsInterface:  elemType.Kind() == reflect.Interface,
-					Import:       elemType.PkgPath(),
+					Name:        elemType.Name(),
+					IsInterface: elemType.Kind() == reflect.Interface,
+					Import:      elemType.PkgPath(),
 				},
 				Size: elemSize,
 			}
@@ -119,14 +117,14 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 			res.Type = &GoMap{
 				BaseType: BaseType{OriginalName: rtyp.Name(), Import: rtyp.PkgPath()},
 				KeyType: &GoSimple{
-					OriginalName: keyType.Name(),
-					IsInterface:  keyType.Kind() == reflect.Interface,
-					Import:       keyType.PkgPath(),
+					Name:        keyType.Name(),
+					IsInterface: keyType.Kind() == reflect.Interface,
+					Import:      keyType.PkgPath(),
 				},
 				ValueType: &GoSimple{
-					OriginalName: elemType.Name(),
-					IsInterface:  elemType.Kind() == reflect.Interface,
-					Import:       elemType.PkgPath(),
+					Name:        elemType.Name(),
+					IsInterface: elemType.Kind() == reflect.Interface,
+					Import:      elemType.PkgPath(),
 				},
 			}
 		}

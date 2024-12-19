@@ -19,6 +19,10 @@ func (p *Parameter) Selectable() bool {
 	return !p.Dummy && p.Type.Selectable()
 }
 
+func (p *Parameter) Visible() bool {
+	return !p.Dummy && p.Type.Visible()
+}
+
 func (p *Parameter) GetOriginalName() string {
 	return p.OriginalName
 }

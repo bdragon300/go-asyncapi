@@ -52,18 +52,15 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 	}
 	if c.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", c.Ref)
-		// Always draw the promises that are located in the `channels` section
+		// Make a promise selectable if it defined in `channels` section
 		prm := lang.NewUserPromise(c.Ref, channelKey, lo.Ternary(isComponent, nil, lo.ToPtr(true)))
 		ctx.PutPromise(prm)
 		return prm, nil
 	}
 
 	chName, _ := lo.Coalesce(c.XGoName, channelKey)
-	// Render only the channels defined directly in `channels` document section, not in `components`
 	res := &render.Channel{
 		OriginalName:   chName,
-		TypeNamePrefix: ctx.GenerateObjName(chName, ""),
-		SpecKey:        channelKey,
 		IsComponent:    isComponent,
 	}
 
@@ -102,7 +99,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 			if !ok {
 				return false
 			}
-			return lo.Contains(*c.Servers, srv.OriginalName)
+			return lo.Contains(*c.Servers, srv.OriginalName)  // FIXME: use also alias name
 		})
 		res.ServersPromise = prm
 		ctx.PutListPromise(prm)

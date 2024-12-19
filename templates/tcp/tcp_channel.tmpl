@@ -1,14 +1,9 @@
 {{- localobj .Type}}
-type {{ .Type | goid }}Server interface {
-    Open{{.Type | goid}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType| gousage}}{{end}}) (*{{.Type| gousage}}, error)
-    {{- if .IsPublisher}}Producer() {{qualrun .ProtoName "Producer"}}{{end}}
-    {{- if .IsSubscriber}}Consumer() {{qualrun .ProtoName "Consumer"}}{{end}}
-}
-
 {{template "proto/channel/bareNewFunction" .}}
 
 {{template "proto/channel/openFunction" .}}
 
+{{- if gondefined .Type}}
 {{.Type| godef}}
 
 {{template "proto/channel/commonMethods" .}}
@@ -16,3 +11,11 @@ type {{ .Type | goid }}Server interface {
 {{if .IsPublisher}}{{template "proto/channel/barePublishMethods" .}}{{end}}
 
 {{if .IsSubscriber}}{{template "proto/channel/subscribeMethods" .}}{{end}}
+
+type {{ .Type | goid }}Server interface {
+    Open{{.Type | goid}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType | gousage}}{{end}}) (*{{.Type| gousage}}, error)
+    {{if .IsPublisher}}Producer() {{qualrun .ProtoName "Producer"}}{{end}}
+    {{if .IsSubscriber}}Consumer() {{qualrun .ProtoName "Consumer"}}{{end}}
+}
+
+{{- end}}

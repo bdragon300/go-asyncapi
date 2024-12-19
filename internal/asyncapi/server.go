@@ -48,18 +48,15 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	}
 	if s.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", s.Ref)
-		// Always draw the promises that are located in the `servers` section
+		// Make a promise selectable if it defined in `servers` section
 		prm := lang.NewUserPromise(s.Ref, serverKey, lo.Ternary(isComponent, nil, lo.ToPtr(true)))
 		ctx.PutPromise(prm)
 		return prm, nil
 	}
 
 	srvName, _ := lo.Coalesce(s.XGoName, serverKey)
-	// Render only the servers defined directly in `servers` document section, not in `components`
 	res := render.Server{
 		OriginalName:    srvName,
-		SpecKey:         serverKey,
-		TypeNamePrefix:  ctx.GenerateObjName(srvName, ""),
 		URL:             s.URL,
 		Protocol:        s.Protocol,
 		ProtocolVersion: s.ProtocolVersion,
@@ -67,12 +64,11 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	}
 
 	// Channels which are connected to this server
-	prm := lang.NewListCbPromise[*render.Channel](func(item common.CompileObject, path []string) bool {
-		_, ok := item.Renderable.(*render.Channel)
-		if !ok {
+	prm := lang.NewListCbPromise[common.Renderable](func(item common.CompileObject, path []string) bool {
+		if len(path) < 2 || len(path) >= 2 && path[0] != "channels" {
 			return false
 		}
-		return len(path) >= 2 && path[0] == "channels"
+		return item.Kind() == common.ObjectKindChannel
 	})
 	ctx.PutListPromise(prm)
 	res.AllChannelsPromise = prm

@@ -9,6 +9,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/selector"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
 	"github.com/bdragon300/go-asyncapi/internal/types"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 	"go/format"
 	"os"
@@ -55,7 +56,9 @@ type renderSource interface {
 }
 
 type fileRenderState struct {
-	fileHeader *context.RenderFileHeader
+	imports     *context.ImportsList
+	packageName string
+	fileName string
 	buf        *bytes.Buffer
 }
 
@@ -66,48 +69,58 @@ type renderQueueItem struct {
 }
 
 func RenderFiles(source renderSource, opts common.RenderOpts) (map[string]*bytes.Buffer, error) {
-	files := make(map[string]fileRenderState)
+	filesState := make(map[string]fileRenderState)
+	namespace := &context.RenderNamespace{}
 	// TODO: logging
 	queue := buildRenderQueue(source, opts.Selections)
-	var deferred []renderQueueItem
+	var postponed []renderQueueItem
 
 	for len(queue) > 0 {
 		for _, item := range queue {
 			fileName, err := renderInlineTemplate(item, opts, item.selection.File)
 			switch {
-			case errors.Is(err, common.ErrDefinitionLocationUnknown):
-				// Template can't be rendered right now due to unknown object definition, defer it
-				deferred = append(deferred, item)
+			case errors.Is(err, context.ErrDefinitionLocationUnknown):
+				// Template can't be rendered right now due to unknown object definition, postpone it
+				postponed = append(postponed, item)
 				continue
 			case err != nil:
 				return nil, err
 			}
+			fileName = utils.NormalizePath(fileName)
 
-			if _, ok := files[fileName]; !ok {
-				files[fileName] = fileRenderState{fileHeader: context.NewRenderFileHeader(item.selection.Package), buf: &bytes.Buffer{}}
+			if _, ok := filesState[fileName]; !ok {
+				filesState[fileName] = fileRenderState{
+					imports:     &context.ImportsList{},
+					buf:         &bytes.Buffer{},
+					packageName: item.selection.Package,
+					fileName: fileName,
+				}
 			}
+			tmpNamespace := namespace.Clone()
 
-			err = renderObject(item, opts, item.selection.Template, files[fileName])
+			err = renderObject(item, opts, item.selection.Template, filesState[fileName], tmpNamespace)
 			switch {
-			case errors.Is(err, common.ErrDefinitionLocationUnknown):
-				// Template can't be rendered right now due to unknown object definition, defer it
+			case errors.Is(err, context.ErrDefinitionLocationUnknown):
+				// Some objects needed by template code have not been defined and therefore, not in namespace yet.
+				// Postpone this run to the end in hope that next runs will define these objects.
 				item.err = err
-				deferred = append(deferred, item)
+				postponed = append(postponed, item)
 				continue
 			case err != nil:
 				return nil, err
 			}
+			namespace = tmpNamespace  // Update namespace
 		}
-		if len(deferred) == len(queue) {
+		if len(postponed) == len(queue) {
 			return nil, fmt.Errorf(
-				"missed object definitions, please ensure they are rendered by .D method: %w",
-				errors.Join(lo.Map(deferred, func(item renderQueueItem, _ int) error { return item.err })...),
+				"missed object definitions, please ensure they are rendered by godef: %w",
+				errors.Join(lo.Map(postponed, func(item renderQueueItem, _ int) error { return item.err })...),
 			)
 		}
-		queue, deferred = deferred, nil
+		queue, postponed = postponed, nil
 	}
 
-	res, err := renderFiles(files, opts)
+	res, err := renderFiles(filesState, opts)
 	if err != nil {
 		return res, err
 	}
@@ -125,30 +138,17 @@ func buildRenderQueue(source renderSource, selections []common.RenderSelectionCo
 	return
 }
 
-type renderablePromise interface {
-	RenderableT() common.Renderable
-}
-
-func unwrapPromise(obj common.CompileObject) common.Renderable {
-	// Unwrap promise(s) until we get the actual object
-	r := obj.Renderable
-	v, ok := r.(renderablePromise)
-	for ok {
-		r = v.RenderableT()
-		v, ok = r.(renderablePromise)
-	}
-	return r
-}
-
 func renderInlineTemplate(item renderQueueItem, opts common.RenderOpts, text string) (string, error) {
 	ctx := &context.RenderContextImpl{
 		RenderOpts:             opts,
 		CurrentSelectionConfig: item.selection,
-		FileHeader:             context.NewRenderFileHeader(""),
-		Object:        item.object,
+		PackageName:            item.selection.Package,
+		Imports:                &context.ImportsList{},
+		Object:                 item.object,
 	}
 	common.SetContext(ctx)
-	tplCtx := tmpl.NewTemplateContext(ctx, unwrapPromise(item.object), ctx.FileHeader)
+
+	tplCtx := tmpl.NewTemplateContext(ctx, item.object.Renderable, ctx.Imports)
 
 	var res bytes.Buffer
 	tpl, err := template.New("").Funcs(tmpl.GetTemplateFunctions()).Parse(text)
@@ -161,26 +161,32 @@ func renderInlineTemplate(item renderQueueItem, opts common.RenderOpts, text str
 	return res.String(), nil
 }
 
-func renderObject(item renderQueueItem, opts common.RenderOpts, templateName string, renderState fileRenderState) error {
+func renderObject(item renderQueueItem, opts common.RenderOpts, templateName string, fileState fileRenderState, ns *context.RenderNamespace) error {
 	var tpl *template.Template
 
 	ctx := &context.RenderContextImpl{
-		RenderOpts: opts,
+		RenderOpts:             opts,
 		CurrentSelectionConfig: item.selection,
-		FileHeader: renderState.fileHeader,
-		Object: item.object,
+		PackageName:            fileState.packageName,
+		PackageNamespace:       ns,
+		Imports:                fileState.imports,
+		Object:                 item.object,
 	}
 	common.SetContext(ctx)
-	tplCtx := tmpl.NewTemplateContext(ctx, unwrapPromise(item.object), renderState.fileHeader)
+
+	tplCtx := tmpl.NewTemplateContext(ctx, item.object.Renderable, fileState.imports)
 
 	// Execute the main template first to accumulate imports and other data, that will be rendered in preamble
 	if tpl = tmpl.LoadTemplate(templateName); tpl == nil {
 		return fmt.Errorf("template %q not found", templateName)
 	}
-	if err := tpl.Execute(renderState.buf, tplCtx); err != nil {
+
+	var res bytes.Buffer
+	if err := tpl.Execute(&res, tplCtx); err != nil {
 		return err
 	}
-	renderState.buf.WriteRune('\n')  // Separate writes following each other (if any)
+	fileState.buf.Write(res.Bytes())
+	fileState.buf.WriteRune('\n') // Separate writes following each other (if any)
 
 	return nil
 }
@@ -208,9 +214,13 @@ func renderFiles(files map[string]fileRenderState, opts common.RenderOpts) (map[
 func renderFile(preambleTpl *template.Template, opts common.RenderOpts, renderState fileRenderState) (*bytes.Buffer, error) {
 	var res bytes.Buffer
 
-	ctx := &context.RenderContextImpl{RenderOpts: opts, FileHeader: renderState.fileHeader}
+	ctx := &context.RenderContextImpl{
+		RenderOpts:  opts,
+		PackageName: renderState.packageName,
+		Imports:     renderState.imports,
+	}
 	common.SetContext(ctx)
-	tplCtx := tmpl.NewTemplateContext(ctx, nil, renderState.fileHeader)
+	tplCtx := tmpl.NewTemplateContext(ctx, nil, renderState.imports)
 
 	if err := preambleTpl.Execute(&res, tplCtx); err != nil {
 		return nil, err
@@ -252,7 +262,7 @@ func renderFile(preambleTpl *template.Template, opts common.RenderOpts, renderSt
 //			fileName := pkgName + ".go" // All objects with the same type in one file
 //			if opts.FileScope == common.FileScopeName {
 //				// Every single object in a separate file
-//				fileName = utils.ToFileName(item.Object.ID()) + ".go"
+//				fileName = utils.NormalizePath(item.Object.ID()) + ".go"
 //			}
 //			if opts.PackageScope == common.PackageScopeType {
 //				fileName = path.Join(targetPkg, fileName)

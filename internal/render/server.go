@@ -9,8 +9,6 @@ import (
 
 type Server struct {
 	OriginalName string
-	SpecKey      string // Name as it is in the source document, without considering `x-go-name` extension
-	TypeNamePrefix string // Name of server struct
 	Dummy          bool
 	IsComponent bool // true if server is defined in `components` section
 
@@ -19,7 +17,8 @@ type Server struct {
 	ProtocolVersion string
 
 	VariablesPromises  types.OrderedMap[string, *lang.Promise[*ServerVariable]]
-	AllChannelsPromise *lang.ListPromise[*Channel]
+	// All channels defined in `channel` section this server is applied to. Can be *Channel or promise to *Channel
+	AllChannelsPromise *lang.ListPromise[common.Renderable]
 
 	BindingsType    *lang.GoStruct           // nil if bindings are not defined for server
 	BindingsPromise *lang.Promise[*Bindings] // nil if bindings are not defined for server as well
@@ -35,13 +34,52 @@ func (s *Server) Selectable() bool {
 	return !s.Dummy && !s.IsComponent // Select only the servers defined in the `channels` section`
 }
 
-func (s *Server) ProtoObjects() []common.Renderable {
-	return []common.Renderable{s.ProtoServer}
+func (s *Server) Visible() bool {
+	return !s.Dummy
+}
+
+func (s *Server) SelectProtoObject(protocol string) common.Renderable {
+	if s.ProtoServer.Selectable() && s.ProtoServer.ProtoName == protocol {
+		return s.ProtoServer
+	}
+	return nil
 }
 
 func (s *Server) GetOriginalName() string {
 	return s.OriginalName
 }
+
+func (s *Server) GetBoundChannels() []common.Renderable {
+	type renderableUnwrapper interface {
+		UnwrapRenderable() common.Renderable
+	}
+
+	currentName := common.GetContext().GetObjectName(s)
+	r := lo.Filter(s.AllChannelsPromise.T(), func(r common.Renderable, _ int) bool {
+		if !r.Visible() {
+			return false
+		}
+		if w, ok := r.(renderableUnwrapper); ok {
+			r = w.UnwrapRenderable()
+		}
+		if ch, ok := r.(*Channel); ok {
+			// Empty/omitted servers field in channel means "all servers"
+			return len(ch.SpecServerNames) == 0 || lo.Contains(ch.SpecServerNames, currentName)
+		}
+		return false
+	})
+	return r
+}
+
+//func (p *ProtoServer) GetBoundProtoChannels(protoName string) []*ProtoChannel {
+//	channels := p.GetBoundChannels()
+//	res := lo.FlatMap(channels, func(ch common.Renderable, _ int) []*ProtoChannel {
+//		return lo.Map(ch.SelectProtoObject([]string{p.ProtoName}), func(item common.Renderable, _ int) *ProtoChannel {
+//			return item.(*ProtoChannel)
+//		})
+//	})
+//	return res
+//}
 
 //func (s Server) D(ctx *common.RenderContext) []*j.Statement {
 //	var res []*j.Statement
@@ -125,24 +163,8 @@ func (s *Server) GetOriginalName() string {
 //	}
 //}
 
-//func (s Server) ID() string {
-//	return s.GetOriginalName
-//}
-//
 func (s *Server) String() string {
 	return "Server " + s.OriginalName
-}
-
-func (s *Server) GetRelevantProtoChannels(protoName string) []*ProtoChannel {
-	r := lo.FlatMap(s.AllChannelsPromise.T(), func(ch *Channel, _ int) []*ProtoChannel {
-		return lo.FilterMap(ch.ProtoObjects(), func(r common.Renderable, _ int) (*ProtoChannel, bool) {
-			pch := r.(*ProtoChannel)
-			// Empty/omitted servers field in channel means "all servers"
-			ok := len(pch.SpecServerNames) == 0 || lo.Contains(pch.SpecServerNames, s.SpecKey)
-			return pch, ok && !pch.Dummy && pch.ProtoName == protoName
-		})
-	})
-	return r
 }
 
 func (c *Server) BindingsProtocols() (res []string) {
@@ -155,7 +177,7 @@ func (c *Server) BindingsProtocols() (res []string) {
 
 func (c *Server) ProtoBindingsValue(protoName string) common.Renderable {
 	res := &lang.GoValue{
-		Type:               &lang.GoSimple{OriginalName: "ServerBindings", Import: common.GetContext().RuntimeModule(protoName)},
+		Type:               &lang.GoSimple{Name: "ServerBindings", Import: common.GetContext().RuntimeModule(protoName)},
 		EmptyCurlyBrackets: true,
 	}
 	if c.BindingsPromise != nil {
@@ -171,13 +193,13 @@ type ProtoServer struct {
 	*Server
 	Type *lang.GoStruct // Nil if server is dummy or has unsupported protocol
 
-	ProtoName string
+	ProtoName string // TODO: difference between ProtoName and Protocol? Maybe remove ProtoName?
 }
 
 func (p *ProtoServer) String() string {
 	return "ProtoServer " + p.OriginalName
 }
 
-func (p *ProtoServer) Kind() common.ObjectKind {
-	return common.ObjectKindProtoServer
+func (p *ProtoServer) Selectable() bool {
+	return !p.Dummy
 }

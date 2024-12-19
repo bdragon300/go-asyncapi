@@ -64,7 +64,7 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 				Description:   p.Description,
 				HasDefinition: true,
 			},
-			AliasedType: &lang.GoSimple{OriginalName: "string"},
+			AliasedType: &lang.GoSimple{Name: "string"},
 		}
 		res.IsStringType = true
 	}

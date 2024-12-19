@@ -1,6 +1,6 @@
 {{define "lang/goarray/definition"}}
     {{- if .Description }}
-        {{- print (goid .) "--" .Description | gocomment }}
+        {{ print (goid .) "--" .Description | gocomment }}
     {{- end }}
     type {{ . | goid }} [{{ if .Size }}{{ .Size }}{{ end }}]{{ .ItemsType | gousage }}
 {{- end}}
@@ -11,7 +11,7 @@
         {{- else }}
             {{- qualgenpkg . }}{{ . | goid }}
         {{- end }}
-    {{- else }}
+    {{- else -}}
         [{{ if .Size }}{{ .Size }}{{ end }}]{{ .ItemsType | gousage }}
     {{- end }}
 {{- end}}

@@ -2,10 +2,9 @@
 
 package {{ .PackageName }}
 
-{{- $imports := .Imports }}
-{{- if $imports }}
+{{- with .Imports }}
 import (
-{{- range $imports }}
+{{- range . }}
     {{ if .Alias }}{{ .Alias }} {{ end }}"{{ .PackagePath }}"
 {{- end }}
 )

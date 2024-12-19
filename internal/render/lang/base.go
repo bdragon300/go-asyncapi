@@ -13,7 +13,6 @@ type BaseType struct {
 	// and `field ArrayName`
 	HasDefinition bool
 	Import        string // optional external (or runtime) module to import a type from
-	definitionInfo *common.GolangTypeDefinitionInfo
 }
 
 func (b *BaseType) Kind() common.ObjectKind {
@@ -24,23 +23,20 @@ func (b *BaseType) Selectable() bool {
 	return b.HasDefinition
 }
 
+func (b *BaseType) Visible() bool {
+	return true
+}
+
 func (b *BaseType) IsPointer() bool {
 	return false
 }
 
-func (b *BaseType) DefinitionInfo() (*common.GolangTypeDefinitionInfo, error) {
-	if b.definitionInfo == nil {
-		return nil, common.ErrDefinitionLocationUnknown
-	}
-	return b.definitionInfo, nil
-}
-
-func (b *BaseType) SetDefinitionInfo(info *common.GolangTypeDefinitionInfo) {
-	b.definitionInfo = info
-}
-
 func (b *BaseType) GetOriginalName() string {
 	return b.OriginalName
+}
+
+func (b *BaseType) ObjectHasDefinition() bool {
+	return b.HasDefinition
 }
 
 type GolangTypeWrapperType interface {

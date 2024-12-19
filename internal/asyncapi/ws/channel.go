@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
+	"github.com/samber/lo"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -19,13 +20,13 @@ type channelBindings struct {
 }
 
 func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, parent *render.Channel) (*render.ProtoChannel, error) {
-	golangName := parent.TypeNamePrefix + utils.TransformInitialisms(pb.ProtoName)
+	golangName := utils.ToGolangName(parent.OriginalName + lo.Capitalize(pb.ProtoName), true)
 	chanStruct, err := asyncapi.BuildProtoChannelStruct(ctx, channel, parent, pb.ProtoName, golangName)
 	if err != nil {
 		return nil, err
 	}
 
-	chanStruct.Fields = append(chanStruct.Fields, lang.GoStructField{Name: "topic", Type: &lang.GoSimple{OriginalName: "string"}})
+	chanStruct.Fields = append(chanStruct.Fields, lang.GoStructField{Name: "topic", Type: &lang.GoSimple{Name: "string"}})
 
 	return &render.ProtoChannel{
 		Channel:         parent,
@@ -44,7 +45,7 @@ func (pb ProtoBuilder) BuildChannelBindings(
 		return
 	}
 
-	vals = lang.ConstructGoValue(bindings, []string{"Query", "Headers"}, &lang.GoSimple{OriginalName: "ChannelBindings", Import: ctx.RuntimeModule(pb.ProtoName)})
+	vals = lang.ConstructGoValue(bindings, []string{"Query", "Headers"}, &lang.GoSimple{Name: "ChannelBindings", Import: ctx.RuntimeModule(pb.ProtoName)})
 	if bindings.Query != nil {
 		v, err2 := json.Marshal(bindings.Query)
 		if err2 != nil {

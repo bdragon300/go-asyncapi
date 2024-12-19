@@ -19,6 +19,10 @@ func (s *ServerVariable) Selectable() bool {
 	return false
 }
 
+func (s *ServerVariable) Visible() bool {
+	return true
+}
+
 func (s *ServerVariable) GetOriginalName() string {
 	return s.OriginalName
 }

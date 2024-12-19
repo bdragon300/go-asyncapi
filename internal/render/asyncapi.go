@@ -21,6 +21,10 @@ func (a *AsyncAPI) Selectable() bool {
 	return true
 }
 
+func (a *AsyncAPI) Visible() bool {
+	return true
+}
+
 func (a *AsyncAPI) EffectiveDefaultContentType() string {
 	res, _ := lo.Coalesce(a.DefaultContentType, fallbackContentType)
 	return res
