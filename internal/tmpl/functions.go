@@ -160,7 +160,6 @@ func templateGoID(val any) string {
 	switch v := val.(type) {
 	case common.Renderable:
 		res = common.GetContext().GetObjectName(v)
-		return utils.ToGolangName(res, true)
 	case string:
 		res = v
 	default:

@@ -83,15 +83,21 @@ func (o Object) Compile(ctx *common.CompileContext) error {
 }
 
 func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]string, objectKey string) (common.Renderable, error) {
-	//_, isComponent := flags[common.SchemaTagComponent]
+	_, isComponent := flags[common.SchemaTagComponent]
 	ignore := o.XIgnore //|| (isComponent && !ctx.CompileOpts.ModelOpts.IsAllowedName(objectKey))
 	if ignore {
 		ctx.Logger.Debug("Object denoted to be ignored")
-		return &lang.GoSimple{Name: "any", IsInterface: true}, nil
+		return &lang.GoSimple{TypeName: "any", IsInterface: true}, nil
 	}
 	if o.Ref != "" {
+		refName := objectKey
+		// Ignore the objectKey in definitions other than `components.schemas`, generate a unique name instead
+		if !isComponent {
+			refName = ctx.GenerateObjName("", "")
+		}
+
 		ctx.Logger.Trace("Ref", "$ref", o.Ref)
-		res := lang.NewUserPromise(o.Ref, objectKey, nil)
+		res := lang.NewUserPromise(o.Ref, refName, lo.ToPtr(false))
 		ctx.PutPromise(res)
 		return res, nil
 	}
@@ -122,6 +128,8 @@ func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]str
 		ctx.Logger.Trace("Object is nullable, make it pointer")
 		golangType = &lang.GoPointer{Type: golangType}
 	}
+	n := golangType.Name()
+	_=n
 	return golangType, nil
 }
 
@@ -186,21 +194,21 @@ func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.Sch
 		}
 	case "null", "":
 		ctx.Logger.Trace("Object is any")
-		golangType = &lang.GoSimple{Name: "any", IsInterface: true}
+		golangType = &lang.GoSimple{TypeName: "any", IsInterface: true}
 	case "boolean":
 		ctx.Logger.Trace("Object is bool")
-		aliasedType = &lang.GoSimple{Name: "bool"}
+		aliasedType = &lang.GoSimple{TypeName: "bool"}
 	case "integer":
 		// TODO: "format:"
 		ctx.Logger.Trace("Object is int")
-		aliasedType = &lang.GoSimple{Name: "int"}
+		aliasedType = &lang.GoSimple{TypeName: "int"}
 	case "number":
 		// TODO: "format:"
 		ctx.Logger.Trace("Object is float64")
-		aliasedType = &lang.GoSimple{Name: "float64"}
+		aliasedType = &lang.GoSimple{TypeName: "float64"}
 	case "string":
 		ctx.Logger.Trace("Object is string")
-		aliasedType = &lang.GoSimple{Name: "string"}
+		aliasedType = &lang.GoSimple{TypeName: "string"}
 	default:
 		return nil, types.CompileError{Err: fmt.Errorf("unknown jsonschema type %q", typeName), Path: ctx.PathStackRef()}
 	}
@@ -213,9 +221,9 @@ func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.Sch
 				OriginalName:  ctx.GenerateObjName(o.Title, ""),
 				Description:   o.Description,
 				HasDefinition: hasDefinition,
+				ObjectKind: lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
 			},
 			AliasedType: aliasedType,
-			ObjectKind: lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
 		}
 	}
 
@@ -246,8 +254,8 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 			OriginalName:  ctx.GenerateObjName(objName, ""),
 			Description:   o.Description,
 			HasDefinition: hasDefinition,
+			ObjectKind: lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
 		},
-		ObjectKind: lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
 	}
 	// TODO: cache the object name in case any sub-schemas recursively reference it
 
@@ -322,7 +330,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 						Description:   o.AdditionalProperties.V0.Description,
 						HasDefinition: false,
 					},
-					KeyType:   &lang.GoSimple{Name: "string"},
+					KeyType:   &lang.GoSimple{TypeName: "string"},
 					ValueType: prm,
 				},
 				ExtraTags:      xTags,
@@ -339,7 +347,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 						Description:   "",
 						HasDefinition: false,
 					},
-					AliasedType: &lang.GoSimple{Name: "any", IsInterface: true},
+					AliasedType: &lang.GoSimple{TypeName: "any", IsInterface: true},
 				}
 				f := lang.GoStructField{
 					Name: "AdditionalProperties",
@@ -349,7 +357,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 							Description:   "",
 							HasDefinition: false,
 						},
-						KeyType:   &lang.GoSimple{Name: "string"},
+						KeyType:   &lang.GoSimple{TypeName: "string"},
 						ValueType: &valTyp,
 					},
 					ContentTypesFunc: contentTypesFunc,
@@ -364,12 +372,14 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 
 func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.SchemaTag]string) (*lang.GoArray, error) {
 	_, hasDefinition := flags[common.SchemaTagDefinition]
+	_, isComponent := flags[common.SchemaTagComponent]
 	objName, _ := lo.Coalesce(o.XGoName, o.Title)
 	res := lang.GoArray{
 		BaseType: lang.BaseType{
 			OriginalName:  ctx.GenerateObjName(objName, ""),
 			Description:   o.Description,
 			HasDefinition: hasDefinition,
+			ObjectKind: lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
 		},
 		ItemsType: nil,
 	}
@@ -389,7 +399,7 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 				Description:   "",
 				HasDefinition: false,
 			},
-			AliasedType: &lang.GoSimple{Name: "any", IsInterface: true},
+			AliasedType: &lang.GoSimple{TypeName: "any", IsInterface: true},
 		}
 		res.ItemsType = &lang.GoMap{
 			BaseType: lang.BaseType{
@@ -397,7 +407,7 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 				Description:   "",
 				HasDefinition: false,
 			},
-			KeyType:   &lang.GoSimple{Name: "string"},
+			KeyType:   &lang.GoSimple{TypeName: "string"},
 			ValueType: &valTyp,
 		}
 	}
@@ -415,8 +425,8 @@ func (o Object) buildUnionStruct(ctx *common.CompileContext, flags map[common.Sc
 				OriginalName:  ctx.GenerateObjName(objName, ""),
 				Description:   o.Description,
 				HasDefinition: hasDefinition,
+				ObjectKind: lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
 			},
-			ObjectKind: lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
 		},
 	}
 

@@ -2,6 +2,7 @@ package render
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
 )
 
 type Parameter struct {
@@ -23,8 +24,8 @@ func (p *Parameter) Visible() bool {
 	return !p.Dummy && p.Type.Visible()
 }
 
-func (p *Parameter) GetOriginalName() string {
-	return p.OriginalName
+func (p *Parameter) Name() string {
+	return utils.CapitalizeUnchanged(p.OriginalName)
 }
 
 //func (p Parameter) D(ctx *common.RenderContext) []*j.Statement {

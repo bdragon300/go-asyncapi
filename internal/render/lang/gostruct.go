@@ -15,12 +15,6 @@ import (
 type GoStruct struct {
 	BaseType
 	Fields []GoStructField
-	// Typically it's ObjectKindOther or ObjectKindSchema
-	ObjectKind common.ObjectKind
-}
-
-func (s *GoStruct) Kind() common.ObjectKind {
-	return s.ObjectKind
 }
 
 func (s *GoStruct) GoTemplate() string {

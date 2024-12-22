@@ -23,7 +23,7 @@ func (s *ServerVariable) Visible() bool {
 	return true
 }
 
-func (s *ServerVariable) GetOriginalName() string {
+func (s *ServerVariable) Name() string {
 	return s.OriginalName
 }
 

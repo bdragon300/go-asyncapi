@@ -28,8 +28,8 @@ func (p *GoPointer) String() string {
 	return "GoPointer -> " + p.Type.String()
 }
 
-func (p *GoPointer) GetOriginalName() string {
-	return p.Type.GetOriginalName()
+func (p *GoPointer) Name() string {
+	return p.Type.Name()
 }
 
 func (p *GoPointer) UnwrapGolangType() (common.GolangType, bool) {

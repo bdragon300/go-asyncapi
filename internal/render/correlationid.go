@@ -42,8 +42,8 @@ func (c *CorrelationID) Visible() bool {
 	return true
 }
 
-func (c *CorrelationID) GetOriginalName() string {
-	return c.OriginalName
+func (c *CorrelationID) Name() string {
+	return utils.CapitalizeUnchanged(c.OriginalName)
 }
 
 //func (c CorrelationID) D(_ *common.RenderContext) []*j.Statement {
@@ -340,7 +340,7 @@ func (c *CorrelationID) renderValueExtractionCode(
 			if pathIdx >= len(path)-1 { // Primitive types should get addressed by the last path item
 				err = fmt.Errorf(
 					"type %q cannot be resolved further, path: /%s",
-					typ.GetOriginalName(),  // TODO: check if this is correct
+					typ.Name(), // TODO: check if this is correct
 					strings.Join(path[:pathIdx], "/"),
 				)
 				return
@@ -366,7 +366,7 @@ func (c *CorrelationID) renderValueExtractionCode(
 			//ctx.Logger.Trace("Unknown type", "path", path[:pathIdx], "name", typ.String(), "type", fmt.Sprintf("%T", typ))
 			err = fmt.Errorf(
 				"type %s is not addressable, path: /%s",
-				typ.GetOriginalName(),  // TODO: check if this is correct
+				typ.Name(), // TODO: check if this is correct
 				strings.Join(path[:pathIdx], "/"),
 			)
 			return

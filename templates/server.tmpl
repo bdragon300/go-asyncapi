@@ -6,18 +6,20 @@ const {{$ | goid}}ProtocolVersion = {{.ProtocolVersion | golit}}
 
 func {{$ | goid}}URL(
 {{- range .VariablesPromises.Entries}}
-    {{- .Key | goid}} string,
+    {{- .Value.T | goid}} string,
 {{- end }}) {{qualrun "ParamString"}} {
     {{- if gt .VariablesPromises.Len 0}}
         {{- range .VariablesPromises.Entries}}
             {{- if .Value.T.Default}}
-                if {{.Key | goid}} == "" {
-                    {{.Key | goid}} = "{{.Value.T.Default}}"
+                if {{.Value.T | goid}} == "" {
+                    {{.Value.T | goid}} = {{.Value.T.Default | golit}}
                 }
             {{- end}}
         {{- end}}
         paramMap := map[string]string{
-            {{- range .VariablesPromises.Entries}}{{.Key | golit}}: {{.Value.T | goid}},{{end}}
+            {{- range .VariablesPromises.Entries}}
+                {{.Key | golit}}: {{.Value.T | goid}},
+            {{- end}}
         }
         return {{qualrun "ParamString"}}{
             Expr: {{.URL | golit}},

@@ -70,7 +70,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		refName := messageKey
 		pathStack := ctx.Stack.Items()
 		makeSelectable := !isComponent
-		// Check if message is used in a channel messageKey always be "message" in this case.
+		// Ignore the messageKey in definitions other than `messages`, since messageKey always be "message" there.
 		if messageKey == "message" && len(pathStack) > 3 {
 			// Use the OriginalName of message instead.
 			refName = ""
@@ -104,7 +104,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 			},
 		},
 		PayloadType:         m.getPayloadType(ctx),
-		HeadersFallbackType: &lang.GoMap{KeyType: &lang.GoSimple{Name: "string"}, ValueType: &lang.GoSimple{Name: "any", IsInterface: true}},
+		HeadersFallbackType: &lang.GoMap{KeyType: &lang.GoSimple{TypeName: "string"}, ValueType: &lang.GoSimple{TypeName: "any", IsInterface: true}},
 		ContentType: m.ContentType,
 		IsComponent: isComponent,
 	}
@@ -202,7 +202,7 @@ func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 	}
 
 	ctx.Logger.Trace("Message payload has `any` type")
-	return &lang.GoSimple{Name: "any", IsInterface: true}
+	return &lang.GoSimple{TypeName: "any", IsInterface: true}
 }
 
 type Tag struct {

@@ -21,11 +21,13 @@ var (
 )
 
 // Initialisms are the commonly used acronyms inside identifiers, that code linters want they to be in upper case
-// Got from https://github.com/golang/lint/blob/6edffad5e6160f5949cdefc81710b2706fbcd4f6/lint.go#L770
 var initialisms = []string{
+	// Got from https://github.com/golang/lint/blob/6edffad5e6160f5949cdefc81710b2706fbcd4f6/lint.go#L770
 	"Acl", "Api", "Ascii", "Cpu", "Css", "Dns", "Eof", "Guid", "Html", "Http", "Https", "Id", "Ip", "Json", "Lhs",
 	"Qps", "Ram", "Rhs", "Rpc", "Sla", "Smtp", "Sql", "Ssh", "Tcp", "Tls", "Ttl", "Udp", "Ui", "Uid", "Uuid", "Uri",
 	"Url", "Utf8", "Vm", "Xml", "Xmpp", "Xsrf", "Xss",
+	// Additional initialisms used in the generated code
+	"Amqp", "Ip", "Mqtt",
 }
 var initialismsTrie = ahocorasick.NewTrieBuilder().AddStrings(initialisms).Build()
 
@@ -100,6 +102,14 @@ func TransformInitialisms(name string) string {
 
 func JoinNonemptyStrings(sep string, s ...string) string {
 	return strings.Join(lo.Compact(s), sep)
+}
+
+// CapitalizeUnchanged is like strings.Title, but does not change the rest of the string to lowercase keeping it as is.
+func CapitalizeUnchanged(s string) string {
+	if s == "" {
+		return ""
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
 }
 
 func NormalizePath(rawPath string) string {

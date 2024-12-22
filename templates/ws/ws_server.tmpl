@@ -28,7 +28,7 @@ func (s {{.Type| gousage}}) Consumer() {{qualrun .ProtoName "Consumer"}} {
                 ctx {{qual "context.Context"}},
                 {{- if .ParametersType}}params {{ .ParametersType | gousage }},{{end}}
             ) (ch *{{ .Type | gousage }}, err error) {
-                return {{qualgenpkg .Type}}Open{{ $ch | goid }}(
+                return {{qualgenpkg .Type}}Open{{ $ch | goid }}{{$.ProtoName | capitalize | goid }}(
                     ctx,
                     {{- if .ParametersType}}params,{{end}}
                     {{- if .IsPublisher}}s.producer,{{end}}

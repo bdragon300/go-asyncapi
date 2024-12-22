@@ -34,9 +34,9 @@ type Renderable interface {  // TODO: rename
 	Visible() bool
 	// String is just a string representation of the object for logging and debugging purposes.
 	String() string
-	// GetOriginalName returns the name of the object as it was defined in the AsyncAPI document. Suitable if we render
+	// Name returns the name of the object as it was defined in the AsyncAPI document. Suitable if we render
 	// the object through a promise -- object's name should be taken from the promise, which is also is Renderable.
-	GetOriginalName() string
+	Name() string
 }
 
 type (

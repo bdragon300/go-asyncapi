@@ -37,7 +37,7 @@ func BuildProtoChannelStruct(
 			HasDefinition: true,
 		},
 		Fields: []lang.GoStructField{
-			{Name: "name", Type: &lang.GoSimple{Name: "ParamString", Import: ctx.RuntimeModule("")}},
+			{Name: "name", Type: &lang.GoSimple{TypeName: "ParamString", Import: ctx.RuntimeModule("")}},
 		},
 	}
 
@@ -48,7 +48,7 @@ func BuildProtoChannelStruct(
 			Name:        "publisher",
 			Description: source.Publish.Description,
 			Type: &lang.GoSimple{
-				Name:        "Publisher",
+				TypeName:    "Publisher",
 				Import:      ctx.RuntimeModule(protoName),
 				IsInterface: true,
 			},
@@ -62,7 +62,7 @@ func BuildProtoChannelStruct(
 			Name:        "subscriber",
 			Description: source.Subscribe.Description,
 			Type: &lang.GoSimple{
-				Name:        "Subscriber",
+				TypeName:    "Subscriber",
 				Import:      ctx.RuntimeModule(protoName),
 				IsInterface: true,
 			},
@@ -90,14 +90,14 @@ func BuildProtoServerStruct(
 	ctx.Logger.Trace("Server producer", "proto", protoName)
 	fld := lang.GoStructField{
 		Name: "producer",
-		Type: &lang.GoSimple{Name: "Producer", Import: ctx.RuntimeModule(protoName), IsInterface: true},
+		Type: &lang.GoSimple{TypeName: "Producer", Import: ctx.RuntimeModule(protoName), IsInterface: true},
 	}
 	srvStruct.Fields = append(srvStruct.Fields, fld)
 
 	ctx.Logger.Trace("Server consumer", "proto", protoName)
 	fld = lang.GoStructField{
 		Name: "consumer",
-		Type: &lang.GoSimple{Name: "Consumer", Import: ctx.RuntimeModule(protoName), IsInterface: true},
+		Type: &lang.GoSimple{TypeName: "Consumer", Import: ctx.RuntimeModule(protoName), IsInterface: true},
 	}
 	srvStruct.Fields = append(srvStruct.Fields, fld)
 

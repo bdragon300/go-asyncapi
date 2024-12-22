@@ -3,6 +3,7 @@ package render
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 )
 
@@ -42,17 +43,14 @@ func (m *Message) Visible() bool {
 }
 
 func (m *Message) SelectProtoObject(protocol string) common.Renderable {
-	res := lo.Filter(m.ProtoMessages, func(p *ProtoMessage, _ int) bool {
+	objects := lo.Filter(m.ProtoMessages, func(p *ProtoMessage, _ int) bool {
 		return p.Selectable() && p.ProtoName == protocol
 	})
-	if len(res) > 0 {
-		return res[0]
-	}
-	return nil
+	return lo.FirstOr(objects, nil)
 }
 
-func (m *Message) GetOriginalName() string {
-	return m.OriginalName
+func (m *Message) Name() string {
+	return utils.CapitalizeUnchanged(m.OriginalName)
 }
 
 func (m *Message) EffectiveContentType() string {
@@ -61,6 +59,9 @@ func (m *Message) EffectiveContentType() string {
 }
 
 func (m *Message) BindingsProtocols() (res []string) {
+	if m.BindingsType == nil {
+		return nil
+	}
 	if m.BindingsPromise != nil {
 		res = append(res, m.BindingsPromise.T().Values.Keys()...)
 		res = append(res, m.BindingsPromise.T().JSONValues.Keys()...)
@@ -111,18 +112,9 @@ func (m *Message) String() string {
 	return "Message " + m.OriginalName
 }
 
-func (m *Message) HasProtoBindings(protoName string) bool {
-	if m.BindingsPromise == nil {
-		return false
-	}
-	_, ok1 := m.BindingsPromise.T().Values.Get(protoName)
-	_, ok2 := m.BindingsPromise.T().JSONValues.Get(protoName)
-	return ok1 || ok2
-}
-
 func (m *Message) ProtoBindingsValue(protoName string) common.Renderable {
 	res := &lang.GoValue{
-		Type:               &lang.GoSimple{Name: "ServerBindings", Import: common.GetContext().RuntimeModule(protoName)},
+		Type:               &lang.GoSimple{TypeName: "ServerBindings", Import: common.GetContext().RuntimeModule(protoName)},
 		EmptyCurlyBrackets: true,
 	}
 	if m.BindingsPromise != nil {

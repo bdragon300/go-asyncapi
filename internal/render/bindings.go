@@ -4,11 +4,12 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/types"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
 )
 
 // Bindings never renders itself, only as a part of other object
 type Bindings struct {
-	OriginalName string
+	OriginalName string  // Actually it isn't used
 
 	Values types.OrderedMap[string, *lang.GoValue] // Binding values by protocol
 	// Value of jsonschema fields as json marshalled strings
@@ -35,8 +36,8 @@ func (b *Bindings) String() string {
 	return "Bindings " + b.OriginalName
 }
 
-func (b *Bindings) GetOriginalName() string {
-	return b.OriginalName
+func (b *Bindings) Name() string {
+	return utils.CapitalizeUnchanged(b.OriginalName)
 }
 
 //func (b *Bindings) RenderBindingsMethod(

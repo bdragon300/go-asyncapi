@@ -3,17 +3,17 @@
 
 {{- else if eq .Object.Kind "server"}}
     {{- if not .CurrentSelection.IgnoreCommon}}
-        {{- template "server.tmpl" deref .Object }}
+        {{- template "server.tmpl" .Object }}
     {{- end}}
 
     {{- range .CurrentSelection.Protocols}}
         {{- with (deref $.Object).SelectProtoObject . }}
-            {{- deref . | tmpl (print .ProtoName "_server.tmpl") }}
+            {{- tmpl (print .ProtoName "_server.tmpl") . }}
         {{- end}}
     {{- end}}
 
 {{- else if eq .Object.Kind "parameter"}}
-    {{- template "parameter.tmpl" deref .Object}}
+    {{- template "parameter.tmpl" .Object}}
 
 {{- else if eq .Object.Kind "channel"}}
     {{- if not .CurrentSelection.IgnoreCommon}}

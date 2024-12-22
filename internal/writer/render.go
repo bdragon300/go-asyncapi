@@ -56,10 +56,10 @@ type renderSource interface {
 }
 
 type fileRenderState struct {
-	imports     *context.ImportsList
+	imports     context.ImportsList
 	packageName string
-	fileName string
-	buf        *bytes.Buffer
+	fileName   string
+	buf        bytes.Buffer
 }
 
 type renderQueueItem struct {
@@ -70,7 +70,7 @@ type renderQueueItem struct {
 
 func RenderFiles(source renderSource, opts common.RenderOpts) (map[string]*bytes.Buffer, error) {
 	filesState := make(map[string]fileRenderState)
-	namespace := &context.RenderNamespace{}
+	ns := context.RenderNamespace{}
 	// TODO: logging
 	queue := buildRenderQueue(source, opts.Selections)
 	var postponed []renderQueueItem
@@ -89,16 +89,9 @@ func RenderFiles(source renderSource, opts common.RenderOpts) (map[string]*bytes
 			fileName = utils.NormalizePath(fileName)
 
 			if _, ok := filesState[fileName]; !ok {
-				filesState[fileName] = fileRenderState{
-					imports:     &context.ImportsList{},
-					buf:         &bytes.Buffer{},
-					packageName: item.selection.Package,
-					fileName: fileName,
-				}
+				filesState[fileName] = fileRenderState{packageName: item.selection.Package, fileName: fileName}
 			}
-			tmpNamespace := namespace.Clone()
-
-			err = renderObject(item, opts, item.selection.Template, filesState[fileName], tmpNamespace)
+			newState, newNs, err := renderObject(item, opts, item.selection.Template, filesState[fileName], ns)
 			switch {
 			case errors.Is(err, context.ErrDefinitionLocationUnknown):
 				// Some objects needed by template code have not been defined and therefore, not in namespace yet.
@@ -109,7 +102,9 @@ func RenderFiles(source renderSource, opts common.RenderOpts) (map[string]*bytes
 			case err != nil:
 				return nil, err
 			}
-			namespace = tmpNamespace  // Update namespace
+
+			ns = newNs
+			filesState[fileName] = newState
 		}
 		if len(postponed) == len(queue) {
 			return nil, fmt.Errorf(
@@ -161,34 +156,44 @@ func renderInlineTemplate(item renderQueueItem, opts common.RenderOpts, text str
 	return res.String(), nil
 }
 
-func renderObject(item renderQueueItem, opts common.RenderOpts, templateName string, fileState fileRenderState, ns *context.RenderNamespace) error {
+func renderObject(
+	item renderQueueItem,
+	opts common.RenderOpts,
+	templateName string,
+	fileState fileRenderState,
+	ns context.RenderNamespace,
+) (fileRenderState, context.RenderNamespace, error) {
 	var tpl *template.Template
+	importsCopy := fileState.imports.Clone()
+	nsCopy := ns.Clone()
 
 	ctx := &context.RenderContextImpl{
 		RenderOpts:             opts,
 		CurrentSelectionConfig: item.selection,
 		PackageName:            fileState.packageName,
-		PackageNamespace:       ns,
-		Imports:                fileState.imports,
+		PackageNamespace:       &nsCopy,
+		Imports:                &importsCopy,
 		Object:                 item.object,
 	}
 	common.SetContext(ctx)
 
-	tplCtx := tmpl.NewTemplateContext(ctx, item.object.Renderable, fileState.imports)
+	tplCtx := tmpl.NewTemplateContext(ctx, item.object.Renderable, &importsCopy)
 
 	// Execute the main template first to accumulate imports and other data, that will be rendered in preamble
 	if tpl = tmpl.LoadTemplate(templateName); tpl == nil {
-		return fmt.Errorf("template %q not found", templateName)
+		return fileState, nsCopy, fmt.Errorf("template %q not found", templateName)
 	}
 
 	var res bytes.Buffer
 	if err := tpl.Execute(&res, tplCtx); err != nil {
-		return err
+		return fileState, nsCopy, err
 	}
-	fileState.buf.Write(res.Bytes())
-	fileState.buf.WriteRune('\n') // Separate writes following each other (if any)
 
-	return nil
+	// Update the file state if rendering was successful
+	fileState.buf.Write(res.Bytes())
+	fileState.imports = importsCopy
+	fileState.buf.WriteRune('\n') // Separate writes following each other (if any)
+	return fileState, nsCopy, nil
 }
 
 func renderFiles(files map[string]fileRenderState, opts common.RenderOpts) (map[string]*bytes.Buffer, error) {
@@ -217,16 +222,16 @@ func renderFile(preambleTpl *template.Template, opts common.RenderOpts, renderSt
 	ctx := &context.RenderContextImpl{
 		RenderOpts:  opts,
 		PackageName: renderState.packageName,
-		Imports:     renderState.imports,
+		Imports:     &renderState.imports,
 	}
 	common.SetContext(ctx)
-	tplCtx := tmpl.NewTemplateContext(ctx, nil, renderState.imports)
+	tplCtx := tmpl.NewTemplateContext(ctx, nil, &renderState.imports)
 
 	if err := preambleTpl.Execute(&res, tplCtx); err != nil {
 		return nil, err
 	}
 	res.WriteRune('\n')
-	if _, err := res.ReadFrom(renderState.buf); err != nil {
+	if _, err := res.Write(renderState.buf.Bytes()); err != nil {
 		return nil, err
 	}
 

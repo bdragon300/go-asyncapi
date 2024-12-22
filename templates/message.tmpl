@@ -1,14 +1,14 @@
 {{- with $message := deref .}}
 
 {{- /*
-Message is the only kind of objects, that can be defined in `components.messages` (but remains invisible in generated code)
-in `messages` root key, and in channel.[publish|subscribe].message (where they become "visible" through them).
-However, the key channel.[publish|subscribe].message is not useful for the message object naming -- it always will
-be "message", so we use name of the referenced object instead.
+Message is a kind of objects, that can be defined both in components and root key (`components.messages` and `messages`),
+and in the same time it can be referenced from other objects (`channel.[publish|subscribe].message`).
 
-Therefore, the same message may be fed to templates for several times if it's referenced from several channels.
+This may lead to name duplicates in the generated code due to being fed an object to templates several times (the object
+itself + refs). Also, as a corner case, a message with the same name may additionally popped up from other spec files.
+
 To mitigate this, here we just render a New* function pair only one time for the name.
-Also, as a corner case, a message with the same name may additionally popped up from other spec files. */}}
+*/}}
 {{- if print "Message" (goid $) | gondefined}}
 {{- localobj .OutType .InType }}
 func New{{ $ | goid }}Out() *{{ .OutType | gousage }} {
@@ -25,7 +25,7 @@ func New{{ $ | goid }}In() *{{ .InType| gousage }} {
     {{- .BindingsType| godef }}
     {{- range $proto := .BindingsProtocols}}
         {{- $bindingsValue := $message.ProtoBindingsValue $proto}}
-        func (c *{{ $message.BindingsType| gousage }}) {{ $proto | capitalize | goid }}() {{$bindingsValue.Type| gousage}} {
+        func (c {{ $message.BindingsType | gousage }}) {{ $proto | capitalize | goid }}() {{$bindingsValue.Type | gousage}} {
         b := {{$bindingsValue| gousage}}
         {{- if $message.BindingsPromise}}
             {{- $jvals := $message.BindingsPromise.T.JSONValues.GetOrEmpty $proto}}

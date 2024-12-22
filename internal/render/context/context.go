@@ -50,7 +50,7 @@ func (c *RenderContextImpl) QualifiedName(parts ...string) string {
 func (c *RenderContextImpl) QualifiedGeneratedPackage(obj common.GolangType) (string, error) {
 	defInfo, defined := c.PackageNamespace.FindObject(obj)
 	if !defined {
-		if v, ok := obj.(definable); ok && v.ObjectHasDefinition() {
+		if v, ok := obj.(definable); ok && v.ObjectHasDefinition() { // TODO: replace to Selectable?
 			return "", ErrDefinitionLocationUnknown
 		}
 		return "", nil // Type is not supposed to be defined in the generated code (including Go built-in types)
@@ -86,7 +86,7 @@ func (c *RenderContextImpl) GetObjectName(obj common.Renderable) string {
 		UnwrapRenderable() common.Renderable
 	}
 
-	res := obj.GetOriginalName()
+	res := obj.Name()
 	// Take the alternate name from CurrentObject (if any), if the CurrentObject is the RenderablePromise,
 	// and it points to the same object as the one was passed as argument.
 	currentObj := c.Object.Renderable
@@ -94,7 +94,7 @@ func (c *RenderContextImpl) GetObjectName(obj common.Renderable) string {
 		currentObj = p.UnwrapRenderable()
 	}
 	if currentObj == obj {
-		res = c.Object.GetOriginalName()
+		res = c.Object.Name()
 	}
 
 	return res
@@ -156,6 +156,10 @@ func (s *ImportsList) addImport(pkgPath string, pkgName string) string {
 	return pkgName
 }
 
+func (s *ImportsList) Clone() ImportsList {
+	return ImportsList{imports: lo.Assign(s.imports)}
+}
+
 type RenderNameDefinition struct {
 	Object common.GolangType
 	Selection common.RenderSelectionConfig
@@ -206,8 +210,8 @@ func (s *RenderNamespace) FindName(name string) bool {
 	return lo.Contains(s.names, name)
 }
 
-func (s *RenderNamespace) Clone() *RenderNamespace {
-	return &RenderNamespace{
+func (s *RenderNamespace) Clone() RenderNamespace {
+	return RenderNamespace{
 		definitions: append([]RenderNameDefinition(nil), s.definitions...),
 		names: append([]string(nil), s.names...),
 	}

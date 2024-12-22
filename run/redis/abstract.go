@@ -26,7 +26,7 @@ type (
 )
 
 type EnvelopeMarshaler interface {
-	MarshalRedisEnvelope(envelope EnvelopeWriter) error
+	MarshalEnvelopeRedis(envelope EnvelopeWriter) error
 }
 
 // Sub
@@ -45,5 +45,5 @@ type (
 )
 
 type EnvelopeUnmarshaler interface {
-	UnmarshalRedisEnvelope(envelope EnvelopeReader) error
+	UnmarshalEnvelopeRedis(envelope EnvelopeReader) error
 }

@@ -28,7 +28,7 @@ type (
 )
 
 type EnvelopeMarshaler interface {
-	MarshalAMQPEnvelope(envelope EnvelopeWriter) error
+	MarshalEnvelopeAMQP(envelope EnvelopeWriter) error
 }
 
 // Sub
@@ -51,5 +51,5 @@ type (
 )
 
 type EnvelopeUnmarshaler interface {
-	UnmarshalAMQPEnvelope(envelope EnvelopeReader) error
+	UnmarshalEnvelopeAMQP(envelope EnvelopeReader) error
 }

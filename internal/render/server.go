@@ -4,6 +4,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/types"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 )
 
@@ -45,8 +46,8 @@ func (s *Server) SelectProtoObject(protocol string) common.Renderable {
 	return nil
 }
 
-func (s *Server) GetOriginalName() string {
-	return s.OriginalName
+func (s *Server) Name() string {
+	return utils.CapitalizeUnchanged(s.OriginalName)
 }
 
 func (s *Server) GetBoundChannels() []common.Renderable {
@@ -167,21 +168,24 @@ func (s *Server) String() string {
 	return "Server " + s.OriginalName
 }
 
-func (c *Server) BindingsProtocols() (res []string) {
-	if c.BindingsPromise != nil {
-		res = append(res, c.BindingsPromise.T().Values.Keys()...)
-		res = append(res, c.BindingsPromise.T().JSONValues.Keys()...)
+func (s *Server) BindingsProtocols() (res []string) {
+	if s.BindingsType == nil {
+		return nil
+	}
+	if s.BindingsPromise != nil {
+		res = append(res, s.BindingsPromise.T().Values.Keys()...)
+		res = append(res, s.BindingsPromise.T().JSONValues.Keys()...)
 	}
 	return lo.Uniq(res)
 }
 
-func (c *Server) ProtoBindingsValue(protoName string) common.Renderable {
+func (s *Server) ProtoBindingsValue(protoName string) common.Renderable {
 	res := &lang.GoValue{
-		Type:               &lang.GoSimple{Name: "ServerBindings", Import: common.GetContext().RuntimeModule(protoName)},
+		Type:               &lang.GoSimple{TypeName: "ServerBindings", Import: common.GetContext().RuntimeModule(protoName)},
 		EmptyCurlyBrackets: true,
 	}
-	if c.BindingsPromise != nil {
-		if b, ok := c.BindingsPromise.T().Values.Get(protoName); ok {
+	if s.BindingsPromise != nil {
+		if b, ok := s.BindingsPromise.T().Values.Get(protoName); ok {
 			//ctx.Logger.Debug("Server bindings", "proto", protoName)
 			res = b
 		}

@@ -27,7 +27,7 @@ type (
 )
 
 type EnvelopeMarshaler interface {
-	MarshalIPEnvelope(envelope EnvelopeWriter) error
+	MarshalEnvelopeIP(envelope EnvelopeWriter) error
 }
 
 // Sub
@@ -49,5 +49,5 @@ type (
 )
 
 type EnvelopeUnmarshaler interface {
-	UnmarshalIPEnvelope(envelope EnvelopeReader) error
+	UnmarshalEnvelopeIP(envelope EnvelopeReader) error
 }

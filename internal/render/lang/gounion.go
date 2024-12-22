@@ -25,7 +25,7 @@ func (s *UnionStruct) UnionStruct() common.GolangType {
 	// Draw union with named fields and methods
 	strct := s.GoStruct
 	strct.Fields = lo.Map(strct.Fields, func(item GoStructField, _ int) GoStructField {
-		item.Name = item.Type.GetOriginalName()  // FIXME: check if this is will be correct
+		item.Name = item.Type.Name() // FIXME: check if this is will be correct
 		return item
 	})
 	if reflect.DeepEqual(strct.Fields, s.Fields) { // TODO: move this check to unit tests

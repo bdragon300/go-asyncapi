@@ -27,9 +27,9 @@ func buildXGoType(xGoTypeValue *types.Union2[string, xGoType]) (golangType commo
 
 	switch xGoTypeValue.Selector {
 	case 0:
-		t.Name = xGoTypeValue.V0
+		t.TypeName = xGoTypeValue.V0
 	case 1:
-		t.Name = xGoTypeValue.V1.Type
+		t.TypeName = xGoTypeValue.V1.Type
 		t.Import = xGoTypeValue.V1.Import.Package
 		t.IsInterface = xGoTypeValue.V1.Hint.Kind == "interface"
 

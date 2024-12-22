@@ -3,6 +3,7 @@ package render
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 )
 
@@ -41,8 +42,8 @@ func (c *Channel) Visible() bool {
 	return !c.Dummy
 }
 
-func (c *Channel) GetOriginalName() string {
-	return c.OriginalName
+func (c *Channel) Name() string {
+	return utils.CapitalizeUnchanged(c.OriginalName)
 }
 
 //ServersProtocols returns supported protocol list for the given servers, throwing out unsupported ones
@@ -173,6 +174,9 @@ func (c *Channel) SelectProtoObject(protocol string) common.Renderable {
 //}
 
 func (c *Channel) BindingsProtocols() (res []string) {
+	if c.BindingsType == nil {
+		return nil
+	}
 	if c.BindingsChannelPromise != nil {
 		res = append(res, c.BindingsChannelPromise.T().Values.Keys()...)
 		res = append(res, c.BindingsChannelPromise.T().JSONValues.Keys()...)
@@ -190,7 +194,7 @@ func (c *Channel) BindingsProtocols() (res []string) {
 
 func (c *Channel) ProtoBindingsValue(protoName string) common.Renderable {
 	res := &lang.GoValue{
-		Type:               &lang.GoSimple{Name: "ChannelBindings", Import: common.GetContext().RuntimeModule(protoName)},
+		Type:               &lang.GoSimple{TypeName: "ChannelBindings", Import: common.GetContext().RuntimeModule(protoName)},
 		EmptyCurlyBrackets: true,
 	}
 	if c.BindingsChannelPromise != nil {

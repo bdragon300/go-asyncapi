@@ -5,7 +5,7 @@ import (
 )
 
 type GoSimple struct {
-	Name        string // type name
+	TypeName    string // type name
 	IsInterface bool   // true if type is interface, which means it cannot be rendered as pointer  // TODO: use or remove
 	Import      string // optional generated package name or module to import a type from
 }
@@ -32,11 +32,11 @@ func (p *GoSimple) GoTemplate() string {
 
 func (p *GoSimple) String() string {
 	if p.Import != "" {
-		return "GoSimple /" + p.Import + "." + p.Name
+		return "GoSimple /" + p.Import + "." + p.TypeName
 	}
-	return "GoSimple " + p.Name
+	return "GoSimple " + p.TypeName
 }
 
-func (p *GoSimple) GetOriginalName() string {
-	return p.Name
+func (p *GoSimple) Name() string {
+	return p.TypeName
 }

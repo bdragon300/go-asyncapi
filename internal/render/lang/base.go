@@ -2,6 +2,7 @@ package lang
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
 )
 
 type BaseType struct {
@@ -13,10 +14,12 @@ type BaseType struct {
 	// and `field ArrayName`
 	HasDefinition bool
 	Import        string // optional external (or runtime) module to import a type from
+	// Typically it's ObjectKindOther or ObjectKindSchema
+	ObjectKind common.ObjectKind
 }
 
 func (b *BaseType) Kind() common.ObjectKind {
-	return common.ObjectKindOther
+	return b.ObjectKind
 }
 
 func (b *BaseType) Selectable() bool {
@@ -31,8 +34,8 @@ func (b *BaseType) IsPointer() bool {
 	return false
 }
 
-func (b *BaseType) GetOriginalName() string {
-	return b.OriginalName
+func (b *BaseType) Name() string {
+	return utils.CapitalizeUnchanged(b.OriginalName)
 }
 
 func (b *BaseType) ObjectHasDefinition() bool {

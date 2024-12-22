@@ -3,6 +3,7 @@ package lang
 import (
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 )
 
@@ -177,8 +178,8 @@ func (r *RenderablePromise) String() string {
 	return "RenderablePromise -> " + r.ref
 }
 
-func (r *RenderablePromise) GetOriginalName() string {
-	n, _ := lo.Coalesce(r.name, r.target.GetOriginalName())
+func (r *RenderablePromise) Name() string {
+	n, _ := lo.Coalesce(utils.CapitalizeUnchanged(r.name), r.target.Name())
 	return n
 }
 
@@ -214,8 +215,8 @@ func (r *GolangTypePromise) Visible() bool {
 	return r.origin == common.PromiseOriginUser && r.target.Visible()
 }
 
-func (r *GolangTypePromise) GetOriginalName() string {
-	return r.target.GetOriginalName()
+func (r *GolangTypePromise) Name() string {
+	return r.target.Name()
 }
 
 func (r *GolangTypePromise) UnwrapGolangType() common.GolangType {

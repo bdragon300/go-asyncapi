@@ -58,9 +58,9 @@ func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncap
 
 	chanStruct.Fields = append(
 		chanStruct.Fields,
-		lang.GoStructField{Name: "exchange", Type: &lang.GoSimple{Name: "string"}},
-		lang.GoStructField{Name: "queue", Type: &lang.GoSimple{Name: "string"}},
-		lang.GoStructField{Name: "routingKey", Type: &lang.GoSimple{Name: "string"}},
+		lang.GoStructField{Name: "exchange", Type: &lang.GoSimple{TypeName: "string"}},
+		lang.GoStructField{Name: "queue", Type: &lang.GoSimple{TypeName: "string"}},
+		lang.GoStructField{Name: "routingKey", Type: &lang.GoSimple{TypeName: "string"}},
 	)
 
 	return &render.ProtoChannel{
@@ -77,30 +77,30 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 		return
 	}
 
-	vals = &lang.GoValue{Type: &lang.GoSimple{Name: "ChannelBindings", Import: ctx.RuntimeModule(pb.ProtoName)}, EmptyCurlyBrackets: true}
+	vals = &lang.GoValue{Type: &lang.GoSimple{TypeName: "ChannelBindings", Import: ctx.RuntimeModule(pb.ProtoName)}, EmptyCurlyBrackets: true}
 	switch bindings.Is {
 	case "queue":
-		vals.StructValues.Set("ChannelType", &lang.GoSimple{Name: "ChannelTypeQueue", Import: ctx.RuntimeModule(pb.ProtoName)})
+		vals.StructValues.Set("ChannelType", &lang.GoSimple{TypeName: "ChannelTypeQueue", Import: ctx.RuntimeModule(pb.ProtoName)})
 	default: // routingKey and any other value
-		vals.StructValues.Set("ChannelType", &lang.GoSimple{Name: "ChannelTypeRoutingKey", Import: ctx.RuntimeModule(pb.ProtoName)})
+		vals.StructValues.Set("ChannelType", &lang.GoSimple{TypeName: "ChannelTypeRoutingKey", Import: ctx.RuntimeModule(pb.ProtoName)})
 	}
 	if bindings.Exchange != nil {
-		ecVals := lang.ConstructGoValue(*bindings.Exchange, []string{"Type"}, &lang.GoSimple{Name: "ExchangeConfiguration", Import: ctx.RuntimeModule(pb.ProtoName)})
+		ecVals := lang.ConstructGoValue(*bindings.Exchange, []string{"Type"}, &lang.GoSimple{TypeName: "ExchangeConfiguration", Import: ctx.RuntimeModule(pb.ProtoName)})
 		switch bindings.Exchange.Type {
 		case "default":
-			ecVals.StructValues.Set("Type", &lang.GoSimple{Name: "ExchangeTypeDefault", Import: ctx.RuntimeModule(pb.ProtoName)})
+			ecVals.StructValues.Set("Type", &lang.GoSimple{TypeName: "ExchangeTypeDefault", Import: ctx.RuntimeModule(pb.ProtoName)})
 		case "topic":
-			ecVals.StructValues.Set("Type", &lang.GoSimple{Name: "ExchangeTypeTopic", Import: ctx.RuntimeModule(pb.ProtoName)})
+			ecVals.StructValues.Set("Type", &lang.GoSimple{TypeName: "ExchangeTypeTopic", Import: ctx.RuntimeModule(pb.ProtoName)})
 		case "direct":
-			ecVals.StructValues.Set("Type", &lang.GoSimple{Name: "ExchangeTypeDirect", Import: ctx.RuntimeModule(pb.ProtoName)})
+			ecVals.StructValues.Set("Type", &lang.GoSimple{TypeName: "ExchangeTypeDirect", Import: ctx.RuntimeModule(pb.ProtoName)})
 		case "fanout":
-			ecVals.StructValues.Set("Type", &lang.GoSimple{Name: "ExchangeTypeFanout", Import: ctx.RuntimeModule(pb.ProtoName)})
+			ecVals.StructValues.Set("Type", &lang.GoSimple{TypeName: "ExchangeTypeFanout", Import: ctx.RuntimeModule(pb.ProtoName)})
 		case "headers":
-			ecVals.StructValues.Set("Type", &lang.GoSimple{Name: "ExchangeTypeHeaders", Import: ctx.RuntimeModule(pb.ProtoName)})
+			ecVals.StructValues.Set("Type", &lang.GoSimple{TypeName: "ExchangeTypeHeaders", Import: ctx.RuntimeModule(pb.ProtoName)})
 		}
 		vals.StructValues.Set("ExchangeConfiguration", ecVals)
 	}
-	qVals := lang.ConstructGoValue(*bindings.Queue, nil, &lang.GoSimple{Name: "QueueConfiguration", Import: ctx.RuntimeModule(pb.ProtoName)})
+	qVals := lang.ConstructGoValue(*bindings.Queue, nil, &lang.GoSimple{TypeName: "QueueConfiguration", Import: ctx.RuntimeModule(pb.ProtoName)})
 	vals.StructValues.Set("QueueConfiguration", qVals)
 
 	return
@@ -113,16 +113,16 @@ func (pb ProtoBuilder) BuildOperationBindings(ctx *common.CompileContext, rawDat
 		return
 	}
 
-	vals = lang.ConstructGoValue(bindings, []string{"Expiration", "DeliveryMode"}, &lang.GoSimple{Name: "OperationBindings", Import: ctx.RuntimeModule(pb.ProtoName)})
+	vals = lang.ConstructGoValue(bindings, []string{"Expiration", "DeliveryMode"}, &lang.GoSimple{TypeName: "OperationBindings", Import: ctx.RuntimeModule(pb.ProtoName)})
 	if bindings.Expiration > 0 {
-		v := lang.ConstructGoValue(bindings.Expiration*int(time.Millisecond), nil, &lang.GoSimple{Name: "Duration", Import: "time"})
+		v := lang.ConstructGoValue(bindings.Expiration*int(time.Millisecond), nil, &lang.GoSimple{TypeName: "Duration", Import: "time"})
 		vals.StructValues.Set("Expiration", v)
 	}
 	switch bindings.DeliveryMode {
 	case 1:
-		vals.StructValues.Set("DeliveryMode", &lang.GoSimple{Name: "DeliveryModeTransient", Import: ctx.RuntimeModule(pb.ProtoName)})
+		vals.StructValues.Set("DeliveryMode", &lang.GoSimple{TypeName: "DeliveryModeTransient", Import: ctx.RuntimeModule(pb.ProtoName)})
 	case 2:
-		vals.StructValues.Set("DeliveryMode", &lang.GoSimple{Name: "DeliveryModePersistent", Import: ctx.RuntimeModule(pb.ProtoName)})
+		vals.StructValues.Set("DeliveryMode", &lang.GoSimple{TypeName: "DeliveryModePersistent", Import: ctx.RuntimeModule(pb.ProtoName)})
 	}
 
 	return

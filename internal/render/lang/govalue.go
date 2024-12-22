@@ -38,7 +38,7 @@ func (gv *GoValue) IsPointer() bool {
 	return gv.Type != nil && gv.Type.IsPointer()
 }
 
-func (gv *GoValue) GetOriginalName() string {
+func (gv *GoValue) Name() string {
 	return ""
 }
 
@@ -97,7 +97,7 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 			res.Type = &GoArray{
 				BaseType: BaseType{OriginalName: rtyp.Name(), Import: rtyp.PkgPath()},
 				ItemsType: &GoSimple{
-					Name:        elemType.Name(),
+					TypeName:    elemType.Name(),
 					IsInterface: elemType.Kind() == reflect.Interface,
 					Import:      elemType.PkgPath(),
 				},
@@ -117,12 +117,12 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 			res.Type = &GoMap{
 				BaseType: BaseType{OriginalName: rtyp.Name(), Import: rtyp.PkgPath()},
 				KeyType: &GoSimple{
-					Name:        keyType.Name(),
+					TypeName:    keyType.Name(),
 					IsInterface: keyType.Kind() == reflect.Interface,
 					Import:      keyType.PkgPath(),
 				},
 				ValueType: &GoSimple{
-					Name:        elemType.Name(),
+					TypeName:    elemType.Name(),
 					IsInterface: elemType.Kind() == reflect.Interface,
 					Import:      elemType.PkgPath(),
 				},

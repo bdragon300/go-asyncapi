@@ -8,7 +8,6 @@ import (
 type GoTypeAlias struct {
 	BaseType
 	AliasedType common.GolangType
-	ObjectKind common.ObjectKind
 }
 
 func (p *GoTypeAlias) GoTemplate() string {
@@ -20,10 +19,6 @@ func (p *GoTypeAlias) UnwrapGolangType() (common.GolangType, bool) {
 		return v.UnwrapGolangType()
 	}
 	return p.AliasedType, p.AliasedType != nil
-}
-
-func (b *GoTypeAlias) Kind() common.ObjectKind {
-	return b.ObjectKind
 }
 
 func (p *GoTypeAlias) IsPointer() bool {

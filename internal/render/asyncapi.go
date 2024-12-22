@@ -34,7 +34,7 @@ func (a *AsyncAPI) String() string {
 	return "AsyncAPI"
 }
 
-func (a *AsyncAPI) GetOriginalName() string {
+func (a *AsyncAPI) Name() string {
 	return ""
 }
 

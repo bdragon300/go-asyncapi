@@ -4,7 +4,6 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
-	"github.com/bdragon300/go-asyncapi/internal/utils"
 )
 
 type ServerVariable struct {
@@ -35,7 +34,7 @@ func (sv ServerVariable) build(ctx *common.CompileContext, serverVariableKey str
 	}
 
 	res := &render.ServerVariable{
-		OriginalName: utils.ToGolangName(serverVariableKey, false),
+		OriginalName: serverVariableKey,
 		Enum:         sv.Enum,
 		Default:      sv.Default,
 		Description:  sv.Description,

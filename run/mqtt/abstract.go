@@ -30,7 +30,7 @@ type (
 )
 
 type EnvelopeMarshaler interface {
-	MarshalMQTTEnvelope(envelope EnvelopeWriter) error
+	MarshalEnvelopeMQTT(envelope EnvelopeWriter) error
 }
 
 // Sub
@@ -49,5 +49,5 @@ type (
 )
 
 type EnvelopeUnmarshaler interface {
-	UnmarshalMQTTEnvelope(envelope EnvelopeReader) error
+	UnmarshalEnvelopeMQTT(envelope EnvelopeReader) error
 }

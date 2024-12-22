@@ -1,7 +1,7 @@
 {{- localobj .Type}}
 {{template "proto/channel/openFunction" .}}
 
-func New{{ .Channel | goid }}(
+func New{{ .Channel | goid }}{{.ProtoName | capitalize | goid}}(
     {{ if .ParametersType}}params {{ .ParametersType | gousage }},{{end}}
     {{ if .IsPublisher}}publisher {{qualrun .ProtoName "Publisher"}},{{end}}
     {{ if .IsSubscriber}}subscriber {{qualrun .ProtoName "Subscriber"}},{{end}}
@@ -11,7 +11,7 @@ func New{{ .Channel | goid }}(
         {{if .IsPublisher}}publisher: publisher,{{end}}
         {{if .IsSubscriber}}subscriber: subscriber,{{end}}
     }
-    {{- if .BindingsType}}
+    {{- if and .BindingsType (.BindingsProtocols | has .ProtoName)}}
         bindings := {{ .BindingsType | gousage }}{}.{{.ProtoName | capitalize | goid}}()
         switch bindings.ChannelType {
         case {{qualrun .ProtoName "ChannelTypeQueue"}}:
@@ -52,20 +52,20 @@ func (c {{ .Type | gousage }}) RoutingKey() string {
     func (c {{ .Type | gousage }}) SealEnvelope(envelope {{qualrun .ProtoName "EnvelopeWriter"}}, message {{if .PublisherMessageTypePromise}}{{goptr .PublisherMessageTypePromise.T.OutType}}{{else}}any{{end}}) error {
         envelope.ResetPayload()
         {{- if .PublisherMessageTypePromise}}
-            {{- /* Message is set for Channel in spec */ -}}
+            {{- /* Message is set for Channel in spec */}}
             if err := message.Marshal{{.ProtoName | capitalize | goid}}Envelope(envelope); err != nil {
                 return err
             }
         {{- else}}
-            {{- /* No Message set for Channel in spec */ -}}
+            {{- /* No Message set for Channel in spec */}}
             enc := {{qual "encoding/json.NewEncoder"}}(envelope)
             if err := enc.Encode(message); err != nil {
                 return err
             }
         {{- end}}
         envelope.SetRoutingKey(c.RoutingKey())
-        {{- if and .PublisherMessageTypePromise (.PublisherMessageTypePromise.T.HasProtoBindings .ProtoName)}}
-            envelope.SetBindings({{ .PublisherMessageTypePromise.T.BindingsType | gousage }}){}.{{.ProtoName | capitalize | goid}}()
+        {{- if and .PublisherMessageTypePromise (.PublisherMessageTypePromise.T.BindingsProtocols | has .ProtoName)}}
+            envelope.SetBindings({{ .PublisherMessageTypePromise.T.BindingsType | gousage }}{}.{{.ProtoName | capitalize | goid}}())
         {{- end}}
         return nil
     }
