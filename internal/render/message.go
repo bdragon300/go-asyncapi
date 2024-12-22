@@ -17,7 +17,7 @@ type Message struct {
 	HeadersFallbackType  *lang.GoMap
 	HeadersTypePromise   *lang.Promise[*lang.GoStruct]
 
-	AllServersPromise    *lang.ListPromise[*Server]    // For extracting all using protocols
+	AllServersPromise    *lang.ListPromise[*Server]    // All servers we know about
 
 	BindingsType         *lang.GoStruct                // nil if message bindings are not defined for message
 	BindingsPromise      *lang.Promise[*Bindings]      // nil if message bindings are not defined for message as well
@@ -44,7 +44,7 @@ func (m *Message) Visible() bool {
 
 func (m *Message) SelectProtoObject(protocol string) common.Renderable {
 	objects := lo.Filter(m.ProtoMessages, func(p *ProtoMessage, _ int) bool {
-		return p.Selectable() && p.ProtoName == protocol
+		return p.Selectable() && p.Protocol == protocol
 	})
 	return lo.FirstOr(objects, nil)
 }
@@ -189,7 +189,7 @@ func (m *Message) ProtoBindingsValue(protoName string) common.Renderable {
 //	receiver := j.Id(rn).Op("*").Id(m.OutType.GetOriginalName)
 //
 //	return []*j.Statement{
-//		// Method MarshalProtoEnvelope(envelope proto.EnvelopeWriter) error
+//		// Method MarshalEnvelopeProto(envelope proto.EnvelopeWriter) error
 //		j.Func().Params(receiver.Clone()).Id("Marshal" + protoTitle + "Envelope").
 //			Params(j.Id("envelope").Qual(ctx.RuntimeModule(protoName), "EnvelopeWriter")).
 //			Error().
@@ -280,7 +280,7 @@ func (m *Message) ProtoBindingsValue(protoName string) common.Renderable {
 //	receiver := j.Id(rn).Op("*").Id(m.InType.GetOriginalName)
 //
 //	return []*j.Statement{
-//		// Method UnmarshalProtoEnvelope(envelope proto.EnvelopeReader) error
+//		// Method UnmarshalEnvelopeProto(envelope proto.EnvelopeReader) error
 //		j.Func().Params(receiver.Clone()).Id("Unmarshal" + protoTitle + "Envelope").
 //			Params(j.Id("envelope").Qual(ctx.RuntimeModule(protoName), "EnvelopeReader")).
 //			Error().
@@ -327,7 +327,7 @@ func (m *Message) ProtoBindingsValue(protoName string) common.Renderable {
 
 type ProtoMessage struct {
 	*Message
-	ProtoName string
+	Protocol string
 }
 
 func (p *ProtoMessage) Selectable() bool {
@@ -343,6 +343,6 @@ func (p *ProtoMessage) String() string {
 func (p *ProtoMessage) isBound() bool {
 	return lo.Contains(
 		lo.Map(p.AllServersPromise.T(), func(s *Server, _ int) string { return s.Protocol }),
-		p.ProtoName,
+		p.Protocol,
 	)
 }

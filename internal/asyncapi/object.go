@@ -97,7 +97,7 @@ func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]str
 		}
 
 		ctx.Logger.Trace("Ref", "$ref", o.Ref)
-		res := lang.NewUserPromise(o.Ref, refName, lo.ToPtr(false))
+		res := lang.NewRef(o.Ref, refName, lo.ToPtr(false))
 		ctx.PutPromise(res)
 		return res, nil
 	}
@@ -287,7 +287,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 	for _, entry := range o.Properties.Entries() {
 		ctx.Logger.Trace("Object property", "name", entry.Key)
 		ref := ctx.PathStackRef("properties", entry.Key)
-		prm := lang.NewInternalGolangTypePromise(ref)
+		prm := lang.NewGolangTypePromise(ref)
 		ctx.PutPromise(prm)
 
 		var langObj common.GolangType = prm
@@ -318,7 +318,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 		case 0: // "additionalProperties:" is an object
 			ctx.Logger.Trace("Object additional properties as an object")
 			ref := ctx.PathStackRef("additionalProperties")
-			prm := lang.NewInternalGolangTypePromise(ref)
+			prm := lang.NewGolangTypePromise(ref)
 			ctx.PutPromise(prm)
 			xTags, xTagNames, xTagVals := o.AdditionalProperties.V0.xGoTagsInfo(ctx)
 			f := lang.GoStructField{
@@ -388,7 +388,7 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 	case o.Items != nil && o.Items.Selector == 0: // Only one "type:" of items
 		ctx.Logger.Trace("Object items (single type)")
 		ref := ctx.PathStackRef("items")
-		prm := lang.NewInternalGolangTypePromise(ref)
+		prm := lang.NewGolangTypePromise(ref)
 		ctx.PutPromise(prm)
 		res.ItemsType = prm
 	case o.Items == nil || o.Items.Selector == 1: // No items or Several types for each item sequentially
@@ -439,19 +439,19 @@ func (o Object) buildUnionStruct(ctx *common.CompileContext, flags map[common.Sc
 
 	res.Fields = lo.Times(len(o.OneOf), func(index int) lang.GoStructField {
 		ref := ctx.PathStackRef("oneOf", strconv.Itoa(index))
-		prm := lang.NewInternalGolangTypePromise(ref)
+		prm := lang.NewGolangTypePromise(ref)
 		ctx.PutPromise(prm)
 		return lang.GoStructField{Type: &lang.GoPointer{Type: prm}}
 	})
 	res.Fields = append(res.Fields, lo.Times(len(o.AnyOf), func(index int) lang.GoStructField {
 		ref := ctx.PathStackRef("anyOf", strconv.Itoa(index))
-		prm := lang.NewInternalGolangTypePromise(ref)
+		prm := lang.NewGolangTypePromise(ref)
 		ctx.PutPromise(prm)
 		return lang.GoStructField{Type: &lang.GoPointer{Type: prm}}
 	})...)
 	res.Fields = append(res.Fields, lo.Times(len(o.AllOf), func(index int) lang.GoStructField {
 		ref := ctx.PathStackRef("allOf", strconv.Itoa(index))
-		prm := lang.NewInternalGolangTypePromise(ref)
+		prm := lang.NewGolangTypePromise(ref)
 		ctx.PutPromise(prm)
 		return lang.GoStructField{Type: prm}
 	})...)

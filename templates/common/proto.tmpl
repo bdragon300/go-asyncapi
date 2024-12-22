@@ -19,11 +19,11 @@ func (c {{.Type| gousage}}) Close() (err error) {
 {{- end}}
 
 {{define "proto/channel/outputMethods"}}
-func (c {{.Type| gousage}}) Publisher() {{qualrun .ProtoName "Publisher"}} {
+func (c {{.Type| gousage}}) Publisher() {{qualrun .Protocol "Publisher"}} {
     return c.publisher
 }
 
-func (c {{.Type| gousage}}) Publish(ctx {{qual "context.Context"}}, envelopes ...{{qualrun .ProtoName "EnvelopeWriter"}}) error {
+func (c {{.Type| gousage}}) Publish(ctx {{qual "context.Context"}}, envelopes ...{{qualrun .Protocol "EnvelopeWriter"}}) error {
     return c.publisher.Send(ctx, envelopes...)
 }
 {{- end}}
@@ -31,11 +31,11 @@ func (c {{.Type| gousage}}) Publish(ctx {{qual "context.Context"}}, envelopes ..
 {{- /* Common template for channel publish methods that doesn't contain protocol-specific bindings manipulations */}}
 {{define "proto/channel/barePublishMethods"}}
     {{template "proto/channel/outputMethods" .}}
-    func (c {{.Type| gousage}}) SealEnvelope(envelope {{qualrun .ProtoName "EnvelopeWriter"}}, message {{if .PublisherMessageTypePromise}}{{goptr .PublisherMessageTypePromise.T.OutType}}{{else}}any{{end}}) error {
+    func (c {{.Type| gousage}}) SealEnvelope(envelope {{qualrun .Protocol "EnvelopeWriter"}}, message {{if .PublisherMessageTypePromise}}{{goptr .PublisherMessageTypePromise.T.OutType}}{{else}}any{{end}}) error {
         envelope.ResetPayload()
         {{- if .PublisherMessageTypePromise}}
             {{- /*Message is set for Channel in spec*/}}
-            if err := message.MarshalEnvelope{{.ProtoName | capitalize | goid}}(envelope); err != nil {
+            if err := message.MarshalEnvelope{{.Protocol | capitalize | goid}}(envelope); err != nil {
                 return err
             }
         {{- else}}
@@ -46,18 +46,18 @@ func (c {{.Type| gousage}}) Publish(ctx {{qual "context.Context"}}, envelopes ..
             }
         {{- end}}
 
-        {{- if and .PublisherMessageTypePromise (.PublisherMessageTypePromise.T.BindingsProtocols | has .ProtoName)}}
-            envelope.SetBindings({{.PublisherMessageTypePromise.T.BindingsType | gousage}}{}.{{.ProtoName | capitalize | goid}}())
+        {{- if and .PublisherMessageTypePromise (.PublisherMessageTypePromise.T.BindingsProtocols | has .Protocol)}}
+            envelope.SetBindings({{.PublisherMessageTypePromise.T.BindingsType | gousage}}{}.{{.Protocol | capitalize | goid}}())
         {{- end}}
         return nil
     }
 {{- end}}
 
 {{define "proto/channel/subscribeMethods"}}
-func (c {{.Type| gousage}}) ExtractEnvelope(envelope {{qualrun .ProtoName "EnvelopeReader"}}, message {{if .SubscriberMessageTypePromise}}{{goptr .SubscriberMessageTypePromise.T.InType}}{{else}}any{{end}}) error {
+func (c {{.Type| gousage}}) ExtractEnvelope(envelope {{qualrun .Protocol "EnvelopeReader"}}, message {{if .SubscriberMessageTypePromise}}{{goptr .SubscriberMessageTypePromise.T.InType}}{{else}}any{{end}}) error {
     {{- if .SubscriberMessageTypePromise}}
         {{- /* Message set for Channel in spec */ -}}
-        return message.UnmarshalEnvelope{{.ProtoName | capitalize | goid}}(envelope)
+        return message.UnmarshalEnvelope{{.Protocol | capitalize | goid}}(envelope)
     {{- else}}
         {{- /* No Message set for Channel in spec */ -}}
         dec := {{qual "encoding/json.NewDecoder"}}(envelope)
@@ -65,40 +65,40 @@ func (c {{.Type| gousage}}) ExtractEnvelope(envelope {{qualrun .ProtoName "Envel
     {{- end}}
 }
 
-func (c {{.Type| gousage}}) IsSubscriber() {{qualrun .ProtoName "Subscriber"}} {
+func (c {{.Type| gousage}}) IsSubscriber() {{qualrun .Protocol "Subscriber"}} {
     return c.subscriber
 }
 
-func (c {{.Type| gousage}}) Subscribe(ctx {{qual "context.Context"}}, cb func(envelope {{qualrun .ProtoName "EnvelopeReader"}})) error {
+func (c {{.Type| gousage}}) Subscribe(ctx {{qual "context.Context"}}, cb func(envelope {{qualrun .Protocol "EnvelopeReader"}})) error {
     return c.subscriber.Receive(ctx, cb)
 }
 {{- end}}
 
 {{- /* Common template for channel OpenChannel function that doesn't contain protocol-specific bindings manipulations */}}
 {{define "proto/channel/openFunction"}}
-    func Open{{ .Channel | goid }}{{.ProtoName | capitalize | goid}}(
+    func Open{{ .Channel | goid }}{{.Protocol | capitalize | goid}}(
         ctx {{qual "context.Context"}},
         {{ if .ParametersType}}params {{.ParametersType | gousage}},{{end}}
-        {{ if .IsPublisher}}producer {{qualrun .ProtoName "Producer"}},{{end}}
-        {{ if .IsSubscriber}}consumer {{qualrun .ProtoName "Consumer"}},{{end}}
+        {{ if .IsPublisher}}producer {{qualrun .Protocol "Producer"}},{{end}}
+        {{ if .IsSubscriber}}consumer {{qualrun .Protocol "Consumer"}},{{end}}
     ) (ch *{{.Type | gousage}}, err error) {
         name := {{.Channel | goid}}Name({{if .ParametersType}}params{{end}})
-        {{- if .BindingsProtocols | has .ProtoName}}
-            bindings := {{.BindingsType | gousage}}{}.{{.ProtoName | capitalize | goid}}()
+        {{- if .BindingsProtocols | has .Protocol}}
+            bindings := {{.BindingsType | gousage}}{}.{{.Protocol | capitalize | goid}}()
         {{- end }}
 
         {{- if .IsPublisher}}
-            var publisher {{qualrun .ProtoName "Publisher"}}
+            var publisher {{qualrun .Protocol "Publisher"}}
             if producer != nil {
-                if publisher, err = producer.Publisher(ctx, name.String(), {{if .BindingsProtocols | has .ProtoName}}&bindings{{else}}nil{{end}}); err != nil {
+                if publisher, err = producer.Publisher(ctx, name.String(), {{if .BindingsProtocols | has .Protocol}}&bindings{{else}}nil{{end}}); err != nil {
                     return nil, err
                 }
             }
         {{- end}}
         {{- if .IsSubscriber}}
-            var subscriber {{qualrun .ProtoName "Subscriber"}}
+            var subscriber {{qualrun .Protocol "Subscriber"}}
             if consumer != nil {
-                if subscriber, err = consumer.Subscriber(ctx, name.String(), {{if .BindingsProtocols | has .ProtoName}}&bindings{{else}}nil{{end}}); err != nil {
+                if subscriber, err = consumer.Subscriber(ctx, name.String(), {{if .BindingsProtocols | has .Protocol}}&bindings{{else}}nil{{end}}); err != nil {
                     return nil, err
                 }
             }
@@ -114,10 +114,10 @@ func (c {{.Type| gousage}}) Subscribe(ctx {{qual "context.Context"}}, cb func(en
 
 {{- /* Common template for channel NewChannel function that doesn't contain protocol-specific bindings manipulations */}}
 {{define "proto/channel/bareNewFunction"}}
-    func New{{ .Channel | goid }}{{.ProtoName | capitalize | goid}}(
+    func New{{ .Channel | goid }}{{.Protocol | capitalize | goid}}(
         {{- if .ParametersType}}params {{.ParametersType| gousage}},{{end}}
-        {{- if .IsPublisher}}publisher {{qualrun .ProtoName "Publisher"}},{{end}}
-        {{- if .IsSubscriber}}subscriber {{qualrun .ProtoName "Subscriber"}},{{end}}
+        {{- if .IsPublisher}}publisher {{qualrun .Protocol "Publisher"}},{{end}}
+        {{- if .IsSubscriber}}subscriber {{qualrun .Protocol "Subscriber"}},{{end}}
     ) *{{.Type| gousage}} {
         res := {{.Type| gousage}}{
             name: {{.Channel | goid}}Name({{if .ParametersType}}params{{end}}),
@@ -129,7 +129,7 @@ func (c {{.Type| gousage}}) Subscribe(ctx {{qual "context.Context"}}, cb func(en
 {{- end}}
 
 {{define "proto/message/marshalUnmarshalMethods"}}
-func (m *{{ .OutType | goid }}) MarshalEnvelope{{ .ProtoName | capitalize | goid }}(envelope {{qualrun .ProtoName "EnvelopeWriter"}}) error {
+func (m *{{ .OutType | goid }}) MarshalEnvelope{{ .Protocol | capitalize | goid }}(envelope {{qualrun .Protocol "EnvelopeWriter"}}) error {
     {{- template "proto/message/encodeExpr" .}}
     envelope.SetContentType({{.ContentType | golit}})
     {{- if .HeadersTypePromise}}
@@ -144,7 +144,7 @@ func (m *{{ .OutType | goid }}) MarshalEnvelope{{ .ProtoName | capitalize | goid
     return nil
 }
 
-func (m *{{ .InType | goid }}) UnmarshalEnvelope{{ .ProtoName | capitalize | goid }}(envelope {{qualrun .ProtoName "EnvelopeReader"}}) error {
+func (m *{{ .InType | goid }}) UnmarshalEnvelope{{ .Protocol | capitalize | goid }}(envelope {{qualrun .Protocol "EnvelopeReader"}}) error {
     {{- template "proto/message/decodeExpr" .}}
     {{- if .HeadersTypePromise }}
         {{- /* Empty headers should not generate code */}}

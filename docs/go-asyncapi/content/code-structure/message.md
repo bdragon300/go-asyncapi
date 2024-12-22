@@ -70,7 +70,7 @@ type MyMessageOut struct {
 	Headers map[string]any
 }
 
-func (m *MyMessageOut) MarshalKafkaEnvelope(envelope kafka.EnvelopeWriter) error {
+func (m *MyMessageOut) MarshalEnvelopeKafka(envelope kafka.EnvelopeWriter) error {
 	enc := encoding.NewEncoder("application/json", envelope)
 
 	if err := enc.Encode(m.Payload); err != nil {
@@ -100,7 +100,7 @@ type MyMessageIn struct {
 	Headers map[string]any
 }
 
-func (m *MyMessageIn) UnmarshalKafkaEnvelope(envelope kafka.EnvelopeReader) error {
+func (m *MyMessageIn) UnmarshalEnvelopeKafka(envelope kafka.EnvelopeReader) error {
 	dec := encoding.NewDecoder("application/json", envelope)
 
 	if err := dec.Decode(&m.Payload); err != nil {
@@ -317,7 +317,7 @@ func NewDecoder(contentType string, r io.Reader) Decoder {
 {{< tab "Generated message code" >}}
 ```go
 // ...
-func (m *MyMessageOut) MarshalKafkaEnvelope(envelope kafka.EnvelopeWriter) error {
+func (m *MyMessageOut) MarshalEnvelopeKafka(envelope kafka.EnvelopeWriter) error {
 	enc := encoding.NewEncoder("application/json", envelope)
 
 	if err := enc.Encode(m.Payload); err != nil {
@@ -330,7 +330,7 @@ func (m *MyMessageOut) MarshalKafkaEnvelope(envelope kafka.EnvelopeWriter) error
 
 // ...
 
-func (m *MyMessageIn) UnmarshalKafkaEnvelope(envelope kafka.EnvelopeReader) error {
+func (m *MyMessageIn) UnmarshalEnvelopeKafka(envelope kafka.EnvelopeReader) error {
     dec := encoding.NewDecoder("application/json", envelope)
     
     if err := dec.Decode(&m.Payload); err != nil {

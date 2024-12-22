@@ -24,7 +24,6 @@ func (pb ProtoBuilder) BuildServer(ctx *common.CompileContext, server *asyncapi.
 	return &render.ProtoServer{
 		Server:    parent,
 		Type:      baseServer,
-		ProtoName: pb.ProtoName,
 	}, nil
 }
 

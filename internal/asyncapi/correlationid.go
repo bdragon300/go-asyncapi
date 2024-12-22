@@ -41,7 +41,7 @@ func (c CorrelationID) build(ctx *common.CompileContext, correlationIDKey string
 	// TODO: move this ref code from everywhere to single place?
 	if c.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", c.Ref)
-		res := lang.NewUserPromise(c.Ref, correlationIDKey, nil)
+		res := lang.NewRef(c.Ref, correlationIDKey, nil)
 		ctx.PutPromise(res)
 		return res, nil
 	}

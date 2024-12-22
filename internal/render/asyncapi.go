@@ -2,14 +2,12 @@ package render
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/samber/lo"
 )
 
 const fallbackContentType = "application/json" // Default content type if it omitted in spec
 
 type AsyncAPI struct {
-	AllMessages        *lang.ListPromise[*Message]
 	DefaultContentType string
 }
 

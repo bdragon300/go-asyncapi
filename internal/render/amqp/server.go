@@ -4,7 +4,7 @@ package amqp
 //	*render.Server
 //	Type *lang.GoStruct
 //
-//	ProtoName, ProtoTitle string
+//	Protocol, ProtoTitle string
 //}
 //
 //func (ps ProtoServer) Selectable() bool {
@@ -12,7 +12,7 @@ package amqp
 //}
 
 //func (ps ProtoServer) D(ctx *common.RenderContext) []*j.Statement {
-//	ctx.LogStartRender("Server", "", ps.Parent.GetOriginalName, "definition", ps.Selectable(), "proto", ps.ProtoName)
+//	ctx.LogStartRender("Server", "", ps.Parent.GetOriginalName, "definition", ps.Selectable(), "proto", ps.Protocol)
 //	defer ctx.LogFinishRender()
 //
 //	var res []*j.Statement
@@ -26,7 +26,7 @@ package amqp
 //}
 
 //func (ps ProtoServer) U(ctx *common.RenderContext) []*j.Statement {
-//	ctx.LogStartRender("Server", "", ps.Parent.GetOriginalName, "usage", ps.Selectable(), "proto", ps.ProtoName)
+//	ctx.LogStartRender("Server", "", ps.Parent.GetOriginalName, "usage", ps.Selectable(), "proto", ps.Protocol)
 //	defer ctx.LogFinishRender()
 //	return ps.Type.U(ctx)
 //}
@@ -40,12 +40,12 @@ package amqp
 //}
 
 //func (ps ProtoServer) renderChannelMethods(ctx *common.RenderContext) []*j.Statement {
-//	ctx.Logger.Trace("renderChannelMethods", "proto", ps.ProtoName)
+//	ctx.Logger.Trace("renderChannelMethods", "proto", ps.Protocol)
 //
 //	var res []*j.Statement
 //
 //	for _, ch := range ps.Parent.GetRelevantChannels() {
-//		protoChan := ch.AllProtoChannels[ps.ProtoName].(*ProtoChannel)
+//		protoChan := ch.AllProtoChannels[ps.Protocol].(*ProtoChannel)
 //		res = append(res,
 //			ps.RenderOpenChannelMethod(ctx, protoChan.Type, protoChan, protoChan.Parent.ParametersType)...,
 //		)

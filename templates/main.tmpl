@@ -8,7 +8,7 @@
 
     {{- range .CurrentSelection.Protocols}}
         {{- with (deref $.Object).SelectProtoObject . }}
-            {{- tmpl (print .ProtoName "_server.tmpl") . }}
+            {{- tmpl (print .Protocol "_server.tmpl") . }}
         {{- end}}
     {{- end}}
 
@@ -21,7 +21,7 @@
     {{- end}}
     {{- range .CurrentSelection.Protocols}}
         {{- with (deref $.Object).SelectProtoObject . }}
-            {{- tmpl (print .ProtoName "_channel.tmpl") . }}
+            {{- tmpl (print .Protocol "_channel.tmpl") . }}
         {{- end}}
     {{- end}}
 
@@ -32,7 +32,7 @@
 
     {{- range .CurrentSelection.Protocols}}
         {{- with (deref $.Object).SelectProtoObject . }}
-            {{- tmpl (print .ProtoName "_message.tmpl") . }}
+            {{- tmpl (print .Protocol "_message.tmpl") . }}
         {{- end}}
     {{- end}}
 {{- end}}

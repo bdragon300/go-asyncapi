@@ -40,7 +40,7 @@ func (s *Server) Visible() bool {
 }
 
 func (s *Server) SelectProtoObject(protocol string) common.Renderable {
-	if s.ProtoServer.Selectable() && s.ProtoServer.ProtoName == protocol {
+	if s.ProtoServer.Selectable() && s.ProtoServer.Protocol == protocol {
 		return s.ProtoServer
 	}
 	return nil
@@ -65,7 +65,7 @@ func (s *Server) GetBoundChannels() []common.Renderable {
 		}
 		if ch, ok := r.(*Channel); ok {
 			// Empty/omitted servers field in channel means "all servers"
-			return len(ch.SpecServerNames) == 0 || lo.Contains(ch.SpecServerNames, currentName)
+			return len(ch.BoundServerNames) == 0 || lo.Contains(ch.BoundServerNames, currentName)
 		}
 		return false
 	})
@@ -75,7 +75,7 @@ func (s *Server) GetBoundChannels() []common.Renderable {
 //func (p *ProtoServer) GetBoundProtoChannels(protoName string) []*ProtoChannel {
 //	channels := p.GetBoundChannels()
 //	res := lo.FlatMap(channels, func(ch common.Renderable, _ int) []*ProtoChannel {
-//		return lo.Map(ch.SelectProtoObject([]string{p.ProtoName}), func(item common.Renderable, _ int) *ProtoChannel {
+//		return lo.Map(ch.SelectProtoObject([]string{p.Protocol}), func(item common.Renderable, _ int) *ProtoChannel {
 //			return item.(*ProtoChannel)
 //		})
 //	})
@@ -196,8 +196,6 @@ func (s *Server) ProtoBindingsValue(protoName string) common.Renderable {
 type ProtoServer struct {
 	*Server
 	Type *lang.GoStruct // Nil if server is dummy or has unsupported protocol
-
-	ProtoName string // TODO: difference between ProtoName and Protocol? Maybe remove ProtoName?
 }
 
 func (p *ProtoServer) String() string {

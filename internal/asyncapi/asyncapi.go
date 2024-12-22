@@ -3,7 +3,6 @@ package asyncapi
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
-	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 )
 
@@ -28,14 +27,7 @@ func (a AsyncAPI) Compile(ctx *common.CompileContext) error {
 }
 
 func (a AsyncAPI) build(ctx *common.CompileContext) *render.AsyncAPI {
-	allMessagesPrm := lang.NewListCbPromise[*render.Message](func(item common.CompileObject, _ []string) bool {
-		_, ok := item.Renderable.(*render.Message)
-		return ok
-	})
-	ctx.PutListPromise(allMessagesPrm)
-
 	res := &render.AsyncAPI{
-		AllMessages:        allMessagesPrm,
 		DefaultContentType: a.DefaultContentType,
 	}
 	return res

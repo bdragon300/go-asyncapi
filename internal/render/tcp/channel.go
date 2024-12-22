@@ -5,7 +5,7 @@ package tcp
 //	GolangNameProto string // Channel TypeNamePrefix name concatenated with protocol name, e.g. Channel1Kafka
 //	Type          *render.GoStruct
 //
-//	ProtoName, ProtoTitle string
+//	Protocol, ProtoTitle string
 //}
 //
 //func (pc ProtoChannel) Selectable() bool {
@@ -13,7 +13,7 @@ package tcp
 //}
 //
 //func (pc ProtoChannel) D(ctx *common.RenderContext) []*j.Statement {
-//	ctx.LogStartRender("Channel", "", pc.Parent.GetOriginalName, "definition", pc.Selectable(), "proto", pc.ProtoName)
+//	ctx.LogStartRender("Channel", "", pc.Parent.GetOriginalName, "definition", pc.Selectable(), "proto", pc.Protocol)
 //	defer ctx.LogFinishRender()
 //	var res []*j.Statement
 //	res = append(res, pc.ServerIface.D(ctx)...)
@@ -33,7 +33,7 @@ package tcp
 //}
 //
 //func (pc ProtoChannel) U(ctx *common.RenderContext) []*j.Statement {
-//	ctx.LogStartRender("Channel", "", pc.Parent.GetOriginalName, "usage", pc.Selectable(), "proto", pc.ProtoName)
+//	ctx.LogStartRender("Channel", "", pc.Parent.GetOriginalName, "usage", pc.Selectable(), "proto", pc.Protocol)
 //	defer ctx.LogFinishRender()
 //	return pc.Type.U(ctx)
 //}
@@ -43,11 +43,11 @@ package tcp
 //}
 //
 //func (pc ProtoChannel) String() string {
-//	return "TCP ProtoChannel " + pc.Parent.GetOriginalName // TODO: substitute ProtoName (everywhere) + remove copypaste everywhere
+//	return "TCP ProtoChannel " + pc.Parent.GetOriginalName // TODO: substitute Protocol (everywhere) + remove copypaste everywhere
 //}
 //
 //func (pc ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {
-//	ctx.Logger.Trace("renderNewFunc", "proto", pc.ProtoName)
+//	ctx.Logger.Trace("renderNewFunc", "proto", pc.Protocol)
 //
 //	return []*j.Statement{
 //		// NewChannel1Proto(params Channel1Parameters, publisher proto.Publisher, subscriber proto.Subscriber) *Channel1Proto
@@ -57,10 +57,10 @@ package tcp
 //					g.Id("params").Add(utils.ToCode(pc.Parent.ParametersType.U(ctx))...)
 //				}
 //				if pc.Parent.Publisher {
-//					g.Id("publisher").Qual(ctx.RuntimeModule(pc.ProtoName), "Publisher")
+//					g.Id("publisher").Qual(ctx.RuntimeModule(pc.Protocol), "Publisher")
 //				}
 //				if pc.Parent.Subscriber {
-//					g.Id("subscriber").Qual(ctx.RuntimeModule(pc.ProtoName), "Subscriber")
+//					g.Id("subscriber").Qual(ctx.RuntimeModule(pc.Protocol), "Subscriber")
 //				}
 //			}).
 //			Op("*").Add(utils.ToCode(pc.Type.U(ctx))...).
@@ -88,7 +88,7 @@ package tcp
 //}
 //
 //func (pc ProtoChannel) renderProtoPublisherMethods(ctx *common.RenderContext) []*j.Statement {
-//	ctx.Logger.Trace("renderProtoPublisherMethods", "proto", pc.ProtoName)
+//	ctx.Logger.Trace("renderProtoPublisherMethods", "proto", pc.Protocol)
 //
 //	rn := pc.Type.ReceiverName()
 //	receiver := j.Id(rn).Id(pc.Type.GetOriginalName)
@@ -102,7 +102,7 @@ package tcp
 //		// Method SealEnvelope(envelope proto.EnvelopeWriter, message *Message1Out) error
 //		j.Func().Params(receiver.Clone()).Id("SealEnvelope").
 //			ParamsFunc(func(g *j.Group) {
-//				g.Id("envelope").Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeWriter")
+//				g.Id("envelope").Qual(ctx.RuntimeModule(pc.Protocol), "EnvelopeWriter")
 //				g.Id("message").Add(utils.ToCode(msgTyp.U(ctx))...)
 //			}).
 //			Error().
@@ -115,14 +115,14 @@ package tcp
 //							return err
 //						}`))
 //				} else { // Message is set for Channel in spec
-//					// TODO: substitute ProtoName below (everywhere)
+//					// TODO: substitute Protocol below (everywhere)
 //					bg.Op(`
-//						if err := message.MarshalTCPEnvelope(envelope); err != nil {
+//						if err := message.MarshalEnvelopeTCP(envelope); err != nil {
 //							return err
 //						}`)
 //				}
 //				// Message SetBindings
-//				if pc.Parent.PublisherMessageTypePromise != nil && pc.Parent.PublisherMessageTypePromise.Target().HasProtoBindings(pc.ProtoName) {
+//				if pc.Parent.PublisherMessageTypePromise != nil && pc.Parent.PublisherMessageTypePromise.Target().HasProtoBindings(pc.Protocol) {
 //					bg.Op("envelope.SetBindings").Call(
 //						j.Add(utils.ToCode(pc.Parent.PublisherMessageTypePromise.Target().BindingsType.U(ctx))...).Values().Dot(pc.ProtoTitle).Call(),
 //					)

@@ -5,7 +5,7 @@ package proto
 //	GolangNameProto string // Channel TypeNamePrefix name concatenated with protocol name, e.g. Channel1Kafka
 //	Type          *render.GoStruct
 //
-//	ProtoName, ProtoTitle string
+//	Protocol, ProtoTitle string
 //}
 
 
@@ -16,11 +16,11 @@ package proto
 //	Type          *render.GoStruct
 //	//ServerIface     *render.GoInterface
 //
-//	ProtoName, ProtoTitle string
+//	Protocol, ProtoTitle string
 //}
 
 //func (pc BaseProtoChannel) RenderCommonSubscriberMethods(ctx *common.RenderContext) []*j.Statement {
-//	ctx.Logger.Trace("RenderCommonSubscriberMethods", "proto", pc.ProtoName)
+//	ctx.Logger.Trace("RenderCommonSubscriberMethods", "proto", pc.Protocol)
 //
 //	rn := pc.Type.ReceiverName()
 //	receiver := j.Id(rn).Id(pc.Type.GetOriginalName)
@@ -33,7 +33,7 @@ package proto
 //		// Method ExtractEnvelope(envelope proto.EnvelopeReader, message *Message1In) error
 //		j.Func().Params(receiver.Clone()).Id("ExtractEnvelope").
 //			Params(
-//				j.Id("envelope").Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeReader"),
+//				j.Id("envelope").Qual(ctx.RuntimeModule(pc.Protocol), "EnvelopeReader"),
 //				j.Id("message").Add(utils.ToCode(msgTyp.U(ctx))...),
 //			).
 //			Error().
@@ -52,7 +52,7 @@ package proto
 //		// Method Subscriber() proto.Subscriber
 //		j.Func().Params(receiver.Clone()).Id("Subscriber").
 //			Params().
-//			Qual(ctx.RuntimeModule(pc.ProtoName), "Subscriber").
+//			Qual(ctx.RuntimeModule(pc.Protocol), "Subscriber").
 //			Block(
 //				j.Return(j.Id(rn).Dot("subscriber")),
 //			),
@@ -62,7 +62,7 @@ package proto
 //			Params(
 //				j.Id("ctx").Qual("context", "Context"),
 //				// FIXME: *any on fallback variant
-//				j.Id("cb").Func().Params(j.Id("envelope").Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeReader")),
+//				j.Id("cb").Func().Params(j.Id("envelope").Qual(ctx.RuntimeModule(pc.Protocol), "EnvelopeReader")),
 //			).
 //			Error().
 //			Block(
@@ -72,7 +72,7 @@ package proto
 //}
 
 //func (pc BaseProtoChannel) RenderCommonPublisherMethods(ctx *common.RenderContext) []*j.Statement {
-//	ctx.Logger.Trace("RenderCommonPublisherMethods", "proto", pc.ProtoName)
+//	ctx.Logger.Trace("RenderCommonPublisherMethods", "proto", pc.Protocol)
 //
 //	rn := pc.Type.ReceiverName()
 //	receiver := j.Id(rn).Id(pc.Type.GetOriginalName)
@@ -81,7 +81,7 @@ package proto
 //		// Method Publisher() proto.Publisher
 //		j.Func().Params(receiver.Clone()).Id("Publisher").
 //			Params().
-//			Qual(ctx.RuntimeModule(pc.ProtoName), "Publisher").
+//			Qual(ctx.RuntimeModule(pc.Protocol), "Publisher").
 //			Block(
 //				j.Return(j.Id(rn).Dot("publisher")),
 //			),
@@ -90,7 +90,7 @@ package proto
 //		j.Func().Params(receiver.Clone()).Id("Publish").
 //			Params(
 //				j.Id("ctx").Qual("context", "Context"),
-//				j.Id("envelopes").Op("...").Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeWriter"),
+//				j.Id("envelopes").Op("...").Qual(ctx.RuntimeModule(pc.Protocol), "EnvelopeWriter"),
 //			).
 //			Error().
 //			Block(
@@ -100,7 +100,7 @@ package proto
 //}
 
 //func (pc BaseProtoChannel) RenderCommonMethods(ctx *common.RenderContext) []*j.Statement {
-//	ctx.Logger.Trace("RenderCommonMethods", "proto", pc.ProtoName)
+//	ctx.Logger.Trace("RenderCommonMethods", "proto", pc.Protocol)
 //
 //	rn := pc.Type.ReceiverName()
 //	receiver := j.Id(rn).Id(pc.Type.GetOriginalName)
@@ -135,7 +135,7 @@ package proto
 //}
 
 //func (pc BaseProtoChannel) RenderOpenFunc(ctx *common.RenderContext) []*j.Statement {
-//	ctx.Logger.Trace("RenderOpenFunc", "proto", pc.ProtoName)
+//	ctx.Logger.Trace("RenderOpenFunc", "proto", pc.Protocol)
 //
 //	return []*j.Statement{
 //		// OpenChannel1Proto(ctx context.Context, params Channel1Parameters, servers ...channel1ProtoServer) (*Channel1Proto, error)
@@ -160,10 +160,10 @@ package proto
 //						bg.Id("bindings").Op(":=").Id(pc.Parent.BindingsType.GetOriginalName).Values().Dot(pc.ProtoTitle).Call()
 //					}
 //					if pc.Parent.Publisher {
-//						bg.Var().Id("prod").Index().Qual(ctx.RuntimeModule(pc.ProtoName), "Producer")
+//						bg.Var().Id("prod").Index().Qual(ctx.RuntimeModule(pc.Protocol), "Producer")
 //					}
 //					if pc.Parent.Subscriber {
-//						bg.Var().Id("cons").Index().Qual(ctx.RuntimeModule(pc.ProtoName), "Consumer")
+//						bg.Var().Id("cons").Index().Qual(ctx.RuntimeModule(pc.Protocol), "Consumer")
 //					}
 //					bg.Op("for _, srv := range servers").BlockFunc(func(g *j.Group) {
 //						if pc.Parent.Publisher {
@@ -184,9 +184,9 @@ package proto
 //					bg.Op("pubs, err := ").
 //						Qual(ctx.RuntimeModule(""), "GatherPublishers").
 //						Types(
-//							j.Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeWriter"),
-//							j.Qual(ctx.RuntimeModule(pc.ProtoName), "Publisher"),
-//							j.Qual(ctx.RuntimeModule(pc.ProtoName), "ChannelBindings"),
+//							j.Qual(ctx.RuntimeModule(pc.Protocol), "EnvelopeWriter"),
+//							j.Qual(ctx.RuntimeModule(pc.Protocol), "Publisher"),
+//							j.Qual(ctx.RuntimeModule(pc.Protocol), "ChannelBindings"),
 //						).
 //						CallFunc(func(g *j.Group) {
 //							g.Id("ctx")
@@ -199,16 +199,16 @@ package proto
 //							return nil, err
 //						}`)
 //					bg.Op("pub := ").Qual(ctx.RuntimeModule(""), "PublisherFanOut").
-//						Types(j.Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeWriter"), j.Qual(ctx.RuntimeModule(pc.ProtoName), "Publisher")).
+//						Types(j.Qual(ctx.RuntimeModule(pc.Protocol), "EnvelopeWriter"), j.Qual(ctx.RuntimeModule(pc.Protocol), "Publisher")).
 //						Op("{Publishers: pubs}")
 //				}
 //				if pc.Parent.Subscriber {
 //					bg.Op("subs, err := ").
 //						Qual(ctx.RuntimeModule(""), "GatherSubscribers").
 //						Types(
-//							j.Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeReader"),
-//							j.Qual(ctx.RuntimeModule(pc.ProtoName), "Subscriber"),
-//							j.Qual(ctx.RuntimeModule(pc.ProtoName), "ChannelBindings"),
+//							j.Qual(ctx.RuntimeModule(pc.Protocol), "EnvelopeReader"),
+//							j.Qual(ctx.RuntimeModule(pc.Protocol), "Subscriber"),
+//							j.Qual(ctx.RuntimeModule(pc.Protocol), "ChannelBindings"),
 //						).
 //						CallFunc(func(g *j.Group) {
 //							g.Id("ctx")
@@ -223,7 +223,7 @@ package proto
 //						g.Op("return nil, err")
 //					})
 //					bg.Op("sub := ").Qual(ctx.RuntimeModule(""), "SubscriberFanIn").
-//						Types(j.Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeReader"), j.Qual(ctx.RuntimeModule(pc.ProtoName), "Subscriber")).
+//						Types(j.Qual(ctx.RuntimeModule(pc.Protocol), "EnvelopeReader"), j.Qual(ctx.RuntimeModule(pc.Protocol), "Subscriber")).
 //						Op("{Subscribers: subs}")
 //				}
 //				bg.Op("ch := ").Id(pc.Type.NewFuncName()).CallFunc(func(g *j.Group) {

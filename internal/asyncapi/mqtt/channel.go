@@ -28,9 +28,9 @@ func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncap
 	chanStruct.Fields = append(chanStruct.Fields, lang.GoStructField{Name: "topic", Type: &lang.GoSimple{TypeName: "string"}})
 
 	return &render.ProtoChannel{
-		Channel:         parent,
-		Type:            chanStruct,
-		ProtoName:       pb.ProtoName,
+		Channel:  parent,
+		Type:     chanStruct,
+		Protocol: pb.ProtoName,
 	}, nil
 }
 

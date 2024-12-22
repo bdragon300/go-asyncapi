@@ -125,7 +125,7 @@ func (m MyChannelKafka) Publish(ctx context.Context, envelopes ...kafka.Envelope
 func (m MyChannelKafka) SealEnvelope(envelope kafka.EnvelopeWriter, message *MyChannelMessageOut) error {
 	envelope.ResetPayload()
 
-	if err := message.MarshalKafkaEnvelope(envelope); err != nil {
+	if err := message.MarshalEnvelopeKafka(envelope); err != nil {
 		return err
 	}
 	envelope.SetTopic(m.topic)

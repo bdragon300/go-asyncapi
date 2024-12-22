@@ -14,8 +14,8 @@
 
 type {{ .Type | goid }}Server interface {
     Open{{.Type | goid}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType | gousage }}{{end}}) (*{{.Type | gousage }}, error)
-    {{if .IsPublisher}}Producer() {{qualrun .ProtoName "Producer"}}{{end}}
-    {{if .IsSubscriber}}Consumer() {{qualrun .ProtoName "Consumer"}}{{end}}
+    {{if .IsPublisher}}Producer() {{qualrun .Protocol "Producer"}}{{end}}
+    {{if .IsSubscriber}}Consumer() {{qualrun .Protocol "Consumer"}}{{end}}
 }
 
 {{- end}}

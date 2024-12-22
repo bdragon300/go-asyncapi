@@ -49,7 +49,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	if s.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", s.Ref)
 		// Make a promise selectable if it defined in `servers` section
-		prm := lang.NewUserPromise(s.Ref, serverKey, lo.Ternary(isComponent, nil, lo.ToPtr(true)))
+		prm := lang.NewRef(s.Ref, serverKey, lo.Ternary(isComponent, nil, lo.ToPtr(true)))
 		ctx.PutPromise(prm)
 		return prm, nil
 	}
@@ -84,7 +84,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		}
 
 		ref := ctx.PathStackRef("bindings")
-		res.BindingsPromise = lang.NewInternalPromise[*render.Bindings](ref)
+		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref)
 		ctx.PutPromise(res.BindingsPromise)
 	}
 
@@ -92,7 +92,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	for _, v := range s.Variables.Entries() {
 		ctx.Logger.Trace("Server variable", "name", v.Key)
 		ref := ctx.PathStackRef("variables", v.Key)
-		prm := lang.NewInternalPromise[*render.ServerVariable](ref)
+		prm := lang.NewPromise[*render.ServerVariable](ref)
 		ctx.PutPromise(prm)
 		res.VariablesPromises.Set(v.Key, prm)
 	}

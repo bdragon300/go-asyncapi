@@ -36,7 +36,7 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 	//}
 	if p.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", p.Ref)
-		res := lang.NewUserPromise(p.Ref, parameterKey, nil)
+		res := lang.NewRef(p.Ref, parameterKey, nil)
 		ctx.PutPromise(res)
 		return res, nil
 	}
@@ -46,7 +46,7 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 
 	if p.Schema != nil {
 		ctx.Logger.Trace("Parameter schema")
-		prm := lang.NewInternalGolangTypePromise(ctx.PathStackRef("schema"))
+		prm := lang.NewGolangTypePromise(ctx.PathStackRef("schema"))
 		ctx.PutPromise(prm)
 		res.Type = &lang.GoStruct{
 			BaseType: lang.BaseType{

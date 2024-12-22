@@ -5,7 +5,7 @@ package amqp
 //}
 
 //func (pc ProtoChannel) D(ctx *common.RenderContext) []*j.Statement {
-//	ctx.LogStartRender("Channel", "", pc.Parent.GetOriginalName, "definition", pc.Selectable(), "proto", pc.ProtoName)
+//	ctx.LogStartRender("Channel", "", pc.Parent.GetOriginalName, "definition", pc.Selectable(), "proto", pc.Protocol)
 //	defer ctx.LogFinishRender()
 //
 //	var res []*j.Statement
@@ -26,7 +26,7 @@ package amqp
 //}
 
 //func (pc ProtoChannel) U(ctx *common.RenderContext) []*j.Statement {
-//	ctx.LogStartRender("Channel", "", pc.Parent.GetOriginalName, "usage", pc.Selectable(), "proto", pc.ProtoName)
+//	ctx.LogStartRender("Channel", "", pc.Parent.GetOriginalName, "usage", pc.Selectable(), "proto", pc.Protocol)
 //	defer ctx.LogFinishRender()
 //	return pc.Type.U(ctx)
 //}
@@ -40,7 +40,7 @@ package amqp
 //}
 
 //func (pc ProtoChannel) renderNewFunc(ctx *common.RenderContext) []*j.Statement {
-//	ctx.Logger.Trace("renderNewFunc", "proto", pc.ProtoName)
+//	ctx.Logger.Trace("renderNewFunc", "proto", pc.Protocol)
 //	return []*j.Statement{
 //		// NewChannel1Proto(params Channel1Parameters, publisher proto.Publisher, subscriber proto.Subscriber) *Channel1Proto
 //		j.Func().Id(pc.Type.NewFuncName()).
@@ -49,10 +49,10 @@ package amqp
 //					g.Id("params").Add(utils.ToCode(pc.Parent.ParametersType.U(ctx))...)
 //				}
 //				if pc.Parent.Publisher {
-//					g.Id("publisher").Qual(ctx.RuntimeModule(pc.ProtoName), "Publisher")
+//					g.Id("publisher").Qual(ctx.RuntimeModule(pc.Protocol), "Publisher")
 //				}
 //				if pc.Parent.Subscriber {
-//					g.Id("subscriber").Qual(ctx.RuntimeModule(pc.ProtoName), "Subscriber")
+//					g.Id("subscriber").Qual(ctx.RuntimeModule(pc.Protocol), "Subscriber")
 //				}
 //			}).
 //			Op("*").Add(utils.ToCode(pc.Type.U(ctx))...).
@@ -76,7 +76,7 @@ package amqp
 //						utils.ToCode(pc.Parent.BindingsType.U(ctx))...,
 //					).Values().Dot(pc.ProtoTitle).Call()
 //					bg.Switch(j.Id("bindings.ChannelType")).BlockFunc(func(bg2 *j.Group) {
-//						bg2.Case(j.Qual(ctx.RuntimeModule(pc.ProtoName), "ChannelTypeQueue")).Block(
+//						bg2.Case(j.Qual(ctx.RuntimeModule(pc.Protocol), "ChannelTypeQueue")).Block(
 //							j.Id("res.queue").Op("=").Op("res.name.String()"),
 //						)
 //						bg2.Default().Block(
@@ -97,7 +97,7 @@ package amqp
 //}
 
 //func (pc ProtoChannel) renderProtoMethods(ctx *common.RenderContext) []*j.Statement {
-//	ctx.Logger.Trace("renderProtoMethods", "proto", pc.ProtoName)
+//	ctx.Logger.Trace("renderProtoMethods", "proto", pc.Protocol)
 //	rn := pc.Type.ReceiverName()
 //	receiver := j.Id(rn).Id(pc.Type.GetOriginalName)
 //
@@ -129,7 +129,7 @@ package amqp
 //}
 
 //func (pc ProtoChannel) renderProtoPublisherMethods(ctx *common.RenderContext) []*j.Statement {
-//	ctx.Logger.Trace("renderProtoPublisherMethods", "proto", pc.ProtoName)
+//	ctx.Logger.Trace("renderProtoPublisherMethods", "proto", pc.Protocol)
 //	rn := pc.Type.ReceiverName()
 //	receiver := j.Id(rn).Id(pc.Type.GetOriginalName)
 //
@@ -142,7 +142,7 @@ package amqp
 //		// Method SealEnvelope(envelope proto.EnvelopeWriter, message *Message1Out) error
 //		j.Func().Params(receiver.Clone()).Id("SealEnvelope").
 //			ParamsFunc(func(g *j.Group) {
-//				g.Id("envelope").Qual(ctx.RuntimeModule(pc.ProtoName), "EnvelopeWriter")
+//				g.Id("envelope").Qual(ctx.RuntimeModule(pc.Protocol), "EnvelopeWriter")
 //				g.Id("message").Add(utils.ToCode(msgTyp.U(ctx))...)
 //			}).
 //			Error().
@@ -156,13 +156,13 @@ package amqp
 //						}`))
 //				} else { // Message is set for Channel in spec
 //					bg.Op(`
-//						if err := message.MarshalAMQPEnvelope(envelope); err != nil {
+//						if err := message.MarshalEnvelopeAMQP(envelope); err != nil {
 //							return err
 //						}`)
 //				}
 //				bg.Id("envelope").Dot("SetRoutingKey").Call(j.Id(rn).Dot("routingKey"))
 //				// Message SetBindings
-//				if pc.PublisherMessageTypePromise != nil && pc.PublisherMessageTypePromise.Target().HasProtoBindings(pc.ProtoName) {
+//				if pc.PublisherMessageTypePromise != nil && pc.PublisherMessageTypePromise.Target().HasProtoBindings(pc.Protocol) {
 //					bg.Op("envelope.SetBindings").Call(
 //						j.Add(utils.ToCode(pc.PublisherMessageTypePromise.Target().BindingsType.U(ctx))...).Values().Dot(pc.ProtoTitle).Call(),
 //					)

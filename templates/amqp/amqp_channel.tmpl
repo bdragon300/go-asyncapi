@@ -1,20 +1,20 @@
 {{- localobj .Type}}
 {{template "proto/channel/openFunction" .}}
 
-func New{{ .Channel | goid }}{{.ProtoName | capitalize | goid}}(
+func New{{ .Channel | goid }}{{.Protocol | capitalize | goid}}(
     {{ if .ParametersType}}params {{ .ParametersType | gousage }},{{end}}
-    {{ if .IsPublisher}}publisher {{qualrun .ProtoName "Publisher"}},{{end}}
-    {{ if .IsSubscriber}}subscriber {{qualrun .ProtoName "Subscriber"}},{{end}}
+    {{ if .IsPublisher}}publisher {{qualrun .Protocol "Publisher"}},{{end}}
+    {{ if .IsSubscriber}}subscriber {{qualrun .Protocol "Subscriber"}},{{end}}
 ) *{{ .Type | gousage }} {
     res := {{ .Type | gousage }}{
         name: {{ .Channel | goid }}Name({{if .ParametersType}}params{{end}}),
         {{if .IsPublisher}}publisher: publisher,{{end}}
         {{if .IsSubscriber}}subscriber: subscriber,{{end}}
     }
-    {{- if and .BindingsType (.BindingsProtocols | has .ProtoName)}}
-        bindings := {{ .BindingsType | gousage }}{}.{{.ProtoName | capitalize | goid}}()
+    {{- if and .BindingsType (.BindingsProtocols | has .Protocol)}}
+        bindings := {{ .BindingsType | gousage }}{}.{{.Protocol | capitalize | goid}}()
         switch bindings.ChannelType {
-        case {{qualrun .ProtoName "ChannelTypeQueue"}}:
+        case {{qualrun .Protocol "ChannelTypeQueue"}}:
             res.queue = res.name.String()
         default:
             res.routingKey = res.name.String()
@@ -49,11 +49,11 @@ func (c {{ .Type | gousage }}) RoutingKey() string {
 
 {{- if .IsPublisher}}
     {{template "proto/channel/outputMethods" .}}
-    func (c {{ .Type | gousage }}) SealEnvelope(envelope {{qualrun .ProtoName "EnvelopeWriter"}}, message {{if .PublisherMessageTypePromise}}{{goptr .PublisherMessageTypePromise.T.OutType}}{{else}}any{{end}}) error {
+    func (c {{ .Type | gousage }}) SealEnvelope(envelope {{qualrun .Protocol "EnvelopeWriter"}}, message {{if .PublisherMessageTypePromise}}{{goptr .PublisherMessageTypePromise.T.OutType}}{{else}}any{{end}}) error {
         envelope.ResetPayload()
         {{- if .PublisherMessageTypePromise}}
             {{- /* Message is set for Channel in spec */}}
-            if err := message.Marshal{{.ProtoName | capitalize | goid}}Envelope(envelope); err != nil {
+            if err := message.MarshalEnvelope{{.Protocol | capitalize | goid}}(envelope); err != nil {
                 return err
             }
         {{- else}}
@@ -64,8 +64,8 @@ func (c {{ .Type | gousage }}) RoutingKey() string {
             }
         {{- end}}
         envelope.SetRoutingKey(c.RoutingKey())
-        {{- if and .PublisherMessageTypePromise (.PublisherMessageTypePromise.T.BindingsProtocols | has .ProtoName)}}
-            envelope.SetBindings({{ .PublisherMessageTypePromise.T.BindingsType | gousage }}{}.{{.ProtoName | capitalize | goid}}())
+        {{- if and .PublisherMessageTypePromise (.PublisherMessageTypePromise.T.BindingsProtocols | has .Protocol)}}
+            envelope.SetBindings({{ .PublisherMessageTypePromise.T.BindingsType | gousage }}{}.{{.Protocol | capitalize | goid}}())
         {{- end}}
         return nil
     }
@@ -75,7 +75,7 @@ func (c {{ .Type | gousage }}) RoutingKey() string {
 
 type {{ .Type | goid }}Server interface {
     Open{{.Type | goid}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{ .ParametersType | gousage }}{{end}}) (*{{ .Type | gousage }}, error)
-    {{if .IsPublisher}}Producer() {{qualrun .ProtoName "Producer"}}{{end}}
-    {{if .IsSubscriber}}Consumer() {{qualrun .ProtoName "Consumer"}}{{end}}
+    {{if .IsPublisher}}Producer() {{qualrun .Protocol "Producer"}}{{end}}
+    {{if .IsSubscriber}}Consumer() {{qualrun .Protocol "Consumer"}}{{end}}
 }
 {{- end}}

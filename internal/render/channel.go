@@ -8,10 +8,10 @@ import (
 )
 
 type Channel struct {
-	OriginalName    string // Channel name, typically equals to Channel key, can get overridden in x-go-name
-	Dummy           bool
-	SpecServerNames []string                   // List of servers the channel is linked with. Empty means "all servers"
-	ServersPromise  *lang.ListPromise[*Server] // Servers list this channel is applied to, either explicitly marked or "all servers"
+	OriginalName     string // Channel name, typically equals to Channel key, can get overridden in x-go-name
+	Dummy            bool
+	BoundServerNames []string  // List of servers the channel is linked with. Empty list means "all servers"
+	ServersPromise   *lang.ListPromise[*Server] // Servers list this channel is bound with. Empty list means "no servers bound".
 
 	IsPublisher  bool // true if channel has `publish` operation
 	IsSubscriber bool // true if channel has `subscribe` operation
@@ -133,7 +133,7 @@ func (c *Channel) String() string {
 
 func (c *Channel) SelectProtoObject(protocol string) common.Renderable {
 	res := lo.Filter(c.ProtoChannels, func(p *ProtoChannel, _ int) bool {
-		return p.Selectable() && p.ProtoName == protocol
+		return p.Selectable() && p.Protocol == protocol
 	})
 	if len(res) > 0 {
 		return res[0]
@@ -222,7 +222,7 @@ type ProtoChannel struct {
 	*Channel
 	Type *lang.GoStruct
 
-	ProtoName string
+	Protocol string
 }
 
 func (p *ProtoChannel) Selectable() bool {
@@ -238,7 +238,7 @@ func (p *ProtoChannel) isBound() bool {
 	protos := lo.Map(p.ServersPromise.T(), func(s *Server, _ int) string { return s.Protocol })
 	r := lo.Contains(
 		protos,
-		p.ProtoName,
+		p.Protocol,
 	)
 	return r
 }

@@ -28,7 +28,7 @@ func (sv ServerVariable) Compile(ctx *common.CompileContext) error {
 func (sv ServerVariable) build(ctx *common.CompileContext, serverVariableKey string) (common.Renderable, error) {
 	if sv.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", sv.Ref)
-		res := lang.NewUserPromise(sv.Ref, serverVariableKey, nil)
+		res := lang.NewRef(sv.Ref, serverVariableKey, nil)
 		ctx.PutPromise(res)
 		return res, nil
 	}

@@ -53,7 +53,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 	if c.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", c.Ref)
 		// Make a promise selectable if it defined in `channels` section
-		prm := lang.NewUserPromise(c.Ref, channelKey, lo.Ternary(isComponent, nil, lo.ToPtr(true)))
+		prm := lang.NewRef(c.Ref, channelKey, lo.Ternary(isComponent, nil, lo.ToPtr(true)))
 		ctx.PutPromise(prm)
 		return prm, nil
 	}
@@ -77,7 +77,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 		for _, paramName := range c.Parameters.Keys() {
 			ctx.Logger.Trace("Channel parameter", "name", paramName)
 			ref := ctx.PathStackRef("parameters", paramName)
-			prm := lang.NewInternalGolangTypeAssignCbPromise(ref, func(obj any) common.GolangType {
+			prm := lang.NewGolangTypeAssignCbPromise(ref, nil, func(obj any) common.GolangType {
 				return obj.(*render.Parameter).Type
 			})
 			ctx.PutPromise(prm)
@@ -93,7 +93,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 	// Empty servers field means "no servers", omitted servers field means "all servers"
 	if c.Servers != nil {
 		ctx.Logger.Trace("Channel servers", "names", *c.Servers)
-		res.SpecServerNames = *c.Servers
+		res.BoundServerNames = *c.Servers
 		prm := lang.NewListCbPromise[*render.Server](func(item common.CompileObject, path []string) bool {
 			srv, ok := item.Renderable.(*render.Server)
 			if !ok {
@@ -120,7 +120,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 		hasBindings = true
 
 		ref := ctx.PathStackRef("bindings")
-		res.BindingsChannelPromise = lang.NewInternalPromise[*render.Bindings](ref)
+		res.BindingsChannelPromise = lang.NewPromise[*render.Bindings](ref)
 		ctx.PutPromise(res.BindingsChannelPromise)
 	}
 
@@ -133,13 +133,13 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 			hasBindings = true
 
 			ref := ctx.PathStackRef("publish", "bindings")
-			res.BindingsPublishPromise = lang.NewInternalPromise[*render.Bindings](ref)
+			res.BindingsPublishPromise = lang.NewPromise[*render.Bindings](ref)
 			ctx.PutPromise(res.BindingsPublishPromise)
 		}
 		if c.Publish.Message != nil {
 			ctx.Logger.Trace("Found publish operation message")
 			ref := ctx.PathStackRef("publish", "message")
-			res.PublisherMessageTypePromise = lang.NewInternalPromise[*render.Message](ref)
+			res.PublisherMessageTypePromise = lang.NewPromise[*render.Message](ref)
 			ctx.PutPromise(res.PublisherMessageTypePromise)
 		}
 	}
@@ -150,13 +150,13 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 			hasBindings = true
 
 			ref := ctx.PathStackRef("subscribe", "bindings")
-			res.BindingsSubscribePromise = lang.NewInternalPromise[*render.Bindings](ref)
+			res.BindingsSubscribePromise = lang.NewPromise[*render.Bindings](ref)
 			ctx.PutPromise(res.BindingsSubscribePromise)
 		}
 		if c.Subscribe.Message != nil {
 			ctx.Logger.Trace("Channel subscribe operation message")
 			ref := ctx.PathStackRef("subscribe", "message")
-			res.SubscriberMessageTypePromise = lang.NewInternalPromise[*render.Message](ref)
+			res.SubscriberMessageTypePromise = lang.NewPromise[*render.Message](ref)
 			ctx.PutPromise(res.SubscriberMessageTypePromise)
 		}
 	}

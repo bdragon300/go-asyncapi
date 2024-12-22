@@ -34,7 +34,7 @@ func (b *Bindings) build(
 ) (common.Renderable, error) {
 	if b.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", b.Ref)
-		res := lang.NewUserPromise(b.Ref, bindingsKey, nil)
+		res := lang.NewRef(b.Ref, bindingsKey, nil)
 		ctx.PutPromise(res)
 		return res, nil
 	}
