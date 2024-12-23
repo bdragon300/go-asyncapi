@@ -352,7 +352,6 @@ func getPubSubVariant(cmd *GenerateCmd) (pub bool, sub bool, variant *generatePu
 func getCompileOpts(opts generatePubSubArgs, isPub, isSub bool) (common.CompileOpts, error) {
 	//var err error
 	res := common.CompileOpts{
-		//NoEncodingPackage:   opts.NoEncoding,
 		AllowRemoteRefs:     opts.AllowRemoteRefs,
 		RuntimeModule:       opts.RuntimeModule,
 		GeneratePublishers:  isPub,

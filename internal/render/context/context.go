@@ -160,6 +160,15 @@ func (s *ImportsList) Clone() ImportsList {
 	return ImportsList{imports: lo.Assign(s.imports)}
 }
 
+func (s *ImportsList) String() string {
+	return strings.Join(lo.Map(s.Imports(), func(item common.ImportItem, _ int) string {
+		if item.Alias != "" {
+			return fmt.Sprintf("%s %s", item.Alias, item.PackagePath)
+		}
+		return item.PackagePath
+	}), "; ")
+}
+
 type RenderNameDefinition struct {
 	Object common.GolangType
 	Selection common.RenderSelectionConfig
@@ -215,6 +224,13 @@ func (s *RenderNamespace) Clone() RenderNamespace {
 		definitions: append([]RenderNameDefinition(nil), s.definitions...),
 		names: append([]string(nil), s.names...),
 	}
+}
+
+func (s *RenderNamespace) String() string {
+	defs := strings.Join(lo.Map(s.definitions, func(item RenderNameDefinition, _ int) string {
+		return fmt.Sprintf("[%[1]p] %[1]s", item.Object)
+	}), "; ")
+	return fmt.Sprintf("names: %s | defs: %s", strings.Join(s.names, "; "), defs)
 }
 
 //// LogStartRender is typically called at the beginning of a D or U method and logs that the

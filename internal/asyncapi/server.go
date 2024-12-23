@@ -33,9 +33,6 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 		return err
 	}
 	ctx.PutObject(obj)
-	//if v, ok := obj.(*render.Server); ok {
-	//	ctx.PutObject(v.ProtoServer)
-	//}
 	return nil
 }
 

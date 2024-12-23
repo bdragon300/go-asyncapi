@@ -49,9 +49,9 @@ func (c {{ .Type | gousage }}) RoutingKey() string {
 
 {{- if .IsPublisher}}
     {{template "proto/channel/outputMethods" .}}
-    func (c {{ .Type | gousage }}) SealEnvelope(envelope {{qualrun .Protocol "EnvelopeWriter"}}, message {{if .PublisherMessageTypePromise}}{{goptr .PublisherMessageTypePromise.T.OutType}}{{else}}any{{end}}) error {
+    func (c {{ .Type | gousage }}) SealEnvelope(envelope {{qualrun .Protocol "EnvelopeWriter"}}, message {{with .PublisherMessageType}}{{goptr .OutType}}{{else}}any{{end}}) error {
         envelope.ResetPayload()
-        {{- if .PublisherMessageTypePromise}}
+        {{- if .PublisherMessageType}}
             {{- /* Message is set for Channel in spec */}}
             if err := message.MarshalEnvelope{{.Protocol | capitalize | goid}}(envelope); err != nil {
                 return err
@@ -64,8 +64,8 @@ func (c {{ .Type | gousage }}) RoutingKey() string {
             }
         {{- end}}
         envelope.SetRoutingKey(c.RoutingKey())
-        {{- if and .PublisherMessageTypePromise (.PublisherMessageTypePromise.T.BindingsProtocols | has .Protocol)}}
-            envelope.SetBindings({{ .PublisherMessageTypePromise.T.BindingsType | gousage }}{}.{{.Protocol | capitalize | goid}}())
+        {{- if and .PublisherMessageType (.PublisherMessageType.BindingsProtocols | has .Protocol)}}
+            envelope.SetBindings({{ .PublisherMessageType.BindingsType | gousage }}{}.{{.Protocol | capitalize | goid}}())
         {{- end}}
         return nil
     }

@@ -19,7 +19,6 @@ type ObjectListPromise interface {
 	AssignList(objs []any)
 	Assigned() bool
 	FindCallback() PromiseFindCbFunc
-	Ref() string
 }
 
 type PromiseFindCbFunc func(item CompileObject, path []string) bool

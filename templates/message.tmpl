@@ -27,8 +27,8 @@ func New{{ $ | goid }}In() *{{ .InType| gousage }} {
         {{- $bindingsValue := $message.ProtoBindingsValue $proto}}
         func (c {{ $message.BindingsType | gousage }}) {{ $proto | capitalize | goid }}() {{$bindingsValue.Type | gousage}} {
         b := {{$bindingsValue| gousage}}
-        {{- if $message.BindingsPromise}}
-            {{- $jvals := $message.BindingsPromise.T.JSONValues.GetOrEmpty $proto}}
+        {{- with $message.Bindings}}
+            {{- $jvals := .JSONValues.GetOrEmpty $proto}}
             {{- range $jval := $jvals.Entries}}
                 {{ $jval.Key | toCamelCase }} := {{$jval.Value | golit}}
                 _ = {{qual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})
@@ -39,10 +39,7 @@ func New{{ $ | goid }}In() *{{ .InType| gousage }} {
     {{- end}}
 {{- end }}
 
-{{- $headersType := .HeadersFallbackType}}
-{{- if .HeadersTypePromise}}
-    {{- $headersType := .HeadersTypePromise.T}}
-{{- end}}
+{{- $headersType := coalesce .HeadersType .HeadersFallbackType}}
 
 {{- if gondefined .OutType }}
 {{.OutType| godef}}
@@ -57,9 +54,9 @@ func (m *{{ .OutType | goid }}) WithHeaders(headers {{$headersType| gousage}}) *
     return m
 }
 
-{{- if .CorrelationIDPromise}}
-func (m {{ .OutType | goid }}) SetCorrelationID(value {{ .CorrelationIDPromise.T.TargetVarType .OutType | gousage}}) {
-    {{ .CorrelationIDPromise.T.RenderSetterBody "value" .OutType | gousage}}
+{{- with .CorrelationID}}
+func (m {{ $message.OutType | goid }}) SetCorrelationID(value {{ .TargetVarType $message.OutType | gousage}}) {
+    {{ .RenderSetterBody "value" $message.OutType | gousage}}
 }
 {{- end}}
 {{- end}}
@@ -75,9 +72,9 @@ func (m *{{ .InType | goid }}) MessageHeaders() {{$headersType| gousage}} {
     return m.Headers
 }
 
-{{- if .CorrelationIDPromise}}
-func (m {{ .InType | goid }}) CorrelationID() (value {{.CorrelationIDPromise.T.TargetVarType .InType | gousage}}}, err error) {
-    {{ .CorrelationIDPromise.T.RenderGetterBody "value" .InType | gousage}}
+{{- with .CorrelationID}}
+func (m {{ $message.InType | goid }}) CorrelationID() (value {{.TargetVarType $message.InType | gousage}}}, err error) {
+    {{ .RenderGetterBody "value" $message.InType | gousage}}
     return
 }
 {{- end}}

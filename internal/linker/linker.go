@@ -38,7 +38,7 @@ func AssignRefs(sources map[string]ObjectSource) {
 					case common.PromiseOriginUser:
 						logger.Debug("Processing a ref", "$ref", p.Ref(), "target", res)
 					default:
-						panic(fmt.Sprintf("Unknown promise origin %v, this must not happen", p.Origin()))
+						panic(fmt.Sprintf("Unknown promise origin %v, this is a bug", p.Origin()))
 					}
 
 					p.Assign(res)
@@ -153,7 +153,7 @@ func resolvePromise(p common.ObjectPromise, srcSpecID string, sources map[string
 		}
 		return resolvePromise(v, tgtSpecID, sources)
 	case common.ObjectListPromise:
-		panic(fmt.Sprintf("Ref %q must point to one object, but it points to a another list promise", p.Ref()))
+		panic(fmt.Sprintf("Ref %q must point to one object, but it points to another list promise", p.Ref()))
 	case common.Renderable:
 		return v, true
 	default:
@@ -164,53 +164,15 @@ func resolvePromise(p common.ObjectPromise, srcSpecID string, sources map[string
 // TODO: detect ref loops to avoid infinite recursion
 func resolveListPromise(p common.ObjectListPromise, srcSpecID string, sources map[string]ObjectSource) ([]common.Renderable, bool) {
 	// Exclude links from selection in order to avoid duplicates in list
-	cb := func(obj common.CompileObject, _ []string) bool { return !isPromise(obj) }
-	userCallback := p.FindCallback()
-	if userCallback != nil {
-		cb = userCallback
+	cb := p.FindCallback()
+	if cb == nil {
+		panic("List promise must have a callback, this is a bug")
 	}
 	srcObjects := sources[srcSpecID].AllObjects()
 	found := lo.Filter(srcObjects, func(obj common.CompileObject, _ int) bool {
 		return cb(obj, obj.ObjectURL.Pointer)
 	})
 
-	// If we set a callback, let it decide which objects should get to promise, don't do recursive resolving
-	if userCallback != nil {
-		return lo.Map(found, func(item common.CompileObject, _ int) common.Renderable { return item.Renderable }), true
-	}
-
-	var results []common.Renderable
-	for _, obj := range found {
-		switch v := obj.Renderable.(type) {
-		case common.ObjectPromise:
-			if !v.Assigned() {
-				return results, false
-			}
-			resolved, ok := resolvePromise(v, srcSpecID, sources)
-			if !ok {
-				return results, false
-			}
-			results = append(results, resolved)
-		case common.ObjectListPromise:
-			if !v.Assigned() {
-				return results, false
-			}
-			resolved, ok := resolveListPromise(v, srcSpecID, sources)
-			if !ok {
-				return results, false
-			}
-			results = append(results, resolved...)
-		case common.Renderable:
-			results = append(results, v)
-		default:
-			panic(fmt.Sprintf("Found an object of unexpected type %T", v))
-		}
-	}
-	return results, true
-}
-
-func isPromise(obj any) bool {
-	_, ok1 := obj.(common.ObjectPromise)
-	_, ok2 := obj.(common.ObjectListPromise)
-	return ok1 || ok2
+	// Let the callaback decide which objects should be promise targets, don't do recursive resolving
+	return lo.Map(found, func(item common.CompileObject, _ int) common.Renderable { return item.Renderable }), true
 }

@@ -111,46 +111,6 @@ func (r *Promise[T]) IsStruct() bool {
 	return false
 }
 
-func NewListCbPromise[T any](findCb common.PromiseFindCbFunc) *ListPromise[T] {
-	return &ListPromise[T]{findCb: findCb}
-}
-
-type ListPromise[T any] struct {
-	// AssignErrorNote is the optional error message additional note to be shown to user when assignment fails
-	AssignErrorNote string
-
-	ref    string
-	findCb common.PromiseFindCbFunc
-
-	targets  []T
-	assigned bool
-}
-
-func (r *ListPromise[T]) AssignList(objs []any) {
-	var ok bool
-	r.targets, ok = lo.FromAnySlice[T](objs)
-	if !ok {
-		panic(fmt.Sprintf("Cannot assign slice of %+v to a promise of type %T. %s", objs, r.targets, r.AssignErrorNote))
-	}
-	r.assigned = true
-}
-
-func (r *ListPromise[T]) Assigned() bool {
-	return r.assigned
-}
-
-func (r *ListPromise[T]) FindCallback() common.PromiseFindCbFunc {
-	return r.findCb
-}
-
-func (r *ListPromise[T]) T() []T {
-	return r.targets
-}
-
-func (r *ListPromise[T]) Ref() string {
-	return r.ref
-}
-
 func NewGolangTypePromise(ref string) *GolangTypePromise {
 	return &GolangTypePromise{
 		Promise: *newAssignCbPromise[common.GolangType](ref, common.PromiseOriginInternal, nil, nil),
@@ -201,6 +161,41 @@ func (r *GolangTypePromise) GoTemplate() string {
 
 func (r *GolangTypePromise) String() string {
 	return "GolangTypePromise -> " + r.ref
+}
+
+func NewListCbPromise[T any](findCb common.PromiseFindCbFunc) *ListPromise[T] {
+	return &ListPromise[T]{findCb: findCb}
+}
+
+type ListPromise[T any] struct {
+	// AssignErrorNote is the optional error message additional note to be shown to user when assignment fails
+	AssignErrorNote string
+
+	findCb common.PromiseFindCbFunc
+
+	targets  []T
+	assigned bool
+}
+
+func (r *ListPromise[T]) AssignList(objs []any) {
+	var ok bool
+	r.targets, ok = lo.FromAnySlice[T](objs)
+	if !ok {
+		panic(fmt.Sprintf("Cannot assign slice of %+v to a promise of type %T. %s", objs, r.targets, r.AssignErrorNote))
+	}
+	r.assigned = true
+}
+
+func (r *ListPromise[T]) Assigned() bool {
+	return r.assigned
+}
+
+func (r *ListPromise[T]) FindCallback() common.PromiseFindCbFunc {
+	return r.findCb
+}
+
+func (r *ListPromise[T]) T() []T {
+	return r.targets
 }
 
 func unwrapRenderablePromiseOrRef(val common.Renderable) common.Renderable {

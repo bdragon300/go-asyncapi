@@ -1,6 +1,7 @@
 package tmpl
 
 import (
+	"errors"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
@@ -44,6 +45,17 @@ func GetTemplateFunctions() template.FuncMap {
 		"qualrun": func(parts ...string) string { return common.GetContext().QualifiedRuntimeName(parts...) },
 		"tmpl": func(templateName string, ctx any) (string, error) {
 			return templateExecTemplate(templateName, ctx)
+		},
+		"trytmpl": func(templateName string, ctx any) (string, error) {
+			res, err := templateExecTemplate(templateName, ctx)
+			switch {
+			case errors.Is(err, ErrTemplateNotFound):
+				return "", nil
+			case err != nil:
+				return "", err
+			}
+
+			return res, nil
 		},
 		"localobj": func(obj ...common.GolangType) string {
 			for _, o := range obj {
@@ -129,9 +141,12 @@ func TemplateGoUsage(r common.GolangType) (string, error) {
 func templateExecTemplate(templateName string, ctx any) (string, error) {
 	var bld strings.Builder
 
-	tpl := LoadTemplate(templateName)
+	tpl, err := LoadTemplate(templateName)
+	if err != nil {
+		return "", fmt.Errorf("template %q: %w", templateName, err)
+	}
 	if err := tpl.Execute(&bld, ctx); err != nil {
-		return "", err
+		return "", fmt.Errorf("template %q: %w", templateName, err)
 	}
 	return bld.String(), nil
 }

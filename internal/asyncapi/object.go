@@ -90,13 +90,14 @@ func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]str
 		return &lang.GoSimple{TypeName: "any", IsInterface: true}, nil
 	}
 	if o.Ref != "" {
+		ctx.Logger.Trace("Ref", "$ref", o.Ref)
+
 		refName := objectKey
 		// Ignore the objectKey in definitions other than `components.schemas`, generate a unique name instead
 		if !isComponent {
 			refName = ctx.GenerateObjName("", "")
 		}
 
-		ctx.Logger.Trace("Ref", "$ref", o.Ref)
 		res := lang.NewRef(o.Ref, refName, lo.ToPtr(false))
 		ctx.PutPromise(res)
 		return res, nil
@@ -107,7 +108,7 @@ func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]str
 	}
 
 	if len(o.OneOf)+len(o.AnyOf)+len(o.AllOf) > 0 {
-		ctx.Logger.Trace("Object is union struct")
+		ctx.Logger.Trace("Object", "type", "union")
 		return o.buildUnionStruct(ctx, flags) // TODO: process other items that can be set along with oneof/anyof/allof
 	}
 
@@ -128,8 +129,7 @@ func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]str
 		ctx.Logger.Trace("Object is nullable, make it pointer")
 		golangType = &lang.GoPointer{Type: golangType}
 	}
-	n := golangType.Name()
-	_=n
+
 	return golangType, nil
 }
 
@@ -163,11 +163,11 @@ func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.Sch
 	if typeName == "object" {
 		if o.XGoType != nil && !o.XGoType.V1.Embedded {
 			f := buildXGoType(o.XGoType)
-			ctx.Logger.Trace("Object is custom type", "type", f.String())
+			ctx.Logger.Trace("Object with custom type", "type", f.String())
 			return f, nil
 		}
 
-		ctx.Logger.Trace("Object is struct")
+		ctx.Logger.Trace("Object", "type", "struct")
 		ctx.Logger.NextCallLevel()
 		golangType, err = o.buildLangStruct(ctx, flags)
 		ctx.Logger.PrevCallLevel()
@@ -179,13 +179,13 @@ func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.Sch
 
 	if o.XGoType != nil {
 		f := buildXGoType(o.XGoType)
-		ctx.Logger.Trace("Object is a custom type", "type", f.String())
+		ctx.Logger.Trace("Object with custom type", "type", f.String())
 		return f, nil
 	}
 
 	switch typeName {
 	case "array":
-		ctx.Logger.Trace("Object is array")
+		ctx.Logger.Trace("Object", "type", "array")
 		ctx.Logger.NextCallLevel()
 		golangType, err = o.buildLangArray(ctx, flags)
 		ctx.Logger.PrevCallLevel()
@@ -193,21 +193,21 @@ func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.Sch
 			return nil, err
 		}
 	case "null", "":
-		ctx.Logger.Trace("Object is any")
+		ctx.Logger.Trace("Object", "type", "any")
 		golangType = &lang.GoSimple{TypeName: "any", IsInterface: true}
 	case "boolean":
-		ctx.Logger.Trace("Object is bool")
+		ctx.Logger.Trace("Object", "type", "bool")
 		aliasedType = &lang.GoSimple{TypeName: "bool"}
 	case "integer":
 		// TODO: "format:"
-		ctx.Logger.Trace("Object is int")
+		ctx.Logger.Trace("Object", "type", "int")
 		aliasedType = &lang.GoSimple{TypeName: "int"}
 	case "number":
 		// TODO: "format:"
-		ctx.Logger.Trace("Object is float64")
+		ctx.Logger.Trace("Object", "type", "float64")
 		aliasedType = &lang.GoSimple{TypeName: "float64"}
 	case "string":
-		ctx.Logger.Trace("Object is string")
+		ctx.Logger.Trace("Object", "type", "string")
 		aliasedType = &lang.GoSimple{TypeName: "string"}
 	default:
 		return nil, types.CompileError{Err: fmt.Errorf("unknown jsonschema type %q", typeName), Path: ctx.PathStackRef()}
@@ -262,6 +262,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 	var contentTypesFunc func() []string
 	_, isMarshal := flags[common.SchemaTagMarshal]
 	if isMarshal {
+		ctx.Logger.Trace("Object struct is marshalable")
 		messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.CompileObject, _ []string) bool {
 			_, ok := item.Renderable.(*render.Message)
 			return ok
@@ -269,7 +270,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 		ctx.PutListPromise(messagesPrm)
 		contentTypesFunc = func() []string {
 			tagNames := lo.Uniq(lo.Map(messagesPrm.T(), func(item *render.Message, _ int) string {
-				return item.EffectiveContentType()
+				return guessTagByContentType(item.EffectiveContentType())
 			}))
 			slices.Sort(tagNames)
 			return tagNames
@@ -316,7 +317,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 		propName, _ := lo.Coalesce(o.AdditionalProperties.V0.XGoName, o.Title)
 		switch o.AdditionalProperties.Selector {
 		case 0: // "additionalProperties:" is an object
-			ctx.Logger.Trace("Object additional properties as an object")
+			ctx.Logger.Trace("Object additional properties", "type", "object")
 			ref := ctx.PathStackRef("additionalProperties")
 			prm := lang.NewGolangTypePromise(ref)
 			ctx.PutPromise(prm)
@@ -339,7 +340,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 			}
 			res.Fields = append(res.Fields, f)
 		case 1:
-			ctx.Logger.Trace("Object additional properties as boolean flag")
+			ctx.Logger.Trace("Object additional properties", "type", "boolean")
 			if o.AdditionalProperties.V1 { // "additionalProperties: true" -- allow any additional properties
 				valTyp := lang.GoTypeAlias{
 					BaseType: lang.BaseType{
@@ -386,13 +387,13 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 
 	switch {
 	case o.Items != nil && o.Items.Selector == 0: // Only one "type:" of items
-		ctx.Logger.Trace("Object items (single type)")
+		ctx.Logger.Trace("Object items", "typesCount", "single")
 		ref := ctx.PathStackRef("items")
 		prm := lang.NewGolangTypePromise(ref)
 		ctx.PutPromise(prm)
 		res.ItemsType = prm
 	case o.Items == nil || o.Items.Selector == 1: // No items or Several types for each item sequentially
-		ctx.Logger.Trace("Object items (zero or several types)")
+		ctx.Logger.Trace("Object items", "typesCount", "zero or several")
 		valTyp := lang.GoTypeAlias{
 			BaseType: lang.BaseType{
 				OriginalName:  ctx.GenerateObjName(objName, "ItemsItemValue"),

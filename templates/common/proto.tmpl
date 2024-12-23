@@ -31,9 +31,9 @@ func (c {{.Type| gousage}}) Publish(ctx {{qual "context.Context"}}, envelopes ..
 {{- /* Common template for channel publish methods that doesn't contain protocol-specific bindings manipulations */}}
 {{define "proto/channel/barePublishMethods"}}
     {{template "proto/channel/outputMethods" .}}
-    func (c {{.Type| gousage}}) SealEnvelope(envelope {{qualrun .Protocol "EnvelopeWriter"}}, message {{if .PublisherMessageTypePromise}}{{goptr .PublisherMessageTypePromise.T.OutType}}{{else}}any{{end}}) error {
+    func (c {{.Type| gousage}}) SealEnvelope(envelope {{qualrun .Protocol "EnvelopeWriter"}}, message {{with .PublisherMessageType}}{{goptr .OutType}}{{else}}any{{end}}) error {
         envelope.ResetPayload()
-        {{- if .PublisherMessageTypePromise}}
+        {{- if .PublisherMessageType}}
             {{- /*Message is set for Channel in spec*/}}
             if err := message.MarshalEnvelope{{.Protocol | capitalize | goid}}(envelope); err != nil {
                 return err
@@ -46,16 +46,16 @@ func (c {{.Type| gousage}}) Publish(ctx {{qual "context.Context"}}, envelopes ..
             }
         {{- end}}
 
-        {{- if and .PublisherMessageTypePromise (.PublisherMessageTypePromise.T.BindingsProtocols | has .Protocol)}}
-            envelope.SetBindings({{.PublisherMessageTypePromise.T.BindingsType | gousage}}{}.{{.Protocol | capitalize | goid}}())
+        {{- if and .PublisherMessageType (.PublisherMessageType.BindingsProtocols | has .Protocol)}}
+            envelope.SetBindings({{.PublisherMessageType.BindingsType | gousage}}{}.{{.Protocol | capitalize | goid}}())
         {{- end}}
         return nil
     }
 {{- end}}
 
 {{define "proto/channel/subscribeMethods"}}
-func (c {{.Type| gousage}}) ExtractEnvelope(envelope {{qualrun .Protocol "EnvelopeReader"}}, message {{if .SubscriberMessageTypePromise}}{{goptr .SubscriberMessageTypePromise.T.InType}}{{else}}any{{end}}) error {
-    {{- if .SubscriberMessageTypePromise}}
+func (c {{.Type| gousage}}) ExtractEnvelope(envelope {{qualrun .Protocol "EnvelopeReader"}}, message {{with .SubscriberMessageType}}{{goptr .InType}}{{else}}any{{end}}) error {
+    {{- if .SubscriberMessageType}}
         {{- /* Message set for Channel in spec */ -}}
         return message.UnmarshalEnvelope{{.Protocol | capitalize | goid}}(envelope)
     {{- else}}
@@ -130,11 +130,11 @@ func (c {{.Type| gousage}}) Subscribe(ctx {{qual "context.Context"}}, cb func(en
 
 {{define "proto/message/marshalUnmarshalMethods"}}
 func (m *{{ .OutType | goid }}) MarshalEnvelope{{ .Protocol | capitalize | goid }}(envelope {{qualrun .Protocol "EnvelopeWriter"}}) error {
-    {{- template "proto/message/encodeExpr" .}}
+    {{- template "proto/message/encoder" .}}
     envelope.SetContentType({{.ContentType | golit}})
-    {{- if .HeadersTypePromise}}
+    {{- with .HeadersType}}
         envelope.SetHeaders({
-        {{- range .HeadersTypePromise.T.Fields}}
+        {{- range .Fields}}
             {{ .Name | golit}}: m.Headers.{{.Name}},
         {{- end}}
         })
@@ -145,12 +145,12 @@ func (m *{{ .OutType | goid }}) MarshalEnvelope{{ .Protocol | capitalize | goid 
 }
 
 func (m *{{ .InType | goid }}) UnmarshalEnvelope{{ .Protocol | capitalize | goid }}(envelope {{qualrun .Protocol "EnvelopeReader"}}) error {
-    {{- template "proto/message/decodeExpr" .}}
-    {{- if .HeadersTypePromise }}
+    {{- template "proto/message/decoder" .}}
+    {{- with .HeadersType }}
         {{- /* Empty headers should not generate code */}}
-        {{- if gt (len .HeadersTypePromise.T.Fields) 0}}
+        {{- if gt (len .Fields) 0}}
             headers := envelope.Headers()
-            {{- range .HeadersTypePromise.T.Fields}}
+            {{- range .Fields}}
                 if v, ok := headers[{{.Name | golit}}]; ok {
                     m.Headers.{{.Name}} = v.({{.Type| gousage}})
                 }
@@ -163,32 +163,18 @@ func (m *{{ .InType | goid }}) UnmarshalEnvelope{{ .Protocol | capitalize | goid
 }
 {{- end}}
 
-{{define "proto/message/encodeExpr"}}
-{{- if .EffectiveContentType | hasSuffix "yaml"}}
-    enc := {{qual "encoding/yaml.v3.NewEncoder"}}(envelope)
-    if err := enc.Encode(m.Payload); err != nil {
-        return err
-    }
-{{- else}}
-    {{- /* Use json even we dealing with unknown content type */}}
-    enc := {{qual "encoding/json.NewEncoder"}}(envelope)
-    if err := enc.Encode(m.Payload); err != nil {
-        return err
-    }
-{{- end}}
+{{define "proto/message/encoder"}}
+    {{with trytmpl (print "proto/message/encoder/" .EffectiveContentType) .}}
+        {{.}}
+    {{else}}
+        {{template "proto/message/encoder/default" .}}
+    {{end}}
 {{- end}}
 
-{{define "proto/message/decodeExpr"}}
-{{- if .EffectiveContentType | hasSuffix "yaml"}}
-    dec := {{qual "encoding/yaml.v3.NewDecoder"}}(envelope)
-    if err := dec.Decode(&m.Payload); err != nil {
-        return err
-    }
-{{- else}}
-    {{- /* Use json even we dealing with unknown content type */}}
-    dec := {{qual "encoding/json.NewDecoder"}}(envelope)
-    if err := dec.Decode(&m.Payload); err != nil {
-        return err
-    }
-{{- end}}
+{{define "proto/message/decoder"}}
+    {{with trytmpl (print "proto/message/decoder/" .EffectiveContentType) .}}
+        {{.}}
+    {{else}}
+        {{template "proto/message/decoder/default" .}}
+    {{end}}
 {{- end}}

@@ -1,6 +1,7 @@
 package render
 
 import (
+	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
@@ -25,7 +26,7 @@ type Message struct {
 	ContentType          string                        // Message's content type
 	CorrelationIDPromise *lang.Promise[*CorrelationID] // nil if correlationID is not defined for message
 	PayloadType          common.GolangType // `any` or a particular type
-	AsyncAPIPromise *lang.Promise[*AsyncAPI]
+	AsyncAPIPromise      *lang.Promise[*AsyncAPI]
 
 	ProtoMessages []*ProtoMessage
 }
@@ -69,6 +70,34 @@ func (m *Message) BindingsProtocols() (res []string) {
 	return lo.Uniq(res)
 }
 
+func (m *Message) HeadersType() *lang.GoStruct {
+	if m.HeadersTypePromise != nil {
+		return m.HeadersTypePromise.T()
+	}
+	return nil
+}
+
+func (m *Message) AllServers() []*Server {
+	return m.AllServersPromise.T()
+}
+
+func (m *Message) Bindings() *Bindings {
+	if m.BindingsPromise != nil {
+		return m.BindingsPromise.T()
+	}
+	return nil
+}
+
+func (m *Message) CorrelationID() *CorrelationID {
+	if m.CorrelationIDPromise != nil {
+		return m.CorrelationIDPromise.T()
+	}
+	return nil
+}
+
+func (m *Message) AsyncAPI() *AsyncAPI {
+	return m.AsyncAPIPromise.T()
+}
 
 //func (m Message) Selectable() bool {
 //	return !m.Dummy
@@ -335,9 +364,8 @@ func (p *ProtoMessage) Selectable() bool {
 }
 
 func (p *ProtoMessage) String() string {
-	return "Message " + p.OriginalName
+	return fmt.Sprintf("ProtoMessage[%s] %s", p.Protocol, p.OriginalName)
 }
-
 
 // isBound returns true if the message is bound to the protocol
 func (p *ProtoMessage) isBound() bool {

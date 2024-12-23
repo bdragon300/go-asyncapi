@@ -27,6 +27,7 @@ func (a AsyncAPI) Compile(ctx *common.CompileContext) error {
 }
 
 func (a AsyncAPI) build(ctx *common.CompileContext) *render.AsyncAPI {
+	ctx.Logger.Trace("AsyncAPI root object")
 	res := &render.AsyncAPI{
 		DefaultContentType: a.DefaultContentType,
 	}

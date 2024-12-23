@@ -4,6 +4,8 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
+	"strconv"
+	"strings"
 )
 
 func NewRef(ref string, name string, selectable *bool) *Ref {
@@ -36,7 +38,22 @@ func (r *Ref) Visible() bool {
 }
 
 func (r *Ref) String() string {
-	return "Ref -> " + r.ref
+	var b strings.Builder
+	b.WriteString("Ref")
+	if r.name != "" {
+		b.WriteString("[name=")
+		b.WriteString(r.name)
+		b.WriteString("]")
+	}
+	if r.selectable != nil {
+		b.WriteString("[selectable=")
+		b.WriteString(strconv.FormatBool(*r.selectable))
+		b.WriteString("]")
+	}
+
+	b.WriteString(" -> ")
+	b.WriteString(r.ref)
+	return b.String()
 }
 
 func (r *Ref) Name() string {

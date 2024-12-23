@@ -1,0 +1,37 @@
+{{define "proto/message/encoder/default"}}
+    {{- if .EffectiveContentType | hasSuffix "yaml"}}
+        {{template "proto/message/encoder/application/yaml" .}}
+    {{- else}}
+        // Default encoder
+        enc := {{qual "encoding/json.NewEncoder"}}(envelope)
+        if err := enc.Encode(m.Payload); err != nil {
+            return err
+        }
+    {{- end}}
+{{- end}}
+
+{{define "proto/message/decoder/default"}}
+    {{- if .EffectiveContentType | hasSuffix "yaml"}}
+        {{template "proto/message/decoder/application/yaml" .}}
+    {{- else}}
+        // Default decoder
+        dec := {{qual "encoding/json.NewDecoder"}}(envelope)
+        if err := dec.Decode(&m.Payload); err != nil {
+            return err
+        }
+    {{- end}}
+{{- end}}
+{{/*TODO: add xml, avro, etc.*/}}
+{{define "proto/message/encoder/application/yaml"}}
+    enc := {{qual "gopkg.in/yaml.v3.NewEncoder"}}(envelope)
+    if err := enc.Encode(m.Payload); err != nil {
+        return err
+    }
+{{- end}}
+
+{{define "proto/message/decoder/application/yaml"}}
+    dec := {{qual "gopkg.in/yaml.v3.NewDecoder"}}(envelope)
+    if err := dec.Decode(&m.Payload); err != nil {
+        return err
+    }
+{{- end}}

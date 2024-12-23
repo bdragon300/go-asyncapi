@@ -132,12 +132,6 @@ func (c *Module) Compile(ctx *common.CompileContext) error {
 	if err := WalkAndCompile(ctx, reflect.ValueOf(c.parsedSpec)); err != nil {
 		return fmt.Errorf("spec: %w", err)
 	}
-	//if !ctx.CompileOpts.NoEncodingPackage {
-	//	c.logger.Trace("Compile the encoding package", "specURL", c.specURL)
-	//	if err := EncodingCompile(ctx); err != nil {
-	//		return fmt.Errorf("encoding package: %w", err)
-	//	}
-	//}
 	return nil
 }
 

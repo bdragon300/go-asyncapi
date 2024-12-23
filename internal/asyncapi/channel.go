@@ -32,12 +32,6 @@ func (c Channel) Compile(ctx *common.CompileContext) error {
 		return err
 	}
 	ctx.PutObject(obj)
-	//if v, ok := obj.(*render.Channel); ok {
-	//	ctx.Logger.Trace("Objects", "object", obj)
-	//	for _, protoObj := range v.ProtoChannels {
-	//		ctx.PutObject(protoObj)
-	//	}
-	//}
 	return nil
 }
 

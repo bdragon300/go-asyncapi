@@ -17,6 +17,7 @@ import (
 	"text/template"
 )
 
+
 //type MultilineError struct {
 //	error
 //}
@@ -69,39 +70,56 @@ type renderQueueItem struct {
 }
 
 func RenderFiles(source renderSource, opts common.RenderOpts) (map[string]*bytes.Buffer, error) {
+	logger := types.NewLogger("Rendering 🎨")
 	filesState := make(map[string]fileRenderState)
 	ns := context.RenderNamespace{}
 	// TODO: logging
+	logger.Info("Run rendering")
 	queue := buildRenderQueue(source, opts.Selections)
 	var postponed []renderQueueItem
 
+	logger.Info("Objects selected", "objects", len(queue))
 	for len(queue) > 0 {
 		for _, item := range queue {
+			logger.Debug("Render", "object", item.object.String())
+
+			logger.Trace("-> Render file name", "object", item.object.String(), "template", item.selection.File)
 			fileName, err := renderInlineTemplate(item, opts, item.selection.File)
 			switch {
 			case errors.Is(err, context.ErrDefinitionLocationUnknown):
 				// Template can't be rendered right now due to unknown object definition, postpone it
 				postponed = append(postponed, item)
+				logger.Trace(
+					"--> Postpone the file name rendering because some definitions it uses are not known yet",
+					"object", item.object.String(),
+				)
 				continue
 			case err != nil:
 				return nil, err
 			}
 			fileName = utils.NormalizePath(fileName)
+			logger.Trace("-> File", "name", fileName)
 
 			if _, ok := filesState[fileName]; !ok {
 				filesState[fileName] = fileRenderState{packageName: item.selection.Package, fileName: fileName}
 			}
+			logger.Debug("-> Render", "object", item.object.String(), "file", fileName, "template", item.selection.Template)
 			newState, newNs, err := renderObject(item, opts, item.selection.Template, filesState[fileName], ns)
 			switch {
 			case errors.Is(err, context.ErrDefinitionLocationUnknown):
 				// Some objects needed by template code have not been defined and therefore, not in namespace yet.
 				// Postpone this run to the end in hope that next runs will define these objects.
 				item.err = err
+				logger.Trace(
+					"--> Postpone the object because some the definitions of the object it uses are not known yet",
+					"object", item.object.String(),
+				)
 				postponed = append(postponed, item)
 				continue
 			case err != nil:
 				return nil, err
 			}
+			logger.Trace("--> Updated file state", "imports", newState.imports.String(), "namespace", newNs.String())
 
 			ns = newNs
 			filesState[fileName] = newState
@@ -112,9 +130,13 @@ func RenderFiles(source renderSource, opts common.RenderOpts) (map[string]*bytes
 				errors.Join(lo.Map(postponed, func(item renderQueueItem, _ int) error { return item.err })...),
 			)
 		}
+		if len(postponed) > 0 {
+			logger.Trace("Process postponed objects", "objects", len(postponed))
+		}
 		queue, postponed = postponed, nil
 	}
 
+	logger.Debug("Render files", "files", len(filesState))
 	res, err := renderFiles(filesState, opts)
 	if err != nil {
 		return res, err
@@ -124,9 +146,13 @@ func RenderFiles(source renderSource, opts common.RenderOpts) (map[string]*bytes
 }
 
 func buildRenderQueue(source renderSource, selections []common.RenderSelectionConfig) (res []renderQueueItem) {
+	logger := types.NewLogger("Rendering 🎨")
+
 	for _, selection := range selections {
+		logger.Debug("Select objects", "selection", selection)
 		objects := selector.SelectObjects(source.AllObjects(), selection)
 		for _, obj := range objects {
+			logger.Debug("-> Selected", "object", obj)
 			res = append(res, renderQueueItem{selection: selection, object: obj})
 		}
 	}
@@ -163,7 +189,6 @@ func renderObject(
 	fileState fileRenderState,
 	ns context.RenderNamespace,
 ) (fileRenderState, context.RenderNamespace, error) {
-	var tpl *template.Template
 	importsCopy := fileState.imports.Clone()
 	nsCopy := ns.Clone()
 
@@ -180,8 +205,9 @@ func renderObject(
 	tplCtx := tmpl.NewTemplateContext(ctx, item.object.Renderable, &importsCopy)
 
 	// Execute the main template first to accumulate imports and other data, that will be rendered in preamble
-	if tpl = tmpl.LoadTemplate(templateName); tpl == nil {
-		return fileState, nsCopy, fmt.Errorf("template %q not found", templateName)
+	tpl, err := tmpl.LoadTemplate(templateName)
+	if err != nil {
+		return fileState, nsCopy, fmt.Errorf("template %q: %w", templateName, err)
 	}
 
 	var res bytes.Buffer
@@ -198,14 +224,16 @@ func renderObject(
 
 func renderFiles(files map[string]fileRenderState, opts common.RenderOpts) (map[string]*bytes.Buffer, error) {
 	var res = make(map[string]*bytes.Buffer, len(files))
+	logger := types.NewLogger("Rendering 🎨")
 
 	// TODO: redefinition preamble in config/cli args
-	tpl := tmpl.LoadTemplate(defaultPreambleTemplateName)
-	if tpl == nil {
-		return nil, fmt.Errorf("template %q not found", defaultPreambleTemplateName)
+	tpl, err := tmpl.LoadTemplate(defaultPreambleTemplateName)
+	if err != nil {
+		return nil, fmt.Errorf("template %q: %w", defaultPreambleTemplateName, err)
 	}
 
 	for fileName, state := range files {
+		logger.Trace("Render file", "file", fileName, "package", state.packageName, "imports", state.imports.String())
 		b, err := renderFile(tpl, opts, state)
 		if err != nil {
 			return nil, err
@@ -328,14 +356,14 @@ func FormatFiles(files map[string]*bytes.Buffer) error {
 	logger.Info("Run formatting")
 
 	for fileName, buf := range files {
-		logger.Debug("File", "name", fileName)
+		logger.Debug("File", "name", fileName, "bytes", buf.Len())
 		formatted, err := format.Source(buf.Bytes())
 		if err != nil {
 			return err
 		}
 		buf.Reset()
 		buf.Write(formatted)
-		logger.Debug("File formatted", "name", fileName, "bytes", buf.Len())
+		logger.Debug("-> File formatted", "name", fileName, "bytes", buf.Len())
 	}
 
 	logger.Info("Formatting completed", "files", len(files))
@@ -360,7 +388,7 @@ func WriteToFiles(files map[string]*bytes.Buffer, baseDir string) error {
 		if err := os.WriteFile(fullPath, buf.Bytes(), 0o644); err != nil {
 			return err
 		}
-		logger.Debug("File wrote", "name", fullPath, "bytes", buf.Len())
+		logger.Debug("-> File wrote", "name", fullPath, "bytes", buf.Len())
 		totalBytes += buf.Len()
 	}
 	logger.Debugf("Writer stats: files: %d, total bytes: %d", len(files), totalBytes)

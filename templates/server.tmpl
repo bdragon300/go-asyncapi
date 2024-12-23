@@ -5,20 +5,20 @@ const {{$ | goid}}ProtocolVersion = {{.ProtocolVersion | golit}}
 {{- end}}
 
 func {{$ | goid}}URL(
-{{- range .VariablesPromises.Entries}}
-    {{- .Value.T | goid}} string,
+{{- range .Variables.Entries}}
+    {{- .Value | goid}} string,
 {{- end }}) {{qualrun "ParamString"}} {
-    {{- if gt .VariablesPromises.Len 0}}
-        {{- range .VariablesPromises.Entries}}
-            {{- if .Value.T.Default}}
-                if {{.Value.T | goid}} == "" {
-                    {{.Value.T | goid}} = {{.Value.T.Default | golit}}
+    {{- if gt .Variables.Len 0}}
+        {{- range .Variables.Entries}}
+            {{- if .Value.Default}}
+                if {{.Value | goid}} == "" {
+                    {{.Value | goid}} = {{.Value.Default | golit}}
                 }
             {{- end}}
         {{- end}}
         paramMap := map[string]string{
-            {{- range .VariablesPromises.Entries}}
-                {{.Key | golit}}: {{.Value.T | goid}},
+            {{- range .Variables.Entries}}
+                {{.Key | golit}}: {{.Value | goid}},
             {{- end}}
         }
         return {{qualrun "ParamString"}}{
@@ -38,8 +38,8 @@ func {{$ | goid}}URL(
         {{- $bindingsValue := $server.ProtoBindingsValue $proto}}
         func (c *{{ $server.BindingsType | gousage }}) {{ $proto | capitalize | goid }}() {{$bindingsValue.Type | gousage}} {
             b := {{$bindingsValue | gousage}}
-            {{- if $server.BindingsPromise}}
-                {{- $jvals := $server.BindingsPromise.T.JSONValues.GetOrEmpty $proto}}
+            {{- with $server.Bindings}}
+                {{- $jvals := .JSONValues.GetOrEmpty $proto}}
                 {{- range $jval := $jvals.Entries}}
                     {{$jval.Key | toCamelCase }} := {{$jval.Value | golit}}
                     _ = {{qual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})

@@ -57,7 +57,7 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 			Fields: []lang.GoStructField{{Name: "Value", Type: prm}},
 		}
 	} else {
-		ctx.Logger.Trace("Parameter has no schema")
+		ctx.Logger.Trace("Parameter without schema")
 		res.Type = &lang.GoTypeAlias{
 			BaseType: lang.BaseType{
 				OriginalName:  ctx.GenerateObjName(parName, ""),

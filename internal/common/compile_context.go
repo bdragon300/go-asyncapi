@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"path"
 	"strings"
 
@@ -39,7 +40,6 @@ type CompileOpts struct {
 	//MessageOpts         ObjectCompileOpts
 	//ModelOpts           ObjectCompileOpts
 	//ServerOpts          ObjectCompileOpts
-	//NoEncodingPackage   bool  // TODO: remove in favor of selections
 	AllowRemoteRefs     bool
 	RuntimeModule       string
 	GeneratePublishers  bool
@@ -88,6 +88,7 @@ type CompileContext struct {
 }
 
 func (c *CompileContext) PutObject(obj Renderable) {
+	c.Logger.Debug("Built", "object", obj.String(), "addr", fmt.Sprintf("%p", obj), "type", fmt.Sprintf("%T", obj))
 	c.Storage.AddObject(CompileObject{Renderable: obj, ObjectURL: c.CurrentObjectURL()})
 }
 

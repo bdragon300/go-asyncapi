@@ -28,22 +28,22 @@ func {{$ | goid}}Name({{if .ParametersType}}params {{.ParametersType | gousage}}
         {{- $bindingsValue := $channel.ProtoBindingsValue $proto }}
         func (c {{ $channel.BindingsType | gousage }}) {{ $proto | capitalize | goid }}() {{$bindingsValue.Type | gousage}} {
             b := {{$bindingsValue | gousage}}
-            {{- if $channel.BindingsChannelPromise }}
-                {{- $jvals := $channel.BindingsChannelPromise.T.JSONValues.GetOrEmpty $proto }}
+            {{- with $channel.BindingsChannel }}
+                {{- $jvals := .JSONValues.GetOrEmpty $proto }}
                 {{- range $jvals.Entries}}
                     {{.Key | toCamelCase }} := {{.Value | golit}}
                     _ = {{qual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}), &b.{{.Key}})
                 {{- end}}
             {{- end}}
-            {{- if $channel.BindingsPublishPromise}}
-                {{- $jvals := $channel.BindingsPublishPromise.T.JSONValues.GetOrEmpty $proto}}
+            {{- with $channel.BindingsPublish }}
+                {{- $jvals := .JSONValues.GetOrEmpty $proto}}
                 {{- range $jvals.Entries}}
                     {{.Key | toCamelCase }}Pub := {{.Value | golit}}
                     _ = {{qual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}Pub), &b.PublisherBindings.{{.Key}})
                 {{- end}}
             {{- end}}
-            {{- if $channel.BindingsSubscribePromise}}
-                {{- $jvals := $channel.BindingsSubscribePromise.T.JSONValues.GetOrEmpty $proto}}
+            {{- with $channel.BindingsSubscribe}}
+                {{- $jvals := .JSONValues.GetOrEmpty $proto}}
                 {{- range $jvals.Entries}}
                     {{.Key | toCamelCase }}Sub := {{.Value | golit}}
                     _ = {{qual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}Sub), &b.SubscriberBindings.{{.Key}})

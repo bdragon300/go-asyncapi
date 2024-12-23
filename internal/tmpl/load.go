@@ -1,6 +1,7 @@
 package tmpl
 
 import (
+	"errors"
 	"github.com/bdragon300/go-asyncapi/templates"
 	"text/template"
 )
@@ -8,8 +9,9 @@ import (
 const mainTemplateName = "main.tmpl"
 
 var mainTemplate *template.Template
+var ErrTemplateNotFound = errors.New("template not found")
 
-func LoadTemplate(name string) *template.Template {
+func LoadTemplate(name string) (*template.Template, error) {
 	// TODO: user template dir
 	if mainTemplate == nil {
 		mainTemplate = template.Must(
@@ -18,7 +20,7 @@ func LoadTemplate(name string) *template.Template {
 	}
 	t := mainTemplate.Lookup(name)
 	if t == nil {
-		panic("template not found: " + name)
+		return nil, ErrTemplateNotFound
 	}
-	return t
+	return t, nil
 }

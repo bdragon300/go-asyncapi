@@ -1,6 +1,7 @@
 package render
 
 import (
+	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/types"
@@ -165,7 +166,7 @@ func (s *Server) GetBoundChannels() []common.Renderable {
 //}
 
 func (s *Server) String() string {
-	return "Server " + s.OriginalName
+	return fmt.Sprintf("Server[%s] %s", s.Protocol, s.OriginalName)
 }
 
 func (s *Server) BindingsProtocols() (res []string) {
@@ -191,6 +192,24 @@ func (s *Server) ProtoBindingsValue(protoName string) common.Renderable {
 		}
 	}
 	return res
+}
+
+func (s *Server) Variables() (res types.OrderedMap[string, *ServerVariable]) {
+	for _, entry := range s.VariablesPromises.Entries() {
+		res.Set(entry.Key, entry.Value.T())
+	}
+	return
+}
+
+func (s *Server) AllChannels() (res []common.Renderable) {
+	return s.AllChannelsPromise.T()
+}
+
+func (s *Server) Bindings() (res *Bindings) {
+	if s.BindingsPromise != nil {
+		return s.BindingsPromise.T()
+	}
+	return nil
 }
 
 type ProtoServer struct {

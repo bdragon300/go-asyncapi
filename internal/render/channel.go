@@ -1,6 +1,7 @@
 package render
 
 import (
+	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
@@ -141,6 +142,41 @@ func (c *Channel) SelectProtoObject(protocol string) common.Renderable {
 	return nil
 }
 
+func (c *Channel) PublisherMessageType() *Message {
+	if c.PublisherMessageTypePromise != nil {
+		return c.PublisherMessageTypePromise.T()
+	}
+	return nil
+}
+
+func (c *Channel) SubscriberMessageType() *Message {
+	if c.SubscriberMessageTypePromise != nil {
+		return c.SubscriberMessageTypePromise.T()
+	}
+	return nil
+}
+
+func (c *Channel) BindingsChannel() *Bindings {
+	if c.BindingsChannelPromise != nil {
+		return c.BindingsChannelPromise.T()
+	}
+	return nil
+}
+
+func (c *Channel) BindingsPublish() *Bindings {
+	if c.BindingsPublishPromise != nil {
+		return c.BindingsPublishPromise.T()
+	}
+	return nil
+}
+
+func (c *Channel) BindingsSubscribe() *Bindings {
+	if c.BindingsSubscribePromise != nil {
+		return c.BindingsSubscribePromise.T()
+	}
+	return nil
+}
+
 //func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement {
 //	ctx.Logger.Trace("renderChannelNameFunc")
 //
@@ -230,7 +266,7 @@ func (p *ProtoChannel) Selectable() bool {
 }
 
 func (p *ProtoChannel) String() string {
-	return "ProtoChannel " + p.OriginalName
+	return fmt.Sprintf("ProtoChannel[%s] %s", p.Protocol, p.OriginalName)
 }
 
 // isBound returns true if channel is bound to at least one server with supported protocol

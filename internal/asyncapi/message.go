@@ -46,12 +46,6 @@ func (m Message) Compile(ctx *common.CompileContext) error {
 		return err
 	}
 	ctx.PutObject(obj)
-	//if v, ok := obj.(*render.Message); ok {
-	//	ctx.Logger.Trace("ProtoObjects", "object", obj)
-	//	for _, protoObj := range v.ProtoMessages {
-	//		ctx.PutObject(protoObj)
-	//	}
-	//}
 	return nil
 }
 
@@ -64,6 +58,8 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	}
 
 	if m.Ref != "" {
+		ctx.Logger.Trace("Ref", "$ref", m.Ref)
+
 		// Message is the only type of objects, that has their own root key, the key in components and can be used
 		// as ref in other objects at the same time (at channel.[publish|subscribe].message).
 		// Therefore, a message object may get to selections more than once, it's needed to handle in templates.
@@ -79,7 +75,6 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 			makeSelectable = true
 		}
 
-		ctx.Logger.Trace("Ref", "$ref", m.Ref)
 		// Always draw the promises that are located in the `messages` section
 		prm := lang.NewRef(m.Ref, refName, lo.Ternary(makeSelectable, lo.ToPtr(true), nil))
 		ctx.PutPromise(prm)

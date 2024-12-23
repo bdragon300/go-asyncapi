@@ -136,8 +136,8 @@ func normalizePathItem(name string) string {
 	// Cut underscores that may appear at string endings
 	newString = strings.Trim(newString, "_")
 
-	// newString may left empty after normalization, because rawPath is empty or has "/", "_", or smth
-	// So, the filename will be the md5 hash from rawPath in base32 form
+	// newString may become empty after normalization, because rawPath is empty or be "/", "___" strings.
+	// In this case, the filename will be the md5 hash from original rawPath in base32 form
 	if newString == "" {
 		hsh := md5.New()
 		newString = "empty" + normalizePathItem(base32.StdEncoding.EncodeToString(hsh.Sum([]byte(name))))
