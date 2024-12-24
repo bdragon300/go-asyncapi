@@ -550,7 +550,7 @@ path evaluation. The only use-case for this is to force the path item to be trea
 E.g., `$message.payload#/~0field%20_1/'10'/%22field2%22~1foo` contains three fields: `~field _1`, `10`
 (a string, not an integer) and `"field2"/foo`.
 
-### x-go-ignore
+### x-ignore
 
 If set to **true**, the correlation id code will be ignored.
 
@@ -570,7 +570,7 @@ components:
             type: string
       correlationId:
         location: '$message.payload#/correlationId'
-        x-go-ignore: true
+        x-ignore: true
 ```
 {{< /details >}}
 
@@ -623,7 +623,7 @@ type FooBarIn struct {
 {{< /tabs >}}
 {{< /details >}}
 
-## x-go-ignore
+## x-ignore
 
 If this extra field is set to **true**, the message will not be generated.
 All references to this message in the generated code (if any) are replaced by Go `any` type.
@@ -633,7 +633,7 @@ All references to this message in the generated code (if any) are replaced by Go
 components:
   messages:
     myMessage:
-      x-go-ignore: true
+      x-ignore: true
       description: MyMessage
       payload:
         type: string

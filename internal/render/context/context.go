@@ -14,9 +14,9 @@ import (
 	"unicode"
 )
 
-// ErrDefinitionLocationUnknown is returned when we try to get a package in the generated code for an object, but the
+// ErrNotDefined is returned when we try to get a package in the generated code for an object, but the
 // definition of this object has not been rendered, therefore its location is unknown yet.
-var ErrDefinitionLocationUnknown = errors.New("definition location is unknown")
+var ErrNotDefined = errors.New("not defined")
 
 type definable interface {
 	ObjectHasDefinition() bool
@@ -51,7 +51,7 @@ func (c *RenderContextImpl) QualifiedGeneratedPackage(obj common.GolangType) (st
 	defInfo, defined := c.PackageNamespace.FindObject(obj)
 	if !defined {
 		if v, ok := obj.(definable); ok && v.ObjectHasDefinition() { // TODO: replace to Selectable?
-			return "", ErrDefinitionLocationUnknown
+			return "", ErrNotDefined
 		}
 		return "", nil // Type is not supposed to be defined in the generated code (including Go built-in types)
 	}
@@ -82,7 +82,7 @@ func (c *RenderContextImpl) CurrentSelection() common.RenderSelectionConfig {
 }
 
 func (c *RenderContextImpl) GetObjectName(obj common.Renderable) string {
-	type renderableUnwrapper interface {
+	type renderableWrapper interface {
 		UnwrapRenderable() common.Renderable
 	}
 
@@ -90,7 +90,7 @@ func (c *RenderContextImpl) GetObjectName(obj common.Renderable) string {
 	// Take the alternate name from CurrentObject (if any), if the CurrentObject is the RenderablePromise,
 	// and it points to the same object as the one was passed as argument.
 	currentObj := c.Object.Renderable
-	if p, ok := currentObj.(renderableUnwrapper); ok {
+	if p, ok := currentObj.(renderableWrapper); ok {
 		currentObj = p.UnwrapRenderable()
 	}
 	if currentObj == obj {

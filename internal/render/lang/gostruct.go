@@ -2,6 +2,8 @@ package lang
 
 import (
 	"fmt"
+	"github.com/bdragon300/go-asyncapi/internal/log"
+	"github.com/samber/lo"
 	"slices"
 	"strconv"
 	"strings"
@@ -97,7 +99,9 @@ type GoStructField struct {
 //}
 
 func(f *GoStructField) RenderTags() string {
+	logger := log.GetLogger(log.LoggerPrefixRendering)
 	tags := f.getTags()
+	logger.Trace("--> Rendering field tags", "field", f.Name, "values", lo.FromEntries(tags.Entries()))
 	if tags.Len() == 0 {
 		return ""
 	}

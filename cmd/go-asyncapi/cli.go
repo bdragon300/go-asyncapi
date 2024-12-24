@@ -2,11 +2,11 @@ package main
 
 import (
 	"errors"
+	"github.com/bdragon300/go-asyncapi/internal/log"
 	"io"
 	"os"
 
-	"github.com/bdragon300/go-asyncapi/internal/types"
-	"github.com/charmbracelet/log"
+	chlog "github.com/charmbracelet/log"
 
 	"github.com/alexflint/go-arg"
 )
@@ -19,8 +19,6 @@ type cli struct {
 	Verbose             int          `arg:"-v" help:"Logging verbosity: 0 default, 1 debug output, 2 more debug output" placeholder:"LEVEL"`
 	Quiet               bool         `help:"Suppress the output"`
 }
-
-var mainLogger *types.Logger
 
 func main() {
 	cliArgs := cli{}
@@ -39,17 +37,16 @@ func main() {
 	// Setting up the logger
 	switch cliArgs.Verbose {
 	case 0:
-		log.SetLevel(log.InfoLevel)
+		chlog.SetLevel(chlog.InfoLevel)
 	case 1:
-		log.SetLevel(log.DebugLevel)
+		chlog.SetLevel(chlog.DebugLevel)
 	default:
-		log.SetLevel(types.TraceLevel)
+		chlog.SetLevel(log.TraceLevel)
 	}
 	if cliArgs.Quiet {
-		log.SetOutput(io.Discard)
+		chlog.SetOutput(io.Discard)
 	}
-	log.SetReportTimestamp(false)
-	mainLogger = types.NewLogger("") // FIXME: configure logger in single place
+	chlog.SetReportTimestamp(false)
 
 	cmd := cliArgs.GenerateCmd
 	if err := generate(cmd); err != nil {
@@ -58,7 +55,7 @@ func main() {
 			cliParser.WriteHelp(os.Stderr)
 		}
 
-		log.Error(err.Error())
-		log.Fatal("Cannot finish the generation. Use -v=1 flag to enable debug output")
+		chlog.Error(err.Error())
+		chlog.Fatal("Cannot finish the generation. Use -v=1 flag to enable debug output")
 	}
 }

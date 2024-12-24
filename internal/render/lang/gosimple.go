@@ -22,6 +22,10 @@ func (p *GoSimple) Visible() bool {
 	return true
 }
 
+func (p *GoSimple) Addressable() bool {
+	return !p.IsInterface
+}
+
 func (p *GoSimple) IsPointer() bool {
 	return false
 }

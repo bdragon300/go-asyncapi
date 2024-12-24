@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/assets"
+	"github.com/bdragon300/go-asyncapi/internal/log"
 	"gopkg.in/yaml.v3"
 	"io"
 	"os"
@@ -29,7 +30,6 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/amqp"
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/http"
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/kafka"
-	"github.com/bdragon300/go-asyncapi/internal/types"
 	stdHTTP "net/http"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
@@ -138,7 +138,7 @@ func generate(cmd *GenerateCmd) error {
 		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
 	}
 	implDir := path.Join(cmd.TargetDir, cmd.ImplDir)
-	mainLogger.Debugf("Target implementations directory is %s", implDir)
+	log.GetLogger("").Debugf("Target implementations directory is %s", implDir)
 
 	// Compilation
 	resolver := getResolver(*pubSubOpts)
@@ -161,7 +161,7 @@ func generate(cmd *GenerateCmd) error {
 		return fmt.Errorf("schema render: %w", err)
 	}
 
-	// TODO: uncomment
+	// TODO: add cli arg to disable formatting
 	// Formatting
 	//if err = writer.FormatFiles(files); err != nil {
 	//	return fmt.Errorf("formatting code: %w", err)
@@ -180,25 +180,25 @@ func generate(cmd *GenerateCmd) error {
 		}
 	}
 
-	mainLogger.Info("Finished")
+	log.GetLogger("").Info("Finished")
 	return nil
 }
 
 func generateImplementation(cmd *GenerateCmd) error {
 	implDir := path.Join(cmd.TargetDir, cmd.ImplDir)
-	mainLogger.Debugf("Target implementations directory is %s", implDir)
+	log.GetLogger("").Debugf("Target implementations directory is %s", implDir)
 	proto := cmd.Implementation.Protocol
 	name := cmd.Implementation.Name
 	if err := generationWriteImplementations(map[string]string{proto: name}, []string{proto}, implDir); err != nil {
 		return err
 	}
 
-	mainLogger.Info("Finished")
+	log.GetLogger("").Info("Finished")
 	return nil
 }
 
 func generationCompile(specURL *specurl.URL, compileOpts common.CompileOpts, resolver compiler.SpecFileResolver) (map[string]*compiler.Module, error) {
-	logger := types.NewLogger("Compilation 🔨")
+	logger := log.GetLogger(log.LoggerPrefixCompilation)
 	compileQueue := []*specurl.URL{specURL}      // Queue of specIDs to compile
 	modules := make(map[string]*compiler.Module) // Compilers by spec id
 	for len(compileQueue) > 0 {
@@ -234,7 +234,7 @@ func generationCompile(specURL *specurl.URL, compileOpts common.CompileOpts, res
 }
 
 func generationLinking(objSources map[string]linker.ObjectSource) error {
-	logger := types.NewLogger("Linking 🔗")
+	logger := log.GetLogger(log.LoggerPrefixLinking)
 	logger.Info("Run linking")
 	// Linking refs
 	linker.AssignRefs(objSources)
@@ -265,7 +265,7 @@ func generationLinking(objSources map[string]linker.ObjectSource) error {
 }
 
 func generationWriteImplementations(selectedImpls map[string]string, protocols []string, implDir string) error {
-	logger := types.NewLogger("Writing 📝")
+	logger := log.GetLogger(log.LoggerPrefixWriting)
 	logger.Info("Writing implementations")
 	implManifest := lo.Must(getImplementationsManifest())
 
@@ -403,7 +403,7 @@ func getCompileOpts(opts generatePubSubArgs, isPub, isSub bool) (common.CompileO
 }
 
 func getResolver(opts generatePubSubArgs) compiler.SpecFileResolver {
-	logger := types.NewLogger("Resolving 📡")
+	logger := log.GetLogger(log.LoggerPrefixResolving)
 	if opts.FileResolverCommand != "" {
 		return compiler.SubprocessSpecFileResolver{
 			CommandLine: opts.FileResolverCommand,
@@ -475,7 +475,7 @@ func getRenderOpts(opts generatePubSubArgs, targetDir string) (common.RenderOpts
 		})
 		res.ImportBase = path.Join(m, path.Join(parts...))
 	}
-	mainLogger.Debugf("Target import base is %s", res.ImportBase)
+	log.GetLogger("").Debugf("Target import base is %s", res.ImportBase)
 
 	return res, nil
 }

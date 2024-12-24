@@ -2,11 +2,10 @@ package linker
 
 import (
 	"fmt"
+	"github.com/bdragon300/go-asyncapi/internal/log"
 	"strings"
 
 	"github.com/bdragon300/go-asyncapi/internal/specurl"
-
-	"github.com/bdragon300/go-asyncapi/internal/types"
 
 	"github.com/samber/lo"
 
@@ -20,7 +19,7 @@ type ObjectSource interface {
 }
 
 func AssignRefs(sources map[string]ObjectSource) {
-	logger := types.NewLogger("Linking 🔗")
+	logger := log.GetLogger(log.LoggerPrefixLinking)
 	assigned := 1
 
 	for assigned > 0 {
@@ -51,7 +50,7 @@ func AssignRefs(sources map[string]ObjectSource) {
 }
 
 func AssignListPromises(sources map[string]ObjectSource) {
-	logger := types.NewLogger("Linking 🔗")
+	logger := log.GetLogger(log.LoggerPrefixLinking)
 	totalAssigned := 0
 	assigned := 1
 	promisesCount := lo.SumBy(lo.Values(sources), func(item ObjectSource) int { return len(item.ListPromises()) })

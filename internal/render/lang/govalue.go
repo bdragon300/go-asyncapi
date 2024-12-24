@@ -34,6 +34,10 @@ func (gv *GoValue) GoTemplate() string {
 	return "lang/govalue"
 }
 
+func (gv *GoValue) Addressable() bool {
+	return gv.Type != nil && gv.Type.Addressable()
+}
+
 func (gv *GoValue) IsPointer() bool {
 	return gv.Type != nil && gv.Type.IsPointer()
 }

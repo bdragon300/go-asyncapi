@@ -32,11 +32,15 @@ func (p *GoPointer) Name() string {
 	return p.Type.Name()
 }
 
-func (p *GoPointer) UnwrapGolangType() (common.GolangType, bool) {
-	if v, ok := p.Type.(GolangTypeWrapperType); ok {
-		return v.UnwrapGolangType()
+func (p *GoPointer) InnerGolangType() common.GolangType {
+	if v, ok := p.Type.(GolangTypeExtractor); ok {
+		return v.InnerGolangType()
 	}
-	return p.Type, p.Type != nil
+	return p.Type
+}
+
+func (p *GoPointer) Addressable() bool {
+	return false  // Prevent appearing pointer to pointer (var foo **MyType)
 }
 
 func (p *GoPointer) IsPointer() bool {

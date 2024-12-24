@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"github.com/bdragon300/go-asyncapi/internal/log"
 	"path"
 	"strings"
 
@@ -23,6 +24,9 @@ type CompileObject struct {
 type GolangType interface {
 	Renderable
 	GoTemplate() string
+	// Addressable returns true if this type can have pointer in its definition
+	Addressable() bool
+	// IsPointer returns true if this type is a pointer
 	IsPointer() bool
 }
 
@@ -74,7 +78,7 @@ func NewCompileContext(specPath *specurl.URL, compileOpts CompileOpts) *CompileC
 	res := CompileContext{specRef: specPath, CompileOpts: compileOpts}
 	res.Logger = &CompilerLogger{
 		ctx:    &res,
-		logger: types.NewLogger("Compilation 🔨"),
+		logger: log.GetLogger(log.LoggerPrefixCompilation),
 	}
 	return &res
 }
@@ -158,7 +162,7 @@ func (c *CompileContext) WithResultsStore(store CompilationStorage) *CompileCont
 	}
 	res.Logger = &CompilerLogger{
 		ctx:    &res,
-		logger: types.NewLogger("Compilation 🔨"),
+		logger: log.GetLogger(log.LoggerPrefixCompilation),
 	}
 	return &res
 }

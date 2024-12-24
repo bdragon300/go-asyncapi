@@ -52,7 +52,7 @@ func (s *UnionStruct) String() string {
 //	stmt := &jen.Statement{}
 //	for _, f := range s.GoStruct.Fields {
 //		op := ""
-//		if v, ok := f.Type.(GolangPointerType); !ok || !v.IsPointer() { // No need to take address for a pointer
+//		if v, ok := f.Type.(GolangPointerType); !ok || !v.Addressable() { // No need to take address for a pointer
 //			op = "&"
 //		}
 //		stmt = stmt.If(
@@ -82,9 +82,9 @@ func isTypeStruct(typ common.GolangType) bool {
 	switch v := typ.(type) {
 	case golangStructType:
 		return v.IsStruct()
-	case GolangTypeWrapperType:
-		t, ok := v.UnwrapGolangType()
-		return !ok || isTypeStruct(t)
+	case GolangTypeExtractor:
+		t := v.InnerGolangType()
+		return !lo.IsNil(t) && isTypeStruct(t)
 	}
 	return false
 }

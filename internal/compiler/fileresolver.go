@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/bdragon300/go-asyncapi/internal/log"
 	"io"
 	"net/http"
 	"os"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/bdragon300/go-asyncapi/internal/specurl"
 
-	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/samber/lo"
 )
 
@@ -30,7 +30,7 @@ type DefaultSpecFileResolver struct {
 	Client  *http.Client
 	Timeout time.Duration
 	BaseDir string // Where to search local specs
-	Logger  *types.Logger
+	Logger  *log.Logger
 }
 
 func (r DefaultSpecFileResolver) Resolve(specPath *specurl.URL) (io.ReadCloser, error) {
@@ -90,7 +90,7 @@ func (r DefaultSpecFileResolver) resolveRemote(specPath string) (io.ReadCloser, 
 type SubprocessSpecFileResolver struct {
 	CommandLine string
 	RunTimeout  time.Duration
-	Logger      *types.Logger
+	Logger      *log.Logger
 }
 
 type subprocessSpecCommand struct {

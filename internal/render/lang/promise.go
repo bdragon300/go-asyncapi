@@ -80,23 +80,19 @@ func (r *Promise[T]) FindCallback() common.PromiseFindCbFunc {
 	return r.findCb
 }
 
-func (r *Promise[T]) UnwrapGolangType() (common.GolangType, bool) {
-	if !r.assigned {
-		return nil, false
+func (r *Promise[T]) UnwrapGolangType() common.GolangType {
+	if v, ok := any(r.target).(common.GolangType); ok {
+		return unwrapGolangPromise(v)
 	}
-	if v, ok := any(r.target).(GolangTypeWrapperType); ok {
-		return v.UnwrapGolangType()
-	}
-	v, ok := any(r.target).(common.GolangType)
-	return v, ok
+	return nil
 }
 
-func (r *Promise[T]) IsPointer() bool {
+func (r *Promise[T]) Addressable() bool {
 	if !r.assigned {
 		return false
 	}
 	if v, ok := any(r.target).(common.GolangType); ok {
-		return v.IsPointer()
+		return v.Addressable()
 	}
 	return false
 }
@@ -143,12 +139,12 @@ func (r *GolangTypePromise) Name() string {
 	return r.target.Name()
 }
 
-func (r *GolangTypePromise) UnwrapGolangType() common.GolangType {
-	return unwrapGolangPromise(r.target)
-}
-
 func (r *GolangTypePromise) UnwrapRenderable() common.Renderable {
 	return unwrapRenderablePromiseOrRef(r.target)
+}
+
+func (r *GolangTypePromise) Addressable() bool {
+	return r.target.Addressable()
 }
 
 func (r *GolangTypePromise) IsPointer() bool {
@@ -199,22 +195,18 @@ func (r *ListPromise[T]) T() []T {
 }
 
 func unwrapRenderablePromiseOrRef(val common.Renderable) common.Renderable {
-	type renderableUnwrapper interface {
+	type renderableWrapper interface {
 		UnwrapRenderable() common.Renderable
 	}
 
-	if o, ok := val.(renderableUnwrapper); ok {
+	if o, ok := val.(renderableWrapper); ok {
 		return o.UnwrapRenderable()
 	}
 	return val
 }
 
 func unwrapGolangPromise(val common.GolangType) common.GolangType {
-	type golangTypeUnwrapper interface {
-		UnwrapGolangType() common.GolangType
-	}
-
-	if o, ok := val.(golangTypeUnwrapper); ok {
+	if o, ok := val.(GolangTypeWrapper); ok {
 		val = o.UnwrapGolangType()
 	}
 	return val

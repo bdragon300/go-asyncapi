@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/bdragon300/go-asyncapi/internal/log"
 	"io"
 	"path"
 	"reflect"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/bdragon300/go-asyncapi/internal/specurl"
 
-	"github.com/bdragon300/go-asyncapi/internal/types"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -21,16 +21,16 @@ import (
 
 func NewModule(specURL *specurl.URL) *Module {
 	return &Module{
-		logger:             types.NewLogger("Compilation 🔨"),
-		specURL:            specURL,
-		objects:            make([]common.CompileObject, 0),
-		protocols:          make(map[string]int),
+		logger:    log.GetLogger(log.LoggerPrefixCompilation),
+		specURL:   specURL,
+		objects:   make([]common.CompileObject, 0),
+		protocols: make(map[string]int),
 	}
 }
 
 type Module struct {
 	specURL       *specurl.URL
-	logger        *types.Logger
+	logger        *log.Logger
 	externalSpecs []*specurl.URL
 
 	// Set on parsing

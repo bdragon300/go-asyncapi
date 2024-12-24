@@ -31,9 +31,9 @@ func (c {{.Type| gousage}}) Publish(ctx {{qual "context.Context"}}, envelopes ..
 {{- /* Common template for channel publish methods that doesn't contain protocol-specific bindings manipulations */}}
 {{define "proto/channel/barePublishMethods"}}
     {{template "proto/channel/outputMethods" .}}
-    func (c {{.Type| gousage}}) SealEnvelope(envelope {{qualrun .Protocol "EnvelopeWriter"}}, message {{with .PublisherMessageType}}{{goptr .OutType}}{{else}}any{{end}}) error {
+    func (c {{.Type| gousage}}) SealEnvelope(envelope {{qualrun .Protocol "EnvelopeWriter"}}, message {{with visible .PublisherMessageType}}{{goptr .OutType}}{{else}}any{{end}}) error {
         envelope.ResetPayload()
-        {{- if .PublisherMessageType}}
+        {{- if visible .PublisherMessageType}}
             {{- /*Message is set for Channel in spec*/}}
             if err := message.MarshalEnvelope{{.Protocol | capitalize | goid}}(envelope); err != nil {
                 return err
@@ -46,7 +46,7 @@ func (c {{.Type| gousage}}) Publish(ctx {{qual "context.Context"}}, envelopes ..
             }
         {{- end}}
 
-        {{- if and .PublisherMessageType (.PublisherMessageType.BindingsProtocols | has .Protocol)}}
+        {{- if and (visible .PublisherMessageType) (.PublisherMessageType.BindingsProtocols | has .Protocol)}}
             envelope.SetBindings({{.PublisherMessageType.BindingsType | gousage}}{}.{{.Protocol | capitalize | goid}}())
         {{- end}}
         return nil
@@ -54,8 +54,8 @@ func (c {{.Type| gousage}}) Publish(ctx {{qual "context.Context"}}, envelopes ..
 {{- end}}
 
 {{define "proto/channel/subscribeMethods"}}
-func (c {{.Type| gousage}}) ExtractEnvelope(envelope {{qualrun .Protocol "EnvelopeReader"}}, message {{with .SubscriberMessageType}}{{goptr .InType}}{{else}}any{{end}}) error {
-    {{- if .SubscriberMessageType}}
+func (c {{.Type| gousage}}) ExtractEnvelope(envelope {{qualrun .Protocol "EnvelopeReader"}}, message {{with visible .SubscriberMessageType}}{{goptr .InType}}{{else}}any{{end}}) error {
+    {{- if visible .SubscriberMessageType}}
         {{- /* Message set for Channel in spec */ -}}
         return message.UnmarshalEnvelope{{.Protocol | capitalize | goid}}(envelope)
     {{- else}}

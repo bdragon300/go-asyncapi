@@ -55,6 +55,9 @@ func (m *Message) Name() string {
 }
 
 func (m *Message) EffectiveContentType() string {
+	if m.AsyncAPIPromise == nil {
+		return fallbackContentType
+	}
 	res, _ := lo.Coalesce(m.ContentType, m.AsyncAPIPromise.T().EffectiveDefaultContentType())
 	return res
 }
@@ -78,6 +81,9 @@ func (m *Message) HeadersType() *lang.GoStruct {
 }
 
 func (m *Message) AllServers() []*Server {
+	if m.AllServersPromise == nil {
+		return nil
+	}
 	return m.AllServersPromise.T()
 }
 
@@ -96,6 +102,9 @@ func (m *Message) CorrelationID() *CorrelationID {
 }
 
 func (m *Message) AsyncAPI() *AsyncAPI {
+	if m.AsyncAPIPromise == nil {
+		return nil
+	}
 	return m.AsyncAPIPromise.T()
 }
 
@@ -369,6 +378,9 @@ func (p *ProtoMessage) String() string {
 
 // isBound returns true if the message is bound to the protocol
 func (p *ProtoMessage) isBound() bool {
+	if p.AllServersPromise == nil {
+		return false
+	}
 	return lo.Contains(
 		lo.Map(p.AllServersPromise.T(), func(s *Server, _ int) string { return s.Protocol }),
 		p.Protocol,

@@ -30,6 +30,10 @@ func (b *BaseType) Visible() bool {
 	return true
 }
 
+func (b *BaseType) Addressable() bool {
+	return true
+}
+
 func (b *BaseType) IsPointer() bool {
 	return false
 }
@@ -42,8 +46,16 @@ func (b *BaseType) ObjectHasDefinition() bool {
 	return b.HasDefinition
 }
 
-type GolangTypeWrapperType interface {
-	UnwrapGolangType() (common.GolangType, bool)
+// GolangTypeExtractor is an interface for GolangType types (such as pointers, aliases) that are able to wrap another
+// GolangType type.
+type GolangTypeExtractor interface {
+	InnerGolangType() common.GolangType
+}
+
+// GolangTypeWrapper is an interface for non-GolangType types (such as promises, refs) that contain a Golang type inside.
+// Used primarily in templates.
+type GolangTypeWrapper interface {
+	UnwrapGolangType() common.GolangType
 }
 
 type golangStructType interface {

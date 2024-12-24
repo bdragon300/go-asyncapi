@@ -2,14 +2,13 @@ package common
 
 import (
 	"fmt"
+	"github.com/bdragon300/go-asyncapi/internal/log"
 	"strings"
-
-	"github.com/bdragon300/go-asyncapi/internal/types"
 )
 
 type CompilerLogger struct {
 	ctx       *CompileContext
-	logger    *types.Logger
+	logger    *log.Logger
 	callLevel int
 }
 

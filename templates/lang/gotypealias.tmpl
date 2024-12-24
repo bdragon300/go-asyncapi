@@ -2,14 +2,14 @@
     {{- if .Description }}
         {{ print (goid .) "--" .Description | gocomment }}
     {{- end }}
-    type {{ . | goid }} {{.AliasedType | godef }}
+    type {{ . | goid }} {{ .AliasedType | godef }}
 {{- end}}
 {{define "lang/gotypealias/usage"}}
     {{- if .HasDefinition }}
         {{- if .Import }}
-            {{- qual .Import (goid .) }}
+            {{- qual .Import (goid .AliasedType) }}
         {{- else }}
-            {{- qualgenpkg . }}{{ . | goid }}
+            {{- qualgenpkg .AliasedType }}{{ .AliasedType | goid }}
         {{- end }}
     {{- else }}
         {{- .AliasedType | gousage }}

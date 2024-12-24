@@ -7,7 +7,6 @@ import (
 
 type Parameter struct {
 	OriginalName string
-	Dummy        bool
 	Type         common.GolangType
 	IsStringType bool  // true if Type contains a type alias to built-in string type
 }
@@ -17,11 +16,11 @@ func (p *Parameter) Kind() common.ObjectKind {
 }
 
 func (p *Parameter) Selectable() bool {
-	return !p.Dummy && p.Type.Selectable()
+	return p.Type.Selectable()
 }
 
 func (p *Parameter) Visible() bool {
-	return !p.Dummy && p.Type.Visible()
+	return p.Type.Visible()
 }
 
 func (p *Parameter) Name() string {

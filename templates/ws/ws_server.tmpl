@@ -21,14 +21,14 @@ func (s {{.Type| gousage}}) Consumer() {{qualrun .Protocol "Consumer"}} {
     return s.consumer
 }
 
-{{- range $ch := .GetBoundChannels}}
+{{- range .GetBoundChannels}}
     {{- with deref .}}
         {{- with .SelectProtoObject $.Protocol }}
-            func (s {{ $.Type | gousage }}) Open{{ $ch | goid }}(
+            func (s {{ $.Type | gousage }}) Open{{ .Type | goid }}(
                 ctx {{qual "context.Context"}},
                 {{- if .ParametersType}}params {{ .ParametersType | gousage }},{{end}}
             ) (ch *{{ .Type | gousage }}, err error) {
-                return {{qualgenpkg .Type}}Open{{ $ch | goid }}{{$.Protocol | capitalize | goid }}(
+                return {{qualgenpkg .Type}}Open{{ .Type | goid }}(
                     ctx,
                     {{- if .ParametersType}}params,{{end}}
                     {{- if .IsPublisher}}s.producer,{{end}}

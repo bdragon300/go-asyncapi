@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/selector"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
-	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 	"go/format"
@@ -70,7 +70,7 @@ type renderQueueItem struct {
 }
 
 func RenderFiles(source renderSource, opts common.RenderOpts) (map[string]*bytes.Buffer, error) {
-	logger := types.NewLogger("Rendering 🎨")
+	logger := log.GetLogger(log.LoggerPrefixRendering)
 	filesState := make(map[string]fileRenderState)
 	ns := context.RenderNamespace{}
 	// TODO: logging
@@ -86,7 +86,7 @@ func RenderFiles(source renderSource, opts common.RenderOpts) (map[string]*bytes
 			logger.Trace("-> Render file name", "object", item.object.String(), "template", item.selection.File)
 			fileName, err := renderInlineTemplate(item, opts, item.selection.File)
 			switch {
-			case errors.Is(err, context.ErrDefinitionLocationUnknown):
+			case errors.Is(err, context.ErrNotDefined):
 				// Template can't be rendered right now due to unknown object definition, postpone it
 				postponed = append(postponed, item)
 				logger.Trace(
@@ -106,7 +106,7 @@ func RenderFiles(source renderSource, opts common.RenderOpts) (map[string]*bytes
 			logger.Debug("-> Render", "object", item.object.String(), "file", fileName, "template", item.selection.Template)
 			newState, newNs, err := renderObject(item, opts, item.selection.Template, filesState[fileName], ns)
 			switch {
-			case errors.Is(err, context.ErrDefinitionLocationUnknown):
+			case errors.Is(err, context.ErrNotDefined):
 				// Some objects needed by template code have not been defined and therefore, not in namespace yet.
 				// Postpone this run to the end in hope that next runs will define these objects.
 				item.err = err
@@ -126,7 +126,7 @@ func RenderFiles(source renderSource, opts common.RenderOpts) (map[string]*bytes
 		}
 		if len(postponed) == len(queue) {
 			return nil, fmt.Errorf(
-				"missed object definitions, please ensure they are rendered by godef: %w",
+				"missed object definitions, please ensure they are rendered by `godef` prior using or use `localobj`: \n%w",
 				errors.Join(lo.Map(postponed, func(item renderQueueItem, _ int) error { return item.err })...),
 			)
 		}
@@ -146,7 +146,7 @@ func RenderFiles(source renderSource, opts common.RenderOpts) (map[string]*bytes
 }
 
 func buildRenderQueue(source renderSource, selections []common.RenderSelectionConfig) (res []renderQueueItem) {
-	logger := types.NewLogger("Rendering 🎨")
+	logger := log.GetLogger(log.LoggerPrefixRendering)
 
 	for _, selection := range selections {
 		logger.Debug("Select objects", "selection", selection)
@@ -224,7 +224,7 @@ func renderObject(
 
 func renderFiles(files map[string]fileRenderState, opts common.RenderOpts) (map[string]*bytes.Buffer, error) {
 	var res = make(map[string]*bytes.Buffer, len(files))
-	logger := types.NewLogger("Rendering 🎨")
+	logger := log.GetLogger(log.LoggerPrefixRendering)
 
 	// TODO: redefinition preamble in config/cli args
 	tpl, err := tmpl.LoadTemplate(defaultPreambleTemplateName)
@@ -268,7 +268,7 @@ func renderFile(preambleTpl *template.Template, opts common.RenderOpts, renderSt
 
 //func RenderFiles(source renderSource, opts common.RenderOpts) (fileContents map[string]*bytes.Buffer, err error) {
 //	fileContents = make(map[string]*bytes.Buffer)
-//	logger := types.NewLogger("Rendering 🎨")
+//	logger := types.GetLogger("Rendering 🎨")
 //	rendered := 0
 //	totalObjects := 0
 //
@@ -352,14 +352,14 @@ func renderFile(preambleTpl *template.Template, opts common.RenderOpts, renderSt
 
 // FormatFiles formats the files in-place in the map using gofmt
 func FormatFiles(files map[string]*bytes.Buffer) error {
-	logger := types.NewLogger("Formatting 📐")
+	logger := log.GetLogger(log.LoggerPrefixFormatting)
 	logger.Info("Run formatting")
 
 	for fileName, buf := range files {
 		logger.Debug("File", "name", fileName, "bytes", buf.Len())
 		formatted, err := format.Source(buf.Bytes())
 		if err != nil {
-			return err
+			return err // TODO: print as multiline error
 		}
 		buf.Reset()
 		buf.Write(formatted)
@@ -371,7 +371,7 @@ func FormatFiles(files map[string]*bytes.Buffer) error {
 }
 
 func WriteToFiles(files map[string]*bytes.Buffer, baseDir string) error {
-	logger := types.NewLogger("Writing 📝")
+	logger := log.GetLogger(log.LoggerPrefixWriting)
 	logger.Info("Run writing")
 
 	if err := ensureDir(baseDir); err != nil {

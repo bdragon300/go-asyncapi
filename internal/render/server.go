@@ -52,7 +52,7 @@ func (s *Server) Name() string {
 }
 
 func (s *Server) GetBoundChannels() []common.Renderable {
-	type renderableUnwrapper interface {
+	type renderableWrapper interface {
 		UnwrapRenderable() common.Renderable
 	}
 
@@ -61,7 +61,7 @@ func (s *Server) GetBoundChannels() []common.Renderable {
 		if !r.Visible() {
 			return false
 		}
-		if w, ok := r.(renderableUnwrapper); ok {
+		if w, ok := r.(renderableWrapper); ok {
 			r = w.UnwrapRenderable()
 		}
 		if ch, ok := r.(*Channel); ok {

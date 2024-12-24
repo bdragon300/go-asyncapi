@@ -36,7 +36,7 @@ func (c CorrelationID) build(ctx *common.CompileContext, correlationIDKey string
 	ignore := c.XIgnore //|| !ctx.CompileOpts.MessageOpts.Enable
 	if ignore {
 		ctx.Logger.Debug("CorrelationID denoted to be ignored")
-		return &render.CorrelationID{}, nil
+		return &render.CorrelationID{Dummy: true}, nil
 	}
 	// TODO: move this ref code from everywhere to single place?
 	if c.Ref != "" {

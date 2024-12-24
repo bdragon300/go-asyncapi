@@ -14,15 +14,19 @@ func (p *GoTypeAlias) GoTemplate() string {
 	return "lang/gotypealias"
 }
 
-func (p *GoTypeAlias) UnwrapGolangType() (common.GolangType, bool) {
-	if v, ok := p.AliasedType.(GolangTypeWrapperType); ok {
-		return v.UnwrapGolangType()
+func (p *GoTypeAlias) InnerGolangType() common.GolangType {
+	if v, ok := p.AliasedType.(GolangTypeExtractor); ok {
+		return v.InnerGolangType()
 	}
-	return p.AliasedType, p.AliasedType != nil
+	return p.AliasedType
+}
+
+func (p *GoTypeAlias) Addressable() bool {
+	return true // In fact, type alias is a new type, so it is addressable by default, even if aliased type is not (e.g. interface)
 }
 
 func (p *GoTypeAlias) IsPointer() bool {
-	return p.AliasedType.IsPointer()
+	return false  // Type alias is not a pointer itself
 }
 
 func (p *GoTypeAlias) IsStruct() bool {

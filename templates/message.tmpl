@@ -54,9 +54,9 @@ func (m *{{ .OutType | goid }}) WithHeaders(headers {{$headersType| gousage}}) *
     return m
 }
 
-{{- with .CorrelationID}}
+{{- with visible .CorrelationID}}
 func (m {{ $message.OutType | goid }}) SetCorrelationID(value {{ .TargetVarType $message.OutType | gousage}}) {
-    {{ .RenderSetterBody "value" $message.OutType | gousage}}
+    {{ .RenderSetterBody "m" $message.OutType}}
 }
 {{- end}}
 {{- end}}
@@ -72,9 +72,9 @@ func (m *{{ .InType | goid }}) MessageHeaders() {{$headersType| gousage}} {
     return m.Headers
 }
 
-{{- with .CorrelationID}}
-func (m {{ $message.InType | goid }}) CorrelationID() (value {{.TargetVarType $message.InType | gousage}}}, err error) {
-    {{ .RenderGetterBody "value" $message.InType | gousage}}
+{{- with visible .CorrelationID}}
+func (m {{ $message.InType | goid }}) CorrelationID() (value {{.TargetVarType $message.InType | gousage}}, err error) {
+    {{ .RenderGetterBody "value" $message.InType }}
     return
 }
 {{- end}}

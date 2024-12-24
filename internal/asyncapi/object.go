@@ -104,7 +104,8 @@ func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]str
 	}
 
 	if o.Type == nil {
-		o.Type = o.getDefaultObjectType(ctx)
+		ctx.Logger.Warn("Empty object type is deprecated, guessing it automatically. Hint: probably you wrote `type: null` instead of `type: \"null\"`?")
+		o.Type = o.guessObjectType(ctx)
 	}
 
 	if len(o.OneOf)+len(o.AnyOf)+len(o.AllOf) > 0 {
@@ -230,17 +231,17 @@ func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.Sch
 	return golangType, nil
 }
 
-// getDefaultObjectType is backwards compatible, guessing the user intention when they didn't specify a type.
-func (o Object) getDefaultObjectType(ctx *common.CompileContext) *types.Union2[string, []string] {
+// guessObjectType is backwards compatible, guessing the user intention when they didn't specify a type.
+func (o Object) guessObjectType(ctx *common.CompileContext) *types.Union2[string, []string] {
 	switch {
 	case o.Ref == "" && o.Properties.Len() > 0:
-		ctx.Logger.Trace("Object type is empty, determined `object` because of `properties` presence")
+		ctx.Logger.Trace("Determined `type: object` because of `properties` presence")
 		return types.ToUnion2[string, []string]("object")
 	case o.Items != nil: // TODO: fix type when AllOf, AnyOf, OneOf
-		ctx.Logger.Trace("Object type is empty, determined `array` because of `items` presence")
+		ctx.Logger.Trace("Determined `type: array` because of `items` presence")
 		return types.ToUnion2[string, []string]("array")
 	default:
-		ctx.Logger.Trace("Object type is empty, guessing it `object` by default")
+		ctx.Logger.Trace("Determined `type: object` as a default object type")
 		return types.ToUnion2[string, []string]("object")
 	}
 }

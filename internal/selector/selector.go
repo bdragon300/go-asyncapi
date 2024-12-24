@@ -44,7 +44,7 @@ type filterFunc func(common.CompileObject) bool
 func getFiltersChain(selection common.RenderSelectionConfig) []filterFunc {
 	var filterChain []filterFunc
 	filterChain = append(filterChain, func(object common.CompileObject) bool {
-		return object.Selectable()
+		return object.Selectable() && object.Visible()
 	})
 	if selection.ObjectKindRe != "" {
 		re := regexp.MustCompile(selection.ObjectKindRe) // TODO: compile 1 time (and below)

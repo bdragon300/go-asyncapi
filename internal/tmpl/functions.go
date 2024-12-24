@@ -13,8 +13,8 @@ import (
 )
 
 func GetTemplateFunctions() template.FuncMap {
-	type golangTypeWrapperType interface {
-		UnwrapGolangType() (common.GolangType, bool)
+	type golangTypeExtractor interface {
+		InnerGolangType() common.GolangType
 	}
 
 	// TODO: review the functions names
@@ -22,10 +22,8 @@ func GetTemplateFunctions() template.FuncMap {
 		"golit": func(val any) (string, error) { return templateGoLit(val) },
 		"goptr": func(val common.GolangType) (string, error) { return templateGoPtr(val) },
 		"unwrapgoptr": func(val common.GolangType) common.GolangType {  // TODO: remove?
-			if v, ok := any(val).(golangTypeWrapperType); ok {
-				if wt, ok := v.UnwrapGolangType(); ok {
-					return wt
-				}
+			if v, ok := any(val).(golangTypeExtractor); ok {
+				return v.InnerGolangType()  // TODO: also related to typealias
 			}
 			return nil
 		},
@@ -68,7 +66,7 @@ func GetTemplateFunctions() template.FuncMap {
 		"godef": func(r common.GolangType) (string, error) {
 			tplName := path.Join(r.GoTemplate(), "definition")
 			common.GetContext().DefineTypeInNamespace(r, common.GetContext().CurrentSelection(), true)
-			if v, ok := r.(golangTypeUnwrapper); ok {
+			if v, ok := r.(golangTypeWrapper); ok {
 				r = v.UnwrapGolangType()
 			}
 			res, err := templateExecTemplate(tplName, r)
@@ -89,10 +87,13 @@ func GetTemplateFunctions() template.FuncMap {
 			return !templateGoDefined(r)
 		},
 		"deref": func(r common.Renderable) common.Renderable {
-			if v, ok := r.(renderableUnwrapper); ok {
+			if v, ok := r.(renderableWrapper); ok {
 				return v.UnwrapRenderable()
 			}
 			return r
+		},
+		"visible": func(r common.Renderable) common.Renderable {
+			return lo.Ternary(!lo.IsNil(r) && r.Visible(), r, nil)
 		},
 		"debug": func(args ...any) string { // TODO: remove or replace with log
 			fmt.Printf("DEBUG: %[1]v %[1]p\n", args...)
@@ -118,17 +119,17 @@ func templateGoDefined(r any) bool {
 	panic(fmt.Sprintf("unsupported type %[1]T: %[1]v", r))
 }
 
-type renderableUnwrapper interface {
+type renderableWrapper interface {
 	UnwrapRenderable() common.Renderable
 }
 
-type golangTypeUnwrapper interface {
+type golangTypeWrapper interface {
 	UnwrapGolangType() common.GolangType
 }
 
 func TemplateGoUsage(r common.GolangType) (string, error) {
 	tplName := path.Join(r.GoTemplate(), "usage")
-	if v, ok := r.(golangTypeUnwrapper); ok {
+	if v, ok := r.(golangTypeWrapper); ok {
 		r = v.UnwrapGolangType()
 	}
 	res, err := templateExecTemplate(tplName, r)
@@ -166,7 +167,7 @@ func templateGoPtr(val common.GolangType) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", val, err)
 	}
-	return lo.Ternary(val.IsPointer(), s, "*"+s), nil
+	return lo.Ternary(val.Addressable(), "*"+s, s), nil
 }
 
 func templateGoID(val any) string {
