@@ -40,33 +40,11 @@ type CompilationStorage interface {
 }
 
 type CompileOpts struct {
-	//ChannelOpts         ObjectCompileOpts
-	//MessageOpts         ObjectCompileOpts
-	//ModelOpts           ObjectCompileOpts
-	//ServerOpts          ObjectCompileOpts
 	AllowRemoteRefs     bool
 	RuntimeModule       string
 	GeneratePublishers  bool
 	GenerateSubscribers bool
 }
-
-//type ObjectCompileOpts struct {
-//	Enable       bool
-//	IncludeRegex *regexp.Regexp
-//	ExcludeRegex *regexp.Regexp
-//}
-//
-//func (o ObjectCompileOpts) IsAllowedName(name string) bool {
-//	switch {
-//	case !o.Enable:
-//		return false
-//	case o.ExcludeRegex != nil && o.ExcludeRegex.MatchString(name):
-//		return false
-//	case o.IncludeRegex != nil:
-//		return o.IncludeRegex.MatchString(name)
-//	}
-//	return true
-//}
 
 type ContextStackItem struct {
 	PathItem       string

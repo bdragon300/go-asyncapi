@@ -12,7 +12,7 @@ type ServerVariable struct {
 }
 
 func (s *ServerVariable) Kind() common.ObjectKind {
-	return common.ObjectKindServerVariable
+	return common.ObjectKindOther
 }
 
 func (s *ServerVariable) Selectable() bool {

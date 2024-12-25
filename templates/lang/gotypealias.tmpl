@@ -7,9 +7,9 @@
 {{define "lang/gotypealias/usage"}}
     {{- if .HasDefinition }}
         {{- if .Import }}
-            {{- qual .Import (goid .AliasedType) }}
+            {{- qual .Import (goid .) }}
         {{- else }}
-            {{- qualgenpkg .AliasedType }}{{ .AliasedType | goid }}
+            {{- qualgenpkg . }}{{ . | goid }}
         {{- end }}
     {{- else }}
         {{- .AliasedType | gousage }}

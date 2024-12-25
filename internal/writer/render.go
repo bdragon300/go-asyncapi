@@ -1,6 +1,7 @@
 package writer
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -14,43 +15,31 @@ import (
 	"go/format"
 	"os"
 	"path"
+	"strings"
 	"text/template"
 )
 
 
-//type MultilineError struct {
-//	error
-//}
-//
-//func (e MultilineError) Error() string {
-//	s := e.error.Error()
-//	i := strings.IndexRune(s, '\n')
-//	if i < 0 {
-//		return s
-//	}
-//	return s[:i]
-//}
-//
-//func (e MultilineError) RestLines() string {
-//	lineno := 1
-//	bld := strings.Builder{}
-//	rd := bufio.NewReader(strings.NewReader(e.error.Error()))
-//	_, _ = rd.ReadString('\n') // Skip the first line
-//
-//	for {
-//		s, err := rd.ReadString('\n')
-//		if err != nil {
-//			break // Suppose that the only error here can appear is io.EOF
-//		}
-//		bld.WriteString(fmt.Sprintf("%-3d| ", lineno))
-//		bld.WriteString(s)
-//		lineno++
-//	}
-//
-//	return bld.String()
-//}
+type ErrorWithContent struct {
+	error
+	Content []byte
+}
 
-const defaultPreambleTemplateName = "preamble.tmpl"
+func (e ErrorWithContent) ContentLines() string {
+	var b strings.Builder
+	rd := bufio.NewReader(bytes.NewReader(e.Content))
+
+	for line := 1; ; line++ {
+		s, err := rd.ReadString('\n')
+		if err != nil {
+			break // Suppose that the only error can appear here is io.EOF
+		}
+		b.WriteString(fmt.Sprintf("%-4d│ ", line))
+		b.WriteString(s)
+	}
+
+	return b.String()
+}
 
 type renderSource interface {
 	AllObjects() []common.CompileObject
@@ -73,7 +62,7 @@ func RenderFiles(source renderSource, opts common.RenderOpts) (map[string]*bytes
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 	filesState := make(map[string]fileRenderState)
 	ns := context.RenderNamespace{}
-	// TODO: logging
+
 	logger.Info("Run rendering")
 	queue := buildRenderQueue(source, opts.Selections)
 	var postponed []renderQueueItem
@@ -83,8 +72,8 @@ func RenderFiles(source renderSource, opts common.RenderOpts) (map[string]*bytes
 		for _, item := range queue {
 			logger.Debug("Render", "object", item.object.String())
 
-			logger.Trace("-> Render file name", "object", item.object.String(), "template", item.selection.File)
-			fileName, err := renderInlineTemplate(item, opts, item.selection.File)
+			logger.Trace("-> Render file name", "object", item.object.String(), "template", item.selection.Render.File)
+			fileName, err := renderInlineTemplate(item, opts, item.selection.Render.File)
 			switch {
 			case errors.Is(err, context.ErrNotDefined):
 				// Template can't be rendered right now due to unknown object definition, postpone it
@@ -101,10 +90,10 @@ func RenderFiles(source renderSource, opts common.RenderOpts) (map[string]*bytes
 			logger.Trace("-> File", "name", fileName)
 
 			if _, ok := filesState[fileName]; !ok {
-				filesState[fileName] = fileRenderState{packageName: item.selection.Package, fileName: fileName}
+				filesState[fileName] = fileRenderState{packageName: item.selection.Render.Package, fileName: fileName}
 			}
-			logger.Debug("-> Render", "object", item.object.String(), "file", fileName, "template", item.selection.Template)
-			newState, newNs, err := renderObject(item, opts, item.selection.Template, filesState[fileName], ns)
+			logger.Debug("-> Render", "object", item.object.String(), "file", fileName, "template", item.selection.Render.Template)
+			newState, newNs, err := renderObject(item, opts, item.selection.Render.Template, filesState[fileName], ns)
 			switch {
 			case errors.Is(err, context.ErrNotDefined):
 				// Some objects needed by template code have not been defined and therefore, not in namespace yet.
@@ -163,7 +152,7 @@ func renderInlineTemplate(item renderQueueItem, opts common.RenderOpts, text str
 	ctx := &context.RenderContextImpl{
 		RenderOpts:             opts,
 		CurrentSelectionConfig: item.selection,
-		PackageName:            item.selection.Package,
+		PackageName:            item.selection.Render.Package,
 		Imports:                &context.ImportsList{},
 		Object:                 item.object,
 	}
@@ -176,7 +165,7 @@ func renderInlineTemplate(item renderQueueItem, opts common.RenderOpts, text str
 	if err != nil {
 		return "", err
 	}
-	if err = tpl.Execute(&res, tplCtx.Object()); err != nil {
+	if err = tpl.Execute(&res, tplCtx); err != nil {
 		return "", err
 	}
 	return res.String(), nil
@@ -216,9 +205,13 @@ func renderObject(
 	}
 
 	// Update the file state if rendering was successful
-	fileState.buf.Write(res.Bytes())
-	fileState.imports = importsCopy
-	fileState.buf.WriteRune('\n') // Separate writes following each other (if any)
+	// If item is marked reused from other place, do not update the file state and content, just update namespace
+	if item.selection.ReusePackagePath == "" {
+		fileState.buf.Write(res.Bytes())
+		fileState.buf.WriteRune('\n') // Separate writes following each other (if any)
+		fileState.imports = importsCopy
+	}
+
 	return fileState, nsCopy, nil
 }
 
@@ -226,14 +219,17 @@ func renderFiles(files map[string]fileRenderState, opts common.RenderOpts) (map[
 	var res = make(map[string]*bytes.Buffer, len(files))
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
-	// TODO: redefinition preamble in config/cli args
-	tpl, err := tmpl.LoadTemplate(defaultPreambleTemplateName)
+	tpl, err := tmpl.LoadTemplate(opts.PreambleTemplate)
 	if err != nil {
-		return nil, fmt.Errorf("template %q: %w", defaultPreambleTemplateName, err)
+		return nil, fmt.Errorf("template %q: %w", opts.PreambleTemplate, err)
 	}
 
 	for fileName, state := range files {
-		logger.Trace("Render file", "file", fileName, "package", state.packageName, "imports", state.imports.String())
+		logger.Debug("Render file", "file", fileName, "package", state.packageName, "imports", state.imports.String())
+		if state.buf.Len() == 0 {
+			logger.Debug("-> Skip empty file", "file", fileName)
+			continue
+		}
 		b, err := renderFile(tpl, opts, state)
 		if err != nil {
 			return nil, err
@@ -266,90 +262,6 @@ func renderFile(preambleTpl *template.Template, opts common.RenderOpts, renderSt
 	return &res, nil
 }
 
-//func RenderFiles(source renderSource, opts common.RenderOpts) (fileContents map[string]*bytes.Buffer, err error) {
-//	fileContents = make(map[string]*bytes.Buffer)
-//	logger := types.GetLogger("Rendering 🎨")
-//	rendered := 0
-//	totalObjects := 0
-//
-//	logger.Info("Run rendering")
-//
-//	files := make(map[string]*jen.File)
-//	for _, pkgName := range source.Packages() {
-//		ctx := &common.RenderContext{
-//			CurrentPackage: pkgName,
-//			RenderOpts:     opts,
-//		}
-//		items := source.PackageObjects(pkgName)
-//		targetPkg := pkgName
-//		if opts.PackageScope == common.PackageScopeAll {
-//			targetPkg = opts.TargetPackage
-//		}
-//		logger.Debug("Package", "pkg", targetPkg, "items", len(items))
-//		totalObjects += len(items)
-//		for _, item := range items {
-//			if !item.Object.DirectRendering() {
-//				continue
-//			}
-//
-//			fileName := pkgName + ".go" // All objects with the same type in one file
-//			if opts.FileScope == common.FileScopeName {
-//				// Every single object in a separate file
-//				fileName = utils.NormalizePath(item.Object.ID()) + ".go"
-//			}
-//			if opts.PackageScope == common.PackageScopeType {
-//				fileName = path.Join(targetPkg, fileName)
-//			}
-//
-//			f, ok := files[fileName]
-//			if !ok {
-//				f = jen.NewFilePathName(opts.ImportBase, targetPkg)
-//				f.HeaderComment(GeneratedCodePreamble)
-//			}
-//
-//			rendered++
-//			ctx.Logger.Debug("Render object", "pkg", pkgName, "object", item.Object.String(), "file", fileName)
-//			func() {
-//				// catch panics produced by rendering
-//				defer func() {
-//					if r := recover(); r != nil {
-//						err = fmt.Errorf("%s: %s\n%v", item.Object.String(), debug.Stack(), r)
-//					}
-//				}()
-//				for _, stmt := range item.Object.RenderDefinition(ctx) {
-//					f.Add(stmt)
-//				}
-//			}()
-//			if err != nil {
-//				return
-//			}
-//			files[fileName] = f
-//		}
-//	}
-//	logger.Debugf("Render stats: packages %d, objects: %d (rendered directly: %d)", len(source.Packages()), totalObjects, rendered)
-//
-//	for fileName, f := range files {
-//		logger.Trace("Render file", "file", fileName)
-//		buf := &bytes.Buffer{}
-//		if b, ok := fileContents[fileName]; ok {
-//			buf.WriteRune('\n')
-//			buf = b
-//		}
-//		if err = f.Render(buf); err != nil {
-//			if strings.ContainsRune(err.Error(), '\n') {
-//				return fileContents, MultilineError{err}
-//			}
-//			return fileContents, err
-//		}
-//		logger.Debug("Rendered file", "file", fileName, "size", buf.Len())
-//
-//		fileContents[fileName] = buf
-//	}
-//
-//	logger.Info("Rendering completed", "objects", rendered)
-//	return
-//}
-
 // FormatFiles formats the files in-place in the map using gofmt
 func FormatFiles(files map[string]*bytes.Buffer) error {
 	logger := log.GetLogger(log.LoggerPrefixFormatting)
@@ -359,7 +271,7 @@ func FormatFiles(files map[string]*bytes.Buffer) error {
 		logger.Debug("File", "name", fileName, "bytes", buf.Len())
 		formatted, err := format.Source(buf.Bytes())
 		if err != nil {
-			return err // TODO: print as multiline error
+			return ErrorWithContent{err, buf.Bytes()}
 		}
 		buf.Reset()
 		buf.Write(formatted)

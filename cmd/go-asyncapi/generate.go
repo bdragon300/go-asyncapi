@@ -3,13 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bdragon300/go-asyncapi/assets"
 	"github.com/bdragon300/go-asyncapi/internal/log"
+	"github.com/bdragon300/go-asyncapi/internal/tmpl"
 	"gopkg.in/yaml.v3"
 	"io"
 	"os"
 	"path"
-	"slices"
 	"strings"
 	"time"
 
@@ -61,9 +60,11 @@ type generatePubSubArgs struct {
 	Spec string `arg:"required,positional" help:"AsyncAPI specification file path or url" placeholder:"PATH"`
 
 	ProjectModule string `arg:"-M,--module" help:"Module path to use [default: extracted from go.mod file in the current working directory concatenated with target dir]" placeholder:"MODULE"`
-	TemplateDir string `arg:"--template-dir" help:"Directory with custom templates" placeholder:"DIR"`
-	ConfigFile string `arg:"--config-file" help:"YAML configuration file path" placeholder:"PATH"`
-	generateObjectSelectionOpts
+	TemplateDir string `arg:"-T,--template-dir" help:"Directory with custom templates" placeholder:"DIR"`
+	PreambleTemplate string `arg:"--preamble-template" default:"preamble.tmpl" help:"Custom preamble template name" placeholder:"NAME"`
+	ConfigFile string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"PATH"`
+	DisableFormatting bool `arg:"--disable-formatting" help:"Disable code formatting"`
+	NoImplementations bool `arg:"--no-implementations" help:"Do not generate any protocol implementation"`
 	ImplementationsOpts
 	AllowRemoteRefs bool `arg:"--allow-remote-refs" help:"Allow fetching spec files from remote $ref URLs"`
 
@@ -90,35 +91,6 @@ type ImplementationsOpts struct {
 	UDP   string `arg:"--udp-impl" default:"std" help:"Implementation for UDP ('none' to disable)" placeholder:"NAME"`
 }
 
-type generateObjectSelectionOpts struct {
-	//SelectChannelsAll   bool   `arg:"--select-channels-all" help:"Select all channels to be generated"`
-	//SelectChannelsRe    string `arg:"--select-channels-re" help:"Select channels whose name in document matches the regex" placeholder:"REGEX"`
-	//IgnoreChannelsAll   bool   `arg:"--ignore-channels-all" help:"Ignore all channels to be generated"`
-	//IgnoreChannelsRe    string `arg:"--ignore-channels-re" help:"Ignore channels whose name in document matches the regex" placeholder:"REGEX"`
-	//ReuseChannelsModule string `arg:"--reuse-channels-module" help:"Reuse the module with channels code" placeholder:"MODULE"`
-	//
-	//SelectMessagesAll   bool   `arg:"--select-messages-all" help:"Select all messages to be generated"`
-	//SelectMessagesRe    string `arg:"--select-messages-re" help:"Select messages whose name in document matches the regex" placeholder:"REGEX"`
-	//IgnoreMessagesAll   bool   `arg:"--ignore-messages-all" help:"Ignore all messages to be generated"`
-	//IgnoreMessagesRe    string `arg:"--ignore-messages-re" help:"Ignore messages whose name in document matches the regex" placeholder:"REGEX"`
-	//ReuseMessagesModule string `arg:"--reuse-messages-module" help:"Reuse the module with messages code" placeholder:"MODULE"`
-	//
-	//SelectModelsAll   bool   `arg:"--select-models-all" help:"Select all models to be generated"`
-	//SelectModelsRe    string `arg:"--select-models-re" help:"Select models whose name in document matches the regex" placeholder:"REGEX"`
-	//IgnoreModelsAll   bool   `arg:"--ignore-models-all" help:"Ignore all models to be generated"`
-	//IgnoreModelsRe    string `arg:"--ignore-models-re" help:"Ignore models whose name in document matches the regex" placeholder:"REGEX"`
-	//ReuseModelsModule string `arg:"--reuse-models-module" help:"Reuse the module with models code" placeholder:"MODULE"`
-	//
-	//SelectServersAll   bool   `arg:"--select-servers=all" help:"Select all servers to be generated"`
-	//SelectServersRe    string `arg:"--select-servers-re" help:"Select servers whose name in document matches the regex" placeholder:"REGEX"`
-	//IgnoreServersAll   bool   `arg:"--ignore-servers-all" help:"Ignore all servers to be generated"`
-	//IgnoreServersRe    string `arg:"--ignore-servers-re" help:"Ignore servers whose name in document matches the regex" placeholder:"REGEX"`
-	//ReuseServersModule string `arg:"--reuse-servers-module" help:"Reuse the module with servers code" placeholder:"MODULE"`
-
-	NoImplementations bool `arg:"--no-implementations" help:"Do not generate any protocol implementation"`
-	//NoEncoding        bool `arg:"--no-encoding" help:"Do not generate encoders/decoders code"`
-}
-
 func generate(cmd *GenerateCmd) error {
 	if cmd.Implementation != nil {
 		return generateImplementation(cmd)
@@ -127,12 +99,9 @@ func generate(cmd *GenerateCmd) error {
 	asyncapi.ProtocolBuilders = protocolBuilders()
 	isPub, isSub, pubSubOpts := getPubSubVariant(cmd)
 	if !isSub && !isPub {
-		return fmt.Errorf("%w: no publisher or subscriber set to generate", ErrWrongCliArgs)
+		return fmt.Errorf("%w: publisher, subscriber or both are required in args", ErrWrongCliArgs)
 	}
-	compileOpts, err := getCompileOpts(*pubSubOpts, isPub, isSub)
-	if err != nil {
-		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
-	}
+	compileOpts := getCompileOpts(*pubSubOpts, isPub, isSub)
 	renderOpts, err := getRenderOpts(*pubSubOpts, cmd.TargetDir)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
@@ -161,11 +130,12 @@ func generate(cmd *GenerateCmd) error {
 		return fmt.Errorf("schema render: %w", err)
 	}
 
-	// TODO: add cli arg to disable formatting
 	// Formatting
-	//if err = writer.FormatFiles(files); err != nil {
-	//	return fmt.Errorf("formatting code: %w", err)
-	//}
+	if !renderOpts.DisableFormatting {
+		if err = writer.FormatFiles(files); err != nil {
+			return fmt.Errorf("formatting code: %w", err)
+		}
+	}
 
 	// Writing
 	if err = writer.WriteToFiles(files, cmd.TargetDir); err != nil {
@@ -195,6 +165,152 @@ func generateImplementation(cmd *GenerateCmd) error {
 
 	log.GetLogger("").Info("Finished")
 	return nil
+}
+
+func protocolBuilders() map[string]asyncapi.ProtocolBuilder {
+	return map[string]asyncapi.ProtocolBuilder{
+		amqp.Builder.ProtocolName():  amqp.Builder,
+		http.Builder.ProtocolName():  http.Builder,
+		kafka.Builder.ProtocolName(): kafka.Builder,
+		mqtt.Builder.ProtocolName():  mqtt.Builder,
+		ws.Builder.ProtocolName():    ws.Builder,
+		redis.Builder.ProtocolName(): redis.Builder,
+		ip.Builder.ProtocolName():    ip.Builder,
+		tcp.Builder.ProtocolName():   tcp.Builder,
+		udp.Builder.ProtocolName():   udp.Builder,
+	}
+}
+
+func getPubSubVariant(cmd *GenerateCmd) (pub bool, sub bool, variant *generatePubSubArgs) {
+	switch {
+	case cmd.PubSub != nil:
+		return true, true, cmd.PubSub
+	case cmd.Pub != nil:
+		return true, false, cmd.Pub
+	case cmd.Sub != nil:
+		return false, true, cmd.Sub
+	}
+	return
+}
+
+func getCompileOpts(opts generatePubSubArgs, isPub, isSub bool) common.CompileOpts {
+	return common.CompileOpts{
+		AllowRemoteRefs:     opts.AllowRemoteRefs,
+		RuntimeModule:       opts.RuntimeModule,
+		GeneratePublishers:  isPub,
+		GenerateSubscribers: isSub,
+	}
+}
+
+func getRenderOpts(opts generatePubSubArgs, targetDir string) (common.RenderOpts, error) {
+	logger := log.GetLogger("")
+	res := common.RenderOpts{
+		RuntimeModule: opts.RuntimeModule,
+		TargetDir:     targetDir,
+		DisableFormatting: opts.DisableFormatting,
+		PreambleTemplate: opts.PreambleTemplate,
+	}
+
+	// Selections
+	logger.Debug("Load config", "file", opts.ConfigFile)
+	conf, err := loadConfig(opts.ConfigFile)
+	if err != nil {
+		return res, err
+	}
+	if logger.GetLevel() == log.TraceLevel {
+		buf := lo.Must(yaml.Marshal(conf))
+		logger.Trace("Loaded config", "value", string(buf))
+	}
+	for _, item := range conf.Selections {
+		pkg, _ := lo.Coalesce(
+			item.Render.Package,
+			lo.Ternary(path.Dir(item.Render.File) != ".", path.Dir(item.Render.File), ""),
+			lo.Ternary(targetDir != "", path.Base(targetDir), ""),
+			defaultPackage,
+		)
+		templateName, _ := lo.Coalesce(item.Render.Template, defaultTemplate)
+		sel := common.RenderSelectionConfig{
+			Protocols:        item.Protocols,
+			ObjectKinds:     item.ObjectKinds,
+			ModuleURLRe:      item.ModuleURLRe,
+			PathRe:           item.PathRe,
+			NameRe: item.NameRe,
+			Render: common.RenderSelectionConfigRender{
+				Template:         templateName,
+				File:             item.Render.File,
+				Package:          pkg,
+				Protocols:        item.Render.Protocols,
+				ProtoObjectsOnly: item.Render.ProtoObjectsOnly,
+			},
+			ReusePackagePath: item.ReusePackagePath,
+			AllSupportedProtocols: lo.Keys(asyncapi.ProtocolBuilders),
+		}
+		logger.Debug("Use selection", "value", sel)
+		res.Selections = append(res.Selections, sel)
+	}
+
+	// Custom templates
+	if opts.TemplateDir != "" {
+		logger.Debug("Use custom templates", "dir", opts.TemplateDir)
+		tmpl.SetCustomTemplateDirectory(opts.TemplateDir)
+	}
+
+	// ImportBase
+	res.ImportBase = opts.ProjectModule
+	if res.ImportBase == "" {
+		m, err := getProjectModule()
+		if err != nil {
+			return res, fmt.Errorf("getting project module from ./go.mod (use -M arg to override): %w", err)
+		}
+		logger.Debug("Determined project module", "value", m)
+		// Clean path and remove empty, current and parent directories, leaving only names
+		// This is not the best solution, however, it should work for most cases. Moreover, user can always override it.
+		parts := lo.Filter(strings.Split(path.Clean(targetDir), string(os.PathSeparator)), func(s string, _ int) bool {
+			return !lo.Contains([]string{"", ".", ".."}, s)
+		})
+		res.ImportBase = path.Join(m, path.Join(parts...))
+	}
+	logger.Debug("Import base", "value", res.ImportBase)
+
+	return res, nil
+}
+
+func getProjectModule() (string, error) {
+	pwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("cannot get current working directory: %w", err)
+	}
+	fn := path.Join(pwd, "go.mod")
+	f, err := os.Open(fn)
+	if err != nil {
+		return "", fmt.Errorf("unable to open %q: %w", fn, err)
+	}
+	data, err := io.ReadAll(f)
+	if err != nil {
+		return "", fmt.Errorf("unable read %q file: %w", fn, err)
+	}
+	modpath := modfile.ModulePath(data)
+	if modpath == "" {
+		return "", fmt.Errorf("module path not found in %q", fn)
+	}
+	return modpath, nil
+}
+
+func getResolver(opts generatePubSubArgs) compiler.SpecFileResolver {
+	logger := log.GetLogger(log.LoggerPrefixResolving)
+	if opts.FileResolverCommand != "" {
+		return compiler.SubprocessSpecFileResolver{
+			CommandLine: opts.FileResolverCommand,
+			RunTimeout:  opts.FileResolverTimeout,
+			Logger:      logger,
+		}
+	}
+	return compiler.DefaultSpecFileResolver{
+		Client:  stdHTTP.DefaultClient,
+		Timeout: opts.FileResolverTimeout,
+		BaseDir: opts.FileResolverSearchDir,
+		Logger:  logger,
+	}
 }
 
 func generationCompile(specURL *specurl.URL, compileOpts common.CompileOpts, resolver compiler.SpecFileResolver) (map[string]*compiler.Module, error) {
@@ -264,10 +380,24 @@ func generationLinking(objSources map[string]linker.ObjectSource) error {
 	return nil
 }
 
+func getImplementationsOpts(opts ImplementationsOpts) map[string]string {
+	return map[string]string{
+		amqp.Builder.ProtocolName():  opts.AMQP,
+		http.Builder.ProtocolName():  opts.HTTP,
+		kafka.Builder.ProtocolName(): opts.Kafka,
+		mqtt.Builder.ProtocolName():  opts.MQTT,
+		ws.Builder.ProtocolName():    opts.WS,
+		redis.Builder.ProtocolName(): opts.Redis,
+		ip.Builder.ProtocolName():    opts.IP,
+		tcp.Builder.ProtocolName():   opts.TCP,
+		udp.Builder.ProtocolName():   opts.UDP,
+	}
+}
+
 func generationWriteImplementations(selectedImpls map[string]string, protocols []string, implDir string) error {
 	logger := log.GetLogger(log.LoggerPrefixWriting)
 	logger.Info("Writing implementations")
-	implManifest := lo.Must(getImplementationsManifest())
+	implManifest := lo.Must(loadImplementationsManifest())
 
 	var totalBytes int
 	var writtenProtocols []string
@@ -302,228 +432,7 @@ func generationWriteImplementations(selectedImpls map[string]string, protocols [
 	return nil
 }
 
-func getProjectModule() (string, error) {
-	pwd, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("cannot get current working directory: %w", err)
-	}
-	fn := path.Join(pwd, "go.mod")
-	f, err := os.Open(fn)
-	if err != nil {
-		return "", fmt.Errorf("unable to open %q: %w", fn, err)
-	}
-	data, err := io.ReadAll(f)
-	if err != nil {
-		return "", fmt.Errorf("unable read %q file: %w", fn, err)
-	}
-	modpath := modfile.ModulePath(data)
-	if modpath == "" {
-		return "", fmt.Errorf("module path not found in %q", fn)
-	}
-	return modpath, nil
-}
-
-func getImplementationsOpts(opts ImplementationsOpts) map[string]string {
-	return map[string]string{
-		amqp.Builder.ProtocolName():  opts.AMQP,
-		http.Builder.ProtocolName():  opts.HTTP,
-		kafka.Builder.ProtocolName(): opts.Kafka,
-		mqtt.Builder.ProtocolName():  opts.MQTT,
-		ws.Builder.ProtocolName():    opts.WS,
-		redis.Builder.ProtocolName(): opts.Redis,
-		ip.Builder.ProtocolName():    opts.IP,
-		tcp.Builder.ProtocolName():   opts.TCP,
-		udp.Builder.ProtocolName():   opts.UDP,
-	}
-}
-
-func getPubSubVariant(cmd *GenerateCmd) (pub bool, sub bool, variant *generatePubSubArgs) {
-	switch {
-	case cmd.PubSub != nil:
-		return true, true, cmd.PubSub
-	case cmd.Pub != nil:
-		return true, false, cmd.Pub
-	case cmd.Sub != nil:
-		return false, true, cmd.Sub
-	}
-	return
-}
-
-func getCompileOpts(opts generatePubSubArgs, isPub, isSub bool) (common.CompileOpts, error) {
-	//var err error
-	res := common.CompileOpts{
-		AllowRemoteRefs:     opts.AllowRemoteRefs,
-		RuntimeModule:       opts.RuntimeModule,
-		GeneratePublishers:  isPub,
-		GenerateSubscribers: isSub,
-	}
-
-	//includeAll := !opts.SelectChannelsAll && !opts.SelectMessagesAll && !opts.SelectModelsAll && !opts.SelectServersAll
-	//f := func(all, ignoreAll bool, re, ignoreRe string) (r common.ObjectCompileOpts, e error) {
-	//	r.Enable = (includeAll || all) && !ignoreAll
-	//	if re != "" {
-	//		if r.IncludeRegex, e = regexp.Compile(re); e != nil {
-	//			return
-	//		}
-	//	}
-	//	if ignoreRe != "" {
-	//		if r.ExcludeRegex, e = regexp.Compile(ignoreRe); e != nil {
-	//			return
-	//		}
-	//	}
-	//	return
-	//}
-
-	//if res.ChannelOpts, err = f(opts.SelectChannelsAll, opts.IgnoreChannelsAll, opts.SelectChannelsRe, opts.IgnoreChannelsRe); err != nil {
-	//	return res, err
-	//}
-	//if opts.ReuseChannelsModule != "" {
-	//	res.ReusePackages[asyncapi.PackageScopeChannels] = opts.ReuseChannelsModule
-	//}
-	//if res.MessageOpts, err = f(opts.SelectMessagesAll, opts.IgnoreMessagesAll, opts.SelectMessagesRe, opts.IgnoreMessagesRe); err != nil {
-	//	return res, err
-	//}
-	//if opts.ReuseMessagesModule != "" {
-	//	res.ReusePackages[asyncapi.PackageScopeMessages] = opts.ReuseMessagesModule
-	//}
-	//if res.ModelOpts, err = f(opts.SelectModelsAll, opts.IgnoreModelsAll, opts.SelectModelsRe, opts.IgnoreModelsRe); err != nil {
-	//	return res, err
-	//}
-	//if opts.ReuseModelsModule != "" {
-	//	res.ReusePackages[asyncapi.PackageScopeModels] = opts.ReuseModelsModule
-	//}
-	//if res.ServerOpts, err = f(opts.SelectServersAll, opts.IgnoreServersAll, opts.SelectServersRe, opts.IgnoreServersRe); err != nil {
-	//	return res, err
-	//}
-	//if opts.ReuseServersModule != "" {
-	//	res.ReusePackages[asyncapi.PackageScopeServers] = opts.ReuseServersModule
-	//}
-
-	return res, nil
-}
-
-func getResolver(opts generatePubSubArgs) compiler.SpecFileResolver {
-	logger := log.GetLogger(log.LoggerPrefixResolving)
-	if opts.FileResolverCommand != "" {
-		return compiler.SubprocessSpecFileResolver{
-			CommandLine: opts.FileResolverCommand,
-			RunTimeout:  opts.FileResolverTimeout,
-			Logger:      logger,
-		}
-	}
-	return compiler.DefaultSpecFileResolver{
-		Client:  stdHTTP.DefaultClient,
-		Timeout: opts.FileResolverTimeout,
-		BaseDir: opts.FileResolverSearchDir,
-		Logger:  logger,
-	}
-}
-
-func getRenderOpts(opts generatePubSubArgs, targetDir string) (common.RenderOpts, error) {
-	res := common.RenderOpts{
-		RuntimeModule: opts.RuntimeModule,
-		TargetDir:     targetDir,
-		TemplateDir: opts.TemplateDir,
-	}
-
-	// TODO: logging
-	// Selections
-	if opts.ConfigFile == "" {
-		conf, err := loadConfig(opts.ConfigFile)
-		if err != nil {
-			return res, err
-		}
-		for _, item := range conf.Render.Selections {
-			pkg, _ := lo.Coalesce(
-				item.Package,
-				lo.Ternary(path.Dir(item.File) != ".", path.Dir(item.File), ""),
-				lo.Ternary(targetDir != "", path.Base(targetDir), ""),
-				defaultPackage,
-			)
-			templateName, _ := lo.Coalesce(item.Template,defaultTemplate)
-			protocols := item.Protocols
-			if len(protocols) == 0 {
-				protocols = lo.Keys(asyncapi.ProtocolBuilders)
-				slices.Sort(protocols)
-			}
-			sel := common.RenderSelectionConfig{
-				Template:     templateName,
-				File:         item.File,
-				Package:      pkg,
-				Protocols: protocols,
-				IgnoreCommon: item.IgnoreCommon,  // TODO: rename
-				TemplateArgs: item.TemplateArgs,
-				ObjectKindRe: item.ObjectKindRe,
-				ModuleURLRe:  item.ModuleURLRe,
-				PathRe:       item.PathRe,
-			}
-			res.Selections = append(res.Selections, sel)
-		}
-	}
-
-	// ImportBase
-	res.ImportBase = opts.ProjectModule
-	if res.ImportBase == "" {
-		m, err := getProjectModule()
-		if err != nil {
-			return res, fmt.Errorf("getting project module from ./go.mod (use -M arg to override): %w", err)
-		}
-		// Clean path and remove empty, current and parent directories, leaving only names
-		// This is not the best solution, however, it should work for most cases. Moreover, user can always override it.
-		parts := lo.Filter(strings.Split(path.Clean(targetDir), string(os.PathSeparator)), func(s string, _ int) bool {
-			return !lo.Contains([]string{"", ".", ".."}, s)
-		})
-		res.ImportBase = path.Join(m, path.Join(parts...))
-	}
-	log.GetLogger("").Debugf("Target import base is %s", res.ImportBase)
-
-	return res, nil
-}
-
-func loadConfig(fileName string) (toolConfig, error) {
-	var conf toolConfig
-
-	var f io.ReadCloser
-	var err error
-	if fileName == "" {
-		f, err = assets.AssetFS.Open(defaultConfigFileName)
-		if err != nil {
-			return conf, fmt.Errorf("cannot open default config file in assets, this is a programming error: %w", err)
-		}
-	} else {
-		f, err = os.Open(fileName)
-		if err != nil {
-			return conf, fmt.Errorf("cannot open config file: %w", err)
-		}
-	}
-	defer f.Close()
-
-	buf, err := io.ReadAll(f)
-	if err != nil {
-		return conf, fmt.Errorf("cannot read config file: %w", err)
-	}
-
-	if err = yaml.Unmarshal(buf, &conf); err != nil {
-		return conf, fmt.Errorf("cannot parse YAML config file: %w", err)
-	}
-	return conf, nil
-}
-
-func protocolBuilders() map[string]asyncapi.ProtocolBuilder {
-	return map[string]asyncapi.ProtocolBuilder{
-		amqp.Builder.ProtocolName():  amqp.Builder,
-		http.Builder.ProtocolName():  http.Builder,
-		kafka.Builder.ProtocolName(): kafka.Builder,
-		mqtt.Builder.ProtocolName():  mqtt.Builder,
-		ws.Builder.ProtocolName():    ws.Builder,
-		redis.Builder.ProtocolName(): redis.Builder,
-		ip.Builder.ProtocolName():    ip.Builder,
-		tcp.Builder.ProtocolName():   tcp.Builder,
-		udp.Builder.ProtocolName():   udp.Builder,
-	}
-}
-
-func getImplementationsManifest() (implementations.ImplManifest, error) {
+func loadImplementationsManifest() (implementations.ImplManifest, error) {
 	f, err := implementations.ImplementationFS.Open("manifest.json")
 	if err != nil {
 		return nil, fmt.Errorf("cannot open manifest.json: %w", err)
@@ -536,4 +445,3 @@ func getImplementationsManifest() (implementations.ImplManifest, error) {
 
 	return meta, nil
 }
-

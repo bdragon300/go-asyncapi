@@ -33,7 +33,7 @@ type CorrelationID struct {
 }
 
 func (c *CorrelationID) Kind() common.ObjectKind {
-	return common.ObjectKindCorrelationID
+	return common.ObjectKindOther
 }
 
 func (c *CorrelationID) Selectable() bool {

@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"github.com/bdragon300/go-asyncapi/internal/log"
+	"github.com/bdragon300/go-asyncapi/internal/writer"
 	"io"
 	"os"
 
@@ -50,9 +51,12 @@ func main() {
 
 	cmd := cliArgs.GenerateCmd
 	if err := generate(cmd); err != nil {
+		var multilineErr writer.ErrorWithContent
 		switch {
 		case errors.Is(err, ErrWrongCliArgs):
 			cliParser.WriteHelp(os.Stderr)
+		case chlog.GetLevel() <= chlog.DebugLevel && errors.As(err, &multilineErr):
+			chlog.Error(err.Error(), "details", multilineErr.ContentLines())
 		}
 
 		chlog.Error(err.Error())

@@ -56,15 +56,21 @@ func (c *RenderContextImpl) QualifiedGeneratedPackage(obj common.GolangType) (st
 		return "", nil // Type is not supposed to be defined in the generated code (including Go built-in types)
 	}
 
+	// Use the package path from reuse config if it is defined
+	if defInfo.Selection.ReusePackagePath != "" {
+		_, packageName := path.Split(defInfo.Selection.ReusePackagePath)
+		return c.Imports.addImport(defInfo.Selection.ReusePackagePath, packageName), nil
+	}
+
 	// Check if the object is defined in the same directory (assuming the directory is equal to package)
-	fileDir := path.Dir(defInfo.Selection.File)
-	if fileDir == path.Dir(c.CurrentSelectionConfig.File) {
+	fileDir := path.Dir(defInfo.Selection.Render.File)
+	if fileDir == path.Dir(c.CurrentSelectionConfig.Render.File) {
 		return "", nil // Object is defined in the current package, its name doesn't require a package name
 	}
 
 	parentDir := path.Dir(fileDir)
-	pkgPath := path.Join(c.RenderOpts.ImportBase, parentDir, defInfo.Selection.Package)
-	return c.Imports.addImport(pkgPath, defInfo.Selection.Package), nil
+	pkgPath := path.Join(c.RenderOpts.ImportBase, parentDir, defInfo.Selection.Render.Package)
+	return c.Imports.addImport(pkgPath, defInfo.Selection.Render.Package), nil
 }
 
 func (c *RenderContextImpl) QualifiedRuntimeName(parts ...string) string {
@@ -232,34 +238,6 @@ func (s *RenderNamespace) String() string {
 	}), "; ")
 	return fmt.Sprintf("names: %s | defs: %s", strings.Join(s.names, "; "), defs)
 }
-
-//// LogStartRender is typically called at the beginning of a D or U method and logs that the
-//// object is started to be rendered. It also logs the object's name, type, and the current package.
-//// Every call to LogStartRender should be followed by a call to LogFinishRender which logs that the object is finished to be
-//// rendered.
-//func (c *RenderContext) LogStartRender(kind, pkg, name, mode string, directRendering bool, args ...any) {
-//	l := c.Logger
-//	args = append(args, "pkg", c.CurrentPackage, "mode", mode)
-//	if pkg != "" {
-//		name = pkg + "." + name
-//	}
-//	name = kind + " " + name
-//	if c.logCallLvl > 0 {
-//		name = fmt.Sprintf("%s> %s", strings.Repeat("-", c.logCallLvl), name) // Ex: prefix: --> Message...
-//	}
-//	if directRendering && mode == "definition" {
-//		l.Debug(name, args...)
-//	} else {
-//		l.Trace(name, args...)
-//	}
-//	c.logCallLvl++
-//}
-//
-//func (c *RenderContext) LogFinishRender() {
-//	if c.logCallLvl > 0 {
-//		c.logCallLvl--
-//	}
-//}
 
 // qualifiedToImport converts the qual* template function parameters to qualified name and import package path.
 // And also it returns the package name (the last part of the package path).

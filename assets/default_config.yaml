@@ -1,12 +1,16 @@
-render:
-  selections:
-    - objectKindRe: schema
-      file: schemas/{{. | goid }}.go
-    - objectKindRe: parameter
-      file: parameters/{{. | goid }}.go
-    - objectKindRe: channel
-      file: channels/{{. | goid }}.go
-    - objectKindRe: server
-      file: servers/{{. | goid }}.go
-    - objectKindRe: message
-      file: messages/{{. | goid }}.go
+selections:
+  - objectKinds: ["schema"]
+    render:
+      file: schemas/{{.Object | goid }}.go
+  - objectKinds: ["parameter"]
+    render:
+      file: parameters/{{.Object | goid }}.go
+  - objectKinds: ["channel"]
+    render:
+      file: channels/{{.Object | goid }}.go
+  - objectKinds: ["server"]
+    render:
+      file: servers/{{.Object | goid }}.go
+  - objectKinds: ["message"]
+    render:
+      file: messages/{{.Object | goid }}.go

@@ -10,19 +10,19 @@ func SetContext(c RenderContext) {
 	context = c
 }
 
-// ObjectKind is an enumeration of all possible object kinds used in the AsyncAPI specification.
+// ObjectKind is an enumeration of object kinds that are selectable for rendering.
 type ObjectKind string
 
 const (
-	ObjectKindOther ObjectKind = ""// Utility language object, not intended for selection (type, value, interface, etc.)
+	// ObjectKindOther is a utility language object, not intended for selection (type, value, interface, etc.)
+	ObjectKindOther ObjectKind = ""
 	ObjectKindSchema = "schema"
 	ObjectKindServer = "server"
-	ObjectKindServerVariable = "serverVariable"
 	ObjectKindChannel = "channel"
 	ObjectKindMessage = "message"
 	ObjectKindParameter = "parameter"
-	ObjectKindCorrelationID = "correlationID"
-	ObjectKindAsyncAPI = "asyncapi"	         // Utility object represents the entire AsyncAPI document
+	// ObjectKindAsyncAPI is a utility object represents the entire AsyncAPI document
+	ObjectKindAsyncAPI = "asyncapi"
 )
 
 type Renderable interface {  // TODO: rename
@@ -40,24 +40,40 @@ type Renderable interface {  // TODO: rename
 }
 
 type (
-	RenderSelectionConfig struct {
+	RenderSelectionConfigRender struct {
 		Template     string
 		File         string
 		Package      string
-		Protocols   []string
-		IgnoreCommon bool
-		TemplateArgs map[string]string           // TODO: pass template args to templates
-		ObjectKindRe string
+		Protocols        []string
+		ProtoObjectsOnly bool
+	}
+
+	RenderSelectionConfig struct {
+		Protocols        []string
+		ObjectKinds []string
 		ModuleURLRe  string
 		PathRe       string
+		NameRe	   string
+		Render 	 RenderSelectionConfigRender
+		ReusePackagePath string
+
+		AllSupportedProtocols []string
 	}
 )
+
+func (r RenderSelectionConfig) RenderProtocols() []string {
+	if len(r.Render.Protocols) > 0 {
+		return r.Render.Protocols
+	}
+	return r.AllSupportedProtocols
+}
 
 type RenderOpts struct {
 	RuntimeModule string
 	ImportBase    string
 	TargetDir    string
-	TemplateDir  string
+	DisableFormatting bool
+	PreambleTemplate string
 	Selections []RenderSelectionConfig
 }
 

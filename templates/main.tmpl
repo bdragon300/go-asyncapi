@@ -2,11 +2,11 @@
     {{- template "schema.tmpl" .Object }}
 
 {{- else if eq .Object.Kind "server"}}
-    {{- if not .CurrentSelection.IgnoreCommon}}
+    {{- if not .CurrentSelection.Render.ProtoObjectsOnly}}
         {{- template "server.tmpl" .Object }}
     {{- end}}
 
-    {{- range .CurrentSelection.Protocols}}
+    {{- range .CurrentSelection.RenderProtocols}}
         {{- with (deref $.Object).SelectProtoObject . }}
             {{- tmpl (print .Protocol "_server.tmpl") . }}
         {{- end}}
@@ -16,21 +16,21 @@
     {{- template "parameter.tmpl" .Object}}
 
 {{- else if eq .Object.Kind "channel"}}
-    {{- if not .CurrentSelection.IgnoreCommon}}
+    {{- if not .CurrentSelection.Render.ProtoObjectsOnly}}
         {{- template "channel.tmpl" .Object}}
     {{- end}}
-    {{- range .CurrentSelection.Protocols}}
+    {{- range .CurrentSelection.RenderProtocols}}
         {{- with (deref $.Object).SelectProtoObject . }}
             {{- tmpl (print .Protocol "_channel.tmpl") . }}
         {{- end}}
     {{- end}}
 
 {{- else if eq .Object.Kind "message" }}
-    {{- if not .CurrentSelection.IgnoreCommon}}
+    {{- if not .CurrentSelection.Render.ProtoObjectsOnly}}
         {{- template "message.tmpl" .Object}}
     {{- end}}
 
-    {{- range .CurrentSelection.Protocols}}
+    {{- range .CurrentSelection.RenderProtocols}}
         {{- with (deref $.Object).SelectProtoObject . }}
             {{- tmpl (print .Protocol "_message.tmpl") . }}
         {{- end}}

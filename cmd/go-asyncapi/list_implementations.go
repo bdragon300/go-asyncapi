@@ -9,7 +9,7 @@ import (
 )
 
 func listImplementations() {
-	manifest := lo.Must(getImplementationsManifest())
+	manifest := lo.Must(loadImplementationsManifest())
 	protos := lo.Keys(manifest)
 	slices.Sort(protos)
 	for _, proto := range protos {

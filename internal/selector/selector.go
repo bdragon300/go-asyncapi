@@ -8,7 +8,6 @@ import (
 
 func SelectObjects(objects []common.CompileObject, selection common.RenderSelectionConfig) []common.CompileObject {
 	filterChain := getFiltersChain(selection)
-	// TODO: logging
 
 	allObjects := lo.Map(objects, func(object common.CompileObject, _ int) common.CompileObject {
 		return common.CompileObject{Renderable: object.Renderable, ObjectURL: object.ObjectURL}
@@ -41,15 +40,29 @@ func SelectObjects(objects []common.CompileObject, selection common.RenderSelect
 
 type filterFunc func(common.CompileObject) bool
 
+type protoObjectSelector interface {
+	SelectProtoObject(protocol string) common.Renderable
+}
+
 func getFiltersChain(selection common.RenderSelectionConfig) []filterFunc {
 	var filterChain []filterFunc
 	filterChain = append(filterChain, func(object common.CompileObject) bool {
-		return object.Selectable() && object.Visible()
+		return object.Selectable()
 	})
-	if selection.ObjectKindRe != "" {
-		re := regexp.MustCompile(selection.ObjectKindRe) // TODO: compile 1 time (and below)
+	if len(selection.Protocols) > 0 {
 		filterChain = append(filterChain, func(object common.CompileObject) bool {
-			return re.MatchString(string(object.Kind()))
+			// Check if object has at least one of the proto objects of the given protocols
+			if o, ok := object.Renderable.(protoObjectSelector); ok {
+				return lo.SomeBy(selection.Protocols, func(protocol string) bool {
+					return o.SelectProtoObject(protocol) != nil
+				})
+			}
+			return false
+		})
+	}
+	if len(selection.ObjectKinds) > 0 {
+		filterChain = append(filterChain, func(object common.CompileObject) bool {
+			return lo.Contains(selection.ObjectKinds, string(object.Kind()))
 		})
 	}
 	if selection.ModuleURLRe != "" {
@@ -62,6 +75,12 @@ func getFiltersChain(selection common.RenderSelectionConfig) []filterFunc {
 		re := regexp.MustCompile(selection.PathRe)
 		filterChain = append(filterChain, func(object common.CompileObject) bool {
 			return re.MatchString(object.ObjectURL.PointerRef())
+		})
+	}
+	if selection.NameRe != "" {
+		re := regexp.MustCompile(selection.NameRe)
+		filterChain = append(filterChain, func(object common.CompileObject) bool {
+			return re.MatchString(object.Renderable.Name())
 		})
 	}
 	return filterChain

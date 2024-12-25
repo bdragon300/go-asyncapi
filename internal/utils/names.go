@@ -119,14 +119,17 @@ func NormalizePath(rawPath string) string {
 	}
 
 	directory, file := path.Split(path.Clean(rawPath))
-	dirs := strings.Split(path.Clean(directory), string(os.PathSeparator))
-	normDirs := lo.Map(dirs, func(s string, _ int) string {
-		return normalizePathItem(s)
-	})
+	if directory != "" {
+		dirs := strings.Split(path.Clean(directory), string(os.PathSeparator))
+		normDirs := lo.Map(dirs, func(s string, _ int) string {
+			return normalizePathItem(s)
+		})
+		directory = path.Join(normDirs...)
+	}
 	fileName := strings.TrimSuffix(file, path.Ext(file))
 	normFile := normalizePathItem(fileName)
 
-	return path.Join(path.Join(normDirs...), normFile + ".go")
+	return path.Join(directory, normFile + ".go")
 }
 
 func normalizePathItem(name string) string {
