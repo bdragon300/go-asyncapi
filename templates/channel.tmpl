@@ -1,28 +1,28 @@
 {{- with $channel := deref .}}
 
-{{- if and .ParametersType (gondefined .ParametersType) }}
+{{- if and .ParametersType (ndefined .ParametersType) }}
     {{ .ParametersType | godef }}
 {{- end }}
 
-func {{$ | goid}}Name({{if .ParametersType}}params {{.ParametersType | gousage}}{{end}}) {{qualrun "ParamString"}} {
+func {{$ | goid}}Name({{if .ParametersType}}params {{.ParametersType | gousage}}{{end}}) {{goqualrun "ParamString"}} {
 {{- if .ParametersType}}
     paramMap := map[string]string{
     {{- range .ParametersType.Fields}}
         params.{{.Name}}.Name(): params.{{.Name}}.String(),
     {{- end}}
     }
-    return {{qualrun "ParamString"}}{
+    return {{goqualrun "ParamString"}}{
         Expr: {{. | goid | golit}},
         Parameters: paramMap,
     }
 {{- else}}
-    return {{qualrun "ParamString"}}{
+    return {{goqualrun "ParamString"}}{
         Expr: {{$ | goid | golit}},
     }
 {{- end}}
 }
 
-{{- if and .BindingsType (gondefined .BindingsType) }}
+{{- if and .BindingsType (ndefined .BindingsType) }}
     {{ .BindingsType | godef }}
     {{- range $proto := .BindingsProtocols }}
         {{- $bindingsValue := $channel.ProtoBindingsValue $proto }}
@@ -32,21 +32,21 @@ func {{$ | goid}}Name({{if .ParametersType}}params {{.ParametersType | gousage}}
                 {{- $jvals := .JSONValues.GetOrEmpty $proto }}
                 {{- range $jvals.Entries}}
                     {{.Key | toCamelCase }} := {{.Value | golit}}
-                    _ = {{qual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}), &b.{{.Key}})
+                    _ = {{goqual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}), &b.{{.Key}})
                 {{- end}}
             {{- end}}
             {{- with $channel.BindingsPublish }}
                 {{- $jvals := .JSONValues.GetOrEmpty $proto}}
                 {{- range $jvals.Entries}}
                     {{.Key | toCamelCase }}Pub := {{.Value | golit}}
-                    _ = {{qual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}Pub), &b.PublisherBindings.{{.Key}})
+                    _ = {{goqual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}Pub), &b.PublisherBindings.{{.Key}})
                 {{- end}}
             {{- end}}
             {{- with $channel.BindingsSubscribe}}
                 {{- $jvals := .JSONValues.GetOrEmpty $proto}}
                 {{- range $jvals.Entries}}
                     {{.Key | toCamelCase }}Sub := {{.Value | golit}}
-                    _ = {{qual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}Sub), &b.SubscriberBindings.{{.Key}})
+                    _ = {{goqual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}Sub), &b.SubscriberBindings.{{.Key}})
                 {{- end}}
             {{- end}}
             return b

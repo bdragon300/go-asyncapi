@@ -23,24 +23,6 @@ func (s *GoStruct) GoTemplate() string {
 	return "lang/gostruct"
 }
 
-//func (s GoStruct) NewFuncName() string {
-//	return "New" + s.GetOriginalName
-//}
-
-//func (s GoStruct) ReceiverName() string {
-//	return strings.ToLower(string(s.GetOriginalName[0]))
-//}
-
-//func (s GoStruct) MustGetField(name string) GoStructField {
-//	f, ok := lo.Find(s.Fields, func(item GoStructField) bool {
-//		return item.GetOriginalName == name
-//	})
-//	if !ok {
-//		panic(fmt.Errorf("field %s.%s not found", s.GetOriginalName, name))
-//	}
-//	return f
-//}
-
 func (s *GoStruct) IsStruct() bool {
 	return true
 }
@@ -63,40 +45,6 @@ type GoStructField struct {
 	ExtraTagNames    []string                                // Append these tags and fill them the same value as others
 	ExtraTagValues   []string                                // Add these comma-separated values to all tags (excluding ExtraTags)
 }
-
-//func (f GoStructField) renderDefinition() []*jen.Statement {
-//	var res []*jen.Statement
-//	ctx.LogStartRender("GoStructField", "", f.GetOriginalName, "definition", false)
-//	defer ctx.LogFinishRender()
-//
-//	if f.Description != "" {
-//		res = append(res, jen.Comment(f.GetOriginalName+" -- "+utils.ToLowerFirstLetter(f.Description)))
-//	}
-//
-//	stmt := jen.Id(f.GetOriginalName)
-//
-//	items := utils.ToCode(f.Type.U())
-//	stmt = stmt.Add(items...)
-//
-//	if f.ContentTypesFunc != nil {
-//		tagValues := append([]string{f.MarshalName}, f.ExtraTagValues...)
-//		tagNames := lo.Uniq(lo.FilterMap(f.ContentTypesFunc.Targets(), func(item *render.Message, _ int) (string, bool) {
-//			format := render.getFormatByContentType(item.ContentType)  // FIXME: rework this
-//			return format, format != ""
-//		}))
-//		tagNames = append(tagNames, f.ExtraTagNames...)
-//
-//		tags := lo.SliceToMap(tagNames, func(item string) (string, string) {
-//			return item, strings.Join(tagValues, ",")
-//		})
-//		tags = lo.Assign(tags, lo.FromEntries(f.ExtraTags.Entries()))
-//		stmt = stmt.Tag(tags)
-//	}
-//
-//	res = append(res, stmt)
-//
-//	return res
-//}
 
 func(f *GoStructField) RenderTags() string {
 	logger := log.GetLogger(log.LoggerPrefixRendering)

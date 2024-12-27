@@ -1,5 +1,5 @@
 {{- with deref . }}
-    {{- if gondefined . }}
+    {{- if ndefined . }}
         {{ . | godef }}
     {{- end}}
 {{- end}}

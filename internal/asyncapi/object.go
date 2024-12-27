@@ -84,7 +84,7 @@ func (o Object) Compile(ctx *common.CompileContext) error {
 
 func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]string, objectKey string) (common.Renderable, error) {
 	_, isComponent := flags[common.SchemaTagComponent]
-	ignore := o.XIgnore //|| (isComponent && !ctx.CompileOpts.ModelOpts.IsAllowedName(objectKey))
+	ignore := o.XIgnore
 	if ignore {
 		ctx.Logger.Debug("Object denoted to be ignored")
 		return &lang.GoSimple{TypeName: "any", IsInterface: true}, nil

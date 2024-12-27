@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 	"path"
@@ -17,20 +18,27 @@ func GetTemplateFunctions() template.FuncMap {
 		InnerGolangType() common.GolangType
 	}
 
-	// TODO: review the functions names
 	extraFuncs := template.FuncMap{
+		// Functions that return go code as string
 		"golit": func(val any) (string, error) { return templateGoLit(val) },
 		"goptr": func(val common.GolangType) (string, error) { return templateGoPtr(val) },
-		"unwrapgoptr": func(val common.GolangType) common.GolangType {  // TODO: remove?
-			if v, ok := any(val).(golangTypeExtractor); ok {
-				return v.InnerGolangType()  // TODO: also related to typealias
-			}
-			return nil
-		},
 		"goid": func(val any) string { return templateGoID(val) },
 		"gocomment": func(text string) (string, error) { return templateGoComment(text) },
-		"qual": func(parts ...string) string { return common.GetContext().QualifiedName(parts...) },
-		"qualgenpkg": func(obj common.GolangType) (string, error) {
+		"goqual": func(parts ...string) string { return common.GetContext().QualifiedName(parts...) },
+		"goqualrun": func(parts ...string) string { return common.GetContext().QualifiedRuntimeName(parts...) },
+		"godef": func(r common.GolangType) (string, error) {
+			tplName := path.Join(r.GoTemplate(), "definition")
+			common.GetContext().DefineTypeInNamespace(r, common.GetContext().CurrentSelection(), true)
+			if v, ok := r.(golangTypeWrapper); ok {
+				r = v.UnwrapGolangType()
+			}
+			res, err := templateExecTemplate(tplName, r)
+			if err != nil {
+				return "", fmt.Errorf("%s: %w", r, err)
+			}
+			return res, nil
+		},
+		"gopkg": func(obj common.GolangType) (string, error) {
 			pkg, err := common.GetContext().QualifiedGeneratedPackage(obj)
 			if err != nil {
 				return "", fmt.Errorf("%s: %w", obj, err)
@@ -40,7 +48,26 @@ func GetTemplateFunctions() template.FuncMap {
 			}
 			return pkg + ".", err
 		},
-		"qualrun": func(parts ...string) string { return common.GetContext().QualifiedRuntimeName(parts...) },
+		"gousage": func(r common.GolangType) (string, error) { return TemplateGoUsage(r) },
+
+		// Type helpers
+		"deref": func(r common.Renderable) common.Renderable {
+			if v, ok := r.(renderableWrapper); ok {
+				return v.UnwrapRenderable()
+			}
+			return r
+		},
+		"innertype": func(val common.GolangType) common.GolangType {
+			if v, ok := any(val).(golangTypeExtractor); ok {
+				return v.InnerGolangType()
+			}
+			return nil
+		},
+		"visible": func(r common.Renderable) common.Renderable {
+			return lo.Ternary(!lo.IsNil(r) && r.Visible(), r, nil)
+		},
+
+		// Templates calling
 		"tmpl": func(templateName string, ctx any) (string, error) {
 			return templateExecTemplate(templateName, ctx)
 		},
@@ -55,51 +82,38 @@ func GetTemplateFunctions() template.FuncMap {
 
 			return res, nil
 		},
-		"localobj": func(obj ...common.GolangType) string {
-			for _, o := range obj {
-				if !lo.IsNil(o) {
-					common.GetContext().DefineTypeInNamespace(o, common.GetContext().CurrentSelection(), false)
+
+		// Working with render namespace
+		"def": func(objects ...any) string {
+			for _, o := range objects {
+				switch v := o.(type) {
+				case common.GolangType:
+					if !lo.IsNil(o) {
+						common.GetContext().DefineTypeInNamespace(v, common.GetContext().CurrentSelection(), false)
+					}
+				case string:
+					if o != "" {
+						common.GetContext().DefineNameInNamespace(v)
+					}
 				}
 			}
 			return ""
 		},
-		"godef": func(r common.GolangType) (string, error) {
-			tplName := path.Join(r.GoTemplate(), "definition")
-			common.GetContext().DefineTypeInNamespace(r, common.GetContext().CurrentSelection(), true)
-			if v, ok := r.(golangTypeWrapper); ok {
-				r = v.UnwrapGolangType()
-			}
-			res, err := templateExecTemplate(tplName, r)
-			if err != nil {
-				return "", fmt.Errorf("%s: %w", r, err)
-			}
-			return res, nil
-		},
-		"def": func(name string) string {
-			common.GetContext().DefineNameInNamespace(name)
-			return ""
-		},
-		"gousage": func(r common.GolangType) (string, error) { return TemplateGoUsage(r) },
-		"godefined": func(r any) bool {
+		"defined": func(r any) bool {
 			return templateGoDefined(r)
 		},
-		"gondefined": func(r any) bool {
+		"ndefined": func(r any) bool {
 			return !templateGoDefined(r)
 		},
-		"deref": func(r common.Renderable) common.Renderable {
-			if v, ok := r.(renderableWrapper); ok {
-				return v.UnwrapRenderable()
+
+		// Other
+		"debug": func(args ...any) string {
+			logger := log.GetLogger(log.LoggerPrefixRendering)
+			for _, arg := range args {
+				logger.Debugf("debug: [%[1]p] %[1]v", arg)
 			}
-			return r
-		},
-		"visible": func(r common.Renderable) common.Renderable {
-			return lo.Ternary(!lo.IsNil(r) && r.Visible(), r, nil)
-		},
-		"debug": func(args ...any) string { // TODO: remove or replace with log
-			fmt.Printf("DEBUG: %[1]v %[1]p\n", args...)
 			return ""
 		},
-		// TODO: function to run external command
 	}
 
 	return lo.Assign(sproutFunctions, extraFuncs)

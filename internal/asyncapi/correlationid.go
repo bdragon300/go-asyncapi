@@ -14,8 +14,6 @@ type CorrelationID struct {
 	Description string `json:"description" yaml:"description"`
 	Location    string `json:"location" yaml:"location"`
 
-	// Not used cause the object is not rendered
-
 	XIgnore bool `json:"x-ignore" yaml:"x-ignore"`
 
 	Ref string `json:"$ref" yaml:"$ref"`
@@ -33,12 +31,10 @@ func (c CorrelationID) Compile(ctx *common.CompileContext) error {
 }
 
 func (c CorrelationID) build(ctx *common.CompileContext, correlationIDKey string) (common.Renderable, error) {
-	ignore := c.XIgnore //|| !ctx.CompileOpts.MessageOpts.Enable
-	if ignore {
+	if c.XIgnore {
 		ctx.Logger.Debug("CorrelationID denoted to be ignored")
 		return &render.CorrelationID{Dummy: true}, nil
 	}
-	// TODO: move this ref code from everywhere to single place?
 	if c.Ref != "" {
 		ctx.Logger.Trace("Ref", "$ref", c.Ref)
 		res := lang.NewRef(c.Ref, correlationIDKey, nil)

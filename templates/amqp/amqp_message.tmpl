@@ -1,6 +1,6 @@
 {{- with deref .}}
-    {{- if gondefined (print "MessageMethods" .Protocol (goid .))}}
-        {{template "proto/message/marshalUnmarshalMethods" deref .}}
+    {{- if ndefined (print "MessageMethods" .Protocol (goid .))}}
+        {{template "message/proto/marshalUnmarshalMethods" deref .}}
     {{- end}}
     {{- print "MessageMethods" .Protocol (goid .) | def}}
 {{- end}}

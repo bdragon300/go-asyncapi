@@ -51,8 +51,7 @@ func (m Message) Compile(ctx *common.CompileContext) error {
 
 func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Renderable, error) {
 	_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagComponent]
-	ignore := m.XIgnore //|| (isComponent && !ctx.CompileOpts.MessageOpts.IsAllowedName(messageKey))
-	if ignore {
+	if m.XIgnore {
 		ctx.Logger.Debug("Message denoted to be ignored")
 		return &render.Message{Dummy: true}, nil
 	}
@@ -68,10 +67,8 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		makeSelectable := !isComponent
 		// Ignore the messageKey in definitions other than `messages`, since messageKey always be "message" there.
 		if messageKey == "message" && len(pathStack) > 3 {
-			// Use the OriginalName of message instead.
 			refName = ""
 			// And force make the message selectable if it was defined in `components.messages` section.
-			// TODO: force make selectable only if the channel it refers to is also visible
 			makeSelectable = true
 		}
 

@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"github.com/bdragon300/go-asyncapi/internal/log"
-	"github.com/bdragon300/go-asyncapi/internal/writer"
+	"github.com/bdragon300/go-asyncapi/internal/types"
 	"io"
 	"os"
 
@@ -51,7 +51,7 @@ func main() {
 
 	cmd := cliArgs.GenerateCmd
 	if err := generate(cmd); err != nil {
-		var multilineErr writer.ErrorWithContent
+		var multilineErr types.ErrorWithContent
 		switch {
 		case errors.Is(err, ErrWrongCliArgs):
 			cliParser.WriteHelp(os.Stderr)

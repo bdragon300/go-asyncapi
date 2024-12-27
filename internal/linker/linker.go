@@ -33,9 +33,9 @@ func AssignRefs(sources map[string]ObjectSource) {
 				if res, ok := resolvePromise(p, srcSpecID, sources); ok {
 					switch p.Origin() {
 					case common.PromiseOriginInternal:
-						logger.Debug("Processing an internal ref", "$ref", p.Ref(), "target", res)
+						logger.Debug("Processing an internal ref", "$ref", p.Ref(), "target", res, "addr", fmt.Sprintf("%p", res))
 					case common.PromiseOriginUser:
-						logger.Debug("Processing a ref", "$ref", p.Ref(), "target", res)
+						logger.Debug("Processing a ref", "$ref", p.Ref(), "target", res, "addr", fmt.Sprintf("%p", res))
 					default:
 						panic(fmt.Sprintf("Unknown promise origin %v, this is a bug", p.Origin()))
 					}
@@ -160,7 +160,6 @@ func resolvePromise(p common.ObjectPromise, srcSpecID string, sources map[string
 	}
 }
 
-// TODO: detect ref loops to avoid infinite recursion
 func resolveListPromise(p common.ObjectListPromise, srcSpecID string, sources map[string]ObjectSource) ([]common.Renderable, bool) {
 	// Exclude links from selection in order to avoid duplicates in list
 	cb := p.FindCallback()

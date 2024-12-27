@@ -41,43 +41,6 @@ func (s *UnionStruct) String() string {
 	return "UnionStruct " + s.OriginalName
 }
 
-//func (s UnionStruct) renderMethods() []*jen.Statement {
-//	ctx.Logger.Trace("renderMethods")
-//
-//	var res []*jen.Statement
-//	receiverName := strings.ToLower(string(s.GoStruct.GetOriginalName[0]))
-//
-//	// Method UnmarshalJSON(bytes []byte) error
-//	body := []jen.Code{jen.Var().Err().Error()}
-//	stmt := &jen.Statement{}
-//	for _, f := range s.GoStruct.Fields {
-//		op := ""
-//		if v, ok := f.Type.(GolangPointerType); !ok || !v.Addressable() { // No need to take address for a pointer
-//			op = "&"
-//		}
-//		stmt = stmt.If(
-//			jen.Err().Op("=").Qual("encoding/json", "Unmarshal").Call(jen.Id("bytes"), jen.Op(op).Id(receiverName).Dot(f.Type.IsPromise())),
-//			jen.Err().Op("!=").Nil(),
-//		).
-//			Block(jen.Return(jen.Nil())).
-//			Else()
-//	}
-//	if len(s.GoStruct.Fields) > 0 {
-//		stmt = stmt.Block(jen.Return(jen.Err()))
-//	} else {
-//		stmt = stmt.Return(jen.Return(jen.Nil()))
-//	}
-//	body = append(body, stmt)
-//
-//	res = append(res, jen.Func().Params(jen.Id(receiverName).Op("*").Id(s.GoStruct.GetOriginalName)).Id("UnmarshalJSON").
-//		Params(jen.Id("bytes").Index().Byte()).
-//		Error().
-//		Block(body...),
-//	)
-//
-//	return res
-//}
-
 func isTypeStruct(typ common.GolangType) bool {
 	switch v := typ.(type) {
 	case golangStructType:

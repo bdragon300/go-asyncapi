@@ -9,8 +9,8 @@ itself + refs). Also, as a corner case, a message with the same name may additio
 
 To mitigate this, here we just render a New* function pair only one time for the name.
 */}}
-{{- if print "Message" (goid $) | gondefined}}
-{{- localobj .OutType .InType }}
+{{- if print "Message" (goid $) | ndefined}}
+{{- def .OutType .InType }}
 func New{{ $ | goid }}Out() *{{ .OutType | gousage }} {
     return &{{ .OutType| gousage }}{}
 }
@@ -21,7 +21,7 @@ func New{{ $ | goid }}In() *{{ .InType| gousage }} {
 {{- print "Message" (goid $) | def }}
 {{- end}}
 
-{{- if and .BindingsType (gondefined .BindingsType)}}
+{{- if and .BindingsType (ndefined .BindingsType)}}
     {{- .BindingsType| godef }}
     {{- range $proto := .BindingsProtocols}}
         {{- $bindingsValue := $message.ProtoBindingsValue $proto}}
@@ -31,7 +31,7 @@ func New{{ $ | goid }}In() *{{ .InType| gousage }} {
             {{- $jvals := .JSONValues.GetOrEmpty $proto}}
             {{- range $jval := $jvals.Entries}}
                 {{ $jval.Key | toCamelCase }} := {{$jval.Value | golit}}
-                _ = {{qual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})
+                _ = {{goqual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})
             {{- end}}
         {{- end}}
         return b
@@ -41,7 +41,7 @@ func New{{ $ | goid }}In() *{{ .InType| gousage }} {
 
 {{- $headersType := coalesce .HeadersType .HeadersFallbackType}}
 
-{{- if gondefined .OutType }}
+{{- if ndefined .OutType }}
 {{.OutType| godef}}
 
 func (m *{{ .OutType | goid }}) WithPayload(payload {{.PayloadType| gousage}}) *{{ .OutType | goid }} {
@@ -61,7 +61,7 @@ func (m {{ $message.OutType | goid }}) SetCorrelationID(value {{ .TargetVarType 
 {{- end}}
 {{- end}}
 
-{{- if gondefined .InType }}
+{{- if ndefined .InType }}
 {{.InType| godef}}
 
 func (m *{{ .InType | goid }}) MessagePayload() {{.PayloadType| gousage}} {

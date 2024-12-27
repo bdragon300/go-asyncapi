@@ -38,8 +38,7 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 
 func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Renderable, error) {
 	_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagComponent]
-	ignore := s.XIgnore //|| !ctx.CompileOpts.ServerOpts.IsAllowedName(serverKey)
-	if ignore {
+	if s.XIgnore {
 		ctx.Logger.Debug("Server denoted to be ignored")
 		return &render.Server{Dummy: true}, nil
 	}

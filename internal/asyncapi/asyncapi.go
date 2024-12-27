@@ -19,7 +19,6 @@ type AsyncAPI struct {
 	ExternalDocs       ExternalDocumentation             `json:"externalDocs" yaml:"externalDocs"`
 }
 
-// TODO: make AsyncAPI as one of object kinds
 func (a AsyncAPI) Compile(ctx *common.CompileContext) error {
 	obj := a.build(ctx)
 	ctx.PutObject(obj)

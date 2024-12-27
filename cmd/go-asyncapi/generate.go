@@ -60,11 +60,10 @@ type generatePubSubArgs struct {
 	Spec string `arg:"required,positional" help:"AsyncAPI specification file path or url" placeholder:"PATH"`
 
 	ProjectModule string `arg:"-M,--module" help:"Module path to use [default: extracted from go.mod file in the current working directory concatenated with target dir]" placeholder:"MODULE"`
+	ConfigFile string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"PATH"`
 	TemplateDir string `arg:"-T,--template-dir" help:"Directory with custom templates" placeholder:"DIR"`
 	PreambleTemplate string `arg:"--preamble-template" default:"preamble.tmpl" help:"Custom preamble template name" placeholder:"NAME"`
-	ConfigFile string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"PATH"`
 	DisableFormatting bool `arg:"--disable-formatting" help:"Disable code formatting"`
-	NoImplementations bool `arg:"--no-implementations" help:"Do not generate any protocol implementation"`
 	ImplementationsOpts
 	AllowRemoteRefs bool `arg:"--allow-remote-refs" help:"Allow fetching spec files from remote $ref URLs"`
 
@@ -80,6 +79,8 @@ type generateImplementationArgs struct {
 }
 
 type ImplementationsOpts struct {
+	NoImplementations bool `arg:"--no-implementations" help:"Do not generate any protocol implementation"`
+
 	Kafka string `arg:"--kafka-impl" default:"franz-go" help:"Implementation for Kafka ('none' to disable)" placeholder:"NAME"`
 	AMQP  string `arg:"--amqp-impl" default:"amqp091-go" help:"Implementation for AMQP ('none' to disable)" placeholder:"NAME"`
 	HTTP  string `arg:"--http-impl" default:"std" help:"Implementation for HTTP ('none' to disable)" placeholder:"NAME"`
@@ -108,6 +109,7 @@ func generate(cmd *GenerateCmd) error {
 	}
 	implDir := path.Join(cmd.TargetDir, cmd.ImplDir)
 	log.GetLogger("").Debugf("Target implementations directory is %s", implDir)
+	tmpl.ParseTemplates(pubSubOpts.TemplateDir)
 
 	// Compilation
 	resolver := getResolver(*pubSubOpts)
@@ -125,9 +127,11 @@ func generate(cmd *GenerateCmd) error {
 	}
 
 	// Rendering
-	files, err := writer.RenderFiles(mainModule, renderOpts)
+	// Render definitions from all modules
+	allObjects := lo.FlatMap(lo.Values(modules), func(m *compiler.Module, _ int) []common.CompileObject { return m.AllObjects() })
+	files, err := writer.RenderObjects(allObjects, renderOpts)
 	if err != nil {
-		return fmt.Errorf("schema render: %w", err)
+		return fmt.Errorf("render: %w", err)
 	}
 
 	// Formatting
@@ -247,12 +251,6 @@ func getRenderOpts(opts generatePubSubArgs, targetDir string) (common.RenderOpts
 		}
 		logger.Debug("Use selection", "value", sel)
 		res.Selections = append(res.Selections, sel)
-	}
-
-	// Custom templates
-	if opts.TemplateDir != "" {
-		logger.Debug("Use custom templates", "dir", opts.TemplateDir)
-		tmpl.SetCustomTemplateDirectory(opts.TemplateDir)
 	}
 
 	// ImportBase

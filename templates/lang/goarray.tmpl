@@ -7,9 +7,9 @@
 {{define "lang/goarray/usage"}}
     {{- if .HasDefinition }}
         {{- if .Import }}
-            {{- qual .Import (goid .) }}
+            {{- goqual .Import (goid .) }}
         {{- else }}
-            {{- qualgenpkg . }}{{ . | goid }}
+            {{- gopkg . }}{{ . | goid }}
         {{- end }}
     {{- else -}}
         [{{ if .Size }}{{ .Size }}{{ end }}]{{ .ItemsType | gousage }}

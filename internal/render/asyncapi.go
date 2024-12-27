@@ -35,12 +35,3 @@ func (a *AsyncAPI) String() string {
 func (a *AsyncAPI) Name() string {
 	return ""
 }
-
-//// SpecEffectiveContentTypes returns a list of all unique content types used in the spec. This includes all content
-//// types from all messages and the default content type.
-//func (a AsyncAPI) SpecEffectiveContentTypes() []string {
-//	return lo.Uniq(lo.Map(a.AllMessages.Targets(), func(item *Message, _ int) string {
-//		contentType, _ := lo.Coalesce(item.ContentType, a.EffectiveDefaultContentType())
-//		return contentType
-//	}))
-//}

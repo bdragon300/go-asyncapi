@@ -14,7 +14,7 @@ type BaseType struct {
 	// and `field ArrayName`
 	HasDefinition bool
 	Import        string // optional external (or runtime) module to import a type from
-	// Typically it's ObjectKindOther or ObjectKindSchema
+	// Possible values: ObjectKindOther, ObjectKindSchema
 	ObjectKind common.ObjectKind
 }
 

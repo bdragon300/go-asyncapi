@@ -1,21 +1,21 @@
-{{- localobj .Type}}
-{{template "proto/channel/bareNewFunction" .}}
+{{- def .Type}}
+{{template "channel/proto/newFunction" .}}
 
-{{template "proto/channel/openFunction" .}}
+{{template "channel/proto/openFunction" .}}
 
-{{- if gondefined .Type}}
+{{- if ndefined .Type}}
 {{.Type| godef}}
 
-{{template "proto/channel/commonMethods" .}}
+{{template "channel/proto/commonMethods" .}}
 
-{{if .IsPublisher}}{{template "proto/channel/barePublishMethods" .}}{{end}}
+{{if .IsPublisher}}{{template "channel/proto/publishMethods" .}}{{end}}
 
-{{if .IsSubscriber}}{{template "proto/channel/subscribeMethods" .}}{{end}}
+{{if .IsSubscriber}}{{template "channel/proto/subscribeMethods" .}}{{end}}
 
 type {{ .Type | goid }}Server interface {
-    Open{{.Type | goid}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType | gousage}}{{end}}) (*{{.Type| gousage}}, error)
-    {{if .IsPublisher}}Producer() {{qualrun .Protocol "Producer"}}{{end}}
-    {{if .IsSubscriber}}Consumer() {{qualrun .Protocol "Consumer"}}{{end}}
+    Open{{.Type | goid}}(ctx {{goqual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType | gousage}}{{end}}) (*{{.Type| gousage}}, error)
+    {{if .IsPublisher}}Producer() {{goqualrun .Protocol "Producer"}}{{end}}
+    {{if .IsSubscriber}}Consumer() {{goqualrun .Protocol "Consumer"}}{{end}}
 }
 
 {{- end}}

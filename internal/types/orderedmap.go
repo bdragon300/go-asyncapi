@@ -10,6 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// TODO: use `maps` package features below
 type OrderedMap[K comparable, V any] struct {
 	data map[K]V
 	keys []K
@@ -62,11 +63,12 @@ func (o OrderedMap[K, V]) Get(key K) (V, bool) {
 	return v, ok
 }
 
-func (o OrderedMap[K, V]) GetOr(key K, defaultValue V) V {
-	if v, ok := o.Get(key); ok {
-		return v
+func (o OrderedMap[K, V]) MustGet(key K) V {
+	v, ok := o.Get(key)
+	if !ok {
+		panic(fmt.Sprintf("key %v not found", key))
 	}
-	return defaultValue
+	return v
 }
 
 func (o OrderedMap[K, V]) GetOrEmpty(key K) (res V) {

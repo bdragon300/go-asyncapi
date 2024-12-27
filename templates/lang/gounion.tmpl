@@ -3,7 +3,7 @@
 
 func (u *{{ . | goid }}) UnmarshalJSON(data []byte) (err error) {
 {{- range .Fields}}
-    if err = {{qual "encoding/json.Unmarshal"}}(bytes, {{if and (not .Type.IsPointer) .Type.Addressable}}&{{end}}u{{.Type.TypeName}}; err == nil {
+    if err = {{goqual "encoding/json.Unmarshal"}}(bytes, {{if and (not .Type.IsPointer) .Type.Addressable}}&{{end}}u{{.Type.TypeName}}; err == nil {
         return
     }
 {{- end}}

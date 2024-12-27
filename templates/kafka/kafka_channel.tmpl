@@ -1,16 +1,5 @@
-{{- localobj .Type}}
-{{template "proto/channel/openFunction" .}}
-
-func New{{ .Channel | goid }}{{.Protocol | capitalize | goid}}(
-    {{ if .ParametersType}}params {{.ParametersType| gousage}},{{end}}
-    {{ if .IsPublisher}}publisher {{qualrun .Protocol "Publisher"}},{{end}}
-    {{ if .IsSubscriber}}subscriber {{qualrun .Protocol "Subscriber"}},{{end}}
-) *{{.Type | gousage}} {
-    res := {{.Type | gousage}}{
-        name: {{.Channel | goid}}Name({{if .ParametersType}}params{{end}}),
-        {{ if .IsPublisher}}publisher: publisher,{{end}}
-        {{ if .IsSubscriber}}subscriber: subscriber,{{end}}
-    }
+{{- def .Type}}
+{{define "channel/kafka/newFunction/block1"}}
     res.topic = res.name.String()
     {{- if .BindingsType}}
         bindings := {{.BindingsType | gousage}}{}.{{.Protocol | capitalize | goid}}()
@@ -18,48 +7,31 @@ func New{{ .Channel | goid }}{{.Protocol | capitalize | goid}}(
             res.topic = bindings.Topic
         }
     {{- end}}
+{{- end}}
+{{define "channel/kafka/publishMethods/block1"}}
+    envelope.SetTopic(c.topic)
+{{- end}}
 
-    return &res
-}
+{{template "channel/proto/newFunction" .}}
 
-{{- if gondefined .Type}}
+{{template "channel/proto/openFunction" .}}
+
+{{- if ndefined .Type}}
 {{.Type | godef}}
 
-{{template "proto/channel/commonMethods" .}}
+{{template "channel/proto/commonMethods" .}}
 
 func (c {{.Type| gousage}}) Topic() string {
     return c.topic
 }
 
-{{- if .IsPublisher}}
-    {{template "proto/channel/outputMethods" .}}
-    func (c {{.Type| gousage}}) SealEnvelope(envelope {{qualrun .Protocol "EnvelopeWriter"}}, message {{with visible .PublisherMessageType}}{{goptr .OutType}}{{else}}any{{end}}) error {
-        envelope.ResetPayload()
-        {{- if visible .PublisherMessageType}}
-            {{- /* Message is set for Channel in spec */}}
-            if err := message.MarshalEnvelope{{.Protocol | capitalize | goid}}(envelope); err != nil {
-                return err
-            }
-        {{- else}}
-            {{- /* No Message set for Channel in spec */}}
-            enc := {{qual "encoding/json.NewEncoder"}}(envelope)
-            if err := enc.Encode(message); err != nil {
-                return err
-            }
-        {{- end}}
-        envelope.SetTopic(c.topic)
-        {{- if and (visible .PublisherMessageType) (.PublisherMessageType.BindingsProtocols | has .Protocol)}}
-            envelope.SetBindings({{.PublisherMessageType.BindingsType | gousage }}{}.{{.Protocol | capitalize | goid}}())
-        {{- end}}
-        return nil
-    }
-{{- end}}
+{{if .IsPublisher}}{{template "channel/proto/publishMethods" .}}{{end}}
 
-{{if .IsSubscriber}}{{template "proto/channel/subscribeMethods" .}}{{end}}
+{{if .IsSubscriber}}{{template "channel/proto/subscribeMethods" .}}{{end}}
 
 type {{ .Type | goid }}Server interface {
-    Open{{.Type | goid}}(ctx {{qual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType| gousage}}{{end}}) (*{{.Type| gousage}}, error)
-    {{if .IsPublisher}}Producer() {{qualrun .Protocol "Producer"}}{{end}}
-    {{if .IsSubscriber}}Consumer() {{qualrun .Protocol "Consumer"}}{{end}}
+    Open{{.Type | goid}}(ctx {{goqual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType| gousage}}{{end}}) (*{{.Type| gousage}}, error)
+    {{if .IsPublisher}}Producer() {{goqualrun .Protocol "Producer"}}{{end}}
+    {{if .IsSubscriber}}Consumer() {{goqualrun .Protocol "Consumer"}}{{end}}
 }
 {{- end}}

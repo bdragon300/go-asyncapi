@@ -3,18 +3,17 @@
         {{- if .Type.IsPointer }}
             {{- if .Empty }}
                 {{- if .EmptyCurlyBrackets }}
-                    {{- /* &{} -> ToPtr({}) */}}{{ qualrun "ToPtr"}}({})
+                    {{- /* &{} -> ToPtr({}) */}}{{ goqualrun "ToPtr"}}({})
                 {{- else }}
                     {{- /* &nil -> nil */}}nil
                 {{- end }}
             {{- else if .LiteralValue }}
-                {{- $t := unwrapgoptr .Type }}
-                {{- if $t }}
+                {{- with innertype .Type }}
                     {{- /* &int(123) -> ToPtr(int(123)) */}}
-                    {{- qualrun "ToPtr"}}({{ $t | gousage }}({{template "lang/gotypealias/value_expr" .}}))
+                    {{- goqualrun "ToPtr"}}({{ . | gousage }}({{template "lang/gotypealias/value_expr" .}}))
                 {{- else }}
                     {{- /* &123 -> ToPtr(123) */}}
-                    {{- qualrun "ToPtr"}}({{template "lang/gotypealias/value_expr" .}})
+                    {{- goqualrun "ToPtr"}}({{template "lang/gotypealias/value_expr" .}})
                 {{- end }}
             {{- else }}
                 {{- /* &AnyType{}; &map[string]int{}; &[]int{} */}}&{{- .Type | gousage }}

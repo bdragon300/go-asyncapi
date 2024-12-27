@@ -1,7 +1,6 @@
 package writer
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -10,36 +9,15 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/selector"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
+	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 	"go/format"
 	"os"
 	"path"
-	"strings"
+	"slices"
 	"text/template"
 )
-
-
-type ErrorWithContent struct {
-	error
-	Content []byte
-}
-
-func (e ErrorWithContent) ContentLines() string {
-	var b strings.Builder
-	rd := bufio.NewReader(bytes.NewReader(e.Content))
-
-	for line := 1; ; line++ {
-		s, err := rd.ReadString('\n')
-		if err != nil {
-			break // Suppose that the only error can appear here is io.EOF
-		}
-		b.WriteString(fmt.Sprintf("%-4d│ ", line))
-		b.WriteString(s)
-	}
-
-	return b.String()
-}
 
 type renderSource interface {
 	AllObjects() []common.CompileObject
@@ -58,13 +36,13 @@ type renderQueueItem struct {
 	err            error
 }
 
-func RenderFiles(source renderSource, opts common.RenderOpts) (map[string]*bytes.Buffer, error) {
+func RenderObjects(objects []common.CompileObject, opts common.RenderOpts) (map[string]*bytes.Buffer, error) {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 	filesState := make(map[string]fileRenderState)
 	ns := context.RenderNamespace{}
 
 	logger.Info("Run rendering")
-	queue := buildRenderQueue(source, opts.Selections)
+	queue := buildRenderQueue(objects, opts.Selections)
 	var postponed []renderQueueItem
 
 	logger.Info("Objects selected", "objects", len(queue))
@@ -98,7 +76,7 @@ func RenderFiles(source renderSource, opts common.RenderOpts) (map[string]*bytes
 			case errors.Is(err, context.ErrNotDefined):
 				// Some objects needed by template code have not been defined and therefore, not in namespace yet.
 				// Postpone this run to the end in hope that next runs will define these objects.
-				item.err = err
+				item.err = fmt.Errorf("%s: %w", item.object.String(), err)
 				logger.Trace(
 					"--> Postpone the object because some the definitions of the object it uses are not known yet",
 					"object", item.object.String(),
@@ -115,7 +93,7 @@ func RenderFiles(source renderSource, opts common.RenderOpts) (map[string]*bytes
 		}
 		if len(postponed) == len(queue) {
 			return nil, fmt.Errorf(
-				"missed object definitions, please ensure they are rendered by `godef` prior using or use `localobj`: \n%w",
+				"missed object definitions, please ensure they are defined by `godef` or `def` functions prior using: \n%w",
 				errors.Join(lo.Map(postponed, func(item renderQueueItem, _ int) error { return item.err })...),
 			)
 		}
@@ -134,12 +112,12 @@ func RenderFiles(source renderSource, opts common.RenderOpts) (map[string]*bytes
 	return res, nil
 }
 
-func buildRenderQueue(source renderSource, selections []common.RenderSelectionConfig) (res []renderQueueItem) {
+func buildRenderQueue(objects []common.CompileObject, selections []common.RenderSelectionConfig) (res []renderQueueItem) {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
 	for _, selection := range selections {
 		logger.Debug("Select objects", "selection", selection)
-		objects := selector.SelectObjects(source.AllObjects(), selection)
+		objects := selector.SelectObjects(objects, selection)
 		for _, obj := range objects {
 			logger.Debug("-> Selected", "object", obj)
 			res = append(res, renderQueueItem{selection: selection, object: obj})
@@ -224,7 +202,10 @@ func renderFiles(files map[string]fileRenderState, opts common.RenderOpts) (map[
 		return nil, fmt.Errorf("template %q: %w", opts.PreambleTemplate, err)
 	}
 
-	for fileName, state := range files {
+	keys := lo.Keys(files)
+	slices.Sort(keys)
+	for _, fileName := range keys {
+		state := files[fileName]
 		logger.Debug("Render file", "file", fileName, "package", state.packageName, "imports", state.imports.String())
 		if state.buf.Len() == 0 {
 			logger.Debug("-> Skip empty file", "file", fileName)
@@ -267,11 +248,14 @@ func FormatFiles(files map[string]*bytes.Buffer) error {
 	logger := log.GetLogger(log.LoggerPrefixFormatting)
 	logger.Info("Run formatting")
 
-	for fileName, buf := range files {
+	keys := lo.Keys(files)
+	slices.Sort(keys)
+	for _, fileName := range keys {
+		buf := files[fileName]
 		logger.Debug("File", "name", fileName, "bytes", buf.Len())
 		formatted, err := format.Source(buf.Bytes())
 		if err != nil {
-			return ErrorWithContent{err, buf.Bytes()}
+			return types.ErrorWithContent{err, buf.Bytes()}
 		}
 		buf.Reset()
 		buf.Write(formatted)

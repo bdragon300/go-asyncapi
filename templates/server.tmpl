@@ -7,7 +7,7 @@ const {{$ | goid}}ProtocolVersion = {{.ProtocolVersion | golit}}
 func {{$ | goid}}URL(
 {{- range .Variables.Entries}}
     {{- .Value | goid}} string,
-{{- end }}) {{qualrun "ParamString"}} {
+{{- end }}) {{goqualrun "ParamString"}} {
     {{- if gt .Variables.Len 0}}
         {{- range .Variables.Entries}}
             {{- if .Value.Default}}
@@ -21,18 +21,18 @@ func {{$ | goid}}URL(
                 {{.Key | golit}}: {{.Value | goid}},
             {{- end}}
         }
-        return {{qualrun "ParamString"}}{
+        return {{goqualrun "ParamString"}}{
             Expr: {{.URL | golit}},
             Parameters: paramMap,
         }
     {{- else}}
-        return {{qualrun "ParamString"}}{
+        return {{goqualrun "ParamString"}}{
             Expr: {{.URL | golit}},
         }
     {{- end}}
 }
 
-{{- if and .BindingsType (gondefined .BindingsType)}}
+{{- if and .BindingsType (ndefined .BindingsType)}}
     {{- .BindingsType | godef}}
     {{- range $proto := .BindingsProtocols}}
         {{- $bindingsValue := $server.ProtoBindingsValue $proto}}
@@ -42,7 +42,7 @@ func {{$ | goid}}URL(
                 {{- $jvals := .JSONValues.GetOrEmpty $proto}}
                 {{- range $jval := $jvals.Entries}}
                     {{$jval.Key | toCamelCase }} := {{$jval.Value | golit}}
-                    _ = {{qual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})
+                    _ = {{goqual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})
                 {{- end}}
             {{- end}}
             return b

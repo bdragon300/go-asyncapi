@@ -1,6 +1,6 @@
 {{- with deref .}}
 
-{{- if gondefined .Type}}
+{{- if ndefined .Type}}
 {{.Type | godef}}
 
 func (p {{.Type| gousage}}) Name() string {
@@ -11,7 +11,7 @@ func (p {{.Type| gousage}}) String() string {
     {{- if .IsStringType}}
         return string(p)
     {{- else}}
-        return {{qual "fmt.Sprint"}}(p.Value)
+        return {{goqual "fmt.Sprint"}}(p.Value)
     {{- end}}
 }
 {{- end}}

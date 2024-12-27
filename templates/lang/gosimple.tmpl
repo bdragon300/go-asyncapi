@@ -3,8 +3,8 @@
 {{- end}}
 {{define "lang/gosimple/usage"}}
     {{- if .Import }}
-        {{- qual .Import .Name }}
+        {{- goqual .Import .Name }}
     {{- else }}
-        {{- qualgenpkg . }}{{ .Name }}
+        {{- gopkg . }}{{ .Name }}
     {{- end }}
 {{- end}}

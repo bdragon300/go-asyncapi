@@ -36,9 +36,7 @@ func (c Channel) Compile(ctx *common.CompileContext) error {
 }
 
 func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[common.SchemaTag]string) (common.Renderable, error) {
-	ignore := c.XIgnore ||
-		(!ctx.CompileOpts.GeneratePublishers && !ctx.CompileOpts.GenerateSubscribers) // ||
-		//!ctx.CompileOpts.ChannelOpts.IsAllowedName(channelKey)
+	ignore := c.XIgnore || (!ctx.CompileOpts.GeneratePublishers && !ctx.CompileOpts.GenerateSubscribers)
 	_, isComponent := flags[common.SchemaTagComponent]
 	if ignore {
 		ctx.Logger.Debug("Channel denoted to be ignored")

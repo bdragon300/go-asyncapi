@@ -194,6 +194,7 @@ func (r *ListPromise[T]) T() []T {
 	return r.targets
 }
 
+// TODO: detect ref loops to avoid infinite recursion
 func unwrapRenderablePromiseOrRef(val common.Renderable) common.Renderable {
 	type renderableWrapper interface {
 		UnwrapRenderable() common.Renderable
