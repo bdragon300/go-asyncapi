@@ -6,6 +6,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"io"
 	"os"
+	"time"
 )
 
 type (
@@ -27,28 +28,65 @@ type (
 		ReusePackagePath string `yaml:"reusePackagePath"`
 	}
 
+	toolConfigDirectories struct {
+		Templates string `yaml:"templates"`
+		Target    string `yaml:"target"`
+		Implementations string `yaml:"implementations"`
+	}
+
+	toolConfigRender struct {
+		PreambleTemplate string `yaml:"preambleTemplate"`
+		DisableFormatting bool `yaml:"disableFormatting"`
+	}
+
+	toolConfigResolver struct {
+		AllowRemoteReferences bool          `yaml:"allowRemoteReferences"`
+		SearchDirectory string        `yaml:"searchDirectory"`
+		Timeout time.Duration `yaml:"timeout"`
+		Command string        `yaml:"command"`
+	}
+
+	toolConfigImplementation struct {
+		Name string `yaml:"name"`
+	}
+
 	toolConfig struct {
-		Selections []toolConfigSelection `yaml:"selections"`
+		ConfigVersion int`yaml:"configVersion"`
+		ProjectModule string `yaml:"projectModule"`
+		RuntimeModule string `yaml:"runtimeModule"`
+		Directories toolConfigDirectories `yaml:"directories"`
+
+		Selections        []toolConfigSelection `yaml:"selections"`
+		Resolver          toolConfigResolver    `yaml:"resolver"`
+		NoImplementations bool                  `yaml:"noImplementations"`
+		Render toolConfigRender `yaml:"render"`
+
+		Implementations map[string]toolConfigImplementation `yaml:"implementations"`
 	}
 )
 
-func loadConfig(fileName string) (toolConfig, error) {
-	var conf toolConfig
-
-	var f io.ReadCloser
-	var err error
-	if fileName == "" {
-		f, err = assets.AssetFS.Open(defaultConfigFileName)
-		if err != nil {
-			return conf, fmt.Errorf("cannot open default config file in assets, this is a programming error: %w", err)
-		}
-	} else {
-		f, err = os.Open(fileName)
-		if err != nil {
-			return conf, fmt.Errorf("cannot open config file: %w", err)
-		}
+func loadDefaultConfig() (toolConfig, error) {
+	f, err := assets.AssetFS.Open(defaultConfigFileName)
+	if err != nil {
+		return toolConfig{}, fmt.Errorf("cannot open default config file in assets, this is a bug: %w", err)
 	}
 	defer f.Close()
+
+	return parseConfigFile(f)
+}
+
+func loadConfig(fileName string) (toolConfig, error) {
+	f, err := os.Open(fileName)
+	if err != nil {
+		return toolConfig{}, fmt.Errorf("cannot open config file: %w", err)
+	}
+	defer f.Close()
+
+	return parseConfigFile(f)
+}
+
+func parseConfigFile(f io.Reader) (toolConfig, error) {
+	var conf toolConfig
 
 	buf, err := io.ReadAll(f)
 	if err != nil {
@@ -60,4 +98,3 @@ func loadConfig(fileName string) (toolConfig, error) {
 	}
 	return conf, nil
 }
-

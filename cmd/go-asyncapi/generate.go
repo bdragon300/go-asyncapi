@@ -52,25 +52,25 @@ type GenerateCmd struct {
 	PubSub         *generatePubSubArgs         `arg:"subcommand:pubsub" help:"Generate both publisher and subscriber code"`
 	Implementation *generateImplementationArgs `arg:"subcommand:implementation" help:"Generate the implementation code only"`
 
-	TargetDir string `arg:"-t,--target-dir" default:"./asyncapi" help:"Directory to save the generated code" placeholder:"DIR"`
-	ImplDir   string `arg:"--impl-dir" default:"impl" help:"Directory to save implementations inside the target dir" placeholder:"DIR"`
+	TargetDir string `arg:"-t,--target-dir" help:"Directory to save the generated code" placeholder:"DIR"`
+	ImplDir   string `arg:"--impl-dir" help:"Directory to save implementations inside the target dir" placeholder:"DIR"`
+	ConfigFile string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"PATH"`
 }
 
 type generatePubSubArgs struct {
 	Spec string `arg:"required,positional" help:"AsyncAPI specification file path or url" placeholder:"PATH"`
 
 	ProjectModule string `arg:"-M,--module" help:"Module path to use [default: extracted from go.mod file in the current working directory concatenated with target dir]" placeholder:"MODULE"`
-	ConfigFile string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"PATH"`
 	TemplateDir string `arg:"-T,--template-dir" help:"Directory with custom templates" placeholder:"DIR"`
-	PreambleTemplate string `arg:"--preamble-template" default:"preamble.tmpl" help:"Custom preamble template name" placeholder:"NAME"`
+	PreambleTemplate string `arg:"--preamble-template" help:"Custom preamble template name" placeholder:"NAME"`
 	DisableFormatting bool `arg:"--disable-formatting" help:"Disable code formatting"`
 	ImplementationsOpts
 	AllowRemoteRefs bool `arg:"--allow-remote-refs" help:"Allow fetching spec files from remote $ref URLs"`
 
-	RuntimeModule         string        `arg:"--runtime-module" default:"github.com/bdragon300/go-asyncapi/run" help:"Runtime module name" placeholder:"MODULE"`
-	FileResolverSearchDir string        `arg:"--file-resolver-search-dir" help:"Directory to search the local spec files for [default: current working directory]" placeholder:"PATH"`
-	FileResolverTimeout   time.Duration `arg:"--file-resolver-timeout" default:"30s" help:"Timeout for file resolver to resolve a spec file" placeholder:"DURATION"`
-	FileResolverCommand   string        `arg:"--file-resolver-command" help:"Custom file resolver executable to use instead of built-in resolver" placeholder:"PATH"`
+	RuntimeModule       string        `arg:"--runtime-module" help:"Runtime module name" placeholder:"MODULE"`
+	ResolverSearchDir   string        `arg:"--resolver-search-dir" help:"Directory to search the local spec files for [default: current working directory]" placeholder:"PATH"`
+	ResolverTimeout time.Duration `arg:"--resolver-timeout" help:"Timeout for resolver to resolve a spec file" placeholder:"DURATION"`
+	ResolverCommand string        `arg:"--resolver-command" help:"Custom resolver executable to use instead of built-in resolver" placeholder:"PATH"`
 }
 
 type generateImplementationArgs struct {
@@ -81,38 +81,49 @@ type generateImplementationArgs struct {
 type ImplementationsOpts struct {
 	NoImplementations bool `arg:"--no-implementations" help:"Do not generate any protocol implementation"`
 
-	Kafka string `arg:"--kafka-impl" default:"franz-go" help:"Implementation for Kafka ('none' to disable)" placeholder:"NAME"`
-	AMQP  string `arg:"--amqp-impl" default:"amqp091-go" help:"Implementation for AMQP ('none' to disable)" placeholder:"NAME"`
-	HTTP  string `arg:"--http-impl" default:"std" help:"Implementation for HTTP ('none' to disable)" placeholder:"NAME"`
-	MQTT  string `arg:"--mqtt-impl" default:"paho-mqtt" help:"Implementation for MQTT ('none' to disable)" placeholder:"NAME"`
-	WS    string `arg:"--ws-impl" default:"gobwas-ws" help:"Implementation for WebSocket ('none' to disable)" placeholder:"NAME"`
-	Redis string `arg:"--redis-impl" default:"go-redis" help:"Implementation for Redis ('none' to disable)" placeholder:"NAME"`
-	IP    string `arg:"--ip-impl" default:"std" help:"Implementation for IP raw sockets ('none' to disable)" placeholder:"NAME"`
-	TCP   string `arg:"--tcp-impl" default:"std" help:"Implementation for TCP ('none' to disable)" placeholder:"NAME"`
-	UDP   string `arg:"--udp-impl" default:"std" help:"Implementation for UDP ('none' to disable)" placeholder:"NAME"`
+	Kafka string `arg:"--kafka-impl" help:"Implementation for Kafka ('none' to disable)" placeholder:"NAME"`
+	AMQP  string `arg:"--amqp-impl" help:"Implementation for AMQP ('none' to disable)" placeholder:"NAME"`
+	HTTP  string `arg:"--http-impl" help:"Implementation for HTTP ('none' to disable)" placeholder:"NAME"`
+	MQTT  string `arg:"--mqtt-impl" help:"Implementation for MQTT ('none' to disable)" placeholder:"NAME"`
+	WS    string `arg:"--ws-impl" help:"Implementation for WebSocket ('none' to disable)" placeholder:"NAME"`
+	Redis string `arg:"--redis-impl" help:"Implementation for Redis ('none' to disable)" placeholder:"NAME"`
+	IP    string `arg:"--ip-impl" help:"Implementation for IP raw sockets ('none' to disable)" placeholder:"NAME"`
+	TCP   string `arg:"--tcp-impl" help:"Implementation for TCP ('none' to disable)" placeholder:"NAME"`
+	UDP   string `arg:"--udp-impl" help:"Implementation for UDP ('none' to disable)" placeholder:"NAME"`
 }
 
 func generate(cmd *GenerateCmd) error {
+	logger := log.GetLogger("")
+	isPub, isSub, pubSubOpts := getPubSubVariant(cmd)
+	mergedConfig, err := mergeConfig(cmd, pubSubOpts)
+	if err != nil {
+		return err
+	}
+
 	if cmd.Implementation != nil {
-		return generateImplementation(cmd)
+		return generateImplementation(cmd.Implementation, mergedConfig)
 	}
 
 	asyncapi.ProtocolBuilders = protocolBuilders()
-	isPub, isSub, pubSubOpts := getPubSubVariant(cmd)
 	if !isSub && !isPub {
 		return fmt.Errorf("%w: publisher, subscriber or both are required in args", ErrWrongCliArgs)
 	}
-	compileOpts := getCompileOpts(*pubSubOpts, isPub, isSub)
-	renderOpts, err := getRenderOpts(*pubSubOpts, cmd.TargetDir)
+
+	if logger.GetLevel() == log.TraceLevel {
+		buf := lo.Must(yaml.Marshal(mergedConfig))
+		logger.Trace("Use the resulting config", "value", string(buf))
+	}
+	compileOpts := getCompileOpts(mergedConfig, isPub, isSub)
+	renderOpts, err := getRenderOpts(mergedConfig, mergedConfig.Directories.Target)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
 	}
-	implDir := path.Join(cmd.TargetDir, cmd.ImplDir)
-	log.GetLogger("").Debugf("Target implementations directory is %s", implDir)
-	tmpl.ParseTemplates(pubSubOpts.TemplateDir)
+	implDir := path.Join(mergedConfig.Directories.Target, mergedConfig.Directories.Implementations)
+	logger.Debugf("Target implementations directory is %s", implDir)
+	tmpl.ParseTemplates(mergedConfig.Directories.Templates)
 
 	// Compilation
-	resolver := getResolver(*pubSubOpts)
+	resolver := getResolver(mergedConfig)
 	specURL := specurl.Parse(pubSubOpts.Spec)
 	modules, err := generationCompile(specURL, compileOpts, resolver)
 	if err != nil {
@@ -142,27 +153,27 @@ func generate(cmd *GenerateCmd) error {
 	}
 
 	// Writing
-	if err = writer.WriteToFiles(files, cmd.TargetDir); err != nil {
+	if err = writer.WriteToFiles(files, mergedConfig.Directories.Target); err != nil {
 		return fmt.Errorf("writing code to files: %w", err)
 	}
 
 	// Rendering the selected implementations
-	if !pubSubOpts.NoImplementations {
-		selectedImpls := getImplementationsOpts(pubSubOpts.ImplementationsOpts)
+	if !mergedConfig.NoImplementations {
+		selectedImpls := getImplementationsOpts(mergedConfig.Implementations)
 		if err = generationWriteImplementations(selectedImpls, mainModule.Protocols(), implDir); err != nil {
 			return err
 		}
 	}
 
-	log.GetLogger("").Info("Finished")
+	logger.Info("Finished")
 	return nil
 }
 
-func generateImplementation(cmd *GenerateCmd) error {
-	implDir := path.Join(cmd.TargetDir, cmd.ImplDir)
+func generateImplementation(cmd *generateImplementationArgs, conf toolConfig) error {
+	implDir := path.Join(conf.Directories.Target, conf.Directories.Implementations)  // TODO: remove this line
 	log.GetLogger("").Debugf("Target implementations directory is %s", implDir)
-	proto := cmd.Implementation.Protocol
-	name := cmd.Implementation.Name
+	proto := cmd.Protocol
+	name := cmd.Name
 	if err := generationWriteImplementations(map[string]string{proto: name}, []string{proto}, implDir); err != nil {
 		return err
 	}
@@ -185,6 +196,52 @@ func protocolBuilders() map[string]asyncapi.ProtocolBuilder {
 	}
 }
 
+func mergeConfig(cmd *GenerateCmd, generateArgs *generatePubSubArgs) (config toolConfig, err error) {
+	if config, err = loadDefaultConfig(); err != nil {
+		return
+	}
+	if lo.IsNil(generateArgs) {
+		generateArgs = &generatePubSubArgs{}
+	}
+
+	var userConfig toolConfig
+	if cmd.ConfigFile != "" {
+		log.GetLogger("").Debug("Load config", "file", cmd.ConfigFile)
+		if userConfig, err = loadConfig(cmd.ConfigFile); err != nil {
+			return
+		}
+	}
+
+	config.ConfigVersion = coalesce(userConfig.ConfigVersion, config.ConfigVersion)
+	config.ProjectModule = coalesce(generateArgs.ProjectModule, userConfig.ProjectModule, config.ProjectModule)
+	config.RuntimeModule = coalesce(generateArgs.RuntimeModule, userConfig.RuntimeModule, config.RuntimeModule)
+	config.Directories.Templates = coalesce(generateArgs.TemplateDir, userConfig.Directories.Templates, config.Directories.Templates)
+	config.Directories.Target = coalesce(cmd.TargetDir, userConfig.Directories.Target, config.Directories.Target)
+	config.Directories.Implementations = coalesce(cmd.ImplDir, userConfig.Directories.Implementations, config.Directories.Implementations)
+
+	// *Replace* selections
+	if len(userConfig.Selections) > 0 {
+		config.Selections = userConfig.Selections
+	}
+
+	config.Resolver.AllowRemoteReferences = coalesce(generateArgs.AllowRemoteRefs, userConfig.Resolver.AllowRemoteReferences, config.Resolver.AllowRemoteReferences)
+	config.Resolver.SearchDirectory = coalesce(generateArgs.ResolverSearchDir, userConfig.Resolver.SearchDirectory, config.Resolver.SearchDirectory)
+	config.Resolver.Timeout = coalesce(generateArgs.ResolverTimeout, userConfig.Resolver.Timeout, config.Resolver.Timeout)
+	config.Resolver.Command = coalesce(generateArgs.ResolverCommand, userConfig.Resolver.Command, config.Resolver.Command)
+	config.NoImplementations = coalesce(userConfig.NoImplementations, config.NoImplementations)
+	config.Render.PreambleTemplate = coalesce(generateArgs.PreambleTemplate, userConfig.Render.PreambleTemplate, config.Render.PreambleTemplate)
+	config.Render.DisableFormatting = coalesce(generateArgs.DisableFormatting, userConfig.Render.DisableFormatting, config.Render.DisableFormatting)
+
+	// Merge implementations options
+	if len(userConfig.Implementations) > 0 {
+		for k, v := range userConfig.Implementations {
+			config.Implementations[k] = v
+		}
+	}
+
+	return
+}
+
 func getPubSubVariant(cmd *GenerateCmd) (pub bool, sub bool, variant *generatePubSubArgs) {
 	switch {
 	case cmd.PubSub != nil:
@@ -197,34 +254,25 @@ func getPubSubVariant(cmd *GenerateCmd) (pub bool, sub bool, variant *generatePu
 	return
 }
 
-func getCompileOpts(opts generatePubSubArgs, isPub, isSub bool) common.CompileOpts {
+func getCompileOpts(cfg toolConfig, isPub, isSub bool) common.CompileOpts {
 	return common.CompileOpts{
-		AllowRemoteRefs:     opts.AllowRemoteRefs,
-		RuntimeModule:       opts.RuntimeModule,
+		AllowRemoteRefs:     cfg.Resolver.AllowRemoteReferences,
+		RuntimeModule:       cfg.RuntimeModule,
 		GeneratePublishers:  isPub,
 		GenerateSubscribers: isSub,
 	}
 }
 
-func getRenderOpts(opts generatePubSubArgs, targetDir string) (common.RenderOpts, error) {
+func getRenderOpts(conf toolConfig, targetDir string) (common.RenderOpts, error) {
 	logger := log.GetLogger("")
 	res := common.RenderOpts{
-		RuntimeModule: opts.RuntimeModule,
-		TargetDir:     targetDir,
-		DisableFormatting: opts.DisableFormatting,
-		PreambleTemplate: opts.PreambleTemplate,
+		RuntimeModule:     conf.RuntimeModule,
+		TargetDir:         targetDir,
+		DisableFormatting: conf.Render.DisableFormatting,
+		PreambleTemplate:  conf.Render.PreambleTemplate,
 	}
 
 	// Selections
-	logger.Debug("Load config", "file", opts.ConfigFile)
-	conf, err := loadConfig(opts.ConfigFile)
-	if err != nil {
-		return res, err
-	}
-	if logger.GetLevel() == log.TraceLevel {
-		buf := lo.Must(yaml.Marshal(conf))
-		logger.Trace("Loaded config", "value", string(buf))
-	}
 	for _, item := range conf.Selections {
 		pkg, _ := lo.Coalesce(
 			item.Render.Package,
@@ -254,7 +302,7 @@ func getRenderOpts(opts generatePubSubArgs, targetDir string) (common.RenderOpts
 	}
 
 	// ImportBase
-	res.ImportBase = opts.ProjectModule
+	res.ImportBase = conf.ProjectModule
 	if res.ImportBase == "" {
 		m, err := getProjectModule()
 		if err != nil {
@@ -294,19 +342,19 @@ func getProjectModule() (string, error) {
 	return modpath, nil
 }
 
-func getResolver(opts generatePubSubArgs) compiler.SpecFileResolver {
+func getResolver(conf toolConfig) compiler.SpecFileResolver {
 	logger := log.GetLogger(log.LoggerPrefixResolving)
-	if opts.FileResolverCommand != "" {
+	if conf.Resolver.Command != "" {
 		return compiler.SubprocessSpecFileResolver{
-			CommandLine: opts.FileResolverCommand,
-			RunTimeout:  opts.FileResolverTimeout,
+			CommandLine: conf.Resolver.Command,
+			RunTimeout:  conf.Resolver.Timeout,
 			Logger:      logger,
 		}
 	}
 	return compiler.DefaultSpecFileResolver{
 		Client:  stdHTTP.DefaultClient,
-		Timeout: opts.FileResolverTimeout,
-		BaseDir: opts.FileResolverSearchDir,
+		Timeout: conf.Resolver.Timeout,
+		BaseDir: conf.Resolver.SearchDirectory,
 		Logger:  logger,
 	}
 }
@@ -378,17 +426,17 @@ func generationLinking(objSources map[string]linker.ObjectSource) error {
 	return nil
 }
 
-func getImplementationsOpts(opts ImplementationsOpts) map[string]string {
+func getImplementationsOpts(opts map[string]toolConfigImplementation) map[string]string {
 	return map[string]string{
-		amqp.Builder.ProtocolName():  opts.AMQP,
-		http.Builder.ProtocolName():  opts.HTTP,
-		kafka.Builder.ProtocolName(): opts.Kafka,
-		mqtt.Builder.ProtocolName():  opts.MQTT,
-		ws.Builder.ProtocolName():    opts.WS,
-		redis.Builder.ProtocolName(): opts.Redis,
-		ip.Builder.ProtocolName():    opts.IP,
-		tcp.Builder.ProtocolName():   opts.TCP,
-		udp.Builder.ProtocolName():   opts.UDP,
+		amqp.Builder.ProtocolName():  opts["amqp"].Name,
+		http.Builder.ProtocolName():  opts["http"].Name,
+		kafka.Builder.ProtocolName(): opts["kafka"].Name,
+		mqtt.Builder.ProtocolName():  opts["mqtt"].Name,
+		ws.Builder.ProtocolName():    opts["ws"].Name,
+		redis.Builder.ProtocolName(): opts["redis"].Name,
+		ip.Builder.ProtocolName():    opts["ip"].Name,
+		tcp.Builder.ProtocolName():   opts["tcp"].Name,
+		udp.Builder.ProtocolName():   opts["udp"].Name,
 	}
 }
 
@@ -442,4 +490,9 @@ func loadImplementationsManifest() (implementations.ImplManifest, error) {
 	}
 
 	return meta, nil
+}
+
+func coalesce[T comparable](vals ...T) T {
+	res, _ := lo.Coalesce(vals...)
+	return res
 }

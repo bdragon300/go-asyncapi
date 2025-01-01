@@ -46,7 +46,7 @@ files by URL using the standard Go's HTTP client.
 {{< hint warning >}}
 The files, which are referenced by the `$ref` field, are resolved relatively to the search directory (current working
 directory by default), not to the file
-where the reference is placed. Use `--file-resolver-search-dir` cli flag to change this directory.
+where the reference is placed. Use `--resolver-search-dir` cli flag to change this directory.
 
 For example, the reference `foo.yaml#/bar/baz` inside the `/path/to/spam.yaml` will be resolved as
 `/search_dir/foo.yaml#/bar/baz`, not as `/path/to/foo.yaml#/bar/baz`. **The second option is not supported yet.**
@@ -63,7 +63,7 @@ as well.
 
 {{< hint info >}}
 `go-asyncapi` waits for the command to be finished in timeout of 30 seconds (which can be configured by the 
-`--file-resolver-timeout` flag). If a resolver process is still running after this timeout has passed, `go-asyncapi`
+`--resolver-timeout` flag). If a resolver process is still running after this timeout has passed, `go-asyncapi`
 does the *graceful shutdown*:
 
 1. `go-asyncapi` sends **SIGTERM** signal to a process awaiting it to be finished
@@ -107,7 +107,7 @@ esac
 {{< /tab >}}
 {{< tab "Usage" >}}
 ```shell
-go-asyncapi generate pubsub --allow-remote-refs --file-resolver-command my-resolver.sh asyncapi-spec.yaml
+go-asyncapi generate pubsub --allow-remote-refs --resolver-command my-resolver.sh asyncapi-spec.yaml
 ```
 {{< /tab >}}
 {{< /tabs >}}
