@@ -118,8 +118,7 @@ func generate(cmd *GenerateCmd) error {
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
 	}
-	implDir := path.Join(mergedConfig.Directories.Target, mergedConfig.Directories.Implementations)
-	logger.Debugf("Target implementations directory is %s", implDir)
+	logger.Debugf("Target implementations directory is %s", mergedConfig.Directories.Implementations)
 	tmpl.ParseTemplates(mergedConfig.Directories.Templates)
 
 	// Compilation
@@ -160,7 +159,7 @@ func generate(cmd *GenerateCmd) error {
 	// Rendering the selected implementations
 	if !mergedConfig.NoImplementations {
 		selectedImpls := getImplementationsOpts(mergedConfig.Implementations)
-		if err = generationWriteImplementations(selectedImpls, mainModule.Protocols(), implDir); err != nil {
+		if err = generationWriteImplementations(selectedImpls, mainModule.Protocols(), mergedConfig.Directories.Implementations); err != nil {
 			return err
 		}
 	}
@@ -170,11 +169,10 @@ func generate(cmd *GenerateCmd) error {
 }
 
 func generateImplementation(cmd *generateImplementationArgs, conf toolConfig) error {
-	implDir := path.Join(conf.Directories.Target, conf.Directories.Implementations)  // TODO: remove this line
-	log.GetLogger("").Debugf("Target implementations directory is %s", implDir)
+	log.GetLogger("").Debugf("Target implementations directory is %s", conf.Directories.Implementations)
 	proto := cmd.Protocol
 	name := cmd.Name
-	if err := generationWriteImplementations(map[string]string{proto: name}, []string{proto}, implDir); err != nil {
+	if err := generationWriteImplementations(map[string]string{proto: name}, []string{proto}, conf.Directories.Implementations); err != nil {
 		return err
 	}
 

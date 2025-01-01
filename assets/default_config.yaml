@@ -5,7 +5,7 @@ runtimeModule: github.com/bdragon300/go-asyncapi/run
 directories:
   templates:
   target: ./asyncapi
-  implementations: impl
+  implementations: ./asyncapi/impl
 
 selections:
   - objectKinds: ["schema"]
