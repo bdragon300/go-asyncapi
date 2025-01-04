@@ -12,11 +12,15 @@ import (
 )
 
 type Channel struct {
-	Description string                              `json:"description" yaml:"description"`
-	Servers     *[]string                           `json:"servers" yaml:"servers"`
-	Subscribe   *Operation                          `json:"subscribe" yaml:"subscribe"`
-	Publish     *Operation                          `json:"publish" yaml:"publish"`
+	Address    string                              `json:"address" yaml:"address"`
+	Messages  types.OrderedMap[string, Message]    `json:"messages" yaml:"messages"`
+	Title 	string                              `json:"title" yaml:"title"`
+	Summary 	string                              `json:"summary" yaml:"summary"`
+	Description string          `json:"description" yaml:"description"`
+	Servers     []StandaloneRef `json:"servers" yaml:"servers"`
 	Parameters  types.OrderedMap[string, Parameter] `json:"parameters" yaml:"parameters"`
+	Tags 	  []Tag                               `json:"tags" yaml:"tags"`
+	ExternalDocs *ExternalDocumentation             `json:"externalDocs" yaml:"externalDocs"`
 	Bindings    *ChannelBindings                    `json:"bindings" yaml:"bindings"`
 
 	XGoName string `json:"x-go-name" yaml:"x-go-name"`
@@ -37,24 +41,44 @@ func (c Channel) Compile(ctx *common.CompileContext) error {
 
 func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[common.SchemaTag]string) (common.Renderable, error) {
 	ignore := c.XIgnore || (!ctx.CompileOpts.GeneratePublishers && !ctx.CompileOpts.GenerateSubscribers)
-	_, isComponent := flags[common.SchemaTagComponent]
 	if ignore {
 		ctx.Logger.Debug("Channel denoted to be ignored")
 		return &render.Channel{Dummy: true}, nil
 	}
+
+	_, isComponent := flags[common.SchemaTagComponent]
 	if c.Ref != "" {
-		ctx.Logger.Trace("Ref", "$ref", c.Ref)
 		// Make a promise selectable if it defined in `channels` section
-		prm := lang.NewRef(c.Ref, channelKey, lo.Ternary(isComponent, nil, lo.ToPtr(true)))
-		ctx.PutPromise(prm)
-		return prm, nil
+		return registerRef(ctx,  c.Ref, channelKey, lo.Ternary(isComponent, nil, lo.ToPtr(true))), nil
 	}
 
 	chName, _ := lo.Coalesce(c.XGoName, channelKey)
 	res := &render.Channel{
-		OriginalName:   chName,
-		IsComponent:    isComponent,
+		OriginalName: chName,
+		IsComponent:  isComponent,
+		IsPublisher: ctx.CompileOpts.GeneratePublishers,
+		IsSubscriber: ctx.CompileOpts.GenerateSubscribers,
 	}
+
+	// Servers which this channel is bound with
+	if len(c.Servers) > 0 {
+		ctx.Logger.Trace("Channel servers", "refs", c.Servers)
+		for _, srvRef := range c.Servers {
+			prm := lang.NewPromise[*render.Server](srvRef.Ref)
+			res.ServersPromises = append(res.ServersPromises, prm)
+			ctx.PutPromise(prm)
+		}
+	} else {
+		ctx.Logger.Trace("Channel for all servers")
+	}
+	prm := lang.NewListCbPromise[common.Renderable](func(item common.CompileObject, path []string) bool {
+		if len(path) < 2 || len(path) >= 2 && path[0] != "servers" {
+			return false
+		}
+		return item.Kind() == common.ObjectKindServer && item.Visible()
+	}, nil)
+	res.AllActiveServersPromise = prm
+	ctx.PutListPromise(prm)
 
 	// Channel parameters
 	if c.Parameters.Len() > 0 {
@@ -81,78 +105,32 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 		ctx.Logger.PrevCallLevel()
 	}
 
-	// Servers which this channel is connected to
-	// Empty servers field means "no servers", omitted servers field means "all servers"
-	if c.Servers != nil {
-		ctx.Logger.Trace("Channel servers", "names", *c.Servers)
-		res.BoundServerNames = *c.Servers
-		prm := lang.NewListCbPromise[*render.Server](func(item common.CompileObject, path []string) bool {
-			srv, ok := item.Renderable.(*render.Server)
-			if !ok {
-				return false
-			}
-			return lo.Contains(*c.Servers, srv.OriginalName)  // FIXME: use also alias name
-		})
-		res.ServersPromise = prm
-		ctx.PutListPromise(prm)
-	} else {
-		ctx.Logger.Trace("Channel for all servers")
-		prm := lang.NewListCbPromise[*render.Server](func(item common.CompileObject, path []string) bool {
-			_, ok := item.Renderable.(*render.Server)
-			return ok
-		})
-		res.ServersPromise = prm
-		ctx.PutListPromise(prm)
+	for _, msgEntry := range c.Messages.Entries() {
+		msgName, ref := msgEntry.Key, msgEntry.Value
+		ctx.Logger.Trace("Channel message", "name", msgName)
+		refObj := lang.NewRef(ref.Ref, msgName, lo.ToPtr(false))
+		ctx.PutPromise(refObj)
+		res.MessagesPromises = append(res.MessagesPromises, refObj)
 	}
 
-	// Channel/operation bindings
-	var hasBindings bool
+	// All known Operations
+	prmOp := lang.NewListCbPromise[common.Renderable](func(item common.CompileObject, path []string) bool {
+		if len(path) < 2 || len(path) >= 2 && path[0] != "operations" {
+			return false
+		}
+		return item.Kind() == common.ObjectKindOperation && item.Visible()
+	}, nil)
+	res.AllActiveOperationsPromise = prmOp
+	ctx.PutListPromise(prmOp)
+
+	// Bindings
 	if c.Bindings != nil {
 		ctx.Logger.Trace("Found channel bindings")
-		hasBindings = true
 
 		ref := ctx.PathStackRef("bindings")
-		res.BindingsChannelPromise = lang.NewPromise[*render.Bindings](ref)
-		ctx.PutPromise(res.BindingsChannelPromise)
-	}
+		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref)
+		ctx.PutPromise(res.BindingsPromise)
 
-	genPub := c.Publish != nil && ctx.CompileOpts.GeneratePublishers
-	genSub := c.Subscribe != nil && ctx.CompileOpts.GenerateSubscribers
-	if genPub && !c.Publish.XIgnore {
-		res.IsPublisher = true
-		if c.Publish.Bindings != nil {
-			ctx.Logger.Trace("Found publish operation bindings")
-			hasBindings = true
-
-			ref := ctx.PathStackRef("publish", "bindings")
-			res.BindingsPublishPromise = lang.NewPromise[*render.Bindings](ref)
-			ctx.PutPromise(res.BindingsPublishPromise)
-		}
-		if c.Publish.Message != nil {
-			ctx.Logger.Trace("Found publish operation message")
-			ref := ctx.PathStackRef("publish", "message")
-			res.PublisherMessageTypePromise = lang.NewPromise[*render.Message](ref)
-			ctx.PutPromise(res.PublisherMessageTypePromise)
-		}
-	}
-	if genSub && !c.Subscribe.XIgnore {
-		res.IsSubscriber = true
-		if c.Subscribe.Bindings != nil {
-			ctx.Logger.Trace("Found subscribe operation bindings")
-			hasBindings = true
-
-			ref := ctx.PathStackRef("subscribe", "bindings")
-			res.BindingsSubscribePromise = lang.NewPromise[*render.Bindings](ref)
-			ctx.PutPromise(res.BindingsSubscribePromise)
-		}
-		if c.Subscribe.Message != nil {
-			ctx.Logger.Trace("Channel subscribe operation message")
-			ref := ctx.PathStackRef("subscribe", "message")
-			res.SubscriberMessageTypePromise = lang.NewPromise[*render.Message](ref)
-			ctx.PutPromise(res.SubscriberMessageTypePromise)
-		}
-	}
-	if hasBindings {
 		res.BindingsType = &lang.GoStruct{
 			BaseType: lang.BaseType{
 				OriginalName:  ctx.GenerateObjName(chName, "Bindings"),
@@ -162,12 +140,10 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 	}
 
 	// Build protocol-specific channels for all supported protocols
-	// At this point we don't know yet which servers this channel is applied to, so we don't have the protocols list to compile.
-	// Servers will be known on rendering stage (after linking), but there we will already need to have proto
-	// channels to be compiled for certain protocols we want to render.
-	// As a solution, here we just build the proto channels for all supported protocols
+	// At this point we don't have the actual protocols list to compile, because we don't know yet which servers this
+	// channel is bound with -- it will be known only after linking stage.
+	// So we just compile the proto channels for all supported protocols.
 	ctx.Logger.Trace("Prebuild the channels for every supported protocol")
-	var protoChannels []*render.ProtoChannel
 	for proto, b := range ProtocolBuilders {
 		ctx.Logger.Trace("Channel", "proto", proto)
 		ctx.Logger.NextCallLevel()
@@ -176,44 +152,12 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 		if err != nil {
 			return nil, err
 		}
-		protoChannels = append(protoChannels, obj)
+		res.ProtoChannels = append(res.ProtoChannels, obj)
 	}
-	res.ProtoChannels = protoChannels
 
 	return res, nil
 }
 
-type Operation struct {
-	OperationID  string                 `json:"operationId" yaml:"operationId"`
-	Summary      string                 `json:"summary" yaml:"summary"`
-	Description  string                 `json:"description" yaml:"description"`
-	Security     []SecurityRequirement  `json:"security" yaml:"security"`
-	Tags         []Tag                  `json:"tags" yaml:"tags"`
-	ExternalDocs *ExternalDocumentation `json:"externalDocs" yaml:"externalDocs"`
-	Bindings     *OperationBinding      `json:"bindings" yaml:"bindings"`
-	Traits       []OperationTrait       `json:"traits" yaml:"traits"`
-	// FIXME: can be either a message or map of messages?
-	Message *Message `json:"message" yaml:"message"`
-
-	XIgnore bool `json:"x-ignore" yaml:"x-ignore"`
-}
-
-func (c Operation) Compile(ctx *common.CompileContext) error {
-	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
-	return nil
-}
-
-type OperationTrait struct {
-	OperationID  string                 `json:"operationId" yaml:"operationId"`
-	Summary      string                 `json:"summary" yaml:"summary"`
-	Description  string                 `json:"description" yaml:"description"`
-	Security     []SecurityRequirement  `json:"security" yaml:"security"`
-	Tags         []Tag                  `json:"tags" yaml:"tags"`
-	ExternalDocs *ExternalDocumentation `json:"externalDocs" yaml:"externalDocs"`
-	Bindings     *OperationBinding      `json:"bindings" yaml:"bindings"`
-
-	Ref string `json:"$ref" yaml:"$ref"`
-}
 
 type SecurityRequirement struct {
 	types.OrderedMap[string, []string] // FIXME: orderedmap must be in fields as utils.OrderedMap[SecurityRequirement, []SecurityRequirement]

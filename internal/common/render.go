@@ -19,6 +19,7 @@ const (
 	ObjectKindSchema = "schema"
 	ObjectKindServer = "server"
 	ObjectKindChannel = "channel"
+	ObjectKindOperation = "operation"
 	ObjectKindMessage = "message"
 	ObjectKindParameter = "parameter"
 	// ObjectKindAsyncAPI is a utility object represents the entire AsyncAPI document
@@ -37,6 +38,22 @@ type Renderable interface {  // TODO: rename
 	// Name returns the name of the object as it was defined in the AsyncAPI document. Suitable if we render
 	// the object through a promise -- object's name should be taken from the promise, which is also is Renderable.
 	Name() string
+}
+
+type renderableWrapper interface {
+	UnwrapRenderable() Renderable
+}
+
+// TODO: detect ref loops to avoid infinite recursion
+func DerefRenderable(obj Renderable) Renderable {
+	if w, ok := obj.(renderableWrapper); ok {
+		return w.UnwrapRenderable()
+	}
+	return obj
+}
+
+func CheckSameRenderables(a, b Renderable) bool {
+	return DerefRenderable(a) == DerefRenderable(b)
 }
 
 type (

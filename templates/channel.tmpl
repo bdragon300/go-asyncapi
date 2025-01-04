@@ -28,25 +28,11 @@ func {{$ | goid}}Name({{if .ParametersType}}params {{.ParametersType | gousage}}
         {{- $bindingsValue := $channel.ProtoBindingsValue $proto }}
         func (c {{ $channel.BindingsType | gousage }}) {{ $proto | capitalize | goid }}() {{$bindingsValue.Type | gousage}} {
             b := {{$bindingsValue | gousage}}
-            {{- with $channel.BindingsChannel }}
+            {{- with $channel.Bindings }}
                 {{- $jvals := .JSONValues.GetOrEmpty $proto }}
                 {{- range $jvals.Entries}}
                     {{.Key | toCamelCase }} := {{.Value | golit}}
                     _ = {{goqual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}), &b.{{.Key}})
-                {{- end}}
-            {{- end}}
-            {{- with $channel.BindingsPublish }}
-                {{- $jvals := .JSONValues.GetOrEmpty $proto}}
-                {{- range $jvals.Entries}}
-                    {{.Key | toCamelCase }}Pub := {{.Value | golit}}
-                    _ = {{goqual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}Pub), &b.PublisherBindings.{{.Key}})
-                {{- end}}
-            {{- end}}
-            {{- with $channel.BindingsSubscribe}}
-                {{- $jvals := .JSONValues.GetOrEmpty $proto}}
-                {{- range $jvals.Entries}}
-                    {{.Key | toCamelCase }}Sub := {{.Value | golit}}
-                    _ = {{goqual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}Sub), &b.SubscriberBindings.{{.Key}})
                 {{- end}}
             {{- end}}
             return b

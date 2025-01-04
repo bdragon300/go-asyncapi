@@ -10,7 +10,7 @@ import (
 
 func NewRef(ref string, name string, selectable *bool) *Ref {
 	return &Ref{
-		Promise:    *newAssignCbPromise[common.Renderable](ref, common.PromiseOriginUser, nil, nil),
+		Promise:    *newPromise[common.Renderable](ref, common.PromiseOriginUser, nil, nil),
 		selectable: selectable,
 		name:       name,
 	}
@@ -62,6 +62,6 @@ func (r *Ref) Name() string {
 }
 
 func (r *Ref) UnwrapRenderable() common.Renderable {
-	return unwrapRenderablePromiseOrRef(r.target)
+	return common.DerefRenderable(r.target)
 }
 

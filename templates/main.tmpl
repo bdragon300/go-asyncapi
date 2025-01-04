@@ -12,9 +12,6 @@
         {{- end}}
     {{- end}}
 
-{{- else if and (eq .Object.Kind "parameter") (visible .Object)}}
-    {{- template "parameter.tmpl" .Object}}
-
 {{- else if and (eq .Object.Kind "channel") (visible .Object)}}
     {{- if not .CurrentSelection.Render.ProtoObjectsOnly}}
         {{- template "channel.tmpl" .Object}}
@@ -22,6 +19,16 @@
     {{- range .CurrentSelection.RenderProtocols}}
         {{- with (deref $.Object).SelectProtoObject . }}
             {{- tmpl (print .Protocol "_channel.tmpl") . }}
+        {{- end}}
+    {{- end}}
+
+{{- else if and (eq .Object.Kind "operation") (visible .Object)}}
+    {{- if not .CurrentSelection.Render.ProtoObjectsOnly}}
+        {{- template "operation.tmpl" .Object}}
+    {{- end}}
+    {{- range .CurrentSelection.RenderProtocols}}
+        {{- with (deref $.Object).SelectProtoObject . }}
+            {{- tmpl (print .Protocol "_operation.tmpl") . }}
         {{- end}}
     {{- end}}
 
@@ -35,4 +42,8 @@
             {{- tmpl (print .Protocol "_message.tmpl") . }}
         {{- end}}
     {{- end}}
+
+{{- else if and (eq .Object.Kind "parameter") (visible .Object)}}
+    {{- template "parameter.tmpl" .Object}}
+
 {{- end}}

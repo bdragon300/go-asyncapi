@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
-
 	"github.com/bdragon300/go-asyncapi/internal/types"
 
 	yaml "gopkg.in/yaml.v3"
@@ -17,11 +16,9 @@ import (
 )
 
 type Message struct {
-	MessageID     string                 `json:"messageId" yaml:"messageId"`
 	Headers       *Object                `json:"headers" yaml:"headers" cgen:"marshal"`
 	Payload       *Object                `json:"payload" yaml:"payload" cgen:"marshal"` // TODO: other formats
 	CorrelationID *CorrelationID         `json:"correlationId" yaml:"correlationId"`
-	SchemaFormat  string                 `json:"schemaFormat" yaml:"schemaFormat"`
 	ContentType   string                 `json:"contentType" yaml:"contentType"`
 	Name          string                 `json:"name" yaml:"name"`
 	Title         string                 `json:"title" yaml:"title"`
@@ -73,9 +70,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		}
 
 		// Always draw the promises that are located in the `messages` section
-		prm := lang.NewRef(m.Ref, refName, lo.Ternary(makeSelectable, lo.ToPtr(true), nil))
-		ctx.PutPromise(prm)
-		return prm, nil
+		return registerRef(ctx, m.Ref, refName, lo.Ternary(makeSelectable, lo.ToPtr(true), nil)), nil
 	}
 
 	msgName, _ := lo.Coalesce(m.XGoName, messageKey)
@@ -102,20 +97,31 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	}
 	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", res.ContentType))
 
-	// Lookup servers after linking to figure out all protocols the message is used in
-	prm := lang.NewListCbPromise[*render.Server](func(item common.CompileObject, path []string) bool {
-		_, ok := item.Renderable.(*render.Server)
-		return ok
-	})
-	res.AllServersPromise = prm
-	ctx.PutListPromise(prm)
+	// Gather all channels and operations to find out further (after linking) which ones are bound with this message
+	prmCh := lang.NewListCbPromise[common.Renderable](func(item common.CompileObject, path []string) bool {
+		if len(path) < 2 || len(path) >= 2 && path[0] != "channels" {
+			return false
+		}
+		return item.Kind() == common.ObjectKindChannel && item.Visible()
+	}, nil)
+	res.AllActiveChannelsPromise = prmCh
+	ctx.PutListPromise(prmCh)
 
-	prm2 := lang.NewCbPromise[*render.AsyncAPI](func(item common.CompileObject, path []string) bool {
+	prmOp := lang.NewListCbPromise[common.Renderable](func(item common.CompileObject, path []string) bool {
+		if len(path) < 2 || len(path) >= 2 && path[0] != "operations" {
+			return false
+		}
+		return item.Kind() == common.ObjectKindOperation && item.Visible()
+	}, nil)
+	res.AllActiveOperationsPromise = prmOp
+	ctx.PutListPromise(prmOp)
+
+	prmAsyncAPI := lang.NewCbPromise[*render.AsyncAPI](func(item common.CompileObject, path []string) bool {
 		_, ok := item.Renderable.(*render.AsyncAPI)
 		return ok
 	}, nil)
-	res.AsyncAPIPromise = prm2
-	ctx.PutPromise(prm2)
+	res.AsyncAPIPromise = prmAsyncAPI
+	ctx.PutPromise(prmAsyncAPI)
 
 	// Link to Headers struct if any
 	if m.Headers != nil {
@@ -151,7 +157,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	}
 
 	// Build protocol-specific messages for all supported protocols
-	// Here we don't know yet which channels this message is used by, so we don't have the protocols list to compile.
+	// Here we don't know yet which channels this message is bound with, so we don't have the protocols list to compile.
 	ctx.Logger.Trace("Prebuild the messages for every supported protocol")
 	var protoMessages []*render.ProtoMessage
 	for proto := range ProtocolBuilders {
@@ -201,6 +207,8 @@ type Tag struct {
 	Name         string                 `json:"name" yaml:"name"`
 	Description  string                 `json:"description" yaml:"description"`
 	ExternalDocs *ExternalDocumentation `json:"externalDocs" yaml:"externalDocs"`
+
+	Ref string `json:"$ref" yaml:"$ref"`
 }
 
 type MessageExample struct {
@@ -211,10 +219,8 @@ type MessageExample struct {
 }
 
 type MessageTrait struct {
-	MessageID     string                 `json:"messageId" yaml:"messageId"`
 	Headers       *Object                `json:"headers" yaml:"headers"`
 	CorrelationID *CorrelationID         `json:"correlationId" yaml:"correlationId"`
-	SchemaFormat  string                 `json:"schemaFormat" yaml:"schemaFormat"`
 	ContentType   string                 `json:"contentType" yaml:"contentType"`
 	Name          string                 `json:"name" yaml:"name"`
 	Title         string                 `json:"title" yaml:"title"`

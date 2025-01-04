@@ -9,8 +9,11 @@ import (
 )
 
 type Parameter struct {
+	Enum 	  []string `json:"enum" yaml:"enum"`
+	Default  string   `json:"default" yaml:"default"`
 	Description string  `json:"description" yaml:"description"`
-	Schema      *Object `json:"schema" yaml:"schema"`     // TODO: implement
+	Examples []string `json:"examples" yaml:"examples"`
+	Schema      *Object `json:"schema" yaml:"schema"`     // DEPRECATED
 	Location    string  `json:"location" yaml:"location"` // TODO: implement
 
 	XGoName string `json:"x-go-name" yaml:"x-go-name"`
@@ -30,10 +33,7 @@ func (p Parameter) Compile(ctx *common.CompileContext) error {
 
 func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (common.Renderable, error) {
 	if p.Ref != "" {
-		ctx.Logger.Trace("Ref", "$ref", p.Ref)
-		res := lang.NewRef(p.Ref, parameterKey, nil)
-		ctx.PutPromise(res)
-		return res, nil
+		return registerRef(ctx, p.Ref, parameterKey, nil), nil
 	}
 
 	parName, _ := lo.Coalesce(p.XGoName, parameterKey)

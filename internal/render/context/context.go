@@ -88,17 +88,10 @@ func (c *RenderContextImpl) CurrentSelection() common.RenderSelectionConfig {
 }
 
 func (c *RenderContextImpl) GetObjectName(obj common.Renderable) string {
-	type renderableWrapper interface {
-		UnwrapRenderable() common.Renderable
-	}
-
 	res := obj.Name()
 	// Take the alternate name from CurrentObject (if any), if the CurrentObject is the RenderablePromise,
 	// and it points to the same object as the one was passed as argument.
-	currentObj := c.Object.Renderable
-	if p, ok := currentObj.(renderableWrapper); ok {
-		currentObj = p.UnwrapRenderable()
-	}
+	currentObj := common.DerefRenderable(c.Object.Renderable)
 	if currentObj == obj {
 		res = c.Object.Name()
 	}

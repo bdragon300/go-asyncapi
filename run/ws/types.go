@@ -7,8 +7,6 @@ type (
 		Method string
 		Query any // jsonschema
 		Headers any // jsonschema
-		PublisherBindings OperationBindings
-		SubscriberBindings OperationBindings
 	}
 	OperationBindings struct {}
 	MessageBindings struct {}

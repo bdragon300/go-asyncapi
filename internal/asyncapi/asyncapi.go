@@ -14,9 +14,8 @@ type AsyncAPI struct {
 	Servers            types.OrderedMap[string, Server]  `json:"servers" yaml:"servers"`
 	DefaultContentType string                            `json:"defaultContentType" yaml:"defaultContentType"`
 	Channels           types.OrderedMap[string, Channel] `json:"channels" yaml:"channels"`
+	Operations		 types.OrderedMap[string, Operation] `json:"operations" yaml:"operations"`
 	Components         ComponentsItem                    `json:"components" yaml:"components"`
-	Tags               []Tag                             `json:"tags" yaml:"tags"`
-	ExternalDocs       ExternalDocumentation             `json:"externalDocs" yaml:"externalDocs"`
 }
 
 func (a AsyncAPI) Compile(ctx *common.CompileContext) error {
@@ -37,6 +36,25 @@ type InfoItem struct {
 	Title       string `json:"title" yaml:"title"`
 	Version     string `json:"version" yaml:"version"`
 	Description string `json:"description" yaml:"description"`
+	TermsOfService string `json:"termsOfService" yaml:"termsOfService"`
+	Contact     ContactItem `json:"contact" yaml:"contact"`
+	License     LicenseItem `json:"license" yaml:"license"`
+	Tags               []Tag                             `json:"tags" yaml:"tags"`
+	ExternalDocs       ExternalDocumentation             `json:"externalDocs" yaml:"externalDocs"`
 }
 
-type ExternalDocumentation struct{}
+type ContactItem struct {
+	Name  string `json:"name" yaml:"name"`
+	URL   string `json:"url" yaml:"url"`
+	Email string `json:"email" yaml:"email"`
+}
+
+type LicenseItem struct {
+	Name string `json:"name" yaml:"name"`
+	URL  string `json:"url" yaml:"url"`
+}
+
+type ExternalDocumentation struct{
+	Description string `json:"description" yaml:"description"`
+	URL string `json:"url" yaml:"url"`
+}

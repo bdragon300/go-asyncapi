@@ -35,9 +35,6 @@ type (
 		ChannelType           ChannelType
 		ExchangeConfiguration ExchangeConfiguration
 		QueueConfiguration    QueueConfiguration
-
-		PublisherBindings  OperationBindings
-		SubscriberBindings OperationBindings
 	}
 
 	OperationBindings struct {

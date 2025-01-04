@@ -3,10 +3,7 @@ package http
 type (
 	ServerBindings struct{}
 
-	ChannelBindings struct {
-		PublisherBindings  OperationBindings
-		SubscriberBindings OperationBindings
-	}
+	ChannelBindings struct {}
 
 	OperationBindings struct {
 		Type  string

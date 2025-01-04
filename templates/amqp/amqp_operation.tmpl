@@ -1,0 +1,30 @@
+{{define "operation/amqp/newFunction/block1"}}
+    {{- if and .BindingsType (.BindingsProtocols | has .Protocol)}}
+        bindings := {{ .BindingsType | gousage }}{}.{{.Protocol | capitalize | goid}}()
+        switch bindings.ChannelType {
+        case {{goqualrun .Protocol "ChannelTypeQueue"}}:
+            res.queue = res.name.String()
+        default:
+            res.routingKey = res.name.String()
+        }
+        if bindings.ExchangeConfiguration.Name != nil {
+            res.exchange = *bindings.ExchangeConfiguration.Name
+        }
+        if bindings.QueueConfiguration.Name != "" {
+            res.queue = bindings.QueueConfiguration.Name
+        }
+    {{- end}}
+{{- end}}
+{{define "operation/amqp/publishMethods/block1"}}
+    envelope.SetRoutingKey(o.RoutingKey())
+{{- end}}
+
+{{- with deref .}}
+    {{template "operation/proto/openFunction" .}}
+
+    {{ .Type | godef }}
+
+    {{if .IsPublisher}}{{template "operation/proto/publishMethods" .}}{{end}}
+    {{if .IsSubscriber}}{{template "operation/proto/subscribeMethods" .}}{{end}}
+    {{template "operation/proto/serverInterface" .}}
+{{- end}}

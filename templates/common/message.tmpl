@@ -1,0 +1,76 @@
+{{define "message/proto/marshalMethods"}}
+{{- range .BoundChannels}}
+    func (m *{{ $.OutType | goid }}) MarshalChannel{{. | goid}}{{$.Protocol | capitalize | goid}}(envelope {{goqualrun $.Protocol "EnvelopeWriter"}}) error {
+        return m.MarshalEnvelope{{$.Protocol | capitalize | goid}}(envelope)
+    }
+{{- end}}
+
+{{- range .BoundOperations}}
+    func (m *{{ $.OutType | goid }}) MarshalOperation{{. | goid}}{{$.Protocol | capitalize | goid}}(envelope {{goqualrun $.Protocol "EnvelopeWriter"}}) error {
+        return m.MarshalEnvelope{{$.Protocol | capitalize | goid}}(envelope)
+    }
+{{- end}}
+
+func (m *{{ .OutType | goid }}) MarshalEnvelope{{ .Protocol | capitalize | goid }}(envelope {{goqualrun .Protocol "EnvelopeWriter"}}) error {
+    {{- template "message/proto/encoder" .}}
+    envelope.SetContentType({{.ContentType | golit}})
+    {{- with .HeadersType}}
+        envelope.SetHeaders({
+        {{- range .Fields}}
+            {{ .Name | golit}}: m.Headers.{{.Name}},
+        {{- end}}
+        })
+    {{- else}}
+        envelope.SetHeaders({{goqualrun "Headers"}}(m.Headers))
+    {{- end}}
+    return nil
+}
+{{- end}}
+
+{{define "message/proto/unmarshalMethods"}}
+{{- range .BoundChannels}}
+    func (m *{{ $.InType | goid }}) UnmarshalChannel{{. | goid}}{{$.Protocol | capitalize | goid}}(envelope {{goqualrun $.Protocol "EnvelopeReader"}}) error {
+        return m.UnmarshalEnvelope{{$.Protocol | capitalize | goid}}(envelope)
+    }
+{{- end}}
+
+{{- range .BoundOperations}}
+    func (m *{{ $.InType | goid }}) UnmarshalOperation{{. | goid}}{{$.Protocol | capitalize | goid}}(envelope {{goqualrun $.Protocol "EnvelopeReader"}}) error {
+        return m.UnmarshalEnvelope{{$.Protocol | capitalize | goid}}(envelope)
+    }
+{{- end}}
+
+func (m *{{ .InType | goid }}) UnmarshalEnvelope{{ .Protocol | capitalize | goid }}(envelope {{goqualrun .Protocol "EnvelopeReader"}}) error {
+    {{- template "message/proto/decoder" .}}
+    {{- with .HeadersType }}
+        {{- /* Empty headers should not generate code */}}
+        {{- if gt (len .Fields) 0}}
+            headers := envelope.Headers()
+            {{- range .Fields}}
+                if v, ok := headers[{{.Name | golit}}]; ok {
+                    m.Headers.{{.Name}} = v.({{.Type| gousage}})
+                }
+            {{- end}}
+        {{- end}}
+    {{- else}}
+        m.Headers = {{.HeadersFallbackType| gousage}}(envelope.Headers())
+    {{- end}}
+    return nil
+}
+{{- end}}
+
+{{define "message/proto/encoder"}}
+{{with trytmpl (print "message/proto/encoder/" .EffectiveContentType) .}}
+    {{.}}
+{{else}}
+    {{template "message/proto/encoder/default" .}}
+{{end}}
+{{- end}}
+
+{{define "message/proto/decoder"}}
+{{with trytmpl (print "message/proto/decoder/" .EffectiveContentType) .}}
+    {{.}}
+{{else}}
+    {{template "message/proto/decoder/default" .}}
+{{end}}
+{{- end}}

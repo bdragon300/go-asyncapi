@@ -1,0 +1,20 @@
+{{- with $operation := deref .}}
+
+{{- if and .BindingsType (ndefined .BindingsType) }}
+    {{ .BindingsType | godef }}
+    {{- range $proto := .BindingsProtocols }}
+        {{- $bindingsValue := $operation.ProtoBindingsValue $proto }}
+        func (c {{ $operation.BindingsType | gousage }}) {{ $proto | capitalize | goid }}() {{$bindingsValue.Type | gousage}} {
+        b := {{$bindingsValue | gousage}}
+        {{- with $operation.Bindings }}
+            {{- $jvals := .JSONValues.GetOrEmpty $proto }}
+            {{- range $jvals.Entries}}
+                {{.Key | toCamelCase }} := {{.Value | golit}}
+                _ = {{goqual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}), &b.{{.Key}})
+            {{- end}}
+        {{- end}}
+        return b
+        }
+    {{- end}}
+{{- end}}
+{{- end}}

@@ -11,16 +11,16 @@ import (
 
 type Server struct {
 	OriginalName string
-	Dummy          bool
+	Dummy          bool  // x-ignore is set
 	IsComponent bool // true if server is defined in `components` section
+
+	AllActiveChannelsPromise *lang.ListPromise[common.Renderable]
 
 	URL             string
 	Protocol        string
 	ProtocolVersion string
 
 	VariablesPromises  types.OrderedMap[string, *lang.Promise[*ServerVariable]]
-	// All channels defined in `channel` section this server is applied to. Can be *Channel or promise to *Channel
-	AllChannelsPromise *lang.ListPromise[common.Renderable]
 
 	BindingsType    *lang.GoStruct           // nil if bindings are not defined for server
 	BindingsPromise *lang.Promise[*Bindings] // nil if bindings are not defined for server as well
@@ -51,26 +51,23 @@ func (s *Server) Name() string {
 	return utils.CapitalizeUnchanged(s.OriginalName)
 }
 
-func (s *Server) GetBoundChannels() []common.Renderable {
-	type renderableWrapper interface {
-		UnwrapRenderable() common.Renderable
-	}
-
-	currentName := common.GetContext().GetObjectName(s)
-	r := lo.Filter(s.AllChannelsPromise.T(), func(r common.Renderable, _ int) bool {
-		if !r.Visible() {
-			return false
-		}
-		if w, ok := r.(renderableWrapper); ok {
-			r = w.UnwrapRenderable()
-		}
-		if ch, ok := r.(*Channel); ok {
-			// Empty/omitted servers field in channel means "all servers"
-			return len(ch.BoundServerNames) == 0 || lo.Contains(ch.BoundServerNames, currentName)
-		}
-		return false
+func (s *Server) BoundChannels() []common.Renderable {
+	r := lo.Filter(s.AllActiveChannelsPromise.T(), func(r common.Renderable, _ int) bool {
+		ch := common.DerefRenderable(r).(*Channel)
+		return lo.ContainsBy(ch.BoundServers(), func(s common.Renderable) bool {
+			return common.CheckSameRenderables(s, r)
+		})
 	})
 	return r
+}
+
+func (s *Server) BoundOperations() []common.Renderable {
+	chans := s.BoundChannels()
+	ops := lo.FlatMap(chans, func(c common.Renderable, _ int) []common.Renderable {
+		ch := common.DerefRenderable(c).(*Channel)
+		return ch.BoundOperations()
+	})
+	return ops
 }
 
 func (s *Server) String() string {
@@ -106,10 +103,6 @@ func (s *Server) Variables() (res types.OrderedMap[string, *ServerVariable]) {
 		res.Set(entry.Key, entry.Value.T())
 	}
 	return
-}
-
-func (s *Server) AllChannels() (res []common.Renderable) {
-	return s.AllChannelsPromise.T()
 }
 
 func (s *Server) Bindings() (res *Bindings) {

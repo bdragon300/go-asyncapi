@@ -18,7 +18,8 @@ type Message struct {
 	HeadersFallbackType  *lang.GoMap
 	HeadersTypePromise   *lang.Promise[*lang.GoStruct]
 
-	AllServersPromise    *lang.ListPromise[*Server]    // All servers we know about
+	AllActiveChannelsPromise   *lang.ListPromise[common.Renderable]
+	AllActiveOperationsPromise *lang.ListPromise[common.Renderable]
 
 	BindingsType         *lang.GoStruct                // nil if message bindings are not defined for message
 	BindingsPromise      *lang.Promise[*Bindings]      // nil if message bindings are not defined for message as well
@@ -101,6 +102,26 @@ func (m *Message) AsyncAPI() *AsyncAPI {
 	return m.AsyncAPIPromise.T()
 }
 
+func (m *Message) BoundChannels() []common.Renderable {
+	r := lo.Filter(m.AllActiveChannelsPromise.T(), func(c common.Renderable, _ int) bool {
+		ch := common.DerefRenderable(c).(*Channel)
+		return lo.ContainsBy(ch.BoundMessages(), func(item common.Renderable) bool {
+			return common.CheckSameRenderables(item, m)
+		})
+	})
+	return r
+}
+
+func (m *Message) BoundOperations() []common.Renderable {
+	r := lo.Filter(m.AllActiveOperationsPromise.T(), func(o common.Renderable, _ int) bool {
+		op := common.DerefRenderable(o).(*Operation)
+		return lo.ContainsBy(op.BoundMessages(), func(item common.Renderable) bool {
+			return common.CheckSameRenderables(item, m)
+		})
+	})
+	return r
+}
+
 func (m *Message) String() string {
 	return "Message " + m.OriginalName
 }
@@ -133,11 +154,13 @@ func (p *ProtoMessage) String() string {
 
 // isBound returns true if the message is bound to the protocol
 func (p *ProtoMessage) isBound() bool {
-	if p.AllServersPromise == nil {
-		return false
-	}
-	return lo.Contains(
-		lo.Map(p.AllServersPromise.T(), func(s *Server, _ int) string { return s.Protocol }),
-		p.Protocol,
-	)
+	res := lo.SomeBy(p.BoundChannels(), func(c common.Renderable) bool {
+		ch := common.DerefRenderable(c).(*Channel)
+		return !lo.IsNil(ch.SelectProtoObject(p.Protocol))
+	}) || lo.SomeBy(p.BoundOperations(), func(o common.Renderable) bool {
+		op := common.DerefRenderable(o).(*Operation)
+		return !lo.IsNil(op.SelectProtoObject(p.Protocol))
+	})
+
+	return res
 }

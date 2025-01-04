@@ -1,0 +1,16 @@
+{{define "operation/mqtt/newFunction/block1"}}
+    res.topic = res.name.String()
+{{- end}}
+{{define "operation/mqtt/publishMethods/block1"}}
+    envelope.SetTopic(o.topic)
+{{- end}}
+
+{{- with deref .}}
+    {{template "operation/proto/openFunction" .}}
+
+    {{ .Type | godef }}
+
+    {{if .IsPublisher}}{{template "operation/proto/publishMethods" .}}{{end}}
+    {{if .IsSubscriber}}{{template "operation/proto/subscribeMethods" .}}{{end}}
+    {{template "operation/proto/serverInterface" .}}
+{{- end}}

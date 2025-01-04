@@ -11,13 +11,16 @@ import (
 )
 
 type Server struct {
-	URL             string                                   `json:"url" yaml:"url"`
+	URL             string                                   `json:"url" yaml:"url"`  // DEPRECATED
+	Host 		  string                                   `json:"host" yaml:"host"`
 	Protocol        string                                   `json:"protocol" yaml:"protocol"`
 	ProtocolVersion string                                   `json:"protocolVersion" yaml:"protocolVersion"`
+	Pathname		string                                   `json:"pathname" yaml:"pathname"`
 	Description     string                                   `json:"description" yaml:"description"`
 	Variables       types.OrderedMap[string, ServerVariable] `json:"variables" yaml:"variables"`
 	Security        []SecurityRequirement                    `json:"security" yaml:"security"`
 	Tags            []Tag                                    `json:"tags" yaml:"tags"`
+	ExternalDocs   *ExternalDocumentation                            `json:"externalDocs" yaml:"externalDocs"`
 	Bindings        *ServerBindings                          `json:"bindings" yaml:"bindings"`
 
 	XGoName string `json:"x-go-name" yaml:"x-go-name"`
@@ -43,11 +46,8 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		return &render.Server{Dummy: true}, nil
 	}
 	if s.Ref != "" {
-		ctx.Logger.Trace("Ref", "$ref", s.Ref)
 		// Make a promise selectable if it defined in `servers` section
-		prm := lang.NewRef(s.Ref, serverKey, lo.Ternary(isComponent, nil, lo.ToPtr(true)))
-		ctx.PutPromise(prm)
-		return prm, nil
+		return registerRef(ctx, s.Ref, serverKey, lo.Ternary(isComponent, nil, lo.ToPtr(true))), nil
 	}
 
 	srvName, _ := lo.Coalesce(s.XGoName, serverKey)
@@ -59,15 +59,15 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		IsComponent:     isComponent,
 	}
 
-	// Channels which are connected to this server
+	// Channels which are bound to this server
 	prm := lang.NewListCbPromise[common.Renderable](func(item common.CompileObject, path []string) bool {
 		if len(path) < 2 || len(path) >= 2 && path[0] != "channels" {
 			return false
 		}
-		return item.Kind() == common.ObjectKindChannel
-	})
+		return item.Kind() == common.ObjectKindChannel && item.Visible()
+	}, nil)
 	ctx.PutListPromise(prm)
-	res.AllChannelsPromise = prm
+	res.AllActiveChannelsPromise = prm
 
 	// Bindings
 	if s.Bindings != nil {

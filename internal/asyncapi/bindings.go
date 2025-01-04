@@ -33,10 +33,7 @@ func (b *Bindings) build(
 	bindingsKey string,
 ) (common.Renderable, error) {
 	if b.Ref != "" {
-		ctx.Logger.Trace("Ref", "$ref", b.Ref)
-		res := lang.NewRef(b.Ref, bindingsKey, nil)
-		ctx.PutPromise(res)
-		return res, nil
+		return registerRef(ctx, b.Ref, bindingsKey, nil), nil
 	}
 
 	res := render.Bindings{OriginalName: bindingsKey}

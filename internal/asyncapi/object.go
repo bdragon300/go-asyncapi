@@ -7,6 +7,8 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"slices"
 	"strconv"
+	"strings"
+	"unicode"
 
 	"github.com/bdragon300/go-asyncapi/internal/types"
 
@@ -19,6 +21,7 @@ import (
 	"github.com/samber/lo"
 )
 
+// JSON Schema Specification Draft 07
 type Object struct {
 	Type                 *types.Union2[string, []string]            `json:"type" yaml:"type"`
 	AdditionalItems      *types.Union2[Object, bool]                `json:"additionalItems" yaml:"additionalItems"`
@@ -98,9 +101,7 @@ func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]str
 			refName = ctx.GenerateObjName("", "")
 		}
 
-		res := lang.NewRef(o.Ref, refName, lo.ToPtr(false))
-		ctx.PutPromise(res)
-		return res, nil
+		return registerRef(ctx, o.Ref, refName, lo.ToPtr(false)), nil
 	}
 
 	if o.Type == nil {
@@ -267,7 +268,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 		messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.CompileObject, _ []string) bool {
 			_, ok := item.Renderable.(*render.Message)
 			return ok
-		})
+		}, nil)
 		ctx.PutListPromise(messagesPrm)
 		contentTypesFunc = func() []string {
 			tagNames := lo.Uniq(lo.Map(messagesPrm.T(), func(item *render.Message, _ int) string {
@@ -436,7 +437,7 @@ func (o Object) buildUnionStruct(ctx *common.CompileContext, flags map[common.Sc
 	messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.CompileObject, _ []string) bool {
 		_, ok := item.Renderable.(*render.Message)
 		return ok
-	})
+	}, nil)
 	ctx.PutListPromise(messagesPrm)
 
 	res.Fields = lo.Times(len(o.OneOf), func(index int) lang.GoStructField {
@@ -476,4 +477,17 @@ func (o Object) xGoTagsInfo(ctx *common.CompileContext) (xTags types.OrderedMap[
 		ctx.Logger.Trace("Extra tags values", "values", xTagValues)
 	}
 	return
+}
+
+// guessTagByContentType guesses the struct tag name by the MIME type. It returns the last
+// word extracted from the content type string, e.g. for "application/xhtml+xml" it will return "xml".
+func guessTagByContentType(contentType string) string {
+	words := strings.FieldsFunc(contentType, func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsNumber(r)
+	})
+	if res, ok := lo.Last(words); ok {
+		return res
+	}
+
+	return contentType
 }

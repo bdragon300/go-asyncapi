@@ -20,10 +20,7 @@ type (
 		Retain bool
 	}
 
-	ChannelBindings struct {
-		PublisherBindings OperationBindings
-		SubscriberBindings OperationBindings
-	}
+	ChannelBindings struct {}
 
 	OperationBindings struct {
 		QoS int

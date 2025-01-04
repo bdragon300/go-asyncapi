@@ -1,0 +1,164 @@
+package asyncapi
+
+import (
+	"errors"
+	"fmt"
+	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render"
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
+	"github.com/bdragon300/go-asyncapi/internal/types"
+	"github.com/samber/lo"
+)
+
+type OperationAction string
+
+const (
+	OperationActionSend   OperationAction = "send"
+	OperationActionReceive OperationAction = "receive"
+)
+
+type Operation struct {
+	Action       OperationAction `json:"action" yaml:"action"`
+	Channel      *StandaloneRef         `json:"channel" yaml:"channel"`
+	Title        string                 `json:"title" yaml:"title"`
+	Summary      string                 `json:"summary" yaml:"summary"`
+	Description  string                 `json:"description" yaml:"description"`
+	Security     []SecurityRequirement  `json:"security" yaml:"security"`
+	Tags         []Tag                  `json:"tags" yaml:"tags"`
+	ExternalDocs *ExternalDocumentation `json:"externalDocs" yaml:"externalDocs"`
+	Bindings     *OperationBinding      `json:"bindings" yaml:"bindings"`
+	Traits       []OperationTrait       `json:"traits" yaml:"traits"`
+	Messages     []StandaloneRef        `json:"messages" yaml:"messages"`
+	Reply        *OperationReply        `json:"reply" yaml:"reply"`
+
+	XIgnore bool `json:"x-ignore" yaml:"x-ignore"`
+
+	Ref string `json:"$ref" yaml:"$ref"`
+}
+
+func (o Operation) Compile(ctx *common.CompileContext) error {
+	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
+	obj, err := o.build(ctx, ctx.Stack.Top().PathItem, ctx.Stack.Top().Flags)
+	if err != nil {
+		return err
+	}
+	ctx.PutObject(obj)
+	return nil
+}
+
+func (o Operation) build(ctx *common.CompileContext, operationKey string, flags map[common.SchemaTag]string) (common.Renderable, error) {
+	ignore := o.XIgnore ||
+		o.Action == OperationActionSend && !ctx.CompileOpts.GeneratePublishers ||
+		o.Action == OperationActionReceive && !ctx.CompileOpts.GenerateSubscribers
+	if ignore {
+		ctx.Logger.Debug("Operation denoted to be ignored")
+		return &render.Operation{Dummy: true}, nil
+	}
+
+	_, isComponent := flags[common.SchemaTagComponent]
+	if o.Ref != "" {
+		// Make a promise selectable if it defined in `operations` section
+		return registerRef(ctx, o.Ref, operationKey, lo.Ternary(isComponent, nil, lo.ToPtr(true))), nil
+	}
+
+	res := &render.Operation{
+		OriginalName: operationKey,
+		IsComponent: isComponent,
+		IsPublisher: o.Action == OperationActionSend,
+		IsSubscriber: o.Action == OperationActionReceive,
+	}
+
+	if o.Channel == nil {
+		return nil, types.CompileError{Err: errors.New("channel field is empty"), Path: ctx.PathStackRef()}
+	}
+
+	ctx.Logger.Trace("Bound channel", "ref", o.Channel.Ref)
+	prm := lang.NewPromise[*render.Channel](o.Channel.Ref)
+	ctx.PutPromise(prm)
+	res.ChannelPromise = prm
+
+	if o.Bindings != nil {
+		ctx.Logger.Trace("Found operation bindings")
+
+		ref := ctx.PathStackRef("bindings")
+		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref)
+		ctx.PutPromise(res.BindingsPromise)
+
+		res.BindingsType = &lang.GoStruct{
+			BaseType: lang.BaseType{
+				OriginalName:  ctx.GenerateObjName(operationKey, "Bindings"),
+				HasDefinition: true,
+			},
+		}
+	}
+
+	for _, message := range o.Messages {
+		ctx.Logger.Trace("Operation message", "ref", message.Ref)
+
+		prm := lang.NewPromise[*render.Message](message.Ref)
+		ctx.PutPromise(prm)
+		res.MessagesPromises = append(res.MessagesPromises, prm)
+	}
+
+	// Build protocol-specific operations for all supported protocols
+	// At this point we don't have the actual protocols list to compile, because we don't know yet which servers the
+	// channel is bound with -- it will be known only after linking stage.
+	// So we just compile the proto operations for all supported protocols.
+	ctx.Logger.Trace("Prebuild the operations for every supported protocol")
+	for proto := range ProtocolBuilders {
+		ctx.Logger.Trace("Operation", "proto", proto)
+		prm := lang.NewGolangTypeAssignCbPromise(o.Channel.Ref, nil, func(obj any) common.GolangType {
+			ch := obj.(*render.Channel)
+			protoCh, found := lo.Find(ch.ProtoChannels, func(p *render.ProtoChannel) bool {
+				return p.Protocol == proto
+			})
+			if !found {
+				panic(fmt.Sprintf("ProtoChannel[%s] not found in %s. This is a bug", proto, ch))
+			}
+			return protoCh.Type
+		})
+		res.ProtoOperations = append(res.ProtoOperations, &render.ProtoOperation{
+			Operation: res,
+			Type: &lang.GoStruct{
+				BaseType: lang.BaseType{
+					OriginalName: ctx.GenerateObjName(operationKey, "ProtoOperation"),
+					HasDefinition: true,
+				},
+				Fields: []lang.GoStructField{
+					{Type: prm},
+				},
+			},
+			Protocol: proto,
+		})
+	}
+
+	return res, nil
+}
+
+type OperationTrait struct {
+	OperationID  string                 `json:"operationId" yaml:"operationId"` // DEPRECATED
+	Title        string                 `json:"title" yaml:"title"`
+	Summary      string                 `json:"summary" yaml:"summary"`
+	Description  string                 `json:"description" yaml:"description"`
+	Security     []SecurityRequirement  `json:"security" yaml:"security"`
+	Tags         []Tag                  `json:"tags" yaml:"tags"`
+	ExternalDocs *ExternalDocumentation `json:"externalDocs" yaml:"externalDocs"`
+	Bindings     *OperationBinding      `json:"bindings" yaml:"bindings"`
+
+	Ref string `json:"$ref" yaml:"$ref"`
+}
+
+type OperationReply struct {
+	Address  *OperationReplyAddress `json:"address" yaml:"address"`
+	Channel  *StandaloneRef         `json:"channel" yaml:"channel"`
+	Messages []StandaloneRef        `json:"messages" yaml:"messages"`
+
+	Ref string `json:"$ref" yaml:"$ref"`
+}
+
+type OperationReplyAddress struct {
+	Location    string `json:"location" yaml:"location"`
+	Description string `json:"description" yaml:"description"`
+
+	Ref string `json:"$ref" yaml:"$ref"`
+}

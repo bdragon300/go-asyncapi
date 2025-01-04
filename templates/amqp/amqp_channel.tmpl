@@ -1,28 +1,9 @@
 {{- def .Type}}
-{{define "channel/amqp/newFunction/block1"}}
-    {{- if and .BindingsType (.BindingsProtocols | has .Protocol)}}
-        bindings := {{ .BindingsType | gousage }}{}.{{.Protocol | capitalize | goid}}()
-        switch bindings.ChannelType {
-        case {{goqualrun .Protocol "ChannelTypeQueue"}}:
-            res.queue = res.name.String()
-        default:
-            res.routingKey = res.name.String()
-        }
-        if bindings.ExchangeConfiguration.Name != nil {
-            res.exchange = *bindings.ExchangeConfiguration.Name
-        }
-        if bindings.QueueConfiguration.Name != "" {
-            res.queue = bindings.QueueConfiguration.Name
-        }
-    {{- end}}
-{{- end}}
-{{define "channel/amqp/publishMethods/block1"}}
-    envelope.SetRoutingKey(c.RoutingKey())
-{{- end}}
+{{- if .BoundMessages }}
+    {{template "channel/proto/newFunction" .}}
 
-{{template "channel/proto/newFunction" .}}
-
-{{template "channel/proto/openFunction" .}}
+    {{template "channel/proto/openFunction" .}}
+{{- end}}
 
 {{- if ndefined .Type}}
 {{ .Type | godef }}
@@ -41,14 +22,9 @@ func (c {{ .Type | gousage }}) RoutingKey() string {
     return c.routingKey
 }
 
-
 {{if .IsPublisher}}{{template "channel/proto/publishMethods" .}}{{end}}
 
 {{if .IsSubscriber}}{{template "channel/proto/subscribeMethods" .}}{{end}}
 
-type {{ .Type | goid }}Server interface {
-    Open{{.Type | goid}}(ctx {{goqual "context.Context"}}, {{if .ParametersType}}params {{ .ParametersType | gousage }}{{end}}) (*{{ .Type | gousage }}, error)
-    {{if .IsPublisher}}Producer() {{goqualrun .Protocol "Producer"}}{{end}}
-    {{if .IsSubscriber}}Consumer() {{goqualrun .Protocol "Consumer"}}{{end}}
-}
+{{template "channel/proto/serverInterface" .}}
 {{- end}}

@@ -21,5 +21,6 @@ func (s {{ .Type | gousage }}) Consumer() {{goqualrun .Protocol "Consumer"}} {
 }
 
 {{template "server/proto/channelOpenMethods" .}}
+{{template "server/proto/operationOpenMethods" .}}
 
 {{- end}}

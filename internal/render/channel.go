@@ -11,22 +11,25 @@ import (
 type Channel struct {
 	OriginalName     string // Channel name, typically equals to Channel key, can get overridden in x-go-name
 	Dummy            bool
-	BoundServerNames []string  // List of servers the channel is linked with. Empty list means "all servers"
-	ServersPromise   *lang.ListPromise[*Server] // Servers list this channel is bound with. Empty list means "no servers bound".
-
-	IsPublisher  bool // true if channel has `publish` operation
-	IsSubscriber bool // true if channel has `subscribe` operation
 	IsComponent bool // true if channel is defined in `components` section
+	IsPublisher bool
+	IsSubscriber bool
+
+	ServersPromises   []*lang.Promise[*Server] // Servers that this channel is bound with. Empty list means "no servers bound".
+	AllActiveServersPromise *lang.ListPromise[common.Renderable]
 
 	ParametersType *lang.GoStruct // nil if no parameters
 
-	PublisherMessageTypePromise  *lang.Promise[*Message] // nil when message is not set
-	SubscriberMessageTypePromise *lang.Promise[*Message] // nil when message is not set
+	MessagesPromises []*lang.Ref
+
+	// All operations we know about for further selecting ones that are bound to this channel
+	// We can't collect here just the operations already bound with this channel, because the channel in operation
+	// is also a promise, and the order of promises resolving is not guaranteed. So we just collect all operations
+	// and then filter them by the channel on render stage.
+	AllActiveOperationsPromise *lang.ListPromise[common.Renderable]
 
 	BindingsType             *lang.GoStruct           // nil if no bindings are set for channel at all
-	BindingsChannelPromise   *lang.Promise[*Bindings] // nil if channel bindings are not set
-	BindingsSubscribePromise *lang.Promise[*Bindings] // nil if subscribe operation bindings are not set
-	BindingsPublishPromise   *lang.Promise[*Bindings] // nil if publish operation bindings are not set
+	BindingsPromise          *lang.Promise[*Bindings] // nil if channel bindings are not set
 
 	ProtoChannels []*ProtoChannel // Proto channels for each supported protocol
 }
@@ -36,7 +39,7 @@ func (c *Channel) Kind() common.ObjectKind {
 }
 
 func (c *Channel) Selectable() bool {
-	return !c.Dummy && !c.IsComponent // Select only the channels defined in the `channels` section`
+	return !c.Dummy && !c.IsComponent // Select only the channels defined in the `channels` section
 }
 
 func (c *Channel) Visible() bool {
@@ -61,37 +64,34 @@ func (c *Channel) SelectProtoObject(protocol string) common.Renderable {
 	return nil
 }
 
-func (c *Channel) PublisherMessageType() *Message {
-	if c.PublisherMessageTypePromise != nil {
-		return c.PublisherMessageTypePromise.T()
+func (c *Channel) BoundServers() []common.Renderable {
+	if len(c.ServersPromises) == 0 {
+		return c.AllActiveServersPromise.T()
 	}
-	return nil
+	return lo.Map(c.ServersPromises, func(s *lang.Promise[*Server], _ int) common.Renderable { return s.T() })
 }
 
-func (c *Channel) SubscriberMessageType() *Message {
-	if c.SubscriberMessageTypePromise != nil {
-		return c.SubscriberMessageTypePromise.T()
-	}
-	return nil
+func (c *Channel) BoundMessages() []common.Renderable {
+	ops := c.BoundOperations()
+	opMsgs := lo.FlatMap(ops, func(o common.Renderable, _ int) []common.Renderable {
+		op := common.DerefRenderable(o).(*Operation)
+		return op.Messages()
+	})
+	r := lo.Without(c.Messages(), opMsgs...)
+	return r
 }
 
-func (c *Channel) BindingsChannel() *Bindings {
-	if c.BindingsChannelPromise != nil {
-		return c.BindingsChannelPromise.T()
-	}
-	return nil
+func (c *Channel) BoundOperations() []common.Renderable {
+	r := lo.Filter(c.AllActiveOperationsPromise.T(), func(o common.Renderable, _ int) bool {
+		op := common.DerefRenderable(o).(*Operation)
+		return common.CheckSameRenderables(op.Channel(), c)
+	})
+	return r
 }
 
-func (c *Channel) BindingsPublish() *Bindings {
-	if c.BindingsPublishPromise != nil {
-		return c.BindingsPublishPromise.T()
-	}
-	return nil
-}
-
-func (c *Channel) BindingsSubscribe() *Bindings {
-	if c.BindingsSubscribePromise != nil {
-		return c.BindingsSubscribePromise.T()
+func (c *Channel) Bindings() *Bindings {
+	if c.BindingsPromise != nil {
+		return c.BindingsPromise.T()
 	}
 	return nil
 }
@@ -100,17 +100,9 @@ func (c *Channel) BindingsProtocols() (res []string) {
 	if c.BindingsType == nil {
 		return nil
 	}
-	if c.BindingsChannelPromise != nil {
-		res = append(res, c.BindingsChannelPromise.T().Values.Keys()...)
-		res = append(res, c.BindingsChannelPromise.T().JSONValues.Keys()...)
-	}
-	if c.BindingsPublishPromise != nil {
-		res = append(res, c.BindingsPublishPromise.T().Values.Keys()...)
-		res = append(res, c.BindingsPublishPromise.T().JSONValues.Keys()...)
-	}
-	if c.BindingsSubscribePromise != nil {
-		res = append(res, c.BindingsSubscribePromise.T().Values.Keys()...)
-		res = append(res, c.BindingsSubscribePromise.T().JSONValues.Keys()...)
+	if c.BindingsPromise != nil {
+		res = append(res, c.BindingsPromise.T().Values.Keys()...)
+		res = append(res, c.BindingsPromise.T().JSONValues.Keys()...)
 	}
 	return lo.Uniq(res)
 }
@@ -120,22 +112,16 @@ func (c *Channel) ProtoBindingsValue(protoName string) common.Renderable {
 		Type:               &lang.GoSimple{TypeName: "ChannelBindings", Import: common.GetContext().RuntimeModule(protoName)},
 		EmptyCurlyBrackets: true,
 	}
-	if c.BindingsChannelPromise != nil {
-		if b, ok := c.BindingsChannelPromise.T().Values.Get(protoName); ok {
+	if c.BindingsPromise != nil {
+		if b, ok := c.BindingsPromise.T().Values.Get(protoName); ok {
 			res = b
 		}
 	}
-	if c.BindingsPublishPromise != nil {
-		if v, ok := c.BindingsPublishPromise.T().Values.Get(protoName); ok {
-			res.StructValues.Set("PublisherBindings", v)
-		}
-	}
-	if c.BindingsSubscribePromise != nil {
-		if v, ok := c.BindingsSubscribePromise.T().Values.Get(protoName); ok {
-			res.StructValues.Set("SubscriberBindings", v)
-		}
-	}
 	return res
+}
+
+func (c *Channel) Messages() []common.Renderable {
+	return lo.Map(c.MessagesPromises, func(prm *lang.Ref, _ int) common.Renderable { return prm.T() })
 }
 
 type ProtoChannel struct {
@@ -155,10 +141,10 @@ func (p *ProtoChannel) String() string {
 
 // isBound returns true if channel is bound to at least one server with supported protocol
 func (p *ProtoChannel) isBound() bool {
-	protos := lo.Map(p.ServersPromise.T(), func(s *Server, _ int) string { return s.Protocol })
-	r := lo.Contains(
-		protos,
-		p.Protocol,
-	)
+	protos := lo.Map(p.BoundServers(), func(s common.Renderable, _ int) string {
+		srv := common.DerefRenderable(s).(*Server)
+		return srv.Protocol
+	})
+	r := lo.Contains(protos, p.Protocol)
 	return r
 }

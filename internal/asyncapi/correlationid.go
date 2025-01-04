@@ -2,7 +2,6 @@ package asyncapi
 
 import (
 	"errors"
-	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"strings"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -36,10 +35,7 @@ func (c CorrelationID) build(ctx *common.CompileContext, correlationIDKey string
 		return &render.CorrelationID{Dummy: true}, nil
 	}
 	if c.Ref != "" {
-		ctx.Logger.Trace("Ref", "$ref", c.Ref)
-		res := lang.NewRef(c.Ref, correlationIDKey, nil)
-		ctx.PutPromise(res)
-		return res, nil
+		return registerRef(ctx, c.Ref, correlationIDKey, nil), nil
 	}
 
 	locationParts := strings.SplitN(c.Location, "#", 2)

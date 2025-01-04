@@ -5,8 +5,8 @@ import (
 	"io"
 )
 
-type AbstractProducer[B any, W AbstractEnvelopeWriter, P AbstractPublisher[W]] interface {
-	Publisher(ctx context.Context, channelName string, bindings *B) (P, error)
+type AbstractProducer[CB any, OB any, W AbstractEnvelopeWriter, P AbstractPublisher[W]] interface {
+	Publisher(ctx context.Context, channelName string, chBindings *CB, opBindings *OB) (P, error)
 	// There is no Close method here because the generated code does not responsible for creating Producers. It is the responsibility of the user.
 }
 type AbstractPublisher[W AbstractEnvelopeWriter] interface {
@@ -22,8 +22,8 @@ type AbstractEnvelopeWriter interface {
 	SetContentType(contentType string)
 }
 
-type AbstractConsumer[B any, R AbstractEnvelopeReader, S AbstractSubscriber[R]] interface {
-	Subscriber(ctx context.Context, channelName string, bindings *B) (S, error)
+type AbstractConsumer[CB any, OB any, R AbstractEnvelopeReader, S AbstractSubscriber[R]] interface {
+	Subscriber(ctx context.Context, channelName string, chBindings *CB, opBindings *OB) (S, error)
 	// There is no Close method here because the generated code does not responsible for creating Consumers. It is the responsibility of the user.
 }
 type AbstractSubscriber[R AbstractEnvelopeReader] interface {

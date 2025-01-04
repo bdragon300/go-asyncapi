@@ -9,11 +9,11 @@ import (
 type promiseAssignCbFunc[T any] func(obj any) T
 
 func NewPromise[T any](ref string) *Promise[T] {
-	return newAssignCbPromise(ref, common.PromiseOriginInternal, nil, defaultAssignCb[T])
+	return newPromise(ref, common.PromiseOriginInternal, nil, defaultAssignCb[T])
 }
 
 func NewCbPromise[T any](findCb common.PromiseFindCbFunc, assignCb promiseAssignCbFunc[T]) *Promise[T] {
-	return newAssignCbPromise("", common.PromiseOriginInternal, findCb, assignCb)
+	return newPromise("", common.PromiseOriginInternal, findCb, assignCb)
 }
 
 func defaultAssignCb[T any](obj any) T {
@@ -24,7 +24,7 @@ func defaultAssignCb[T any](obj any) T {
 	return t
 }
 
-func newAssignCbPromise[T any](
+func newPromise[T any](
 	ref string,
 	origin common.PromiseOrigin,
 	findCb common.PromiseFindCbFunc,
@@ -52,6 +52,7 @@ func (r *Promise[T]) Assign(obj any) {
 		r.assigned = true
 		return
 	}
+
 	t, ok := obj.(T)
 	if !ok {
 		panic(fmt.Sprintf("Object %+v is not a type %T in promise %q. %s", obj, new(T), r.ref, r.AssignErrorNote))
@@ -109,13 +110,13 @@ func (r *Promise[T]) IsStruct() bool {
 
 func NewGolangTypePromise(ref string) *GolangTypePromise {
 	return &GolangTypePromise{
-		Promise: *newAssignCbPromise[common.GolangType](ref, common.PromiseOriginInternal, nil, nil),
+		Promise: *newPromise[common.GolangType](ref, common.PromiseOriginInternal, nil, nil),
 	}
 }
 
 func NewGolangTypeAssignCbPromise(ref string, findCb common.PromiseFindCbFunc, assignCb promiseAssignCbFunc[common.GolangType]) *GolangTypePromise {
 	return &GolangTypePromise{
-		Promise: *newAssignCbPromise[common.GolangType](ref, common.PromiseOriginInternal, findCb, assignCb),
+		Promise: *newPromise[common.GolangType](ref, common.PromiseOriginInternal, findCb, assignCb),
 	}
 }
 
@@ -140,7 +141,7 @@ func (r *GolangTypePromise) Name() string {
 }
 
 func (r *GolangTypePromise) UnwrapRenderable() common.Renderable {
-	return unwrapRenderablePromiseOrRef(r.target)
+	return common.DerefRenderable(r.target)
 }
 
 func (r *GolangTypePromise) Addressable() bool {
@@ -159,8 +160,8 @@ func (r *GolangTypePromise) String() string {
 	return "GolangTypePromise -> " + r.ref
 }
 
-func NewListCbPromise[T any](findCb common.PromiseFindCbFunc) *ListPromise[T] {
-	return &ListPromise[T]{findCb: findCb}
+func NewListCbPromise[T any](findCb common.PromiseFindCbFunc, assignItemCb promiseAssignCbFunc[T]) *ListPromise[T] {
+	return &ListPromise[T]{findCb: findCb, assignItemCb: assignItemCb}
 }
 
 type ListPromise[T any] struct {
@@ -168,12 +169,21 @@ type ListPromise[T any] struct {
 	AssignErrorNote string
 
 	findCb common.PromiseFindCbFunc
+	assignItemCb promiseAssignCbFunc[T]
 
 	targets  []T
 	assigned bool
 }
 
 func (r *ListPromise[T]) AssignList(objs []any) {
+	if r.assignCb != nil {
+		r.targets = lo.Map(objs, func(item any, _ int) T {
+			return r.assignCb(item)
+		})
+		r.assigned = true
+		return
+	}
+
 	var ok bool
 	r.targets, ok = lo.FromAnySlice[T](objs)
 	if !ok {
@@ -192,18 +202,6 @@ func (r *ListPromise[T]) FindCallback() common.PromiseFindCbFunc {
 
 func (r *ListPromise[T]) T() []T {
 	return r.targets
-}
-
-// TODO: detect ref loops to avoid infinite recursion
-func unwrapRenderablePromiseOrRef(val common.Renderable) common.Renderable {
-	type renderableWrapper interface {
-		UnwrapRenderable() common.Renderable
-	}
-
-	if o, ok := val.(renderableWrapper); ok {
-		return o.UnwrapRenderable()
-	}
-	return val
 }
 
 func unwrapGolangPromise(val common.GolangType) common.GolangType {

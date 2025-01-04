@@ -15,8 +15,6 @@ type (
 		Topic              string
 		Partitions         int
 		Replicas           int
-		PublisherBindings  OperationBindings
-		SubscriberBindings OperationBindings
 		TopicConfiguration TopicConfiguration
 	}
 

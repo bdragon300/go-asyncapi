@@ -3,7 +3,6 @@ package asyncapi
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
-	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 )
 
 type ServerVariable struct {
@@ -27,10 +26,7 @@ func (sv ServerVariable) Compile(ctx *common.CompileContext) error {
 
 func (sv ServerVariable) build(ctx *common.CompileContext, serverVariableKey string) (common.Renderable, error) {
 	if sv.Ref != "" {
-		ctx.Logger.Trace("Ref", "$ref", sv.Ref)
-		res := lang.NewRef(sv.Ref, serverVariableKey, nil)
-		ctx.PutPromise(res)
-		return res, nil
+		return registerRef(ctx, sv.Ref, serverVariableKey, nil), nil
 	}
 
 	res := &render.ServerVariable{

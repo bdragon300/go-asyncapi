@@ -1,7 +1,9 @@
 {{- def .Type}}
-{{template "channel/proto/newFunction" .}}
+{{- if .BoundMessages }}
+    {{template "channel/proto/newFunction" .}}
 
-{{template "channel/proto/openFunction" .}}
+    {{template "channel/proto/openFunction" .}}
+{{- end}}
 
 {{- if ndefined .Type}}
 {{.Type| godef}}
@@ -12,9 +14,5 @@
 
 {{if .IsSubscriber}}{{template "channel/proto/subscribeMethods" .}}{{end}}
 
-type {{ .Type | goid }}Server interface {
-    Open{{.Type | goid}}(ctx {{goqual "context.Context"}}, {{if .ParametersType}}params {{.ParametersType| gousage}}{{end}}) (*{{.Type| gousage}}, error)
-    {{if .IsPublisher}}Producer() {{goqualrun .Protocol "Producer"}}{{end}}
-    {{if .IsSubscriber}}Consumer() {{goqualrun .Protocol "Consumer"}}{{end}}
-}
+{{template "channel/proto/serverInterface" .}}
 {{- end}}

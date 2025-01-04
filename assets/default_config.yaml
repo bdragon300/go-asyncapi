@@ -11,18 +11,21 @@ selections:
   - objectKinds: ["schema"]
     render:
       file: schemas/{{.Object | goid }}.go
-  - objectKinds: ["parameter"]
-    render:
-      file: parameters/{{.Object | goid }}.go
-  - objectKinds: ["channel"]
-    render:
-      file: channels/{{.Object | goid }}.go
   - objectKinds: ["server"]
     render:
       file: servers/{{.Object | goid }}.go
+  - objectKinds: ["channel"]
+    render:
+      file: channels/{{.Object | goid }}.go
+  - objectKinds: ["operation"]
+    render:
+      file: operations/{{.Object | goid }}.go
   - objectKinds: ["message"]
     render:
       file: messages/{{.Object | goid }}.go
+  - objectKinds: ["parameter"]
+    render:
+      file: parameters/{{.Object | goid }}.go
 
 resolver:
   allowRemoteReferences: false

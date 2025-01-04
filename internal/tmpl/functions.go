@@ -52,10 +52,7 @@ func GetTemplateFunctions() template.FuncMap {
 
 		// Type helpers
 		"deref": func(r common.Renderable) common.Renderable {
-			if v, ok := r.(renderableWrapper); ok {
-				return v.UnwrapRenderable()
-			}
-			return r
+			return common.DerefRenderable(r)
 		},
 		"innertype": func(val common.GolangType) common.GolangType {
 			if v, ok := any(val).(golangTypeExtractor); ok {
@@ -131,10 +128,6 @@ func templateGoDefined(r any) bool {
 	}
 
 	panic(fmt.Sprintf("unsupported type %[1]T: %[1]v", r))
-}
-
-type renderableWrapper interface {
-	UnwrapRenderable() common.Renderable
 }
 
 type golangTypeWrapper interface {
