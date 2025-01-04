@@ -40,7 +40,7 @@ type ProduceClient struct {
 	protocolFamily string
 }
 
-func (p ProduceClient) Publisher(ctx context.Context, _ string, _ *runTCP.ChannelBindings) (runTCP.Publisher, error) {
+func (p ProduceClient) Publisher(ctx context.Context, _ string, _ *runTCP.ChannelBindings, _*runTCP.OperationBindings) (runTCP.Publisher, error) {
 	conn, err := p.DialContext(ctx, p.protocolFamily, p.address)
 	if err != nil {
 		return nil, err

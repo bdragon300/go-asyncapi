@@ -37,8 +37,8 @@ type ConsumeClient struct {
 	mu                  *sync.RWMutex
 }
 
-func (c *ConsumeClient) Subscriber(ctx context.Context, address string, bindings *runWs.ChannelBindings) (runWs.Subscriber, error) {
-	c.ensureChannel(address, bindings) // FIXME: maybe it's better to take the path from bindings?
+func (c *ConsumeClient) Subscriber(ctx context.Context, address string, chb *runWs.ChannelBindings, opb *runWs.OperationBindings) (runWs.Subscriber, error) {
+	c.ensureChannel(address, chb, opb) // FIXME: maybe it's better to take the path from bindings?
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
@@ -47,15 +47,15 @@ func (c *ConsumeClient) Subscriber(ctx context.Context, address string, bindings
 	}
 }
 
-func (c *ConsumeClient) ensureChannel(channelName string, bindings *runWs.ChannelBindings) {
+func (c *ConsumeClient) ensureChannel(channelName string, chb *runWs.ChannelBindings, opb *runWs.OperationBindings) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if _, ok := c.connections[channelName]; !ok { // HandleFunc panics if called more than once for the same channel
 		c.connections[channelName] = make(chan *Channel)
 		c.HandleFunc(channelName, func(w http.ResponseWriter, req *http.Request) {
-			if bindings != nil {
-				needMethod := bindings.Method
+			if chb != nil {
+				needMethod := chb.Method
 				if needMethod != "" && strings.ToUpper(needMethod) != req.Method {
 					http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 					return
@@ -79,7 +79,7 @@ func (c *ConsumeClient) ensureChannel(channelName string, bindings *runWs.Channe
 			ctx, cancel := context.WithTimeout(req.Context(), c.httpResponseTimeout)
 			defer cancel()
 
-			conn := NewChannel(bindings, netConn, false)
+			conn := NewChannel(chb, opb, netConn, false)
 			select {
 			case <-ctx.Done():
 				// TODO: error log

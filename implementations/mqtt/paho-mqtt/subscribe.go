@@ -14,8 +14,9 @@ type SubscribeChannel struct {
 	Client mqtt.Client
 	Topic  string
 
-	bindings      *runMqtt.ChannelBindings
-	subscribeChan *run.FanOut[runMqtt.EnvelopeReader]
+	channelBindings *runMqtt.ChannelBindings
+	operationBindings *runMqtt.OperationBindings
+	subscribeChan   *run.FanOut[runMqtt.EnvelopeReader]
 	instances     int
 	mu            *sync.Mutex
 	ctx           context.Context

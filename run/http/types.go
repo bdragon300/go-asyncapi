@@ -12,6 +12,6 @@ type (
 
 	MessageBindings struct {
 		Headers any // jsonschema contents
-		StatusCode int
+		StatusCode int  // TODO: implement if operation.reply is set
 	}
 )

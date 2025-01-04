@@ -20,11 +20,11 @@ type Client struct {
 	*redis.Client
 }
 
-func (c *Client) Publisher(_ context.Context, address string, _ *runRedis.ChannelBindings) (runRedis.Publisher, error) {
+func (c *Client) Publisher(_ context.Context, address string, _ *runRedis.ChannelBindings, _ *runRedis.OperationBindings) (runRedis.Publisher, error) {
 	return &PublishChannel{Client: c.Client, Name: address}, nil
 }
 
-func (c *Client) Subscriber(ctx context.Context, address string, _ *runRedis.ChannelBindings) (runRedis.Subscriber, error) {
+func (c *Client) Subscriber(ctx context.Context, address string, _ *runRedis.ChannelBindings, _ *runRedis.OperationBindings) (runRedis.Subscriber, error) {
 	return &SubscriberChannel{
 		PubSub: c.Client.Subscribe(ctx, address),
 		Name:   address,

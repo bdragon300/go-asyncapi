@@ -11,12 +11,13 @@ import (
 	"github.com/gobwas/ws/wsutil"
 )
 
-func NewChannel(bindings *runWs.ChannelBindings, conn net.Conn, clientSide bool) *Channel {
+func NewChannel(chb *runWs.ChannelBindings, opb *runWs.OperationBindings, conn net.Conn, clientSide bool) *Channel {
 	res := Channel{
-		Conn:       conn,
-		clientSide: clientSide,
-		bindings:   bindings,
-		items:      run.NewFanOut[runWs.EnvelopeReader](),
+		Conn:            conn,
+		clientSide:      clientSide,
+		channelBindings: chb,
+		operationBindings: opb,
+		items:           run.NewFanOut[runWs.EnvelopeReader](),
 	}
 	res.ctx, res.cancel = context.WithCancelCause(context.Background())
 	go res.run()
@@ -35,9 +36,10 @@ type Channel struct {
 	// To prevent cache spoofing attack, the client-side application must additionally mask the payload in
 	// outgoing websocket frames, whereas the server-side code must unmask the payload back in incoming frames
 	// https://www.rfc-editor.org/rfc/rfc6455#section-5.3
-	clientSide bool
-	bindings   *runWs.ChannelBindings
-	items      *run.FanOut[runWs.EnvelopeReader]
+	clientSide      bool
+	channelBindings *runWs.ChannelBindings
+	operationBindings *runWs.OperationBindings
+	items           *run.FanOut[runWs.EnvelopeReader]
 	ctx        context.Context
 	cancel     context.CancelCauseFunc
 }

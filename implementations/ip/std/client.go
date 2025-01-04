@@ -49,11 +49,11 @@ type Client struct {
 	MaxEnvelopeSize int
 }
 
-func (c *Client) Subscriber(ctx context.Context, _ string, _ *runIP.ChannelBindings) (runIP.Subscriber, error) {
+func (c *Client) Subscriber(ctx context.Context, _ string, _ *runIP.ChannelBindings, _ *runIP.OperationBindings) (runIP.Subscriber, error) {
 	return c.channel(ctx)
 }
 
-func (c *Client) Publisher(ctx context.Context, _ string, _ *runIP.ChannelBindings) (runIP.Publisher, error) {
+func (c *Client) Publisher(ctx context.Context, _ string, _ *runIP.ChannelBindings, _ *runIP.OperationBindings) (runIP.Publisher, error) {
 	return c.channel(ctx)
 }
 

@@ -7,10 +7,11 @@ import (
 	runHttp "github.com/bdragon300/go-asyncapi/run/http"
 )
 
-func NewSubscriber(bindings *runHttp.ChannelBindings) *Subscriber {
+func NewSubscriber(chb *runHttp.ChannelBindings, opb *runHttp.OperationBindings) *Subscriber {
 	res := Subscriber{
-		bindings: bindings,
-		items:    run.NewFanOut[runHttp.EnvelopeReader](),
+		channelBindings: chb,
+		operationBindings: opb,
+		items:           run.NewFanOut[runHttp.EnvelopeReader](),
 	}
 	res.ctx, res.cancel = context.WithCancelCause(context.Background())
 
@@ -18,8 +19,9 @@ func NewSubscriber(bindings *runHttp.ChannelBindings) *Subscriber {
 }
 
 type Subscriber struct {
-	bindings *runHttp.ChannelBindings
-	items    *run.FanOut[runHttp.EnvelopeReader]
+	channelBindings *runHttp.ChannelBindings
+	operationBindings *runHttp.OperationBindings
+	items           *run.FanOut[runHttp.EnvelopeReader]
 	ctx      context.Context
 	cancel   context.CancelCauseFunc
 }

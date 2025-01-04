@@ -18,8 +18,9 @@ type SubscribeChannel struct {
 	// Additional arguments for the consumer. See ConsumeWithContext docs for details.
 	ConsumeArgs amqp091.Table
 
-	queueName string
-	bindings  *runAmqp.ChannelBindings
+	queueName       string
+	channelBindings *runAmqp.ChannelBindings
+	operationBindings *runAmqp.OperationBindings
 }
 
 func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope runAmqp.EnvelopeReader)) (err error) {
@@ -31,8 +32,8 @@ func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope runAmqp.
 		consumerCtx,
 		s.queueName,
 		s.ConsumerTag,
-		s.bindings.SubscriberBindings.Ack,
-		run.DerefOrZero(s.bindings.QueueConfiguration.Exclusive),
+		s.operationBindings.Ack,
+		run.FromPtrOrZero(s.channelBindings.QueueConfiguration.Exclusive),
 		false,
 		false,
 		s.ConsumeArgs,
@@ -44,7 +45,7 @@ func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope runAmqp.
 	for delivery := range deliveries {
 		evlp := NewEnvelopeIn(&delivery, bytes.NewReader(delivery.Body))
 		cb(evlp)
-		if s.bindings.SubscriberBindings.Ack {
+		if s.operationBindings.Ack {
 			if e := s.Ack(delivery.DeliveryTag, false); e != nil {
 				return fmt.Errorf("ack: %w", e)
 			}

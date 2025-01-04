@@ -53,11 +53,11 @@ type Client struct {
 	protocolFamily string
 }
 
-func (c Client) Publisher(ctx context.Context, _ string, _ *runUDP.ChannelBindings) (runUDP.Publisher, error) {
+func (c Client) Publisher(ctx context.Context, _ string, _ *runUDP.ChannelBindings, _ *runUDP.OperationBindings) (runUDP.Publisher, error) {
 	return c.channel(ctx)
 }
 
-func (c Client) Subscriber(ctx context.Context, _ string, _ *runUDP.ChannelBindings) (runUDP.Subscriber, error) {
+func (c Client) Subscriber(ctx context.Context, _ string, _ *runUDP.ChannelBindings, _ *runUDP.OperationBindings) (runUDP.Subscriber, error) {
 	return c.channel(ctx)
 }
 

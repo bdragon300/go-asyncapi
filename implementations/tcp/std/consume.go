@@ -36,7 +36,7 @@ type ConsumeClient struct {
 	MaxEnvelopeSize int
 }
 
-func (c *ConsumeClient) Subscriber(_ context.Context, _ string, _ *runTCP.ChannelBindings) (runTCP.Subscriber, error) {
+func (c *ConsumeClient) Subscriber(_ context.Context, _ string, _ *runTCP.ChannelBindings, _*runTCP.OperationBindings) (runTCP.Subscriber, error) {
 	conn, err := c.AcceptTCP()
 	if err != nil {
 		return nil, err

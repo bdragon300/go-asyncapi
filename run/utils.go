@@ -1,6 +1,6 @@
 package run
 
-func DerefOrZero[T any](x *T) T {
+func FromPtrOrZero[T any](x *T) T {
 	if x != nil {
 		return *x
 	}

@@ -9,18 +9,20 @@ import (
 	runHttp "github.com/bdragon300/go-asyncapi/run/http"
 )
 
-func NewPublisher(bindings *runHttp.ChannelBindings, channelURL *url.URL) *Publisher {
+func NewPublisher(chb *runHttp.ChannelBindings, opb *runHttp.OperationBindings, channelURL *url.URL) *Publisher {
 	return &Publisher{
-		Client:     http.DefaultClient,
-		channelURL: channelURL,
-		bindings:   bindings,
+		Client:          http.DefaultClient,
+		channelURL:      channelURL,
+		channelBindings: chb,
+		operationBindings: opb,
 	}
 }
 
 type Publisher struct {
 	Client     *http.Client
-	channelURL *url.URL
-	bindings   *runHttp.ChannelBindings
+	channelURL      *url.URL
+	channelBindings *runHttp.ChannelBindings
+	operationBindings *runHttp.OperationBindings
 }
 
 type ImplementationRecord interface {
@@ -30,8 +32,8 @@ type ImplementationRecord interface {
 
 func (p Publisher) Send(ctx context.Context, envelopes ...runHttp.EnvelopeWriter) error {
 	method := "GET"
-	if p.bindings != nil && p.bindings.PublisherBindings.Method != "" {
-		method = p.bindings.PublisherBindings.Method
+	if p.channelBindings != nil && p.operationBindings.Method != "" {
+		method = p.operationBindings.Method
 	}
 
 	for i, envelope := range envelopes {

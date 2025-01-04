@@ -25,12 +25,12 @@ type ConsumeClient struct {
 	mu          *sync.RWMutex
 }
 
-func (c *ConsumeClient) Subscriber(_ context.Context, address string, bindings *runHttp.ChannelBindings) (runHttp.Subscriber, error) {
+func (c *ConsumeClient) Subscriber(_ context.Context, address string, chb *runHttp.ChannelBindings, opb *runHttp.OperationBindings) (runHttp.Subscriber, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.ensureChannel(address, bindings)
-	subscriber := NewSubscriber(bindings)
+	c.ensureChannel(address, opb)
+	subscriber := NewSubscriber(chb, opb)
 	element := c.subscribers[address].Add(func(msg *EnvelopeIn) {
 		subscriber.items.Put(func() runHttp.EnvelopeReader {
 			return NewEnvelopeIn(msg.Clone(context.Background()), msg.ResponseWriter)
@@ -48,12 +48,12 @@ func (c *ConsumeClient) Subscriber(_ context.Context, address string, bindings *
 	return subscriber, nil
 }
 
-func (c *ConsumeClient) ensureChannel(channelName string, bindings *runHttp.ChannelBindings) {
+func (c *ConsumeClient) ensureChannel(channelName string, opb *runHttp.OperationBindings) {
 	if _, ok := c.subscribers[channelName]; !ok { // HandleFunc panics if called more than once for the same channel
 		c.subscribers[channelName] = run.NewFanOut[*EnvelopeIn]()
 		c.HandleFunc(channelName, func(w http.ResponseWriter, req *http.Request) {
-			if bindings != nil {
-				needMethod := bindings.SubscriberBindings.Method
+			if opb != nil {
+				needMethod := opb.Method
 				if needMethod != "" && strings.ToUpper(needMethod) != req.Method {
 					http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 					return

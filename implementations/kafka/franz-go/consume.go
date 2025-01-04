@@ -26,9 +26,9 @@ type ConsumeClient struct {
 	extraOpts []kgo.Opt
 }
 
-func (c ConsumeClient) Subscriber(_ context.Context, address string, bindings *runKafka.ChannelBindings) (runKafka.Subscriber, error) {
+func (c ConsumeClient) Subscriber(_ context.Context, address string, chb *runKafka.ChannelBindings, opb *runKafka.OperationBindings) (runKafka.Subscriber, error) {
 	// TODO: schema registry https://github.com/twmb/franz-go/blob/master/examples/schema_registry/schema_registry.go
-	// TODO: bindings.ClientID, bindings.GroupID
+	// TODO: chb.ClientID, chb.GroupID
 	var opts []kgo.Opt
 
 	u, err := url.Parse(c.serverURL)
@@ -38,8 +38,8 @@ func (c ConsumeClient) Subscriber(_ context.Context, address string, bindings *r
 	opts = append(opts, kgo.SeedBrokers(strings.Split(u.Host, ",")...))
 
 	topic := address
-	if bindings != nil && bindings.Topic != "" {
-		topic = bindings.Topic
+	if chb != nil && chb.Topic != "" {
+		topic = chb.Topic
 	}
 	if topic != "" {
 		opts = append(opts, kgo.ConsumeTopics(topic))
@@ -52,9 +52,10 @@ func (c ConsumeClient) Subscriber(_ context.Context, address string, bindings *r
 	}
 
 	return &SubscribeChannel{
-		Client:   cl,
-		Topic:    topic,
-		bindings: bindings,
+		Client:          cl,
+		Topic:           topic,
+		channelBindings: chb,
+		operationBindings: opb,
 	}, nil
 }
 
@@ -62,7 +63,8 @@ type SubscribeChannel struct {
 	*kgo.Client
 	Topic             string
 	IgnoreFetchErrors bool // TODO: add opts for Subscriber/Publisher interfaces
-	bindings          *runKafka.ChannelBindings
+	channelBindings *runKafka.ChannelBindings
+	operationBindings *runKafka.OperationBindings
 }
 
 func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope runKafka.EnvelopeReader)) error {

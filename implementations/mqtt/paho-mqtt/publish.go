@@ -13,8 +13,9 @@ type PublishChannel struct {
 	Client mqtt.Client
 	Topic  string
 
-	bindings  *runMqtt.ChannelBindings
-	instances int
+	channelBindings *runMqtt.ChannelBindings
+	operationBindings *runMqtt.OperationBindings
+	instances       int
 	mu        *sync.Mutex
 	ctx       context.Context
 	cancel    context.CancelFunc
@@ -29,9 +30,9 @@ func (r *PublishChannel) Send(ctx context.Context, envelopes ...runMqtt.Envelope
 		ir := envelope.(ImplementationRecord)
 		var qos byte
 		var retain bool
-		if r.bindings != nil {
-			qos = byte(r.bindings.PublisherBindings.QoS)
-			retain = r.bindings.PublisherBindings.Retain
+		if r.channelBindings != nil {
+			qos = byte(r.operationBindings.QoS)
+			retain = r.operationBindings.Retain
 		}
 		tok := r.Client.Publish(r.Topic, qos, retain, ir.Bytes())
 

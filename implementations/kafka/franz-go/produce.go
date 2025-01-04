@@ -26,7 +26,7 @@ type ProduceClient struct {
 	extraOpts []kgo.Opt
 }
 
-func (p ProduceClient) Publisher(_ context.Context, address string, bindings *runKafka.ChannelBindings) (runKafka.Publisher, error) {
+func (p ProduceClient) Publisher(_ context.Context, address string, chb *runKafka.ChannelBindings, opb *runKafka.OperationBindings) (runKafka.Publisher, error) {
 	// TODO: schema registry https://github.com/twmb/franz-go/blob/master/examples/schema_registry/schema_registry.go
 	var opts []kgo.Opt
 
@@ -37,8 +37,8 @@ func (p ProduceClient) Publisher(_ context.Context, address string, bindings *ru
 	opts = append(opts, kgo.SeedBrokers(strings.Split(u.Host, ",")...))
 
 	topic := address
-	if bindings != nil && bindings.Topic != "" {
-		topic = bindings.Topic
+	if chb != nil && chb.Topic != "" {
+		topic = chb.Topic
 	}
 	if topic != "" {
 		opts = append(opts, kgo.DefaultProduceTopic(topic))
@@ -51,9 +51,10 @@ func (p ProduceClient) Publisher(_ context.Context, address string, bindings *ru
 	}
 
 	return &PublishChannel{
-		Client:   cl,
-		Topic:    topic,
-		bindings: bindings,
+		Client:          cl,
+		Topic:           topic,
+		channelBindings: chb,
+		operationBindings: opb,
 	}, nil
 }
 
@@ -64,8 +65,9 @@ type ImplementationRecord interface {
 
 type PublishChannel struct {
 	*kgo.Client
-	Topic    string
-	bindings *runKafka.ChannelBindings
+	Topic           string
+	channelBindings *runKafka.ChannelBindings
+	operationBindings *runKafka.OperationBindings
 }
 
 func (p PublishChannel) Send(ctx context.Context, envelopes ...runKafka.EnvelopeWriter) error {

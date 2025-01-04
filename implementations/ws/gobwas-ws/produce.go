@@ -25,9 +25,9 @@ type ProduceClient struct {
 	serverURL *url.URL
 }
 
-func (p ProduceClient) Publisher(ctx context.Context, address string, bindings *runWs.ChannelBindings) (runWs.Publisher, error) {
-	if bindings != nil && bindings.Method != "" && bindings.Method != "GET" {
-		return nil, fmt.Errorf("unsupported method %s", bindings.Method)
+func (p ProduceClient) Publisher(ctx context.Context, address string, chb *runWs.ChannelBindings, opb *runWs.OperationBindings) (runWs.Publisher, error) {
+	if chb != nil && chb.Method != "" && chb.Method != "GET" {
+		return nil, fmt.Errorf("unsupported method %s", chb.Method)
 	}
 	u := p.serverURL.JoinPath(address)
 	netConn, _, _, err := ws.Dial(ctx, u.String())
@@ -35,5 +35,5 @@ func (p ProduceClient) Publisher(ctx context.Context, address string, bindings *
 		return nil, err
 	}
 
-	return NewChannel(bindings, netConn, true), nil
+	return NewChannel(chb, opb, netConn, true), nil
 }
