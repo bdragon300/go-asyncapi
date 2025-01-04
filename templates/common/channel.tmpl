@@ -7,8 +7,8 @@
 {{- end}}
 
 {{define "channel/proto/commonMethods"}}
-func (c {{.Type | gousage}}) Name() {{goqualrun "ParamString"}} {
-    return c.name
+func (c {{.Type | gousage}}) Address() {{goqualrun "ParamString"}} {
+    return c.address
 }
 
 func (c {{.Type | gousage}}) Close() (err error) {

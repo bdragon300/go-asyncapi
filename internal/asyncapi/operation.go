@@ -136,7 +136,6 @@ func (o Operation) build(ctx *common.CompileContext, operationKey string, flags 
 }
 
 type OperationTrait struct {
-	OperationID  string                 `json:"operationId" yaml:"operationId"` // DEPRECATED
 	Title        string                 `json:"title" yaml:"title"`
 	Summary      string                 `json:"summary" yaml:"summary"`
 	Description  string                 `json:"description" yaml:"description"`

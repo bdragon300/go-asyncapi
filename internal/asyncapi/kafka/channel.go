@@ -22,11 +22,11 @@ type channelBindings struct {
 }
 
 type topicConfiguration struct {
-	CleanupPolicy     []string `json:"cleanup.policy" yaml:"cleanup.policy"`
-	RetentionMs       int      `json:"retention.ms" yaml:"retention.ms"`
-	RetentionBytes    int      `json:"retention.bytes" yaml:"retention.bytes"`
-	DeleteRetentionMs int      `json:"delete.retention.ms" yaml:"delete.retention.ms"`
-	MaxMessageBytes   int      `json:"max.message.bytes" yaml:"max.message.bytes"`
+	CleanupPolicy  []string `json:"cleanup.policy" yaml:"cleanup.policy"`
+	RetentionMs    int      `json:"retention.ms" yaml:"retention.ms"`
+	RetentionBytes    int `json:"retention.bytes" yaml:"retention.bytes"`
+	DeleteRetentionMs int `json:"delete.retention.ms" yaml:"delete.retention.ms"`
+	MaxMessageBytes   int `json:"max.message.bytes" yaml:"max.message.bytes"`
 }
 
 type operationBindings struct {
@@ -65,7 +65,7 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 		vals.StructValues.Set("Replicas", *bindings.Replicas)
 	}
 	if bindings.TopicConfiguration != nil {
-		tcVals := lang.ConstructGoValue(*bindings.TopicConfiguration, []string{"CleanupPolicy", "RetentionMs", "DeleteRetentionMs"}, &lang.GoSimple{TypeName: "TopicConfiguration", Import: ctx.RuntimeModule(pb.ProtoName)})
+		tcVals := lang.ConstructGoValue(*bindings.TopicConfiguration, []string{"CleanupPolicy", "RetentionTime", "DeleteRetentionTime"}, &lang.GoSimple{TypeName: "TopicConfiguration", Import: ctx.RuntimeModule(pb.ProtoName)})
 
 		// TopicConfiguration->CleanupPolicy
 		if len(bindings.TopicConfiguration.CleanupPolicy) > 0 {
@@ -80,15 +80,15 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 				tcVals.StructValues.Set("CleanupPolicy", cpVal)
 			}
 		}
-		// TopicConfiguration->RetentionMs
+		// TopicConfiguration->RetentionTime
 		if bindings.TopicConfiguration.RetentionMs > 0 {
 			v := lang.ConstructGoValue(bindings.TopicConfiguration.RetentionMs*int(time.Millisecond), nil, &lang.GoSimple{TypeName: "Duration", Import: "time"})
-			tcVals.StructValues.Set("RetentionMs", v)
+			tcVals.StructValues.Set("RetentionTime", v)
 		}
-		// TopicConfiguration->DeleteRetentionMs
+		// TopicConfiguration->DeleteRetentionTime
 		if bindings.TopicConfiguration.DeleteRetentionMs > 0 {
 			v := lang.ConstructGoValue(bindings.TopicConfiguration.DeleteRetentionMs*int(time.Millisecond), nil, &lang.GoSimple{TypeName: "Duration", Import: "time"})
-			tcVals.StructValues.Set("DeleteRetentionMs", v)
+			tcVals.StructValues.Set("DeleteRetentionTime", v)
 		}
 		vals.StructValues.Set("TopicConfiguration", tcVals)
 	}

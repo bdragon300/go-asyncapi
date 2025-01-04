@@ -37,12 +37,12 @@ type ConsumeClient struct {
 	mu                  *sync.RWMutex
 }
 
-func (c *ConsumeClient) Subscriber(ctx context.Context, channelName string, bindings *runWs.ChannelBindings) (runWs.Subscriber, error) {
-	c.ensureChannel(channelName, bindings) // FIXME: maybe it's better to take the path from bindings?
+func (c *ConsumeClient) Subscriber(ctx context.Context, address string, bindings *runWs.ChannelBindings) (runWs.Subscriber, error) {
+	c.ensureChannel(address, bindings) // FIXME: maybe it's better to take the path from bindings?
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
-	case conn := <-c.connections[channelName]:
+	case conn := <-c.connections[address]:
 		return conn, nil
 	}
 }

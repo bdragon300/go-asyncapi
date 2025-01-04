@@ -25,13 +25,13 @@ type ConsumeClient struct {
 	mu          *sync.RWMutex
 }
 
-func (c *ConsumeClient) Subscriber(_ context.Context, channelName string, bindings *runHttp.ChannelBindings) (runHttp.Subscriber, error) {
+func (c *ConsumeClient) Subscriber(_ context.Context, address string, bindings *runHttp.ChannelBindings) (runHttp.Subscriber, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.ensureChannel(channelName, bindings)
+	c.ensureChannel(address, bindings)
 	subscriber := NewSubscriber(bindings)
-	element := c.subscribers[channelName].Add(func(msg *EnvelopeIn) {
+	element := c.subscribers[address].Add(func(msg *EnvelopeIn) {
 		subscriber.items.Put(func() runHttp.EnvelopeReader {
 			return NewEnvelopeIn(msg.Clone(context.Background()), msg.ResponseWriter)
 		})
@@ -42,7 +42,7 @@ func (c *ConsumeClient) Subscriber(_ context.Context, channelName string, bindin
 		<-subscriber.ctx.Done()
 		c.mu.Lock()
 		defer c.mu.Unlock()
-		c.subscribers[channelName].Remove(element)
+		c.subscribers[address].Remove(element)
 	}()
 
 	return subscriber, nil

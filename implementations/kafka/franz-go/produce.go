@@ -26,7 +26,7 @@ type ProduceClient struct {
 	extraOpts []kgo.Opt
 }
 
-func (p ProduceClient) Publisher(_ context.Context, channelName string, bindings *runKafka.ChannelBindings) (runKafka.Publisher, error) {
+func (p ProduceClient) Publisher(_ context.Context, address string, bindings *runKafka.ChannelBindings) (runKafka.Publisher, error) {
 	// TODO: schema registry https://github.com/twmb/franz-go/blob/master/examples/schema_registry/schema_registry.go
 	var opts []kgo.Opt
 
@@ -36,7 +36,7 @@ func (p ProduceClient) Publisher(_ context.Context, channelName string, bindings
 	}
 	opts = append(opts, kgo.SeedBrokers(strings.Split(u.Host, ",")...))
 
-	topic := channelName
+	topic := address
 	if bindings != nil && bindings.Topic != "" {
 		topic = bindings.Topic
 	}

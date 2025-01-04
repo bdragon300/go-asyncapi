@@ -11,7 +11,6 @@ import (
 )
 
 type Server struct {
-	URL             string                                   `json:"url" yaml:"url"`  // DEPRECATED
 	Host 		  string                                   `json:"host" yaml:"host"`
 	Protocol        string                                   `json:"protocol" yaml:"protocol"`
 	ProtocolVersion string                                   `json:"protocolVersion" yaml:"protocolVersion"`
@@ -53,7 +52,8 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	srvName, _ := lo.Coalesce(s.XGoName, serverKey)
 	res := render.Server{
 		OriginalName:    srvName,
-		URL:             s.URL,
+		Host:			s.Host,
+		Pathname:		s.Pathname,
 		Protocol:        s.Protocol,
 		ProtocolVersion: s.ProtocolVersion,
 		IsComponent:     isComponent,

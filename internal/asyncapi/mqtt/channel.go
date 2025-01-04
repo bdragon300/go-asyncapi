@@ -5,6 +5,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
+	"time"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -16,6 +17,7 @@ import (
 type operationBindings struct {
 	QoS    int  `json:"qos" yaml:"qos"`
 	Retain bool `json:"retain" yaml:"retain"`
+	MessageExpiryInterval int `json:"messageExpiryInterval" yaml:"messageExpiryInterval"` // Seconds
 }
 
 func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, parent *render.Channel) (*render.ProtoChannel, error) {
@@ -47,6 +49,10 @@ func (pb ProtoBuilder) BuildOperationBindings(
 		err = types.CompileError{Err: err, Path: ctx.PathStackRef(), Proto: pb.ProtoName}
 		return
 	}
-	vals = lang.ConstructGoValue(bindings, nil, &lang.GoSimple{TypeName: "OperationBindings", Import: ctx.RuntimeModule(pb.ProtoName)})
+	vals = lang.ConstructGoValue(bindings, []string{"MessageExpiryInterval"}, &lang.GoSimple{TypeName: "OperationBindings", Import: ctx.RuntimeModule(pb.ProtoName)})
+	if bindings.MessageExpiryInterval > 0 {
+		v := lang.ConstructGoValue(bindings.MessageExpiryInterval*int(time.Second), nil, &lang.GoSimple{TypeName: "Duration", Import: "time"})
+		vals.StructValues.Set("MessageExpiryInterval", v)
+	}
 	return
 }

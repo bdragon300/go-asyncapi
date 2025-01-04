@@ -18,6 +18,19 @@ type (
 		TopicConfiguration TopicConfiguration
 	}
 
+	TopicConfiguration struct {
+		CleanupPolicy     TopicCleanupPolicy
+		RetentionTime       time.Duration
+		RetentionBytes    int
+		DeleteRetentionTime time.Duration
+		MaxMessageBytes   int
+	}
+
+	TopicCleanupPolicy struct {
+		Delete  bool
+		Compact bool
+	}
+
 	OperationBindings struct {
 		ClientID any // jsonschema contents
 		GroupID  any // jsonschema contents
@@ -28,17 +41,5 @@ type (
 		SchemaIDLocation        string
 		SchemaIDPayloadEncoding string
 		SchemaLookupStrategy    string
-	}
-	TopicConfiguration struct {
-		CleanupPolicy     TopicCleanupPolicy
-		RetentionMs       time.Duration
-		RetentionBytes    int
-		DeleteRetentionMs time.Duration
-		MaxMessageBytes   int
-	}
-
-	TopicCleanupPolicy struct {
-		Delete  bool
-		Compact bool
 	}
 )

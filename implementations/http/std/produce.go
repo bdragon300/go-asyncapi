@@ -23,6 +23,6 @@ type ProduceClient struct {
 	serverURL *url.URL
 }
 
-func (p ProduceClient) Publisher(_ context.Context, channelName string, bindings *runHttp.ChannelBindings) (runHttp.Publisher, error) {
-	return NewPublisher(bindings, p.serverURL.JoinPath(channelName)), nil
+func (p ProduceClient) Publisher(_ context.Context, address string, bindings *runHttp.ChannelBindings) (runHttp.Publisher, error) {
+	return NewPublisher(bindings, p.serverURL.JoinPath(address)), nil
 }

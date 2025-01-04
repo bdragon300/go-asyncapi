@@ -63,11 +63,11 @@ type Client struct {
 	subscribers map[string]*SubscribeChannel
 }
 
-func (c *Client) Subscriber(ctx context.Context, channelName string, bindings *runMqtt.ChannelBindings) (runMqtt.Subscriber, error) {
+func (c *Client) Subscriber(ctx context.Context, address string, bindings *runMqtt.ChannelBindings) (runMqtt.Subscriber, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if v, ok := c.subscribers[channelName]; ok && v.instances > 0 {
+	if v, ok := c.subscribers[address]; ok && v.instances > 0 {
 		v.instances++
 		return v, nil
 	}
@@ -78,7 +78,7 @@ func (c *Client) Subscriber(ctx context.Context, channelName string, bindings *r
 	}
 
 	subCh := run.NewFanOut[runMqtt.EnvelopeReader]()
-	tok := c.Client.Subscribe(channelName, qos, func(_ mqtt.Client, message mqtt.Message) {
+	tok := c.Client.Subscribe(address, qos, func(_ mqtt.Client, message mqtt.Message) {
 		subCh.Put(func() runMqtt.EnvelopeReader { return NewEnvelopeIn(message) })
 	})
 	select {
@@ -93,7 +93,7 @@ func (c *Client) Subscriber(ctx context.Context, channelName string, bindings *r
 	ctx2, cancel := context.WithCancel(context.Background())
 	r := SubscribeChannel{
 		Client:        c.Client,
-		Topic:         channelName,
+		Topic:         address,
 		bindings:      bindings,
 		subscribeChan: subCh,
 		instances:     1,
@@ -101,15 +101,15 @@ func (c *Client) Subscriber(ctx context.Context, channelName string, bindings *r
 		ctx:           ctx2,
 		cancel:        cancel,
 	}
-	c.subscribers[channelName] = &r
+	c.subscribers[address] = &r
 	return &r, nil
 }
 
-func (c *Client) Publisher(_ context.Context, channelName string, bindings *runMqtt.ChannelBindings) (runMqtt.Publisher, error) {
+func (c *Client) Publisher(_ context.Context, address string, bindings *runMqtt.ChannelBindings) (runMqtt.Publisher, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if v, ok := c.publishers[channelName]; ok && v.instances > 0 {
+	if v, ok := c.publishers[address]; ok && v.instances > 0 {
 		v.instances++
 		return v, nil
 	}
@@ -117,13 +117,13 @@ func (c *Client) Publisher(_ context.Context, channelName string, bindings *runM
 	ctx2, cancel := context.WithCancel(context.Background())
 	r := PublishChannel{
 		Client:    c.Client,
-		Topic:     channelName,
+		Topic:     address,
 		bindings:  bindings,
 		instances: 1,
 		mu:        c.mu,
 		ctx:       ctx2,
 		cancel:    cancel,
 	}
-	c.publishers[channelName] = &r
+	c.publishers[address] = &r
 	return &r, nil
 }

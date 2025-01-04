@@ -4,20 +4,20 @@
     {{ .ParametersType | godef }}
 {{- end }}
 
-func {{$ | goid}}Name({{if .ParametersType}}params {{.ParametersType | gousage}}{{end}}) {{goqualrun "ParamString"}} {
+func {{$ | goid}}Address({{with .ParametersType}}params {{. | gousage}}{{end}}) {{goqualrun "ParamString"}} {
 {{- if .ParametersType}}
     paramMap := map[string]string{
     {{- range .ParametersType.Fields}}
-        params.{{.Name}}.Name(): params.{{.Name}}.String(),
+        params.{{.Name}}.Name(): string(params.{{.Name}}),
     {{- end}}
     }
     return {{goqualrun "ParamString"}}{
-        Expr: {{. | goid | golit}},
+        Expr: {{ .Address | golit}},
         Parameters: paramMap,
     }
 {{- else}}
     return {{goqualrun "ParamString"}}{
-        Expr: {{$ | goid | golit}},
+        Expr: {{ .Address | golit}},
     }
 {{- end}}
 }

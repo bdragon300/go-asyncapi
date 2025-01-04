@@ -37,6 +37,22 @@ type (
 		QueueConfiguration    QueueConfiguration
 	}
 
+	ExchangeConfiguration struct {
+		Name       *string // Empty name points to default broker exchange
+		Type       ExchangeType
+		Durable    *bool
+		AutoDelete *bool
+		VHost      string
+	}
+
+	QueueConfiguration struct {
+		Name       string
+		Durable    *bool
+		Exclusive  *bool
+		AutoDelete *bool
+		VHost      string
+	}
+
 	OperationBindings struct {
 		Expiration   time.Duration
 		UserID       string
@@ -53,21 +69,5 @@ type (
 	MessageBindings struct {
 		ContentEncoding string
 		MessageType     string
-	}
-
-	ExchangeConfiguration struct {
-		Name       *string // Empty name points to default broker exchange
-		Type       ExchangeType
-		Durable    *bool
-		AutoDelete *bool
-		VHost      string
-	}
-
-	QueueConfiguration struct {
-		Name       string
-		Durable    *bool
-		Exclusive  *bool
-		AutoDelete *bool
-		VHost      string
 	}
 )

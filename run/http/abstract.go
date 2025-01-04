@@ -9,7 +9,7 @@ import (
 // Pub
 type (
 	Producer interface {
-		Publisher(ctx context.Context, channelName string, chBindings *ChannelBindings, opBindings *OperationBindings) (Publisher, error)
+		Publisher(ctx context.Context, address string, chBindings *ChannelBindings, opBindings *OperationBindings) (Publisher, error)
 	}
 	Publisher interface {
 		Send(ctx context.Context, envelopes ...EnvelopeWriter) error
@@ -31,7 +31,7 @@ type EnvelopeMarshaler interface {
 // Sub
 type (
 	Consumer interface {
-		Subscriber(ctx context.Context, channelName string, chBindings *ChannelBindings, opBindings *OperationBindings) (Subscriber, error)
+		Subscriber(ctx context.Context, address string, chBindings *ChannelBindings, opBindings *OperationBindings) (Subscriber, error)
 	}
 	Subscriber interface {
 		Receive(ctx context.Context, cb func(envelope EnvelopeReader)) error

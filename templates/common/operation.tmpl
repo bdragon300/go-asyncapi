@@ -23,15 +23,21 @@ func Open{{ .Channel | goid }}{{.Protocol | capitalize | goid}}{{. | goid}}(
     {{ if .IsPublisher}}producer {{goqualrun .Protocol "Producer"}},{{end}}
     {{ if .IsSubscriber}}consumer {{goqualrun .Protocol "Consumer"}},{{end}}
 ) (ch *{{.Type | gousage}}, err error) {
-    name := {{.Channel | goid}}Name({{if .Channel.ParametersType}}params{{end}})
     {{- if .Channel.BindingsProtocols | has .Protocol}}
         bindings := {{.Channel.BindingsType | gousage}}{}.{{.Protocol | capitalize | goid}}()
     {{- end }}
 
+    {{- if or .IsPublisher .IsSubscriber}}
+        address, err := {{.Channel | goid}}Address({{if .Channel.ParametersType}}params{{end}}).Expand()
+        if err != nil {
+            return nil, err
+        }
+    {{- end}}
     {{- if .IsPublisher}}
         var publisher {{goqualrun .Protocol "Publisher"}}
+
         if producer != nil {
-            if publisher, err = producer.Publisher(ctx, name.String(), {{if .Channel.BindingsProtocols | has .Protocol}}&bindings{{else}}nil{{end}}); err != nil {
+            if publisher, err = producer.Publisher(ctx, address, {{if .Channel.BindingsProtocols | has .Protocol}}&bindings{{else}}nil{{end}}); err != nil {
                 return nil, err
             }
         }
@@ -39,7 +45,7 @@ func Open{{ .Channel | goid }}{{.Protocol | capitalize | goid}}{{. | goid}}(
     {{- if .IsSubscriber}}
         var subscriber {{goqualrun .Protocol "Subscriber"}}
         if consumer != nil {
-            if subscriber, err = consumer.Subscriber(ctx, name.String(), {{if .Channel.BindingsProtocols | has .Protocol}}&bindings{{else}}nil{{end}}); err != nil {
+            if subscriber, err = consumer.Subscriber(ctx, address, {{if .Channel.BindingsProtocols | has .Protocol}}&bindings{{else}}nil{{end}}); err != nil {
                 return nil, err
             }
         }

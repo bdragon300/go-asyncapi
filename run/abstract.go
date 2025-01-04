@@ -6,7 +6,7 @@ import (
 )
 
 type AbstractProducer[CB any, OB any, W AbstractEnvelopeWriter, P AbstractPublisher[W]] interface {
-	Publisher(ctx context.Context, channelName string, chBindings *CB, opBindings *OB) (P, error)
+	Publisher(ctx context.Context, address string, chBindings *CB, opBindings *OB) (P, error)
 	// There is no Close method here because the generated code does not responsible for creating Producers. It is the responsibility of the user.
 }
 type AbstractPublisher[W AbstractEnvelopeWriter] interface {
@@ -23,7 +23,7 @@ type AbstractEnvelopeWriter interface {
 }
 
 type AbstractConsumer[CB any, OB any, R AbstractEnvelopeReader, S AbstractSubscriber[R]] interface {
-	Subscriber(ctx context.Context, channelName string, chBindings *CB, opBindings *OB) (S, error)
+	Subscriber(ctx context.Context, address string, chBindings *CB, opBindings *OB) (S, error)
 	// There is no Close method here because the generated code does not responsible for creating Consumers. It is the responsibility of the user.
 }
 type AbstractSubscriber[R AbstractEnvelopeReader] interface {

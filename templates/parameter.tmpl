@@ -7,12 +7,5 @@ func (p {{.Type| gousage}}) Name() string {
     return {{  . | goid | golit }}
 }
 
-func (p {{.Type| gousage}}) String() string {
-    {{- if .IsStringType}}
-        return string(p)
-    {{- else}}
-        return {{goqual "fmt.Sprint"}}(p.Value)
-    {{- end}}
-}
 {{- end}}
 {{- end}}

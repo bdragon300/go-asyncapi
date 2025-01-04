@@ -10,6 +10,7 @@ import (
 
 type Channel struct {
 	OriginalName     string // Channel name, typically equals to Channel key, can get overridden in x-go-name
+	Address string
 	Dummy            bool
 	IsComponent bool // true if channel is defined in `components` section
 	IsPublisher bool

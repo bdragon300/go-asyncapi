@@ -26,8 +26,3 @@ func (h Headers) ToByteValues() map[string][]byte {
 
 	return res
 }
-
-type Parameter interface {
-	Name() string
-	String() string
-}

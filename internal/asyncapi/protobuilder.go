@@ -37,7 +37,7 @@ func BuildProtoChannelStruct(
 			HasDefinition: true,
 		},
 		Fields: []lang.GoStructField{
-			{Name: "name", Type: &lang.GoSimple{TypeName: "ParamString", Import: ctx.RuntimeModule("")}},
+			{Name: "address", Type: &lang.GoSimple{TypeName: "ParamString", Import: ctx.RuntimeModule("")}},
 		},
 	}
 
@@ -46,7 +46,6 @@ func BuildProtoChannelStruct(
 		ctx.Logger.Trace("Channel publish operation", "proto", protoName)
 		chanStruct.Fields = append(chanStruct.Fields, lang.GoStructField{
 			Name:        "publisher",
-			Description: source.Publish.Description,
 			Type: &lang.GoSimple{
 				TypeName:    "Publisher",
 				Import:      ctx.RuntimeModule(protoName),
@@ -60,7 +59,6 @@ func BuildProtoChannelStruct(
 		ctx.Logger.Trace("Channel subscribe operation", "proto", protoName)
 		chanStruct.Fields = append(chanStruct.Fields, lang.GoStructField{
 			Name:        "subscriber",
-			Description: source.Subscribe.Description,
 			Type: &lang.GoSimple{
 				TypeName:    "Subscriber",
 				Import:      ctx.RuntimeModule(protoName),

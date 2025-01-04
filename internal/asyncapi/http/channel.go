@@ -14,7 +14,6 @@ import (
 )
 
 type operationBindings struct {
-	Type   string `json:"type" yaml:"type"`
 	Method string `json:"method" yaml:"method"`
 	Query  any    `json:"query" yaml:"query"` // jsonschema object
 }

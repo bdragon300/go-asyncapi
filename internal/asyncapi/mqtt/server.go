@@ -16,6 +16,8 @@ type serverBindings struct {
 	CleanSession bool      `json:"cleanSession" yaml:"cleanSession"`
 	LastWill     *lastWill `json:"lastWill" yaml:"lastWill"`
 	KeepAlive    int       `json:"keepAlive" yaml:"keepAlive"`
+	SessionExpiryInterval int `json:"sessionExpiryInterval" yaml:"sessionExpiryInterval"`
+	MaximumPacketSize int `json:"maximumPacketSize" yaml:"maximumPacketSize"`
 }
 
 type lastWill struct {

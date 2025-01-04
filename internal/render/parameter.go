@@ -8,7 +8,6 @@ import (
 type Parameter struct {
 	OriginalName string
 	Type         common.GolangType
-	IsStringType bool  // true if Type contains a type alias to built-in string type
 }
 
 func (p *Parameter) Kind() common.ObjectKind {

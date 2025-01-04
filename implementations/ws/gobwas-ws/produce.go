@@ -25,11 +25,11 @@ type ProduceClient struct {
 	serverURL *url.URL
 }
 
-func (p ProduceClient) Publisher(ctx context.Context, channelName string, bindings *runWs.ChannelBindings) (runWs.Publisher, error) {
+func (p ProduceClient) Publisher(ctx context.Context, address string, bindings *runWs.ChannelBindings) (runWs.Publisher, error) {
 	if bindings != nil && bindings.Method != "" && bindings.Method != "GET" {
 		return nil, fmt.Errorf("unsupported method %s", bindings.Method)
 	}
-	u := p.serverURL.JoinPath(channelName)
+	u := p.serverURL.JoinPath(address)
 	netConn, _, _, err := ws.Dial(ctx, u.String())
 	if err != nil {
 		return nil, err

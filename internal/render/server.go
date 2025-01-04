@@ -16,7 +16,8 @@ type Server struct {
 
 	AllActiveChannelsPromise *lang.ListPromise[common.Renderable]
 
-	URL             string
+	Host string
+	Pathname string
 	Protocol        string
 	ProtocolVersion string
 

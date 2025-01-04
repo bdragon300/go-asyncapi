@@ -55,6 +55,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 	chName, _ := lo.Coalesce(c.XGoName, channelKey)
 	res := &render.Channel{
 		OriginalName: chName,
+		Address: c.Address,
 		IsComponent:  isComponent,
 		IsPublisher: ctx.CompileOpts.GeneratePublishers,
 		IsSubscriber: ctx.CompileOpts.GenerateSubscribers,

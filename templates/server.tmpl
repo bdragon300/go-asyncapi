@@ -7,7 +7,7 @@ const {{$ | goid}}ProtocolVersion = {{.ProtocolVersion | golit}}
 func {{$ | goid}}URL(
 {{- range .Variables.Entries}}
     {{- .Value | goid}} string,
-{{- end }}) {{goqualrun "ParamString"}} {
+{{- end }}) {{goqualrun "ParamURL"}} {
     {{- if gt .Variables.Len 0}}
         {{- range .Variables.Entries}}
             {{- if .Value.Default}}
@@ -21,13 +21,15 @@ func {{$ | goid}}URL(
                 {{.Key | golit}}: {{.Value | goid}},
             {{- end}}
         }
-        return {{goqualrun "ParamString"}}{
-            Expr: {{.URL | golit}},
+        return {{goqualrun "ParamURL"}}{
+            Host: {{.Host | golit}},
+            Pathname: {{.Pathname | golit}},
             Parameters: paramMap,
         }
     {{- else}}
-        return {{goqualrun "ParamString"}}{
-            Expr: {{.URL | golit}},
+        return {{goqualrun "ParamURL"}}{
+            Host: {{.Host | golit}},
+            Pathname: {{.Pathname | golit}},
         }
     {{- end}}
 }
