@@ -9,11 +9,11 @@ import (
 )
 
 type Channel struct {
-	OriginalName     string // Channel name, typically equals to Channel key, can get overridden in x-go-name
-	Address string
-	Dummy            bool
-	IsComponent bool // true if channel is defined in `components` section
-	IsPublisher bool
+	OriginalName string // Channel name, typically equals to Channel key, can get overridden in x-go-name
+	Address      string
+	Dummy        bool
+	IsSelectable bool // true if channel should get to selections
+	IsPublisher  bool
 	IsSubscriber bool
 
 	ServersPromises   []*lang.Promise[*Server] // Servers that this channel is bound with. Empty list means "no servers bound".
@@ -21,7 +21,7 @@ type Channel struct {
 
 	ParametersType *lang.GoStruct // nil if no parameters
 
-	MessagesPromises []*lang.Ref
+	MessagesRefs []*lang.Ref
 
 	// All operations we know about for further selecting ones that are bound to this channel
 	// We can't collect here just the operations already bound with this channel, because the channel in operation
@@ -40,7 +40,7 @@ func (c *Channel) Kind() common.ObjectKind {
 }
 
 func (c *Channel) Selectable() bool {
-	return !c.Dummy && !c.IsComponent // Select only the channels defined in the `channels` section
+	return !c.Dummy && c.IsSelectable // Select only the channels defined in the `channels` section
 }
 
 func (c *Channel) Visible() bool {
@@ -78,7 +78,9 @@ func (c *Channel) BoundMessages() []common.Renderable {
 		op := common.DerefRenderable(o).(*Operation)
 		return op.Messages()
 	})
-	r := lo.Without(c.Messages(), opMsgs...)
+	r := utils.WithoutBy(c.Messages(), opMsgs, func(a, b common.Renderable) bool {
+		return common.CheckSameRenderables(a, b)
+	})
 	return r
 }
 
@@ -122,7 +124,7 @@ func (c *Channel) ProtoBindingsValue(protoName string) common.Renderable {
 }
 
 func (c *Channel) Messages() []common.Renderable {
-	return lo.Map(c.MessagesPromises, func(prm *lang.Ref, _ int) common.Renderable { return prm.T() })
+	return lo.Map(c.MessagesRefs, func(prm *lang.Ref, _ int) common.Renderable { return prm })
 }
 
 type ProtoChannel struct {

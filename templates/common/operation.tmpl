@@ -1,34 +1,36 @@
 {{define "operation/proto/newFunction"}}
-func New{{ .Channel | goid }}{{.Protocol | capitalize | goid}}{{. | goid}}(
+func New{{.ProtoChannel | goid}}{{.Protocol | capitalize | goid}}{{ . | goid }}(
     {{- with .Channel.ParametersType}}params {{ . | gousage}},{{end}}
     {{- if .IsPublisher}}publisher {{goqualrun .Protocol "Publisher"}},{{end}}
     {{- if .IsSubscriber}}subscriber {{goqualrun .Protocol "Subscriber"}},{{end}}
 ) *{{.Type| gousage}} {
     res := {{.Type | gousage}}{
-        name: {{.Channel | goid}}Name({{if .ParametersType}}params{{end}}),
-        {{- if .IsPublisher}}publisher: publisher,{{end}}
-        {{- if .IsSubscriber}}subscriber: subscriber,{{end}}
+        Channel: {{gopkg .ProtoChannel.Type}}New{{.ProtoChannel | goid}}{{.Protocol | capitalize | goid}}(
+            {{- with .Channel.ParametersType}}params{{end}},
+            {{- if .ProtoChannel.IsPublisher}}{{- if .IsPublisher}}publisher{{else}}nil{{end}},{{end}}
+            {{- if .ProtoChannel.IsSubscriber}}{{- if .IsSubscriber}}subscriber{{else}}nil{{end}},{{end}}
+        ),
     }
-    {{- with trytmpl (print "operation/" .Protocol "/newFunction/block1") .}}
-        {{.}}
-    {{- end}}
     return &res
 }
 {{- end}}
 
 {{define "operation/proto/openFunction"}}
-func Open{{ .Channel | goid }}{{.Protocol | capitalize | goid}}{{. | goid}}(
+func Open{{.ProtoChannel | goid}}{{.Protocol | capitalize | goid}}{{ . | goid }}(
     ctx {{goqual "context.Context"}},
     {{ with .Channel.ParametersType}}params {{. | gousage}},{{end}}
     {{ if .IsPublisher}}producer {{goqualrun .Protocol "Producer"}},{{end}}
     {{ if .IsSubscriber}}consumer {{goqualrun .Protocol "Consumer"}},{{end}}
 ) (ch *{{.Type | gousage}}, err error) {
     {{- if .Channel.BindingsProtocols | has .Protocol}}
-        bindings := {{.Channel.BindingsType | gousage}}{}.{{.Protocol | capitalize | goid}}()
+        chBindings := {{.Channel.BindingsType | gousage}}{}.{{.Protocol | capitalize | goid}}()
+    {{- end }}
+    {{- if .BindingsProtocols | has .Protocol}}
+        opBindings := {{.BindingsType | gousage}}{}.{{.Protocol | capitalize | goid}}()
     {{- end }}
 
     {{- if or .IsPublisher .IsSubscriber}}
-        address, err := {{.Channel | goid}}Address({{if .Channel.ParametersType}}params{{end}}).Expand()
+        address, err := {{with .Channel.SelectProtoObject .Protocol}}{{gopkg .Type}}{{end}}{{.Channel | goid}}Address({{if .Channel.ParametersType}}params{{end}}).Expand()
         if err != nil {
             return nil, err
         }
@@ -37,7 +39,7 @@ func Open{{ .Channel | goid }}{{.Protocol | capitalize | goid}}{{. | goid}}(
         var publisher {{goqualrun .Protocol "Publisher"}}
 
         if producer != nil {
-            if publisher, err = producer.Publisher(ctx, address, {{if .Channel.BindingsProtocols | has .Protocol}}&bindings{{else}}nil{{end}}); err != nil {
+            if publisher, err = producer.Publisher(ctx, address, {{if .Channel.BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, {{if .BindingsProtocols | has .Protocol}}&opBindings{{else}}nil{{end}}); err != nil {
                 return nil, err
             }
         }
@@ -45,17 +47,26 @@ func Open{{ .Channel | goid }}{{.Protocol | capitalize | goid}}{{. | goid}}(
     {{- if .IsSubscriber}}
         var subscriber {{goqualrun .Protocol "Subscriber"}}
         if consumer != nil {
-            if subscriber, err = consumer.Subscriber(ctx, address, {{if .Channel.BindingsProtocols | has .Protocol}}&bindings{{else}}nil{{end}}); err != nil {
+            if subscriber, err = consumer.Subscriber(ctx, address, {{if .Channel.BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, {{if .BindingsProtocols | has .Protocol}}&opBindings{{else}}nil{{end}}); err != nil {
                 return nil, err
             }
         }
     {{- end}}
 
-    return New{{ .Channel | goid }}{{.Protocol | capitalize | goid}}{{. | goid}}(
-        {{ if .Channel.ParametersType}}params, {{end}}
-        {{ if .IsPublisher}}publisher,{{end}}
-        {{ if .IsSubscriber}}subscriber,{{end}}
-    ), nil
+    res := &{{.Type | gousage}}{
+        Channel: {{gopkg .ProtoChannel.Type}}New{{.ProtoChannel | goid}}{{.Protocol | capitalize | goid}}(
+            {{- with .Channel.ParametersType}}params{{end}},
+            {{- if .ProtoChannel.IsPublisher}}{{- if .IsPublisher}}publisher{{else}}nil{{end}},{{end}}
+            {{- if .ProtoChannel.IsSubscriber}}{{- if .IsSubscriber}}subscriber{{else}}nil{{end}},{{end}}
+        ),
+    }
+    return res, nil
+}
+{{- end}}
+
+{{define "operation/proto/commonMethods"}}
+func (o {{ .Type | gousage }}) Close() error {
+    return o.Channel.Close()
 }
 {{- end}}
 
@@ -88,7 +99,7 @@ type {{ . | goid }}OperationEnvelopeMarshaler{{.Protocol | capitalize | goid}} i
             if err := o.SealEnvelope{{. | goid}}(envelope, message); err != nil {
                 return err
             }
-            return o.Publish(ctx, envelope)
+            return o.Channel.Publish(ctx, envelope)
         }
     {{- end}}
 {{- end}}
@@ -111,14 +122,19 @@ type {{ . | goid }}OperationEnvelopeUnmarshaler{{.Protocol | capitalize | goid}}
 
         func (o {{ $.Type | gousage }}) Subscribe{{. | goid}}(
             ctx {{goqual "context.Context"}},
-            cb func(message {{ .InType | goptr | gousage }}) error,
-        ) error {
-            return o.Subscribe(ctx, func(envelope {{goqualrun $.Protocol "EnvelopeReader"}}) error {
+            cb func(message {{ .InType | goptr }}),
+        ) (err error) {
+            subCtx, cancel := {{goqual "context.WithCancelCause"}}(ctx)
+            defer cancel(nil)
+
+            return o.Channel.Subscribe(subCtx, func(envelope {{goqualrun $.Protocol "EnvelopeReader"}}) {
                 message := new({{ .InType | gousage }})
-                if err := o.OpenEnvelope(envelope, message); err != nil {
-                    return err
+                if err2 := o.OpenEnvelope{{. | goid}}(envelope, message); err2 != nil {
+                    err = {{goqual "fmt.Errorf"}}("open message envelope: %w", err2)
+                    cancel(err)
+                    return
                 }
-                return cb(message)
+                cb(message)
             })
         }
     {{- end}}
@@ -127,7 +143,7 @@ type {{ . | goid }}OperationEnvelopeUnmarshaler{{.Protocol | capitalize | goid}}
 
 {{define "operation/proto/serverInterface"}}
 type {{ .Type | goid }}Server interface {
-    OpenOperation{{.Type | goid}}(ctx {{goqual "context.Context"}}, {{with .Channel.ParametersType}}params {{ . | gousage }}{{end}}) (*{{ .Type | gousage }}, error)
+    OpenOperation{{.Channel | goid}}{{.Protocol | capitalize | goid}}{{. | goid}}(ctx {{goqual "context.Context"}}, {{with .Channel.ParametersType}}params {{ . | gousage }}{{end}}) (*{{ .Type | gousage }}, error)
     {{if .IsPublisher}}Producer() {{goqualrun .Protocol "Producer"}}{{end}}
     {{if .IsSubscriber}}Consumer() {{goqualrun .Protocol "Consumer"}}{{end}}
 }

@@ -8,20 +8,12 @@ import (
 
 type promiseAssignCbFunc[T any] func(obj any) T
 
-func NewPromise[T any](ref string) *Promise[T] {
-	return newPromise(ref, common.PromiseOriginInternal, nil, defaultAssignCb[T])
+func NewPromise[T any](ref string, assignCb promiseAssignCbFunc[T]) *Promise[T] {
+	return newPromise[T](ref, common.PromiseOriginInternal, nil, assignCb)
 }
 
 func NewCbPromise[T any](findCb common.PromiseFindCbFunc, assignCb promiseAssignCbFunc[T]) *Promise[T] {
 	return newPromise("", common.PromiseOriginInternal, findCb, assignCb)
-}
-
-func defaultAssignCb[T any](obj any) T {
-	t, ok := obj.(T)
-	if !ok {
-		panic(fmt.Sprintf("Object %+v is not a type %T", obj, new(T)))
-	}
-	return t
 }
 
 func newPromise[T any](
@@ -108,15 +100,9 @@ func (r *Promise[T]) IsStruct() bool {
 	return false
 }
 
-func NewGolangTypePromise(ref string) *GolangTypePromise {
+func NewGolangTypePromise(ref string, assignCb promiseAssignCbFunc[common.GolangType]) *GolangTypePromise {
 	return &GolangTypePromise{
-		Promise: *newPromise[common.GolangType](ref, common.PromiseOriginInternal, nil, nil),
-	}
-}
-
-func NewGolangTypeAssignCbPromise(ref string, findCb common.PromiseFindCbFunc, assignCb promiseAssignCbFunc[common.GolangType]) *GolangTypePromise {
-	return &GolangTypePromise{
-		Promise: *newPromise[common.GolangType](ref, common.PromiseOriginInternal, findCb, assignCb),
+		Promise: *newPromise[common.GolangType](ref, common.PromiseOriginInternal, nil, assignCb),
 	}
 }
 
@@ -176,9 +162,9 @@ type ListPromise[T any] struct {
 }
 
 func (r *ListPromise[T]) AssignList(objs []any) {
-	if r.assignCb != nil {
+	if r.assignItemCb != nil {
 		r.targets = lo.Map(objs, func(item any, _ int) T {
-			return r.assignCb(item)
+			return r.assignItemCb(item)
 		})
 		r.assigned = true
 		return

@@ -11,10 +11,10 @@ type AsyncAPI struct {
 	Asyncapi           string                            `json:"asyncapi" yaml:"asyncapi"`
 	ID                 string                            `json:"id" yaml:"id"`
 	Info               InfoItem                          `json:"info" yaml:"info"`
-	Servers            types.OrderedMap[string, Server]  `json:"servers" yaml:"servers"`
+	Servers            types.OrderedMap[string, Server]  `json:"servers" yaml:"servers" cgen:"selectable"`
 	DefaultContentType string                            `json:"defaultContentType" yaml:"defaultContentType"`
-	Channels           types.OrderedMap[string, Channel] `json:"channels" yaml:"channels"`
-	Operations		 types.OrderedMap[string, Operation] `json:"operations" yaml:"operations"`
+	Channels           types.OrderedMap[string, Channel] `json:"channels" yaml:"channels" cgen:"selectable"`
+	Operations		 types.OrderedMap[string, Operation] `json:"operations" yaml:"operations" cgen:"selectable"`
 	Components         ComponentsItem                    `json:"components" yaml:"components"`
 }
 

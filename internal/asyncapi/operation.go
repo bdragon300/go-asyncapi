@@ -55,16 +55,16 @@ func (o Operation) build(ctx *common.CompileContext, operationKey string, flags 
 		return &render.Operation{Dummy: true}, nil
 	}
 
-	_, isComponent := flags[common.SchemaTagComponent]
+	_, isSelectable := flags[common.SchemaTagSelectable]
 	if o.Ref != "" {
 		// Make a promise selectable if it defined in `operations` section
-		return registerRef(ctx, o.Ref, operationKey, lo.Ternary(isComponent, nil, lo.ToPtr(true))), nil
+		return registerRef(ctx, o.Ref, operationKey, lo.Ternary(isSelectable, lo.ToPtr(true), nil)), nil
 	}
 
 	res := &render.Operation{
 		OriginalName: operationKey,
-		IsComponent: isComponent,
-		IsPublisher: o.Action == OperationActionSend,
+		IsSelectable: isSelectable,
+		IsPublisher:  o.Action == OperationActionSend,
 		IsSubscriber: o.Action == OperationActionReceive,
 	}
 
@@ -73,7 +73,7 @@ func (o Operation) build(ctx *common.CompileContext, operationKey string, flags 
 	}
 
 	ctx.Logger.Trace("Bound channel", "ref", o.Channel.Ref)
-	prm := lang.NewPromise[*render.Channel](o.Channel.Ref)
+	prm := lang.NewPromise[*render.Channel](o.Channel.Ref,nil)
 	ctx.PutPromise(prm)
 	res.ChannelPromise = prm
 
@@ -81,7 +81,7 @@ func (o Operation) build(ctx *common.CompileContext, operationKey string, flags 
 		ctx.Logger.Trace("Found operation bindings")
 
 		ref := ctx.PathStackRef("bindings")
-		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref)
+		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, nil)
 		ctx.PutPromise(res.BindingsPromise)
 
 		res.BindingsType = &lang.GoStruct{
@@ -95,7 +95,7 @@ func (o Operation) build(ctx *common.CompileContext, operationKey string, flags 
 	for _, message := range o.Messages {
 		ctx.Logger.Trace("Operation message", "ref", message.Ref)
 
-		prm := lang.NewPromise[*render.Message](message.Ref)
+		prm := lang.NewPromise[*render.Message](message.Ref, nil)
 		ctx.PutPromise(prm)
 		res.MessagesPromises = append(res.MessagesPromises, prm)
 	}
@@ -107,7 +107,7 @@ func (o Operation) build(ctx *common.CompileContext, operationKey string, flags 
 	ctx.Logger.Trace("Prebuild the operations for every supported protocol")
 	for proto := range ProtocolBuilders {
 		ctx.Logger.Trace("Operation", "proto", proto)
-		prm := lang.NewGolangTypeAssignCbPromise(o.Channel.Ref, nil, func(obj any) common.GolangType {
+		prmProtoChType := lang.NewGolangTypePromise(o.Channel.Ref, func(obj any) common.GolangType {
 			ch := obj.(*render.Channel)
 			protoCh, found := lo.Find(ch.ProtoChannels, func(p *render.ProtoChannel) bool {
 				return p.Protocol == proto
@@ -117,6 +117,18 @@ func (o Operation) build(ctx *common.CompileContext, operationKey string, flags 
 			}
 			return protoCh.Type
 		})
+		ctx.PutPromise(prmProtoChType)
+		prmProtoCh := lang.NewPromise[*render.ProtoChannel](o.Channel.Ref, func(obj any) *render.ProtoChannel {
+			ch := obj.(*render.Channel)
+			protoCh, found := lo.Find(ch.ProtoChannels, func(p *render.ProtoChannel) bool {
+				return p.Protocol == proto
+			})
+			if !found {
+				panic(fmt.Sprintf("ProtoChannel[%s] not found in %s. This is a bug", proto, ch))
+			}
+			return protoCh
+		})
+		ctx.PutPromise(prmProtoCh)
 		res.ProtoOperations = append(res.ProtoOperations, &render.ProtoOperation{
 			Operation: res,
 			Type: &lang.GoStruct{
@@ -125,10 +137,11 @@ func (o Operation) build(ctx *common.CompileContext, operationKey string, flags 
 					HasDefinition: true,
 				},
 				Fields: []lang.GoStructField{
-					{Type: prm},
+					{Name: "Channel", Type: &lang.GoPointer{Type: prmProtoChType}},
 				},
 			},
-			Protocol: proto,
+			ProtoChannelPromise: prmProtoCh,
+			Protocol:            proto,
 		})
 	}
 

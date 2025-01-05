@@ -11,9 +11,9 @@ import (
 type Message struct {
 	OriginalName string
 	OutType      *lang.GoStruct
-	InType               *lang.GoStruct
-	Dummy                bool
-	IsComponent bool // true if message is defined in `components` section
+	InType       *lang.GoStruct
+	Dummy        bool
+	IsSelectable bool // true if message should get to selections
 
 	HeadersFallbackType  *lang.GoMap
 	HeadersTypePromise   *lang.Promise[*lang.GoStruct]
@@ -37,7 +37,7 @@ func (m *Message) Kind() common.ObjectKind {
 }
 
 func (m *Message) Selectable() bool {
-	return !m.Dummy && !m.IsComponent // Select only the messages defined in the `channels` section`
+	return !m.Dummy && m.IsSelectable // Select only the messages defined in the `channels` section`
 }
 
 func (m *Message) Visible() bool {

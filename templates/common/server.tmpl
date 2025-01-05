@@ -1,11 +1,11 @@
 {{define "server/proto/channelOpenMethods"}}
 {{- range .BoundChannels}}
     {{- with .SelectProtoObject $.Protocol }}
-        func (s {{ $.Type | gousage }}) OpenChannel{{ . | goid }}(
+        func (s {{ $.Type | gousage }}) OpenChannel{{ . | goid }}{{$.Protocol | capitalize | goid}}(
             ctx {{goqual "context.Context"}},
             {{with .ParametersType}}params {{ . | gousage }},{{end}}
         ) (ch *{{ .Type | gousage }}, err error) {
-            return {{gopkg .Type}}Open{{ .Type | goid }}(
+            return {{gopkg .Type}}Open{{ . | goid }}{{$.Protocol | capitalize | goid}}(
                 ctx,
                 {{- if .ParametersType}}params,{{end}}
                 {{- if .IsPublisher}}s.producer,{{end}}
@@ -19,13 +19,13 @@
 {{define "server/proto/operationOpenMethods"}}
 {{- range .BoundOperations}}
     {{- with .SelectProtoObject $.Protocol }}
-        func (s {{ $.Type | gousage }}) OpenOperation{{ . | goid }}(
+        func (s {{ $.Type | gousage }}) OpenOperation{{ .Channel | goid }}{{$.Protocol | capitalize | goid}}{{ . | goid }}(
             ctx {{goqual "context.Context"}},
-            {{with .ParametersType}}params {{ . | gousage }},{{end}}
+            {{with .Channel.ParametersType}}params {{ . | gousage }},{{end}}
         ) (ch *{{ .Type | gousage }}, err error) {
-            return {{gopkg .Type}}Open{{ .Type | goid }}(
+            return {{gopkg .Type}}Open{{ .Channel | goid }}{{$.Protocol | capitalize | goid}}{{ . | goid }}(
                 ctx,
-                {{- if .ParametersType}}params,{{end}}
+                {{- if .Channel.ParametersType}}params,{{end}}
                 {{- if .IsPublisher}}s.producer,{{end}}
                 {{- if .IsSubscriber}}s.consumer,{{end}}
             )

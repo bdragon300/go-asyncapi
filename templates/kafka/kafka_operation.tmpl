@@ -1,21 +1,14 @@
-{{define "operation/kafka/newFunction/block1"}}
-    res.topic = res.name.String()
-    {{- if .BindingsType}}
-        bindings := {{.BindingsType | gousage}}{}.{{.Protocol | capitalize | goid}}()
-        if bindings.Topic != "" {
-            res.topic = bindings.Topic
-        }
-    {{- end}}
-{{- end}}
 {{define "operation/kafka/publishMethods/block1"}}
-    envelope.SetTopic(o.topic)
+    envelope.SetTopic(o.Channel.Topic())
 {{- end}}
-
 {{- with deref .}}
+    {{ .Type | def }}
+    {{template "operation/proto/newFunction" .}}
     {{template "operation/proto/openFunction" .}}
 
     {{ .Type | godef }}
 
+    {{template "operation/proto/commonMethods" .}}
     {{if .IsPublisher}}{{template "operation/proto/publishMethods" .}}{{end}}
     {{if .IsSubscriber}}{{template "operation/proto/subscribeMethods" .}}{{end}}
     {{template "operation/proto/serverInterface" .}}

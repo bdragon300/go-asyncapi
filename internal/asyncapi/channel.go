@@ -46,18 +46,18 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 		return &render.Channel{Dummy: true}, nil
 	}
 
-	_, isComponent := flags[common.SchemaTagComponent]
+	_, isSelectable := flags[common.SchemaTagSelectable]
 	if c.Ref != "" {
 		// Make a promise selectable if it defined in `channels` section
-		return registerRef(ctx,  c.Ref, channelKey, lo.Ternary(isComponent, nil, lo.ToPtr(true))), nil
+		return registerRef(ctx, c.Ref, channelKey, lo.Ternary(isSelectable, lo.ToPtr(true), nil)), nil
 	}
 
 	chName, _ := lo.Coalesce(c.XGoName, channelKey)
 	res := &render.Channel{
 		OriginalName: chName,
-		Address: c.Address,
-		IsComponent:  isComponent,
-		IsPublisher: ctx.CompileOpts.GeneratePublishers,
+		Address:      c.Address,
+		IsSelectable: isSelectable,
+		IsPublisher:  ctx.CompileOpts.GeneratePublishers,
 		IsSubscriber: ctx.CompileOpts.GenerateSubscribers,
 	}
 
@@ -65,7 +65,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 	if len(c.Servers) > 0 {
 		ctx.Logger.Trace("Channel servers", "refs", c.Servers)
 		for _, srvRef := range c.Servers {
-			prm := lang.NewPromise[*render.Server](srvRef.Ref)
+			prm := lang.NewPromise[*render.Server](srvRef.Ref, nil)
 			res.ServersPromises = append(res.ServersPromises, prm)
 			ctx.PutPromise(prm)
 		}
@@ -94,7 +94,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 		for _, paramName := range c.Parameters.Keys() {
 			ctx.Logger.Trace("Channel parameter", "name", paramName)
 			ref := ctx.PathStackRef("parameters", paramName)
-			prm := lang.NewGolangTypeAssignCbPromise(ref, nil, func(obj any) common.GolangType {
+			prm := lang.NewGolangTypePromise(ref, func(obj any) common.GolangType {
 				return obj.(*render.Parameter).Type
 			})
 			ctx.PutPromise(prm)
@@ -106,12 +106,12 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 		ctx.Logger.PrevCallLevel()
 	}
 
-	for _, msgEntry := range c.Messages.Entries() {
-		msgName, ref := msgEntry.Key, msgEntry.Value
+	for _, msgName := range c.Messages.Keys() {
 		ctx.Logger.Trace("Channel message", "name", msgName)
-		refObj := lang.NewRef(ref.Ref, msgName, lo.ToPtr(false))
-		ctx.PutPromise(refObj)
-		res.MessagesPromises = append(res.MessagesPromises, refObj)
+		ref := ctx.PathStackRef("messages", msgName)
+		prm2 := lang.NewRef(ref, msgName, lo.ToPtr(true))
+		ctx.PutPromise(prm2)
+		res.MessagesRefs = append(res.MessagesRefs, prm2)
 	}
 
 	// All known Operations
@@ -129,7 +129,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 		ctx.Logger.Trace("Found channel bindings")
 
 		ref := ctx.PathStackRef("bindings")
-		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref)
+		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, nil)
 		ctx.PutPromise(res.BindingsPromise)
 
 		res.BindingsType = &lang.GoStruct{
@@ -161,5 +161,5 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 
 
 type SecurityRequirement struct {
-	types.OrderedMap[string, []string] // FIXME: orderedmap must be in fields as utils.OrderedMap[SecurityRequirement, []SecurityRequirement]
+	types.OrderedMap[string, types.Union2[[]string, string]]  // Possible values: `"name": []` or `"$ref": "url"`
 }

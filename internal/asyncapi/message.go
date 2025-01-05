@@ -47,7 +47,6 @@ func (m Message) Compile(ctx *common.CompileContext) error {
 }
 
 func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Renderable, error) {
-	_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagComponent]
 	if m.XIgnore {
 		ctx.Logger.Debug("Message denoted to be ignored")
 		return &render.Message{Dummy: true}, nil
@@ -58,19 +57,16 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 
 		// Message is the only type of objects, that has their own root key, the key in components and can be used
 		// as ref in other objects at the same time (at channel.[publish|subscribe].message).
-		// Therefore, a message object may get to selections more than once, it's needed to handle in templates.
+		// Therefore, a message object may get to selections more than once, it's needed to handle it in templates.
 		refName := messageKey
 		pathStack := ctx.Stack.Items()
-		makeSelectable := !isComponent
 		// Ignore the messageKey in definitions other than `messages`, since messageKey always be "message" there.
 		if messageKey == "message" && len(pathStack) > 3 {
 			refName = ""
-			// And force make the message selectable if it was defined in `components.messages` section.
-			makeSelectable = true
 		}
 
 		// Always draw the promises that are located in the `messages` section
-		return registerRef(ctx, m.Ref, refName, lo.Ternary(makeSelectable, lo.ToPtr(true), nil)), nil
+		return registerRef(ctx, m.Ref, refName, nil), nil
 	}
 
 	msgName, _ := lo.Coalesce(m.XGoName, messageKey)
@@ -92,8 +88,8 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		},
 		PayloadType:         m.getPayloadType(ctx),
 		HeadersFallbackType: &lang.GoMap{KeyType: &lang.GoSimple{TypeName: "string"}, ValueType: &lang.GoSimple{TypeName: "any", IsInterface: true}},
-		ContentType: m.ContentType,
-		IsComponent: isComponent,
+		ContentType:         m.ContentType,
+		IsSelectable:        true,
 	}
 	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", res.ContentType))
 
@@ -127,7 +123,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	if m.Headers != nil {
 		ctx.Logger.Trace("Message headers")
 		ref := ctx.PathStackRef("headers")
-		res.HeadersTypePromise = lang.NewPromise[*lang.GoStruct](ref)
+		res.HeadersTypePromise = lang.NewPromise[*lang.GoStruct](ref, nil)
 		res.HeadersTypePromise.AssignErrorNote = "Probably the headers schema has type other than of 'object'?"
 		ctx.PutPromise(res.HeadersTypePromise)
 	}
@@ -144,7 +140,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		}
 
 		ref := ctx.PathStackRef("bindings")
-		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref)
+		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref,nil)
 		ctx.PutPromise(res.BindingsPromise)
 	}
 
@@ -152,7 +148,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	if m.CorrelationID != nil {
 		ctx.Logger.Trace("Message correlationId")
 		ref := ctx.PathStackRef("correlationId")
-		res.CorrelationIDPromise = lang.NewPromise[*render.CorrelationID](ref)
+		res.CorrelationIDPromise = lang.NewPromise[*render.CorrelationID](ref,nil)
 		ctx.PutPromise(res.CorrelationIDPromise)
 	}
 
@@ -178,7 +174,7 @@ func (m Message) setStructFields(ctx *common.CompileContext, langMessage *render
 	}
 	if langMessage.HeadersTypePromise != nil {
 		ctx.Logger.Trace("Message headers has a concrete type")
-		prm := lang.NewGolangTypePromise(langMessage.HeadersTypePromise.Ref())
+		prm := lang.NewGolangTypePromise(langMessage.HeadersTypePromise.Ref(), nil)
 		ctx.PutPromise(prm)
 		fields = append(fields, lang.GoStructField{Name: string(render.CorrelationIDStructFieldHeaders), Type: prm})
 	} else {
@@ -194,7 +190,7 @@ func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {
 	if m.Payload != nil {
 		ctx.Logger.Trace("Message payload has a concrete type")
 		ref := ctx.PathStackRef("payload")
-		prm := lang.NewGolangTypePromise(ref)
+		prm := lang.NewGolangTypePromise(ref, nil)
 		ctx.PutPromise(prm)
 		return prm
 	}

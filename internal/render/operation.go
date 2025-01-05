@@ -9,10 +9,10 @@ import (
 )
 
 type Operation struct {
-	OriginalName  string  // Actually it isn't used
-	Dummy            bool
-	IsComponent bool // true if channel is defined in `components` section
-	IsPublisher bool
+	OriginalName string  // Actually it isn't used
+	Dummy        bool
+	IsSelectable bool // true if channel should get to selections
+	IsPublisher  bool
 	IsSubscriber bool
 
 	ChannelPromise *lang.Promise[*Channel] // Channel this operation bound with
@@ -30,7 +30,7 @@ func (o *Operation) Kind() common.ObjectKind {
 }
 
 func (o *Operation) Selectable() bool {
-	return !o.Dummy && !o.IsComponent // Proto channels for each supported protocol
+	return !o.Dummy && o.IsSelectable // Proto channels for each supported protocol
 }
 
 func (o *Operation) Visible() bool {
@@ -98,7 +98,8 @@ func (o *Operation) ProtoBindingsValue(protoName string) common.Renderable {
 type ProtoOperation struct {
 	*Operation
 
-	Type *lang.GoStruct
+	ProtoChannelPromise *lang.Promise[*ProtoChannel]
+	Type                *lang.GoStruct
 	Protocol string
 }
 
@@ -108,6 +109,10 @@ func (p *ProtoOperation) Selectable() bool {
 
 func (p *ProtoOperation) String() string {
 	return fmt.Sprintf("ProtoOperation[%s] %s", p.Protocol, p.OriginalName)
+}
+
+func (p *ProtoOperation) ProtoChannel() *ProtoChannel {
+	return p.ProtoChannelPromise.T()
 }
 
 // isBound returns true if operation is bound to at least one server with supported protocol

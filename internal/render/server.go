@@ -11,8 +11,8 @@ import (
 
 type Server struct {
 	OriginalName string
-	Dummy          bool  // x-ignore is set
-	IsComponent bool // true if server is defined in `components` section
+	Dummy        bool // x-ignore is set
+	IsSelectable bool // true if server is defined in `components` section
 
 	AllActiveChannelsPromise *lang.ListPromise[common.Renderable]
 
@@ -34,7 +34,7 @@ func (s *Server) Kind() common.ObjectKind {
 }
 
 func (s *Server) Selectable() bool {
-	return !s.Dummy && !s.IsComponent // Select only the servers defined in the `channels` section`
+	return !s.Dummy && s.IsSelectable // Select only the servers defined in the `channels` section`
 }
 
 func (s *Server) Visible() bool {
@@ -55,8 +55,8 @@ func (s *Server) Name() string {
 func (s *Server) BoundChannels() []common.Renderable {
 	r := lo.Filter(s.AllActiveChannelsPromise.T(), func(r common.Renderable, _ int) bool {
 		ch := common.DerefRenderable(r).(*Channel)
-		return lo.ContainsBy(ch.BoundServers(), func(s common.Renderable) bool {
-			return common.CheckSameRenderables(s, r)
+		return lo.ContainsBy(ch.BoundServers(), func(item common.Renderable) bool {
+			return common.CheckSameRenderables(s, item)
 		})
 	})
 	return r

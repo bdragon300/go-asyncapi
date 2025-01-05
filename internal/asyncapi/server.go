@@ -39,24 +39,24 @@ func (s Server) Compile(ctx *common.CompileContext) error {
 }
 
 func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Renderable, error) {
-	_, isComponent := ctx.Stack.Top().Flags[common.SchemaTagComponent]
+	_, isSelectable := ctx.Stack.Top().Flags[common.SchemaTagSelectable]
 	if s.XIgnore {
 		ctx.Logger.Debug("Server denoted to be ignored")
 		return &render.Server{Dummy: true}, nil
 	}
 	if s.Ref != "" {
 		// Make a promise selectable if it defined in `servers` section
-		return registerRef(ctx, s.Ref, serverKey, lo.Ternary(isComponent, nil, lo.ToPtr(true))), nil
+		return registerRef(ctx, s.Ref, serverKey, lo.Ternary(isSelectable, lo.ToPtr(true), nil)), nil
 	}
 
 	srvName, _ := lo.Coalesce(s.XGoName, serverKey)
 	res := render.Server{
 		OriginalName:    srvName,
-		Host:			s.Host,
-		Pathname:		s.Pathname,
+		Host:            s.Host,
+		Pathname:        s.Pathname,
 		Protocol:        s.Protocol,
 		ProtocolVersion: s.ProtocolVersion,
-		IsComponent:     isComponent,
+		IsSelectable:    isSelectable,
 	}
 
 	// Channels which are bound to this server
@@ -80,7 +80,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		}
 
 		ref := ctx.PathStackRef("bindings")
-		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref)
+		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, nil)
 		ctx.PutPromise(res.BindingsPromise)
 	}
 
@@ -88,7 +88,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	for _, v := range s.Variables.Entries() {
 		ctx.Logger.Trace("Server variable", "name", v.Key)
 		ref := ctx.PathStackRef("variables", v.Key)
-		prm := lang.NewPromise[*render.ServerVariable](ref)
+		prm := lang.NewPromise[*render.ServerVariable](ref,nil)
 		ctx.PutPromise(prm)
 		res.VariablesPromises.Set(v.Key, prm)
 	}
@@ -113,7 +113,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	res.ProtoServer = protoServer
 
 	// Register protocol only for servers in `servers` document section, not in `components`
-	if !isComponent {
+	if !isSelectable {
 		ctx.Storage.RegisterProtocol(s.Protocol)
 	}
 

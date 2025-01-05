@@ -1,9 +1,14 @@
-{{- def .Type}}
-{{- if .BoundMessages }}
-    {{template "channel/proto/newFunction" .}}
-
-    {{template "channel/proto/openFunction" .}}
+{{define "channel/mqtt/newFunction/block1"}}
+    res.topic = res.address.String()
 {{- end}}
+{{define "channel/mqtt/publishMethods/block1"}}
+    envelope.SetTopic(c.Topic())
+{{- end}}
+
+{{- def .Type}}
+{{template "channel/proto/newFunction" .}}
+
+{{template "channel/proto/openFunction" .}}
 
 {{- if ndefined .Type}}
 {{ .Type | godef }}

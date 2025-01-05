@@ -1,9 +1,20 @@
-{{- def .Type}}
-{{- if .BoundMessages }}
-    {{template "channel/proto/newFunction" .}}
-
-    {{template "channel/proto/openFunction" .}}
+{{define "channel/kafka/newFunction/block1"}}
+    res.topic = res.address.String()
+    {{- if .BindingsType}}
+        bindings := {{.BindingsType | gousage}}{}.{{.Protocol | capitalize | goid}}()
+        if bindings.Topic != "" {
+            res.topic = bindings.Topic
+        }
+    {{- end}}
 {{- end}}
+{{define "channel/kafka/publishMethods/block1"}}
+    envelope.SetTopic(c.Topic())
+{{- end}}
+
+{{- def .Type}}
+{{template "channel/proto/newFunction" .}}
+
+{{template "channel/proto/openFunction" .}}
 
 {{- if ndefined .Type}}
 {{.Type | godef}}

@@ -1,9 +1,7 @@
 {{- def .Type}}
-{{- if .BoundMessages }}
-    {{template "channel/proto/newFunction" .}}
+{{template "channel/proto/newFunction" .}}
 
-    {{template "channel/proto/openFunction" .}}
-{{- end}}
+{{template "channel/proto/openFunction" .}}
 
 {{- if ndefined .Type}}
 {{.Type| godef}}
