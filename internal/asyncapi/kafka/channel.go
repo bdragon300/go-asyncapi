@@ -65,7 +65,7 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 		vals.StructValues.Set("Replicas", *bindings.Replicas)
 	}
 	if bindings.TopicConfiguration != nil {
-		tcVals := lang.ConstructGoValue(*bindings.TopicConfiguration, []string{"CleanupPolicy", "RetentionTime", "DeleteRetentionTime"}, &lang.GoSimple{TypeName: "TopicConfiguration", Import: ctx.RuntimeModule(pb.ProtoName)})
+		tcVals := lang.ConstructGoValue(*bindings.TopicConfiguration, []string{"CleanupPolicy", "RetentionMs", "DeleteRetentionMs"}, &lang.GoSimple{TypeName: "TopicConfiguration", Import: ctx.RuntimeModule(pb.ProtoName)})
 
 		// TopicConfiguration->CleanupPolicy
 		if len(bindings.TopicConfiguration.CleanupPolicy) > 0 {

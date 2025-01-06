@@ -30,11 +30,13 @@ func (o *Operation) Kind() common.ObjectKind {
 }
 
 func (o *Operation) Selectable() bool {
-	return !o.Dummy && o.IsSelectable // Proto channels for each supported protocol
+	// Proto channels for each supported protocol
+	// If bound channel is not selectable, then operation is not selectable as well
+	return !o.Dummy && !o.ChannelPromise.T().Selectable() && o.IsSelectable
 }
 
 func (o *Operation) Visible() bool {
-	return !o.Dummy
+	return !o.Dummy && !o.ChannelPromise.T().Visible()
 }
 
 func (o *Operation) String() string {

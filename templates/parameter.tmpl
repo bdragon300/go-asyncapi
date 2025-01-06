@@ -3,9 +3,5 @@
 {{- if ndefined .Type}}
 {{.Type | godef}}
 
-func (p {{.Type| gousage}}) Name() string {
-    return {{  . | goid | golit }}
-}
-
 {{- end}}
 {{- end}}

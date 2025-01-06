@@ -1,11 +1,13 @@
 package render
 
 import (
+	"cmp"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
+	"slices"
 )
 
 type Channel struct {
@@ -19,6 +21,7 @@ type Channel struct {
 	ServersPromises   []*lang.Promise[*Server] // Servers that this channel is bound with. Empty list means "no servers bound".
 	AllActiveServersPromise *lang.ListPromise[common.Renderable]
 
+	ParametersPromises []*lang.Ref // nil if no parameters
 	ParametersType *lang.GoStruct // nil if no parameters
 
 	MessagesRefs []*lang.Ref
@@ -66,10 +69,19 @@ func (c *Channel) SelectProtoObject(protocol string) common.Renderable {
 }
 
 func (c *Channel) BoundServers() []common.Renderable {
-	if len(c.ServersPromises) == 0 {
-		return c.AllActiveServersPromise.T()
+	if c.Dummy {
+		return nil
 	}
-	return lo.Map(c.ServersPromises, func(s *lang.Promise[*Server], _ int) common.Renderable { return s.T() })
+
+	var res []common.Renderable
+	if len(c.ServersPromises) == 0 {
+		res = c.AllActiveServersPromise.T()
+		// ListPromise is filled up by linker, which doesn't guarantee the order. So, sort items by name
+		slices.SortFunc(res, func(a, b common.Renderable) int { return cmp.Compare(a.Name(), b.Name()) })
+	}
+	res = lo.Map(c.ServersPromises, func(s *lang.Promise[*Server], _ int) common.Renderable { return s.T() })
+
+	return res
 }
 
 func (c *Channel) BoundMessages() []common.Renderable {
@@ -85,10 +97,15 @@ func (c *Channel) BoundMessages() []common.Renderable {
 }
 
 func (c *Channel) BoundOperations() []common.Renderable {
+	if c.Dummy {
+		return nil
+	}
 	r := lo.Filter(c.AllActiveOperationsPromise.T(), func(o common.Renderable, _ int) bool {
 		op := common.DerefRenderable(o).(*Operation)
 		return common.CheckSameRenderables(op.Channel(), c)
 	})
+	// ListPromise is filled up by linker, which doesn't guarantee the order. So, sort items by name
+	slices.SortFunc(r, func(a, b common.Renderable) int { return cmp.Compare(a.Name(), b.Name()) })
 	return r
 }
 
@@ -121,6 +138,11 @@ func (c *Channel) ProtoBindingsValue(protoName string) common.Renderable {
 		}
 	}
 	return res
+}
+
+func (c *Channel) Parameters() []common.Renderable {
+	r := lo.Map(c.ParametersPromises, func(prm *lang.Ref, _ int) common.Renderable { return prm })
+	return r
 }
 
 func (c *Channel) Messages() []common.Renderable {

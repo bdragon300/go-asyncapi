@@ -7,8 +7,8 @@
 func {{$ | goid}}Address({{with .ParametersType}}params {{. | gousage}}{{end}}) {{goqualrun "ParamString"}} {
 {{- if .ParametersType}}
     paramMap := map[string]string{
-    {{- range .ParametersType.Fields}}
-        params.{{.Name}}.Name(): string(params.{{.Name}}),
+    {{- range .Parameters}}
+        {{.Name | golit}}: string(params.{{. | goid | capitalize }}),
     {{- end}}
     }
     return {{goqualrun "ParamString"}}{

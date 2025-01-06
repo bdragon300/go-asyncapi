@@ -1,11 +1,11 @@
 {{define "server/proto/channelOpenMethods"}}
-{{- range .BoundChannels}}
-    {{- with .SelectProtoObject $.Protocol }}
-        func (s {{ $.Type | gousage }}) OpenChannel{{ . | goid }}{{$.Protocol | capitalize | goid}}(
+{{- range $channel := .BoundChannels}}
+    {{- with (deref .).SelectProtoObject $.Protocol }}
+        func (s {{ $.Type | gousage }}) OpenChannel{{ $channel | goid }}{{$.Protocol | capitalize | goid}}(
             ctx {{goqual "context.Context"}},
             {{with .ParametersType}}params {{ . | gousage }},{{end}}
         ) (ch *{{ .Type | gousage }}, err error) {
-            return {{gopkg .Type}}Open{{ . | goid }}{{$.Protocol | capitalize | goid}}(
+            return {{gopkg .Type}}Open{{ $channel | goid }}{{$.Protocol | capitalize | goid}}(
                 ctx,
                 {{- if .ParametersType}}params,{{end}}
                 {{- if .IsPublisher}}s.producer,{{end}}
@@ -17,17 +17,17 @@
 {{- end}}
 
 {{define "server/proto/operationOpenMethods"}}
-{{- range .BoundOperations}}
-    {{- with .SelectProtoObject $.Protocol }}
-        func (s {{ $.Type | gousage }}) OpenOperation{{ .Channel | goid }}{{$.Protocol | capitalize | goid}}{{ . | goid }}(
+{{- range $operation := .BoundOperations}}
+    {{- with (deref .).SelectProtoObject $.Protocol }}
+        func (s {{ $.Type | gousage }}) OpenOperation{{ $operation.Channel | goid }}{{$.Protocol | capitalize | goid}}{{ $operation | goid }}(
             ctx {{goqual "context.Context"}},
-            {{with .Channel.ParametersType}}params {{ . | gousage }},{{end}}
+            {{with $operation.Channel.ParametersType}}params {{ . | gousage }},{{end}}
         ) (ch *{{ .Type | gousage }}, err error) {
-            return {{gopkg .Type}}Open{{ .Channel | goid }}{{$.Protocol | capitalize | goid}}{{ . | goid }}(
+            return {{gopkg .Type}}Open{{ $operation.Channel | goid }}{{$.Protocol | capitalize | goid}}{{ . | goid }}(
                 ctx,
-                {{- if .Channel.ParametersType}}params,{{end}}
-                {{- if .IsPublisher}}s.producer,{{end}}
-                {{- if .IsSubscriber}}s.consumer,{{end}}
+                {{- if $operation.Channel.ParametersType}}params,{{end}}
+                {{- if $operation.IsPublisher}}s.producer,{{end}}
+                {{- if $operation.IsSubscriber}}s.consumer,{{end}}
             )
         }
     {{- end}}

@@ -52,6 +52,9 @@ func GetTemplateFunctions() template.FuncMap {
 
 		// Type helpers
 		"deref": func(r common.Renderable) common.Renderable {
+			if r == nil {
+				return nil
+			}
 			return common.DerefRenderable(r)
 		},
 		"innertype": func(val common.GolangType) common.GolangType {

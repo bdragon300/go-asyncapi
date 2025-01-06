@@ -2,7 +2,10 @@ package asyncapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
+	"github.com/samber/lo"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
@@ -101,3 +104,50 @@ func BuildProtoServerStruct(
 
 	return &srvStruct, nil
 }
+
+func BuildProtoOperation(ctx *common.CompileContext, source *Operation, target *render.Operation, proto string) *render.ProtoOperation {
+	prmChType := lang.NewGolangTypePromise(source.Channel.Ref, func(obj any) common.GolangType {
+		ch := obj.(*render.Channel)
+		if ch.Dummy {
+			return &lang.GoSimple{TypeName: "any", IsInterface: true}  // Dummy type
+		}
+		protoCh, found := lo.Find(ch.ProtoChannels, func(p *render.ProtoChannel) bool {
+			return p.Protocol == proto
+		})
+		if !found {
+			panic(fmt.Sprintf("ProtoChannel[%s] not found in %s. This is a bug", proto, ch))
+		}
+		return protoCh.Type
+	})
+	ctx.PutPromise(prmChType)
+	prmCh := lang.NewPromise[*render.ProtoChannel](source.Channel.Ref, func(obj any) *render.ProtoChannel {
+		ch := obj.(*render.Channel)
+		if ch.Dummy {
+			return &render.ProtoChannel{Channel: ch, Protocol: proto}  // Dummy channel
+		}
+		protoCh, found := lo.Find(ch.ProtoChannels, func(p *render.ProtoChannel) bool {
+			return p.Protocol == proto
+		})
+		if !found {
+			panic(fmt.Sprintf("ProtoChannel[%s] not found in %s. This is a bug", proto, ch))
+		}
+		return protoCh
+	})
+	ctx.PutPromise(prmCh)
+
+	return &render.ProtoOperation{
+		Operation: target,
+		Type: &lang.GoStruct{
+			BaseType: lang.BaseType{
+				OriginalName:  utils.ToGolangName(target.OriginalName+lo.Capitalize(proto), true),
+				HasDefinition: true,
+			},
+			Fields: []lang.GoStructField{
+				{Name: "Channel", Type: &lang.GoPointer{Type: prmChType}},
+			},
+		},
+		ProtoChannelPromise: prmCh,
+		Protocol:            proto,
+	}
+}
+

@@ -1,11 +1,13 @@
 package render
 
 import (
+	"cmp"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
+	"slices"
 )
 
 type Message struct {
@@ -56,8 +58,8 @@ func (m *Message) Name() string {
 }
 
 func (m *Message) EffectiveContentType() string {
-	if m.AsyncAPIPromise == nil {
-		return fallbackContentType
+	if m.Dummy {
+		return ""
 	}
 	res, _ := lo.Coalesce(m.ContentType, m.AsyncAPIPromise.T().EffectiveDefaultContentType())
 	return res
@@ -96,9 +98,6 @@ func (m *Message) CorrelationID() *CorrelationID {
 }
 
 func (m *Message) AsyncAPI() *AsyncAPI {
-	if m.AsyncAPIPromise == nil {
-		return nil
-	}
 	return m.AsyncAPIPromise.T()
 }
 
@@ -109,6 +108,8 @@ func (m *Message) BoundChannels() []common.Renderable {
 			return common.CheckSameRenderables(item, m)
 		})
 	})
+	// ListPromise is filled up by linker, which doesn't guarantee the order. So, sort items by name
+	slices.SortFunc(r, func(a, b common.Renderable) int { return cmp.Compare(a.Name(), b.Name()) })
 	return r
 }
 
@@ -119,6 +120,8 @@ func (m *Message) BoundOperations() []common.Renderable {
 			return common.CheckSameRenderables(item, m)
 		})
 	})
+	// ListPromise is filled up by linker, which doesn't guarantee the order. So, sort items by name
+	slices.SortFunc(r, func(a, b common.Renderable) int { return cmp.Compare(a.Name(), b.Name()) })
 	return r
 }
 

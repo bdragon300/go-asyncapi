@@ -1,6 +1,6 @@
 {{define "message/proto/marshalMethods"}}
 {{- range .BoundChannels}}
-    {{- if and (visible .) .IsPublisher}}
+    {{- if and (visible .) (deref .).IsPublisher}}
         func (m *{{ $.OutType | goid }}) MarshalChannel{{. | goid}}{{$.Protocol | capitalize | goid}}(envelope {{goqualrun $.Protocol "EnvelopeWriter"}}) error {
             return m.MarshalEnvelope{{$.Protocol | capitalize | goid}}(envelope)
         }
@@ -8,7 +8,7 @@
 {{- end}}
 
 {{- range .BoundOperations}}
-    {{- if and (visible .) .IsPublisher}}
+    {{- if and (visible .) (deref .).IsPublisher}}
         func (m *{{ $.OutType | goid }}) MarshalOperation{{. | goid}}{{$.Protocol | capitalize | goid}}(envelope {{goqualrun $.Protocol "EnvelopeWriter"}}) error {
             return m.MarshalEnvelope{{$.Protocol | capitalize | goid}}(envelope)
         }
@@ -17,7 +17,7 @@
 
 func (m *{{ .OutType | goid }}) MarshalEnvelope{{ .Protocol | capitalize | goid }}(envelope {{goqualrun .Protocol "EnvelopeWriter"}}) error {
     {{- template "message/proto/encoder" .}}
-    envelope.SetContentType({{.ContentType | golit}})
+    envelope.SetContentType({{.EffectiveContentType | golit}})
     {{- with .HeadersType}}
         envelope.SetHeaders({
         {{- range .Fields}}
@@ -33,7 +33,7 @@ func (m *{{ .OutType | goid }}) MarshalEnvelope{{ .Protocol | capitalize | goid 
 
 {{define "message/proto/unmarshalMethods"}}
 {{- range .BoundChannels}}
-    {{- if and (visible .) .IsSubscriber}}
+    {{- if and (visible .) (deref .).IsSubscriber}}
         func (m *{{ $.InType | goid }}) UnmarshalChannel{{. | goid}}{{$.Protocol | capitalize | goid}}(envelope {{goqualrun $.Protocol "EnvelopeReader"}}) error {
             return m.UnmarshalEnvelope{{$.Protocol | capitalize | goid}}(envelope)
         }
@@ -41,7 +41,7 @@ func (m *{{ .OutType | goid }}) MarshalEnvelope{{ .Protocol | capitalize | goid 
 {{- end}}
 
 {{- range .BoundOperations}}
-    {{- if and (visible .) .IsSubscriber}}
+    {{- if and (visible .) (deref .).IsSubscriber}}
         func (m *{{ $.InType | goid }}) UnmarshalOperation{{. | goid}}{{$.Protocol | capitalize | goid}}(envelope {{goqualrun $.Protocol "EnvelopeReader"}}) error {
             return m.UnmarshalEnvelope{{$.Protocol | capitalize | goid}}(envelope)
         }
@@ -68,17 +68,17 @@ func (m *{{ .InType | goid }}) UnmarshalEnvelope{{ .Protocol | capitalize | goid
 {{- end}}
 
 {{define "message/proto/encoder"}}
-{{with trytmpl (print "message/proto/encoder/" .EffectiveContentType) .}}
+{{- with trytmpl (print "message/proto/encoder/" .EffectiveContentType) .}}
     {{.}}
-{{else}}
+{{- else}}
     {{template "message/proto/encoder/default" .}}
-{{end}}
+{{- end}}
 {{- end}}
 
 {{define "message/proto/decoder"}}
-{{with trytmpl (print "message/proto/decoder/" .EffectiveContentType) .}}
+{{- with trytmpl (print "message/proto/decoder/" .EffectiveContentType) .}}
     {{.}}
-{{else}}
+{{- else}}
     {{template "message/proto/decoder/default" .}}
-{{end}}
+{{- end}}
 {{- end}}

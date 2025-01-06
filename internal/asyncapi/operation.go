@@ -2,7 +2,6 @@ package asyncapi
 
 import (
 	"errors"
-	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
@@ -107,42 +106,7 @@ func (o Operation) build(ctx *common.CompileContext, operationKey string, flags 
 	ctx.Logger.Trace("Prebuild the operations for every supported protocol")
 	for proto := range ProtocolBuilders {
 		ctx.Logger.Trace("Operation", "proto", proto)
-		prmProtoChType := lang.NewGolangTypePromise(o.Channel.Ref, func(obj any) common.GolangType {
-			ch := obj.(*render.Channel)
-			protoCh, found := lo.Find(ch.ProtoChannels, func(p *render.ProtoChannel) bool {
-				return p.Protocol == proto
-			})
-			if !found {
-				panic(fmt.Sprintf("ProtoChannel[%s] not found in %s. This is a bug", proto, ch))
-			}
-			return protoCh.Type
-		})
-		ctx.PutPromise(prmProtoChType)
-		prmProtoCh := lang.NewPromise[*render.ProtoChannel](o.Channel.Ref, func(obj any) *render.ProtoChannel {
-			ch := obj.(*render.Channel)
-			protoCh, found := lo.Find(ch.ProtoChannels, func(p *render.ProtoChannel) bool {
-				return p.Protocol == proto
-			})
-			if !found {
-				panic(fmt.Sprintf("ProtoChannel[%s] not found in %s. This is a bug", proto, ch))
-			}
-			return protoCh
-		})
-		ctx.PutPromise(prmProtoCh)
-		res.ProtoOperations = append(res.ProtoOperations, &render.ProtoOperation{
-			Operation: res,
-			Type: &lang.GoStruct{
-				BaseType: lang.BaseType{
-					OriginalName: ctx.GenerateObjName(operationKey, "ProtoOperation"),
-					HasDefinition: true,
-				},
-				Fields: []lang.GoStructField{
-					{Name: "Channel", Type: &lang.GoPointer{Type: prmProtoChType}},
-				},
-			},
-			ProtoChannelPromise: prmProtoCh,
-			Protocol:            proto,
-		})
+		res.ProtoOperations = append(res.ProtoOperations, BuildProtoOperation(ctx, &o, res, proto))
 	}
 
 	return res, nil

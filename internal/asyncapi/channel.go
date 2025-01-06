@@ -94,14 +94,18 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 		for _, paramName := range c.Parameters.Keys() {
 			ctx.Logger.Trace("Channel parameter", "name", paramName)
 			ref := ctx.PathStackRef("parameters", paramName)
-			prm := lang.NewGolangTypePromise(ref, func(obj any) common.GolangType {
+			prmType := lang.NewGolangTypePromise(ref, func(obj any) common.GolangType {
 				return obj.(*render.Parameter).Type
 			})
-			ctx.PutPromise(prm)
+			ctx.PutPromise(prmType)
 			res.ParametersType.Fields = append(res.ParametersType.Fields, lang.GoStructField{
 				Name: utils.ToGolangName(paramName, true),
-				Type: prm,
+				Type: prmType,
 			})
+
+			prm := lang.NewRef(ref, paramName, nil)
+			res.ParametersPromises = append(res.ParametersPromises, prm)
+			ctx.PutPromise(prm)
 		}
 		ctx.Logger.PrevCallLevel()
 	}
@@ -158,7 +162,6 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 
 	return res, nil
 }
-
 
 type SecurityRequirement struct {
 	types.OrderedMap[string, types.Union2[[]string, string]]  // Possible values: `"name": []` or `"$ref": "url"`
