@@ -181,12 +181,12 @@ func templateGoID(val any, forceCapitalize bool) string {
 
 	switch v := val.(type) {
 	case common.Renderable:
-		// Prefers the name of the topObject over the name of the val, if topObject is a Ref points to val.
-		// Otherwise, uses the name of the val.
+		// Prefer the name of the topObject over the name of the val if the topObject is a Ref and points to val.
+		// Otherwise, use the name of the val.
 		//
-		// For example, context contains the topObject is a Ref defined in `servers.myServer` section. But in val
-		// we've got a render.Server object defined in `components.servers.reusableServer`. We would like to see
-		// "myServer" in the generated code instead of "reusableServer" in this case.
+		// For example, the topObject is a lang.Ref defined in `servers.myServer`. val contains the render.Server
+		// defined in `components.servers.reusableServer` that this Ref is points to. Then we'll use the "myServer"
+		// as the server name in generated code: functions, structs, etc.
 		topObject := common.GetContext().GetObject()
 		res = lo.Ternary(common.CheckSameRenderables(topObject.Renderable, v), topObject.Name(), v.Name())
 	case string:
