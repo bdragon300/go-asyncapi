@@ -139,7 +139,7 @@ type {{ .Channel | goid }}ChannelEnvelopeUnmarshaler{{.Protocol | goid}} interfa
 
     func (c {{ $.Type | gousage }}) Subscribe{{. | goid}}(
         ctx {{goqual "context.Context"}},
-        cb func(message {{ (deref .).InType | goptr }}),
+        cb func(message {{ (deref .).InType | ptr | gousage }}),
     ) (err error) {
         subCtx, cancel := {{goqual "context.WithCancelCause"}}(ctx)
         defer cancel(nil)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/log"
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 	"path"
@@ -21,7 +22,6 @@ func GetTemplateFunctions() template.FuncMap {
 	extraFuncs := template.FuncMap{
 		// Functions that return go code as string
 		"golit": func(val any) (string, error) { return templateGoLit(val) },
-		"goptr": func(val common.GolangType) (string, error) { return templateGoPtr(val) },
 		"goid": func(val any) string { return templateGoID(val, true) },
 		"goidorig": func(val any) string { return templateGoID(val, false) },
 		"gocomment": func(text string) (string, error) { return templateGoComment(text) },
@@ -66,6 +66,12 @@ func GetTemplateFunctions() template.FuncMap {
 		},
 		"visible": func(r common.Renderable) common.Renderable {
 			return lo.Ternary(!lo.IsNil(r) && r.Visible(), r, nil)
+		},
+		"ptr": func(val common.GolangType) (common.GolangType, error) {
+			if lo.IsNil(val) {
+				return nil, fmt.Errorf("cannot get a pointer to nil")
+			}
+			return &lang.GoPointer{Type: val}, nil
 		},
 
 		// Templates calling
@@ -168,17 +174,6 @@ func templateGoLit(val any) (string, error) {
 		return TemplateGoUsage(v)
 	}
 	return utils.ToGoLiteral(val), nil
-}
-
-func templateGoPtr(val common.GolangType) (string, error) {
-	if val == nil {
-		return "", fmt.Errorf("cannot get a pointer to nil")
-	}
-	s, err := TemplateGoUsage(val)
-	if err != nil {
-		return "", fmt.Errorf("%s: %w", val, err)
-	}
-	return lo.Ternary(val.Addressable(), "*"+s, s), nil
 }
 
 func templateGoID(val any, forceCapitalize bool) string {

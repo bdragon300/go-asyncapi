@@ -4,5 +4,5 @@
     {{- .Type | godef }}
 {{- end}}
 {{define "lang/gopointer/usage"}}
-    {{- .Type | goptr }}
+    {{- if .Type.Addressable}}*{{end}}{{ .Type | gousage }}
 {{- end}}
