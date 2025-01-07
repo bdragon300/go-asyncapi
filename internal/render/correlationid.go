@@ -45,7 +45,7 @@ func (c *CorrelationID) Visible() bool {
 }
 
 func (c *CorrelationID) Name() string {
-	return utils.CapitalizeUnchanged(c.OriginalName)
+	return c.OriginalName
 }
 
 func (c *CorrelationID) String() string {

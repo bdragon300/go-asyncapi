@@ -51,7 +51,7 @@ func (c *Channel) Visible() bool {
 }
 
 func (c *Channel) Name() string {
-	return utils.CapitalizeUnchanged(c.OriginalName)
+	return c.OriginalName
 }
 
 func (c *Channel) String() string {

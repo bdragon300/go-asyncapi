@@ -2,7 +2,6 @@ package lang
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/utils"
 )
 
 type BaseType struct {
@@ -39,7 +38,7 @@ func (b *BaseType) IsPointer() bool {
 }
 
 func (b *BaseType) Name() string {
-	return utils.CapitalizeUnchanged(b.OriginalName)
+	return b.OriginalName
 }
 
 func (b *BaseType) ObjectHasDefinition() bool {

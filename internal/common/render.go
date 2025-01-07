@@ -102,7 +102,7 @@ type RenderContext interface {
 	QualifiedGeneratedPackage(obj GolangType) (string, error)
 
 	CurrentSelection() RenderSelectionConfig
-	GetObjectName(obj Renderable) string
+	GetObject() CompileObject
 	Package() string
 
 	DefineTypeInNamespace(obj GolangType, selection RenderSelectionConfig, actual bool)

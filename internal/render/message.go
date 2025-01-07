@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
-	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 	"slices"
 )
@@ -54,7 +53,7 @@ func (m *Message) SelectProtoObject(protocol string) common.Renderable {
 }
 
 func (m *Message) Name() string {
-	return utils.CapitalizeUnchanged(m.OriginalName)
+	return m.OriginalName
 }
 
 func (m *Message) EffectiveContentType() string {

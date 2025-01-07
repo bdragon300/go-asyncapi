@@ -4,7 +4,7 @@
     {{ .BindingsType | godef }}
     {{- range $proto := .BindingsProtocols }}
         {{- $bindingsValue := $operation.ProtoBindingsValue $proto }}
-        func (c {{ $operation.BindingsType | gousage }}) {{ $proto | capitalize | goid }}() {{$bindingsValue.Type | gousage}} {
+        func (c {{ $operation.BindingsType | gousage }}) {{ $proto | goid }}() {{$bindingsValue.Type | gousage}} {
         b := {{$bindingsValue | gousage}}
         {{- with $operation.Bindings }}
             {{- $jvals := .JSONValues.GetOrEmpty $proto }}

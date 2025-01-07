@@ -104,14 +104,6 @@ func JoinNonemptyStrings(sep string, s ...string) string {
 	return strings.Join(lo.Compact(s), sep)
 }
 
-// CapitalizeUnchanged is like strings.Title, but does not change the rest of the string to lowercase keeping it as is.
-func CapitalizeUnchanged(s string) string {
-	if s == "" {
-		return ""
-	}
-	return strings.ToUpper(s[:1]) + s[1:]
-}
-
 func NormalizePath(rawPath string) string {
 	if rawPath == "" {
 		hsh := md5.New()

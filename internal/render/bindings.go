@@ -4,7 +4,6 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/types"
-	"github.com/bdragon300/go-asyncapi/internal/utils"
 )
 
 // Bindings never renders itself, only as a part of other object
@@ -33,5 +32,5 @@ func (b *Bindings) String() string {
 }
 
 func (b *Bindings) Name() string {
-	return utils.CapitalizeUnchanged(b.OriginalName)
+	return b.OriginalName
 }

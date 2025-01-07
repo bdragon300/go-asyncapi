@@ -2,7 +2,6 @@ package render
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/utils"
 )
 
 type Parameter struct {
@@ -23,7 +22,7 @@ func (p *Parameter) Visible() bool {
 }
 
 func (p *Parameter) Name() string {
-	return utils.CapitalizeUnchanged(p.OriginalName)
+	return p.OriginalName
 }
 
 func (p *Parameter) String() string {

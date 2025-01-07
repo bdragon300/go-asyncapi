@@ -5,7 +5,6 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/types"
-	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 )
 
@@ -49,7 +48,7 @@ func (s *Server) SelectProtoObject(protocol string) common.Renderable {
 }
 
 func (s *Server) Name() string {
-	return utils.CapitalizeUnchanged(s.OriginalName)
+	return s.OriginalName
 }
 
 func (s *Server) BoundChannels() []common.Renderable {

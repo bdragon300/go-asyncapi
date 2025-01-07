@@ -8,7 +8,7 @@ func {{$ | goid}}Address({{with .ParametersType}}params {{. | gousage}}{{end}}) 
 {{- if .ParametersType}}
     paramMap := map[string]string{
     {{- range .Parameters}}
-        {{.Name | golit}}: string(params.{{. | goid | capitalize }}),
+        {{.Name | golit}}: string(params.{{. | goid }}),
     {{- end}}
     }
     return {{goqualrun "ParamString"}}{
@@ -26,7 +26,7 @@ func {{$ | goid}}Address({{with .ParametersType}}params {{. | gousage}}{{end}}) 
     {{ .BindingsType | godef }}
     {{- range $proto := .BindingsProtocols }}
         {{- $bindingsValue := $channel.ProtoBindingsValue $proto }}
-        func (c {{ $channel.BindingsType | gousage }}) {{ $proto | capitalize | goid }}() {{$bindingsValue.Type | gousage}} {
+        func (c {{ $channel.BindingsType | gousage }}) {{ $proto | goid }}() {{$bindingsValue.Type | gousage}} {
             b := {{$bindingsValue | gousage}}
             {{- with $channel.Bindings }}
                 {{- $jvals := .JSONValues.GetOrEmpty $proto }}

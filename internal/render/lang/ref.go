@@ -2,7 +2,6 @@ package lang
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 	"strconv"
 	"strings"
@@ -57,7 +56,7 @@ func (r *Ref) String() string {
 }
 
 func (r *Ref) Name() string {
-	n, _ := lo.Coalesce(utils.CapitalizeUnchanged(r.name), r.target.Name())
+	n, _ := lo.Coalesce(r.name, r.target.Name())
 	return n
 }
 

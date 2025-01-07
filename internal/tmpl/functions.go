@@ -22,7 +22,8 @@ func GetTemplateFunctions() template.FuncMap {
 		// Functions that return go code as string
 		"golit": func(val any) (string, error) { return templateGoLit(val) },
 		"goptr": func(val common.GolangType) (string, error) { return templateGoPtr(val) },
-		"goid": func(val any) string { return templateGoID(val) },
+		"goid": func(val any) string { return templateGoID(val, true) },
+		"goidorig": func(val any) string { return templateGoID(val, false) },
 		"gocomment": func(text string) (string, error) { return templateGoComment(text) },
 		"goqual": func(parts ...string) string { return common.GetContext().QualifiedName(parts...) },
 		"goqualrun": func(parts ...string) string { return common.GetContext().QualifiedRuntimeName(parts...) },
@@ -180,12 +181,19 @@ func templateGoPtr(val common.GolangType) (string, error) {
 	return lo.Ternary(val.Addressable(), "*"+s, s), nil
 }
 
-func templateGoID(val any) string {
+func templateGoID(val any, forceCapitalize bool) string {
 	var res string
 
 	switch v := val.(type) {
 	case common.Renderable:
-		res = common.GetContext().GetObjectName(v)
+		// Prefers the name of the topObject over the name of the val, if topObject is a Ref points to val.
+		// Otherwise, uses the name of the val.
+		//
+		// For example, context contains the topObject is a Ref defined in `servers.myServer` section. But in val
+		// we've got a render.Server object defined in `components.servers.reusableServer`. We would like to see
+		// "myServer" in the generated code instead of "reusableServer" in this case.
+		topObject := common.GetContext().GetObject()
+		res = lo.Ternary(common.CheckSameRenderables(topObject.Renderable, v), topObject.Name(), v.Name())
 	case string:
 		res = v
 	default:
@@ -195,7 +203,11 @@ func templateGoID(val any) string {
 	if res == "" {
 		return ""
 	}
-	return utils.ToGolangName(res, unicode.IsUpper(rune(res[0])))
+	exported := true
+	if !forceCapitalize {
+		exported = unicode.IsUpper(rune(res[0]))
+	}
+	return utils.ToGolangName(res, exported)
 }
 
 func templateGoComment(text string) (string, error) {

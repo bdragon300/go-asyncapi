@@ -1,11 +1,11 @@
 {{define "server/proto/channelOpenMethods"}}
 {{- range $channel := .BoundChannels}}
     {{- with (deref .).SelectProtoObject $.Protocol }}
-        func (s {{ $.Type | gousage }}) OpenChannel{{ $channel | goid }}{{$.Protocol | capitalize | goid}}(
+        func (s {{ $.Type | gousage }}) OpenChannel{{ $channel | goid }}{{$.Protocol | goid}}(
             ctx {{goqual "context.Context"}},
             {{with .ParametersType}}params {{ . | gousage }},{{end}}
         ) (ch *{{ .Type | gousage }}, err error) {
-            return {{gopkg .Type}}Open{{ $channel | goid }}{{$.Protocol | capitalize | goid}}(
+            return {{gopkg .Type}}Open{{ $channel | goid }}{{$.Protocol | goid}}(
                 ctx, {{if .ParametersType}}params,{{end}} s,
             )
         }
@@ -16,11 +16,11 @@
 {{define "server/proto/operationOpenMethods"}}
 {{- range $operation := .BoundOperations}}
     {{- with (deref .).SelectProtoObject $.Protocol }}
-        func (s {{ $.Type | gousage }}) OpenOperation{{ $operation.Channel | goid }}{{$.Protocol | capitalize | goid}}{{ $operation | goid }}(
+        func (s {{ $.Type | gousage }}) OpenOperation{{ $operation.Channel | goid }}{{$.Protocol | goid}}{{ $operation | goid }}(
             ctx {{goqual "context.Context"}},
             {{with $operation.Channel.ParametersType}}params {{ . | gousage }},{{end}}
         ) (ch *{{ .Type | gousage }}, err error) {
-            return {{gopkg .Type}}Open{{ $operation.Channel | goid }}{{$.Protocol | capitalize | goid}}{{ . | goid }}(
+            return {{gopkg .Type}}Open{{ $operation.Channel | goid }}{{$.Protocol | goid}}{{ . | goid }}(
                 ctx, {{if $operation.Channel.ParametersType}}params,{{end}} s,
             )
         }
@@ -43,7 +43,7 @@ func (s {{ .Type | gousage }}) Consumer() {{goqualrun .Protocol "Consumer"}} {
 
 {{- if .BindingsProtocols | has .Protocol}}
 func (s {{.Type | gousage}}) Bindings() {{goqualrun .Protocol "ServerBindings"}} {
-    return {{.BindingsType | gousage}}{}.{{.Protocol | capitalize | goid}}()
+    return {{.BindingsType | gousage}}{}.{{.Protocol | goid}}()
 }
 {{- end}}
 

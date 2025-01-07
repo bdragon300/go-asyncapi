@@ -1,7 +1,7 @@
 {{define "channel/kafka/newFunction/block1"}}
     res.topic = res.address.String()
     {{- if .BindingsType}}
-        bindings := {{.BindingsType | gousage}}{}.{{.Protocol | capitalize | goid}}()
+        bindings := {{.BindingsType | gousage}}{}.{{.Protocol | goid}}()
         if bindings.Topic != "" {
             res.topic = bindings.Topic
         }

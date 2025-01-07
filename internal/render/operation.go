@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
-	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 )
 
@@ -44,7 +43,7 @@ func (o *Operation) String() string {
 }
 
 func (o *Operation) Name() string {
-	return utils.CapitalizeUnchanged(o.OriginalName)
+	return o.OriginalName
 }
 
 func (o *Operation) SelectProtoObject(protocol string) common.Renderable {

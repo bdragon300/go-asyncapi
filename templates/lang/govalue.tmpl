@@ -48,7 +48,7 @@
     {{- else if .StructValues.Len }}
         {{- /* Struct */}}{
         {{- range .StructValues.Entries }}
-            {{.Key | goid }}: {{ .Value | golit }},
+            {{.Key | goidorig }}: {{ .Value | golit }},
         {{- end }}
         }
     {{- else if .ArrayValues }}

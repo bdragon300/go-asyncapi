@@ -1,6 +1,6 @@
 {{define "channel/amqp/newFunction/block1"}}
     {{- if and .BindingsType (.BindingsProtocols | has .Protocol)}}
-        bindings := {{ .BindingsType | gousage }}{}.{{.Protocol | capitalize | goid}}()
+        bindings := {{ .BindingsType | gousage }}{}.{{.Protocol | goid}}()
         switch bindings.ChannelType {
         case {{goqualrun .Protocol "ChannelTypeQueue"}}:
             res.queue = res.address.String()

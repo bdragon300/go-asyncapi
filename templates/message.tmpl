@@ -25,7 +25,7 @@ func New{{ $ | goid }}In() *{{ .InType| gousage }} {
     {{- .BindingsType| godef }}
     {{- range $proto := .BindingsProtocols}}
         {{- $bindingsValue := $message.ProtoBindingsValue $proto}}
-        func (c {{ $message.BindingsType | gousage }}) {{ $proto | capitalize | goid }}() {{$bindingsValue.Type | gousage}} {
+        func (c {{ $message.BindingsType | gousage }}) {{ $proto | goid }}() {{$bindingsValue.Type | gousage}} {
         b := {{$bindingsValue| gousage}}
         {{- with $message.Bindings}}
             {{- $jvals := .JSONValues.GetOrEmpty $proto}}
