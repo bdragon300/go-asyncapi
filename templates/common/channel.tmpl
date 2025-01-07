@@ -20,9 +20,8 @@ func New{{ .Channel | goid }}{{.Protocol | capitalize | goid}}(
 func Open{{ .Channel | goid }}{{.Protocol | capitalize | goid}}(
     ctx {{goqual "context.Context"}},
     {{ with .ParametersType}}params {{. | gousage}},{{end}}
-    {{ if .IsPublisher}}producer {{goqualrun .Protocol "Producer"}},{{end}}
-    {{ if .IsSubscriber}}consumer {{goqualrun .Protocol "Consumer"}},{{end}}
-) (ch *{{.Type | gousage}}, err error) {
+    server {{.Type | goid }}Server,
+) (*{{.Type | gousage}}, error) {
     {{- if .BindingsProtocols | has .Protocol}}
         chBindings := {{.BindingsType | gousage}}{}.{{.Protocol | capitalize | goid}}()
     {{- end }}
@@ -34,20 +33,15 @@ func Open{{ .Channel | goid }}{{.Protocol | capitalize | goid}}(
         }
     {{- end}}
     {{- if .IsPublisher}}
-        var publisher {{goqualrun .Protocol "Publisher"}}
-
-        if producer != nil {
-            if publisher, err = producer.Publisher(ctx, address, {{if .BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, nil); err != nil {
-                return nil, err
-            }
+        publisher, err := server.Producer().Publisher(ctx, address, {{if .BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, nil)
+        if err != nil {
+            return nil, err
         }
     {{- end}}
     {{- if .IsSubscriber}}
-        var subscriber {{goqualrun .Protocol "Subscriber"}}
-        if consumer != nil {
-            if subscriber, err = consumer.Subscriber(ctx, address, {{if .BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, nil); err != nil {
-                return nil, err
-            }
+        subscriber, err := server.Consumer().Subscriber(ctx, address, {{if .BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, nil)
+        if err != nil {
+            return nil, err
         }
     {{- end}}
 
@@ -63,6 +57,12 @@ func Open{{ .Channel | goid }}{{.Protocol | capitalize | goid}}(
 func (c {{.Type | gousage}}) Address() {{goqualrun "ParamString"}} {
     return c.address
 }
+
+{{- if .BindingsProtocols | has .Protocol}}
+func (c {{.Type | gousage}}) Bindings() {{goqualrun .Protocol "ChannelBindings"}} {
+    return {{.BindingsType | gousage}}{}.{{.Protocol | capitalize | goid}}()
+}
+{{- end}}
 
 func (c {{.Type | gousage}}) Close() (err error) {
     {{- if .IsPublisher}}

@@ -6,10 +6,7 @@
             {{with .ParametersType}}params {{ . | gousage }},{{end}}
         ) (ch *{{ .Type | gousage }}, err error) {
             return {{gopkg .Type}}Open{{ $channel | goid }}{{$.Protocol | capitalize | goid}}(
-                ctx,
-                {{- if .ParametersType}}params,{{end}}
-                {{- if .IsPublisher}}s.producer,{{end}}
-                {{- if .IsSubscriber}}s.consumer,{{end}}
+                ctx, {{if .ParametersType}}params,{{end}} s,
             )
         }
     {{- end}}
@@ -24,12 +21,30 @@
             {{with $operation.Channel.ParametersType}}params {{ . | gousage }},{{end}}
         ) (ch *{{ .Type | gousage }}, err error) {
             return {{gopkg .Type}}Open{{ $operation.Channel | goid }}{{$.Protocol | capitalize | goid}}{{ . | goid }}(
-                ctx,
-                {{- if $operation.Channel.ParametersType}}params,{{end}}
-                {{- if $operation.IsPublisher}}s.producer,{{end}}
-                {{- if $operation.IsSubscriber}}s.consumer,{{end}}
+                ctx, {{if $operation.Channel.ParametersType}}params,{{end}} s,
             )
         }
     {{- end}}
 {{- end}}
+{{- end}}
+
+{{define "server/proto/commonMethods" }}
+func (s {{ .Type | gousage }}) Name() string {
+    return "{{ . | goid }}"
+}
+
+func (s {{ .Type | gousage }}) Producer() {{goqualrun .Protocol "Producer"}} {
+    return s.producer
+}
+
+func (s {{ .Type | gousage }}) Consumer() {{goqualrun .Protocol "Consumer"}} {
+    return s.consumer
+}
+
+{{- if .BindingsProtocols | has .Protocol}}
+func (s {{.Type | gousage}}) Bindings() {{goqualrun .Protocol "ServerBindings"}} {
+    return {{.BindingsType | gousage}}{}.{{.Protocol | capitalize | goid}}()
+}
+{{- end}}
+
 {{- end}}

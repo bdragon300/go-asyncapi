@@ -9,18 +9,7 @@ func New{{ .Server | goid }}(producer {{goqualrun .Protocol "Producer"}}, consum
 {{- if ndefined .Type}}
 {{.Type| godef}}
 
-func (s {{.Type| gousage}}) Name() string {
-    return "{{ . | goid }}"
-}
-
-func (s {{.Type| gousage}}) Producer() {{goqualrun .Protocol "Producer"}} {
-    return s.producer
-}
-
-func (s {{.Type| gousage}}) Consumer() {{goqualrun .Protocol "Consumer"}} {
-    return s.consumer
-}
-
+{{template "server/proto/commonMethods" .}}
 {{template "server/proto/channelOpenMethods" .}}
 {{template "server/proto/operationOpenMethods" .}}
 

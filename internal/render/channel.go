@@ -78,8 +78,9 @@ func (c *Channel) BoundServers() []common.Renderable {
 		res = c.AllActiveServersPromise.T()
 		// ListPromise is filled up by linker, which doesn't guarantee the order. So, sort items by name
 		slices.SortFunc(res, func(a, b common.Renderable) int { return cmp.Compare(a.Name(), b.Name()) })
+	} else {
+		res = lo.Map(c.ServersPromises, func(s *lang.Promise[*Server], _ int) common.Renderable { return s.T() })
 	}
-	res = lo.Map(c.ServersPromises, func(s *lang.Promise[*Server], _ int) common.Renderable { return s.T() })
 
 	return res
 }

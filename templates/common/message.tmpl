@@ -1,3 +1,15 @@
+{{define "message/proto/commonMethods"}}
+{{- if .BindingsProtocols | has .Protocol}}
+func (c {{.InType | gousage}}) Bindings{{.Protocol | capitalize | goid}}() {{goqualrun .Protocol "MessageBindings"}} {
+    return {{.BindingsType | gousage}}{}.{{.Protocol | capitalize | goid}}()
+}
+
+func (c {{.OutType | gousage}}) Bindings{{.Protocol | capitalize | goid}}() {{goqualrun .Protocol "MessageBindings"}} {
+    return {{.BindingsType | gousage}}{}.{{.Protocol | capitalize | goid}}()
+}
+{{- end}}
+{{- end}}
+
 {{define "message/proto/marshalMethods"}}
 {{- range .BoundChannels}}
     {{- if and (visible .) (deref .).IsPublisher}}
