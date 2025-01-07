@@ -1,3 +1,4 @@
+{{- /* dot == render.Renderable: Ref -> lang.* or lang.* */}}
 {{- with deref . }}
     {{- if ndefined . }}
         {{ . | godef }}

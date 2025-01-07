@@ -1,3 +1,4 @@
+{{- /* dot == render.ProtoMessage */}}
 {{- with deref .}}
     {{- if ndefined (print "MessageMethods" .Protocol (goid .))}}
         {{template "message/proto/commonMethods" .}}

@@ -1,3 +1,5 @@
+{{- /* dot == lang.GoStruct */}}
+
 {{define "lang/gostruct/definition"}}
     {{- if .Description }}
         {{- print (goid .) "--" .Description | gocomment }}

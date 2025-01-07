@@ -1,3 +1,5 @@
+{{- /* dot == lang.GoMap */}}
+
 {{define "lang/gomap/definition"}}
     {{- if .Description }}
         {{ print (goid .) "--" .Description | gocomment }}

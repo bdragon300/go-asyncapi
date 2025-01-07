@@ -1,3 +1,5 @@
+{{- /* dot == render.ProtoOperation */}}
+
 {{define "operation/proto/newFunction"}}
 func New{{.ProtoChannel | goid}}{{.Protocol | goid}}{{ . | goid }}(
     {{ with .Channel.ParametersType}}params {{ . | gousage}},{{end}}

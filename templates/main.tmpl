@@ -1,3 +1,4 @@
+{{- /* dot == tmpl.TemplateContext */}}
 {{- if and (eq .Object.Kind "schema") (visible .Object) }}
     {{- template "schema.tmpl" .Object }}
 

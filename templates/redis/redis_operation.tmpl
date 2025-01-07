@@ -1,3 +1,4 @@
+{{- /* dot == render.ProtoOperation */}}
 {{- with deref .}}
     {{ .Type | def }}
     {{template "operation/proto/newFunction" .}}

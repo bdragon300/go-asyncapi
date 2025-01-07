@@ -1,3 +1,5 @@
+{{- /* dot == render.ProtoServer */}}
+
 {{define "server/proto/channelOpenMethods"}}
 {{- range $channel := .BoundChannels}}
     {{- with (deref .).SelectProtoObject $.Protocol }}

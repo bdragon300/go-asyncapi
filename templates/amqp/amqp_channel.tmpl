@@ -1,3 +1,4 @@
+{{- /* dot == render.ProtoChannel */}}
 {{define "channel/amqp/newFunction/block1"}}
     {{- if and .BindingsType (.BindingsProtocols | has .Protocol)}}
         bindings := {{ .BindingsType | gousage }}{}.{{.Protocol | goid}}()

@@ -1,3 +1,5 @@
+{{- /* dot == render.ProtoMessage */}}
+
 {{define "message/proto/commonMethods"}}
 {{- if .BindingsProtocols | has .Protocol}}
 func (c {{.InType | gousage}}) Bindings{{.Protocol | goid}}() {{goqualrun .Protocol "MessageBindings"}} {

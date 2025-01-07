@@ -1,3 +1,5 @@
+{{- /* dot == lang.GoTypeAlias */}}
+
 {{define "lang/gotypealias/definition"}}
     {{- if .Description }}
         {{ print (goid .) "--" .Description | gocomment }}

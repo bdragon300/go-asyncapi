@@ -1,3 +1,4 @@
+{{- /* dot == render.ProtoServer */}}
 {{- def .Type}}
 func New{{ .Server | goid }}(producer {{goqualrun .Protocol "Producer"}}, consumer {{goqualrun .Protocol "Consumer"}}) *{{.Type| gousage}} {
     return &{{.Type| gousage}}{

@@ -1,3 +1,5 @@
+{{- /* dot == render.ProtoMessage */}}
+
 {{define "message/proto/encoder/default"}}
     {{- if .EffectiveContentType | hasSuffix "yaml"}}
         {{template "message/proto/encoder/application/yaml" .}}
