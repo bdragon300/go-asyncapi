@@ -106,7 +106,7 @@ func BuildProtoServerStruct(
 }
 
 func BuildProtoOperation(ctx *common.CompileContext, source *Operation, target *render.Operation, proto string) *render.ProtoOperation {
-	prmChType := lang.NewGolangTypePromise(source.Channel.Ref, func(obj any) common.GolangType {
+	prmChType := lang.NewGolangTypePromise(source.Channel.Ref, func(obj common.Renderable) common.GolangType {
 		ch := obj.(*render.Channel)
 		if ch.Dummy {
 			return &lang.GoSimple{TypeName: "any", IsInterface: true}  // Dummy type
@@ -120,7 +120,7 @@ func BuildProtoOperation(ctx *common.CompileContext, source *Operation, target *
 		return protoCh.Type
 	})
 	ctx.PutPromise(prmChType)
-	prmCh := lang.NewPromise[*render.ProtoChannel](source.Channel.Ref, func(obj any) *render.ProtoChannel {
+	prmCh := lang.NewPromise[*render.ProtoChannel](source.Channel.Ref, func(obj common.Renderable) *render.ProtoChannel {
 		ch := obj.(*render.Channel)
 		if ch.Dummy {
 			return &render.ProtoChannel{Channel: ch, Protocol: proto}  // Dummy channel

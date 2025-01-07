@@ -72,7 +72,7 @@ func AssignListPromises(sources map[string]ObjectSource) {
 					}
 					logger.Trace("Internal list promise resolved", "count", len(res), "targets", targets)
 
-					p.AssignList(lo.ToAnySlice(res))
+					p.AssignList(res)
 					assigned++
 				}
 			}

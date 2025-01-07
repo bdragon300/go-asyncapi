@@ -8,7 +8,7 @@ const (
 )
 
 type ObjectPromise interface {
-	Assign(obj any)
+	Assign(obj Renderable)
 	Assigned() bool
 	Ref() string
 	Origin() PromiseOrigin
@@ -16,7 +16,7 @@ type ObjectPromise interface {
 }
 
 type ObjectListPromise interface {
-	AssignList(objs []any)
+	AssignList(objs []Renderable)
 	Assigned() bool
 	FindCallback() PromiseFindCbFunc
 }

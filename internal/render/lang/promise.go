@@ -6,17 +6,17 @@ import (
 	"github.com/samber/lo"
 )
 
-type promiseAssignCbFunc[T any] func(obj any) T
+type promiseAssignCbFunc[T common.Renderable] func(obj common.Renderable) T
 
-func NewPromise[T any](ref string, assignCb promiseAssignCbFunc[T]) *Promise[T] {
+func NewPromise[T common.Renderable](ref string, assignCb promiseAssignCbFunc[T]) *Promise[T] {
 	return newPromise[T](ref, common.PromiseOriginInternal, nil, assignCb)
 }
 
-func NewCbPromise[T any](findCb common.PromiseFindCbFunc, assignCb promiseAssignCbFunc[T]) *Promise[T] {
+func NewCbPromise[T common.Renderable](findCb common.PromiseFindCbFunc, assignCb promiseAssignCbFunc[T]) *Promise[T] {
 	return newPromise("", common.PromiseOriginInternal, findCb, assignCb)
 }
 
-func newPromise[T any](
+func newPromise[T common.Renderable](
 	ref string,
 	origin common.PromiseOrigin,
 	findCb common.PromiseFindCbFunc,
@@ -25,7 +25,7 @@ func newPromise[T any](
 	return &Promise[T]{ref: ref, origin: origin, findCb: findCb, assignCb: assignCb}
 }
 
-type Promise[T any] struct{
+type Promise[T common.Renderable] struct{
 	// AssignErrorNote is the optional error message additional note to be shown to user when assignment fails
 	AssignErrorNote string
 
@@ -38,7 +38,7 @@ type Promise[T any] struct{
 	assigned bool
 }
 
-func (r *Promise[T]) Assign(obj any) {
+func (r *Promise[T]) Assign(obj common.Renderable) {
 	if r.assignCb != nil {
 		r.target = r.assignCb(obj)
 		r.assigned = true
@@ -146,11 +146,11 @@ func (r *GolangTypePromise) String() string {
 	return "GolangTypePromise -> " + r.ref
 }
 
-func NewListCbPromise[T any](findCb common.PromiseFindCbFunc, assignItemCb promiseAssignCbFunc[T]) *ListPromise[T] {
+func NewListCbPromise[T common.Renderable](findCb common.PromiseFindCbFunc, assignItemCb promiseAssignCbFunc[T]) *ListPromise[T] {
 	return &ListPromise[T]{findCb: findCb, assignItemCb: assignItemCb}
 }
 
-type ListPromise[T any] struct {
+type ListPromise[T common.Renderable] struct {
 	// AssignErrorNote is the optional error message additional note to be shown to user when assignment fails
 	AssignErrorNote string
 
@@ -161,19 +161,21 @@ type ListPromise[T any] struct {
 	assigned bool
 }
 
-func (r *ListPromise[T]) AssignList(objs []any) {
+func (r *ListPromise[T]) AssignList(objs []common.Renderable) {
 	if r.assignItemCb != nil {
-		r.targets = lo.Map(objs, func(item any, _ int) T {
+		r.targets = lo.Map(objs, func(item common.Renderable, _ int) T {
 			return r.assignItemCb(item)
 		})
 		r.assigned = true
 		return
 	}
 
-	var ok bool
-	r.targets, ok = lo.FromAnySlice[T](objs)
-	if !ok {
-		panic(fmt.Sprintf("Cannot assign slice of %+v to a promise of type %T. %s", objs, r.targets, r.AssignErrorNote))
+	for _, obj := range objs {
+		v, ok := obj.(T)
+		if !ok {
+			panic(fmt.Sprintf("Object %+v is not a type %T in list promise. %s", obj, new(T), r.AssignErrorNote))
+		}
+		r.targets = append(r.targets, v)
 	}
 	r.assigned = true
 }
