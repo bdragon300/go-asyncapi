@@ -3,12 +3,12 @@
 {{define "server/proto/channelOpenMethods"}}
 {{- range $channel := .BoundChannels}}
     {{- with (deref .).SelectProtoObject $.Protocol }}
-        func (s {{ $.Type | gousage }}) OpenChannel{{ $channel | goid }}{{$.Protocol | goid}}(
+        func (s {{ $.Type | gousage }}) Open{{ $channel | goid }}{{$.Protocol | goid}}(
             ctx {{goqual "context.Context"}},
             {{with .ParametersType}}params {{ . | gousage }},{{end}}
-        ) (ch *{{ .Type | gousage }}, err error) {
+        ) (*{{ .Type | gousage }}, error) {
             return {{gopkg .Type}}Open{{ $channel | goid }}{{$.Protocol | goid}}(
-                ctx, {{if .ParametersType}}params,{{end}} s,
+                ctx,{{if .ParametersType}}params,{{end}} s,
             )
         }
     {{- end}}
@@ -18,12 +18,12 @@
 {{define "server/proto/operationOpenMethods"}}
 {{- range $operation := .BoundOperations}}
     {{- with (deref .).SelectProtoObject $.Protocol }}
-        func (s {{ $.Type | gousage }}) OpenOperation{{ $operation.Channel | goid }}{{$.Protocol | goid}}{{ $operation | goid }}(
+        func (s {{ $.Type | gousage }}) Open{{ $operation | goid }}{{$.Protocol | goid}}(
             ctx {{goqual "context.Context"}},
             {{with $operation.Channel.ParametersType}}params {{ . | gousage }},{{end}}
-        ) (ch *{{ .Type | gousage }}, err error) {
-            return {{gopkg .Type}}Open{{ $operation.Channel | goid }}{{$.Protocol | goid}}{{ . | goid }}(
-                ctx, {{if $operation.Channel.ParametersType}}params,{{end}} s,
+        ) (*{{ .Type | gousage }}, error) {
+            return {{gopkg .Type}}Open{{ . | goid }}{{$.Protocol | goid}}(
+                ctx,{{if $operation.Channel.ParametersType}}params,{{end}} s,
             )
         }
     {{- end}}

@@ -1,25 +1,21 @@
 {{- /* dot == render.Renderable: Ref -> render.Message or render.Message */}}
 {{- with $message := deref .}}
 
-{{- /*
-Message is a kind of objects, that can be defined both in components and root key (`components.messages` and `messages`),
-and in the same time it can be referenced from other objects (`channel.[publish|subscribe].message`).
-
-This may lead to name duplicates in the generated code due to being fed an object to templates several times (the object
-itself + refs). Also, as a corner case, a message with the same name may additionally popped up from other spec files.
-
-To mitigate this, here we just render a New* function pair only one time for the name.
-*/}}
 {{- if print "Message" (goid $) | ndefined}}
-{{- def .OutType .InType }}
-func New{{ $ | goid }}Out() *{{ .OutType | gousage }} {
-    return &{{ .OutType| gousage }}{}
-}
+    {{- if .IsPublisher}}
+        {{- def .OutType }}
+        func New{{ $ | goid }}Out() *{{ .OutType | gousage }} {
+            return &{{ .OutType | gousage }}{}
+        }
+    {{- end}}
 
-func New{{ $ | goid }}In() *{{ .InType| gousage }} {
-    return &{{ .InType| gousage }}{}
-}
-{{- print "Message" (goid $) | def }}
+    {{- if .IsSubscriber}}
+        {{- def .InType }}
+        func New{{ $ | goid }}In() *{{ .InType| gousage }} {
+            return &{{ .InType | gousage }}{}
+        }
+    {{- end}}
+    {{- print "Message" (goid $) | def }}
 {{- end}}
 
 {{- if and .BindingsType (ndefined .BindingsType)}}
@@ -27,22 +23,22 @@ func New{{ $ | goid }}In() *{{ .InType| gousage }} {
     {{- range $proto := .BindingsProtocols}}
         {{- $bindingsValue := $message.ProtoBindingsValue $proto}}
         func (c {{ $message.BindingsType | gousage }}) {{ $proto | goid }}() {{$bindingsValue.Type | gousage}} {
-        b := {{$bindingsValue| gousage}}
-        {{- with $message.Bindings}}
-            {{- $jvals := .JSONValues.GetOrEmpty $proto}}
-            {{- range $jval := $jvals.Entries}}
-                {{ $jval.Key | toCamelCase }} := {{$jval.Value | golit}}
-                _ = {{goqual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})
+            b := {{$bindingsValue| gousage}}
+            {{- with $message.Bindings}}
+                {{- $jvals := .JSONValues.GetOrEmpty $proto}}
+                {{- range $jval := $jvals.Entries}}
+                    {{ $jval.Key | toCamelCase }} := {{$jval.Value | golit}}
+                    _ = {{goqual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})
+                {{- end}}
             {{- end}}
-        {{- end}}
-        return b
+            return b
         }
     {{- end}}
 {{- end }}
 
 {{- $headersType := coalesce .HeadersType .HeadersFallbackType}}
 
-{{- if ndefined .OutType }}
+{{- if and (ndefined .OutType) .IsPublisher }}
 {{.OutType| godef}}
 
 func (m *{{ .OutType | goid }}) WithPayload(payload {{.PayloadType| gousage}}) *{{ .OutType | goid }} {
@@ -62,7 +58,7 @@ func (m {{ $message.OutType | goid }}) SetCorrelationID(value {{ .TargetVarType 
 {{- end}}
 {{- end}}
 
-{{- if ndefined .InType }}
+{{- if and (ndefined .InType) .IsSubscriber }}
 {{.InType| godef}}
 
 func (m *{{ .InType | goid }}) MessagePayload() {{.PayloadType| gousage}} {

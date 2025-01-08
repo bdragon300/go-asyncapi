@@ -6,15 +6,15 @@
     {{- range $proto := .BindingsProtocols }}
         {{- $bindingsValue := $operation.ProtoBindingsValue $proto }}
         func (c {{ $operation.BindingsType | gousage }}) {{ $proto | goid }}() {{$bindingsValue.Type | gousage}} {
-        b := {{$bindingsValue | gousage}}
-        {{- with $operation.Bindings }}
-            {{- $jvals := .JSONValues.GetOrEmpty $proto }}
-            {{- range $jvals.Entries}}
-                {{.Key | toCamelCase }} := {{.Value | golit}}
-                _ = {{goqual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}), &b.{{.Key}})
+            b := {{$bindingsValue | gousage}}
+            {{- with $operation.Bindings }}
+                {{- $jvals := .JSONValues.GetOrEmpty $proto }}
+                {{- range $jvals.Entries}}
+                    {{.Key | toCamelCase }} := {{.Value | golit}}
+                    _ = {{goqual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}), &b.{{.Key}})
+                {{- end}}
             {{- end}}
-        {{- end}}
-        return b
+            return b
         }
     {{- end}}
 {{- end}}

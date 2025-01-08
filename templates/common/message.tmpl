@@ -1,21 +1,12 @@
 {{- /* dot == render.ProtoMessage */}}
 
 {{define "message/proto/commonMethods"}}
-{{- if .BindingsProtocols | has .Protocol}}
-func (c {{.InType | gousage}}) Bindings{{.Protocol | goid}}() {{goqualrun .Protocol "MessageBindings"}} {
-    return {{.BindingsType | gousage}}{}.{{.Protocol | goid}}()
-}
-
-func (c {{.OutType | gousage}}) Bindings{{.Protocol | goid}}() {{goqualrun .Protocol "MessageBindings"}} {
-    return {{.BindingsType | gousage}}{}.{{.Protocol | goid}}()
-}
-{{- end}}
 {{- end}}
 
 {{define "message/proto/marshalMethods"}}
 {{- range .BoundChannels}}
     {{- if and (visible .) (deref .).IsPublisher}}
-        func (m *{{ $.OutType | goid }}) MarshalChannel{{. | goid}}{{$.Protocol | goid}}(envelope {{goqualrun $.Protocol "EnvelopeWriter"}}) error {
+        func (m *{{ $.OutType | goid }}) Marshal{{. | goid}}{{$.Protocol | goid}}(envelope {{goqualrun $.Protocol "EnvelopeWriter"}}) error {
             return m.MarshalEnvelope{{$.Protocol | goid}}(envelope)
         }
     {{- end}}
@@ -23,7 +14,7 @@ func (c {{.OutType | gousage}}) Bindings{{.Protocol | goid}}() {{goqualrun .Prot
 
 {{- range .BoundOperations}}
     {{- if and (visible .) (deref .).IsPublisher}}
-        func (m *{{ $.OutType | goid }}) MarshalOperation{{. | goid}}{{$.Protocol | goid}}(envelope {{goqualrun $.Protocol "EnvelopeWriter"}}) error {
+        func (m *{{ $.OutType | goid }}) Marshal{{. | goid}}{{$.Protocol | goid}}(envelope {{goqualrun $.Protocol "EnvelopeWriter"}}) error {
             return m.MarshalEnvelope{{$.Protocol | goid}}(envelope)
         }
     {{- end}}
@@ -43,12 +34,18 @@ func (m *{{ .OutType | goid }}) MarshalEnvelope{{ .Protocol | goid }}(envelope {
     {{- end}}
     return nil
 }
+
+{{- if .BindingsProtocols | has .Protocol}}
+    func (c {{.OutType | gousage}}) Bindings{{.Protocol | goid}}() {{goqualrun .Protocol "MessageBindings"}} {
+        return {{.BindingsType | gousage}}{}.{{.Protocol | goid}}()
+    }
+{{- end}}
 {{- end}}
 
 {{define "message/proto/unmarshalMethods"}}
 {{- range .BoundChannels}}
     {{- if and (visible .) (deref .).IsSubscriber}}
-        func (m *{{ $.InType | goid }}) UnmarshalChannel{{. | goid}}{{$.Protocol | goid}}(envelope {{goqualrun $.Protocol "EnvelopeReader"}}) error {
+        func (m *{{ $.InType | goid }}) Unmarshal{{. | goid}}{{$.Protocol | goid}}(envelope {{goqualrun $.Protocol "EnvelopeReader"}}) error {
             return m.UnmarshalEnvelope{{$.Protocol | goid}}(envelope)
         }
     {{- end}}
@@ -56,7 +53,7 @@ func (m *{{ .OutType | goid }}) MarshalEnvelope{{ .Protocol | goid }}(envelope {
 
 {{- range .BoundOperations}}
     {{- if and (visible .) (deref .).IsSubscriber}}
-        func (m *{{ $.InType | goid }}) UnmarshalOperation{{. | goid}}{{$.Protocol |  goid}}(envelope {{goqualrun $.Protocol "EnvelopeReader"}}) error {
+        func (m *{{ $.InType | goid }}) Unmarshal{{. | goid}}{{$.Protocol |  goid}}(envelope {{goqualrun $.Protocol "EnvelopeReader"}}) error {
             return m.UnmarshalEnvelope{{$.Protocol | goid}}(envelope)
         }
     {{- end}}
@@ -79,6 +76,12 @@ func (m *{{ .InType | goid }}) UnmarshalEnvelope{{ .Protocol | goid }}(envelope 
     {{- end}}
     return nil
 }
+
+{{- if .BindingsProtocols | has .Protocol}}
+    func (c {{.InType | gousage}}) Bindings{{.Protocol | goid}}() {{goqualrun .Protocol "MessageBindings"}} {
+        return {{.BindingsType | gousage}}{}.{{.Protocol | goid}}()
+    }
+{{- end}}
 {{- end}}
 
 {{define "message/proto/encoder"}}

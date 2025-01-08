@@ -90,6 +90,8 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		HeadersFallbackType: &lang.GoMap{KeyType: &lang.GoSimple{TypeName: "string"}, ValueType: &lang.GoSimple{TypeName: "any", IsInterface: true}},
 		ContentType:         m.ContentType,
 		IsSelectable:        true,
+		IsPublisher:         ctx.CompileOpts.GeneratePublishers,
+		IsSubscriber:        ctx.CompileOpts.GenerateSubscribers,
 	}
 	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", res.ContentType))
 

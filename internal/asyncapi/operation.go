@@ -63,8 +63,8 @@ func (o Operation) build(ctx *common.CompileContext, operationKey string, flags 
 	res := &render.Operation{
 		OriginalName: operationKey,
 		IsSelectable: isSelectable,
-		IsPublisher:  o.Action == OperationActionSend,
-		IsSubscriber: o.Action == OperationActionReceive,
+		IsPublisher:  o.Action == OperationActionSend && ctx.CompileOpts.GeneratePublishers,
+		IsSubscriber: o.Action == OperationActionReceive && ctx.CompileOpts.GenerateSubscribers,
 	}
 
 	if o.Channel == nil {

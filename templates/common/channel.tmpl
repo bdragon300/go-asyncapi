@@ -22,7 +22,7 @@ func New{{ .Channel | goid }}{{.Protocol | goid}}(
 func Open{{ .Channel | goid }}{{.Protocol | goid}}(
     ctx {{goqual "context.Context"}},
     {{ with .ParametersType}}params {{. | gousage}},{{end}}
-    server {{.Type | goid }}Server,
+    server {{.Channel | goid }}Server{{.Protocol | goid}},
 ) (*{{.Type | gousage}}, error) {
     {{- if .BindingsProtocols | has .Protocol}}
         chBindings := {{.BindingsType | gousage}}{}.{{.Protocol | goid}}()
@@ -48,7 +48,7 @@ func Open{{ .Channel | goid }}{{.Protocol | goid}}(
     {{- end}}
 
     return New{{ .Channel | goid }}{{.Protocol | goid}}(
-        {{ if .ParametersType}}params, {{end}}
+        {{ if .ParametersType}}params,{{end}}
         {{ if .IsPublisher}}publisher,{{end}}
         {{ if .IsSubscriber}}subscriber,{{end}}
     ), nil
@@ -82,17 +82,17 @@ func (c {{.Type | gousage}}) Close() (err error) {
 {{- end}}
 
 {{define "channel/proto/publishMethods"}}
-type {{ .Channel | goid }}ChannelEnvelopeMarshaler{{.Protocol | goid}} interface {
-    MarshalChannel{{.Channel | goid}}{{.Protocol | goid}}(envelope {{goqualrun .Protocol "EnvelopeWriter"}}) error
+type {{ .Channel | goid }}EnvelopeMarshaler{{.Protocol | goid}} interface {
+    Marshal{{.Channel | goid}}{{.Protocol | goid}}(envelope {{goqualrun .Protocol "EnvelopeWriter"}}) error
 }
 
 {{- range .BoundMessages}}
     {{- if not (visible .) }}{{continue}}{{end}}
-    func (c {{ $.Type | gousage }}) SealEnvelope{{. | goid}}(
+    func (c {{ $.Type | gousage }}) Seal{{. | goid}}(
         envelope {{goqualrun $.Protocol "EnvelopeWriter"}},
-        message {{ $.Channel | goid }}ChannelEnvelopeMarshaler{{$.Protocol | goid}},
+        message {{ $.Channel | goid }}EnvelopeMarshaler{{$.Protocol | goid}},
     ) error {
-        if err := message.MarshalChannel{{$.Channel | goid}}{{$.Protocol | goid}}(envelope); err != nil {
+        if err := message.Marshal{{$.Channel | goid}}{{$.Protocol | goid}}(envelope); err != nil {
             return err
         }
         {{ with trytmpl (print "channel/" $.Protocol "/publishMethods/block1") .}}{{.}}{{end}}
@@ -105,9 +105,9 @@ type {{ .Channel | goid }}ChannelEnvelopeMarshaler{{.Protocol | goid}} interface
     func (c {{ $.Type | gousage }}) Send{{. | goid}}(
         ctx {{goqual "context.Context"}},
         envelope {{goqualrun $.Protocol "EnvelopeWriter"}},
-        message {{ $.Channel | goid }}ChannelEnvelopeMarshaler{{$.Protocol | goid}},
+        message {{ $.Channel | goid }}EnvelopeMarshaler{{$.Protocol | goid}},
     ) error {
-        if err := c.SealEnvelope{{. | goid}}(envelope, message); err != nil {
+        if err := c.Seal{{. | goid}}(envelope, message); err != nil {
             return err
         }
         return c.Publish(ctx, envelope)
@@ -124,17 +124,17 @@ func (c {{.Type| gousage}}) Publish(ctx {{goqual "context.Context"}}, envelopes 
 {{- end}}
 
 {{define "channel/proto/subscribeMethods"}}
-type {{ .Channel | goid }}ChannelEnvelopeUnmarshaler{{.Protocol | goid}} interface {
-    UnmarshalChannel{{.Channel | goid}}{{.Protocol | goid}}(envelope {{goqualrun .Protocol "EnvelopeReader"}}) error
+type {{ .Channel | goid }}EnvelopeUnmarshaler{{.Protocol | goid}} interface {
+    Unmarshal{{.Channel | goid}}{{.Protocol | goid}}(envelope {{goqualrun .Protocol "EnvelopeReader"}}) error
 }
 
 {{- range .BoundMessages}}
     {{- if not (visible .) }}{{continue}}{{end}}
-    func (c {{ $.Type | gousage }}) OpenEnvelope{{. | goid}}(
+    func (c {{ $.Type | gousage }}) Unseal{{. | goid}}(
         envelope {{goqualrun $.Protocol "EnvelopeReader"}},
-        message {{ $.Channel | goid }}ChannelEnvelopeUnmarshaler{{$.Protocol | goid}},
+        message {{ $.Channel | goid }}EnvelopeUnmarshaler{{$.Protocol | goid}},
     ) error {
-        return message.UnmarshalChannel{{$.Channel | goid}}{{$.Protocol | goid}}(envelope)
+        return message.Unmarshal{{$.Channel | goid}}{{$.Protocol | goid}}(envelope)
     }
 
     func (c {{ $.Type | gousage }}) Subscribe{{. | goid}}(
@@ -146,7 +146,7 @@ type {{ .Channel | goid }}ChannelEnvelopeUnmarshaler{{.Protocol | goid}} interfa
 
         return c.Subscribe(subCtx, func(envelope {{goqualrun $.Protocol "EnvelopeReader"}}) {
             message := new({{ (deref .).InType | gousage }})
-            if err2 := c.OpenEnvelope{{. | goid}}(envelope, message); err2 != nil {
+            if err2 := c.Unseal{{. | goid}}(envelope, message); err2 != nil {
                 err = {{goqual "fmt.Errorf"}}("open message envelope: %w", err2)
                 cancel(err)
                 return
@@ -166,8 +166,8 @@ func (c {{.Type| gousage}}) Subscribe(ctx {{goqual "context.Context"}}, cb func(
 {{- end}}
 
 {{define "channel/proto/serverInterface"}}
-type {{ .Type | goid }}Server interface {
-    OpenChannel{{.Channel | goid}}{{.Protocol | goid}}(ctx {{goqual "context.Context"}}, {{if .ParametersType}}params {{ .ParametersType | gousage }}{{end}}) (*{{ .Type | gousage }}, error)
+type {{ .Channel | goid }}Server{{.Protocol | goid}} interface {
+    Open{{.Channel | goid}}{{.Protocol | goid}}(ctx {{goqual "context.Context"}}, {{if .ParametersType}}params {{ .ParametersType | gousage }}{{end}}) (*{{ .Type | gousage }}, error)
     {{if .IsPublisher}}Producer() {{goqualrun .Protocol "Producer"}}{{end}}
     {{if .IsSubscriber}}Consumer() {{goqualrun .Protocol "Consumer"}}{{end}}
 }

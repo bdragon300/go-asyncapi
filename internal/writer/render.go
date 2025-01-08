@@ -17,6 +17,7 @@ import (
 	"path"
 	"slices"
 	"text/template"
+	"unicode"
 )
 
 type renderSource interface {
@@ -207,7 +208,7 @@ func renderFiles(files map[string]fileRenderState, opts common.RenderOpts) (map[
 	for _, fileName := range keys {
 		state := files[fileName]
 		logger.Debug("Render file", "file", fileName, "package", state.packageName, "imports", state.imports.String())
-		if state.buf.Len() == 0 {
+		if !bytes.ContainsFunc(state.buf.Bytes(), unicode.IsLetter) {
 			logger.Debug("-> Skip empty file", "file", fileName)
 			continue
 		}

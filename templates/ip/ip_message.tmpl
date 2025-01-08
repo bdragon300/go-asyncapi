@@ -2,8 +2,8 @@
 {{- with deref .}}
     {{- if ndefined (print "MessageMethods" .Protocol (goid .))}}
         {{template "message/proto/commonMethods" .}}
-        {{template "message/proto/marshalMethods" .}}
-        {{template "message/proto/unmarshalMethods" .}}
+        {{if .IsPublisher}}{{template "message/proto/marshalMethods" .}}{{end}}
+        {{if .IsSubscriber}}{{template "message/proto/unmarshalMethods" .}}{{end}}
     {{- end}}
     {{- print "MessageMethods" .Protocol (goid .) | def}}
 {{- end}}

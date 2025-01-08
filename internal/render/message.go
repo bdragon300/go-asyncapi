@@ -15,6 +15,8 @@ type Message struct {
 	InType       *lang.GoStruct
 	Dummy        bool
 	IsSelectable bool // true if message should get to selections
+	IsPublisher bool
+	IsSubscriber bool
 
 	HeadersFallbackType  *lang.GoMap
 	HeadersTypePromise   *lang.Promise[*lang.GoStruct]
