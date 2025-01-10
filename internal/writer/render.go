@@ -9,20 +9,12 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/selector"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
-	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
-	"go/format"
-	"os"
-	"path"
 	"slices"
 	"text/template"
 	"unicode"
 )
-
-type renderSource interface {
-	AllObjects() []common.CompileObject
-}
 
 type fileRenderState struct {
 	imports     context.ImportsList
@@ -32,7 +24,7 @@ type fileRenderState struct {
 }
 
 type renderQueueItem struct {
-	selection common.RenderSelectionConfig
+	selection common.ConfigSelectionItem
 	object         common.CompileObject
 	err            error
 }
@@ -52,7 +44,7 @@ func RenderObjects(objects []common.CompileObject, opts common.RenderOpts) (map[
 			logger.Debug("Render", "object", item.object.String())
 
 			logger.Trace("-> Render file name", "object", item.object.String(), "template", item.selection.Render.File)
-			fileName, err := renderInlineTemplate(item, opts, item.selection.Render.File)
+			fileName, err := renderObjectInlineTemplate(item, opts, item.selection.Render.File)
 			switch {
 			case errors.Is(err, context.ErrNotDefined):
 				// Template can't be rendered right now due to unknown object definition, postpone it
@@ -113,13 +105,13 @@ func RenderObjects(objects []common.CompileObject, opts common.RenderOpts) (map[
 	return res, nil
 }
 
-func buildRenderQueue(objects []common.CompileObject, selections []common.RenderSelectionConfig) (res []renderQueueItem) {
+func buildRenderQueue(allObjects []common.CompileObject, selections []common.ConfigSelectionItem) (res []renderQueueItem) {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
 	for _, selection := range selections {
 		logger.Debug("Select objects", "selection", selection)
-		objects := selector.SelectObjects(objects, selection)
-		for _, obj := range objects {
+		selectedObjects := selector.SelectObjects(allObjects, selection)
+		for _, obj := range selectedObjects {
 			logger.Debug("-> Selected", "object", obj)
 			res = append(res, renderQueueItem{selection: selection, object: obj})
 		}
@@ -127,7 +119,7 @@ func buildRenderQueue(objects []common.CompileObject, selections []common.Render
 	return
 }
 
-func renderInlineTemplate(item renderQueueItem, opts common.RenderOpts, text string) (string, error) {
+func renderObjectInlineTemplate(item renderQueueItem, opts common.RenderOpts, text string) (string, error) {
 	ctx := &context.RenderContextImpl{
 		RenderOpts:             opts,
 		CurrentSelectionConfig: item.selection,
@@ -139,6 +131,10 @@ func renderInlineTemplate(item renderQueueItem, opts common.RenderOpts, text str
 
 	tplCtx := tmpl.NewTemplateContext(ctx, item.object.Renderable, ctx.Imports)
 
+	return renderInlineTemplate(text, tplCtx)
+}
+
+func renderInlineTemplate(text string, tplCtx any) (string, error) {
 	var res bytes.Buffer
 	tpl, err := template.New("").Funcs(tmpl.GetTemplateFunctions()).Parse(text)
 	if err != nil {
@@ -184,7 +180,7 @@ func renderObject(
 	}
 
 	// Update the file state if rendering was successful
-	// If item is marked reused from other place, do not update the file state and content, just update namespace
+	// If item is marked reused from other place, do not update the file state and content, just update the namespace
 	if item.selection.ReusePackagePath == "" {
 		fileState.buf.Write(res.Bytes())
 		fileState.buf.WriteRune('\n') // Separate writes following each other (if any)
@@ -242,68 +238,4 @@ func renderFile(preambleTpl *template.Template, opts common.RenderOpts, renderSt
 	}
 
 	return &res, nil
-}
-
-// FormatFiles formats the files in-place in the map using gofmt
-func FormatFiles(files map[string]*bytes.Buffer) error {
-	logger := log.GetLogger(log.LoggerPrefixFormatting)
-	logger.Info("Run formatting")
-
-	keys := lo.Keys(files)
-	slices.Sort(keys)
-	for _, fileName := range keys {
-		buf := files[fileName]
-		logger.Debug("File", "name", fileName, "bytes", buf.Len())
-		formatted, err := format.Source(buf.Bytes())
-		if err != nil {
-			return types.ErrorWithContent{err, buf.Bytes()}
-		}
-		buf.Reset()
-		buf.Write(formatted)
-		logger.Debug("-> File formatted", "name", fileName, "bytes", buf.Len())
-	}
-
-	logger.Info("Formatting completed", "files", len(files))
-	return nil
-}
-
-func WriteToFiles(files map[string]*bytes.Buffer, baseDir string) error {
-	logger := log.GetLogger(log.LoggerPrefixWriting)
-	logger.Info("Run writing")
-
-	if err := ensureDir(baseDir); err != nil {
-		return err
-	}
-	totalBytes := 0
-	for fileName, buf := range files {
-		logger.Debug("File", "name", fileName)
-		fullPath := path.Join(baseDir, fileName)
-		if err := ensureDir(path.Dir(fullPath)); err != nil {
-			return err
-		}
-
-		if err := os.WriteFile(fullPath, buf.Bytes(), 0o644); err != nil {
-			return err
-		}
-		logger.Debug("-> File wrote", "name", fullPath, "bytes", buf.Len())
-		totalBytes += buf.Len()
-	}
-	logger.Debugf("Writer stats: files: %d, total bytes: %d", len(files), totalBytes)
-
-	logger.Info("Writing completed", "files", len(files))
-	return nil
-}
-
-func ensureDir(path string) error {
-	if info, err := os.Stat(path); os.IsNotExist(err) {
-		if err2 := os.MkdirAll(path, 0o755); err2 != nil {
-			return err2
-		}
-	} else if err != nil {
-		return err
-	} else if !info.IsDir() {
-		return fmt.Errorf("path %q is not a directory", path)
-	}
-
-	return nil
 }

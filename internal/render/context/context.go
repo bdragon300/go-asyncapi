@@ -1,16 +1,11 @@
 package context
 
 import (
-	"cmp"
 	"errors"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
-	"github.com/samber/lo"
-	"go/token"
 	"path"
-	"slices"
-	"strings"
 	"unicode"
 )
 
@@ -25,7 +20,7 @@ type definable interface {
 // TODO: add object path?
 type RenderContextImpl struct {
 	RenderOpts     common.RenderOpts
-	CurrentSelectionConfig common.RenderSelectionConfig
+	CurrentSelectionConfig common.ConfigSelectionItem
 	PackageName      string
 	Imports          *ImportsList
 	PackageNamespace *RenderNamespace
@@ -83,7 +78,7 @@ func (c *RenderContextImpl) QualifiedRuntimeName(parts ...string) string {
 	return fmt.Sprintf("%s.%s", c.Imports.addImport(pkgPath, pkgName), name)
 }
 
-func (c *RenderContextImpl) CurrentSelection() common.RenderSelectionConfig {
+func (c *RenderContextImpl) CurrentSelection() common.ConfigSelectionItem {
 	return c.CurrentSelectionConfig
 }
 
@@ -95,7 +90,7 @@ func (c *RenderContextImpl) Package() string {
 	return c.PackageName
 }
 
-func (c *RenderContextImpl) DefineTypeInNamespace(obj common.GolangType, selection common.RenderSelectionConfig, actual bool) {
+func (c *RenderContextImpl) DefineTypeInNamespace(obj common.GolangType, selection common.ConfigSelectionItem, actual bool) {
 	c.PackageNamespace.AddObject(obj, selection, actual)
 }
 
@@ -110,145 +105,4 @@ func (c *RenderContextImpl) DefineNameInNamespace(name string) {
 
 func (c *RenderContextImpl) NameDefinedInNamespace(name string) bool {
 	return c.PackageNamespace.FindName(name)
-}
-
-type ImportsList struct { //TODO: rename
-	imports map[string]common.ImportItem
-}
-
-func (s *ImportsList) Imports() []common.ImportItem {
-	res := lo.Values(s.imports)
-	slices.SortFunc(res, func(a, b common.ImportItem) int {
-		return cmp.Compare(a.PackagePath, b.PackagePath)
-	})
-	return res
-}
-
-func (s *ImportsList) addImport(pkgPath string, pkgName string) string {
-	if s.imports == nil {
-		s.imports = make(map[string]common.ImportItem)
-	}
-	if _, ok := s.imports[pkgPath]; !ok {
-		res := common.ImportItem{PackageName: pkgName, PackagePath: pkgPath}
-		// Generate alias if the package with the same name already imported, or its name is not a valid Go identifier (e.g. "go-asyncapi")
-		namesakes := lo.Filter(lo.Entries(s.imports), func(item lo.Entry[string, common.ImportItem], _ int) bool {
-			return item.Key != pkgPath && item.Value.PackageName == pkgName
-		})
-		if len(namesakes) > 0 || !token.IsIdentifier(pkgName) {
-			// Generate a new alias to avoid package name conflict
-			res.Alias = fmt.Sprintf("%s%d", utils.ToGolangName(pkgName, false), len(namesakes)+1)
-		}
-		s.imports[pkgPath] = res
-	}
-
-	if v := s.imports[pkgPath]; v.Alias != "" {
-		return v.Alias // Return alias
-	}
-	return pkgName
-}
-
-func (s *ImportsList) Clone() ImportsList {
-	return ImportsList{imports: lo.Assign(s.imports)}
-}
-
-func (s *ImportsList) String() string {
-	return strings.Join(lo.Map(s.Imports(), func(item common.ImportItem, _ int) string {
-		if item.Alias != "" {
-			return fmt.Sprintf("%s %s", item.Alias, item.PackagePath)
-		}
-		return item.PackagePath
-	}), "; ")
-}
-
-type RenderNameDefinition struct {
-	Object common.GolangType
-	Selection common.RenderSelectionConfig
-	// Actual is true when this definition is the actual definition of the object, and false when it is a deferred definition.
-	Actual bool
-}
-
-
-type RenderNamespace struct {
-	definitions []RenderNameDefinition
-	names []string
-}
-
-func (s *RenderNamespace) AddObject(obj common.GolangType, selection common.RenderSelectionConfig, actual bool) {
-	found := lo.ContainsBy(s.definitions, func(def RenderNameDefinition) bool {
-		return def.Object == obj && def.Actual == actual
-	})
-	if !found {
-		s.definitions = append(s.definitions, RenderNameDefinition{Object: obj, Selection: selection, Actual: actual})
-	}
-}
-
-func (s *RenderNamespace) AddName(name string) {
-	if !lo.Contains(s.names, name) {
-		s.names = append(s.names, name)
-	}
-}
-
-func (s *RenderNamespace) FindObject(obj common.GolangType) (RenderNameDefinition, bool) {
-	found := lo.Filter(s.definitions, func(def RenderNameDefinition, _ int) bool {
-		return def.Object == obj
-	})
-	// Return the "actual" definition first, if any
-	slices.SortFunc(found, func(a, b RenderNameDefinition) int {
-		switch {
-		case a.Actual && !b.Actual:
-			return 1
-		case !a.Actual && b.Actual:
-			return -1
-		}
-		return 0
-	})
-
-	return lo.Last(found)
-}
-
-func (s *RenderNamespace) FindName(name string) bool {
-	return lo.Contains(s.names, name)
-}
-
-func (s *RenderNamespace) Clone() RenderNamespace {
-	return RenderNamespace{
-		definitions: append([]RenderNameDefinition(nil), s.definitions...),
-		names: append([]string(nil), s.names...),
-	}
-}
-
-func (s *RenderNamespace) String() string {
-	defs := strings.Join(lo.Map(s.definitions, func(item RenderNameDefinition, _ int) string {
-		return fmt.Sprintf("[%[1]p] %[1]s", item.Object)
-	}), "; ")
-	return fmt.Sprintf("names: %s | defs: %s", strings.Join(s.names, "; "), defs)
-}
-
-// qualifiedToImport converts the qual* template function parameters to qualified name and import package path.
-// And also it returns the package name (the last part of the package path).
-func qualifiedToImport(parts []string) (pkgPath string, pkgName string, name string) {
-	// parts["a"] -> ["a", "a", ""]
-	// parts["", "a"] -> ["", "", "a"]
-	// parts["a.x"] -> ["a", "a", "x"]
-	// parts["a/b/c"] -> ["a/b/c", "c", ""]
-	// parts["a", "x"] -> ["a", "a", "x"]
-	// parts["a/b.c", "x"] -> ["a/b.c", "bc", "x"]
-	// parts["n", "d", "a/b.c", "x"] -> ["n/d/a/b.c-e", "b.c-e", "x"]
-	switch len(parts) {
-	case 0:
-		panic("Empty parameters, at least one is required")
-	case 1:
-		pkgPath = parts[0]
-	default:
-		pkgPath = path.Join(parts[:len(parts)-1]...) + "." + parts[len(parts)-1]
-	}
-	if pos := strings.LastIndex(pkgPath, "."); pos >= 0 {
-		name = pkgPath[pos+1:]
-		pkgPath = pkgPath[:pos]
-	}
-	pkgName = pkgPath
-	if pos := strings.LastIndex(pkgPath, "/"); pos >= 0 {
-		pkgName = pkgPath[pos+1:]
-	}
-	return
 }

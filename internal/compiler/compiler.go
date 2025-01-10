@@ -8,7 +8,6 @@ import (
 	"io"
 	"path"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/bdragon300/go-asyncapi/internal/specurl"
@@ -16,7 +15,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/samber/lo"
 )
 
 func NewModule(specURL *specurl.URL) *Module {
@@ -24,7 +22,6 @@ func NewModule(specURL *specurl.URL) *Module {
 		logger:    log.GetLogger(log.LoggerPrefixCompilation),
 		specURL:   specURL,
 		objects:   make([]common.CompileObject, 0),
-		protocols: make(map[string]int),
 	}
 }
 
@@ -39,17 +36,12 @@ type Module struct {
 
 	// Set during compilation
 	objects            []common.CompileObject
-	protocols          map[string]int
 	promises           []common.ObjectPromise
 	listPromises       []common.ObjectListPromise
 }
 
 func (c *Module) AddObject(obj common.CompileObject) {
 	c.objects = append(c.objects, obj)
-}
-
-func (c *Module) RegisterProtocol(protoName string) {
-	c.protocols[protoName]++
 }
 
 func (c *Module) AddExternalSpecPath(specPath *specurl.URL) {
@@ -66,10 +58,6 @@ func (c *Module) AddListPromise(p common.ObjectListPromise) {
 
 func (c *Module) SpecObjectURL() specurl.URL {
 	return *c.specURL
-}
-
-func (c *Module) Protocols() []string {
-	return lo.Keys(c.protocols)
 }
 
 func (c *Module) AllObjects() []common.CompileObject {
@@ -140,10 +128,7 @@ func (c *Module) ExternalSpecs() []*specurl.URL {
 }
 
 func (c *Module) Stats() string {
-	return fmt.Sprintf(
-		"%s(%s): %d objects, known protocols: %s",
-		c.specURL, c.parsedSpecKind, len(c.AllObjects()), strings.Join(lo.Keys(c.protocols), ","),
-	)
+	return fmt.Sprintf("%s(%s): %d objects", c.specURL, c.parsedSpecKind, len(c.AllObjects()))
 }
 
 func (c *Module) decodeSpecFile(specPath string, data io.ReadSeeker) (SpecKind, compiledObject, error) {

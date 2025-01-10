@@ -57,7 +57,19 @@ func CheckSameRenderables(a, b Renderable) bool {
 }
 
 type (
-	RenderSelectionConfigRender struct {
+	ConfigSelectionItem struct {
+		Protocols        []string
+		ObjectKinds []string
+		ModuleURLRe  string
+		PathRe       string
+		NameRe           string
+		Render           ConfigSelectionItemRender
+		ReusePackagePath string
+
+		AllSupportedProtocols []string
+	}
+
+	ConfigSelectionItemRender struct {
 		Template     string
 		File         string
 		Package      string
@@ -65,20 +77,16 @@ type (
 		ProtoObjectsOnly bool
 	}
 
-	RenderSelectionConfig struct {
-		Protocols        []string
-		ObjectKinds []string
-		ModuleURLRe  string
-		PathRe       string
-		NameRe	   string
-		Render 	 RenderSelectionConfigRender
-		ReusePackagePath string
-
-		AllSupportedProtocols []string
+	ConfigImplementationProtocol struct {
+		Protocol string
+		Name      string
+		Disable   bool
+		Directory string
+		Package   string
 	}
 )
 
-func (r RenderSelectionConfig) RenderProtocols() []string {
+func (r ConfigSelectionItem) RenderProtocols() []string {
 	if len(r.Render.Protocols) > 0 {
 		return r.Render.Protocols
 	}
@@ -91,7 +99,13 @@ type RenderOpts struct {
 	TargetDir    string
 	DisableFormatting bool
 	PreambleTemplate string
-	Selections []RenderSelectionConfig
+	Selections []ConfigSelectionItem
+}
+
+type RenderImplementationsOpts struct {
+	Disable bool
+	Directory string
+	Protocols []ConfigImplementationProtocol
 }
 
 type RenderContext interface {
@@ -101,11 +115,11 @@ type RenderContext interface {
 	QualifiedRuntimeName(parts ...string) string
 	QualifiedGeneratedPackage(obj GolangType) (string, error)
 
-	CurrentSelection() RenderSelectionConfig
+	CurrentSelection() ConfigSelectionItem
 	GetObject() CompileObject
 	Package() string
 
-	DefineTypeInNamespace(obj GolangType, selection RenderSelectionConfig, actual bool)
+	DefineTypeInNamespace(obj GolangType, selection ConfigSelectionItem, actual bool)
 	TypeDefinedInNamespace(obj GolangType) bool
 	DefineNameInNamespace(name string)
 	NameDefinedInNamespace(name string) bool

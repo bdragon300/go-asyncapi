@@ -8,8 +8,11 @@ import (
 var ImplementationFS embed.FS
 
 type ImplManifestItem struct {
-	URL string `json:"url"`
-	Dir string `json:"dir"`
+	Protocol string `yaml:"protocol"`
+	Name string `yaml:"name"`
+	URL string `yaml:"url"`
+	Dir string `yaml:"dir"`
+	Default bool `yaml:"default"`
 }
 
-type ImplManifest map[string]map[string]ImplManifestItem
+type ImplManifest []ImplManifestItem

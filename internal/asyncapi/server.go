@@ -112,10 +112,5 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	}
 	res.ProtoServer = protoServer
 
-	// Register protocol only for servers in `servers` document section, not in `components`
-	if !isSelectable {
-		ctx.Storage.RegisterProtocol(s.Protocol)
-	}
-
 	return &res, nil
 }

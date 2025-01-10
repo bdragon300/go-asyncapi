@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/bdragon300/go-asyncapi/implementations"
 	"os"
 
 	"github.com/samber/lo"
@@ -10,12 +11,17 @@ import (
 
 func listImplementations() {
 	manifest := lo.Must(loadImplementationsManifest())
-	protos := lo.Keys(manifest)
+	implGroups := lo.GroupBy(manifest, func(item implementations.ImplManifestItem) string {
+		return item.Protocol
+	})
+	protos := lo.Keys(implGroups)
 	slices.Sort(protos)
 	for _, proto := range protos {
 		_, _ = os.Stdout.WriteString(proto + ":\n")
-		for implName, info := range manifest[proto] {
-			_, _ = os.Stdout.WriteString(fmt.Sprintf("* %s (%s)\n", implName, info.URL))
+		for _, info := range implGroups[proto] {
+			_, _ = os.Stdout.WriteString(
+				fmt.Sprintf("* %s (%s) %s\n", info.Name, info.URL, lo.Ternary(info.Default, "[default]", "")),
+			)
 		}
 		_, _ = os.Stdout.WriteString("\n")
 	}

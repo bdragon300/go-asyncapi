@@ -1,0 +1,53 @@
+- protocol: kafka
+  name: github.com/twmb/franz-go
+  url: https://github.com/twmb/franz-go
+  dir: kafka/franz-go
+  default: true
+
+- protocol: amqp
+  name: github.com/rabbitmq/amqp091-go
+  url: https://github.com/rabbitmq/amqp091-go
+  dir: amqp/amqp091-go
+  default: true
+
+- protocol: http
+  name: net/http
+  url: https://pkg.go.dev/net/http
+  dir: http/std
+  default: true
+
+- protocol: mqtt
+  name: github.com/eclipse/paho.mqtt.golang
+  url: https://github.com/eclipse/paho.mqtt.golang
+  dir: mqtt/paho-mqtt
+  default: true
+
+- protocol: ws
+  name: github.com/gobwas/ws
+  url: https://github.com/gobwas/ws
+  dir: ws/gobwas-ws
+  default: true
+
+- protocol: redis
+  name: github.com/redis/go-redis
+  url: https://github.com/redis/go-redis
+  dir: redis/go-redis
+  default: true
+
+- protocol: tcp
+  name: std
+  url: https://pkg.go.dev/net
+  dir: tcp/std
+  default: true
+
+- protocol: udp
+  name: std
+  url: https://pkg.go.dev/net
+  dir: udp/std
+  default: true
+
+- protocol: ip
+  name: std
+  url: https://pkg.go.dev/net
+  dir: ip/std
+  default: true

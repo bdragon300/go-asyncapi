@@ -5,7 +5,6 @@ runtimeModule: github.com/bdragon300/go-asyncapi/run
 directories:
   templates:
   target: ./asyncapi
-  implementations: ./asyncapi/impl
 
 selections:
   - objectKinds: ["schema"]
@@ -33,27 +32,9 @@ resolver:
   timeout: 30s
   command:
 
-noImplementations: false
 render:
   preambleTemplate: preamble.tmpl
   disableFormatting: false
 
 implementations:
-  kafka:
-    name: franz-go
-  amqp:
-    name: amqp091-go
-  http:
-    name: std
-  mqtt:
-    name: paho-mqtt
-  ws:
-    name: gobwas-ws
-  redis:
-    name: go-redis
-  ip:
-    name: std
-  tcp:
-    name: std
-  udp:
-    name: std
+  directory: impl/{{ .Protocol }}

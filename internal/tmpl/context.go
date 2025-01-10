@@ -5,7 +5,7 @@ import (
 )
 
 type renderContext interface {
-	CurrentSelection() common.RenderSelectionConfig
+	CurrentSelection() common.ConfigSelectionItem
 	Package() string
 }
 
@@ -36,10 +36,15 @@ func (t TemplateContext) PackageName() string {
 	return t.renderContext.Package()
 }
 
-func (t TemplateContext) CurrentSelection() common.RenderSelectionConfig {
+func (t TemplateContext) CurrentSelection() common.ConfigSelectionItem {
 	return t.renderContext.CurrentSelection()
 }
 
 func (t TemplateContext) Object() common.Renderable {
 	return t.object
+}
+
+type ImplementationsTemplateContext struct {
+	Protocol string
+	Name     string
 }

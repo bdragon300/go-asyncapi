@@ -6,15 +6,10 @@ import (
 	"regexp"
 )
 
-func SelectObjects(objects []common.CompileObject, selection common.RenderSelectionConfig) []common.CompileObject {
-	filterChain := getFiltersChain(selection)
-
-	allObjects := lo.Map(objects, func(object common.CompileObject, _ int) common.CompileObject {
-		return common.CompileObject{Renderable: object.Renderable, ObjectURL: object.ObjectURL}
-	})
-
-	res := lo.Filter(allObjects, func(object common.CompileObject, _ int) bool {
-		for _, filter := range filterChain {
+func SelectObjects(objects []common.CompileObject, selection common.ConfigSelectionItem) []common.CompileObject {
+	filtersChain := buildFiltersChain(selection)
+	res := lo.Filter(objects, func(object common.CompileObject, _ int) bool {
+		for _, filter := range filtersChain {
 			if !filter(object) {
 				return false
 			}
@@ -24,27 +19,13 @@ func SelectObjects(objects []common.CompileObject, selection common.RenderSelect
 	return res
 }
 
-//func FindSelectionByObject(object compiler.Object, selections []common.RenderSelectionConfig) *common.RenderSelectionConfig {
-//	// TODO: nested structures defined in Channel or smth like this will not work (ObjectKind==lang), they have no explicit selections
-//	for _, selection := range selections {
-//		filtersChain := getFiltersChain(selection.RenderSelectionFilterConfig)
-//		match := lo.ContainsBy(filtersChain, func(f filterFunc) bool {
-//			return f(object)
-//		})
-//		if match {
-//			return &selection
-//		}
-//	}
-//	return nil
-//}
-
 type filterFunc func(common.CompileObject) bool
 
 type protoObjectSelector interface {
 	SelectProtoObject(protocol string) common.Renderable
 }
 
-func getFiltersChain(selection common.RenderSelectionConfig) []filterFunc {
+func buildFiltersChain(selection common.ConfigSelectionItem) []filterFunc {
 	var filterChain []filterFunc
 	filterChain = append(filterChain, func(object common.CompileObject) bool {
 		return object.Selectable()

@@ -32,7 +32,6 @@ type GolangType interface {
 
 type CompilationStorage interface {
 	AddObject(obj CompileObject)
-	RegisterProtocol(protoName string)
 	AddExternalSpecPath(specPath *specurl.URL)
 	AddPromise(p ObjectPromise)
 	AddListPromise(p ObjectListPromise)

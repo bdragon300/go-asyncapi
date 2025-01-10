@@ -8,7 +8,7 @@ import (
 	"path"
 )
 
-func CopyRecursive(srcFS fs.FS, dstBase string, copyCb func(w io.Writer, r io.Reader) (int64, error)) (int, error) {
+func CopyRecursive(srcFS fs.FS, dstBase string, copyCb func(entry fs.DirEntry, w io.Writer, r io.Reader) (int64, error)) (int, error) {
 	var totalBytes int
 	entries, err := fs.ReadDir(srcFS, ".")
 	if err != nil {
@@ -42,7 +42,7 @@ func CopyRecursive(srcFS fs.FS, dstBase string, copyCb func(w io.Writer, r io.Re
 					return fmt.Errorf("create/truncate dst file %q: %w", dst, err)
 				}
 				defer dstFile.Close()
-				n, err := copyCb(dstFile, srcFile)
+				n, err := copyCb(entry, dstFile, srcFile)
 				if err != nil {
 					return fmt.Errorf("copy contents from %q to %q: %w", entry.Name(), dst, err)
 				}

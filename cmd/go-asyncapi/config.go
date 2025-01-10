@@ -10,12 +10,22 @@ import (
 )
 
 type (
-	toolConfigSelectionRender struct {
-		Protocols        []string          `yaml:"protocols"`
-		ProtoObjectsOnly bool              `yaml:"protoObjectsOnly"`
-		Template         string            `yaml:"template"`
-		File             string            `yaml:"file"`
-		Package          string            `yaml:"package"`
+	toolConfig struct {
+		ConfigVersion int`yaml:"configVersion"`
+		ProjectModule string `yaml:"projectModule"`
+		RuntimeModule string `yaml:"runtimeModule"`
+		Directories toolConfigDirectories `yaml:"directories"`
+
+		Selections        []toolConfigSelection `yaml:"selections"`
+		Resolver          toolConfigResolver    `yaml:"resolver"`
+		Render toolConfigRender `yaml:"render"`
+
+		Implementations toolConfigImplementations `yaml:"implementations"`
+	}
+
+	toolConfigDirectories struct {
+		Templates string `yaml:"templates"`
+		Target    string `yaml:"target"`
 	}
 
 	toolConfigSelection struct {
@@ -28,15 +38,12 @@ type (
 		ReusePackagePath string `yaml:"reusePackagePath"`
 	}
 
-	toolConfigDirectories struct {
-		Templates string `yaml:"templates"`
-		Target    string `yaml:"target"`
-		Implementations string `yaml:"implementations"`
-	}
-
-	toolConfigRender struct {
-		PreambleTemplate string `yaml:"preambleTemplate"`
-		DisableFormatting bool `yaml:"disableFormatting"`
+	toolConfigSelectionRender struct {
+		Protocols        []string          `yaml:"protocols"`
+		ProtoObjectsOnly bool              `yaml:"protoObjectsOnly"`
+		Template         string            `yaml:"template"`
+		File             string            `yaml:"file"`
+		Package          string            `yaml:"package"`
 	}
 
 	toolConfigResolver struct {
@@ -46,22 +53,23 @@ type (
 		Command string        `yaml:"command"`
 	}
 
-	toolConfigImplementation struct {
-		Name string `yaml:"name"`
+	toolConfigRender struct {
+		PreambleTemplate string `yaml:"preambleTemplate"`
+		DisableFormatting bool `yaml:"disableFormatting"`
 	}
 
-	toolConfig struct {
-		ConfigVersion int`yaml:"configVersion"`
-		ProjectModule string `yaml:"projectModule"`
-		RuntimeModule string `yaml:"runtimeModule"`
-		Directories toolConfigDirectories `yaml:"directories"`
+	toolConfigImplementations struct {
+		Disable bool `yaml:"disable"`
+		Directory string `yaml:"directory"` // Template expression, relative to the target directory
+		Protocols []toolConfigImplementationProtocol `yaml:"protocols"`
+	}
 
-		Selections        []toolConfigSelection `yaml:"selections"`
-		Resolver          toolConfigResolver    `yaml:"resolver"`
-		NoImplementations bool                  `yaml:"noImplementations"`
-		Render toolConfigRender `yaml:"render"`
-
-		Implementations map[string]toolConfigImplementation `yaml:"implementations"`
+	toolConfigImplementationProtocol struct {
+		Protocol  string `yaml:"protocol"`
+		Name      string `yaml:"name"`
+		Disable   bool   `yaml:"disable"`
+		Directory string `yaml:"directory"` // Template expression, relative to the target directory
+		Package string `yaml:"package"`
 	}
 )
 
