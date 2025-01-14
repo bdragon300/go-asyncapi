@@ -23,24 +23,32 @@ func (s *ImportsList) Imports() []common.ImportItem {
 	return res
 }
 
-func (s *ImportsList) addImport(pkgPath string, pkgName string) string {
+func (s *ImportsList) addImport(importPath string, pkgName string) string {
 	if s.imports == nil {
 		s.imports = make(map[string]common.ImportItem)
 	}
-	if _, ok := s.imports[pkgPath]; !ok {
-		res := common.ImportItem{PackageName: pkgName, PackagePath: pkgPath}
-		// Generate alias if the package with the same name already imported, or its name is not a valid Go identifier (e.g. "go-asyncapi")
-		namesakes := lo.Filter(lo.Entries(s.imports), func(item lo.Entry[string, common.ImportItem], _ int) bool {
-			return item.Key != pkgPath && item.Value.PackageName == pkgName
-		})
-		if len(namesakes) > 0 || !token.IsIdentifier(pkgName) {
-			// Generate a new alias to avoid package name conflict
-			res.Alias = fmt.Sprintf("%s%d", utils.ToGolangName(pkgName, false), len(namesakes)+1)
-		}
-		s.imports[pkgPath] = res
+
+	// Suppose that the package name by default is the last part of the import path. But if it's specified, the import
+	// path remains the same, but the package name is going to be used in the code.
+	// This is because Go treats the import as directory path, but uses the package in namespace.
+	// https://stackoverflow.com/questions/43579838/relationship-between-a-package-statement-and-the-directory-of-a-go-file
+	if pkgName == "" {
+		pkgName = utils.GetPackageName(importPath)
 	}
 
-	if v := s.imports[pkgPath]; v.Alias != "" {
+	if _, ok := s.imports[importPath]; !ok {
+		res := common.ImportItem{PackageName: pkgName, PackagePath: importPath}
+		// Generate a new alias if the package with the same name already imported, or it's not a valid Go identifier (e.g. "go-asyncapi")
+		conflicts := lo.Filter(lo.Entries(s.imports), func(item lo.Entry[string, common.ImportItem], _ int) bool {
+			return item.Key != importPath && item.Value.PackageName == pkgName
+		})
+		if len(conflicts) > 0 || !token.IsIdentifier(pkgName) {
+			res.Alias = fmt.Sprintf("%s%d", utils.ToGolangName(pkgName, false), len(conflicts)+1)
+		}
+		s.imports[importPath] = res
+	}
+
+	if v := s.imports[importPath]; v.Alias != "" {
 		return v.Alias // Return alias
 	}
 	return pkgName

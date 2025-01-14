@@ -70,6 +70,7 @@ type (
 		Disable   bool   `yaml:"disable"`
 		Directory string `yaml:"directory"` // Template expression, relative to the target directory
 		Package string `yaml:"package"`
+		ReusePackagePath string `yaml:"reusePackagePath"`
 	}
 )
 

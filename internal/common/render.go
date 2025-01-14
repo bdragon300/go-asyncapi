@@ -1,5 +1,7 @@
 package common
 
+import "github.com/bdragon300/go-asyncapi/implementations"
+
 var context RenderContext
 
 func GetContext() RenderContext {
@@ -83,6 +85,7 @@ type (
 		Disable   bool
 		Directory string
 		Package   string
+		ReusePackagePath string
 	}
 )
 
@@ -113,20 +116,26 @@ type RenderContext interface {
 
 	QualifiedName(parts ...string) string
 	QualifiedRuntimeName(parts ...string) string
-	QualifiedGeneratedPackage(obj GolangType) (string, error)
+	QualifiedTypeGeneratedPackage(obj GolangType) (string, error)
+	QualifiedImplementationGeneratedPackage(obj ImplementationObject) (string, error)
 
 	CurrentSelection() ConfigSelectionItem
 	GetObject() CompileObject
-	Package() string
 
 	DefineTypeInNamespace(obj GolangType, selection ConfigSelectionItem, actual bool)
 	TypeDefinedInNamespace(obj GolangType) bool
 	DefineNameInNamespace(name string)
 	NameDefinedInNamespace(name string) bool
+	FindImplementationInNamespace(protocol string) (ImplementationObject, bool)
 }
 
 type ImportItem struct {
 	Alias       string
 	PackageName string
 	PackagePath string
+}
+
+type ImplementationObject struct {
+	Manifest implementations.ImplManifestItem
+	Config   ConfigImplementationProtocol
 }

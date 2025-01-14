@@ -1,0 +1,23 @@
+{{- /* dot == render.ProtoServer */}}
+
+{{define "server/mqtt/impl/github.com/eclipse/paho.mqtt.golang/newClient"}}
+    client, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(ctx, url, bindings, nil)
+    if err != nil {
+        return nil, err
+    }
+    producer, consumer := client, client
+{{- end}}
+
+{{define "server/mqtt/impl/github.com/eclipse/paho.mqtt.golang/newProducer"}}
+    producer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(ctx, url, bindings, nil)
+    if err != nil {
+        return nil, err
+    }
+{{- end}}
+
+{{define "server/mqtt/impl/github.com/eclipse/paho.mqtt.golang/newConsumer"}}
+    consumer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(ctx, url, bindings, nil)
+    if err != nil {
+        return nil, err
+    }
+{{- end}}

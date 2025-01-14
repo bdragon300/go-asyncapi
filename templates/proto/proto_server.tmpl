@@ -1,0 +1,130 @@
+{{- /* dot == render.ProtoServer */}}
+
+{{define "server/proto/newFunction"}}
+func New{{ .Server | goid }}(producer {{goqualrun .Protocol "Producer"}}, consumer {{goqualrun .Protocol "Consumer"}}) {{ .Type | ptr | gousage }} {
+    return &{{ .Type | gousage }}{
+        producer: producer,
+        consumer: consumer,
+    }
+}
+{{- end}}
+
+{{define "server/proto/connectFunctions"}}
+{{- if and .IsPublisher .IsSubscriber}}
+func Connect{{ .Server | goid }}Bidi(ctx {{goqual "context.Context"}}, url string) ({{ .Type | ptr | gousage }}, error) {
+    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+    {{- if .BindingsProtocols | has .Protocol}}
+        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+    {{- end}}
+    {{- /* Prevent variables from being unused if it will be unclaimed in template below */}}
+    _ = bindings
+    {{- with impl .Protocol }}
+        {{- with trytmpl (print "server/" $.Protocol "/impl/" .Manifest.Name "/newClient") $}}
+            {{.}}
+        {{- else}}
+            client, err := {{gopkg .}}NewClient(ctx, url, bindings)
+            if err != nil {
+                return nil, err
+            }
+            producer, consumer := client, client
+        {{- end}}
+    {{- end}}
+    return New{{ .Server | goid }}(producer, consumer), nil
+}
+{{- end}}
+
+{{- if .IsPublisher}}
+func Connect{{ .Server | goid }}Producer(ctx {{goqual "context.Context"}}, url string) ({{ .Type | ptr | gousage }}, error) {
+    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+    {{- if .BindingsProtocols | has .Protocol}}
+        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+    {{- end}}
+    {{- /* Prevent variables from being unused if it will be unclaimed in template below */}}
+    _ = bindings
+    {{- with impl .Protocol }}
+        {{- with trytmpl (print "server/" $.Protocol "/impl/" .Manifest.Name "/newProducer") $}}
+            {{.}}
+        {{- else}}
+            producer, err := {{gopkg .}}NewClient(ctx, url, bindings)
+            if err != nil {
+                return nil, err
+            }
+        {{- end}}
+    {{- end}}
+    return New{{ .Server | goid }}(producer, nil), nil
+}
+{{- end}}
+
+{{- if .IsSubscriber}}
+func Connect{{ .Server | goid }}Consumer(ctx {{goqual "context.Context"}}, url string) ({{ .Type | ptr | gousage }}, error) {
+    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+    {{- if .BindingsProtocols | has .Protocol}}
+        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+    {{- end}}
+    {{- /* Prevent variables from being unused if it will be unclaimed in template below */}}
+    _ = bindings
+    {{- with impl .Protocol }}
+        {{- with trytmpl (print "server/" $.Protocol "/impl/" .Manifest.Name "/newConsumer") $}}
+            {{.}}
+        {{- else}}
+            consumer, err := {{gopkg .}}NewClient(ctx, url, bindings)
+            if err != nil {
+                return nil, err
+            }
+        {{- end}}
+    {{- end}}
+    return New{{ .Server | goid }}(nil, consumer), nil
+}
+{{- end}}
+{{- end}}
+
+{{define "server/proto/channelOpenMethods"}}
+{{- range $channel := .BoundChannels}}
+    {{- with (deref .).SelectProtoObject $.Protocol }}
+        func (s {{ $.Type | gousage }}) Open{{ $channel | goid }}{{$.Protocol | goid}}(
+            ctx {{goqual "context.Context"}},
+            {{with .ParametersType}}params {{ . | gousage }},{{end}}
+        ) (*{{ .Type | gousage }}, error) {
+            return {{gopkg .Type}}Open{{ $channel | goid }}{{$.Protocol | goid}}(
+                ctx,{{if .ParametersType}}params,{{end}} s,
+            )
+        }
+    {{- end}}
+{{- end}}
+{{- end}}
+
+{{define "server/proto/operationOpenMethods"}}
+{{- range $operation := .BoundOperations}}
+    {{- with (deref .).SelectProtoObject $.Protocol }}
+        func (s {{ $.Type | gousage }}) Open{{ $operation | goid }}{{$.Protocol | goid}}(
+            ctx {{goqual "context.Context"}},
+            {{with $operation.Channel.ParametersType}}params {{ . | gousage }},{{end}}
+        ) (*{{ .Type | gousage }}, error) {
+            return {{gopkg .Type}}Open{{ . | goid }}{{$.Protocol | goid}}(
+                ctx,{{if $operation.Channel.ParametersType}}params,{{end}} s,
+            )
+        }
+    {{- end}}
+{{- end}}
+{{- end}}
+
+{{define "server/proto/commonMethods" }}
+func (s {{ .Type | gousage }}) Name() string {
+    return "{{ . | goid }}"
+}
+
+func (s {{ .Type | gousage }}) Producer() {{goqualrun .Protocol "Producer"}} {
+    return s.producer
+}
+
+func (s {{ .Type | gousage }}) Consumer() {{goqualrun .Protocol "Consumer"}} {
+    return s.consumer
+}
+
+{{- if .BindingsProtocols | has .Protocol}}
+func (s {{.Type | gousage}}) Bindings() {{goqualrun .Protocol "ServerBindings"}} {
+    return {{.BindingsType | gousage}}{}.{{.Protocol | goid}}()
+}
+{{- end}}
+
+{{- end}}

@@ -57,6 +57,8 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		Protocol:        s.Protocol,
 		ProtocolVersion: s.ProtocolVersion,
 		IsSelectable:    isSelectable,
+		IsPublisher:     ctx.CompileOpts.GeneratePublishers,
+		IsSubscriber:    ctx.CompileOpts.GenerateSubscribers,
 	}
 
 	// Channels which are bound to this server

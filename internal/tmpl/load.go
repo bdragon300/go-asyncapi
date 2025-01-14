@@ -28,13 +28,23 @@ func LoadTemplate(name string) (*template.Template, error) {
 }
 
 func ParseTemplates(customDirectory string) {
+	builtinTemplate = parseTemplateFiles(mainTemplateName, customDirectory)
+}
+
+func ParseTemplate(fs fs.FS,filePath string) *template.Template {
+	return template.Must(
+		template.New(mainTemplateName).Funcs(GetTemplateFunctions()).ParseFS(fs, filePath),
+	)
+}
+
+func parseTemplateFiles(name, customDirectory string) *template.Template {
 	logger := log.GetLogger("")
 
-	builtinTemplate = template.Must(
-		template.New(mainTemplateName).Funcs(GetTemplateFunctions()).ParseFS(templates.TemplateFS, "*/*.tmpl","*.tmpl"),
+	res := template.Must(
+		template.New(name).Funcs(GetTemplateFunctions()).ParseFS(templates.TemplateFS, "*/*/*.tmpl", "*/*.tmpl", "*.tmpl"),
 	)
 	if customDirectory == "" {
-		return
+		return res
 	}
 
 	logger.Debug("Use custom templates", "dir", customDirectory)
@@ -43,11 +53,11 @@ func ParseTemplates(customDirectory string) {
 	fileNames = append(fileNames, lo.Must(fs.Glob(dirFS, "*/*.tmpl"))...)
 	if len(fileNames) == 0 {
 		logger.Warn("-> No *.tmpl files found in the directory", "dir", customDirectory)
-		return
+		return res
 	}
 	files := lo.Map(fileNames, func(fileName string, _ int) string {
 		logger.Debug("-> Found custom template file", "name", fileName)
 		return path.Join(customDirectory, fileName)
 	})
-	builtinTemplate = template.Must(builtinTemplate.ParseFiles(files...))
+	return template.Must(builtinTemplate.ParseFiles(files...))
 }

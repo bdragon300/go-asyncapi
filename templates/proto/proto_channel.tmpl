@@ -1,0 +1,177 @@
+{{- /* dot == render.ProtoChannel */}}
+
+{{define "channel/proto/newFunction"}}
+func New{{ .Channel | goid }}{{.Protocol | goid}}(
+    {{ with .ParametersType}}params {{ . | gousage}},{{end}}
+    {{ if .IsPublisher}}publisher {{goqualrun .Protocol "Publisher"}},{{end}}
+    {{ if .IsSubscriber}}subscriber {{goqualrun .Protocol "Subscriber"}},{{end}}
+) *{{.Type| gousage}} {
+    res := {{.Type | gousage}}{
+        address: {{.Channel | goid}}Address({{if .ParametersType}}params{{end}}),
+        {{- if .IsPublisher}}publisher: publisher,{{end}}
+        {{- if .IsSubscriber}}subscriber: subscriber,{{end}}
+    }
+    {{- with trytmpl (print "channel/" .Protocol "/newFunction/block1") .}}
+        {{.}}
+    {{- end}}
+    return &res
+}
+{{- end}}
+
+{{define "channel/proto/openFunction"}}
+func Open{{ .Channel | goid }}{{.Protocol | goid}}(
+    ctx {{goqual "context.Context"}},
+    {{ with .ParametersType}}params {{. | gousage}},{{end}}
+    server {{.Channel | goid }}Server{{.Protocol | goid}},
+) (*{{.Type | gousage}}, error) {
+    {{- if .BindingsProtocols | has .Protocol}}
+        chBindings := {{.BindingsType | gousage}}{}.{{.Protocol | goid}}()
+    {{- end }}
+
+    {{- if or .IsPublisher .IsSubscriber}}
+        address, err := {{.Channel | goid}}Address({{if .ParametersType}}params{{end}}).Expand()
+        if err != nil {
+            return nil, err
+        }
+    {{- end}}
+    {{- if .IsPublisher}}
+        publisher, err := server.Producer().Publisher(ctx, address, {{if .BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, nil)
+        if err != nil {
+            return nil, err
+        }
+    {{- end}}
+    {{- if .IsSubscriber}}
+        subscriber, err := server.Consumer().Subscriber(ctx, address, {{if .BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, nil)
+        if err != nil {
+            return nil, err
+        }
+    {{- end}}
+
+    return New{{ .Channel | goid }}{{.Protocol | goid}}(
+        {{ if .ParametersType}}params,{{end}}
+        {{ if .IsPublisher}}publisher,{{end}}
+        {{ if .IsSubscriber}}subscriber,{{end}}
+    ), nil
+}
+{{- end}}
+
+{{define "channel/proto/commonMethods"}}
+func (c {{.Type | gousage}}) Address() {{goqualrun "ParamString"}} {
+    return c.address
+}
+
+{{- if .BindingsProtocols | has .Protocol}}
+func (c {{.Type | gousage}}) Bindings() {{goqualrun .Protocol "ChannelBindings"}} {
+    return {{.BindingsType | gousage}}{}.{{.Protocol | goid}}()
+}
+{{- end}}
+
+func (c {{.Type | gousage}}) Close() (err error) {
+    {{- if .IsPublisher}}
+        if c.publisher != nil {
+            err = {{goqual "errors.Join"}}(err, c.publisher.Close())
+        }
+    {{- end}}
+    {{- if .IsSubscriber}}
+        if c.subscriber != nil {
+            err = {{goqual "errors.Join"}}(err, c.subscriber.Close())
+        }
+    {{- end}}
+    return
+}
+{{- end}}
+
+{{define "channel/proto/publishMethods"}}
+type {{ .Channel | goid }}EnvelopeMarshaler{{.Protocol | goid}} interface {
+    Marshal{{.Channel | goid}}{{.Protocol | goid}}(envelope {{goqualrun .Protocol "EnvelopeWriter"}}) error
+}
+
+{{- range .BoundMessages}}
+    {{- if not (visible .) }}{{continue}}{{end}}
+    func (c {{ $.Type | gousage }}) Seal{{. | goid}}(
+        envelope {{goqualrun $.Protocol "EnvelopeWriter"}},
+        message {{ $.Channel | goid }}EnvelopeMarshaler{{$.Protocol | goid}},
+    ) error {
+        if err := message.Marshal{{$.Channel | goid}}{{$.Protocol | goid}}(envelope); err != nil {
+            return err
+        }
+        {{ with trytmpl (print "channel/" $.Protocol "/publishMethods/block1") .}}{{.}}{{end}}
+        {{- if (deref .).BindingsProtocols | has $.Protocol }}
+            envelope.SetBindings({{(deref .).BindingsType | gousage}}{}.{{$.Protocol | goid}}())
+        {{- end}}
+        return nil
+    }
+
+    func (c {{ $.Type | gousage }}) Publish{{. | goid}}(
+        ctx {{goqual "context.Context"}},
+        {{if not (impl $.Protocol)}}envelope {{goqualrun $.Protocol "EnvelopeWriter"}},{{end}}
+        message {{ $.Channel | goid }}EnvelopeMarshaler{{$.Protocol | goid}},
+    ) error {
+        {{- with impl $.Protocol}}
+            envelope := {{gopkg .}}NewEnvelopeOut()
+        {{- end}}
+        if err := c.Seal{{. | goid}}(envelope, message); err != nil {
+            return err
+        }
+        return c.Publish(ctx, envelope)
+    }
+{{- end}}
+
+func (c {{.Type| gousage}}) Publisher() {{goqualrun .Protocol "Publisher"}} {
+    return c.publisher
+}
+
+func (c {{.Type| gousage}}) Publish(ctx {{goqual "context.Context"}}, envelopes ...{{goqualrun .Protocol "EnvelopeWriter"}}) error {
+    return c.publisher.Send(ctx, envelopes...)
+}
+{{- end}}
+
+{{define "channel/proto/subscribeMethods"}}
+type {{ .Channel | goid }}EnvelopeUnmarshaler{{.Protocol | goid}} interface {
+    Unmarshal{{.Channel | goid}}{{.Protocol | goid}}(envelope {{goqualrun .Protocol "EnvelopeReader"}}) error
+}
+
+{{- range .BoundMessages}}
+    {{- if not (visible .) }}{{continue}}{{end}}
+    func (c {{ $.Type | gousage }}) Unseal{{. | goid}}(
+        envelope {{goqualrun $.Protocol "EnvelopeReader"}},
+        message {{ $.Channel | goid }}EnvelopeUnmarshaler{{$.Protocol | goid}},
+    ) error {
+        return message.Unmarshal{{$.Channel | goid}}{{$.Protocol | goid}}(envelope)
+    }
+
+    func (c {{ $.Type | gousage }}) Subscribe{{. | goid}}(
+        ctx {{goqual "context.Context"}},
+        cb func(message {{ (deref .).InType | ptr | gousage }}),
+    ) (err error) {
+        subCtx, cancel := {{goqual "context.WithCancelCause"}}(ctx)
+        defer cancel(nil)
+
+        return c.Subscribe(subCtx, func(envelope {{goqualrun $.Protocol "EnvelopeReader"}}) {
+            message := new({{ (deref .).InType | gousage }})
+            if err2 := c.Unseal{{. | goid}}(envelope, message); err2 != nil {
+                err = {{goqual "fmt.Errorf"}}("open message envelope: %w", err2)
+                cancel(err)
+                return
+            }
+            cb(message)
+        })
+    }
+{{- end}}
+
+func (c {{.Type| gousage}}) Subscriber() {{goqualrun .Protocol "Subscriber"}} {
+    return c.subscriber
+}
+
+func (c {{.Type| gousage}}) Subscribe(ctx {{goqual "context.Context"}}, cb func(envelope {{goqualrun .Protocol "EnvelopeReader"}})) error {
+    return c.subscriber.Receive(ctx, cb)
+}
+{{- end}}
+
+{{define "channel/proto/serverInterface"}}
+type {{ .Channel | goid }}Server{{.Protocol | goid}} interface {
+    Open{{.Channel | goid}}{{.Protocol | goid}}(ctx {{goqual "context.Context"}}, {{if .ParametersType}}params {{ .ParametersType | gousage }}{{end}}) (*{{ .Type | gousage }}, error)
+    {{if .IsPublisher}}Producer() {{goqualrun .Protocol "Producer"}}{{end}}
+    {{if .IsSubscriber}}Consumer() {{goqualrun .Protocol "Consumer"}}{{end}}
+}
+{{- end}}

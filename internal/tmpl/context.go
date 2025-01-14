@@ -1,6 +1,7 @@
 package tmpl
 
 import (
+	"github.com/bdragon300/go-asyncapi/implementations"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 )
 
@@ -44,7 +45,8 @@ func (t TemplateContext) Object() common.Renderable {
 	return t.object
 }
 
-type ImplementationsTemplateContext struct {
-	Protocol string
-	Name     string
+type ImplTemplateContext struct {
+	Manifest implementations.ImplManifestItem
+	Directory string
+	Package string
 }

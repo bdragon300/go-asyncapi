@@ -39,15 +39,23 @@ func GetTemplateFunctions() template.FuncMap {
 			}
 			return res, nil
 		},
-		"gopkg": func(obj common.GolangType) (string, error) {
-			pkg, err := common.GetContext().QualifiedGeneratedPackage(obj)
+		"gopkg": func(obj any) (pkg string, err error) {
+			switch v := obj.(type) {
+			case common.GolangType:
+				pkg, err = common.GetContext().QualifiedTypeGeneratedPackage(v)
+			case *common.ImplementationObject:
+				if lo.IsNil(v) {
+					return "", errors.New("argument is nil")
+				}
+				pkg, err = common.GetContext().QualifiedImplementationGeneratedPackage(*v)
+			default:
+				return "", fmt.Errorf("type is not supported %[1]T: %[1]v", obj)
+			}
+
 			if err != nil {
 				return "", fmt.Errorf("%s: %w", obj, err)
 			}
-			if pkg == "" {
-				return "", err
-			}
-			return pkg + ".", err
+			return lo.Ternary(pkg != "", pkg + ".", ""), nil
 		},
 		"gousage": func(r common.GolangType) (string, error) { return TemplateGoUsage(r) },
 
@@ -72,6 +80,13 @@ func GetTemplateFunctions() template.FuncMap {
 				return nil, fmt.Errorf("cannot get a pointer to nil")
 			}
 			return &lang.GoPointer{Type: val}, nil
+		},
+		"impl": func(protocol string) *common.ImplementationObject {
+			impl, found := common.GetContext().FindImplementationInNamespace(protocol)
+			if !found {
+				return nil
+			}
+			return &impl
 		},
 
 		// Templates calling

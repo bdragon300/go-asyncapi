@@ -12,6 +12,8 @@ type Server struct {
 	OriginalName string
 	Dummy        bool // x-ignore is set
 	IsSelectable bool // true if server is defined in `components` section
+	IsPublisher bool
+	IsSubscriber bool
 
 	AllActiveChannelsPromise *lang.ListPromise[common.Renderable]
 

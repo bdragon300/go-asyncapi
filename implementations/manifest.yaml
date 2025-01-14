@@ -35,19 +35,19 @@
   default: true
 
 - protocol: tcp
-  name: std
+  name: net
   url: https://pkg.go.dev/net
   dir: tcp/std
   default: true
 
 - protocol: udp
-  name: std
+  name: net
   url: https://pkg.go.dev/net
   dir: udp/std
   default: true
 
 - protocol: ip
-  name: std
+  name: net
   url: https://pkg.go.dev/net
   dir: ip/std
   default: true

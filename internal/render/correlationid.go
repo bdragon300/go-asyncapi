@@ -194,6 +194,7 @@ func (c *CorrelationID) renderValueExtractionCode(
 			logger.Trace("---> GoMap", "path", path[:pathIdx], "member", memberName, "object", typ.String())
 			varValueStmts = fmt.Sprintf("%s[%s]", anchor, utils.ToGoLiteral(memberName))
 			baseType = typ.ValueType
+			// TODO: replace TemplateGoUsage calls to smth another to remove import from impl, this is a potential circular import
 			varExpr := fmt.Sprintf("var %s %s", nextAnchor, lo.Must(tmpl.TemplateGoUsage(typ.ValueType)))
 			if typ.ValueType.Addressable() {
 				// Append ` = new(TYPE)` to initialize a pointer

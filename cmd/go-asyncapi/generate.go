@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/render"
+	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
+	"github.com/bdragon300/go-asyncapi/internal/writer"
 	"gopkg.in/yaml.v3"
 	"io"
 	"os"
@@ -36,14 +39,13 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/compiler"
 	"github.com/bdragon300/go-asyncapi/internal/linker"
-	"github.com/bdragon300/go-asyncapi/internal/writer"
+	"github.com/bdragon300/go-asyncapi/internal/renderer"
 	"github.com/samber/lo"
 	"golang.org/x/mod/modfile"
 )
 
 const (
 	defaultConfigFileName = "default_config.yaml"
-	defaultPackage 	  = "main"
 	defaultTemplate 	  = "main.tmpl"
 )
 
@@ -76,7 +78,7 @@ func generate(cmd *GenerateCmd) error {
 	isPub, isSub, pubSubOpts := getPubSubVariant(cmd)
 	mergedConfig, err := mergeConfig(cmd, pubSubOpts)
 	if err != nil {
-		return err
+		return fmt.Errorf("read config: %w", err)
 	}
 
 	asyncapi.ProtocolBuilders = protocolBuilders()
@@ -95,48 +97,77 @@ func generate(cmd *GenerateCmd) error {
 	}
 	tmpl.ParseTemplates(mergedConfig.Directories.Templates)
 
+	//
 	// Compilation
+	//
 	resolver := getResolver(mergedConfig)
 	specURL := specurl.Parse(pubSubOpts.Spec)
 	modules, err := generationCompile(specURL, compileOpts, resolver)
 	if err != nil {
-		return err
+		return fmt.Errorf("compilation: %w", err)
 	}
+	logger.Info("Compilation complete", "files", len(modules))
 	objSources := lo.MapValues(modules, func(value *compiler.Module, _ string) linker.ObjectSource { return value })
 
+	//
 	// Linking
+	//
 	if err = generationLinking(objSources); err != nil {
-		return err
+		return fmt.Errorf("linking: %w", err)
 	}
 
+	//
 	// Rendering
-	// Render definitions from all modules
-	allObjects := lo.FlatMap(lo.Values(modules), func(m *compiler.Module, _ int) []common.CompileObject { return m.AllObjects() })
-	files, err := writer.RenderObjects(allObjects, renderOpts)
-	if err != nil {
-		return fmt.Errorf("render: %w", err)
+	//
+	// Implementations
+	var ns context.RenderNamespace
+	var files map[string]*bytes.Buffer
+
+	implementationOpts := getImplementationOpts(mergedConfig.Implementations)
+	if !implementationOpts.Disable {
+		// TODO: logging
+		mainModule := modules[specURL.SpecID]
+		activeProtocols := collectActiveProtocols(mainModule.AllObjects())
+		supportedProtocols := lo.Keys(asyncapi.ProtocolBuilders)
+
+		protocols := lo.Intersect(supportedProtocols, activeProtocols)
+		if len(protocols) < len(activeProtocols) {
+			logger.Warn("Some protocols have no implementations", "protocols", lo.Without(activeProtocols, protocols...))
+		}
+
+		// Render only implementations for protocols that are actually used in the spec
+		slices.Sort(protocols)
+		implObjects, err := getImplementations(implementationOpts, protocols)
+		if err != nil {
+			return fmt.Errorf("getting implementations: %w", err)
+		}
+		if files, ns, err = renderer.RenderImplementations(implObjects, ns); err != nil {
+			return fmt.Errorf("render implementations: %w", err)
+		}
 	}
 
+	// Module objects
+	allObjects := lo.FlatMap(lo.Values(modules), func(m *compiler.Module, _ int) []common.CompileObject { return m.AllObjects() })
+	f, ns, err := renderer.RenderObjects(allObjects, ns, renderOpts)
+	if err != nil {
+		return fmt.Errorf("render objects: %w", err)
+	}
+	files = lo.Assign(files, f)
+
+	//
 	// Formatting
+	//
 	if !renderOpts.DisableFormatting {
 		if err = writer.FormatFiles(files); err != nil {
-			return fmt.Errorf("formatting code: %w", err)
+			return fmt.Errorf("formatting: %w", err)
 		}
 	}
 
+	//
 	// Writing
-	if err = writer.WriteToFiles(files, mergedConfig.Directories.Target); err != nil {
-		return fmt.Errorf("writing code to files: %w", err)
-	}
-
-	// Rendering the selected implementations
-	if !mergedConfig.Implementations.Disable {
-		mainModule := modules[specURL.SpecID]
-		protocols := collectActiveProtocols(mainModule.AllObjects())
-		implementationOpts := getImplementationOpts(mergedConfig.Implementations)
-		if err = generationWriteImplementations(implementationOpts, protocols, mergedConfig.Directories.Target); err != nil {
-			return err
-		}
+	//
+	if err = writer.WriteBuffersToFiles(files, mergedConfig.Directories.Target); err != nil {
+		return fmt.Errorf("writing: %w", err)
 	}
 
 	logger.Info("Finished")
@@ -247,12 +278,6 @@ func getRenderOpts(conf toolConfig, targetDir string) (common.RenderOpts, error)
 
 	// Selections
 	for _, item := range conf.Selections {
-		pkg, _ := lo.Coalesce(
-			item.Render.Package,
-			lo.Ternary(path.Dir(item.Render.File) != ".", path.Dir(item.Render.File), ""),
-			lo.Ternary(targetDir != "", path.Base(targetDir), ""),
-			defaultPackage,
-		)
 		templateName, _ := lo.Coalesce(item.Render.Template, defaultTemplate)
 		sel := common.ConfigSelectionItem{
 			Protocols:        item.Protocols,
@@ -263,7 +288,7 @@ func getRenderOpts(conf toolConfig, targetDir string) (common.RenderOpts, error)
 			Render: common.ConfigSelectionItemRender{
 				Template:         templateName,
 				File:             item.Render.File,
-				Package:          pkg,
+				Package:          item.Render.Package,
 				Protocols:        item.Render.Protocols,
 				ProtoObjectsOnly: item.Render.ProtoObjectsOnly,
 			},
@@ -305,6 +330,7 @@ func getImplementationOpts(conf toolConfigImplementations) common.RenderImplemen
 				Disable:   item.Disable,
 				Directory: item.Directory,
 				Package:   item.Package,
+				ReusePackagePath: item.ReusePackagePath,
 			}
 		}),
 	}
@@ -380,8 +406,33 @@ func generationCompile(specURL *specurl.URL, compileOpts common.CompileOpts, res
 		compileQueue = lo.Flatten([][]*specurl.URL{compileQueue, module.ExternalSpecs()}) // Extend queue with remote specPaths
 	}
 
-	logger.Info("Compilation completed", "files", len(modules))
 	return modules, nil
+}
+
+func getImplementations(conf common.RenderImplementationsOpts, protocols []string) ([]common.ImplementationObject, error) {
+	var res []common.ImplementationObject
+	logger := log.GetLogger(log.LoggerPrefixCompilation)
+
+	manifest := lo.Must(loadImplementationsManifest())
+
+	for _, protocol := range protocols {
+		protoConf := getImplementationConfig(conf, protocol, manifest)
+		if protoConf.Disable {
+			logger.Debug("Skip disabled implementation", "protocol", protocol, "name", protoConf.Name)
+			continue
+		}
+		logger.Trace("Compile implementation", "protocol", protocol, "name", protoConf.Name)
+		protoManifest, found := lo.Find(manifest, func(item implementations.ImplManifestItem) bool {
+			return item.Name == protoConf.Name && item.Protocol == protocol
+		})
+		if !found {
+			return res, fmt.Errorf("cannot find implementation %q for protocol %s", protoConf.Name, protocol)
+		}
+
+		res = append(res, common.ImplementationObject{Manifest: protoManifest, Config: protoConf})
+	}
+
+	return res, nil
 }
 
 func generationLinking(objSources map[string]linker.ObjectSource) error {
@@ -394,7 +445,7 @@ func generationLinking(objSources map[string]linker.ObjectSource) error {
 	logger.Debugf("Linker stats: %s", linker.Stats(objSources))
 	if len(danglingRefs) > 0 {
 		logger.Error("Some refs remain dangling", "refs", danglingRefs)
-		return fmt.Errorf("cannot finish linking")
+		return fmt.Errorf("cannot resolve all refs")
 	}
 
 	// Linking list promises
@@ -416,50 +467,11 @@ func generationLinking(objSources map[string]linker.ObjectSource) error {
 	return nil
 }
 
-func generationWriteImplementations(conf common.RenderImplementationsOpts, genProtocols []string, targetDir string) error {
-	logger := log.GetLogger(log.LoggerPrefixWriting)
-	logger.Info("Writing implementations")
-	manifest := lo.Must(loadImplementationsManifest())
-
-	var totalBytes int
-	var writtenProtocols []string
-	for _, protocol := range genProtocols {
-		protoManifests := lo.Filter(manifest, func(item implementations.ImplManifestItem, _ int) bool { return item.Protocol == protocol })
-		if len(protoManifests) == 0 {
-			logger.Info("No implementations for the protocol", "protocol", protocol)
-			continue
-		}
-		writtenProtocols = append(writtenProtocols, protocol)
-
-		protoConf := getImplementationConfig(conf, protocol, manifest)
-		if protoConf.Disable {
-			logger.Info("Skip disabled implementation", "protocol", protocol, "name", protoConf.Name)
-			continue
-		}
-		protoManifest, found := lo.Find(manifest, func(item implementations.ImplManifestItem) bool { return item.Name == protoConf.Name })
-		if !found {
-			return fmt.Errorf("cannot find implementation %q for protocol %s", protoConf.Name, protocol)
-		}
-
-		logger.Debug("Writing implementation", "protocol", protocol, "name", protoConf.Name)
-		n, err := writer.WriteImplementation(protoManifest, protoConf, targetDir)
-		if err != nil {
-			return fmt.Errorf("implementation rendering for protocol %q: %w", protocol, err)
-		}
-		totalBytes += n
-	}
-	logger.Debugf(
-		"Implementations writer stats: total bytes: %d, protocols: %s",
-		totalBytes, strings.Join(writtenProtocols, ","),
-	)
-
-	logger.Info("Writing implementations completed", "count", len(writtenProtocols))
-	return nil
-}
-
 func getImplementationConfig(conf common.RenderImplementationsOpts, protocol string, manifest implementations.ImplManifest) common.ConfigImplementationProtocol {
 	// Get default implementation
-	protoManifest, found := lo.Find(manifest, func(item implementations.ImplManifestItem) bool { return item.Default && item.Protocol == protocol })
+	protoManifest, found := lo.Find(manifest, func(item implementations.ImplManifestItem) bool {
+		return item.Default && item.Protocol == protocol
+	})
 	if !found {
 		panic(fmt.Sprintf("cannot find default implementation for protocol %s. This is a bug: %v", protocol, manifest))
 	}
@@ -471,6 +483,7 @@ func getImplementationConfig(conf common.RenderImplementationsOpts, protocol str
 		Disable:   coalesce(protoConf.Disable, conf.Disable),
 		Directory: coalesce(protoConf.Directory, conf.Directory),
 		Package:   protoConf.Package,
+		ReusePackagePath: protoConf.ReusePackagePath,
 	}
 }
 

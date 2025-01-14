@@ -15,6 +15,8 @@ import (
 	"github.com/samber/lo"
 )
 
+const defaultPackage 	  = "main"
+
 var (
 	golangTypeReplaceRe = regexp.MustCompile("[^a-zA-Z0-9_]+")
 	fileNameReplaceRe   = regexp.MustCompile("[^a-zA-Z0-9_-]+")
@@ -139,4 +141,20 @@ func normalizePathItem(name string) string {
 	}
 
 	return lo.SnakeCase(newString)
+}
+
+func GetPackageName(pkgPath string) string {
+	pkgPath = path.Clean(pkgPath)
+	_, pkgName := path.Split(pkgPath)
+
+	if pkgName == "" || pkgName == "." {
+		return defaultPackage
+	}
+	return pkgName
+}
+
+func ReplacePackageName(pkgPath, newPkgName string) string {
+	pkgPath = path.Clean(pkgPath)
+	dir, _ := path.Split(pkgPath)
+	return path.Join(dir, newPkgName)
 }

@@ -1,0 +1,23 @@
+{{- /* dot == render.ProtoServer */}}
+
+{{define "server/udp/impl/net/newClient"}}
+    client, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient("", url)
+    if err != nil {
+        return nil, err
+    }
+    consumer, producer := client, client
+{{- end}}
+
+{{define "server/udp/impl/net/newProducer"}}
+    producer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient("", url)
+    if err != nil {
+        return nil, err
+    }
+{{- end}}
+
+{{define "server/udp/impl/net/newConsumer"}}
+    consumer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient("", url)
+    if err != nil {
+        return nil, err
+    }
+{{- end}}
