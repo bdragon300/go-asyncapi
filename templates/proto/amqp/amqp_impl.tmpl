@@ -1,23 +1,23 @@
 {{- /* dot == render.ProtoServer */}}
 
 {{define "server/amqp/impl/github.com/rabbitmq/amqp091-go/newClient"}}
-    client, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(url, bindings)
+    client, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(url.String(), bindings)
     if err != nil {
-    return nil, err
+        return nil, err
     }
     producer, consumer := client, client
 {{- end}}
 
 {{define "server/amqp/impl/github.com/rabbitmq/amqp091-go/newProducer"}}
-    producer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(url, bindings)
+    producer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(url.String(), bindings)
     if err != nil {
-    return nil, err
+        return nil, err
     }
 {{- end}}
 
 {{define "server/amqp/impl/github.com/rabbitmq/amqp091-go/newConsumer"}}
-    consumer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(url, bindings)
+    consumer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(url.String(), bindings)
     if err != nil {
-    return nil, err
+        return nil, err
     }
 {{- end}}

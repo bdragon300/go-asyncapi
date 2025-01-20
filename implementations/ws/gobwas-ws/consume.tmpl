@@ -16,14 +16,14 @@ import (
 )
 
 // TODO: remove httpResponseTimeout, allow to use smth like http.requestHandler or nothing
-func NewConsumer(bindings *runWs.ServerBindings, httpResponseTimeout time.Duration) (*ConsumeClient, error) {
+func NewConsumer(bindings *runWs.ServerBindings, httpResponseTimeout time.Duration) *ConsumeClient {
 	return &ConsumeClient{
 		Upgrader:            ws.DefaultHTTPUpgrader,
 		httpResponseTimeout: httpResponseTimeout,
 		bindings:            bindings,
 		connections:         make(map[string]chan *Channel),
 		mu:                  new(sync.RWMutex),
-	}, nil
+	}
 }
 
 type HTTPUpgraderInterface interface {

@@ -4,26 +4,23 @@ package {{.Package}}
 import (
 	"context"
 	"fmt"
-	"net/url"
-	"strings"
-
 	runKafka "github.com/bdragon300/go-asyncapi/run/kafka"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kversion"
 )
 
-func NewProducer(serverURL string, bindings *runKafka.ServerBindings, extraOpts []kgo.Opt) (*ProduceClient, error) {
+func NewProducer(hosts []string, bindings *runKafka.ServerBindings, extraOpts []kgo.Opt) *ProduceClient {
 	return &ProduceClient{
-		serverURL: serverURL,
+		hosts:     hosts,
 		bindings:  bindings,
 		extraOpts: extraOpts,
-	}, nil
+	}
 }
 
 type ProduceClient struct {
-	serverURL string
-	bindings  *runKafka.ServerBindings
+	hosts    []string
+	bindings *runKafka.ServerBindings
 	extraOpts []kgo.Opt
 }
 
@@ -31,11 +28,7 @@ func (p ProduceClient) Publisher(_ context.Context, address string, chb *runKafk
 	// TODO: schema registry https://github.com/twmb/franz-go/blob/master/examples/schema_registry/schema_registry.go
 	var opts []kgo.Opt
 
-	u, err := url.Parse(p.serverURL)
-	if err != nil {
-		return nil, fmt.Errorf("url parse: %w", err)
-	}
-	opts = append(opts, kgo.SeedBrokers(strings.Split(u.Host, ",")...))
+	opts = append(opts, kgo.SeedBrokers(p.hosts...))
 
 	topic := address
 	if chb != nil && chb.Topic != "" {

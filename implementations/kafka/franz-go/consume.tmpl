@@ -5,25 +5,22 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
-	"strings"
-
 	runKafka "github.com/bdragon300/go-asyncapi/run/kafka"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
-func NewConsumer(serverURL string, bindings *runKafka.ServerBindings, extraOpts []kgo.Opt) (*ConsumeClient, error) {
+func NewConsumer(hosts []string, bindings *runKafka.ServerBindings, extraOpts []kgo.Opt) *ConsumeClient {
 	return &ConsumeClient{
-		serverURL: serverURL,
+		hosts:     hosts,
 		bindings:  bindings,
 		extraOpts: extraOpts,
-	}, nil
+	}
 }
 
 type ConsumeClient struct {
-	serverURL string
-	bindings  *runKafka.ServerBindings
+	hosts    []string
+	bindings *runKafka.ServerBindings
 	extraOpts []kgo.Opt
 }
 
@@ -32,11 +29,7 @@ func (c ConsumeClient) Subscriber(_ context.Context, address string, chb *runKaf
 	// TODO: chb.ClientID, chb.GroupID
 	var opts []kgo.Opt
 
-	u, err := url.Parse(c.serverURL)
-	if err != nil {
-		return nil, fmt.Errorf("url parse: %w", err)
-	}
-	opts = append(opts, kgo.SeedBrokers(strings.Split(u.Host, ",")...))
+	opts = append(opts, kgo.SeedBrokers(c.hosts...))
 
 	topic := address
 	if chb != nil && chb.Topic != "" {

@@ -8,7 +8,7 @@ const {{$ | goid}}ProtocolVersion = {{.ProtocolVersion | golit}}
 func {{$ | goid}}URL(
 {{- range .Variables.Entries}}
     {{- .Value | goidorig}} string,
-{{- end }}) {{goqualrun "ParamURL"}} {
+{{- end }}) (*{{goqual "net/url.URL"}}, error) {
     {{- if gt .Variables.Len 0}}
         {{- range .Variables.Entries}}
             {{- if .Value.Default}}
@@ -22,16 +22,26 @@ func {{$ | goid}}URL(
                 {{.Key | golit}}: {{.Value | goidorig}},
             {{- end}}
         }
-        return {{goqualrun "ParamURL"}}{
-            Host: {{.Host | golit}},
-            Pathname: {{.Pathname | golit}},
-            Parameters: paramMap,
-        }
+
+        res := &{{goqual "net/url.URL"}}{Scheme: {{.Protocol | golit}}}
+        {{- if .Host}}
+            h, err := {{goqualrun "ParamString"}}{Expr: {{.Host | golit}}, Parameters: paramMap}.Expand()
+            if err != nil {
+                return nil, {{goqual "fmt.Errorf"}}("expand host: %w", err)
+            }
+            res.Host = h
+        {{- end}}
+        {{- if .Pathname}}
+            p, err := {{goqualrun "ParamString"}}{Expr: {{.Pathname | golit}}, Parameters: paramMap}.Expand()
+            if err != nil {
+                return nil, {{goqual "fmt.Errorf"}}.Errorf("expand pathname: %w", err)
+            }
+            res.Path = p
+        {{- end}}
+
+        return res, nil
     {{- else}}
-        return {{goqualrun "ParamURL"}}{
-            Host: {{.Host | golit}},
-            Pathname: {{.Pathname | golit}},
-        }
+        return &{{goqual "net/url.URL"}}{Scheme: {{.Protocol | golit}}, Host: {{.Host | golit}}, Path: {{.Pathname | golit}}}, nil
     {{- end}}
 }
 

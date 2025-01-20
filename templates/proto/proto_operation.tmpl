@@ -37,15 +37,23 @@ func Open{{ . | goid }}{{.Protocol | goid}}(
         }
     {{- end}}
     {{- if .IsPublisher}}
-        publisher, err := server.Producer().Publisher(ctx, address, {{if .Channel.BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, {{if .BindingsProtocols | has .Protocol}}&opBindings{{else}}nil{{end}})
-        if err != nil {
-            return nil, err
+        var publisher {{goqualrun .Protocol "Publisher"}}
+        producer := server.Producer()
+        if producer != nil {
+            publisher, err = server.Producer().Publisher(ctx, address, {{if .Channel.BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, {{if .BindingsProtocols | has .Protocol}}&opBindings{{else}}nil{{end}})
+            if err != nil {
+                return nil, err
+            }
         }
     {{- end}}
     {{- if .IsSubscriber}}
-        subscriber, err := server.Consumer().Subscriber(ctx, address, {{if .Channel.BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, {{if .BindingsProtocols | has .Protocol}}&opBindings{{else}}nil{{end}})
-        if err != nil {
-            return nil, err
+        var subscriber {{goqualrun .Protocol "Subscriber"}}
+        consumer := server.Consumer()
+        if consumer != nil {
+            subscriber, err = server.Consumer().Subscriber(ctx, address, {{if .Channel.BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, {{if .BindingsProtocols | has .Protocol}}&opBindings{{else}}nil{{end}})
+            if err != nil {
+                return nil, err
+            }
         }
     {{- end}}
 
@@ -126,7 +134,7 @@ type {{ . | goid }}EnvelopeUnmarshaler{{.Protocol | goid}} interface {
 
     func (o {{ $.Type | gousage }}) Subscribe{{. | goid}}(
         ctx {{goqual "context.Context"}},
-        cb func(message {{ (deref .).InType | ptr | gousage }}),
+        cb func(message {{ gopkg (deref .).InType}}{{ goid .}}IncomingMessage),
     ) (err error) {
         subCtx, cancel := {{goqual "context.WithCancelCause"}}(ctx)
         defer cancel(nil)

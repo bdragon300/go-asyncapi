@@ -4,41 +4,22 @@ package {{.Package}}
 import (
 	"context"
 	"fmt"
-	"net"
-	"net/url"
-
 	runUDP "github.com/bdragon300/go-asyncapi/run/udp"
+	"net"
 )
 
 const DefaultMaxEnvelopeSize = 1024
 
-func NewClient(localURL, remoteURL string) (*Client, error) {
-	var la, ra, pf string
-
-	if localURL != "" {
-		u, err := url.Parse(localURL)
-		if err != nil {
-			return nil, fmt.Errorf("parse localURL: %w", err)
-		}
-		la = u.Host
-		pf = u.Scheme
+func NewClient(localHost, remoteHost, protocolFamily string) *Client {
+	if protocolFamily == "" {
+		protocolFamily = "udp"
 	}
-
-	if remoteURL != "" {
-		u, err := url.Parse(remoteURL)
-		if err != nil {
-			return nil, fmt.Errorf("parse remoteURL: %w", err)
-		}
-		ra = u.Host
-		pf = u.Scheme
-	}
-
 	return &Client{
-		LocalAddress:         la,
-		DefaultRemoteAddress: ra,
+		LocalAddress:         localHost,
+		DefaultRemoteAddress: remoteHost,
 		MaxEnvelopeSize:      DefaultMaxEnvelopeSize,
-		protocolFamily:       pf,
-	}, nil
+		protocolFamily:       protocolFamily,
+	}
 }
 
 type Client struct {
@@ -75,4 +56,3 @@ func (c *Client) channel(ctx context.Context) (*Channel, error) {
 
 	return NewChannel(conn.(*net.UDPConn), c.MaxEnvelopeSize, addr), nil
 }
-

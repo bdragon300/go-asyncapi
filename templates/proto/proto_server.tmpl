@@ -11,7 +11,23 @@ func New{{ .Server | goid }}(producer {{goqualrun .Protocol "Producer"}}, consum
 
 {{define "server/proto/connectFunctions"}}
 {{- if and .IsPublisher .IsSubscriber}}
-func Connect{{ .Server | goid }}Bidi(ctx {{goqual "context.Context"}}, url string) ({{ .Type | ptr | gousage }}, error) {
+
+type {{ .Server | goid }}Closable struct {
+    {{ .Type | gousage }}
+}
+
+func (c {{ .Server | goid }}Closable) Close() error {
+    var err error
+    if v, ok := any(c.producer).({{goqual "io.Closer"}}); ok {
+        err = {{goqual "errors.Join"}}(err, v.Close())
+    }
+    if v, ok := any(c.consumer).({{goqual "io.Closer"}}); ok {
+        err = {{goqual "errors.Join"}}(err, v.Close())
+    }
+    return err
+}
+
+func Connect{{ .Server | goid }}Bidi(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}) (*{{ .Server | goid }}Closable, error) {
     var bindings *{{goqualrun .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
@@ -29,12 +45,14 @@ func Connect{{ .Server | goid }}Bidi(ctx {{goqual "context.Context"}}, url strin
             producer, consumer := client, client
         {{- end}}
     {{- end}}
-    return New{{ .Server | goid }}(producer, consumer), nil
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{producer: producer, consumer: consumer},
+    }, nil
 }
 {{- end}}
 
 {{- if .IsPublisher}}
-func Connect{{ .Server | goid }}Producer(ctx {{goqual "context.Context"}}, url string) ({{ .Type | ptr | gousage }}, error) {
+func Connect{{ .Server | goid }}Producer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}) (*{{ .Server | goid }}Closable, error) {
     var bindings *{{goqualrun .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
@@ -51,12 +69,14 @@ func Connect{{ .Server | goid }}Producer(ctx {{goqual "context.Context"}}, url s
             }
         {{- end}}
     {{- end}}
-    return New{{ .Server | goid }}(producer, nil), nil
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{producer: producer},
+    }, nil
 }
 {{- end}}
 
 {{- if .IsSubscriber}}
-func Connect{{ .Server | goid }}Consumer(ctx {{goqual "context.Context"}}, url string) ({{ .Type | ptr | gousage }}, error) {
+func Connect{{ .Server | goid }}Consumer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}) (*{{ .Server | goid }}Closable, error) {
     var bindings *{{goqualrun .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
@@ -73,7 +93,9 @@ func Connect{{ .Server | goid }}Consumer(ctx {{goqual "context.Context"}}, url s
             }
         {{- end}}
     {{- end}}
-    return New{{ .Server | goid }}(nil, consumer), nil
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{consumer: consumer},
+    }, nil
 }
 {{- end}}
 {{- end}}

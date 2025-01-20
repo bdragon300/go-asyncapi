@@ -67,12 +67,12 @@ func (m *{{ .InType | goid }}) UnmarshalEnvelope{{ .Protocol | goid }}(envelope 
             headers := envelope.Headers()
             {{- range .Fields}}
                 if v, ok := headers[{{.Name | golit}}]; ok {
-                    m.Headers.{{.Name}} = v.({{.Type| gousage}})
+                    m.headers.{{.Name}} = v.({{.Type| gousage}})
                 }
             {{- end}}
         {{- end}}
     {{- else}}
-        m.Headers = {{.HeadersFallbackType| gousage}}(envelope.Headers())
+        m.headers = {{.HeadersFallbackType| gousage}}(envelope.Headers())
     {{- end}}
     return nil
 }

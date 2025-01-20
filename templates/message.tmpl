@@ -1,23 +1,6 @@
 {{- /* dot == render.Renderable: Ref -> render.Message or render.Message */}}
 {{- with $message := deref .}}
 
-{{- if print "Message" (goid $) | ndefined}}
-    {{- if .IsPublisher}}
-        {{- def .OutType }}
-        func New{{ $ | goid }}Out() *{{ .OutType | gousage }} {
-            return &{{ .OutType | gousage }}{}
-        }
-    {{- end}}
-
-    {{- if .IsSubscriber}}
-        {{- def .InType }}
-        func New{{ $ | goid }}In() *{{ .InType| gousage }} {
-            return &{{ .InType | gousage }}{}
-        }
-    {{- end}}
-    {{- print "Message" (goid $) | def }}
-{{- end}}
-
 {{- if and .BindingsType (ndefined .BindingsType)}}
     {{- .BindingsType| godef }}
     {{- range $proto := .BindingsProtocols}}
@@ -41,40 +24,61 @@
 {{- if and (ndefined .OutType) .IsPublisher }}
 {{.OutType| godef}}
 
-func (m *{{ .OutType | goid }}) WithPayload(payload {{.PayloadType| gousage}}) *{{ .OutType | goid }} {
+func (m *{{ .OutType | goid }}) WithPayload(payload {{.PayloadType | gousage}}) *{{ .OutType | goid }} {
     m.Payload = payload
     return m
 }
 
-func (m *{{ .OutType | goid }}) WithHeaders(headers {{$headersType| gousage}}) *{{ .OutType | goid }} {
+func (m *{{ .OutType | goid }}) WithHeaders(headers {{$headersType | gousage}}) *{{ .OutType | goid }} {
     m.Headers = headers
     return m
 }
 
 {{- with visible .CorrelationID}}
-func (m {{ $message.OutType | goid }}) SetCorrelationID(value {{ .TargetVarType $message.OutType | gousage}}) {
+func (m {{ $message.OutType | goid }}) SetCorrelationID(value {{ .TargetSetterVarType $message.OutType | gousage}}) {
     {{ .RenderSetterBody "m" $message.OutType}}
 }
 {{- end}}
 {{- end}}
 
+{{- if print "Message" (goid $) | ndefined}}
+    {{- if .IsSubscriber}}
+        type {{ $ | goid }}IncomingMessage interface {
+            Payload() {{.PayloadType | gousage}}
+            Headers() {{$headersType | gousage}}
+            {{- with visible .CorrelationID}}
+            CorrelationID() (value {{.TargetGetterVarType $message.InType | gousage}}, err error)
+            {{- end}}
+        }
+        {{- def .InType }}
+
+        // New{{ $ | goid }}In is meant to be used by the generated code to create a new message. The user code
+        // should not use this function directly.
+        func New{{ $ | goid }}In(payload {{.PayloadType | gousage}}, headers {{$headersType | gousage}}) *{{ .InType| gousage }} {
+            return &{{ .InType | gousage }}{payload: payload, headers: headers}
+        }
+    {{- end}}
+{{- end}}
+
 {{- if and (ndefined .InType) .IsSubscriber }}
 {{.InType| godef}}
 
-func (m *{{ .InType | goid }}) MessagePayload() {{.PayloadType| gousage}} {
-    return m.Payload
+func (m *{{ .InType | goid }}) Payload() {{.PayloadType | gousage}} {
+    return m.payload
 }
 
-func (m *{{ .InType | goid }}) MessageHeaders() {{$headersType| gousage}} {
-    return m.Headers
+func (m *{{ .InType | goid }}) Headers() {{$headersType | gousage}} {
+    return m.headers
 }
 
 {{- with visible .CorrelationID}}
-func (m {{ $message.InType | goid }}) CorrelationID() (value {{.TargetVarType $message.InType | gousage}}, err error) {
+func (m {{ $message.InType | goid }}) CorrelationID() (value {{.TargetGetterVarType $message.InType | gousage}}, err error) {
     {{ .RenderGetterBody "value" $message.InType }}
     return
 }
 {{- end}}
 {{- end}}
+
+{{- print "Message" (goid $) | def }}
 
 {{- end}}

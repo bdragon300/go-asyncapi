@@ -1,26 +1,14 @@
 {{- /* dot == render.ProtoServer */}}
 
 {{define "server/http/impl/net/http/newClient"}}
-    producer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer(url, bindings)
-    if err != nil {
-        return nil, err
-    }
-    consumer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer(bindings)
-    if err != nil {
-        return nil, err
-    }
+    producer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer(url, bindings)
+    consumer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer(bindings)
 {{- end}}
 
 {{define "server/http/impl/net/http/newProducer"}}
-    producer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer(url, bindings)
-    if err != nil {
-        return nil, err
-    }
+    producer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer(url, bindings)
 {{- end}}
 
 {{define "server/http/impl/net/http/newConsumer"}}
-    consumer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer(bindings)
-    if err != nil {
-        return nil, err
-    }
+    consumer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer(bindings)
 {{- end}}

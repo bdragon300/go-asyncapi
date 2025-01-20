@@ -1,7 +1,7 @@
 {{- /* dot == render.ProtoServer */}}
 
 {{define "server/ip/impl/net/newClient"}}
-    client, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient("", url)
+    client, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient("", url.Host, url.Scheme)
     if err != nil {
         return nil, err
     }
@@ -9,14 +9,14 @@
 {{- end}}
 
 {{define "server/ip/impl/net/newProducer"}}
-    producer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient("", url)
+    producer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient("", url.Host, url.Scheme)
     if err != nil {
         return nil, err
     }
 {{- end}}
 
 {{define "server/ip/impl/net/newConsumer"}}
-    consumer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient("", url)
+    consumer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient("", url.Host, url.Scheme)
     if err != nil {
         return nil, err
     }

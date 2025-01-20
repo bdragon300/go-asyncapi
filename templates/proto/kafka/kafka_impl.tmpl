@@ -1,26 +1,14 @@
 {{- /* dot == render.ProtoServer */}}
 
 {{define "server/kafka/impl/github.com/twmb/franz-go/newClient"}}
-    producer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer(url, bindings, nil)
-    if err != nil {
-        return nil, err
-    }
-    consumer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer(url, bindings, nil)
-    if err != nil {
-        return nil, err
-    }
+    producer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer([]string{url.Host}, bindings, nil)
+    consumer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer([]string{url.Host}, bindings, nil)
 {{- end}}
 
 {{define "server/kafka/impl/github.com/twmb/franz-go/newProducer"}}
-    producer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer(url, bindings, nil)
-    if err != nil {
-        return nil, err
-    }
+    producer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer([]string{url.Host}, bindings, nil)
 {{- end}}
 
 {{define "server/kafka/impl/github.com/twmb/franz-go/newConsumer"}}
-    consumer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer(url, bindings, nil)
-    if err != nil {
-        return nil, err
-    }
+    consumer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer([]string{url.Host}, bindings, nil)
 {{- end}}

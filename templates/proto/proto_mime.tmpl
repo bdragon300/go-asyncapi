@@ -18,7 +18,7 @@
     {{- else}}
         // Default decoder
         dec := {{goqual "encoding/json.NewDecoder"}}(envelope)
-        if err := dec.Decode(&m.Payload); err != nil {
+        if err := dec.Decode(&m.payload); err != nil {
             return err
         }
     {{- end}}
@@ -33,7 +33,7 @@
 
 {{define "message/proto/decoder/application/yaml"}}
     dec := {{goqual "gopkg.in/yaml.v3.NewDecoder"}}(envelope)
-    if err := dec.Decode(&m.Payload); err != nil {
+    if err := dec.Decode(&m.payload); err != nil {
         return err
     }
 {{- end}}

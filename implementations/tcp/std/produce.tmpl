@@ -4,18 +4,15 @@ package {{.Package}}
 import (
 	"bufio"
 	"context"
-	"net"
-	"net/url"
-
 	runTCP "github.com/bdragon300/go-asyncapi/run/tcp"
+	"net"
 )
 
-func NewProducer(serverURL string) (*ProduceClient, error) {
-	u, err := url.Parse(serverURL)
-	if err != nil {
-		return nil, err
+func NewProducer(host, network string) (*ProduceClient, error) {
+	if network == "" {
+		network = "tcp"
 	}
-	la, err := net.ResolveTCPAddr(u.Scheme, u.Host)
+	la, err := net.ResolveTCPAddr(network, host)
 	if err != nil {
 		return nil, err
 	}
@@ -25,8 +22,8 @@ func NewProducer(serverURL string) (*ProduceClient, error) {
 		Dialer:          d,
 		Scanner:         bufio.NewScanner(nil),
 		MaxEnvelopeSize: DefaultMaxEnvelopeSize,
-		address:         u.Host,
-		protocolFamily:  u.Scheme,
+		address:         host,
+		protocolFamily:  network,
 	}, nil
 }
 

@@ -11,12 +11,12 @@ import (
 	runHttp "github.com/bdragon300/go-asyncapi/run/http"
 )
 
-func NewConsumer(bindings *runHttp.ServerBindings) (consumer *ConsumeClient, err error) {
+func NewConsumer(bindings *runHttp.ServerBindings) *ConsumeClient {
 	return &ConsumeClient{
 		bindings:    bindings,
 		subscribers: make(map[string]*run.FanOut[*EnvelopeIn]),
 		mu:          &sync.RWMutex{},
-	}, nil
+	}
 }
 
 type ConsumeClient struct {

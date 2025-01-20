@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/types"
-
 	yaml "gopkg.in/yaml.v3"
 
 	"github.com/samber/lo"
@@ -171,21 +170,25 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 }
 
 func (m Message) setStructFields(ctx *common.CompileContext, langMessage *render.Message) {
-	fields := []lang.GoStructField{
-		{Name: string(render.CorrelationIDStructFieldPayload), Type: langMessage.PayloadType},
-	}
+	var headerType common.GolangType
 	if langMessage.HeadersTypePromise != nil {
 		ctx.Logger.Trace("Message headers has a concrete type")
 		prm := lang.NewGolangTypePromise(langMessage.HeadersTypePromise.Ref(), nil)
 		ctx.PutPromise(prm)
-		fields = append(fields, lang.GoStructField{Name: string(render.CorrelationIDStructFieldHeaders), Type: prm})
+		headerType = prm
 	} else {
 		ctx.Logger.Trace("Message headers has `any` type")
-		fields = append(fields, lang.GoStructField{Name: string(render.CorrelationIDStructFieldHeaders), Type: langMessage.HeadersFallbackType})
+		headerType = langMessage.HeadersFallbackType
 	}
 
-	langMessage.OutType.Fields = fields
-	langMessage.InType.Fields = fields
+	langMessage.OutType.Fields = []lang.GoStructField{
+		{Name: utils.ToGolangName(string(render.CorrelationIDStructFieldPayload), true), Type: langMessage.PayloadType},
+		{Name: utils.ToGolangName(string(render.CorrelationIDStructFieldHeaders), true), Type: headerType},
+	}
+	langMessage.InType.Fields = []lang.GoStructField{
+		{Name: utils.ToGolangName(string(render.CorrelationIDStructFieldPayload), false), Type: langMessage.PayloadType},
+		{Name: utils.ToGolangName(string(render.CorrelationIDStructFieldHeaders), false), Type: headerType},
+	}
 }
 
 func (m Message) getPayloadType(ctx *common.CompileContext) common.GolangType {

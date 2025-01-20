@@ -24,6 +24,7 @@ func Open{{ .Channel | goid }}{{.Protocol | goid}}(
     {{ with .ParametersType}}params {{. | gousage}},{{end}}
     server {{.Channel | goid }}Server{{.Protocol | goid}},
 ) (*{{.Type | gousage}}, error) {
+    var err error
     {{- if .BindingsProtocols | has .Protocol}}
         chBindings := {{.BindingsType | gousage}}{}.{{.Protocol | goid}}()
     {{- end }}
@@ -35,15 +36,23 @@ func Open{{ .Channel | goid }}{{.Protocol | goid}}(
         }
     {{- end}}
     {{- if .IsPublisher}}
-        publisher, err := server.Producer().Publisher(ctx, address, {{if .BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, nil)
-        if err != nil {
-            return nil, err
+        var publisher {{goqualrun .Protocol "Publisher"}}
+        producer := server.Producer()
+        if producer != nil {
+            publisher, err = producer.Publisher(ctx, address, {{if .BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, nil)
+            if err != nil {
+                return nil, err
+            }
         }
     {{- end}}
     {{- if .IsSubscriber}}
-        subscriber, err := server.Consumer().Subscriber(ctx, address, {{if .BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, nil)
-        if err != nil {
-            return nil, err
+        var subscriber {{goqualrun .Protocol "Subscriber"}}
+        consumer := server.Consumer()
+        if consumer != nil {
+            subscriber, err = server.Consumer().Subscriber(ctx, address, {{if .BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, nil)
+            if err != nil {
+                return nil, err
+            }
         }
     {{- end}}
 
@@ -142,7 +151,7 @@ type {{ .Channel | goid }}EnvelopeUnmarshaler{{.Protocol | goid}} interface {
 
     func (c {{ $.Type | gousage }}) Subscribe{{. | goid}}(
         ctx {{goqual "context.Context"}},
-        cb func(message {{ (deref .).InType | ptr | gousage }}),
+        cb func(message {{ gopkg (deref .).InType}}{{ goid .}}IncomingMessage),
     ) (err error) {
         subCtx, cancel := {{goqual "context.WithCancelCause"}}(ctx)
         defer cancel(nil)

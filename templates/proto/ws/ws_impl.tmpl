@@ -1,26 +1,14 @@
 {{- /* dot == render.ProtoServer */}}
 
 {{define "server/ws/impl/github.com/gobwas/ws/newClient"}}
-    producer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer(url, bindings)
-    if err != nil {
-        return nil, err
-    }
-    consumer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer(bindings, 10*{{goqual "time.Seconds"}})
-    if err != nil {
-        return nil, err
-    }
+    producer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer(url, bindings)
+    consumer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer(bindings, 10*{{goqual "time.Seconds"}})
 {{- end}}
 
 {{define "server/ws/impl/github.com/gobwas/ws/newProducer"}}
-    producer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer(url, bindings)
-    if err != nil {
-        return nil, err
-    }
+    producer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer(url, bindings)
 {{- end}}
 
 {{define "server/ws/impl/github.com/gobwas/ws/newConsumer"}}
-    consumer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer(bindings, 10*{{goqual "time.Seconds"}})
-    if err != nil {
-        return nil, err
-    }
+    consumer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer(bindings, 10*{{goqual "time.Seconds"}})
 {{- end}}

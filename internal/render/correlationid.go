@@ -19,8 +19,8 @@ const structReceiverName = "m"
 type CorrelationIDStructField string
 
 const (
-	CorrelationIDStructFieldPayload CorrelationIDStructField = "Payload"
-	CorrelationIDStructFieldHeaders CorrelationIDStructField = "Headers"
+	CorrelationIDStructFieldPayload CorrelationIDStructField = "payload"
+	CorrelationIDStructFieldHeaders CorrelationIDStructField = "headers"
 )
 
 // CorrelationID never renders itself, only as a part of message struct
@@ -29,7 +29,7 @@ type CorrelationID struct {
 	Description  string
 	StructField  CorrelationIDStructField // Type field name to store the value to or to load the value from
 	LocationPath []string                 // JSONPointer path to the field in the message, should be non-empty
-	Dummy bool
+	Dummy        bool
 }
 
 func (c *CorrelationID) Kind() common.ObjectKind {
@@ -58,14 +58,16 @@ func (c *CorrelationID) RenderSetterBody(inVar string, inVarType *lang.GoStruct)
 		"--> Render CorrelationID setter body", "object", c.String(), "inVar", inVar, "inVarType",inVarType.String(),
 	)
 
-	f, ok := lo.Find(inVarType.Fields, func(item lang.GoStructField) bool { return item.Name == string(c.StructField) })
+	structField := utils.ToGolangName(string(c.StructField), true)
+
+	f, ok := lo.Find(inVarType.Fields, func(item lang.GoStructField) bool { return item.Name == structField })
 	if !ok {
-		panic(fmt.Errorf("field %s not found in %s", c.StructField, inVarType))
+		panic(fmt.Errorf("field %s not found in %s", structField, inVarType))
 	}
 
 	// Define the first anchor with initial value
 	body := []string{
-		fmt.Sprintf("v0 := %s.%s", inVar, c.StructField),
+		fmt.Sprintf("v0 := %s.%s", inVar, structField),
 	}
 
 	// Extract a value from types chain
@@ -88,7 +90,7 @@ func (c *CorrelationID) RenderSetterBody(inVar string, inVarType *lang.GoStruct)
 		body = append(body, fmt.Sprintf("%s = %s", bodySteps[i].varValue, exprVal))
 		exprVal = bodySteps[i].varValueVarName
 	}
-	body = append(body, fmt.Sprintf("%s.%s = v0", inVar, c.StructField))
+	body = append(body, fmt.Sprintf("%s.%s = v0", inVar, structField))
 
 	return strings.Join(body, "\n")
 }
@@ -99,14 +101,16 @@ func (c *CorrelationID) RenderGetterBody(outVar string, outVarType *lang.GoStruc
 		"--> Render CorrelationID getter body", "object", c.String(), "outVar", outVar, "outVarType",outVarType.String(),
 	)
 
-	f, ok := lo.Find(outVarType.Fields, func(item lang.GoStructField) bool { return item.Name == string(c.StructField) })
+	structField := utils.ToGolangName(string(c.StructField), false)
+
+	f, ok := lo.Find(outVarType.Fields, func(item lang.GoStructField) bool { return item.Name == structField })
 	if !ok {
-		panic(fmt.Errorf("field %s not found in outVarType", c.StructField))
+		panic(fmt.Errorf("field %s not found in outVarType", structField))
 	}
 
 	// Define the first anchor with initial value
 	body := []string {
-		fmt.Sprintf("v0 := %s.%s", structReceiverName, c.StructField),
+		fmt.Sprintf("v0 := %s.%s", structReceiverName, structField),
 	}
 	// Extract a value from types chain
 	bodySteps, err := c.renderValueExtractionCode(c.LocationPath, f.Type, true)
@@ -125,12 +129,18 @@ func (c *CorrelationID) RenderGetterBody(outVar string, outVarType *lang.GoStruc
 	return strings.Join(body, "\n")
 }
 
-func (c *CorrelationID) TargetVarType(varType *lang.GoStruct) common.GolangType {
-	f, ok := lo.Find(varType.Fields, func(item lang.GoStructField) bool {
-		return item.Name == string(c.StructField)
-	})
+func (c *CorrelationID) TargetSetterVarType(varType *lang.GoStruct) common.GolangType {
+	return c.targetVarType(varType, utils.ToGolangName(string(c.StructField), true))
+}
+
+func (c *CorrelationID) TargetGetterVarType(varType *lang.GoStruct) common.GolangType {
+	return c.targetVarType(varType, utils.ToGolangName(string(c.StructField), false))
+}
+
+func (c *CorrelationID) targetVarType(varType *lang.GoStruct, structField string) common.GolangType {
+	f, ok := lo.Find(varType.Fields, func(item lang.GoStructField) bool { return item.Name == structField })
 	if !ok {
-		panic(fmt.Errorf("struct field %q not found in %s", c.StructField, varType))
+		panic(fmt.Errorf("struct field %q not found in %s", structField, varType))
 	}
 	bodySteps, err := c.renderValueExtractionCode(c.LocationPath, f.Type, false)
 	if err != nil {

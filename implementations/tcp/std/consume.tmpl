@@ -4,10 +4,8 @@ package {{.Package}}
 import (
 	"bufio"
 	"context"
-	"net"
-	"net/url"
-
 	runTCP "github.com/bdragon300/go-asyncapi/run/tcp"
+	"net"
 )
 
 const DefaultMaxEnvelopeSize = 1024
@@ -16,12 +14,11 @@ type Decoder interface {
 	Decode(v any) error
 }
 
-func NewConsumer(listenURL string) (*ConsumeClient, error) {
-	u, err := url.Parse(listenURL)
-	if err != nil {
-		return nil, err
+func NewConsumer(host, network string) (*ConsumeClient, error) {
+	if network == "" {
+		network = "tcp"
 	}
-	listener, err := net.Listen(u.Scheme, u.Host)
+	listener, err := net.Listen(network, host)
 
 	return &ConsumeClient{
 		TCPListener:     listener.(*net.TCPListener),
