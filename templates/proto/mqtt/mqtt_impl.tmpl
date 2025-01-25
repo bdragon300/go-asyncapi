@@ -1,23 +1,50 @@
 {{- /* dot == render.ProtoServer */}}
 
-{{define "server/mqtt/impl/github.com/eclipse/paho.mqtt.golang/newClient"}}
-    client, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(ctx, url.String(), bindings, nil)
+{{define "server/mqtt/impl/github.com/eclipse/paho.mqtt.golang/connectFunction"}}
+func Connect{{ .Server | goid }}Bidi(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}, opts *{{goqual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}}) (*{{ .Server | goid }}Closable, error) {
+    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+    {{- if .BindingsProtocols | has .Protocol}}
+        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+    {{- end}}
+    client, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(ctx, url.String(), bindings, opts)
     if err != nil {
         return nil, err
     }
     producer, consumer := client, client
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{producer: producer, consumer: consumer},
+    }, nil
+}
 {{- end}}
 
-{{define "server/mqtt/impl/github.com/eclipse/paho.mqtt.golang/newProducer"}}
-    producer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(ctx, url.String(), bindings, nil)
+{{define "server/mqtt/impl/github.com/eclipse/paho.mqtt.golang/connectProducerFunction"}}
+func Connect{{ .Server | goid }}Producer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}, opts *{{goqual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}}) (*{{ .Server | goid }}Closable, error) {
+    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+    {{- if .BindingsProtocols | has .Protocol}}
+        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+    {{- end}}
+    producer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(ctx, url.String(), bindings, opts)
     if err != nil {
         return nil, err
     }
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{producer: producer},
+    }, nil
+}
 {{- end}}
 
-{{define "server/mqtt/impl/github.com/eclipse/paho.mqtt.golang/newConsumer"}}
-    consumer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(ctx, url.String(), bindings, nil)
+{{define "server/mqtt/impl/github.com/eclipse/paho.mqtt.golang/connectConsumerFunction"}}
+func Connect{{ .Server | goid }}Consumer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}, opts *{{goqual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}}) (*{{ .Server | goid }}Closable, error) {
+    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+    {{- if .BindingsProtocols | has .Protocol}}
+        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+    {{- end}}
+    consumer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(ctx, url.String(), bindings, opts)
     if err != nil {
         return nil, err
     }
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{consumer: consumer},
+    }, nil
+}
 {{- end}}

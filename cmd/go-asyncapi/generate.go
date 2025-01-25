@@ -46,7 +46,6 @@ import (
 
 const (
 	defaultConfigFileName = "default_config.yaml"
-	defaultTemplate 	  = "main.tmpl"
 )
 
 type GenerateCmd struct {
@@ -278,7 +277,7 @@ func getRenderOpts(conf toolConfig, targetDir string) (common.RenderOpts, error)
 
 	// Selections
 	for _, item := range conf.Selections {
-		templateName, _ := lo.Coalesce(item.Render.Template, defaultTemplate)
+		templateName, _ := lo.Coalesce(item.Render.Template, tmpl.MainTemplateName)
 		sel := common.ConfigSelectionItem{
 			Protocols:        item.Protocols,
 			ObjectKinds:     item.ObjectKinds,

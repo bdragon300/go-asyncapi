@@ -1,23 +1,50 @@
 {{- /* dot == render.ProtoServer */}}
 
-{{define "server/amqp/impl/github.com/rabbitmq/amqp091-go/newClient"}}
+{{define "server/amqp/impl/github.com/rabbitmq/amqp091-go/connectFunction"}}
+func Connect{{ .Server | goid }}Bidi(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}) (*{{ .Server | goid }}Closable, error) {
+    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+    {{- if .BindingsProtocols | has .Protocol}}
+        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+    {{- end}}
     client, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(url.String(), bindings)
     if err != nil {
         return nil, err
     }
     producer, consumer := client, client
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{producer: producer, consumer: consumer},
+    }, nil
+}
 {{- end}}
 
-{{define "server/amqp/impl/github.com/rabbitmq/amqp091-go/newProducer"}}
+{{define "server/amqp/impl/github.com/rabbitmq/amqp091-go/connectProducerFunction"}}
+func Connect{{ .Server | goid }}Producer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}) (*{{ .Server | goid }}Closable, error) {
+    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+    {{- if .BindingsProtocols | has .Protocol}}
+        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+    {{- end}}
     producer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(url.String(), bindings)
     if err != nil {
         return nil, err
     }
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{producer: producer},
+    }, nil
+}
 {{- end}}
 
-{{define "server/amqp/impl/github.com/rabbitmq/amqp091-go/newConsumer"}}
+{{define "server/amqp/impl/github.com/rabbitmq/amqp091-go/connectConsumerFunction"}}
+func Connect{{ .Server | goid }}Consumer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}) (*{{ .Server | goid }}Closable, error) {
+    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+    {{- if .BindingsProtocols | has .Protocol}}
+        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+    {{- end}}
     consumer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(url.String(), bindings)
     if err != nil {
         return nil, err
     }
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{consumer: consumer},
+    }, nil
+}
 {{- end}}

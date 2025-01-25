@@ -1,14 +1,41 @@
 {{- /* dot == render.ProtoServer */}}
 
-{{define "server/ws/impl/github.com/gobwas/ws/newClient"}}
+{{define "server/ws/impl/github.com/gobwas/ws/connectFunction"}}
+func Connect{{ .Server | goid }}Bidi(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}) (*{{ .Server | goid }}Closable, error) {
+    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+    {{- if .BindingsProtocols | has .Protocol}}
+        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+    {{- end}}
     producer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer(url, bindings)
     consumer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer(bindings, 10*{{goqual "time.Seconds"}})
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{producer: producer, consumer: consumer},
+    }, nil
+}
 {{- end}}
 
-{{define "server/ws/impl/github.com/gobwas/ws/newProducer"}}
+{{define "server/ws/impl/github.com/gobwas/ws/connectProducerFunction"}}
+func Connect{{ .Server | goid }}Producer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}) (*{{ .Server | goid }}Closable, error) {
+    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+    {{- if .BindingsProtocols | has .Protocol}}
+        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+    {{- end}}
     producer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer(url, bindings)
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{producer: producer},
+    }, nil
+}
 {{- end}}
 
-{{define "server/ws/impl/github.com/gobwas/ws/newConsumer"}}
+{{define "server/ws/impl/github.com/gobwas/ws/connectConsumerFunction"}}
+func Connect{{ .Server | goid }}Consumer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}) (*{{ .Server | goid }}Closable, error) {
+    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+    {{- if .BindingsProtocols | has .Protocol}}
+        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+    {{- end}}
     consumer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer(bindings, 10*{{goqual "time.Seconds"}})
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{consumer: consumer},
+    }, nil
+}
 {{- end}}

@@ -142,22 +142,24 @@ func (c *RenderContextImpl) FindImplementationInNamespace(protocol string) (comm
 
 // qualifiedToImport converts the qual* template function parameters to qualified name and import package path.
 // And also it returns the package name (the last part of the package path).
-func qualifiedToImport(parts []string) (pkgPath string, pkgName string, name string) {
-	// parts["a"] -> ["a", "a", ""]
-	// parts["", "a"] -> ["", "", "a"]
-	// parts["a.x"] -> ["a", "a", "x"]
-	// parts["a/b/c"] -> ["a/b/c", "c", ""]
-	// parts["a", "x"] -> ["a", "a", "x"]
-	// parts["a/b.c", "x"] -> ["a/b.c", "bc", "x"]
-	// parts["n", "d", "a/b.c", "x"] -> ["n/d/a/b.c-e", "b.c-e", "x"]
-	switch len(parts) {
+func qualifiedToImport(exprParts []string) (pkgPath string, pkgName string, name string) {
+	// exprParts["a"] -> ["a", "a", ""]
+	// exprParts["", "a"] -> ["", "", "a"]
+	// exprParts["a.x"] -> ["a", "a", "x"]
+	// exprParts["a/b/c"] -> ["a/b/c", "c", ""]
+	// exprParts["a", "x"] -> ["a", "a", "x"]
+	// exprParts["a/b.c", "x"] -> ["a/b.c", "bc", "x"]
+	// exprParts["n", "d", "a/b.c", "x"] -> ["n/d/a/b.c-e", "b.c-e", "x"]
+	switch len(exprParts) {
 	case 0:
 		panic("Empty parameters, at least one is required")
 	case 1:
-		pkgPath = parts[0]
+		pkgPath = exprParts[0]
 	default:
-		pkgPath = path.Join(parts[:len(parts)-1]...) + "." + parts[len(parts)-1]
+		pkgPath = path.Join(exprParts[:len(exprParts)-1]...) + "." + exprParts[len(exprParts)-1]
 	}
+	// Split the whole expression into package path and name.
+	// The name is the sequence after the last dot (package path can contain dots in last part).
 	if pos := strings.LastIndex(pkgPath, "."); pos >= 0 {
 		name = pkgPath[pos+1:]
 		pkgPath = pkgPath[:pos]

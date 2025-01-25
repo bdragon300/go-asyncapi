@@ -10,7 +10,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kversion"
 )
 
-func NewProducer(hosts []string, bindings *runKafka.ServerBindings, extraOpts []kgo.Opt) *ProduceClient {
+func NewProducer(hosts []string, bindings *runKafka.ServerBindings, extraOpts ...kgo.Opt) *ProduceClient {
 	return &ProduceClient{
 		hosts:     hosts,
 		bindings:  bindings,

@@ -11,7 +11,7 @@ import (
 	"text/template"
 )
 
-const mainTemplateName = "main.tmpl"
+const MainTemplateName = "main.tmpl"
 
 var (
 	builtinTemplate *template.Template
@@ -28,12 +28,12 @@ func LoadTemplate(name string) (*template.Template, error) {
 }
 
 func ParseTemplates(customDirectory string) {
-	builtinTemplate = parseTemplateFiles(mainTemplateName, customDirectory)
+	builtinTemplate = parseTemplateFiles(MainTemplateName, customDirectory)
 }
 
 func ParseTemplate(fs fs.FS,filePath string) *template.Template {
 	return template.Must(
-		template.New(mainTemplateName).Funcs(GetTemplateFunctions()).ParseFS(fs, filePath),
+		template.New(MainTemplateName).Funcs(GetTemplateFunctions()).ParseFS(fs, filePath),
 	)
 }
 

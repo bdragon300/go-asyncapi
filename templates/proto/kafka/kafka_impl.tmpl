@@ -1,14 +1,41 @@
 {{- /* dot == render.ProtoServer */}}
 
-{{define "server/kafka/impl/github.com/twmb/franz-go/newClient"}}
-    producer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer([]string{url.Host}, bindings, nil)
-    consumer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer([]string{url.Host}, bindings, nil)
+{{define "server/kafka/impl/github.com/twmb/franz-go/connectFunction"}}
+func Connect{{ .Server | goid }}Bidi(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}, opts ...{{goqual "github.com/twmb/franz-go/pkg/kgo.Opt"}}) (*{{ .Server | goid }}Closable, error) {
+    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+    {{- if .BindingsProtocols | has .Protocol}}
+        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+    {{- end}}
+    producer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer([]string{url.Host}, bindings, opts...)
+    consumer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer([]string{url.Host}, bindings, opts...)
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{producer: producer, consumer: consumer},
+    }, nil
+}
 {{- end}}
 
-{{define "server/kafka/impl/github.com/twmb/franz-go/newProducer"}}
-    producer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer([]string{url.Host}, bindings, nil)
+{{define "server/kafka/impl/github.com/twmb/franz-go/connectProducerFunction"}}
+func Connect{{ .Server | goid }}Producer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}, opts ...{{goqual "github.com/twmb/franz-go/pkg/kgo.Opt"}}) (*{{ .Server | goid }}Closable, error) {
+    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+    {{- if .BindingsProtocols | has .Protocol}}
+        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+    {{- end}}
+    producer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer([]string{url.Host}, bindings, opts...)
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{producer: producer},
+    }, nil
+}
 {{- end}}
 
-{{define "server/kafka/impl/github.com/twmb/franz-go/newConsumer"}}
-    consumer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer([]string{url.Host}, bindings, nil)
+{{define "server/kafka/impl/github.com/twmb/franz-go/connectConsumerFunction"}}
+func Connect{{ .Server | goid }}Consumer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}, opts ...{{goqual "github.com/twmb/franz-go/pkg/kgo.Opt"}}) (*{{ .Server | goid }}Closable, error) {
+    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+    {{- if .BindingsProtocols | has .Protocol}}
+        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+    {{- end}}
+    consumer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer([]string{url.Host}, bindings, opts...)
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{consumer: consumer},
+    }, nil
+}
 {{- end}}

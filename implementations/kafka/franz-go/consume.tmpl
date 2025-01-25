@@ -10,7 +10,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
-func NewConsumer(hosts []string, bindings *runKafka.ServerBindings, extraOpts []kgo.Opt) *ConsumeClient {
+func NewConsumer(hosts []string, bindings *runKafka.ServerBindings, extraOpts ...kgo.Opt) *ConsumeClient {
 	return &ConsumeClient{
 		hosts:     hosts,
 		bindings:  bindings,
@@ -79,11 +79,12 @@ func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope runKafka
 		}
 
 		fetches.EachRecord(func(r *kgo.Record) {
-			cb(NewEnvelopeIn(r))
+			select {
+			case <-ctx.Done():
+			default:
+				cb(NewEnvelopeIn(r))
+			}
 		})
-		if batchError != nil {
-			return fmt.Errorf("callback errors: %w", batchError)
-		}
 	}
 }
 

@@ -1,14 +1,29 @@
 {{- /* dot == render.ProtoServer */}}
 
-{{define "server/udp/impl/net/newClient"}}
-    client := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient("", url.Host, url.Scheme)
+{{define "server/udp/impl/net/connectFunction"}}
+func Connect{{ .Server | goid }}Bidi(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}, localHost string) (*{{ .Server | goid }}Closable, error) {
+    client := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(localHost, url.Host, url.Scheme)
     consumer, producer := client, client
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{producer: producer, consumer: consumer},
+    }, nil
+}
 {{- end}}
 
-{{define "server/udp/impl/net/newProducer"}}
-    producer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient("", url.Host, url.Scheme)
+{{define "server/udp/impl/net/connectProducerFunction"}}
+func Connect{{ .Server | goid }}Producer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}, localHost string) (*{{ .Server | goid }}Closable, error) {
+    producer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(localHost, url.Host, url.Scheme)
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{producer: producer},
+    }, nil
+}
 {{- end}}
 
-{{define "server/udp/impl/net/newConsumer"}}
-    consumer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient("", url.Host, url.Scheme)
+{{define "server/udp/impl/net/connectConsumerFunction"}}
+func Connect{{ .Server | goid }}Consumer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}, localHost string) (*{{ .Server | goid }}Closable, error) {
+    consumer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(localHost, url.Host, url.Scheme)
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{consumer: consumer},
+    }, nil
+}
 {{- end}}

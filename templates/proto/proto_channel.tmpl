@@ -49,7 +49,7 @@ func Open{{ .Channel | goid }}{{.Protocol | goid}}(
         var subscriber {{goqualrun .Protocol "Subscriber"}}
         consumer := server.Consumer()
         if consumer != nil {
-            subscriber, err = server.Consumer().Subscriber(ctx, address, {{if .BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, nil)
+            subscriber, err = consumer.Subscriber(ctx, address, {{if .BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, nil)
             if err != nil {
                 return nil, err
             }

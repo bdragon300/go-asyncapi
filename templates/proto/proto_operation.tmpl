@@ -40,7 +40,7 @@ func Open{{ . | goid }}{{.Protocol | goid}}(
         var publisher {{goqualrun .Protocol "Publisher"}}
         producer := server.Producer()
         if producer != nil {
-            publisher, err = server.Producer().Publisher(ctx, address, {{if .Channel.BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, {{if .BindingsProtocols | has .Protocol}}&opBindings{{else}}nil{{end}})
+            publisher, err = producer.Publisher(ctx, address, {{if .Channel.BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, {{if .BindingsProtocols | has .Protocol}}&opBindings{{else}}nil{{end}})
             if err != nil {
                 return nil, err
             }
@@ -50,7 +50,7 @@ func Open{{ . | goid }}{{.Protocol | goid}}(
         var subscriber {{goqualrun .Protocol "Subscriber"}}
         consumer := server.Consumer()
         if consumer != nil {
-            subscriber, err = server.Consumer().Subscriber(ctx, address, {{if .Channel.BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, {{if .BindingsProtocols | has .Protocol}}&opBindings{{else}}nil{{end}})
+            subscriber, err = consumer.Subscriber(ctx, address, {{if .Channel.BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, {{if .BindingsProtocols | has .Protocol}}&opBindings{{else}}nil{{end}})
             if err != nil {
                 return nil, err
             }

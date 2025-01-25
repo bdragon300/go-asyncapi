@@ -1,23 +1,38 @@
 {{- /* dot == render.ProtoServer */}}
 
-{{define "server/ip/impl/net/newClient"}}
+{{define "server/ip/impl/net/connectFunction"}}
+func Connect{{ .Server | goid }}Bidi(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}) (*{{ .Server | goid }}Closable, error) {
     client, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient("", url.Host, url.Scheme)
     if err != nil {
         return nil, err
     }
     consumer, producer := client, client
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{producer: producer, consumer: consumer},
+    }, nil
+}
 {{- end}}
 
-{{define "server/ip/impl/net/newProducer"}}
+{{define "server/ip/impl/net/connectProducerFunction"}}
+func Connect{{ .Server | goid }}Producer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}) (*{{ .Server | goid }}Closable, error) {
     producer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient("", url.Host, url.Scheme)
     if err != nil {
         return nil, err
     }
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{producer: producer},
+    }, nil
+}
 {{- end}}
 
-{{define "server/ip/impl/net/newConsumer"}}
+{{define "server/ip/impl/net/connectConsumerFunction"}}
+func Connect{{ .Server | goid }}Consumer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}) (*{{ .Server | goid }}Closable, error) {
     consumer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient("", url.Host, url.Scheme)
     if err != nil {
         return nil, err
     }
+    return &{{ .Server | goid }}Closable{
+        {{ .Type | gousage }}{consumer: consumer},
+    }, nil
+}
 {{- end}}
