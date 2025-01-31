@@ -4,7 +4,9 @@
     {{-  .Name }}
 {{- end}}
 {{define "lang/gosimple/usage"}}
-    {{- if .Import }}
+    {{- if .RuntimeImport}}
+        {{- goqualrun .Import .Name }}
+    {{- else if .Import }}
         {{- goqual .Import .Name }}
     {{- else }}
         {{- gopkg . }}{{ .Name }}

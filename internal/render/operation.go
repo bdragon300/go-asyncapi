@@ -85,7 +85,7 @@ func (o *Operation) BindingsProtocols() (res []string) {
 
 func (o *Operation) ProtoBindingsValue(protoName string) common.Renderable {
 	res := &lang.GoValue{
-		Type:               &lang.GoSimple{TypeName: "OperationBindings", Import: common.GetContext().RuntimeModule(protoName)},
+		Type:               &lang.GoSimple{TypeName: "OperationBindings", Import: protoName, RuntimeImport: true},
 		EmptyCurlyBrackets: true,
 	}
 	if o.BindingsPromise != nil {

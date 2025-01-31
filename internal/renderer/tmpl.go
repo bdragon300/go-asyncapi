@@ -16,7 +16,7 @@ func renderObjectInlineTemplate(item renderQueueItem, opts common.RenderOpts, te
 		Imports:                &context.ImportsList{},
 		Object:                 item.object,
 	}
-	common.SetContext(ctx)
+	tmpl.SetContext(ctx)
 
 	tplCtx := tmpl.NewTemplateContext(ctx, item.object.Renderable, ctx.Imports)
 
@@ -43,7 +43,7 @@ func renderObjectFileTemplate(preambleTpl *template.Template, opts common.Render
 		PackageName: renderState.packageName,
 		Imports:     &renderState.imports,
 	}
-	common.SetContext(ctx)
+	tmpl.SetContext(ctx)
 	tplCtx := tmpl.NewTemplateContext(ctx, nil, &renderState.imports)
 
 	if err := preambleTpl.Execute(&res, tplCtx); err != nil {

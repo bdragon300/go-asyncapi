@@ -17,6 +17,16 @@ import (
 	"unicode"
 )
 
+var context common.RenderContext
+
+func getContext() common.RenderContext {
+	return context
+}
+
+func SetContext(c common.RenderContext) {
+	context = c
+}
+
 func GetTemplateFunctions() template.FuncMap {
 	type golangTypeExtractor interface {
 		InnerGolangType() common.GolangType
@@ -28,11 +38,11 @@ func GetTemplateFunctions() template.FuncMap {
 		"goid": func(val any) string { return templateGoID(val, true) },
 		"goidorig": func(val any) string { return templateGoID(val, false) },
 		"gocomment": func(text string) (string, error) { return templateGoComment(text) },
-		"goqual": func(parts ...string) string { return common.GetContext().QualifiedName(parts...) },
-		"goqualrun": func(parts ...string) string { return common.GetContext().QualifiedRuntimeName(parts...) },
+		"goqual": func(parts ...string) string { return getContext().QualifiedName(parts...) },
+		"goqualrun": func(parts ...string) string { return getContext().QualifiedRuntimeName(parts...) },
 		"godef": func(r common.GolangType) (string, error) {
 			tplName := path.Join(r.GoTemplate(), "definition")
-			common.GetContext().DefineTypeInNamespace(r, common.GetContext().CurrentSelection(), true)
+			getContext().DefineTypeInNamespace(r, getContext().CurrentSelection(), true)
 			if v, ok := r.(golangTypeWrapper); ok {
 				r = v.UnwrapGolangType()
 			}
@@ -45,12 +55,12 @@ func GetTemplateFunctions() template.FuncMap {
 		"gopkg": func(obj any) (pkg string, err error) {
 			switch v := obj.(type) {
 			case common.GolangType:
-				pkg, err = common.GetContext().QualifiedTypeGeneratedPackage(v)
+				pkg, err = getContext().QualifiedTypeGeneratedPackage(v)
 			case *common.ImplementationObject:
 				if lo.IsNil(v) {
 					return "", errors.New("argument is nil")
 				}
-				pkg, err = common.GetContext().QualifiedImplementationGeneratedPackage(*v)
+				pkg, err = getContext().QualifiedImplementationGeneratedPackage(*v)
 			default:
 				return "", fmt.Errorf("type is not supported %[1]T: %[1]v", obj)
 			}
@@ -85,7 +95,7 @@ func GetTemplateFunctions() template.FuncMap {
 			return &lang.GoPointer{Type: val}, nil
 		},
 		"impl": func(protocol string) *common.ImplementationObject {
-			impl, found := common.GetContext().FindImplementationInNamespace(protocol)
+			impl, found := getContext().FindImplementationInNamespace(protocol)
 			if !found {
 				return nil
 			}
@@ -114,11 +124,11 @@ func GetTemplateFunctions() template.FuncMap {
 				switch v := o.(type) {
 				case common.GolangType:
 					if !lo.IsNil(o) {
-						common.GetContext().DefineTypeInNamespace(v, common.GetContext().CurrentSelection(), false)
+						getContext().DefineTypeInNamespace(v, getContext().CurrentSelection(), false)
 					}
 				case string:
 					if o != "" {
-						common.GetContext().DefineNameInNamespace(v)
+						getContext().DefineNameInNamespace(v)
 					}
 				}
 			}
@@ -150,9 +160,9 @@ func templateGoDefined(r any) bool {
 	}
 	switch v := r.(type) {
 	case common.GolangType:
-		return common.GetContext().TypeDefinedInNamespace(v)
+		return getContext().TypeDefinedInNamespace(v)
 	case string:
-		return common.GetContext().NameDefinedInNamespace(v)
+		return getContext().NameDefinedInNamespace(v)
 	}
 
 	panic(fmt.Sprintf("unsupported type %[1]T: %[1]v", r))
@@ -205,7 +215,7 @@ func templateGoID(val any, forceCapitalize bool) string {
 		// For example, the topObject is a lang.Ref defined in `servers.myServer`. val contains the render.Server
 		// defined in `components.servers.reusableServer` that this Ref is points to. Then we'll use the "myServer"
 		// as the server name in generated code: functions, structs, etc.
-		topObject := common.GetContext().GetObject()
+		topObject := getContext().GetObject()
 		res = lo.Ternary(common.CheckSameRenderables(topObject.Renderable, v), topObject.Name(), v.Name())
 	case string:
 		res = v
@@ -320,7 +330,7 @@ func templateCorrelationIDExtractionCode(c *render.CorrelationID, varStruct *lan
 				%s = v
 			}`, varValueStmts, nextAnchor)
 			if addValidationCode {
-				fmtErrorf := common.GetContext().QualifiedName("fmt.Errorf")
+				fmtErrorf := getContext().QualifiedName("fmt.Errorf")
 				ifExpr += fmt.Sprintf(` else {
 					err = %s("key %%q not found in map on locationPath /%s", %s)
 					return
@@ -345,7 +355,7 @@ func templateCorrelationIDExtractionCode(c *render.CorrelationID, varStruct *lan
 				return
 			}
 			if addValidationCode {
-				fmtErrorf := common.GetContext().QualifiedName("fmt.Errorf")
+				fmtErrorf := getContext().QualifiedName("fmt.Errorf")
 				body = append(body, fmt.Sprintf(`if len(%s) <= %s {
 					err = %s("index %%q is out of range in array of length %%d on locationPath /%s", %s, len(%s))
 					return
@@ -443,3 +453,4 @@ func unescapeCorrelationIDPathItem(value string) (any, error) {
 	// RFC6901 JSON Pointer unescape: replace `~1` to `/` and `~0` to `~`
 	return strings.ReplaceAll(strings.ReplaceAll(value, "~1", "/"), "~0", "~"), nil
 }
+

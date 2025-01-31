@@ -2,16 +2,6 @@ package common
 
 import "github.com/bdragon300/go-asyncapi/implementations"
 
-var context RenderContext
-
-func GetContext() RenderContext {
-	return context
-}
-
-func SetContext(c RenderContext) {
-	context = c
-}
-
 // ObjectKind is an enumeration of object kinds that are selectable for rendering.
 type ObjectKind string
 

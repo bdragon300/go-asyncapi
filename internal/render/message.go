@@ -132,7 +132,7 @@ func (m *Message) String() string {
 
 func (m *Message) ProtoBindingsValue(protoName string) common.Renderable {
 	res := &lang.GoValue{
-		Type:               &lang.GoSimple{TypeName: "ServerBindings", Import: common.GetContext().RuntimeModule(protoName)},
+		Type:               &lang.GoSimple{TypeName: "ServerBindings", Import: protoName, RuntimeImport: true},
 		EmptyCurlyBrackets: true,
 	}
 	if m.BindingsPromise != nil {

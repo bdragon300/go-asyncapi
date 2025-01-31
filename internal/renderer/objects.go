@@ -138,7 +138,7 @@ func renderObject(
 		Imports:                &importsCopy,
 		Object:                 item.object,
 	}
-	common.SetContext(ctx)
+	tmpl.SetContext(ctx)
 
 	tplCtx := tmpl.NewTemplateContext(ctx, item.object.Renderable, &importsCopy)
 

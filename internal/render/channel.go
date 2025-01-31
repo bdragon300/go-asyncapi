@@ -130,7 +130,7 @@ func (c *Channel) BindingsProtocols() (res []string) {
 
 func (c *Channel) ProtoBindingsValue(protoName string) common.Renderable {
 	res := &lang.GoValue{
-		Type:               &lang.GoSimple{TypeName: "ChannelBindings", Import: common.GetContext().RuntimeModule(protoName)},
+		Type:               &lang.GoSimple{TypeName: "ChannelBindings", Import: protoName, RuntimeImport: true},
 		EmptyCurlyBrackets: true,
 	}
 	if c.BindingsPromise != nil {
