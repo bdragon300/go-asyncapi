@@ -182,12 +182,12 @@ func (m Message) setStructFields(ctx *common.CompileContext, langMessage *render
 	}
 
 	langMessage.OutType.Fields = []lang.GoStructField{
-		{Name: utils.ToGolangName(string(render.CorrelationIDStructFieldPayload), true), Type: langMessage.PayloadType},
-		{Name: utils.ToGolangName(string(render.CorrelationIDStructFieldHeaders), true), Type: headerType},
+		{Name: utils.ToGolangName(string(render.CorrelationIDStructFieldKindPayload), true), Type: langMessage.PayloadType},
+		{Name: utils.ToGolangName(string(render.CorrelationIDStructFieldKindHeaders), true), Type: headerType},
 	}
 	langMessage.InType.Fields = []lang.GoStructField{
-		{Name: utils.ToGolangName(string(render.CorrelationIDStructFieldPayload), false), Type: langMessage.PayloadType},
-		{Name: utils.ToGolangName(string(render.CorrelationIDStructFieldHeaders), false), Type: headerType},
+		{Name: utils.ToGolangName(string(render.CorrelationIDStructFieldKindPayload), false), Type: langMessage.PayloadType},
+		{Name: utils.ToGolangName(string(render.CorrelationIDStructFieldKindHeaders), false), Type: headerType},
 	}
 }
 

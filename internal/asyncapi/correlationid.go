@@ -43,12 +43,12 @@ func (c CorrelationID) build(ctx *common.CompileContext, correlationIDKey string
 		return nil, types.CompileError{Err: errors.New("no fragment part in location"), Path: ctx.PathStackRef()}
 	}
 
-	var structField render.CorrelationIDStructField
+	var structField render.CorrelationIDStructFieldKind
 	switch {
 	case strings.HasSuffix(locationParts[0], "header"):
-		structField = render.CorrelationIDStructFieldHeaders
+		structField = render.CorrelationIDStructFieldKindHeaders
 	case strings.HasSuffix(locationParts[0], "payload"):
-		structField = render.CorrelationIDStructFieldPayload
+		structField = render.CorrelationIDStructFieldKindPayload
 	default:
 		return nil, types.CompileError{
 			Err:  errors.New("location source must point only to header or payload"),
@@ -67,9 +67,9 @@ func (c CorrelationID) build(ctx *common.CompileContext, correlationIDKey string
 	ctx.Logger.Trace("CorrelationID object", "messageField", structField, "path", locationPath)
 
 	return &render.CorrelationID{
-		OriginalName: correlationIDKey,
-		Description:  c.Description,
-		StructField:  structField,
-		LocationPath: locationPath,
+		OriginalName:    correlationIDKey,
+		Description:     c.Description,
+		StructFieldKind: structField,
+		LocationPath:    locationPath,
 	}, nil
 }

@@ -1,0 +1,52 @@
+{{/* dot == render.Message */}}
+
+{{define "correlationID/incoming/setter"}}
+{{- with .CorrelationID}}
+v0 := m.{{.StructFieldKind | toTitleCase}}
+
+{{$steps := correlationIDExtractionCode . $.OutType false}}
+{{- /* Render extraction steps except the last one */}}
+{{- range initial $steps}}
+    {{range .CodeLines}}{{.}}{{end}}
+{{- end}}
+
+{{- /* Collapse the value back */}}
+{{- $exprVal := "value"}}
+{{- range reverse }}
+    {{.VarValue}} = {{$exprVal}}
+    {{- $exprVal = .VarValueVarName}}
+{{- end}}
+
+m.{{.StructFieldKind | toTitleCase}} = v0
+{{- end}}
+{{- end}}
+
+
+{{define "correlationID/incoming/varType"}}
+{{- with .CorrelationID}}
+{{$steps := correlationIDExtractionCode . $.OutType false}}
+{{if $steps }}{{last $steps | .VarType | gousage}}{{else}}any{{end}}
+{{- end}}
+{{- end}}
+
+
+{{define "correlationID/outgoing/getter"}}
+{{- with .CorrelationID}}
+v0 := m.{{.StructFieldKind | untitle}}
+
+{{$steps := correlationIDExtractionCode . $.InType true}}
+{{- /* Render extraction steps except the last one */}}
+{{- range $steps}}
+    {{range .CodeLines}}{{.}}{{end}}
+{{- end}}
+
+{{if $steps}}value = {{last $steps | .VarName}}{{end}}
+{{- end}}
+{{- end}}
+
+{{define "correlationID/outgoing/varType"}}
+{{- with .CorrelationID}}
+{{$steps := correlationIDExtractionCode . $.InType false}}
+{{if $steps }}{{last $steps | .VarType | gousage}}{{else}}any{{end}}
+{{- end}}
+{{- end}}

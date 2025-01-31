@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/log"
+	"github.com/bdragon300/go-asyncapi/internal/render"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
+	"net/url"
 	"path"
+	"strconv"
 	"strings"
 	"text/template"
 	"unicode"
@@ -250,4 +253,193 @@ func templateGoComment(text string) (string, error) {
 		}
 	}
 	return b.String(), nil
+}
+
+type correlationIDExtractionStep struct {
+	CodeLines []string
+	VarName         string
+	VarValue        string
+	VarValueVarName string
+	VarType         common.GolangType
+}
+
+func templateCorrelationIDExtractionCode(c *render.CorrelationID, varStruct *lang.GoStruct, addValidationCode bool) (items []correlationIDExtractionStep, err error) {
+	// TODO: consider also AdditionalProperties in object
+	logger := log.GetLogger(log.LoggerPrefixRendering)
+
+	field, ok := lo.Find(varStruct.Fields, func(item lang.GoStructField) bool {
+		return strings.ToLower(item.Name) == strings.ToLower(string(c.StructFieldKind))
+	})
+	if !ok {
+		return nil, fmt.Errorf("field %s not found in %s", c.StructFieldKind, varStruct)
+	}
+
+	locationPath := c.LocationPath
+	baseType := field.Type
+	for pathIdx:=0; pathIdx < len(locationPath); pathIdx++ {
+		var body []string
+		var varValueStmts string
+
+		// Anchor is a variable that holds the current value of the locationPath item
+		anchor := fmt.Sprintf("v%d", pathIdx)
+		nextAnchor := fmt.Sprintf("v%d", pathIdx+1)
+
+		memberName, err2 := unescapeCorrelationIDPathItem(locationPath[pathIdx])
+		if err2 != nil {
+			err = fmt.Errorf("cannot unescape CorrelationID locationPath %q, item %q: %w", locationPath, locationPath[pathIdx], err)
+			return
+		}
+
+		switch typ := baseType.(type) {
+		case *lang.GoStruct:
+			logger.Trace("---> GoStruct", "locationPath", locationPath[:pathIdx], "member", memberName, "object", typ.String())
+			fld, ok := lo.Find(typ.Fields, func(item lang.GoStructField) bool { return item.MarshalName == memberName })
+			if !ok {
+				err = fmt.Errorf(
+					"field %q not found in struct %s, locationPath: /%s",
+					memberName, typ.OriginalName, strings.Join(locationPath[:pathIdx], "/"),
+				)
+				return
+			}
+			varValueStmts = fmt.Sprintf("%s.%s", anchor, fld.Name)
+			baseType = fld.Type
+			body = []string{fmt.Sprintf("%s := %s", nextAnchor, varValueStmts)}
+		case *lang.GoMap:
+			// TODO: x-parameter in correlationIDs spec section to set numbers as "0" for string keys or 0 for int keys
+			logger.Trace("---> GoMap", "locationPath", locationPath[:pathIdx], "member", memberName, "object", typ.String())
+			varValueStmts = fmt.Sprintf("%s[%s]", anchor, utils.ToGoLiteral(memberName))
+			baseType = typ.ValueType
+			// TODO: replace TemplateGoUsage calls to smth another to remove import from impl, this is a potential circular import
+			varExpr := fmt.Sprintf("var %s %s", nextAnchor, lo.Must(TemplateGoUsage(typ.ValueType)))
+			if typ.ValueType.Addressable() {
+				// Append ` = new(TYPE)` to initialize a pointer
+				varExpr += fmt.Sprintf(" = new(%s)", lo.Must(TemplateGoUsage(typ.ValueType)))
+			}
+
+			ifExpr := fmt.Sprintf(`if v, ok := %s; ok {
+				%s = v
+			}`, varValueStmts, nextAnchor)
+			if addValidationCode {
+				fmtErrorf := common.GetContext().QualifiedName("fmt.Errorf")
+				ifExpr += fmt.Sprintf(` else {
+					err = %s("key %%q not found in map on locationPath /%s", %s)
+					return
+				}`, fmtErrorf, strings.Join(locationPath[:pathIdx], "/"), utils.ToGoLiteral(memberName))
+			}
+			body = []string{
+				fmt.Sprintf(`if %s == nil { 
+					%s = make(%s) 
+				}`, anchor, anchor, lo.Must(TemplateGoUsage(typ))),
+				varExpr,
+				ifExpr,
+			}
+		case *lang.GoArray:
+			logger.Trace("---> GoArray", "locationPath", locationPath[:pathIdx], "member", memberName, "object", typ.String())
+			if _, ok := memberName.(string); ok {
+				err = fmt.Errorf(
+					"index %q is not a number, array %s, locationPath: /%s",
+					memberName,
+					typ.OriginalName,
+					strings.Join(locationPath[:pathIdx], "/"),
+				)
+				return
+			}
+			if addValidationCode {
+				fmtErrorf := common.GetContext().QualifiedName("fmt.Errorf")
+				body = append(body, fmt.Sprintf(`if len(%s) <= %s {
+					err = %s("index %%q is out of range in array of length %%d on locationPath /%s", %s, len(%s))
+					return
+				}`, anchor, utils.ToGoLiteral(memberName), fmtErrorf, strings.Join(locationPath[:pathIdx], "/"), utils.ToGoLiteral(memberName), anchor))
+			}
+			varValueStmts = fmt.Sprintf("%s[%s]", anchor, utils.ToGoLiteral(memberName))
+			baseType = typ.ItemsType
+			body = append(body, fmt.Sprintf("%s := %s", nextAnchor, varValueStmts))
+		case *lang.GoSimple: // Should be a terminal type in chain, raise error otherwise (if any locationPath parts left to resolve)
+			logger.Trace("---> GoSimple", "locationPath", locationPath[:pathIdx], "member", memberName, "object", typ.String())
+			if pathIdx >= len(locationPath)-1 { // Primitive types should get addressed by the last locationPath item
+				err = fmt.Errorf(
+					"type %q cannot be resolved further, locationPath: /%s",
+					typ.Name(), // TODO: check if this is correct
+					strings.Join(locationPath[:pathIdx], "/"),
+				)
+				return
+			}
+			baseType = typ
+		case lang.GolangTypeExtractor:
+			logger.Trace(
+				"---> GolangTypeExtractor",
+				"locationPath", locationPath[:pathIdx], "member", memberName, "object", baseType.String(), "type", fmt.Sprintf("%T", typ),
+			)
+			t := typ.InnerGolangType()
+			if lo.IsNil(t) {
+				err = fmt.Errorf(
+					"type %T does not contain a wrapped GolangType, locationPath: /%s",
+					typ,
+					strings.Join(locationPath[:pathIdx], "/"),
+				)
+				return
+			}
+			baseType = t
+			continue
+		case lang.GolangTypeWrapper:
+			logger.Trace(
+				"---> GolangTypeWrapper",
+				"locationPath", locationPath[:pathIdx], "member", memberName, "object", baseType.String(), "type", fmt.Sprintf("%T", typ),
+			)
+			t := typ.UnwrapGolangType()
+			if lo.IsNil(t) {
+				err = fmt.Errorf(
+					"type %T does not contain a wrapped GolangType, locationPath: /%s",
+					typ,
+					strings.Join(locationPath[:pathIdx], "/"),
+				)
+				return
+			}
+			baseType = t
+			continue
+		default:
+			logger.Trace("---> Unknown type", "locationPath", locationPath[:pathIdx], "object", typ.String(), "type", fmt.Sprintf("%T", typ))
+			err = fmt.Errorf(
+				"type %s is not addressable, locationPath: /%s",
+				typ.Name(), // TODO: check if this is correct
+				strings.Join(locationPath[:pathIdx], "/"),
+			)
+			return
+		}
+
+		item := correlationIDExtractionStep{
+			CodeLines:       body,
+			VarName:         nextAnchor,
+			VarValue:        varValueStmts,
+			VarValueVarName: anchor,
+			VarType:         baseType,
+		}
+		logger.Trace("---> Add step", "lines", body, "varName", nextAnchor, "varValue", varValueStmts, "varType", baseType.String())
+
+		items = append(items, item)
+	}
+
+	return
+}
+
+func unescapeCorrelationIDPathItem(value string) (any, error) {
+	if v, err := strconv.Atoi(value); err == nil {
+		return v, nil // Number path items are treated as integers
+	}
+
+	// Unquote path item if it is quoted. Quoted forces a path item to be treated as a string, not number.
+	quoted := strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"") ||
+		strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'")
+	if quoted {
+		value = value[1 : len(value)-1] // Unquote
+	}
+
+	// RFC3986 URL unescape
+	value, err := url.PathUnescape(value)
+	if err != nil {
+		return nil, err
+	}
+
+	// RFC6901 JSON Pointer unescape: replace `~1` to `/` and `~0` to `~`
+	return strings.ReplaceAll(strings.ReplaceAll(value, "~1", "/"), "~0", "~"), nil
 }

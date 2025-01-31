@@ -35,8 +35,8 @@ func (m *{{ .OutType | goid }}) WithHeaders(headers {{$headersType | gousage}}) 
 }
 
 {{- with visible .CorrelationID}}
-func (m {{ $message.OutType | goid }}) SetCorrelationID(value {{ .TargetSetterVarType $message.OutType | gousage}}) {
-    {{ .RenderSetterBody "m" $message.OutType}}
+func (m {{ $message.OutType | goid }}) SetCorrelationID(value {{template "correlationID/outgoing/varType" $message}}) {
+    {{template "correlationID/setter" $message}}
 }
 {{- end}}
 {{- end}}
@@ -47,7 +47,7 @@ func (m {{ $message.OutType | goid }}) SetCorrelationID(value {{ .TargetSetterVa
             Payload() {{.PayloadType | gousage}}
             Headers() {{$headersType | gousage}}
             {{- with visible .CorrelationID}}
-            CorrelationID() (value {{.TargetGetterVarType $message.InType | gousage}}, err error)
+            CorrelationID() (value {{template "correlationID/incoming/varType" $message}}, err error)
             {{- end}}
         }
         {{- def .InType }}
@@ -72,8 +72,8 @@ func (m *{{ .InType | goid }}) Headers() {{$headersType | gousage}} {
 }
 
 {{- with visible .CorrelationID}}
-func (m {{ $message.InType | goid }}) CorrelationID() (value {{.TargetGetterVarType $message.InType | gousage}}, err error) {
-    {{ .RenderGetterBody "value" $message.InType }}
+func (m {{ $message.InType | goid }}) CorrelationID() (value {{template "correlationID/incoming/varType" $message}}, err error) {
+    {{template "correlationID/getter" $message}}
     return
 }
 {{- end}}
