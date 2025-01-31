@@ -161,6 +161,7 @@ type correlationIDExpansionStep struct {
 	varType         common.GolangType
 }
 
+// TODO: make these code rendering methods as template functions or templates or smth
 func (c *CorrelationID) renderValueExtractionCode(
 	path []string,
 	initialType common.GolangType,

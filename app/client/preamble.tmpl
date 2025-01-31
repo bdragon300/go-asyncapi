@@ -1,0 +1,11 @@
+{{/* dot == tmpl.AppTemplateContext */}}
+
+package main
+
+{{- with .Imports }}
+import (
+{{- range . }}
+    {{ if .Alias }}{{ .Alias }} {{ end }}"{{ .PackagePath }}"
+{{- end }}
+)
+{{- end }}

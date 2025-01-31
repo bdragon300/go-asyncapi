@@ -1,0 +1,164 @@
+{{/* dot == tmpl.AppTemplateContext */}}
+
+const (
+	MaxLogPayloadSize     = 128
+	OutputFileCreateMode  = 0644
+	InputStreamBufferSize = 1024 * 1024
+)
+
+{{- range .ActiveProtocols}}
+{{tmpl (print "server/" . "/cliMixin") $}}
+{{- end}}
+
+type MainCli struct {
+	Subscribe *DirectionCliCmd `arg:"subcommand:subscribe" help:"Subscribe to a channel"`
+	Publish   *DirectionCliCmd `arg:"subcommand:publish" help:"Publish to a channel"`
+
+	Debug        bool              `arg:"-d,--debug" help:"Enable debug logging"`
+	File         string            `arg:"-f,--file" help:"File to read or write message data; - means stdin/stdout" default:"-"`
+	Multiple     bool              `arg:"-m,--multiple" help:"Do not exit after the first message processed"`
+	Headers      map[string]string `arg:"--headers" help:"Message header to send; format: key=value [key=value ...]"`
+	EndOfMessage string            `arg:"--end-of-message" help:"Delimiter that separates the message payloads in stream. Empty separator means EOF (in terminal it's caused by pressing Ctrl-D)" default:"\n"`
+
+	RunTimeout {{goqual "time.Duration"}} `arg:"--run-timeout" help:"Timeout to run the command. By default, the command runs indefinitely"`
+}
+
+type DirectionCliCmd struct {
+{{- range .RenderQueue}}
+	{{- if and (eq .Kind "channel") (visible .)}}
+		{{ . | goid }}Cmd *{{ . | goid }}Cmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Channel: {{.Name | toQuotable}}"`
+	{{- else if and (eq .Kind "operation") (visible .)}}
+		{{ . | goid }}Cmd *{{ . | goid }}Cmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Operation: {{.Name | toQuotable}}"`
+	{{- end}}
+{{- end}}
+}
+
+{{- range .RenderQueue}}
+	{{- if and (eq .Kind "server") (visible .)}}
+		type {{. | goid}}CliCmd struct {
+			{{with trytmpl (print "server/" (. | deref | .Protocol) "/cliMixin") .}}{{. | deref | .Protocol | goid}}CliMixin{{end}}
+
+			// Server variables
+			{{- range .Variables.Entries}}
+				{{- with .Value}}
+					{{- if .Default}}
+						{{. | goid}} string `arg:"--{{.Name | toQuotable | toKebabCase}}" help:"Server variable: {{.Name | toQuotable}}" default:"{{.Default | toQuotable}}"`
+					{{- else}}
+						{{. | goid}} string `arg:"--{{.Name | toQuotable | toKebabCase}},required" help:"Server variable: {{.Name | toQuotable}}"`
+					{{- end}}
+				{{- end}}
+			{{- end}}
+
+			// Other
+			URL  *{{goqual "url.URL"}} `arg:"--url" help:"Override server URL"`
+		}
+	{{- end}}
+{{- end}}
+
+type channelOptions struct {
+	cliParser *{{goqual "github.com/alexflint/go-arg.Parser"}}
+
+	publish          bool
+	debug            bool
+	multipleMessages bool
+	payloadSeparator string
+
+	stream         {{goqual "io.ReadWriter"}}
+	publishHeaders map[string]string
+}
+
+func main() {
+	cliArgs := MainCli{}
+	cliParser := {{goqual "github.com/alexflint/go-arg.MustParse"}}(&cliArgs)
+
+	logLevel := {{goqual "log/slog.LevelError"}}
+	if cliArgs.Debug {
+		logLevel = {{goqual "log/slog.LevelDebug"}}
+	}
+	{{goqual "log/slog.SetLogLoggerLevel"}}(logLevel)
+
+	var dirCmd *DirectionCliCmd
+	switch {
+	case cliArgs.Subscribe != nil:
+		dirCmd = cliArgs.Subscribe
+	case cliArgs.Publish != nil:
+		dirCmd = cliArgs.Publish
+	default:
+		showCliError("No direction selected", cliParser)
+	}
+
+	chanOptions := channelOptions{
+		publish:          cliArgs.Publish != nil,
+		cliParser:        cliParser,
+		debug:            cliArgs.Debug,
+		multipleMessages: cliArgs.Multiple,
+		payloadSeparator: unescapeString(cliArgs.EndOfMessage),
+		publishHeaders:   cliArgs.Headers,
+	}
+
+	switch cliArgs.File {
+	case "-":
+		if chanOptions.publish {
+			{{goqual "log/slog.Debug"}}("Writing to stdout")
+			chanOptions.stream = {{goqual "os.Stdout"}}
+		} else {
+			{{goqual "log/slog.Debug"}}("Reading from stdin")
+			chanOptions.stream = {{goqual "os.Stdin"}}
+		}
+	case "":
+		showCliError("No file specified", cliParser)
+	default:
+		flag := {{goqual "os.O_CREATE"}} | {{goqual "os.O_WRONLY"}} | {{goqual "os.O_APPEND"}}
+		if chanOptions.publish {
+			flag = {{goqual "os.O_RDONLY"}}
+		}
+		{{goqual "log/slog.Debug"}}("Opening file", "name", cliArgs.File, "flag", {{goqual "fmt.Sprintf"}}("%#x", flag), "mode", {{goqual "fmt.Sprintf"}}("%#o", OutputFileCreateMode))
+		f, err := {{goqual "os.OpenFile"}}(cliArgs.File, flag, OutputFileCreateMode)
+		if err != nil {
+			{{goqual "log/slog.Error"}}(err.Error())
+			{{goqual "os.Exit"}}(1)
+		}
+		defer f.Close()
+		chanOptions.stream = f
+	}
+
+	ctx := {{goqual "context.Background"}}()
+	if cliArgs.RunTimeout > 0 {
+		var cancel {{goqual "context.CancelFunc"}}
+		ctx, cancel = {{goqual "context.WithTimeout"}}(ctx, cliArgs.RunTimeout)
+		defer cancel()
+	}
+
+	var err error
+	switch {
+	{{- range .RenderQueue}}
+		{{- if and (eq .Kind "channel") (visible .)}}
+			case dirCmd.{{. | goid}}Cmd != nil:
+				err = channel{{. | goid}}(ctx, dirCmd.{{. | goid}}Cmd, chanOptions)
+		{{- else if and (eq .Kind "operation") (visible .)}}
+			case dirCmd.{{. | goid}}Cmd != nil:
+				err = operation{{. | goid}}(ctx, dirCmd.{{. | goid}}Cmd, chanOptions)
+		{{- end}}
+	{{- end}}
+	default:
+		showCliError("No channel or operation selected", cliParser)
+	}
+
+	switch {
+	case {{goqual "context.Is"}}(err, {{goqual "context.DeadlineExceeded"}}):
+		{{goqual "log/slog.Warn"}}("Command run timeout exceeded")
+	case err != nil:
+		{{goqual "log/slog.Error"}}(err.Error())
+		{{goqual "os.Exit"}}(1)
+	}
+}
+
+{{- range .RenderQueue}}
+	{{- if and (eq .Kind "channel") (visible .)}}
+		{{template "channel" .}}
+	{{- else if and (eq .Kind "operation") (visible .)}}
+		{{template "operation" .}}
+	{{- end}}
+{{- end}}
+
+{{template "utils.tmpl"}}

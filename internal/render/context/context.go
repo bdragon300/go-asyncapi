@@ -19,6 +19,7 @@ type definable interface {
 }
 
 // TODO: add object path?
+// TODO: join with TemplateContext into one struct?
 type RenderContextImpl struct {
 	RenderOpts     common.RenderOpts
 	CurrentSelectionConfig common.ConfigSelectionItem

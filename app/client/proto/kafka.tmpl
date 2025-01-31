@@ -1,0 +1,37 @@
+{{define "server/kafka/cliMixin"}}
+type KafkaCliMixin struct {
+    MessageKey string `arg:"--kafka-pub-message-key" help:"Set this key in the outgoing message. By default, the message key is not set"`
+}
+{{- end}}
+
+{{define "channel/github.com/twmb/franz-go/setup"}}
+{{- /* .Channel == common.Renderable: Ref -> render.Channel or render.Channel; .Server == common.Renderable: Ref -> render.Server or render.Server */}}
+var clientOptions []{{goqual "github.com/twmb/franz-go/pkg/kgo.Opt"}}
+logLevel := {{goqual "github.com/twmb/franz-go/pkg/kgo.LogLevelNone"}}
+if opts.debug {
+    logLevel = {{goqual "github.com/twmb/franz-go/pkg/kgo.LogLevelDebug"}}
+}
+clientOptions = append(clientOptions, {{goqual "github.com/twmb/franz-go/pkg/kgo.WithLogger"}}({{goqual "github.com/twmb/franz-go/pkg/kgo.BasicLogger"}}({{goqual "os.Stderr"}}, logLevel, nil)))
+{{- end}}
+
+{{define "channel/github.com/twmb/franz-go/producer/connect"}}
+{{- /* .Channel == common.Renderable: Ref -> render.Channel or render.Channel; .Server == common.Renderable: Ref -> render.Server or render.Server */}}
+server, err := {{gopkg .Server.Type}}Connect{{.Server | goid}}Producer(ctx, serverURL, clientOptions...)
+if err != nil {
+    return {{goqual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
+}
+{{- end}}
+
+{{define "channel/github.com/twmb/franz-go/consumer/connect"}}
+{{- /* .Channel == common.Renderable: Ref -> render.Channel or render.Channel; .Server == common.Renderable: Ref -> render.Server or render.Server */}}
+server, err := {{gopkg .Server.Type}}Connect{{.Server | goid}}Consumer(ctx, serverURL, clientOptions...)
+if err != nil {
+    return {{goqual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
+}
+
+{{define "message/github.com/twmb/franz-go/publish"}}
+{{- /* .Channel == common.Renderable: Ref -> render.Channel or render.Channel; .Server == common.Renderable: Ref -> render.Server or render.Server */}}
+if args.{{.Server | goid}}Cmd.MessageKey != "" {
+    envelope.Key = []byte(args.{{.Server | goid}}Cmd.MessageKey)
+}
+{{- end}}

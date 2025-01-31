@@ -23,6 +23,7 @@ func NewTemplateContext(renderContext renderContext, object common.Renderable, i
 }
 
 // TemplateContext is passed as value to the root template on selections processing.
+// TODO: join with TemplateContext into one struct?
 type TemplateContext struct {
 	renderContext renderContext
 	object          common.Renderable
@@ -49,4 +50,22 @@ type ImplTemplateContext struct {
 	Manifest implementations.ImplManifestItem
 	Directory string
 	Package string
+}
+
+func NewAppTemplateContext(renderQueue []common.Renderable, importsProvider importsProvider, activeProtocols []string) *AppTemplateContext {
+	return &AppTemplateContext{
+		RenderQueue:     renderQueue,
+		ActiveProtocols: activeProtocols,
+		importsProvider: importsProvider,
+	}
+}
+
+type AppTemplateContext struct {
+	RenderQueue     []common.Renderable
+	ActiveProtocols []string
+	importsProvider importsProvider
+}
+
+func (t AppTemplateContext) Imports() []common.ImportItem {
+	return t.importsProvider.Imports()
 }
