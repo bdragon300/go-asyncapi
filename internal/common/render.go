@@ -101,30 +101,6 @@ type RenderImplementationsOpts struct {
 	Protocols []ConfigImplementationProtocol
 }
 
-type RenderContext interface {
-	RuntimeModule(subPackage string) string
-
-	QualifiedName(parts ...string) string
-	QualifiedRuntimeName(parts ...string) string
-	QualifiedTypeGeneratedPackage(obj GolangType) (string, error)
-	QualifiedImplementationGeneratedPackage(obj ImplementationObject) (string, error)
-
-	CurrentSelection() ConfigSelectionItem
-	GetObject() CompileObject
-
-	DefineTypeInNamespace(obj GolangType, selection ConfigSelectionItem, actual bool)
-	TypeDefinedInNamespace(obj GolangType) bool
-	DefineNameInNamespace(name string)
-	NameDefinedInNamespace(name string) bool
-	FindImplementationInNamespace(protocol string) (ImplementationObject, bool)
-}
-
-type ImportItem struct {
-	Alias       string
-	PackageName string
-	PackagePath string
-}
-
 type ImplementationObject struct {
 	Manifest implementations.ImplManifestItem
 	Config   ConfigImplementationProtocol

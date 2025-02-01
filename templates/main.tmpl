@@ -1,4 +1,4 @@
-{{- /* dot == tmpl.TemplateContext */}}
+{{- /* dot == tmpl.CodeTemplateContext */}}
 {{- if and (eq .Object.Kind "schema") (visible .Object) }}
     {{- template "schema.tmpl" .Object }}
 

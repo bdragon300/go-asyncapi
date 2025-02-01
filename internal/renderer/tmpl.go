@@ -2,30 +2,26 @@ package renderer
 
 import (
 	"bytes"
-	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
+	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
 	"text/template"
 )
 
-func renderObjectInlineTemplate(item renderQueueItem, opts common.RenderOpts, text string) (string, error) {
-	ctx := &context.RenderContextImpl{
-		RenderOpts:             opts,
-		CurrentSelectionConfig: item.selection,
-		PackageName:            item.selection.Render.Package,  // May be empty string here
-		Imports:                &context.ImportsList{},
-		Object:                 item.object,
+func renderObjectInlineTemplate(item renderQueueItem, text string, mng *manager.TemplateRenderManager) (string, error) {
+	tplCtx := &tmpl.CodeTemplateContext{
+		RenderOpts:       mng.RenderOpts,
+		CurrentSelection: item.selection,
+		PackageName:      item.selection.Render.Package,
+		Object:           item.object.Renderable,
+		ImportsManager:   &mng.ImportsManager,
 	}
-	tmpl.SetContext(ctx)
 
-	tplCtx := tmpl.NewTemplateContext(ctx, item.object.Renderable, ctx.Imports)
-
-	return renderInlineTemplate(text, tplCtx)
+	return renderInlineTemplate(text, tplCtx, mng)
 }
 
-func renderInlineTemplate(text string, tplCtx any) (string, error) {
+func renderInlineTemplate(text string, tplCtx any, renderManager *manager.TemplateRenderManager) (string, error) {
 	var res bytes.Buffer
-	tpl, err := template.New("").Funcs(tmpl.GetTemplateFunctions()).Parse(text)
+	tpl, err := template.New("").Funcs(tmpl.GetTemplateFunctions(renderManager)).Parse(text)
 	if err != nil {
 		return "", err
 	}
@@ -35,22 +31,20 @@ func renderInlineTemplate(text string, tplCtx any) (string, error) {
 	return res.String(), nil
 }
 
-func renderObjectFileTemplate(preambleTpl *template.Template, opts common.RenderOpts, renderState fileRenderState) (*bytes.Buffer, error) {
+func renderPreambleTemplate(tpl *template.Template, mng *manager.TemplateRenderManager) (*bytes.Buffer, error) {
 	var res bytes.Buffer
 
-	ctx := &context.RenderContextImpl{
-		RenderOpts:  opts,
-		PackageName: renderState.packageName,
-		Imports:     &renderState.imports,
+	tplCtx := &tmpl.CodeTemplateContext{
+		RenderOpts:       mng.RenderOpts,
+		PackageName:      mng.PackageName,
+		ImportsManager:   &mng.ImportsManager,
 	}
-	tmpl.SetContext(ctx)
-	tplCtx := tmpl.NewTemplateContext(ctx, nil, &renderState.imports)
 
-	if err := preambleTpl.Execute(&res, tplCtx); err != nil {
+	if err := tpl.Execute(&res, tplCtx); err != nil {
 		return nil, err
 	}
 	res.WriteRune('\n')
-	if _, err := res.Write(renderState.buf.Bytes()); err != nil {
+	if _, err := res.Write(mng.Buffer.Bytes()); err != nil {
 		return nil, err
 	}
 

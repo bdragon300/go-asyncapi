@@ -6,22 +6,14 @@ import (
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/log"
-	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/selector"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
+	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
-	"path"
 	"slices"
 	"unicode"
 )
-
-type fileRenderState struct {
-	imports     context.ImportsList
-	packageName string
-	fileName   string
-	buf        bytes.Buffer
-}
 
 type renderQueueItem struct {
 	selection common.ConfigSelectionItem
@@ -29,12 +21,11 @@ type renderQueueItem struct {
 	err            error
 }
 
-func RenderObjects(objects []common.CompileObject, ns context.RenderNamespace, opts common.RenderOpts) (map[string]*bytes.Buffer, context.RenderNamespace, error) {
+func RenderObjects(objects []common.CompileObject, mng *manager.TemplateRenderManager) error {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
-	filesState := make(map[string]fileRenderState)
 
 	logger.Info("Run objects rendering")
-	queue := buildRenderQueue(objects, opts.Selections)
+	queue := buildRenderQueue(objects, mng.RenderOpts.Selections)
 	var postponed []renderQueueItem
 
 	logger.Info("Objects selected", "objects", len(queue))
@@ -43,9 +34,9 @@ func RenderObjects(objects []common.CompileObject, ns context.RenderNamespace, o
 			logger.Debug("Render", "object", item.object.String())
 
 			logger.Trace("-> Render file name expression", "object", item.object.String(), "template", item.selection.Render.File)
-			fileName, err := renderObjectInlineTemplate(item, opts, item.selection.Render.File)
+			fileName, err := renderObjectInlineTemplate(item, item.selection.Render.File, mng)
 			switch {
-			case errors.Is(err, context.ErrNotDefined):
+			case errors.Is(err, tmpl.ErrNotDefined):
 				// Template can't be rendered right now due to unknown object definition, postpone it
 				postponed = append(postponed, item)
 				logger.Trace(
@@ -54,20 +45,16 @@ func RenderObjects(objects []common.CompileObject, ns context.RenderNamespace, o
 				)
 				continue
 			case err != nil:
-				return nil, ns, err
+				return fmt.Errorf("render file name expression: %w", err)
 			}
 			fileName = utils.NormalizePath(fileName)
 			logger.Trace("-> File", "name", fileName)
 
-			if _, ok := filesState[fileName]; !ok {
-				pkgName, _ := lo.Coalesce(item.selection.Render.Package, utils.GetPackageName(path.Dir(fileName)))
-				filesState[fileName] = fileRenderState{packageName: pkgName, fileName: fileName}
-			}
-
 			logger.Debug("-> Render", "object", item.object.String(), "file", fileName, "template", item.selection.Render.Template)
-			newState, newNs, err := renderObject(item, opts, item.selection.Render.Template, filesState[fileName], ns)
+			mng.BeginObject(item.object.Renderable, item.selection, fileName)
+			err = renderObject(item, item.selection.Render.Template, mng)
 			switch {
-			case errors.Is(err, context.ErrNotDefined):
+			case errors.Is(err, tmpl.ErrNotDefined):
 				// Some objects needed by template code have not been defined and therefore, not in namespace yet.
 				// Postpone this run to the end in hope that next runs will define these objects.
 				item.err = fmt.Errorf("%s: %w", item.object.String(), err)
@@ -78,15 +65,14 @@ func RenderObjects(objects []common.CompileObject, ns context.RenderNamespace, o
 				postponed = append(postponed, item)
 				continue
 			case err != nil:
-				return nil, ns, err
+				return fmt.Errorf("render object: %w", err)
 			}
 
-			logger.Trace("--> Updated file state", "imports", newState.imports.String(), "namespace", newNs.String())
-			ns = newNs
-			filesState[fileName] = newState
+			mng.Commit()
+			logger.Trace("--> Updated file state", "imports", mng.ImportsManager.String(), "namespace", mng.NamespaceManager.String())
 		}
 		if len(postponed) == len(queue) {
-			return nil, ns, fmt.Errorf(
+			return fmt.Errorf(
 				"missed object definitions, please ensure they are defined by `godef` or `def` functions prior using: \n%w",
 				errors.Join(lo.Map(postponed, func(item renderQueueItem, _ int) error { return item.err })...),
 			)
@@ -97,13 +83,7 @@ func RenderObjects(objects []common.CompileObject, ns context.RenderNamespace, o
 		queue, postponed = postponed, nil
 	}
 
-	logger.Debug("Render files", "files", len(filesState))
-	res, err := renderFiles(filesState, opts)
-	if err != nil {
-		return res, ns, err
-	}
-
-	return res, ns, nil
+	return nil
 }
 
 func buildRenderQueue(allObjects []common.CompileObject, selections []common.ConfigSelectionItem) (res []renderQueueItem) {
@@ -120,69 +100,59 @@ func buildRenderQueue(allObjects []common.CompileObject, selections []common.Con
 	return
 }
 
-func renderObject(
-	item renderQueueItem,
-	opts common.RenderOpts,
-	templateName string,
-	fileState fileRenderState,
-	ns context.RenderNamespace,
-) (fileRenderState, context.RenderNamespace, error) {
-	importsCopy := fileState.imports.Clone()
-	nsCopy := ns.Clone()
-
-	ctx := &context.RenderContextImpl{
-		RenderOpts:             opts,
-		CurrentSelectionConfig: item.selection,
-		PackageName:            fileState.packageName,
-		PackageNamespace:       &nsCopy,
-		Imports:                &importsCopy,
-		Object:                 item.object,
+func renderObject(item renderQueueItem, templateName string, mng *manager.TemplateRenderManager) error {
+	importManager := mng.ImportsManager.Clone()
+	tplCtx := &tmpl.CodeTemplateContext{
+		RenderOpts:       mng.RenderOpts,
+		CurrentSelection: item.selection,
+		PackageName:      mng.PackageName,
+		Object:           item.object.Renderable,
+		ImportsManager:   &importManager,
 	}
-	tmpl.SetContext(ctx)
-
-	tplCtx := tmpl.NewTemplateContext(ctx, item.object.Renderable, &importsCopy)
 
 	// Execute the main template first to accumulate imports and other data, that will be rendered in preamble
 	tpl, err := tmpl.LoadTemplate(templateName)
 	if err != nil {
-		return fileState, nsCopy, fmt.Errorf("template %q: %w", templateName, err)
+		return fmt.Errorf("template %q: %w", templateName, err)
 	}
 
 	var res bytes.Buffer
 	if err := tpl.Execute(&res, tplCtx); err != nil {
-		return fileState, nsCopy, err
+		return err
 	}
 
 	// Update the file state if rendering was successful
 	// If item is marked reused from other place, do not update the file state and content, just update the namespace
 	if item.selection.ReusePackagePath == "" {
-		fileState.buf.Write(res.Bytes())
-		fileState.buf.WriteRune('\n') // Separate writes following each other (if any)
-		fileState.imports = importsCopy
+		mng.Buffer.Write(res.Bytes())
+		mng.ImportsManager = importManager
 	}
 
-	return fileState, nsCopy, nil
+	return nil
 }
 
-func renderFiles(files map[string]fileRenderState, opts common.RenderOpts) (map[string]*bytes.Buffer, error) {
-	var res = make(map[string]*bytes.Buffer, len(files))
-	logger := log.GetLogger(log.LoggerPrefixRendering)
+func FinishFiles(mng *manager.TemplateRenderManager) (map[string]*bytes.Buffer, error) {
+	states := mng.AllStates()
 
-	tpl, err := tmpl.LoadTemplate(opts.PreambleTemplate)
+	var res = make(map[string]*bytes.Buffer, len(states))
+	logger := log.GetLogger(log.LoggerPrefixRendering)
+	logger.Debug("Render files", "files", len(states))
+
+	tpl, err := tmpl.LoadTemplate(mng.RenderOpts.PreambleTemplate)
 	if err != nil {
-		return nil, fmt.Errorf("template %q: %w", opts.PreambleTemplate, err)
+		return nil, fmt.Errorf("template %q: %w", mng.RenderOpts.PreambleTemplate, err)
 	}
 
-	keys := lo.Keys(files)
+	keys := lo.Keys(states)
 	slices.Sort(keys)
 	for _, fileName := range keys {
-		state := files[fileName]
-		logger.Debug("Render file", "file", fileName, "package", state.packageName, "imports", state.imports.String())
-		if !bytes.ContainsFunc(state.buf.Bytes(), unicode.IsLetter) {
+		state := states[fileName]
+		logger.Debug("Render file", "file", fileName, "package", state.PackageName, "imports", state.Imports.String())
+		if !bytes.ContainsFunc(state.Buffer.Bytes(), unicode.IsLetter) {
 			logger.Debug("-> Skip empty file", "file", fileName)
 			continue
 		}
-		b, err := renderObjectFileTemplate(tpl, opts, state)
+		b, err := renderPreambleTemplate(tpl, mng)
 		if err != nil {
 			return nil, err
 		}

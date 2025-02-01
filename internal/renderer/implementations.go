@@ -6,15 +6,15 @@ import (
 	"github.com/bdragon300/go-asyncapi/implementations"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/log"
-	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
+	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 	"io/fs"
 	"path"
 )
 
-func RenderImplementations(objects []common.ImplementationObject, ns context.RenderNamespace) (map[string]*bytes.Buffer, context.RenderNamespace, error) {
+func RenderImplementations(objects []common.ImplementationObject, mng *manager.TemplateRenderManager) error {
 	res := make(map[string]*bytes.Buffer)
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 	//TODO: logging
@@ -27,9 +27,9 @@ func RenderImplementations(objects []common.ImplementationObject, ns context.Ren
 		}
 
 		ctx := tmpl.ImplTemplateContext{Package: obj.Config.Package, Manifest: obj.Manifest}
-		directory, err := renderInlineTemplate(obj.Config.Directory, ctx)
+		directory, err := renderInlineTemplate(obj.Config.Directory, ctx, mng)
 		if err != nil {
-			return nil, ns, fmt.Errorf("render directory expression: %w", err)
+			return fmt.Errorf("render directory expression: %w", err)
 		}
 		directory = path.Clean(directory)
 
@@ -40,22 +40,21 @@ func RenderImplementations(objects []common.ImplementationObject, ns context.Ren
 		templateFiles := lo.Must(fs.Glob(implementations.ImplementationFS, tplFileGlob))
 		for _, templateFile := range templateFiles {
 			logger.Debug("-> Render file", "file", templateFile)
-			tpl := tmpl.ParseTemplate(implementations.ImplementationFS, templateFile)
+			tpl := tmpl.ParseTemplate(implementations.ImplementationFS, templateFile, mng)
 			var buf bytes.Buffer
 			if err := tpl.ExecuteTemplate(&buf, path.Base(templateFile), ctx); err != nil {
-				return nil, ns, fmt.Errorf("execute template %q: %w", templateFile, err)
+				return fmt.Errorf("execute template %q: %w", templateFile, err)
 			}
 			if _, ok := res[templateFile]; ok {
-				return nil, ns, fmt.Errorf("duplicate file %q", path.Base(templateFile))
+				return fmt.Errorf("duplicate file %q", path.Base(templateFile))
 			}
 
 			fileName := utils.NormalizePath(path.Join(directory, path.Base(templateFile)))
 			res[fileName] = &buf
 		}
 
-
-		ns.AddImplementation(obj, directory)
+		mng.AddImplementation(obj, directory)
 	}
 
-	return res, ns, nil
+	return nil
 }

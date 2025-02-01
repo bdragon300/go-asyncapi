@@ -3,6 +3,7 @@ package tmpl
 import (
 	"errors"
 	"github.com/bdragon300/go-asyncapi/internal/log"
+	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
 	"github.com/bdragon300/go-asyncapi/templates"
 	"github.com/samber/lo"
 	"io/fs"
@@ -27,21 +28,21 @@ func LoadTemplate(name string) (*template.Template, error) {
 	return nil, ErrTemplateNotFound
 }
 
-func ParseTemplates(customDirectory string) {
-	builtinTemplate = parseTemplateFiles(MainTemplateName, customDirectory)
+func ParseTemplates(customDirectory string, renderManager *manager.TemplateRenderManager) {
+	builtinTemplate = parseTemplateFiles(MainTemplateName, customDirectory, renderManager)
 }
 
-func ParseTemplate(fs fs.FS,filePath string) *template.Template {
+func ParseTemplate(fs fs.FS, filePath string, renderManager *manager.TemplateRenderManager) *template.Template {
 	return template.Must(
-		template.New(MainTemplateName).Funcs(GetTemplateFunctions()).ParseFS(fs, filePath),
+		template.New(MainTemplateName).Funcs(GetTemplateFunctions(renderManager)).ParseFS(fs, filePath),
 	)
 }
 
-func parseTemplateFiles(name, customDirectory string) *template.Template {
+func parseTemplateFiles(name, customDirectory string, renderManager *manager.TemplateRenderManager) *template.Template {
 	logger := log.GetLogger("")
 
 	res := template.Must(
-		template.New(name).Funcs(GetTemplateFunctions()).ParseFS(templates.TemplateFS, "*/*/*.tmpl", "*/*.tmpl", "*.tmpl"),
+		template.New(name).Funcs(GetTemplateFunctions(renderManager)).ParseFS(templates.TemplateFS, "*/*/*.tmpl", "*/*.tmpl", "*.tmpl"),
 	)
 	if customDirectory == "" {
 		return res

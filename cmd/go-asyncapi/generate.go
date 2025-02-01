@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/render"
-	"github.com/bdragon300/go-asyncapi/internal/render/context"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
+	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
 	"github.com/bdragon300/go-asyncapi/internal/writer"
 	"gopkg.in/yaml.v3"
 	"io"
@@ -94,7 +94,8 @@ func generate(cmd *GenerateCmd) error {
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
 	}
-	tmpl.ParseTemplates(mergedConfig.Directories.Templates)
+	renderManager := manager.NewTemplateRenderManager(renderOpts)
+	tmpl.ParseTemplates(mergedConfig.Directories.Templates, renderManager)
 
 	//
 	// Compilation
@@ -119,7 +120,6 @@ func generate(cmd *GenerateCmd) error {
 	// Rendering
 	//
 	// Implementations
-	var ns context.RenderNamespace
 	var files map[string]*bytes.Buffer
 
 	implementationOpts := getImplementationOpts(mergedConfig.Implementations)
@@ -140,18 +140,23 @@ func generate(cmd *GenerateCmd) error {
 		if err != nil {
 			return fmt.Errorf("getting implementations: %w", err)
 		}
-		if files, ns, err = renderer.RenderImplementations(implObjects, ns); err != nil {
+		if err = renderer.RenderImplementations(implObjects, renderManager); err != nil {
 			return fmt.Errorf("render implementations: %w", err)
 		}
+		renderManager.Commit()
 	}
 
 	// Module objects
 	allObjects := lo.FlatMap(lo.Values(modules), func(m *compiler.Module, _ int) []common.CompileObject { return m.AllObjects() })
-	f, ns, err := renderer.RenderObjects(allObjects, ns, renderOpts)
-	if err != nil {
+	if err := renderer.RenderObjects(allObjects, renderManager); err != nil {
 		return fmt.Errorf("render objects: %w", err)
 	}
-	files = lo.Assign(files, f)
+	// Render preamble, filtering out the empty files, etc.
+	buffers, err := renderer.FinishFiles(renderManager)
+	if err != nil {
+		return fmt.Errorf("finish files: %w", err)
+	}
+	files = lo.Assign(files, buffers)
 
 	//
 	// Formatting

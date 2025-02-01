@@ -1,49 +1,30 @@
 package tmpl
 
 import (
+	"errors"
 	"github.com/bdragon300/go-asyncapi/implementations"
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
 )
 
-type renderContext interface {
-	CurrentSelection() common.ConfigSelectionItem
-	Package() string
+// ErrNotDefined is returned when the package location where the object is defined is not known yet.
+var ErrNotDefined = errors.New("not defined")
+
+type importsManager interface {
+	Imports() []manager.ImportItem
+	AddImport(importPath string, pkgName string) string
 }
 
-type importsProvider interface {
-	Imports() []common.ImportItem
+type CodeTemplateContext struct {
+	RenderOpts       common.RenderOpts
+	CurrentSelection common.ConfigSelectionItem
+	PackageName      string
+	Object         common.Renderable
+	ImportsManager importsManager
 }
 
-func NewTemplateContext(renderContext renderContext, object common.Renderable, importsProvider importsProvider) *TemplateContext {
-	return &TemplateContext{
-		renderContext:   renderContext,
-		importsProvider: importsProvider,
-		object:          object,
-	}
-}
-
-// TemplateContext is passed as value to the root template on selections processing.
-// TODO: join with TemplateContext into one struct?
-type TemplateContext struct {
-	renderContext renderContext
-	object          common.Renderable
-	importsProvider importsProvider
-}
-
-func (t TemplateContext) Imports() []common.ImportItem {
-	return t.importsProvider.Imports()
-}
-
-func (t TemplateContext) PackageName() string {
-	return t.renderContext.Package()
-}
-
-func (t TemplateContext) CurrentSelection() common.ConfigSelectionItem {
-	return t.renderContext.CurrentSelection()
-}
-
-func (t TemplateContext) Object() common.Renderable {
-	return t.object
+func (t CodeTemplateContext) Imports() []manager.ImportItem {
+	return t.ImportsManager.Imports()
 }
 
 type ImplTemplateContext struct {
@@ -52,20 +33,12 @@ type ImplTemplateContext struct {
 	Package string
 }
 
-func NewAppTemplateContext(renderQueue []common.Renderable, importsProvider importsProvider, activeProtocols []string) *AppTemplateContext {
-	return &AppTemplateContext{
-		RenderQueue:     renderQueue,
-		ActiveProtocols: activeProtocols,
-		importsProvider: importsProvider,
-	}
-}
-
 type AppTemplateContext struct {
 	RenderQueue     []common.Renderable
 	ActiveProtocols []string
-	importsProvider importsProvider
+	ImportsManager  importsManager
 }
 
-func (t AppTemplateContext) Imports() []common.ImportItem {
-	return t.importsProvider.Imports()
+func (t AppTemplateContext) Imports() []manager.ImportItem {
+	return t.ImportsManager.Imports()
 }
