@@ -1,7 +1,6 @@
 package renderer
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/implementations"
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -15,7 +14,6 @@ import (
 )
 
 func RenderImplementations(objects []common.ImplementationObject, mng *manager.TemplateRenderManager) error {
-	res := make(map[string]*bytes.Buffer)
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 	//TODO: logging
 
@@ -31,7 +29,6 @@ func RenderImplementations(objects []common.ImplementationObject, mng *manager.T
 		if err != nil {
 			return fmt.Errorf("render directory expression: %w", err)
 		}
-		directory = path.Clean(directory)
 
 		pkgName, _ := lo.Coalesce(obj.Config.Package, utils.GetPackageName(directory))
 		ctx = tmpl.ImplTemplateContext{Directory: directory, Package: pkgName, Manifest: obj.Manifest}
@@ -39,22 +36,21 @@ func RenderImplementations(objects []common.ImplementationObject, mng *manager.T
 		tplFileGlob := path.Join(obj.Manifest.Dir, "*.tmpl")
 		templateFiles := lo.Must(fs.Glob(implementations.ImplementationFS, tplFileGlob))
 		for _, templateFile := range templateFiles {
+			fileName := utils.NormalizePath(path.Join(directory, path.Base(templateFile)))
+			mng.BeginFile(fileName, pkgName)
+
 			logger.Debug("-> Render file", "file", templateFile)
 			tpl := tmpl.ParseTemplate(implementations.ImplementationFS, templateFile, mng)
-			var buf bytes.Buffer
-			if err := tpl.ExecuteTemplate(&buf, path.Base(templateFile), ctx); err != nil {
+			if err := tpl.ExecuteTemplate(mng.Buffer, path.Base(templateFile), ctx); err != nil {
 				return fmt.Errorf("execute template %q: %w", templateFile, err)
 			}
-			if _, ok := res[templateFile]; ok {
-				return fmt.Errorf("duplicate file %q", path.Base(templateFile))
-			}
-
-			fileName := utils.NormalizePath(path.Join(directory, path.Base(templateFile)))
-			res[fileName] = &buf
+			mng.Commit()
 		}
 
 		mng.AddImplementation(obj, directory)
+		mng.Commit()
 	}
+
 
 	return nil
 }

@@ -50,8 +50,8 @@ func (s *NamespaceManager) FindName(name string) bool {
 	return lo.Contains(s.names, name)
 }
 
-func (s *NamespaceManager) Clone() NamespaceManager {
-	return NamespaceManager{
+func (s *NamespaceManager) Clone() *NamespaceManager {
+	return &NamespaceManager{
 		types:               slices.Clone(s.types),
 		names:               slices.Clone(s.names),
 	}

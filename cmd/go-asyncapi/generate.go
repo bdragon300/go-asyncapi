@@ -143,7 +143,6 @@ func generate(cmd *GenerateCmd) error {
 		if err = renderer.RenderImplementations(implObjects, renderManager); err != nil {
 			return fmt.Errorf("render implementations: %w", err)
 		}
-		renderManager.Commit()
 	}
 
 	// Module objects

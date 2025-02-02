@@ -12,7 +12,6 @@ var ErrNotDefined = errors.New("not defined")
 
 type importsManager interface {
 	Imports() []manager.ImportItem
-	AddImport(importPath string, pkgName string) string
 }
 
 type CodeTemplateContext struct {
@@ -21,10 +20,6 @@ type CodeTemplateContext struct {
 	PackageName      string
 	Object         common.Renderable
 	ImportsManager importsManager
-}
-
-func (t CodeTemplateContext) Imports() []manager.ImportItem {
-	return t.ImportsManager.Imports()
 }
 
 type ImplTemplateContext struct {
@@ -39,6 +34,3 @@ type AppTemplateContext struct {
 	ImportsManager  importsManager
 }
 
-func (t AppTemplateContext) Imports() []manager.ImportItem {
-	return t.ImportsManager.Imports()
-}

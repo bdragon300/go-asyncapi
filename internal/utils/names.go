@@ -143,9 +143,9 @@ func normalizePathItem(name string) string {
 	return lo.SnakeCase(newString)
 }
 
-func GetPackageName(pkgPath string) string {
-	pkgPath = path.Clean(pkgPath)
-	_, pkgName := path.Split(pkgPath)
+func GetPackageName(directory string) string {
+	directory = path.Clean(directory)
+	_, pkgName := path.Split(directory)
 
 	if pkgName == "" || pkgName == "." {
 		return defaultPackage

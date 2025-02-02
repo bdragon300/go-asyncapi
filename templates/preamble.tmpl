@@ -3,7 +3,7 @@
 
 package {{ .PackageName }}
 
-{{- with .Imports }}
+{{- with .ImportsManager.Imports }}
 import (
 {{- range . }}
     {{ if .Alias }}{{ .Alias }} {{ end }}"{{ .PackagePath }}"

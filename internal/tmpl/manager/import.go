@@ -6,6 +6,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 	"go/token"
+	"maps"
 	"slices"
 	"strings"
 )
@@ -59,8 +60,8 @@ func (s *ImportsManager) AddImport(importPath string, pkgName string) string {
 	return pkgName
 }
 
-func (s *ImportsManager) Clone() ImportsManager {
-	return ImportsManager{items: lo.Assign(s.items)}
+func (s *ImportsManager) Clone() *ImportsManager {
+	return &ImportsManager{items: maps.Clone(s.items)}
 }
 
 func (s *ImportsManager) String() string {

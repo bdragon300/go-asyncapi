@@ -83,7 +83,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			}
 			return &lang.GoPointer{Type: val}, nil
 		},
-		"impl": func(protocol string) *common.ImplementationObject {  // TODO: replate to 'ctx' function
+		"impl": func(protocol string) *common.ImplementationObject {
 			impl, found := lo.Find(renderManager.Implementations, func(def manager.ImplementationItem) bool {
 				return def.Object.Manifest.Protocol == protocol
 			})
@@ -133,6 +133,9 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		},
 
 		// Other
+		"correlationIDExtractionCode": func(c *render.CorrelationID, varStruct *lang.GoStruct, addValidationCode bool) (items []correlationIDExtractionStep, err error) {
+			return templateCorrelationIDExtractionCode(renderManager, c, varStruct, addValidationCode)
+		},
 		"debug": func(args ...any) string {
 			logger := log.GetLogger(log.LoggerPrefixRendering)
 			for _, arg := range args {
