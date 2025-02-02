@@ -28,6 +28,7 @@ server, err := {{gopkg .Server.Type}}Connect{{.Server | goid}}Consumer(ctx, serv
 if err != nil {
     return {{goqual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
 }
+{{- end}}
 
 {{define "message/github.com/twmb/franz-go/publish"}}
 {{- /* .Channel == common.Renderable: Ref -> render.Channel or render.Channel; .Server == common.Renderable: Ref -> render.Server or render.Server */}}

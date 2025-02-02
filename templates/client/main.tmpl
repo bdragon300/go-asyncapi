@@ -7,7 +7,7 @@ const (
 )
 
 {{- range .ActiveProtocols}}
-{{tmpl (print "server/" . "/cliMixin") $}}
+{{trytmpl (print "server/" . "/cliMixin") $}}
 {{- end}}
 
 type MainCli struct {
@@ -36,7 +36,7 @@ type DirectionCliCmd struct {
 {{- range .RenderQueue}}
 	{{- if and (eq .Kind "server") (visible .)}}
 		type {{. | goid}}CliCmd struct {
-			{{with trytmpl (print "server/" (. | deref | .Protocol) "/cliMixin") .}}{{. | deref | .Protocol | goid}}CliMixin{{end}}
+			{{if trytmpl (print "server/" ((deref .).Protocol) "/cliMixin") .}}{{(deref .).Protocol | goid}}CliMixin{{end}}
 
 			// Server variables
 			{{- range .Variables.Entries}}
