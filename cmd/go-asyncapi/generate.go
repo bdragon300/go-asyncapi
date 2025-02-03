@@ -1,15 +1,18 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/render"
+	"github.com/bdragon300/go-asyncapi/internal/selector"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
 	"github.com/bdragon300/go-asyncapi/internal/writer"
+	"github.com/bdragon300/go-asyncapi/templates/client"
+	templates "github.com/bdragon300/go-asyncapi/templates/code"
 	"gopkg.in/yaml.v3"
 	"io"
+	"io/fs"
 	"os"
 	"path"
 	"slices"
@@ -46,6 +49,7 @@ import (
 
 const (
 	defaultConfigFileName = "default_config.yaml"
+	mainTemplateName = "main.tmpl"
 )
 
 type GenerateCmd struct {
@@ -65,6 +69,7 @@ type generatePubSubArgs struct {
 	PreambleTemplate string `arg:"--preamble-template" help:"Custom preamble template name" placeholder:"NAME"`
 	DisableFormatting bool `arg:"--disable-formatting" help:"Disable code formatting"`
 	AllowRemoteRefs bool `arg:"--allow-remote-refs" help:"Allow fetching spec files from remote $ref URLs"`
+	ClientApp bool `arg:"--client-app" help:"Generate a client application code as well"`
 
 	RuntimeModule       string        `arg:"--runtime-module" help:"Runtime module name" placeholder:"MODULE"`
 	ResolverSearchDir   string        `arg:"--resolver-search-dir" help:"Directory to search the local spec files for [default: current working directory]" placeholder:"PATH"`
@@ -95,7 +100,6 @@ func generate(cmd *GenerateCmd) error {
 		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
 	}
 	renderManager := manager.NewTemplateRenderManager(renderOpts)
-	tmpl.ParseTemplates(mergedConfig.Directories.Templates, renderManager)
 
 	//
 	// Compilation
@@ -119,16 +123,17 @@ func generate(cmd *GenerateCmd) error {
 	//
 	// Rendering
 	//
-	// Implementations
-	var files map[string]*bytes.Buffer
+	mainModule := modules[specURL.SpecID]
+	activeProtocols := collectActiveProtocols(mainModule.AllObjects())
 
+	// Implementations
+	// TODO: logging
 	implementationOpts := getImplementationOpts(mergedConfig.Implementations)
 	if !implementationOpts.Disable {
-		// TODO: logging
-		mainModule := modules[specURL.SpecID]
-		activeProtocols := collectActiveProtocols(mainModule.AllObjects())
-		supportedProtocols := lo.Keys(asyncapi.ProtocolBuilders)
+		tplLoader := tmpl.NewTemplateLoader(mainTemplateName, implementations.ImplementationFS)
+		renderManager.TemplateLoader = tplLoader
 
+		supportedProtocols := lo.Keys(asyncapi.ProtocolBuilders)
 		protocols := lo.Intersect(supportedProtocols, activeProtocols)
 		if len(protocols) < len(activeProtocols) {
 			logger.Warn("Some protocols have no implementations", "protocols", lo.Without(activeProtocols, protocols...))
@@ -146,21 +151,48 @@ func generate(cmd *GenerateCmd) error {
 	}
 
 	// Module objects
+	// TODO: logging
+	templateDirs := []fs.FS{templates.TemplateFS}
+	if mergedConfig.Directories.Templates != "" {
+		templateDirs = append(templateDirs, os.DirFS(mergedConfig.Directories.Templates))
+	}
+	tplLoader := tmpl.NewTemplateLoader(mainTemplateName, templateDirs...)
+	renderManager.TemplateLoader = tplLoader
+	if err = tplLoader.ParseRecursive(renderManager); err != nil {
+		return fmt.Errorf("parse templates: %w", err)
+	}
 	allObjects := lo.FlatMap(lo.Values(modules), func(m *compiler.Module, _ int) []common.CompileObject { return m.AllObjects() })
-	if err := renderer.RenderObjects(allObjects, renderManager); err != nil {
+	renderQueue := buildRenderQueue(allObjects, renderOpts.Selections)
+	if err = renderer.RenderObjects(renderQueue, renderManager); err != nil {
 		return fmt.Errorf("render objects: %w", err)
 	}
-	// Render preamble, filtering out the empty files, etc.
-	buffers, err := renderer.FinishFiles(renderManager)
+
+	// Client app
+	// TODO: logging
+	if pubSubOpts.ClientApp {
+		dirs := append(templateDirs, client.TemplateFS)
+		tplLoader = tmpl.NewTemplateLoader(mainTemplateName, dirs...)
+		renderManager.TemplateLoader = tplLoader
+		if err = tplLoader.ParseRecursive(renderManager); err != nil {
+			return fmt.Errorf("parse templates: %w", err)
+		}
+		if err = renderer.RenderClientApp(renderQueue, activeProtocols, renderManager); err != nil {
+			return fmt.Errorf("render client app: %w", err)
+		}
+	}
+
+	// Render the final result: preamble, etc.
+	// TODO: logging
+	files, err := renderer.FinishFiles(renderManager)
 	if err != nil {
 		return fmt.Errorf("finish files: %w", err)
 	}
-	files = lo.Assign(files, buffers)
 
 	//
 	// Formatting
 	//
 	if !renderOpts.DisableFormatting {
+		// TODO: logging
 		if err = writer.FormatFiles(files); err != nil {
 			return fmt.Errorf("formatting: %w", err)
 		}
@@ -169,6 +201,7 @@ func generate(cmd *GenerateCmd) error {
 	//
 	// Writing
 	//
+	// TODO: logging
 	if err = writer.WriteBuffersToFiles(files, mergedConfig.Directories.Target); err != nil {
 		return fmt.Errorf("writing: %w", err)
 	}
@@ -281,7 +314,6 @@ func getRenderOpts(conf toolConfig, targetDir string) (common.RenderOpts, error)
 
 	// Selections
 	for _, item := range conf.Selections {
-		templateName, _ := lo.Coalesce(item.Render.Template, tmpl.MainTemplateName)
 		sel := common.ConfigSelectionItem{
 			Protocols:        item.Protocols,
 			ObjectKinds:     item.ObjectKinds,
@@ -289,7 +321,7 @@ func getRenderOpts(conf toolConfig, targetDir string) (common.RenderOpts, error)
 			PathRe:           item.PathRe,
 			NameRe: item.NameRe,
 			Render: common.ConfigSelectionItemRender{
-				Template:         templateName,
+				Template:         item.Render.Template,
 				File:             item.Render.File,
 				Package:          item.Render.Package,
 				Protocols:        item.Render.Protocols,
@@ -337,6 +369,20 @@ func getImplementationOpts(conf toolConfigImplementations) common.RenderImplemen
 			}
 		}),
 	}
+}
+
+func buildRenderQueue(allObjects []common.CompileObject, selections []common.ConfigSelectionItem) (res []renderer.RenderQueueItem) {
+	logger := log.GetLogger(log.LoggerPrefixRendering)
+
+	for _, selection := range selections {
+		logger.Debug("Select objects", "selection", selection)
+		selectedObjects := selector.SelectObjects(allObjects, selection)
+		for _, obj := range selectedObjects {
+			logger.Debug("-> Selected", "object", obj)
+			res = append(res, renderer.RenderQueueItem{Selection: selection, Object: obj})
+		}
+	}
+	return
 }
 
 func getProjectModule() (string, error) {
@@ -466,7 +512,7 @@ func generationLinking(objSources map[string]linker.ObjectSource) error {
 			return p.Origin() == common.PromiseOriginUser
 		})
 	})
-	logger.Info("Linking completed", "refs", refsCount)
+	logger.Info("Linking complete", "refs", refsCount)
 	return nil
 }
 

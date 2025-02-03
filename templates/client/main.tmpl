@@ -7,7 +7,7 @@ const (
 )
 
 {{- range .ActiveProtocols}}
-{{trytmpl (print "server/" . "/cliMixin") $}}
+{{trytmpl (print "clientApp/server/" . "/cliMixin") $}}
 {{- end}}
 
 type MainCli struct {
@@ -24,7 +24,7 @@ type MainCli struct {
 }
 
 type DirectionCliCmd struct {
-{{- range .RenderQueue}}
+{{- range .Objects}}
 	{{- if and (eq .Kind "channel") (visible .)}}
 		{{ . | goid }}Cmd *{{ . | goid }}Cmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Channel: {{.Name | toQuotable}}"`
 	{{- else if and (eq .Kind "operation") (visible .)}}
@@ -33,10 +33,10 @@ type DirectionCliCmd struct {
 {{- end}}
 }
 
-{{- range .RenderQueue}}
+{{- range .Objects}}
 	{{- if and (eq .Kind "server") (visible .)}}
 		type {{. | goid}}CliCmd struct {
-			{{if trytmpl (print "server/" ((deref .).Protocol) "/cliMixin") .}}{{(deref .).Protocol | goid}}CliMixin{{end}}
+			{{if trytmpl (print "clientApp/server/" ((deref .).Protocol) "/cliMixin") .}}{{(deref .).Protocol | goid}}CliMixin{{end}}
 
 			// Server variables
 			{{- range .Variables.Entries}}
@@ -50,7 +50,7 @@ type DirectionCliCmd struct {
 			{{- end}}
 
 			// Other
-			URL  *{{goqual "url.URL"}} `arg:"--url" help:"Override server URL"`
+			URL  *{{goqual "net/url.URL"}} `arg:"--url" help:"Override server URL"`
 		}
 	{{- end}}
 {{- end}}
@@ -84,7 +84,7 @@ func main() {
 	case cliArgs.Publish != nil:
 		dirCmd = cliArgs.Publish
 	default:
-		showCliError("No direction selected", cliParser)
+		showCliError("No direction selected. Append --help for more information", cliParser)
 	}
 
 	chanOptions := channelOptions{
@@ -106,7 +106,7 @@ func main() {
 			chanOptions.stream = {{goqual "os.Stdin"}}
 		}
 	case "":
-		showCliError("No file specified", cliParser)
+		showCliError("No file specified. Append --help for more information", cliParser)
 	default:
 		flag := {{goqual "os.O_CREATE"}} | {{goqual "os.O_WRONLY"}} | {{goqual "os.O_APPEND"}}
 		if chanOptions.publish {
@@ -131,7 +131,7 @@ func main() {
 
 	var err error
 	switch {
-	{{- range .RenderQueue}}
+	{{- range .Objects}}
 		{{- if and (eq .Kind "channel") (visible .)}}
 			case dirCmd.{{. | goid}}Cmd != nil:
 				err = channel{{. | goid}}(ctx, dirCmd.{{. | goid}}Cmd, chanOptions)
@@ -141,23 +141,25 @@ func main() {
 		{{- end}}
 	{{- end}}
 	default:
-		showCliError("No channel or operation selected", cliParser)
+		showCliError("No channel or operation selected. Append --help for more information", cliParser)
 	}
 
 	switch {
-	case {{goqual "context.Is"}}(err, {{goqual "context.DeadlineExceeded"}}):
-		{{goqual "log/slog.Warn"}}("Command run timeout exceeded")
+	case {{goqual "errors.Is"}}(err, {{goqual "context.DeadlineExceeded"}}):
+		{{goqual "log/slog.Warn"}}("Running timeout exceeded", "err", err)
 	case err != nil:
 		{{goqual "log/slog.Error"}}(err.Error())
 		{{goqual "os.Exit"}}(1)
+	case {{goqual "errors.Is"}}(ctx.Err(), {{goqual "context.DeadlineExceeded"}}):
+		{{goqual "log/slog.Warn"}}("Running timeout exceeded")
 	}
 }
 
-{{- range .RenderQueue}}
+{{- range .Objects}}
 	{{- if and (eq .Kind "channel") (visible .)}}
-		{{template "channel" .}}
+		{{template "clientApp/channel" .}}
 	{{- else if and (eq .Kind "operation") (visible .)}}
-		{{template "operation" .}}
+		{{template "clientApp/operation" .}}
 	{{- end}}
 {{- end}}
 

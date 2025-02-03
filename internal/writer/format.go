@@ -28,6 +28,6 @@ func FormatFiles(files map[string]*bytes.Buffer) error {
 		logger.Debug("-> File formatted", "name", fileName, "bytes", buf.Len())
 	}
 
-	logger.Info("Formatting completed", "files", len(files))
+	logger.Info("Formatting complete", "files", len(files))
 	return nil
 }

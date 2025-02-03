@@ -106,13 +106,13 @@ func JoinNonemptyStrings(sep string, s ...string) string {
 	return strings.Join(lo.Compact(s), sep)
 }
 
-func NormalizePath(rawPath string) string {
-	if rawPath == "" {
+func ToGoFilePath(pathString string) string {
+	if pathString == "" {
 		hsh := md5.New()
-		return "empty" + normalizePathItem(base32.StdEncoding.EncodeToString(hsh.Sum([]byte(rawPath))))
+		return "empty" + normalizePathItem(base32.StdEncoding.EncodeToString(hsh.Sum([]byte(pathString))))
 	}
 
-	directory, file := path.Split(path.Clean(rawPath))
+	directory, file := path.Split(path.Clean(pathString))
 	if directory != "" {
 		dirs := strings.Split(path.Clean(directory), string(os.PathSeparator))
 		normDirs := lo.Map(dirs, func(s string, _ int) string {

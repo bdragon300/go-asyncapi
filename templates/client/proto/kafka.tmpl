@@ -1,11 +1,15 @@
-{{define "server/kafka/cliMixin"}}
+{{define "clientApp/server/kafka/cliMixin"}}
 type KafkaCliMixin struct {
     MessageKey string `arg:"--kafka-pub-message-key" help:"Set this key in the outgoing message. By default, the message key is not set"`
 }
 {{- end}}
 
-{{define "channel/github.com/twmb/franz-go/setup"}}
-{{- /* .Channel == common.Renderable: Ref -> render.Channel or render.Channel; .Server == common.Renderable: Ref -> render.Server or render.Server */}}
+{{- /*
+    .ChannelOrOperation == common.Renderable: Ref -> render.Channel or render.Channel or render.Operation or render.Operation;
+    .Server == common.Renderable: Ref -> render.Server or render.Server
+    .Kind == "channel" or "operation"
+    */}}
+{{define "clientApp/channeloperation/kafka/github.com/twmb/franz-go/setup"}}
 var clientOptions []{{goqual "github.com/twmb/franz-go/pkg/kgo.Opt"}}
 logLevel := {{goqual "github.com/twmb/franz-go/pkg/kgo.LogLevelNone"}}
 if opts.debug {
@@ -14,24 +18,21 @@ if opts.debug {
 clientOptions = append(clientOptions, {{goqual "github.com/twmb/franz-go/pkg/kgo.WithLogger"}}({{goqual "github.com/twmb/franz-go/pkg/kgo.BasicLogger"}}({{goqual "os.Stderr"}}, logLevel, nil)))
 {{- end}}
 
-{{define "channel/github.com/twmb/franz-go/producer/connect"}}
-{{- /* .Channel == common.Renderable: Ref -> render.Channel or render.Channel; .Server == common.Renderable: Ref -> render.Server or render.Server */}}
-server, err := {{gopkg .Server.Type}}Connect{{.Server | goid}}Producer(ctx, serverURL, clientOptions...)
+{{define "clientApp/channeloperation/kafka/github.com/twmb/franz-go/producer/connect"}}
+server, err := {{gopkg (deref .Server).ProtoServer.Type}}Connect{{.Server | goid}}Producer(ctx, serverURL, clientOptions...)
 if err != nil {
     return {{goqual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
 }
 {{- end}}
 
-{{define "channel/github.com/twmb/franz-go/consumer/connect"}}
-{{- /* .Channel == common.Renderable: Ref -> render.Channel or render.Channel; .Server == common.Renderable: Ref -> render.Server or render.Server */}}
-server, err := {{gopkg .Server.Type}}Connect{{.Server | goid}}Consumer(ctx, serverURL, clientOptions...)
+{{define "clientApp/channeloperation/kafka/github.com/twmb/franz-go/consumer/connect"}}
+server, err := {{gopkg (deref .Server).ProtoServer.Type}}Connect{{.Server | goid}}Consumer(ctx, serverURL, clientOptions...)
 if err != nil {
     return {{goqual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
 }
 {{- end}}
 
-{{define "message/github.com/twmb/franz-go/publish"}}
-{{- /* .Channel == common.Renderable: Ref -> render.Channel or render.Channel; .Server == common.Renderable: Ref -> render.Server or render.Server */}}
+{{define "clientApp/message/kafka/github.com/twmb/franz-go/publish"}}
 if args.{{.Server | goid}}Cmd.MessageKey != "" {
     envelope.Key = []byte(args.{{.Server | goid}}Cmd.MessageKey)
 }

@@ -7,17 +7,23 @@ import (
 	"github.com/samber/lo"
 	"path"
 	"slices"
+	"text/template"
 )
 
 func NewTemplateRenderManager(opts common.RenderOpts) *TemplateRenderManager {
 	return &TemplateRenderManager{
 		RenderOpts: opts,
-		stateCommitted: make(map[string]FileRenderState),
 		Buffer: new(bytes.Buffer),
 		ImportsManager: new(ImportsManager),
 		NamespaceManager: new(NamespaceManager),
+		stateCommitted: make(map[string]FileRenderState),
 		namespaceCommitted: new(NamespaceManager),
 	}
+}
+
+type templateLoader interface {
+	LoadTemplate(name string) (*template.Template, error)
+	LoadRootTemplate() (*template.Template, error)
 }
 
 type TemplateRenderManager struct {
@@ -32,6 +38,7 @@ type TemplateRenderManager struct {
 
 	ImportsManager  *ImportsManager
 	NamespaceManager *NamespaceManager
+	TemplateLoader templateLoader
 	Implementations  []ImplementationItem
 
 	stateCommitted           map[string]FileRenderState

@@ -20,7 +20,7 @@ func FinishFiles(mng *manager.TemplateRenderManager) (map[string]*bytes.Buffer, 
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 	logger.Debug("Render files", "files", len(states))
 
-	tpl, err := tmpl.LoadTemplate(mng.RenderOpts.PreambleTemplate)
+	tpl, err := mng.TemplateLoader.LoadTemplate(mng.RenderOpts.PreambleTemplate)
 	if err != nil {
 		return nil, fmt.Errorf("template %q: %w", mng.RenderOpts.PreambleTemplate, err)
 	}
@@ -47,12 +47,12 @@ func FinishFiles(mng *manager.TemplateRenderManager) (map[string]*bytes.Buffer, 
 	return res, nil
 }
 
-func renderObjectInlineTemplate(item renderQueueItem, text string, mng *manager.TemplateRenderManager) (string, error) {
+func renderObjectInlineTemplate(item RenderQueueItem, text string, mng *manager.TemplateRenderManager) (string, error) {
 	tplCtx := &tmpl.CodeTemplateContext{
 		RenderOpts:       mng.RenderOpts,
-		CurrentSelection: item.selection,
-		PackageName:      item.selection.Render.Package,
-		Object:           item.object.Renderable,
+		CurrentSelection: item.Selection,
+		PackageName:      item.Selection.Render.Package,
+		Object:           item.Object.Renderable,
 		ImportsManager:   mng.ImportsManager,
 	}
 

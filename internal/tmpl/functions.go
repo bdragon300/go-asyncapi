@@ -11,6 +11,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 	"path"
+	"strconv"
 	"strings"
 	"text/template"
 	"unicode"
@@ -23,7 +24,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 
 	extraFuncs := template.FuncMap{
 		// Functions that return go code as string
-		"golit": func(val any) (string, error) { return templateGoLit(val) },
+		"golit": func(val any) (string, error) { return templateGoLit(renderManager, val) },
 		"goid": func(val any) string { return templateGoID(renderManager, val, true) },
 		"goidorig": func(val any) string { return templateGoID(renderManager, val, false) },
 		"gocomment": func(text string) (string, error) { return templateGoComment(text) },
@@ -31,11 +32,11 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		"goqualrun": func(parts ...string) string { return qualifiedRuntimeName(renderManager, parts...) },
 		"godef": func(r common.GolangType) (string, error) {
 			tplName := path.Join(r.GoTemplate(), "definition")
-			renderManager.NamespaceManager.AddType(r, renderManager.CurrentSelection, true)
+			renderManager.NamespaceManager.DefineType(r, renderManager, true)
 			if v, ok := r.(golangTypeWrapper); ok {
 				r = v.UnwrapGolangType()
 			}
-			res, err := templateExecTemplate(tplName, r)
+			res, err := templateExecTemplate(renderManager, tplName, r)
 			if err != nil {
 				return "", fmt.Errorf("%s: %w", r, err)
 			}
@@ -59,7 +60,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			}
 			return lo.Ternary(pkg != "", pkg + ".", ""), nil
 		},
-		"gousage": func(r common.GolangType) (string, error) { return templateGoUsage(r) },
+		"gousage": func(r common.GolangType) (string, error) { return templateGoUsage(renderManager, r) },
 
 		// Type helpers
 		"deref": func(r common.Renderable) common.Renderable {
@@ -92,13 +93,16 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			}
 			return &impl.Object
 		},
+		"toQuotable": func(unquotedStr string) string {
+			return strings.TrimSuffix(strings.TrimPrefix(strconv.Quote(unquotedStr), "\""), "\"")
+		},
 
 		// Templates calling
 		"tmpl": func(templateName string, ctx any) (string, error) {
-			return templateExecTemplate(templateName, ctx)
+			return templateExecTemplate(renderManager, templateName, ctx)
 		},
 		"trytmpl": func(templateName string, ctx any) (string, error) {
-			res, err := templateExecTemplate(templateName, ctx)
+			res, err := templateExecTemplate(renderManager, templateName, ctx)
 			switch {
 			case errors.Is(err, ErrTemplateNotFound):
 				return "", nil
@@ -115,11 +119,11 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 				switch v := o.(type) {
 				case common.GolangType:
 					if !lo.IsNil(o) {
-						renderManager.NamespaceManager.AddType(v, renderManager.CurrentSelection, false)
+						renderManager.NamespaceManager.DefineType(v, renderManager, false)
 					}
 				case string:
 					if o != "" {
-						renderManager.NamespaceManager.AddName(v)
+						renderManager.NamespaceManager.DefineName(v)
 					}
 				}
 			}
@@ -139,7 +143,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		"debug": func(args ...any) string {
 			logger := log.GetLogger(log.LoggerPrefixRendering)
 			for _, arg := range args {
-				logger.Debugf("debug: [%[1]p] %[1]v", arg)
+				logger.Debugf("debug: [%[1]p][%[1]T] %[1]v", arg)
 			}
 			return ""
 		},
@@ -158,7 +162,7 @@ func templateGoDefined(mng *manager.TemplateRenderManager, r any) bool {
 		o, found := mng.NamespaceManager.FindType(v)
 		return found && o.Actual
 	case string:
-		return mng.NamespaceManager.FindName(v)
+		return mng.NamespaceManager.IsNameDefined(v)
 	}
 
 	panic(fmt.Sprintf("unsupported type %[1]T: %[1]v", r))
@@ -168,22 +172,22 @@ type golangTypeWrapper interface {
 	UnwrapGolangType() common.GolangType
 }
 
-func templateGoUsage(r common.GolangType) (string, error) {
+func templateGoUsage(mng *manager.TemplateRenderManager, r common.GolangType) (string, error) {
 	tplName := path.Join(r.GoTemplate(), "usage")
 	if v, ok := r.(golangTypeWrapper); ok {
 		r = v.UnwrapGolangType()
 	}
-	res, err := templateExecTemplate(tplName, r)
+	res, err := templateExecTemplate(mng, tplName, r)
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", r, err)
 	}
 	return res, nil
 }
 
-func templateExecTemplate(templateName string, ctx any) (string, error) {
+func templateExecTemplate(mng *manager.TemplateRenderManager, templateName string, ctx any) (string, error) {
 	var bld strings.Builder
 
-	tpl, err := LoadTemplate(templateName)
+	tpl, err := mng.TemplateLoader.LoadTemplate(templateName)
 	if err != nil {
 		return "", fmt.Errorf("template %q: %w", templateName, err)
 	}
@@ -193,9 +197,9 @@ func templateExecTemplate(templateName string, ctx any) (string, error) {
 	return bld.String(), nil
 }
 
-func templateGoLit(val any) (string, error) {
+func templateGoLit(mng *manager.TemplateRenderManager, val any) (string, error) {
 	if v, ok := val.(common.GolangType); ok {
-		return templateGoUsage(v)
+		return templateGoUsage(mng, v)
 	}
 	return utils.ToGoLiteral(val), nil
 }
@@ -212,7 +216,11 @@ func templateGoID(mng *manager.TemplateRenderManager, val any, forceCapitalize b
 		// defined in `components.servers.reusableServer` that this Ref is points to. Then we'll use the "myServer"
 		// as the server name in generated code: functions, structs, etc.
 		topObject := mng.CurrentObject
-		res = lo.Ternary(common.CheckSameRenderables(topObject, v), topObject.Name(), v.Name())
+		if lo.IsNil(topObject) || !common.CheckSameRenderables(topObject, v) {
+			res = v.Name()  // nil could appear when we render the app template
+		} else {
+			res = topObject.Name()
+		}
 	case string:
 		res = v
 	default:
@@ -316,10 +324,10 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c *
 			varValueStmts = fmt.Sprintf("%s[%s]", anchor, utils.ToGoLiteral(memberName))
 			baseType = typ.ValueType
 			// TODO: replace templateGoUsage calls to smth another to remove import from impl, this is a potential circular import
-			varExpr := fmt.Sprintf("var %s %s", nextAnchor, lo.Must(templateGoUsage(typ.ValueType)))
+			varExpr := fmt.Sprintf("var %s %s", nextAnchor, lo.Must(templateGoUsage(mng, typ.ValueType)))
 			if typ.ValueType.Addressable() {
 				// Append ` = new(TYPE)` to initialize a pointer
-				varExpr += fmt.Sprintf(" = new(%s)", lo.Must(templateGoUsage(typ.ValueType)))
+				varExpr += fmt.Sprintf(" = new(%s)", lo.Must(templateGoUsage(mng, typ.ValueType)))
 			}
 
 			ifExpr := fmt.Sprintf(`if v, ok := %s; ok {
@@ -335,7 +343,7 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c *
 			body = []string{
 				fmt.Sprintf(`if %s == nil { 
 					%s = make(%s) 
-				}`, anchor, anchor, lo.Must(templateGoUsage(typ))),
+				}`, anchor, anchor, lo.Must(templateGoUsage(mng, typ))),
 				varExpr,
 				ifExpr,
 			}
@@ -437,7 +445,7 @@ type definable interface {
 // If import is not needed (obj is defined in current package), returns empty string. If obj was not defined anywhere
 // yet, returns ErrNotDefined.
 func qualifiedTypeGeneratedPackage(mng *manager.TemplateRenderManager, obj common.GolangType) (string, error) {
-	defInfo, defined := mng.NamespaceManager.FindType(obj)
+	nsType, defined := mng.NamespaceManager.FindType(obj)
 	if !defined {
 		if v, ok := obj.(definable); ok && v.ObjectHasDefinition() { // TODO: replace to Selectable?
 			return "", ErrNotDefined
@@ -446,18 +454,18 @@ func qualifiedTypeGeneratedPackage(mng *manager.TemplateRenderManager, obj commo
 	}
 
 	// Use the package path from reuse config if it is defined
-	if defInfo.Selection.ReusePackagePath != "" {
-		return mng.ImportsManager.AddImport(defInfo.Selection.ReusePackagePath, ""), nil
+	if nsType.Selection.ReusePackagePath != "" {
+		return mng.ImportsManager.AddImport(nsType.Selection.ReusePackagePath, ""), nil
 	}
 
 	// Check if the object is defined in the same directory (assuming the directory is equal to package)
-	fileDir := path.Dir(defInfo.Selection.Render.File)
-	if fileDir == path.Dir(mng.CurrentSelection.Render.File) {
+	nsTypeFileDir := path.Dir(nsType.FileName)
+	if nsTypeFileDir == path.Dir(mng.FileName) {
 		return "", nil // Object is defined in the current package, its name doesn't require a package name
 	}
 
-	pkgPath := path.Join(mng.RenderOpts.ImportBase, fileDir)
-	return mng.ImportsManager.AddImport(pkgPath, defInfo.Selection.Render.Package), nil
+	pkgPath := path.Join(mng.RenderOpts.ImportBase, nsTypeFileDir)
+	return mng.ImportsManager.AddImport(pkgPath, nsType.PackageName), nil
 }
 
 func qualifiedImplementationGeneratedPackage(mng *manager.TemplateRenderManager, obj common.ImplementationObject) (string, error) {
@@ -473,7 +481,7 @@ func qualifiedImplementationGeneratedPackage(mng *manager.TemplateRenderManager,
 		return mng.ImportsManager.AddImport(defInfo.Object.Config.ReusePackagePath, ""), nil
 	}
 
-	if defInfo.Directory == path.Dir(mng.CurrentSelection.Render.File) {
+	if defInfo.Directory == path.Dir(mng.FileName) {
 		return "", nil // Object is defined in the current package, its name doesn't require a package name
 	}
 
@@ -483,19 +491,11 @@ func qualifiedImplementationGeneratedPackage(mng *manager.TemplateRenderManager,
 
 func qualifiedName(mng *manager.TemplateRenderManager, parts ...string) string {
 	pkgPath, pkgName, n := qualifiedToImport(parts)
-	var name string
-	if n != "" {
-		name = utils.ToGolangName(n, unicode.IsUpper(rune(n[0])))
-	}
-	return fmt.Sprintf("%s.%s", mng.ImportsManager.AddImport(pkgPath, pkgName), name)
+	return fmt.Sprintf("%s.%s", mng.ImportsManager.AddImport(pkgPath, pkgName), n)
 }
 
 func qualifiedRuntimeName(mng *manager.TemplateRenderManager, parts ...string) string {
 	p := append([]string{mng.RenderOpts.RuntimeModule}, parts...)
 	pkgPath, pkgName, n := qualifiedToImport(p)
-	var name string
-	if n != "" {
-		name = utils.ToGolangName(n, unicode.IsUpper(rune(n[0])))
-	}
-	return fmt.Sprintf("%s.%s", mng.ImportsManager.AddImport(pkgPath, pkgName), name)
+	return fmt.Sprintf("%s.%s", mng.ImportsManager.AddImport(pkgPath, pkgName), n)
 }

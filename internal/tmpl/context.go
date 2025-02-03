@@ -29,8 +29,7 @@ type ImplTemplateContext struct {
 }
 
 type AppTemplateContext struct {
-	RenderQueue     []common.Renderable
+	Objects         []common.Renderable
 	ActiveProtocols []string
-	ImportsManager  importsManager
 }
 

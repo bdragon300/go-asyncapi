@@ -31,7 +31,7 @@ func WriteBuffersToFiles(files map[string]*bytes.Buffer, baseDir string) error {
 	}
 	logger.Debugf("Writer stats: files: %d, total bytes: %d", len(files), totalBytes)
 
-	logger.Info("Writing completed", "files", len(files))
+	logger.Info("Writing complete", "files", len(files))
 	return nil
 }
 
