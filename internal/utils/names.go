@@ -54,7 +54,7 @@ func ToGolangName(rawString string, exported bool) string {
 		camel = lo.CamelCase(rawString)
 	}
 
-	str := TransformInitialisms(camel)
+	str := transformInitialisms(camel)
 
 	// Avoid conflict with Golang reserved keywords
 	if token.IsKeyword(str) {
@@ -63,8 +63,8 @@ func ToGolangName(rawString string, exported bool) string {
 	return str
 }
 
-// TransformInitialisms transforms possible initialisms to upper case in a name in camel case or pascal case.
-func TransformInitialisms(name string) string {
+// transformInitialisms transforms possible initialisms to upper case in a name in camel case or pascal case.
+func transformInitialisms(name string) string {
 	source := []byte(name)
 	res := make([]byte, len(source))
 

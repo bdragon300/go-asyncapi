@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/log"
+	"github.com/bdragon300/go-asyncapi/internal/resolver"
 	"io"
 	"path"
 	"reflect"
@@ -72,7 +73,7 @@ func (c *Module) ListPromises() []common.ObjectListPromise {
 	return c.listPromises
 }
 
-func (c *Module) Load(specFileResolver SpecFileResolver) error {
+func (c *Module) Load(specFileResolver resolver.SpecFileResolver) error {
 	c.logger.Debug("Resolve and load a spec", "specURL", c.specURL)
 	buf, err := c.readSpec(c.specURL, specFileResolver)
 	if err != nil {
@@ -90,7 +91,7 @@ func (c *Module) Load(specFileResolver SpecFileResolver) error {
 	return nil
 }
 
-func (c *Module) readSpec(specURL *specurl.URL, specFileResolver SpecFileResolver) ([]byte, error) {
+func (c *Module) readSpec(specURL *specurl.URL, specFileResolver resolver.SpecFileResolver) ([]byte, error) {
 	t := time.Now()
 	defer func() {
 		c.logger.Debug("File resolver finished", "specURL", specURL, "duration", time.Since(t))

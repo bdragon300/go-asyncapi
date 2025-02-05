@@ -201,7 +201,7 @@ func templateGoLit(mng *manager.TemplateRenderManager, val any) (string, error) 
 	if v, ok := val.(common.GolangType); ok {
 		return templateGoUsage(mng, v)
 	}
-	return utils.ToGoLiteral(val), nil
+	return toGoLiteral(val), nil
 }
 
 func templateGoID(mng *manager.TemplateRenderManager, val any, forceCapitalize bool) string {
@@ -321,7 +321,7 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c *
 		case *lang.GoMap:
 			// TODO: x-parameter in correlationIDs spec section to set numbers as "0" for string keys or 0 for int keys
 			logger.Trace("---> GoMap", "locationPath", locationPath[:pathIdx], "member", memberName, "object", typ.String())
-			varValueStmts = fmt.Sprintf("%s[%s]", anchor, utils.ToGoLiteral(memberName))
+			varValueStmts = fmt.Sprintf("%s[%s]", anchor, toGoLiteral(memberName))
 			baseType = typ.ValueType
 			// TODO: replace templateGoUsage calls to smth another to remove import from impl, this is a potential circular import
 			varExpr := fmt.Sprintf("var %s %s", nextAnchor, lo.Must(templateGoUsage(mng, typ.ValueType)))
@@ -338,7 +338,7 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c *
 				ifExpr += fmt.Sprintf(` else {
 					err = %s("key %%q not found in map on locationPath /%s", %s)
 					return
-				}`, fmtErrorf, strings.Join(locationPath[:pathIdx], "/"), utils.ToGoLiteral(memberName))
+				}`, fmtErrorf, strings.Join(locationPath[:pathIdx], "/"), toGoLiteral(memberName))
 			}
 			body = []string{
 				fmt.Sprintf(`if %s == nil { 
@@ -363,9 +363,9 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c *
 				body = append(body, fmt.Sprintf(`if len(%s) <= %s {
 					err = %s("index %%q is out of range in array of length %%d on locationPath /%s", %s, len(%s))
 					return
-				}`, anchor, utils.ToGoLiteral(memberName), fmtErrorf, strings.Join(locationPath[:pathIdx], "/"), utils.ToGoLiteral(memberName), anchor))
+				}`, anchor, toGoLiteral(memberName), fmtErrorf, strings.Join(locationPath[:pathIdx], "/"), toGoLiteral(memberName), anchor))
 			}
-			varValueStmts = fmt.Sprintf("%s[%s]", anchor, utils.ToGoLiteral(memberName))
+			varValueStmts = fmt.Sprintf("%s[%s]", anchor, toGoLiteral(memberName))
 			baseType = typ.ItemsType
 			body = append(body, fmt.Sprintf("%s := %s", nextAnchor, varValueStmts))
 		case *lang.GoSimple: // Should be a terminal type in chain, raise error otherwise (if any locationPath parts left to resolve)

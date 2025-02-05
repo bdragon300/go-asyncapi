@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/render"
+	"github.com/bdragon300/go-asyncapi/internal/resolver"
 	"github.com/bdragon300/go-asyncapi/internal/selector"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
@@ -64,20 +65,23 @@ type GenerateCmd struct {
 type generatePubSubArgs struct {
 	Spec string `arg:"required,positional" help:"AsyncAPI specification file path or url" placeholder:"PATH"`
 
-	ProjectModule string `arg:"-M,--module" help:"Module path to use [default: extracted from go.mod file in the current working directory concatenated with target dir]" placeholder:"MODULE"`
+	ProjectModule string `arg:"-M,--module" help:"Project module in the generated code. By default, read get from go.mod in the current working directory" placeholder:"MODULE"`
+	RuntimeModule       string        `arg:"--runtime-module" help:"Runtime module path" placeholder:"MODULE"`
+
 	TemplateDir string `arg:"-T,--template-dir" help:"Directory with custom templates" placeholder:"DIR"`
 	PreambleTemplate string `arg:"--preamble-template" help:"Custom preamble template name" placeholder:"NAME"`
 	DisableFormatting bool `arg:"--disable-formatting" help:"Disable code formatting"`
-	AllowRemoteRefs bool `arg:"--allow-remote-refs" help:"Allow fetching spec files from remote $ref URLs"`
-	ClientApp bool `arg:"--client-app" help:"Generate a client application code as well"`
 
-	RuntimeModule       string        `arg:"--runtime-module" help:"Runtime module name" placeholder:"MODULE"`
+	AllowRemoteRefs bool `arg:"--allow-remote-refs" help:"Allow resolver to fetch the files from remote $ref URLs"`
 	ResolverSearchDir   string        `arg:"--resolver-search-dir" help:"Directory to search the local spec files for [default: current working directory]" placeholder:"PATH"`
 	ResolverTimeout time.Duration `arg:"--resolver-timeout" help:"Timeout for resolver to resolve a spec file" placeholder:"DURATION"`
 	ResolverCommand string        `arg:"--resolver-command" help:"Custom resolver executable to use instead of built-in resolver" placeholder:"PATH"`
+
+	ClientApp bool `arg:"--client-app" help:"Generate a client application code as well"`
+	goModTemplate string `arg:"-"`
 }
 
-func generate(cmd *GenerateCmd) error {
+func cliGenerate(cmd *GenerateCmd) error {
 	logger := log.GetLogger("")
 	isPub, isSub, pubSubOpts := getPubSubVariant(cmd)
 	mergedConfig, err := mergeConfig(cmd, pubSubOpts)
@@ -85,15 +89,16 @@ func generate(cmd *GenerateCmd) error {
 		return fmt.Errorf("read config: %w", err)
 	}
 
+	if logger.GetLevel() == log.TraceLevel {
+		buf := lo.Must(yaml.Marshal(mergedConfig))
+		logger.Trace("Use the resulting config", "value", string(buf))
+	}
+
 	asyncapi.ProtocolBuilders = protocolBuilders()
 	if !isSub && !isPub {
 		return fmt.Errorf("%w: publisher, subscriber or both are required in args", ErrWrongCliArgs)
 	}
 
-	if logger.GetLevel() == log.TraceLevel {
-		buf := lo.Must(yaml.Marshal(mergedConfig))
-		logger.Trace("Use the resulting config", "value", string(buf))
-	}
 	compileOpts := getCompileOpts(mergedConfig, isPub, isSub)
 	renderOpts, err := getRenderOpts(mergedConfig, mergedConfig.Directories.Target)
 	if err != nil {
@@ -104,30 +109,33 @@ func generate(cmd *GenerateCmd) error {
 	//
 	// Compilation
 	//
-	resolver := getResolver(mergedConfig)
+	fileResolver := getResolver(mergedConfig)
 	specURL := specurl.Parse(pubSubOpts.Spec)
-	modules, err := generationCompile(specURL, compileOpts, resolver)
+	logger.Debug("Run compilation")
+	modules, err := generationCompile(specURL, compileOpts, fileResolver)
 	if err != nil {
 		return fmt.Errorf("compilation: %w", err)
 	}
-	logger.Info("Compilation complete", "files", len(modules))
+	logger.Debug("Compilation complete", "files", len(modules))
 	objSources := lo.MapValues(modules, func(value *compiler.Module, _ string) linker.ObjectSource { return value })
 
 	//
 	// Linking
 	//
+	logger.Debug("Run linking")
 	if err = generationLinking(objSources); err != nil {
 		return fmt.Errorf("linking: %w", err)
 	}
+	logger.Debug("Linking complete")
 
 	//
 	// Rendering
 	//
 	mainModule := modules[specURL.SpecID]
 	activeProtocols := collectActiveProtocols(mainModule.AllObjects())
+	logger.Debug("Renders protocols", "value", activeProtocols)
 
 	// Implementations
-	// TODO: logging
 	implementationOpts := getImplementationOpts(mergedConfig.Implementations)
 	if !implementationOpts.Disable {
 		tplLoader := tmpl.NewTemplateLoader(mainTemplateName, implementations.ImplementationFS)
@@ -141,6 +149,7 @@ func generate(cmd *GenerateCmd) error {
 
 		// Render only implementations for protocols that are actually used in the spec
 		slices.Sort(protocols)
+		logger.Debug("Run implementations rendering", "protocols", protocols)
 		implObjects, err := getImplementations(implementationOpts, protocols)
 		if err != nil {
 			return fmt.Errorf("getting implementations: %w", err)
@@ -148,15 +157,18 @@ func generate(cmd *GenerateCmd) error {
 		if err = renderer.RenderImplementations(implObjects, renderManager); err != nil {
 			return fmt.Errorf("render implementations: %w", err)
 		}
+		logger.Debug("Implementations rendering complete")
 	}
 
 	// Module objects
-	// TODO: logging
+	logger.Debug("Run objects rendering")
 	templateDirs := []fs.FS{templates.TemplateFS}
 	if mergedConfig.Directories.Templates != "" {
+		logger.Debug("Custom templates location", "directory", mergedConfig.Directories.Templates)
 		templateDirs = append(templateDirs, os.DirFS(mergedConfig.Directories.Templates))
 	}
 	tplLoader := tmpl.NewTemplateLoader(mainTemplateName, templateDirs...)
+	logger.Trace("Parse templates", "dirs", templateDirs)
 	renderManager.TemplateLoader = tplLoader
 	if err = tplLoader.ParseRecursive(renderManager); err != nil {
 		return fmt.Errorf("parse templates: %w", err)
@@ -166,47 +178,58 @@ func generate(cmd *GenerateCmd) error {
 	if err = renderer.RenderObjects(renderQueue, renderManager); err != nil {
 		return fmt.Errorf("render objects: %w", err)
 	}
+	logger.Debug("Objects rendering complete")
 
 	// Client app
-	// TODO: logging
 	if pubSubOpts.ClientApp {
-		dirs := append(templateDirs, client.TemplateFS)
-		tplLoader = tmpl.NewTemplateLoader(mainTemplateName, dirs...)
+		logger.Debug("Run client app rendering")
+		templateDirs = []fs.FS{templates.TemplateFS, client.TemplateFS}
+		if mergedConfig.Directories.Templates != "" {
+			logger.Debug("Custom templates location", "directory", mergedConfig.Directories.Templates)
+			templateDirs = append(templateDirs, os.DirFS(mergedConfig.Directories.Templates))
+		}
+		tplLoader = tmpl.NewTemplateLoader(mainTemplateName, templateDirs...)
+		logger.Trace("Parse templates", "dirs", templateDirs)
 		renderManager.TemplateLoader = tplLoader
 		if err = tplLoader.ParseRecursive(renderManager); err != nil {
 			return fmt.Errorf("parse templates: %w", err)
 		}
-		if err = renderer.RenderClientApp(renderQueue, activeProtocols, renderManager); err != nil {
+
+		if err = renderer.RenderClientApp(renderQueue, activeProtocols, mergedConfig.Client.GoModTemplate, renderManager); err != nil {
 			return fmt.Errorf("render client app: %w", err)
 		}
+		logger.Debug("Client app rendering complete")
 	}
 
 	// Render the final result: preamble, etc.
-	// TODO: logging
+	logger.Debug("Finish the files rendering")
 	files, err := renderer.FinishFiles(renderManager)
 	if err != nil {
 		return fmt.Errorf("finish files: %w", err)
 	}
+	logger.Debug("Rendering finishing complete")
 
 	//
 	// Formatting
 	//
 	if !renderOpts.DisableFormatting {
-		// TODO: logging
+		logger.Debug("Run formatting")
 		if err = writer.FormatFiles(files); err != nil {
 			return fmt.Errorf("formatting: %w", err)
 		}
+		logger.Debug("Formatting complete")
 	}
 
 	//
 	// Writing
 	//
-	// TODO: logging
+	logger.Debug("Run writing")
 	if err = writer.WriteBuffersToFiles(files, mergedConfig.Directories.Target); err != nil {
 		return fmt.Errorf("writing: %w", err)
 	}
+	logger.Debug("Writing complete")
 
-	logger.Info("Finished")
+	logger.Info("Code generation finished")
 	return nil
 }
 
@@ -279,6 +302,7 @@ func mergeConfig(cmd *GenerateCmd, generateArgs *generatePubSubArgs) (config too
 		config.Implementations.Protocols = slices.Clone(userConfig.Implementations.Protocols)
 	}
 
+	config.Client.GoModTemplate = coalesce(generateArgs.goModTemplate, userConfig.Client.GoModTemplate, config.Client.GoModTemplate)
 	return
 }
 
@@ -339,10 +363,10 @@ func getRenderOpts(conf toolConfig, targetDir string) (common.RenderOpts, error)
 	if res.ImportBase == "" {
 		m, err := getProjectModule()
 		if err != nil {
-			return res, fmt.Errorf("getting project module from ./go.mod (use -M arg to override): %w", err)
+			return res, fmt.Errorf("read go.mod (use -M arg to override): %w", err)
 		}
 		logger.Debug("Determined project module", "value", m)
-		// Clean path and remove empty, current and parent directories, leaving only names
+		// Clean target directory path, removing empty, current and parent directories, leaving only the names.
 		// This is not the best solution, however, it should work for most cases. Moreover, user can always override it.
 		parts := lo.Filter(strings.Split(path.Clean(targetDir), string(os.PathSeparator)), func(s string, _ int) bool {
 			return !lo.Contains([]string{"", ".", ".."}, s)
@@ -388,34 +412,35 @@ func buildRenderQueue(allObjects []common.CompileObject, selections []common.Con
 func getProjectModule() (string, error) {
 	pwd, err := os.Getwd()
 	if err != nil {
-		return "", fmt.Errorf("cannot get current working directory: %w", err)
+		return "", fmt.Errorf("get current working directory: %w", err)
 	}
 	fn := path.Join(pwd, "go.mod")
 	f, err := os.Open(fn)
 	if err != nil {
-		return "", fmt.Errorf("unable to open %q: %w", fn, err)
+		return "", fmt.Errorf("open %q: %w", fn, err)
 	}
+	defer f.Close()
 	data, err := io.ReadAll(f)
 	if err != nil {
-		return "", fmt.Errorf("unable read %q file: %w", fn, err)
+		return "", fmt.Errorf("read %q file: %w", fn, err)
 	}
 	modpath := modfile.ModulePath(data)
 	if modpath == "" {
-		return "", fmt.Errorf("module path not found in %q", fn)
+		return "", fmt.Errorf("reading module name from %q", fn)
 	}
 	return modpath, nil
 }
 
-func getResolver(conf toolConfig) compiler.SpecFileResolver {
+func getResolver(conf toolConfig) resolver.SpecFileResolver {
 	logger := log.GetLogger(log.LoggerPrefixResolving)
 	if conf.Resolver.Command != "" {
-		return compiler.SubprocessSpecFileResolver{
+		return resolver.SubprocessSpecFileResolver{
 			CommandLine: conf.Resolver.Command,
 			RunTimeout:  conf.Resolver.Timeout,
 			Logger:      logger,
 		}
 	}
-	return compiler.DefaultSpecFileResolver{
+	return resolver.DefaultSpecFileResolver{
 		Client:  stdHTTP.DefaultClient,
 		Timeout: conf.Resolver.Timeout,
 		BaseDir: conf.Resolver.SearchDirectory,
@@ -423,7 +448,7 @@ func getResolver(conf toolConfig) compiler.SpecFileResolver {
 	}
 }
 
-func generationCompile(specURL *specurl.URL, compileOpts common.CompileOpts, resolver compiler.SpecFileResolver) (map[string]*compiler.Module, error) {
+func generationCompile(specURL *specurl.URL, compileOpts common.CompileOpts, fileResolver resolver.SpecFileResolver) (map[string]*compiler.Module, error) {
 	logger := log.GetLogger(log.LoggerPrefixCompilation)
 	compileQueue := []*specurl.URL{specURL}      // Queue of specIDs to compile
 	modules := make(map[string]*compiler.Module) // Compilers by spec id
@@ -433,7 +458,7 @@ func generationCompile(specURL *specurl.URL, compileOpts common.CompileOpts, res
 			continue // Skip if a spec file has been already compiled
 		}
 
-		logger.Info("Run compilation", "specURL", specURL)
+		logger.Info("Compile a spec", "specURL", specURL)
 		module := compiler.NewModule(specURL)
 		modules[specURL.SpecID] = module
 
@@ -444,7 +469,7 @@ func generationCompile(specURL *specurl.URL, compileOpts common.CompileOpts, res
 			)
 		}
 		logger.Debug("Loading a spec", "specURL", specURL)
-		if err := module.Load(resolver); err != nil {
+		if err := module.Load(fileResolver); err != nil {
 			return nil, fmt.Errorf("load a spec: %w", err)
 		}
 		logger.Debug("Compilation a spec", "specURL", specURL)
@@ -486,7 +511,6 @@ func getImplementations(conf common.RenderImplementationsOpts, protocols []strin
 
 func generationLinking(objSources map[string]linker.ObjectSource) error {
 	logger := log.GetLogger(log.LoggerPrefixLinking)
-	logger.Info("Run linking")
 
 	// Linking refs
 	linker.AssignRefs(objSources)

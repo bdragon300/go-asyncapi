@@ -21,11 +21,9 @@ type RenderQueueItem struct {
 
 func RenderObjects(queue []RenderQueueItem, mng *manager.TemplateRenderManager) error {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
-
-	logger.Info("Run objects rendering")
 	var postponed []RenderQueueItem
 
-	logger.Info("Objects selected", "objects", len(queue))
+	logger.Debug("Objects selected", "count", len(queue))
 	for len(queue) > 0 {
 		for _, item := range queue {
 			logger.Debug("Render", "object", item.Object.String())
@@ -80,6 +78,7 @@ func RenderObjects(queue []RenderQueueItem, mng *manager.TemplateRenderManager) 
 		}
 		queue, postponed = postponed, nil
 	}
+	logger.Info("Objects rendered", "count", len(queue))
 
 	return nil
 }

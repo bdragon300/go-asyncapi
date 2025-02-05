@@ -29,6 +29,7 @@ type ImplTemplateContext struct {
 }
 
 type AppTemplateContext struct {
+	RenderOpts       common.RenderOpts
 	Objects         []common.Renderable
 	ActiveProtocols []string
 }

@@ -38,3 +38,6 @@ render:
 
 implementations:
   directory: impl/{{ .Manifest.Protocol }}
+
+client:
+  goModTemplate: go.mod.tmpl

@@ -10,7 +10,6 @@ import (
 
 func WriteBuffersToFiles(files map[string]*bytes.Buffer, baseDir string) error {
 	logger := log.GetLogger(log.LoggerPrefixWriting)
-	logger.Info("Run writing")
 
 	if err := ensureDir(baseDir); err != nil {
 		return err

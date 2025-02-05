@@ -21,6 +21,7 @@ type (
 		Render toolConfigRender `yaml:"render"`
 
 		Implementations toolConfigImplementations `yaml:"implementations"`
+		Client toolConfigClient `yaml:"client"`
 	}
 
 	toolConfigDirectories struct {
@@ -71,6 +72,10 @@ type (
 		Directory string `yaml:"directory"` // Template expression, relative to the target directory
 		Package string `yaml:"package"`
 		ReusePackagePath string `yaml:"reusePackagePath"`
+	}
+
+	toolConfigClient struct {
+		GoModTemplate string `yaml:"goModTemplate"`
 	}
 )
 

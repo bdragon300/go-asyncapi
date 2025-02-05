@@ -9,6 +9,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
 	"github.com/samber/lo"
 	"slices"
+	"strings"
 	"text/template"
 	"unicode"
 )
@@ -18,7 +19,7 @@ func FinishFiles(mng *manager.TemplateRenderManager) (map[string]*bytes.Buffer, 
 
 	var res = make(map[string]*bytes.Buffer, len(states))
 	logger := log.GetLogger(log.LoggerPrefixRendering)
-	logger.Debug("Render files", "files", len(states))
+	logger.Debug("Finish files rendering", "files", len(states))
 
 	tpl, err := mng.TemplateLoader.LoadTemplate(mng.RenderOpts.PreambleTemplate)
 	if err != nil {
@@ -34,9 +35,13 @@ func FinishFiles(mng *manager.TemplateRenderManager) (map[string]*bytes.Buffer, 
 			logger.Debug("-> Skip empty file", "file", fileName)
 			continue
 		}
-		b, err := renderPreambleTemplate(tpl, mng.RenderOpts, state)
-		if err != nil {
-			return nil, err
+		var b = new(bytes.Buffer)
+		if strings.HasSuffix(fileName, ".go") {
+			logger.Debug("-> Render preamble", "file", fileName)
+			b, err = renderPreambleTemplate(tpl, mng.RenderOpts, state)
+			if err != nil {
+				return nil, err
+			}
 		}
 		if _, err := b.ReadFrom(state.Buffer); err != nil {
 			return nil, err

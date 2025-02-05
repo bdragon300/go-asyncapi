@@ -92,7 +92,6 @@ func operation{{$ | goid}}(ctx {{"context.Context"}}, args *{{$ | goid}}Cmd, opt
 {{- with $server := .Server | deref}}
 serverURL := args.{{$.Server | goid}}Cmd.URL
 if serverURL == nil {
-    {{debug .}}
     u, err := {{gopkg .ProtoServer.Type}}{{. | goid}}URL(
         {{range .Variables.Entries}}args.{{$server | goid}}Cmd.{{.Value | goid}},{{end}}
     )
