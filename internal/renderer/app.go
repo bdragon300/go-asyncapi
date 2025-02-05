@@ -9,11 +9,7 @@ import (
 	"github.com/samber/lo"
 )
 
-const (
-	DefaultClientAppFileName = "client.go"
-)
-
-func RenderClientApp(queue []RenderQueueItem, activeProtocols []string, goModTemplate string, mng *manager.TemplateRenderManager) error {
+func RenderClientApp(queue []RenderQueueItem, activeProtocols []string, goModTemplate, sourceCodeFile string, mng *manager.TemplateRenderManager) error {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
 	objects := lo.Map(queue, func(item RenderQueueItem, _ int) common.Renderable {
@@ -31,8 +27,8 @@ func RenderClientApp(queue []RenderQueueItem, activeProtocols []string, goModTem
 	if err != nil {
 		return fmt.Errorf("load root template: %w", err)
 	}
-	mng.BeginFile(DefaultClientAppFileName, "main")
-	logger.Debug("Render file", "name", DefaultClientAppFileName)
+	mng.BeginFile(sourceCodeFile, "main")
+	logger.Debug("Render file", "name", sourceCodeFile)
 	if err = tpl.Execute(mng.Buffer, ctx); err != nil {
 		return fmt.Errorf("root template: %w", err)
 	}
@@ -50,7 +46,7 @@ func RenderClientApp(queue []RenderQueueItem, activeProtocols []string, goModTem
 	}
 	mng.Commit()
 
-	logger.Info("Client app rendered", "file", DefaultClientAppFileName)
+	logger.Info("Client app rendered", "file", sourceCodeFile)
 
 	return nil
 }

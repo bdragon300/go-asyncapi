@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/log"
-	"github.com/bdragon300/go-asyncapi/internal/renderer"
+	chlog "github.com/charmbracelet/log"
 	"github.com/samber/lo"
 	"os"
 	"os/exec"
@@ -24,9 +24,10 @@ const (
 type ClientCmd struct {
 	Spec string `arg:"required,positional" help:"AsyncAPI specification file path or url" placeholder:"PATH"`
 
-	OutputFile string `arg:"-o,--output" help:"Executable output file path" placeholder:"PATH"`
-	KeepSource bool   `arg:"--keep-source" help:"Do not automatically remove the generated code on exit"`
-	ConfigFile string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"PATH"`
+	ConfigFile     string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"PATH"`
+	OutputExecFile string `arg:"-o,--output" help:"Executable output file path" placeholder:"PATH"`
+	OutputSourceFile string `arg:"--output-source" help:"Source code output file path" placeholder:"PATH"`
+	KeepSource     bool   `arg:"--keep-source" help:"Do not automatically remove the generated code on exit"`
 
 	TemplateDir string `arg:"-T,--template-dir" help:"Directory with custom templates" placeholder:"DIR"`
 	PreambleTemplate string `arg:"--preamble-template" help:"Custom preamble template name" placeholder:"NAME"`
@@ -39,9 +40,9 @@ type ClientCmd struct {
 	ResolverCommand string        `arg:"--resolver-command" help:"Custom resolver executable to use instead of built-in resolver" placeholder:"PATH"`
 }
 
-func cliClient(cmd *ClientCmd) error {
+func cliClient(cmd *ClientCmd, globalConfig toolConfig) error {
 	logger := log.GetLogger("")
-	// TODO: config file
+	cmdConfig := cliClientMergeConfig(globalConfig, cmd)
 
 	projectModule := lo.RandomString(10, lo.LowerCaseLettersCharset)
 	targetDir, err := os.MkdirTemp("", "go-asyncapi-client-")
@@ -49,7 +50,7 @@ func cliClient(cmd *ClientCmd) error {
 		return fmt.Errorf("create temporary directory: %w", err)
 	}
 	defer func() {
-		if !cmd.KeepSource {
+		if !cmdConfig.Client.KeepSource {
 			if err := os.RemoveAll(targetDir); err != nil {
 				logger.Warn("remove directory", "error", err)
 			}
@@ -61,25 +62,25 @@ func cliClient(cmd *ClientCmd) error {
 	logger.Debug("Generate the client code", "targetDir", targetDir, "module", projectModule)
 	generateCmd := &GenerateCmd{
 		TargetDir: targetDir,
-		ConfigFile: cmd.ConfigFile,
 		PubSub: &generatePubSubArgs{
 			Spec:              cmd.Spec,
 			ProjectModule:     projectModule,
-			RuntimeModule:     cmd.RuntimeModule,
-			TemplateDir:       cmd.TemplateDir,
-			PreambleTemplate:  cmd.PreambleTemplate,
-			AllowRemoteRefs:   cmd.AllowRemoteRefs,
-			ResolverSearchDir: cmd.ResolverSearchDir,
-			ResolverTimeout:   cmd.ResolverTimeout,
-			ResolverCommand:   cmd.ResolverCommand,
+			RuntimeModule:     cmdConfig.RuntimeModule,
+			TemplateDir:       cmdConfig.Directories.Templates,
+			PreambleTemplate:  cmdConfig.Render.PreambleTemplate,
+			AllowRemoteRefs:   cmdConfig.Resolver.AllowRemoteReferences,
+			ResolverSearchDir: cmdConfig.Resolver.SearchDirectory,
+			ResolverTimeout:   cmdConfig.Resolver.Timeout,
+			ResolverCommand:   cmdConfig.Resolver.Command,
 			ClientApp:         true,
 		},
 	}
-	if err = cliGenerate(generateCmd); err != nil {
+	if err = cliGenerate(generateCmd, cmdConfig); err != nil {
 		return fmt.Errorf("generate client code: %w", err)
 	}
 
-	outputFile := cmd.OutputFile
+	sourceFile := path.Join(targetDir, cmdConfig.Client.OutputSourceFile)
+	outputFile := cmdConfig.Client.OutputFile
 	if outputFile == "" {
 		outputFile = "client"
 		if runtime.GOOS == "windows" {
@@ -90,7 +91,6 @@ func cliClient(cmd *ClientCmd) error {
 	if err != nil {
 		return fmt.Errorf("resolve output file path: %w", err)
 	}
-	sourceFile := path.Join(targetDir, renderer.DefaultClientAppFileName)
 	logger.Debug("Compile the executable", "sourceFile", sourceFile, "outputFile", outputFile)
 	err = compileClientApp(sourceFile, outputFile)
 	switch {
@@ -119,8 +119,15 @@ func compileClientApp(sourceFile, outputFile string) error {
 
 	subcommands := [][]string{
 		{goGetSubcommand, "./..."},
-		{goBuildSubcommand, "-v", "-o", outputFile, sourceFile},
+		{goBuildSubcommand, "-o", outputFile, sourceFile},
 	}
+	if chlog.GetLevel() <= chlog.DebugLevel {
+		subcommands = [][]string{
+			{goGetSubcommand, "./..."},
+			{goBuildSubcommand, "-v", "-o", outputFile, sourceFile},
+		}
+	}
+
 	for _, subcommand := range subcommands {
 		cmdLine := toolchainPath + " " + strings.Join(subcommand, " ")
 		logger.Infof("Run %s", cmdLine)
@@ -135,4 +142,24 @@ func compileClientApp(sourceFile, outputFile string) error {
 	}
 
 	return nil
+}
+
+func cliClientMergeConfig(globalConfig toolConfig, cmd *ClientCmd) toolConfig {
+	res := globalConfig
+
+	res.Client.OutputFile = coalesce(cmd.OutputExecFile, globalConfig.Client.OutputFile)
+	res.Client.OutputSourceFile = coalesce(cmd.OutputSourceFile, globalConfig.Client.OutputSourceFile)
+	res.Client.KeepSource = coalesce(cmd.KeepSource, globalConfig.Client.KeepSource)
+	res.Client.GoModTemplate = coalesce(cmd.GoModTemplate, globalConfig.Client.GoModTemplate)
+
+	res.Directories.Templates = coalesce(cmd.TemplateDir, globalConfig.Directories.Templates)
+	res.Render.PreambleTemplate = coalesce(cmd.PreambleTemplate, globalConfig.Render.PreambleTemplate)
+
+	res.RuntimeModule = coalesce(cmd.RuntimeModule, globalConfig.RuntimeModule)
+	res.Resolver.AllowRemoteReferences = coalesce(cmd.AllowRemoteRefs, globalConfig.Resolver.AllowRemoteReferences)
+	res.Resolver.SearchDirectory = coalesce(cmd.ResolverSearchDir, globalConfig.Resolver.SearchDirectory)
+	res.Resolver.Timeout = coalesce(cmd.ResolverTimeout, globalConfig.Resolver.Timeout)
+	res.Resolver.Command = coalesce(cmd.ResolverCommand, globalConfig.Resolver.Command)
+
+	return res
 }

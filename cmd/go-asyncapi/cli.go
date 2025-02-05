@@ -2,10 +2,12 @@ package main
 
 import (
 	"errors"
+	"github.com/bdragon300/go-asyncapi/assets"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"io"
 	"os"
+	"path"
 
 	chlog "github.com/charmbracelet/log"
 
@@ -20,6 +22,8 @@ type cli struct {
 	ListImplementations *struct{}    `arg:"subcommand:list-implementations" help:"Show all available protocol implementations"`
 	Verbose             int          `arg:"-v" help:"Logging verbosity: 0 default, 1 debug output, 2 more debug output" placeholder:"LEVEL"`
 	Quiet               bool         `help:"Suppress the logging output"`
+
+	ConfigFile string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"PATH"`
 }
 
 func main() {
@@ -45,10 +49,26 @@ func main() {
 	}
 	chlog.SetReportTimestamp(false)
 
-	var err error
+	logger := log.GetLogger("")
+	builtinConfig, err := loadConfig(assets.AssetFS, "default_config.yaml")
+	if err != nil {
+		logger.Error("Cannot load built-in config", "error", err)
+		os.Exit(1)
+	}
+	var userConfig toolConfig
+	if cliArgs.ConfigFile != "" {
+		log.GetLogger("").Debug("Load config", "file", cliArgs.ConfigFile)
+		userConfig, err = loadConfig(os.DirFS(path.Dir(cliArgs.ConfigFile)), path.Base(cliArgs.ConfigFile))
+		if err != nil {
+			logger.Error("Cannot load user config", "error", err)
+			os.Exit(1)
+		}
+	}
+	mergedConfig := mergeConfig(builtinConfig, userConfig)
+
 	switch {
 	case cliArgs.GenerateCmd != nil:
-		err = cliGenerate(cliArgs.GenerateCmd)
+		err = cliGenerate(cliArgs.GenerateCmd, mergedConfig)
 		if err != nil {
 			var multilineErr types.ErrorWithContent
 			switch {
@@ -59,7 +79,7 @@ func main() {
 			}
 		}
 	case cliArgs.ClientCmd != nil:
-		err = cliClient(cliArgs.ClientCmd)
+		err = cliClient(cliArgs.ClientCmd, mergedConfig)
 	default:
 		cliParser.Fail("No command specified. Try --help for more information")
 		os.Exit(1)

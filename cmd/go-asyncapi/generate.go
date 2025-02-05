@@ -59,7 +59,6 @@ type GenerateCmd struct {
 	PubSub         *generatePubSubArgs         `arg:"subcommand:pubsub" help:"Generate both publisher and subscriber code"`
 
 	TargetDir string `arg:"-t,--target-dir" help:"Directory to save the generated code" placeholder:"DIR"`
-	ConfigFile string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"PATH"`
 }
 
 type generatePubSubArgs struct {
@@ -81,16 +80,13 @@ type generatePubSubArgs struct {
 	goModTemplate string `arg:"-"`
 }
 
-func cliGenerate(cmd *GenerateCmd) error {
+func cliGenerate(cmd *GenerateCmd, globalConfig toolConfig) error {
 	logger := log.GetLogger("")
 	isPub, isSub, pubSubOpts := getPubSubVariant(cmd)
-	mergedConfig, err := mergeConfig(cmd, pubSubOpts)
-	if err != nil {
-		return fmt.Errorf("read config: %w", err)
-	}
+	cmdConfig := cliGenerateMergeConfig(globalConfig, cmd, pubSubOpts)
 
 	if logger.GetLevel() == log.TraceLevel {
-		buf := lo.Must(yaml.Marshal(mergedConfig))
+		buf := lo.Must(yaml.Marshal(cmdConfig))
 		logger.Trace("Use the resulting config", "value", string(buf))
 	}
 
@@ -99,8 +95,8 @@ func cliGenerate(cmd *GenerateCmd) error {
 		return fmt.Errorf("%w: publisher, subscriber or both are required in args", ErrWrongCliArgs)
 	}
 
-	compileOpts := getCompileOpts(mergedConfig, isPub, isSub)
-	renderOpts, err := getRenderOpts(mergedConfig, mergedConfig.Directories.Target)
+	compileOpts := getCompileOpts(cmdConfig, isPub, isSub)
+	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Directories.Target)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
 	}
@@ -109,7 +105,7 @@ func cliGenerate(cmd *GenerateCmd) error {
 	//
 	// Compilation
 	//
-	fileResolver := getResolver(mergedConfig)
+	fileResolver := getResolver(cmdConfig)
 	specURL := specurl.Parse(pubSubOpts.Spec)
 	logger.Debug("Run compilation")
 	modules, err := generationCompile(specURL, compileOpts, fileResolver)
@@ -136,7 +132,7 @@ func cliGenerate(cmd *GenerateCmd) error {
 	logger.Debug("Renders protocols", "value", activeProtocols)
 
 	// Implementations
-	implementationOpts := getImplementationOpts(mergedConfig.Implementations)
+	implementationOpts := getImplementationOpts(cmdConfig.Implementations)
 	if !implementationOpts.Disable {
 		tplLoader := tmpl.NewTemplateLoader(mainTemplateName, implementations.ImplementationFS)
 		renderManager.TemplateLoader = tplLoader
@@ -163,9 +159,9 @@ func cliGenerate(cmd *GenerateCmd) error {
 	// Module objects
 	logger.Debug("Run objects rendering")
 	templateDirs := []fs.FS{templates.TemplateFS}
-	if mergedConfig.Directories.Templates != "" {
-		logger.Debug("Custom templates location", "directory", mergedConfig.Directories.Templates)
-		templateDirs = append(templateDirs, os.DirFS(mergedConfig.Directories.Templates))
+	if cmdConfig.Directories.Templates != "" {
+		logger.Debug("Custom templates location", "directory", cmdConfig.Directories.Templates)
+		templateDirs = append(templateDirs, os.DirFS(cmdConfig.Directories.Templates))
 	}
 	tplLoader := tmpl.NewTemplateLoader(mainTemplateName, templateDirs...)
 	logger.Trace("Parse templates", "dirs", templateDirs)
@@ -184,9 +180,9 @@ func cliGenerate(cmd *GenerateCmd) error {
 	if pubSubOpts.ClientApp {
 		logger.Debug("Run client app rendering")
 		templateDirs = []fs.FS{templates.TemplateFS, client.TemplateFS}
-		if mergedConfig.Directories.Templates != "" {
-			logger.Debug("Custom templates location", "directory", mergedConfig.Directories.Templates)
-			templateDirs = append(templateDirs, os.DirFS(mergedConfig.Directories.Templates))
+		if cmdConfig.Directories.Templates != "" {
+			logger.Debug("Custom templates location", "directory", cmdConfig.Directories.Templates)
+			templateDirs = append(templateDirs, os.DirFS(cmdConfig.Directories.Templates))
 		}
 		tplLoader = tmpl.NewTemplateLoader(mainTemplateName, templateDirs...)
 		logger.Trace("Parse templates", "dirs", templateDirs)
@@ -195,7 +191,7 @@ func cliGenerate(cmd *GenerateCmd) error {
 			return fmt.Errorf("parse templates: %w", err)
 		}
 
-		if err = renderer.RenderClientApp(renderQueue, activeProtocols, mergedConfig.Client.GoModTemplate, renderManager); err != nil {
+		if err = renderer.RenderClientApp(renderQueue, activeProtocols, cmdConfig.Client.GoModTemplate, cmdConfig.Client.OutputSourceFile, renderManager); err != nil {
 			return fmt.Errorf("render client app: %w", err)
 		}
 		logger.Debug("Client app rendering complete")
@@ -224,7 +220,7 @@ func cliGenerate(cmd *GenerateCmd) error {
 	// Writing
 	//
 	logger.Debug("Run writing")
-	if err = writer.WriteBuffersToFiles(files, mergedConfig.Directories.Target); err != nil {
+	if err = writer.WriteBuffersToFiles(files, cmdConfig.Directories.Target); err != nil {
 		return fmt.Errorf("writing: %w", err)
 	}
 	logger.Debug("Writing complete")
@@ -261,49 +257,24 @@ func protocolBuilders() map[string]asyncapi.ProtocolBuilder {
 	}
 }
 
-func mergeConfig(cmd *GenerateCmd, generateArgs *generatePubSubArgs) (config toolConfig, err error) {
-	if config, err = loadDefaultConfig(); err != nil {
-		return
-	}
-	if lo.IsNil(generateArgs) {
-		generateArgs = &generatePubSubArgs{}
-	}
+func cliGenerateMergeConfig(globalConfig toolConfig, cmd *GenerateCmd, generateArgs *generatePubSubArgs) toolConfig {
+	res := globalConfig
 
-	var userConfig toolConfig
-	if cmd.ConfigFile != "" {
-		log.GetLogger("").Debug("Load config", "file", cmd.ConfigFile)
-		if userConfig, err = loadConfig(cmd.ConfigFile); err != nil {
-			return
-		}
-	}
+	res.ProjectModule = coalesce(generateArgs.ProjectModule, res.ProjectModule)
+	res.RuntimeModule = coalesce(generateArgs.RuntimeModule, res.RuntimeModule)
+	res.Directories.Templates = coalesce(generateArgs.TemplateDir, res.Directories.Templates)
+	res.Directories.Target = coalesce(cmd.TargetDir, res.Directories.Target)
 
-	config.ConfigVersion = coalesce(userConfig.ConfigVersion, config.ConfigVersion)
-	config.ProjectModule = coalesce(generateArgs.ProjectModule, userConfig.ProjectModule, config.ProjectModule)
-	config.RuntimeModule = coalesce(generateArgs.RuntimeModule, userConfig.RuntimeModule, config.RuntimeModule)
-	config.Directories.Templates = coalesce(generateArgs.TemplateDir, userConfig.Directories.Templates, config.Directories.Templates)
-	config.Directories.Target = coalesce(cmd.TargetDir, userConfig.Directories.Target, config.Directories.Target)
+	res.Resolver.AllowRemoteReferences = coalesce(generateArgs.AllowRemoteRefs, res.Resolver.AllowRemoteReferences)
+	res.Resolver.SearchDirectory = coalesce(generateArgs.ResolverSearchDir, res.Resolver.SearchDirectory)
+	res.Resolver.Timeout = coalesce(generateArgs.ResolverTimeout, res.Resolver.Timeout)
+	res.Resolver.Command = coalesce(generateArgs.ResolverCommand, res.Resolver.Command)
+	res.Render.PreambleTemplate = coalesce(generateArgs.PreambleTemplate, res.Render.PreambleTemplate)
+	res.Render.DisableFormatting = coalesce(generateArgs.DisableFormatting, res.Render.DisableFormatting)
 
-	// *Replace* selections
-	if len(userConfig.Selections) > 0 {
-		config.Selections = slices.Clone(userConfig.Selections)
-	}
+	res.Client.GoModTemplate = coalesce(generateArgs.goModTemplate, res.Client.GoModTemplate)
 
-	config.Resolver.AllowRemoteReferences = coalesce(generateArgs.AllowRemoteRefs, userConfig.Resolver.AllowRemoteReferences, config.Resolver.AllowRemoteReferences)
-	config.Resolver.SearchDirectory = coalesce(generateArgs.ResolverSearchDir, userConfig.Resolver.SearchDirectory, config.Resolver.SearchDirectory)
-	config.Resolver.Timeout = coalesce(generateArgs.ResolverTimeout, userConfig.Resolver.Timeout, config.Resolver.Timeout)
-	config.Resolver.Command = coalesce(generateArgs.ResolverCommand, userConfig.Resolver.Command, config.Resolver.Command)
-	config.Render.PreambleTemplate = coalesce(generateArgs.PreambleTemplate, userConfig.Render.PreambleTemplate, config.Render.PreambleTemplate)
-	config.Render.DisableFormatting = coalesce(generateArgs.DisableFormatting, userConfig.Render.DisableFormatting, config.Render.DisableFormatting)
-
-	config.Implementations.Directory = coalesce(userConfig.Implementations.Directory, config.Implementations.Directory)
-	config.Implementations.Disable = coalesce(userConfig.Implementations.Disable, config.Implementations.Disable)
-	// *Replace* implementations.protocols
-	if len(userConfig.Implementations.Protocols) > 0 {
-		config.Implementations.Protocols = slices.Clone(userConfig.Implementations.Protocols)
-	}
-
-	config.Client.GoModTemplate = coalesce(generateArgs.goModTemplate, userConfig.Client.GoModTemplate, config.Client.GoModTemplate)
-	return
+	return res
 }
 
 func getPubSubVariant(cmd *GenerateCmd) (pub bool, sub bool, variant *generatePubSubArgs) {
