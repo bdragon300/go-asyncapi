@@ -40,6 +40,6 @@ implementations:
   directory: impl/{{ .Manifest.Protocol }}
 
 client:
-  outputFile: client
+  outputFile: ./client
   outputSourceFile: client.go
   goModTemplate: go.mod.tmpl

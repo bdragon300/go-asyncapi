@@ -87,12 +87,12 @@ func cliClient(cmd *ClientCmd, globalConfig toolConfig) error {
 			outputFile += ".exe"
 		}
 	}
-	outputFile, err = filepath.Abs(outputFile)
+	absoluteOutputFile, err := filepath.Abs(outputFile)
 	if err != nil {
 		return fmt.Errorf("resolve output file path: %w", err)
 	}
-	logger.Debug("Compile the executable", "sourceFile", sourceFile, "outputFile", outputFile)
-	err = compileClientApp(sourceFile, outputFile)
+	logger.Debug("Compile the executable", "sourceFile", sourceFile, "outputFile", absoluteOutputFile)
+	err = compileClientApp(sourceFile, absoluteOutputFile)
 	switch {
 	case errors.Is(err, exec.ErrNotFound):
 		logger.Error(
@@ -104,7 +104,7 @@ func cliClient(cmd *ClientCmd, globalConfig toolConfig) error {
 		return fmt.Errorf("run generated code: %w", err)
 	}
 
-	logger.Info("Client executable compiled", "file", outputFile)
+	logger.Infof("Client executable saved to %q", outputFile)
 
 	return nil
 }
