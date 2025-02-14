@@ -49,7 +49,6 @@ import (
 )
 
 const (
-	defaultConfigFileName = "default_config.yaml"
 	mainTemplateName = "main.tmpl"
 )
 
@@ -96,33 +95,21 @@ func cliGenerate(cmd *GenerateCmd, globalConfig toolConfig) error {
 	}
 
 	compileOpts := getCompileOpts(cmdConfig, isPub, isSub)
-	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Directories.Target)
+	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Directories.Target, true)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
 	}
 	renderManager := manager.NewTemplateRenderManager(renderOpts)
 
 	//
-	// Compilation
+	// Compilation & linking
 	//
 	fileResolver := getResolver(cmdConfig)
 	specURL := specurl.Parse(pubSubOpts.Spec)
-	logger.Debug("Run compilation")
-	modules, err := generationCompile(specURL, compileOpts, fileResolver)
+	modules, err := runCompilationLinking(fileResolver, specURL, compileOpts)
 	if err != nil {
 		return fmt.Errorf("compilation: %w", err)
 	}
-	logger.Debug("Compilation complete", "files", len(modules))
-	objSources := lo.MapValues(modules, func(value *compiler.Module, _ string) linker.ObjectSource { return value })
-
-	//
-	// Linking
-	//
-	logger.Debug("Run linking")
-	if err = generationLinking(objSources); err != nil {
-		return fmt.Errorf("linking: %w", err)
-	}
-	logger.Debug("Linking complete")
 
 	//
 	// Rendering
@@ -170,7 +157,7 @@ func cliGenerate(cmd *GenerateCmd, globalConfig toolConfig) error {
 		return fmt.Errorf("parse templates: %w", err)
 	}
 	allObjects := lo.FlatMap(lo.Values(modules), func(m *compiler.Module, _ int) []common.CompileObject { return m.AllObjects() })
-	renderQueue := buildRenderQueue(allObjects, renderOpts.Selections)
+	renderQueue := selectObjects(allObjects, renderOpts.Selections)
 	if err = renderer.RenderObjects(renderQueue, renderManager); err != nil {
 		return fmt.Errorf("render objects: %w", err)
 	}
@@ -298,7 +285,7 @@ func getCompileOpts(cfg toolConfig, isPub, isSub bool) common.CompileOpts {
 	}
 }
 
-func getRenderOpts(conf toolConfig, targetDir string) (common.RenderOpts, error) {
+func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (common.RenderOpts, error) {
 	logger := log.GetLogger("")
 	res := common.RenderOpts{
 		RuntimeModule:     conf.RuntimeModule,
@@ -331,7 +318,7 @@ func getRenderOpts(conf toolConfig, targetDir string) (common.RenderOpts, error)
 
 	// ImportBase
 	res.ImportBase = conf.ProjectModule
-	if res.ImportBase == "" {
+	if res.ImportBase == "" && findProjectModule {
 		m, err := getProjectModule()
 		if err != nil {
 			return res, fmt.Errorf("read go.mod (use -M arg to override): %w", err)
@@ -366,7 +353,7 @@ func getImplementationOpts(conf toolConfigImplementations) common.RenderImplemen
 	}
 }
 
-func buildRenderQueue(allObjects []common.CompileObject, selections []common.ConfigSelectionItem) (res []renderer.RenderQueueItem) {
+func selectObjects(allObjects []common.CompileObject, selections []common.ConfigSelectionItem) (res []renderer.RenderQueueItem) {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
 	for _, selection := range selections {
@@ -419,7 +406,26 @@ func getResolver(conf toolConfig) resolver.SpecFileResolver {
 	}
 }
 
-func generationCompile(specURL *specurl.URL, compileOpts common.CompileOpts, fileResolver resolver.SpecFileResolver) (map[string]*compiler.Module, error) {
+func runCompilationLinking(fileResolver resolver.SpecFileResolver, specURL *specurl.URL, compileOpts common.CompileOpts) (map[string]*compiler.Module, error) {
+	logger := log.GetLogger("")
+
+	logger.Debug("Run compilation")
+	modules, err := runCompilation(specURL, compileOpts, fileResolver)
+	if err != nil {
+		return nil, err
+	}
+	logger.Debug("Compilation complete", "files", len(modules))
+	objSources := lo.MapValues(modules, func(value *compiler.Module, _ string) linker.ObjectSource { return value })
+
+	logger.Debug("Run linking")
+	if err = runLinking(objSources); err != nil {
+		return nil, fmt.Errorf("linking: %w", err)
+	}
+	logger.Debug("Linking complete")
+	return modules, nil
+}
+
+func runCompilation(specURL *specurl.URL, compileOpts common.CompileOpts, fileResolver resolver.SpecFileResolver) (map[string]*compiler.Module, error) {
 	logger := log.GetLogger(log.LoggerPrefixCompilation)
 	compileQueue := []*specurl.URL{specURL}      // Queue of specIDs to compile
 	modules := make(map[string]*compiler.Module) // Compilers by spec id
@@ -480,7 +486,7 @@ func getImplementations(conf common.RenderImplementationsOpts, protocols []strin
 	return res, nil
 }
 
-func generationLinking(objSources map[string]linker.ObjectSource) error {
+func runLinking(objSources map[string]linker.ObjectSource) error {
 	logger := log.GetLogger(log.LoggerPrefixLinking)
 
 	// Linking refs

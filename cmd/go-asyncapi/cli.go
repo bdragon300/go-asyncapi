@@ -14,11 +14,14 @@ import (
 	"github.com/alexflint/go-arg"
 )
 
+const defaultConfigFileName = "default_config.yaml"
+
 var ErrWrongCliArgs = errors.New("cli args")
 
 type cli struct {
 	GenerateCmd         *GenerateCmd `arg:"subcommand:generate" help:"Generate the code based on AsyncAPI document"`
 	ClientCmd		   *ClientCmd   `arg:"subcommand:client" help:"Build the client executable based on AsyncAPI document (requires Go toolchain installed)"`
+	InfraCmd			*InfraCmd    `arg:"subcommand:infra" help:"Generate the infrastructure code based on AsyncAPI document"`
 	ListImplementations *struct{}    `arg:"subcommand:list-implementations" help:"Show all available protocol implementations"`
 	Verbose             int          `arg:"-v" help:"Logging verbosity: 0 default, 1 debug output, 2 more debug output" placeholder:"LEVEL"`
 	Quiet               bool         `help:"Suppress the logging output"`
@@ -50,7 +53,7 @@ func main() {
 	chlog.SetReportTimestamp(false)
 
 	logger := log.GetLogger("")
-	builtinConfig, err := loadConfig(assets.AssetFS, "default_config.yaml")
+	builtinConfig, err := loadConfig(assets.AssetFS, defaultConfigFileName)
 	if err != nil {
 		logger.Error("Cannot load built-in config", "error", err)
 		os.Exit(1)
@@ -80,6 +83,8 @@ func main() {
 		}
 	case cliArgs.ClientCmd != nil:
 		err = cliClient(cliArgs.ClientCmd, mergedConfig)
+	case cliArgs.InfraCmd != nil:
+		err = cliInfra(cliArgs.InfraCmd, mergedConfig)
 	default:
 		cliParser.Fail("No command specified. Try --help for more information")
 		os.Exit(1)

@@ -22,6 +22,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		InnerGolangType() common.GolangType
 	}
 
+	// TODO: logging inside functions
 	extraFuncs := template.FuncMap{
 		// Functions that return go code as string
 		"golit": func(val any) (string, error) { return templateGoLit(renderManager, val) },

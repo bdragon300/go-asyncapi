@@ -5,7 +5,9 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/types"
+	"github.com/bdragon300/go-asyncapi/run"
 	"github.com/samber/lo"
+	"net/url"
 )
 
 type Server struct {
@@ -51,6 +53,23 @@ func (s *Server) SelectProtoObject(protocol string) common.Renderable {
 
 func (s *Server) Name() string {
 	return s.OriginalName
+}
+
+func (s *Server) URL(variables []common.ConfigServerVariable) (*url.URL, error) {
+	if len(variables) == 0 {
+		return &url.URL{Scheme: s.Protocol, Host: s.Host, Path: s.Pathname}, nil
+	}
+
+	res := &url.URL{Scheme: s.Protocol, Path: s.Pathname}
+	params := lo.SliceToMap(variables, func(v common.ConfigServerVariable) (string, string) {
+		return v.Name, v.Value
+	})
+	h, err := run.ParamString{Expr: s.Host, Parameters: params}.Expand()
+	if err != nil {
+		return nil, fmt.Errorf("expand host %q: %w", s.Host, err)
+	}
+	res.Host = h
+	return res, nil
 }
 
 func (s *Server) BoundChannels() []common.Renderable {

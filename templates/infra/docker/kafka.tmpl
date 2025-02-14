@@ -1,0 +1,45 @@
+{{/* dot:
+  .Server == common.Renderable: Ref -> render.Server or render.Server
+  .ServerVariables == []common.ConfigServerVariable
+  */}}
+{{define "infra/docker/kafka/services"}}
+  "{{.Server.Name | toQuotable}}{{range .ServerVariables}}_{{.Value | toQuotable}}{{end}}":
+    image: docker.io/bitnami/kafka:latest
+    ports:
+      - "{{(.Server.URL .ServerVariables).Port | default "9092"}}:9092"
+    volumes:
+      - "{{.Server.Name | goidorig}}{{range .ServerVariables}}_{{.Value | goidorig}}{{end}}:/bitnami"
+    hostname: "{{(.Server.URL .ServerVariables).Hostname | toQuotable}}"
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=kafka_zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://{{(.Server.URL .ServerVariables).Hostname | toQuotable}}:{{(.Server.URL .ServerVariables).Port | default "9092"}}
+    depends_on:
+      - kafka_zookeeper
+{{- end}}
+
+{{/* dot == common.Renderable: Ref -> render.Server or render.Server */}}
+{{define "infra/docker/kafka/services/extra"}}
+  kafka_zookeeper:
+    image: docker.io/bitnami/zookeeper:latest
+    expose:
+      - "2181"
+    volumes:
+      - "zookeeper_data:/bitnami"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+{{- end}}
+
+{{/* dot:
+  .Server == common.Renderable: Ref -> render.Server or render.Server
+  .ServerVariables == []common.ConfigServerVariable
+  */}}
+{{define "infra/docker/kafka/volumes"}}
+  "{{.Server.Name | goidorig}}{{range .ServerVariables}}_{{.Value | goidorig}}{{end}}":
+{{- end}}
+
+{{/* dot == common.Renderable: Ref -> render.Server or render.Server */}}
+{{define "infra/docker/kafka/volumes/extra"}}
+  zookeeper_data:
+{{- end}}

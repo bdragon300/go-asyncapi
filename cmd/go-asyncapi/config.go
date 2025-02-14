@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/bdragon300/go-asyncapi/internal/types"
 	"gopkg.in/yaml.v3"
 	"io"
 	"io/fs"
@@ -21,6 +22,7 @@ type (
 
 		Implementations toolConfigImplementations `yaml:"implementations"`
 		Client toolConfigClient `yaml:"client"`
+		Infra toolConfigInfra `yaml:"infra"`
 	}
 
 	toolConfigDirectories struct {
@@ -78,6 +80,17 @@ type (
 		OutputSourceFile string `yaml:"outputSourceFile"`
 		KeepSource bool `yaml:"keepSource"`
 		GoModTemplate string `yaml:"goModTemplate"`
+	}
+
+	toolConfigInfra struct {
+		Servers []toolConfigInfraServer                                                              `yaml:"servers"`
+		Format string                                                                                         `yaml:"format"`
+		OutputFile string `yaml:"outputFile"`
+	}
+
+	toolConfigInfraServer struct {
+		Name string `yaml:"name"`
+		Variables types.Union2[types.OrderedMap[string, string], []types.OrderedMap[string, string]] `yaml:"variables"`
 	}
 )
 
@@ -140,6 +153,14 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 	res.Client.OutputFile = coalesce(userConf.Client.OutputFile, defaultConf.Client.OutputFile)
 	res.Client.OutputSourceFile = coalesce(userConf.Client.OutputSourceFile, defaultConf.Client.OutputSourceFile)
 	res.Client.KeepSource = coalesce(userConf.Client.KeepSource, defaultConf.Client.KeepSource)
+
+	res.Infra.Format = coalesce(userConf.Infra.Format, defaultConf.Infra.Format)
+	res.Infra.OutputFile = coalesce(userConf.Infra.OutputFile, defaultConf.Infra.OutputFile)
+	res.Infra.Servers = defaultConf.Infra.Servers
+	// *Replace* infra.servers
+	if len(userConf.Infra.Servers) > 0 {
+		res.Infra.Servers = userConf.Infra.Servers
+	}
 
 	return res
 }

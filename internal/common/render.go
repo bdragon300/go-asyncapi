@@ -77,6 +77,16 @@ type (
 		Package   string
 		ReusePackagePath string
 	}
+
+	ConfigInfraServer struct {
+		Name           string
+		VariableGroups [][]ConfigServerVariable
+	}
+
+	ConfigServerVariable struct {
+		Name  string
+		Value string
+	}
 )
 
 func (r ConfigSelectionItem) RenderProtocols() []string {

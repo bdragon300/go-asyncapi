@@ -43,3 +43,11 @@ client:
   outputFile: ./client
   outputSourceFile: client.go
   goModTemplate: go.mod.tmpl
+
+infra:
+  format: docker
+  outputFile: ./docker-compose.yaml
+  servers:
+    - name: "scram-connections"
+      variables:
+        host: example.com
