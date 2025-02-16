@@ -72,15 +72,6 @@ func main() {
 	switch {
 	case cliArgs.GenerateCmd != nil:
 		err = cliGenerate(cliArgs.GenerateCmd, mergedConfig)
-		if err != nil {
-			var multilineErr types.ErrorWithContent
-			switch {
-			case errors.Is(err, ErrWrongCliArgs):
-				cliParser.WriteHelp(os.Stderr)
-			case chlog.GetLevel() <= chlog.DebugLevel && errors.As(err, &multilineErr):
-				chlog.Error(err.Error(), "details", multilineErr.ContentLines())
-			}
-		}
 	case cliArgs.ClientCmd != nil:
 		err = cliClient(cliArgs.ClientCmd, mergedConfig)
 	case cliArgs.InfraCmd != nil:
@@ -91,6 +82,13 @@ func main() {
 	}
 
 	if err != nil {
+		var multilineErr types.ErrorWithContent
+		switch {
+		case errors.Is(err, ErrWrongCliArgs):
+			cliParser.WriteHelp(os.Stderr)
+		case chlog.GetLevel() <= chlog.DebugLevel && errors.As(err, &multilineErr):
+			chlog.Error(err.Error(), "details", multilineErr.ContentLines())
+		}
 		chlog.Error(err.Error())
 		chlog.Fatal("Cannot finish the command. Use -v=1 flag to enable debug output")
 		os.Exit(1)

@@ -80,6 +80,7 @@ type (
 		OutputSourceFile string `yaml:"outputSourceFile"`
 		KeepSource bool `yaml:"keepSource"`
 		GoModTemplate string `yaml:"goModTemplate"`
+		TempDir string `yaml:"tempDir"`
 	}
 
 	toolConfigInfra struct {

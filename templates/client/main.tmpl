@@ -4,6 +4,7 @@ const (
 	MaxLogPayloadSize     = 128
 	OutputFileCreateMode  = 0644
 	InputStreamBufferSize = 1024 * 1024
+	DefaultProxyHost      = "127.0.0.1"
 )
 
 {{- range .ActiveProtocols}}
@@ -14,6 +15,8 @@ type MainCli struct {
 	Subscribe *DirectionCliCmd `arg:"subcommand:subscribe" help:"Subscribe to a channel"`
 	Publish   *DirectionCliCmd `arg:"subcommand:publish" help:"Publish to a channel"`
 
+	Docker       bool              `arg:"--docker" help:"Proxy connections to a docker-proxy keeping the original destination port numbers. Proxy host can be specified with --proxy-host"`
+	ProxyHost    string            `arg:"--proxy-host" help:"If proxying is enabled, redirect all connections to this host" default:"127.0.0.1"`
 	Debug        bool              `arg:"-d,--debug" help:"Enable debug logging"`
 	File         string            `arg:"-f,--file" help:"File to read or write message data; - means stdin/stdout" default:"-"`
 	Multiple     bool              `arg:"-m,--multiple" help:"Do not exit after the first message processed"`
@@ -65,6 +68,7 @@ type channelOptions struct {
 
 	stream         {{goqual "io.ReadWriter"}}
 	publishHeaders map[string]string
+	proxyHost      string
 }
 
 func main() {
@@ -94,6 +98,10 @@ func main() {
 		multipleMessages: cliArgs.Multiple,
 		payloadSeparator: unescapeString(cliArgs.EndOfMessage),
 		publishHeaders:   cliArgs.Headers,
+	}
+
+	if cliArgs.Docker {
+		chanOptions.proxyHost = cliArgs.ProxyHost
 	}
 
 	switch cliArgs.File {

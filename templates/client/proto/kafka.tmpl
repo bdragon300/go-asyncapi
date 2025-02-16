@@ -16,6 +16,7 @@ if opts.debug {
     logLevel = {{goqual "github.com/twmb/franz-go/pkg/kgo.LogLevelDebug"}}
 }
 clientOptions = append(clientOptions, {{goqual "github.com/twmb/franz-go/pkg/kgo.WithLogger"}}({{goqual "github.com/twmb/franz-go/pkg/kgo.BasicLogger"}}({{goqual "os.Stderr"}}, logLevel, nil)))
+clientOptions = append(clientOptions, {{goqual "github.com/twmb/franz-go/pkg/kgo.AllowAutoTopicCreation"}}())
 {{- end}}
 
 {{define "clientApp/channeloperation/kafka/github.com/twmb/franz-go/producer/connect"}}

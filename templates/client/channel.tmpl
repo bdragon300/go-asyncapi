@@ -100,6 +100,13 @@ if serverURL == nil {
     }
     serverURL = u
 }
+if opts.proxyHost != "" {
+    if port := serverURL.Port(); port != "" {
+        serverURL.Host = {{goqual "net.JoinHostPort"}}(opts.proxyHost, port)
+    } else {
+        serverURL.Host = opts.proxyHost
+    }
+}
 {{goqual "log/slog.Debug"}}("Server URL", "value", serverURL)
 
 {{- with impl .Protocol}}

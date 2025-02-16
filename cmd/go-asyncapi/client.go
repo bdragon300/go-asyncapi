@@ -30,6 +30,7 @@ type ClientCmd struct {
 	KeepSource     bool   `arg:"--keep-source" help:"Do not automatically remove the generated code on exit"`
 
 	TemplateDir string `arg:"-T,--template-dir" help:"Directory with custom templates" placeholder:"DIR"`
+	TempDir string `arg:"--temp-dir" help:"Temporary directory to store the generated code. Implies --keep-source as well" placeholder:"DIR"`
 	PreambleTemplate string `arg:"--preamble-template" help:"Custom preamble template name" placeholder:"NAME"`
 	GoModTemplate string `arg:"--go-mod-template" help:"Custom go.mod template name" placeholder:"NAME"`
 
@@ -45,19 +46,22 @@ func cliClient(cmd *ClientCmd, globalConfig toolConfig) error {
 	cmdConfig := cliClientMergeConfig(globalConfig, cmd)
 
 	projectModule := lo.RandomString(10, lo.LowerCaseLettersCharset)
-	targetDir, err := os.MkdirTemp("", "go-asyncapi-client-")
-	if err != nil {
-		return fmt.Errorf("create temporary directory: %w", err)
-	}
-	defer func() {
-		if !cmdConfig.Client.KeepSource {
-			if err := os.RemoveAll(targetDir); err != nil {
-				logger.Warn("remove directory", "error", err)
-			}
-		} else {
-			logger.Info("Generated code location", "directory", targetDir)
+	targetDir := cmd.TempDir
+	if targetDir == "" {
+		var err error
+		targetDir, err = os.MkdirTemp("", "go-asyncapi-client-")
+		if err != nil {
+			return fmt.Errorf("create temporary directory: %w", err)
 		}
-	}()
+		defer func() {
+			if !cmdConfig.Client.KeepSource {
+				if err := os.RemoveAll(targetDir); err != nil {
+					logger.Warn("remove directory", "error", err)
+				}
+			}
+		}()
+	}
+	logger.Debug("Generated code location", "directory", targetDir)
 
 	logger.Debug("Generate the client code", "targetDir", targetDir, "module", projectModule)
 	generateCmd := &GenerateCmd{
@@ -75,7 +79,7 @@ func cliClient(cmd *ClientCmd, globalConfig toolConfig) error {
 			ClientApp:         true,
 		},
 	}
-	if err = cliGenerate(generateCmd, cmdConfig); err != nil {
+	if err := cliGenerate(generateCmd, cmdConfig); err != nil {
 		return fmt.Errorf("generate client code: %w", err)
 	}
 
@@ -151,6 +155,7 @@ func cliClientMergeConfig(globalConfig toolConfig, cmd *ClientCmd) toolConfig {
 	res.Client.OutputSourceFile = coalesce(cmd.OutputSourceFile, globalConfig.Client.OutputSourceFile)
 	res.Client.KeepSource = coalesce(cmd.KeepSource, globalConfig.Client.KeepSource)
 	res.Client.GoModTemplate = coalesce(cmd.GoModTemplate, globalConfig.Client.GoModTemplate)
+	res.Client.TempDir = coalesce(cmd.TempDir, globalConfig.Client.TempDir)
 
 	res.Directories.Templates = coalesce(cmd.TemplateDir, globalConfig.Directories.Templates)
 	res.Render.PreambleTemplate = coalesce(cmd.PreambleTemplate, globalConfig.Render.PreambleTemplate)
