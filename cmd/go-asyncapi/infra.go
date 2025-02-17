@@ -91,6 +91,7 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 		return fmt.Errorf("render infra: %w", err)
 	}
 
+	// TODO: -o - prints to stdout (and add this to cli help)
 	f, err := os.OpenFile(cmdConfig.Infra.OutputFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		return fmt.Errorf("open output file: %w", err)

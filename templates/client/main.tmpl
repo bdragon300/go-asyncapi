@@ -21,7 +21,7 @@ type MainCli struct {
 	File         string            `arg:"-f,--file" help:"File to read or write message data; - means stdin/stdout" default:"-"`
 	Multiple     bool              `arg:"-m,--multiple" help:"Do not exit after the first message processed"`
 	Headers      map[string]string `arg:"--headers" help:"Message header to send; format: key=value [key=value ...]"`
-	EndOfMessage string            `arg:"--end-of-message" help:"Delimiter that separates the message payloads in stream. Empty separator means EOF (in terminal it's caused by pressing Ctrl-D)" default:"\n"`
+	EndOfMessage string            `arg:"--end-of-message" help:"Delimiter that separates the message payloads in stream. Empty string means EOF (or Ctrl-D in interactive terminal)" default:"\n"`
 
 	RunTimeout {{goqual "time.Duration"}} `arg:"--run-timeout" help:"Timeout to run the command. By default, the command runs indefinitely"`
 }

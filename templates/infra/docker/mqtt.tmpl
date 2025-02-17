@@ -1,0 +1,27 @@
+{{/* dot:
+  .Server == common.Renderable: Ref -> render.Server or render.Server
+  .ServerVariables == []common.ConfigServerVariable
+  */}}
+{{define "infra/docker/mqtt/services"}}
+  "{{.Server.Name | toQuotable}}{{range .ServerVariables}}_{{.Value | toQuotable}}{{end}}":
+    {{- $server := deref .Server}}
+    {{- $port := ($server.URL .ServerVariables).Port | default "1883"}}
+    image: emqx/emqx:latest
+    ports:
+      - "{{$port}}:1883"
+      {{if ndefined "port_18083"}}- "18083:18083"{{def "port_18083"}}{{end}}  # Management UI, creds:admin/public
+    volumes:
+      - "{{.Server.Name | goidorig}}-data{{range .ServerVariables}}_{{.Value | goidorig}}{{end}}:/opt/emqx/data"
+      - "{{.Server.Name | goidorig}}-log{{range .ServerVariables}}_{{.Value | goidorig}}{{end}}:/opt/emqx/log"
+    hostname: "{{($server.URL .ServerVariables).Hostname | toQuotable}}"
+    restart: on-failure
+{{- end}}
+
+{{/* dot:
+  .Server == common.Renderable: Ref -> render.Server or render.Server
+  .ServerVariables == []common.ConfigServerVariable
+  */}}
+{{define "infra/docker/mqtt/volumes"}}
+  "{{.Server.Name | goidorig}}-data{{range .ServerVariables}}_{{.Value | goidorig}}{{end}}":
+  "{{.Server.Name | goidorig}}-log{{range .ServerVariables}}_{{.Value | goidorig}}{{end}}":
+{{- end}}

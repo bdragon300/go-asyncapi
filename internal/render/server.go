@@ -55,8 +55,9 @@ func (s *Server) Name() string {
 	return s.OriginalName
 }
 
-func (s *Server) URL(variables []common.ConfigServerVariable) (*url.URL, error) {
-	if len(variables) == 0 {
+func (s *Server) URL(input any) (*url.URL, error) {
+	variables, ok := input.([]common.ConfigServerVariable)
+	if lo.IsNil(input) || !ok || len(variables) == 0 {
 		return &url.URL{Scheme: s.Protocol, Host: s.Host, Path: s.Pathname}, nil
 	}
 

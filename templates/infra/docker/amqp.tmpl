@@ -1,0 +1,28 @@
+{{/* dot:
+  .Server == common.Renderable: Ref -> render.Server or render.Server
+  .ServerVariables == []common.ConfigServerVariable
+  */}}
+{{define "infra/docker/amqp/services"}}
+  "{{.Server.Name | toQuotable}}{{range .ServerVariables}}_{{.Value | toQuotable}}{{end}}":
+    {{- $server := deref .Server}}
+    {{- $port := ($server.URL .ServerVariables).Port | default "5672"}}
+    image: rabbitmq:management-alpine
+    ports:
+      - "{{$port}}:5672"
+      {{if ndefined "port_15672"}}- "15672:15672"{{def "port_15672"}}{{end}}  # Management UI, creds:user/password
+    volumes:
+      - "{{.Server.Name | goidorig}}{{range .ServerVariables}}_{{.Value | goidorig}}{{end}}:/var/lib/rabbitmq"
+    hostname: "{{($server.URL .ServerVariables).Hostname | toQuotable}}"
+    restart: on-failure
+    environment:
+      - RABBITMQ_DEFAULT_USER=user
+      - RABBITMQ_DEFAULT_PASS=password
+{{- end}}
+
+{{/* dot:
+  .Server == common.Renderable: Ref -> render.Server or render.Server
+  .ServerVariables == []common.ConfigServerVariable
+  */}}
+{{define "infra/docker/amqp/volumes"}}
+  "{{.Server.Name | goidorig}}{{range .ServerVariables}}_{{.Value | goidorig}}{{end}}":
+{{- end}}

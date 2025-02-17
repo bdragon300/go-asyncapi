@@ -47,7 +47,3 @@ client:
 infra:
   format: docker
   outputFile: ./docker-compose.yaml
-  servers:
-    - name: "scram-connections"
-      variables:
-        host: example.com

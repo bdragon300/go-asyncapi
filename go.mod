@@ -1,8 +1,8 @@
 module github.com/bdragon300/go-asyncapi
 
-go 1.22.5
+go 1.23.3
 
-toolchain go1.23.2
+toolchain go1.23.4
 
 require (
 	github.com/BobuSumisu/aho-corasick v1.0.3
@@ -32,7 +32,7 @@ require (
 	github.com/charmbracelet/lipgloss v0.10.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
-	github.com/go-sprout/sprout v0.6.0 // indirect
+	github.com/go-sprout/sprout v1.0.0 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
@@ -47,7 +47,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/twmb/franz-go/pkg/kmsg v1.7.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/sync v0.11.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
