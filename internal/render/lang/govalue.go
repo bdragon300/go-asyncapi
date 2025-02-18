@@ -64,7 +64,6 @@ func (gv *GoValue) String() string {
 	return "GoValue nil"
 }
 
-
 func ConstructGoValue(value any, excludeFields []string, overrideType common.GolangType) *GoValue {
 	type stringAnyMap interface {
 		Entries() []lo.Entry[string, any]

@@ -12,16 +12,16 @@ import (
 )
 
 type Channel struct {
-	Address    string                              `json:"address" yaml:"address"`
-	Messages  types.OrderedMap[string, Message]    `json:"messages" yaml:"messages"`
-	Title 	string                              `json:"title" yaml:"title"`
-	Summary 	string                              `json:"summary" yaml:"summary"`
-	Description string          `json:"description" yaml:"description"`
-	Servers     []StandaloneRef `json:"servers" yaml:"servers"`
-	Parameters  types.OrderedMap[string, Parameter] `json:"parameters" yaml:"parameters"`
-	Tags 	  []Tag                               `json:"tags" yaml:"tags"`
-	ExternalDocs *ExternalDocumentation             `json:"externalDocs" yaml:"externalDocs"`
-	Bindings    *ChannelBindings                    `json:"bindings" yaml:"bindings"`
+	Address      string                              `json:"address" yaml:"address"`
+	Messages     types.OrderedMap[string, Message]   `json:"messages" yaml:"messages"`
+	Title        string                              `json:"title" yaml:"title"`
+	Summary      string                              `json:"summary" yaml:"summary"`
+	Description  string                              `json:"description" yaml:"description"`
+	Servers      []StandaloneRef                     `json:"servers" yaml:"servers"`
+	Parameters   types.OrderedMap[string, Parameter] `json:"parameters" yaml:"parameters"`
+	Tags         []Tag                               `json:"tags" yaml:"tags"`
+	ExternalDocs *ExternalDocumentation              `json:"externalDocs" yaml:"externalDocs"`
+	Bindings     *ChannelBindings                    `json:"bindings" yaml:"bindings"`
 
 	XGoName string `json:"x-go-name" yaml:"x-go-name"`
 	XIgnore bool   `json:"x-ignore" yaml:"x-ignore"`
@@ -164,5 +164,5 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 }
 
 type SecurityRequirement struct {
-	types.OrderedMap[string, types.Union2[[]string, string]]  // Possible values: `"name": []` or `"$ref": "url"`
+	types.OrderedMap[string, types.Union2[[]string, string]] // Possible values: `"name": []` or `"$ref": "url"`
 }

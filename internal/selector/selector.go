@@ -1,9 +1,10 @@
 package selector
 
 import (
+	"regexp"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/samber/lo"
-	"regexp"
 )
 
 func SelectObjects(objects []common.CompileObject, selection common.ConfigSelectionItem) []common.CompileObject {

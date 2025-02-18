@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/bdragon300/go-asyncapi/internal/log"
-	"github.com/bdragon300/go-asyncapi/internal/specurl"
-	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"io"
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/bdragon300/go-asyncapi/internal/log"
+	"github.com/bdragon300/go-asyncapi/internal/specurl"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
 )
 
 const subprocessGracefulShutdownTimeout = 3 * time.Second
@@ -82,4 +83,3 @@ func (r SubprocessSpecFileResolver) getCommand(ctx context.Context) (subprocessS
 
 	return res, nil
 }
-

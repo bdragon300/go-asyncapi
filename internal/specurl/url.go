@@ -2,10 +2,10 @@ package specurl
 
 import (
 	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/samber/lo"
-	"slices"
 )
 
 func Parse(ref string) *URL {

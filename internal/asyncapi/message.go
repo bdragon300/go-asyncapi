@@ -3,6 +3,7 @@ package asyncapi
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/samber/lo"
@@ -112,7 +113,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	res.AllActiveOperationsPromise = prmOp
 	ctx.PutListPromise(prmOp)
 
-	prmAsyncAPI := lang.NewCbPromise[*render.AsyncAPI](func(item common.CompileObject, path []string) bool {
+	prmAsyncAPI := lang.NewCbPromise[*render.AsyncAPI](func(item common.CompileObject, _ []string) bool {
 		_, ok := item.Renderable.(*render.AsyncAPI)
 		return ok
 	}, nil)
@@ -140,7 +141,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 		}
 
 		ref := ctx.PathStackRef("bindings")
-		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref,nil)
+		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, nil)
 		ctx.PutPromise(res.BindingsPromise)
 	}
 
@@ -148,7 +149,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	if m.CorrelationID != nil {
 		ctx.Logger.Trace("Message correlationId")
 		ref := ctx.PathStackRef("correlationId")
-		res.CorrelationIDPromise = lang.NewPromise[*render.CorrelationID](ref,nil)
+		res.CorrelationIDPromise = lang.NewPromise[*render.CorrelationID](ref, nil)
 		ctx.PutPromise(res.CorrelationIDPromise)
 	}
 

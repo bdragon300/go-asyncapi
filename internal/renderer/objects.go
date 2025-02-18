@@ -4,19 +4,20 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"text/template"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
-	"text/template"
 )
 
 type RenderQueueItem struct {
 	Selection common.ConfigSelectionItem
-	Object common.CompileObject
-	Err    error
+	Object    common.CompileObject
+	Err       error
 }
 
 func RenderObjects(queue []RenderQueueItem, mng *manager.TemplateRenderManager) error {

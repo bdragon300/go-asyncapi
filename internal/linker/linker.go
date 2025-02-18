@@ -2,8 +2,9 @@ package linker
 
 import (
 	"fmt"
-	"github.com/bdragon300/go-asyncapi/internal/log"
 	"strings"
+
+	"github.com/bdragon300/go-asyncapi/internal/log"
 
 	"github.com/bdragon300/go-asyncapi/internal/specurl"
 

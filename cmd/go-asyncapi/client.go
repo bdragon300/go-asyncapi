@@ -3,9 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/bdragon300/go-asyncapi/internal/log"
-	chlog "github.com/charmbracelet/log"
-	"github.com/samber/lo"
 	"os"
 	"os/exec"
 	"path"
@@ -13,32 +10,36 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/bdragon300/go-asyncapi/internal/log"
+	chlog "github.com/charmbracelet/log"
+	"github.com/samber/lo"
 )
 
 const (
-	toolchainCommand = "go"
-	goGetSubcommand     = "get"
-	goBuildSubcommand   = "build"
+	toolchainCommand  = "go"
+	goGetSubcommand   = "get"
+	goBuildSubcommand = "build"
 )
 
 type ClientCmd struct {
 	Spec string `arg:"required,positional" help:"AsyncAPI specification file path or url" placeholder:"PATH"`
 
-	ConfigFile     string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"PATH"`
-	OutputExecFile string `arg:"-o,--output" help:"Executable output file path" placeholder:"PATH"`
+	ConfigFile       string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"PATH"`
+	OutputExecFile   string `arg:"-o,--output" help:"Executable output file path" placeholder:"PATH"`
 	OutputSourceFile string `arg:"--output-source" help:"Source code output file path" placeholder:"PATH"`
-	KeepSource     bool   `arg:"--keep-source" help:"Do not automatically remove the generated code on exit"`
+	KeepSource       bool   `arg:"--keep-source" help:"Do not automatically remove the generated code on exit"`
 
-	TemplateDir string `arg:"-T,--template-dir" help:"Directory with custom templates" placeholder:"DIR"`
-	TempDir string `arg:"--temp-dir" help:"Temporary directory to store the generated code. Implies --keep-source as well" placeholder:"DIR"`
+	TemplateDir      string `arg:"-T,--template-dir" help:"Directory with custom templates" placeholder:"DIR"`
+	TempDir          string `arg:"--temp-dir" help:"Temporary directory to store the generated code. Implies --keep-source as well" placeholder:"DIR"`
 	PreambleTemplate string `arg:"--preamble-template" help:"Custom preamble template name" placeholder:"NAME"`
-	GoModTemplate string `arg:"--go-mod-template" help:"Custom go.mod template name" placeholder:"NAME"`
+	GoModTemplate    string `arg:"--go-mod-template" help:"Custom go.mod template name" placeholder:"NAME"`
 
-	RuntimeModule       string        `arg:"--runtime-module" help:"Runtime module name" placeholder:"MODULE"`
-	AllowRemoteRefs bool `arg:"--allow-remote-refs" help:"Allow resolver to fetch the files from remote $ref URLs"`
-	ResolverSearchDir   string        `arg:"--resolver-search-dir" help:"Directory to search the local spec files for [default: current working directory]" placeholder:"PATH"`
-	ResolverTimeout time.Duration `arg:"--resolver-timeout" help:"Timeout for resolver to resolve a spec file" placeholder:"DURATION"`
-	ResolverCommand string        `arg:"--resolver-command" help:"Custom resolver executable to use instead of built-in resolver" placeholder:"PATH"`
+	RuntimeModule     string        `arg:"--runtime-module" help:"Runtime module name" placeholder:"MODULE"`
+	AllowRemoteRefs   bool          `arg:"--allow-remote-refs" help:"Allow resolver to fetch the files from remote $ref URLs"`
+	ResolverSearchDir string        `arg:"--resolver-search-dir" help:"Directory to search the local spec files for [default: current working directory]" placeholder:"PATH"`
+	ResolverTimeout   time.Duration `arg:"--resolver-timeout" help:"Timeout for resolver to resolve a spec file" placeholder:"DURATION"`
+	ResolverCommand   string        `arg:"--resolver-command" help:"Custom resolver executable to use instead of built-in resolver" placeholder:"PATH"`
 }
 
 func cliClient(cmd *ClientCmd, globalConfig toolConfig) error {

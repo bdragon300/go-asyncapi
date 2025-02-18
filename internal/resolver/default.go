@@ -3,13 +3,14 @@ package resolver
 import (
 	"context"
 	"fmt"
-	"github.com/bdragon300/go-asyncapi/internal/log"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/bdragon300/go-asyncapi/internal/log"
 
 	"github.com/bdragon300/go-asyncapi/internal/specurl"
 
@@ -80,4 +81,3 @@ func (r DefaultSpecFileResolver) resolveRemote(specPath string) (io.ReadCloser, 
 	}
 	return resp.Body, nil
 }
-

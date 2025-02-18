@@ -5,7 +5,7 @@ type ProtoBuilder struct {
 }
 
 var Builder = ProtoBuilder{
-	ProtoName:  "ws",
+	ProtoName: "ws",
 }
 
 func (pb ProtoBuilder) ProtocolName() string {

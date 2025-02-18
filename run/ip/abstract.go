@@ -2,10 +2,11 @@ package ip
 
 import (
 	"context"
+	"io"
+
 	"github.com/bdragon300/go-asyncapi/run"
 	"golang.org/x/net/ipv4"
 	"golang.org/x/net/ipv6"
-	"io"
 )
 
 // Pub

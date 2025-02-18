@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"slices"
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 
 	"github.com/bdragon300/go-asyncapi/internal/types"
 
@@ -223,7 +224,7 @@ func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.Sch
 				OriginalName:  ctx.GenerateObjName(o.Title, ""),
 				Description:   o.Description,
 				HasDefinition: hasDefinition,
-				ObjectKind: lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
+				ObjectKind:    lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
 			},
 			AliasedType: aliasedType,
 		}
@@ -256,7 +257,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 			OriginalName:  ctx.GenerateObjName(objName, ""),
 			Description:   o.Description,
 			HasDefinition: hasDefinition,
-			ObjectKind: lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
+			ObjectKind:    lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
 		},
 	}
 	// TODO: cache the object name in case any sub-schemas recursively reference it
@@ -382,7 +383,7 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 			OriginalName:  ctx.GenerateObjName(objName, ""),
 			Description:   o.Description,
 			HasDefinition: hasDefinition,
-			ObjectKind: lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
+			ObjectKind:    lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
 		},
 		ItemsType: nil,
 	}
@@ -428,7 +429,7 @@ func (o Object) buildUnionStruct(ctx *common.CompileContext, flags map[common.Sc
 				OriginalName:  ctx.GenerateObjName(objName, ""),
 				Description:   o.Description,
 				HasDefinition: hasDefinition,
-				ObjectKind: lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
+				ObjectKind:    lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
 			},
 		},
 	}

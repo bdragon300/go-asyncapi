@@ -3,6 +3,7 @@ package asyncapi
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
@@ -48,7 +49,7 @@ func BuildProtoChannelStruct(
 	if target.IsPublisher {
 		ctx.Logger.Trace("Channel publish operation", "proto", protoName)
 		chanStruct.Fields = append(chanStruct.Fields, lang.GoStructField{
-			Name:        "publisher",
+			Name: "publisher",
 			Type: &lang.GoSimple{
 				TypeName:    "Publisher",
 				Import:      ctx.RuntimeModule(protoName),
@@ -61,7 +62,7 @@ func BuildProtoChannelStruct(
 	if target.IsSubscriber {
 		ctx.Logger.Trace("Channel subscribe operation", "proto", protoName)
 		chanStruct.Fields = append(chanStruct.Fields, lang.GoStructField{
-			Name:        "subscriber",
+			Name: "subscriber",
 			Type: &lang.GoSimple{
 				TypeName:    "Subscriber",
 				Import:      ctx.RuntimeModule(protoName),
@@ -110,7 +111,7 @@ func BuildProtoOperation(ctx *common.CompileContext, source *Operation, target *
 	prmChType := lang.NewGolangTypePromise(source.Channel.Ref, func(obj common.Renderable) common.GolangType {
 		ch := obj.(*render.Channel)
 		if ch.Dummy {
-			return &lang.GoSimple{TypeName: "any", IsInterface: true}  // Dummy type
+			return &lang.GoSimple{TypeName: "any", IsInterface: true} // Dummy type
 		}
 		protoCh, found := lo.Find(ch.ProtoChannels, func(p *render.ProtoChannel) bool {
 			return p.Protocol == proto
@@ -124,7 +125,7 @@ func BuildProtoOperation(ctx *common.CompileContext, source *Operation, target *
 	prmCh := lang.NewPromise[*render.ProtoChannel](source.Channel.Ref, func(obj common.Renderable) *render.ProtoChannel {
 		ch := obj.(*render.Channel)
 		if ch.Dummy {
-			return &render.ProtoChannel{Channel: ch, Protocol: proto}  // Dummy channel
+			return &render.ProtoChannel{Channel: ch, Protocol: proto} // Dummy channel
 		}
 		protoCh, found := lo.Find(ch.ProtoChannels, func(p *render.ProtoChannel) bool {
 			return p.Protocol == proto
@@ -151,4 +152,3 @@ func BuildProtoOperation(ctx *common.CompileContext, source *Operation, target *
 		Protocol:            proto,
 	}
 }
-

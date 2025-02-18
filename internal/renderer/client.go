@@ -2,6 +2,7 @@ package renderer
 
 import (
 	"fmt"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
@@ -17,7 +18,7 @@ func RenderClientApp(queue []RenderQueueItem, activeProtocols []string, goModTem
 	})
 	logger.Debug("Objects selected", "count", len(objects))
 	ctx := tmpl.ClientAppTemplateContext{
-		RenderOpts:       mng.RenderOpts,
+		RenderOpts:      mng.RenderOpts,
 		Objects:         objects,
 		ActiveProtocols: activeProtocols,
 	}

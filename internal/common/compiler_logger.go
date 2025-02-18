@@ -2,8 +2,9 @@ package common
 
 import (
 	"fmt"
-	"github.com/bdragon300/go-asyncapi/internal/log"
 	"strings"
+
+	"github.com/bdragon300/go-asyncapi/internal/log"
 )
 
 type CompilerLogger struct {

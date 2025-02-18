@@ -6,9 +6,9 @@ import (
 
 type ServerVariable struct {
 	OriginalName string
-	Description  string // TODO
-	Enum        []string // TODO: implement validation
-	Default     string
+	Description  string   // TODO
+	Enum         []string // TODO: implement validation
+	Default      string
 }
 
 func (s *ServerVariable) Kind() common.ObjectKind {

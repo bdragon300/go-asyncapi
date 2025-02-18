@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"encoding/json"
+
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
@@ -22,8 +23,8 @@ func (pb ProtoBuilder) BuildServer(ctx *common.CompileContext, server *asyncapi.
 		return nil, err
 	}
 	return &render.ProtoServer{
-		Server:    parent,
-		Type:      baseServer,
+		Server: parent,
+		Type:   baseServer,
 	}, nil
 }
 

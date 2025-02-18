@@ -7,18 +7,18 @@ type ObjectKind string
 
 const (
 	// ObjectKindOther is a utility language object, not intended for selection (type, value, interface, etc.)
-	ObjectKindOther ObjectKind = ""
-	ObjectKindSchema = "schema"
-	ObjectKindServer = "server"
-	ObjectKindChannel = "channel"
-	ObjectKindOperation = "operation"
-	ObjectKindMessage = "message"
-	ObjectKindParameter = "parameter"
+	ObjectKindOther     ObjectKind = ""
+	ObjectKindSchema    ObjectKind = "schema"
+	ObjectKindServer    ObjectKind = "server"
+	ObjectKindChannel   ObjectKind = "channel"
+	ObjectKindOperation ObjectKind = "operation"
+	ObjectKindMessage   ObjectKind = "message"
+	ObjectKindParameter ObjectKind = "parameter"
 	// ObjectKindAsyncAPI is a utility object represents the entire AsyncAPI document
 	ObjectKindAsyncAPI = "asyncapi"
 )
 
-type Renderable interface {  // TODO: rename
+type Renderable interface { // TODO: rename
 	Kind() ObjectKind
 	// Selectable returns true if object can be picked for selections to invoke the template. If false, the object
 	// does not get to selections but still can be indirectly rendered inside the templates.
@@ -51,9 +51,9 @@ func CheckSameRenderables(a, b Renderable) bool {
 type (
 	ConfigSelectionItem struct {
 		Protocols        []string
-		ObjectKinds []string
-		ModuleURLRe  string
-		PathRe       string
+		ObjectKinds      []string
+		ModuleURLRe      string
+		PathRe           string
 		NameRe           string
 		Render           ConfigSelectionItemRender
 		ReusePackagePath string
@@ -62,19 +62,19 @@ type (
 	}
 
 	ConfigSelectionItemRender struct {
-		Template     string
-		File         string
-		Package      string
+		Template         string
+		File             string
+		Package          string
 		Protocols        []string
 		ProtoObjectsOnly bool
 	}
 
 	ConfigImplementationProtocol struct {
-		Protocol string
-		Name      string
-		Disable   bool
-		Directory string
-		Package   string
+		Protocol         string
+		Name             string
+		Disable          bool
+		Directory        string
+		Package          string
 		ReusePackagePath string
 	}
 
@@ -97,16 +97,16 @@ func (r ConfigSelectionItem) RenderProtocols() []string {
 }
 
 type RenderOpts struct {
-	RuntimeModule string
-	ImportBase    string
-	TargetDir    string
+	RuntimeModule     string
+	ImportBase        string
+	TargetDir         string
 	DisableFormatting bool
-	PreambleTemplate string
-	Selections []ConfigSelectionItem
+	PreambleTemplate  string
+	Selections        []ConfigSelectionItem
 }
 
 type RenderImplementationsOpts struct {
-	Disable bool
+	Disable   bool
 	Directory string
 	Protocols []ConfigImplementationProtocol
 }

@@ -3,10 +3,11 @@ package render
 import (
 	"cmp"
 	"fmt"
+	"slices"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/samber/lo"
-	"slices"
 )
 
 type Message struct {
@@ -15,21 +16,21 @@ type Message struct {
 	InType       *lang.GoStruct
 	Dummy        bool
 	IsSelectable bool // true if message should get to selections
-	IsPublisher bool
+	IsPublisher  bool
 	IsSubscriber bool
 
-	HeadersFallbackType  *lang.GoMap
-	HeadersTypePromise   *lang.Promise[*lang.GoStruct]
+	HeadersFallbackType *lang.GoMap
+	HeadersTypePromise  *lang.Promise[*lang.GoStruct]
 
 	AllActiveChannelsPromise   *lang.ListPromise[common.Renderable]
 	AllActiveOperationsPromise *lang.ListPromise[common.Renderable]
 
-	BindingsType         *lang.GoStruct                // nil if message bindings are not defined for message
-	BindingsPromise      *lang.Promise[*Bindings]      // nil if message bindings are not defined for message as well
+	BindingsType    *lang.GoStruct           // nil if message bindings are not defined for message
+	BindingsPromise *lang.Promise[*Bindings] // nil if message bindings are not defined for message as well
 
 	ContentType          string                        // Message's content type
 	CorrelationIDPromise *lang.Promise[*CorrelationID] // nil if correlationID is not defined for message
-	PayloadType          common.GolangType // `any` or a particular type
+	PayloadType          common.GolangType             // `any` or a particular type
 	AsyncAPIPromise      *lang.Promise[*AsyncAPI]
 
 	ProtoMessages []*ProtoMessage

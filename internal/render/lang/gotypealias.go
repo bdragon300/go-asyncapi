@@ -2,6 +2,7 @@ package lang
 
 import (
 	"fmt"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 )
 
@@ -26,7 +27,7 @@ func (p *GoTypeAlias) Addressable() bool {
 }
 
 func (p *GoTypeAlias) IsPointer() bool {
-	return false  // Type alias is not a pointer itself
+	return false // Type alias is not a pointer itself
 }
 
 func (p *GoTypeAlias) IsStruct() bool {

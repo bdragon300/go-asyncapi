@@ -2,6 +2,7 @@ package lang
 
 import (
 	"fmt"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/samber/lo"
 )
@@ -25,11 +26,11 @@ func newPromise[T common.Renderable](
 	return &Promise[T]{ref: ref, origin: origin, findCb: findCb, assignCb: assignCb}
 }
 
-type Promise[T common.Renderable] struct{
+type Promise[T common.Renderable] struct {
 	// AssignErrorNote is the optional error message additional note to be shown to user when assignment fails
 	AssignErrorNote string
 
-	ref             string
+	ref      string
 	origin   common.PromiseOrigin
 	findCb   common.PromiseFindCbFunc
 	assignCb promiseAssignCbFunc[T]
@@ -154,7 +155,7 @@ type ListPromise[T common.Renderable] struct {
 	// AssignErrorNote is the optional error message additional note to be shown to user when assignment fails
 	AssignErrorNote string
 
-	findCb common.PromiseFindCbFunc
+	findCb       common.PromiseFindCbFunc
 	assignItemCb promiseAssignCbFunc[T]
 
 	targets  []T

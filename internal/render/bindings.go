@@ -8,7 +8,7 @@ import (
 
 // Bindings never renders itself, only as a part of other object
 type Bindings struct {
-	OriginalName string  // Actually it isn't used
+	OriginalName string // Actually it isn't used
 
 	Values types.OrderedMap[string, *lang.GoValue] // Binding values by protocol
 	// Value of jsonschema fields as json marshalled strings
@@ -16,7 +16,7 @@ type Bindings struct {
 }
 
 func (b *Bindings) Kind() common.ObjectKind {
-	return common.ObjectKindOther  // TODO: separate Bindings from Channel, leaving only the Promise, and make its own 4 ObjectKinds
+	return common.ObjectKindOther // TODO: separate Bindings from Channel, leaving only the Promise, and make its own 4 ObjectKinds
 }
 
 func (b *Bindings) Selectable() bool {

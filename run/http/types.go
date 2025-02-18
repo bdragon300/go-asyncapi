@@ -3,7 +3,7 @@ package http
 type (
 	ServerBindings struct{}
 
-	ChannelBindings struct {}
+	ChannelBindings struct{}
 
 	OperationBindings struct {
 		Method string
@@ -11,7 +11,7 @@ type (
 	}
 
 	MessageBindings struct {
-		Headers any // jsonschema contents
-		StatusCode int  // TODO: implement if operation.reply is set
+		Headers    any // jsonschema contents
+		StatusCode int // TODO: implement if operation.reply is set
 	}
 )

@@ -2,27 +2,28 @@ package main
 
 import (
 	"fmt"
-	"github.com/bdragon300/go-asyncapi/internal/types"
-	"gopkg.in/yaml.v3"
 	"io"
 	"io/fs"
 	"time"
+
+	"github.com/bdragon300/go-asyncapi/internal/types"
+	"gopkg.in/yaml.v3"
 )
 
 type (
 	toolConfig struct {
-		ConfigVersion int`yaml:"configVersion"`
-		ProjectModule string `yaml:"projectModule"`
-		RuntimeModule string `yaml:"runtimeModule"`
-		Directories toolConfigDirectories `yaml:"directories"`
+		ConfigVersion int                   `yaml:"configVersion"`
+		ProjectModule string                `yaml:"projectModule"`
+		RuntimeModule string                `yaml:"runtimeModule"`
+		Directories   toolConfigDirectories `yaml:"directories"`
 
-		Selections        []toolConfigSelection `yaml:"selections"`
-		Resolver          toolConfigResolver    `yaml:"resolver"`
-		Render toolConfigRender `yaml:"render"`
+		Selections []toolConfigSelection `yaml:"selections"`
+		Resolver   toolConfigResolver    `yaml:"resolver"`
+		Render     toolConfigRender      `yaml:"render"`
 
 		Implementations toolConfigImplementations `yaml:"implementations"`
-		Client toolConfigClient `yaml:"client"`
-		Infra toolConfigInfra `yaml:"infra"`
+		Client          toolConfigClient          `yaml:"client"`
+		Infra           toolConfigInfra           `yaml:"infra"`
 	}
 
 	toolConfigDirectories struct {
@@ -31,66 +32,66 @@ type (
 	}
 
 	toolConfigSelection struct {
-		NameRe		   string            `yaml:"nameRe"`
-		ObjectKinds     []string            `yaml:"objectKinds"`
-		ModuleURLRe      string            `yaml:"moduleURLRe"`
-		PathRe           string            `yaml:"pathRe"`
-		Protocols        []string          `yaml:"protocols"`
-		Render 		 toolConfigSelectionRender `yaml:"render"`
-		ReusePackagePath string `yaml:"reusePackagePath"`
+		NameRe           string                    `yaml:"nameRe"`
+		ObjectKinds      []string                  `yaml:"objectKinds"`
+		ModuleURLRe      string                    `yaml:"moduleURLRe"`
+		PathRe           string                    `yaml:"pathRe"`
+		Protocols        []string                  `yaml:"protocols"`
+		Render           toolConfigSelectionRender `yaml:"render"`
+		ReusePackagePath string                    `yaml:"reusePackagePath"`
 	}
 
 	toolConfigSelectionRender struct {
-		Protocols        []string          `yaml:"protocols"`
-		ProtoObjectsOnly bool              `yaml:"protoObjectsOnly"`
-		Template         string            `yaml:"template"`
-		File             string            `yaml:"file"`
-		Package          string            `yaml:"package"`
+		Protocols        []string `yaml:"protocols"`
+		ProtoObjectsOnly bool     `yaml:"protoObjectsOnly"`
+		Template         string   `yaml:"template"`
+		File             string   `yaml:"file"`
+		Package          string   `yaml:"package"`
 	}
 
 	toolConfigResolver struct {
 		AllowRemoteReferences bool          `yaml:"allowRemoteReferences"`
-		SearchDirectory string        `yaml:"searchDirectory"`
-		Timeout time.Duration `yaml:"timeout"`
-		Command string        `yaml:"command"`
+		SearchDirectory       string        `yaml:"searchDirectory"`
+		Timeout               time.Duration `yaml:"timeout"`
+		Command               string        `yaml:"command"`
 	}
 
 	toolConfigRender struct {
-		PreambleTemplate string `yaml:"preambleTemplate"`
-		DisableFormatting bool `yaml:"disableFormatting"`
+		PreambleTemplate  string `yaml:"preambleTemplate"`
+		DisableFormatting bool   `yaml:"disableFormatting"`
 	}
 
 	toolConfigImplementations struct {
-		Disable bool `yaml:"disable"`
-		Directory string `yaml:"directory"` // Template expression, relative to the target directory
+		Disable   bool                               `yaml:"disable"`
+		Directory string                             `yaml:"directory"` // Template expression, relative to the target directory
 		Protocols []toolConfigImplementationProtocol `yaml:"protocols"`
 	}
 
 	toolConfigImplementationProtocol struct {
-		Protocol  string `yaml:"protocol"`
-		Name      string `yaml:"name"`
-		Disable   bool   `yaml:"disable"`
-		Directory string `yaml:"directory"` // Template expression, relative to the target directory
-		Package string `yaml:"package"`
+		Protocol         string `yaml:"protocol"`
+		Name             string `yaml:"name"`
+		Disable          bool   `yaml:"disable"`
+		Directory        string `yaml:"directory"` // Template expression, relative to the target directory
+		Package          string `yaml:"package"`
 		ReusePackagePath string `yaml:"reusePackagePath"`
 	}
 
 	toolConfigClient struct {
-		OutputFile string `yaml:"outputFile"`
+		OutputFile       string `yaml:"outputFile"`
 		OutputSourceFile string `yaml:"outputSourceFile"`
-		KeepSource bool `yaml:"keepSource"`
-		GoModTemplate string `yaml:"goModTemplate"`
-		TempDir string `yaml:"tempDir"`
+		KeepSource       bool   `yaml:"keepSource"`
+		GoModTemplate    string `yaml:"goModTemplate"`
+		TempDir          string `yaml:"tempDir"`
 	}
 
 	toolConfigInfra struct {
-		Servers []toolConfigInfraServer                                                              `yaml:"servers"`
-		Format string                                                                                         `yaml:"format"`
-		OutputFile string `yaml:"outputFile"`
+		Servers    []toolConfigInfraServer `yaml:"servers"`
+		Format     string                  `yaml:"format"`
+		OutputFile string                  `yaml:"outputFile"`
 	}
 
 	toolConfigInfraServer struct {
-		Name string `yaml:"name"`
+		Name      string                                                                             `yaml:"name"`
 		Variables types.Union2[types.OrderedMap[string, string], []types.OrderedMap[string, string]] `yaml:"variables"`
 	}
 )

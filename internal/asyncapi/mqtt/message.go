@@ -2,6 +2,7 @@ package mqtt
 
 import (
 	"encoding/json"
+
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -10,10 +11,10 @@ import (
 )
 
 type messageBindings struct {
-	PayloadFormatIndicator *int	`json:"payloadFormatIndicator" yaml:"payloadFormatIndicator"`
-	CorrelationData any	`json:"correlationData" yaml:"correlationData"` // jsonschema object
-	ContentType string	`json:"contentType" yaml:"contentType"`
-	ResponseTopic string	`json:"responseTopic" yaml:"responseTopic"`
+	PayloadFormatIndicator *int   `json:"payloadFormatIndicator" yaml:"payloadFormatIndicator"`
+	CorrelationData        any    `json:"correlationData" yaml:"correlationData"` // jsonschema object
+	ContentType            string `json:"contentType" yaml:"contentType"`
+	ResponseTopic          string `json:"responseTopic" yaml:"responseTopic"`
 }
 
 func (pb ProtoBuilder) BuildMessageBindings(ctx *common.CompileContext, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {

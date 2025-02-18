@@ -1,10 +1,11 @@
 package lang
 
 import (
-	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/samber/lo"
 	"strconv"
 	"strings"
+
+	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/samber/lo"
 )
 
 func NewRef(ref string, name string, selectable *bool) *Ref {
@@ -63,4 +64,3 @@ func (r *Ref) Name() string {
 func (r *Ref) UnwrapRenderable() common.Renderable {
 	return common.DerefRenderable(r.target)
 }
-

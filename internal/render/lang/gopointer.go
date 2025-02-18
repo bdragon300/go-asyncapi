@@ -5,7 +5,7 @@ import (
 )
 
 type GoPointer struct {
-	Type   common.GolangType
+	Type common.GolangType
 }
 
 func (p *GoPointer) Kind() common.ObjectKind {
@@ -40,7 +40,7 @@ func (p *GoPointer) InnerGolangType() common.GolangType {
 }
 
 func (p *GoPointer) Addressable() bool {
-	return false  // Prevent appearing pointer to pointer (var foo **MyType)
+	return false // Prevent appearing pointer to pointer (var foo **MyType)
 }
 
 func (p *GoPointer) IsPointer() bool {

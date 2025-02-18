@@ -19,11 +19,11 @@ type (
 	}
 
 	TopicConfiguration struct {
-		CleanupPolicy     TopicCleanupPolicy
+		CleanupPolicy       TopicCleanupPolicy
 		RetentionTime       time.Duration
-		RetentionBytes    int
+		RetentionBytes      int
 		DeleteRetentionTime time.Duration
-		MaxMessageBytes   int
+		MaxMessageBytes     int
 	}
 
 	TopicCleanupPolicy struct {

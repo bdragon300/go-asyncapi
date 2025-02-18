@@ -31,8 +31,8 @@ func guessSpecKind(decoder anyDecoder) (SpecKind, compiledObject, error) {
 	case test.Asyncapi != "":
 		return SpecKindAsyncapi, &asyncapi.AsyncAPI{}, nil
 	case test.Openapi != "":
-		panic("openapi not implemented")  // TODO
+		panic("openapi not implemented") // TODO
 	}
-	panic("jsonschema not implemented")  // TODO
+	panic("jsonschema not implemented") // TODO
 	// Assume that some data is jsonschema, TODO: maybe it's better to match more strict?
 }

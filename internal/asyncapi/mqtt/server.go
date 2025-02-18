@@ -2,6 +2,7 @@ package mqtt
 
 import (
 	"encoding/json"
+
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
@@ -12,12 +13,12 @@ import (
 )
 
 type serverBindings struct {
-	ClientID     string    `json:"clientId" yaml:"clientId"`
-	CleanSession bool      `json:"cleanSession" yaml:"cleanSession"`
-	LastWill     *lastWill `json:"lastWill" yaml:"lastWill"`
-	KeepAlive    int       `json:"keepAlive" yaml:"keepAlive"`
-	SessionExpiryInterval int `json:"sessionExpiryInterval" yaml:"sessionExpiryInterval"`
-	MaximumPacketSize int `json:"maximumPacketSize" yaml:"maximumPacketSize"`
+	ClientID              string    `json:"clientId" yaml:"clientId"`
+	CleanSession          bool      `json:"cleanSession" yaml:"cleanSession"`
+	LastWill              *lastWill `json:"lastWill" yaml:"lastWill"`
+	KeepAlive             int       `json:"keepAlive" yaml:"keepAlive"`
+	SessionExpiryInterval int       `json:"sessionExpiryInterval" yaml:"sessionExpiryInterval"`
+	MaximumPacketSize     int       `json:"maximumPacketSize" yaml:"maximumPacketSize"`
 }
 
 type lastWill struct {
@@ -33,8 +34,8 @@ func (pb ProtoBuilder) BuildServer(ctx *common.CompileContext, server *asyncapi.
 		return nil, err
 	}
 	return &render.ProtoServer{
-		Server:    parent,
-		Type:      baseServer,
+		Server: parent,
+		Type:   baseServer,
 	}, nil
 }
 

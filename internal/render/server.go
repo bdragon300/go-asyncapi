@@ -2,29 +2,30 @@ package render
 
 import (
 	"fmt"
+	"net/url"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/bdragon300/go-asyncapi/run"
 	"github.com/samber/lo"
-	"net/url"
 )
 
 type Server struct {
 	OriginalName string
 	Dummy        bool // x-ignore is set
 	IsSelectable bool // true if server is defined in `components` section
-	IsPublisher bool
+	IsPublisher  bool
 	IsSubscriber bool
 
 	AllActiveChannelsPromise *lang.ListPromise[common.Renderable]
 
-	Host string
-	Pathname string
+	Host            string
+	Pathname        string
 	Protocol        string
 	ProtocolVersion string
 
-	VariablesPromises  types.OrderedMap[string, *lang.Promise[*ServerVariable]]
+	VariablesPromises types.OrderedMap[string, *lang.Promise[*ServerVariable]]
 
 	BindingsType    *lang.GoStruct           // nil if bindings are not defined for server
 	BindingsPromise *lang.Promise[*Bindings] // nil if bindings are not defined for server as well

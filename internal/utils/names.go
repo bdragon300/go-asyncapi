@@ -15,7 +15,7 @@ import (
 	"github.com/samber/lo"
 )
 
-const defaultPackage 	  = "main"
+const defaultPackage = "main"
 
 var (
 	golangTypeReplaceRe = regexp.MustCompile("[^a-zA-Z0-9_]+")
@@ -123,7 +123,7 @@ func ToGoFilePath(pathString string) string {
 	fileName := strings.TrimSuffix(file, path.Ext(file))
 	normFile := normalizePathItem(fileName)
 
-	return path.Join(directory, normFile + ".go")
+	return path.Join(directory, normFile+".go")
 }
 
 func normalizePathItem(name string) string {

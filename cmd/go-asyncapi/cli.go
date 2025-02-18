@@ -2,12 +2,13 @@ package main
 
 import (
 	"errors"
-	"github.com/bdragon300/go-asyncapi/assets"
-	"github.com/bdragon300/go-asyncapi/internal/log"
-	"github.com/bdragon300/go-asyncapi/internal/types"
 	"io"
 	"os"
 	"path"
+
+	"github.com/bdragon300/go-asyncapi/assets"
+	"github.com/bdragon300/go-asyncapi/internal/log"
+	"github.com/bdragon300/go-asyncapi/internal/types"
 
 	chlog "github.com/charmbracelet/log"
 
@@ -20,8 +21,8 @@ var ErrWrongCliArgs = errors.New("cli args")
 
 type cli struct {
 	GenerateCmd         *GenerateCmd `arg:"subcommand:generate" help:"Generate the code based on AsyncAPI document"`
-	ClientCmd		   *ClientCmd   `arg:"subcommand:client" help:"Build the client executable based on AsyncAPI document (requires Go toolchain installed)"`
-	InfraCmd			*InfraCmd    `arg:"subcommand:infra" help:"Generate the infrastructure code based on AsyncAPI document"`
+	ClientCmd           *ClientCmd   `arg:"subcommand:client" help:"Build the client executable based on AsyncAPI document (requires Go toolchain installed)"`
+	InfraCmd            *InfraCmd    `arg:"subcommand:infra" help:"Generate the infrastructure code based on AsyncAPI document"`
 	ListImplementations *struct{}    `arg:"subcommand:list-implementations" help:"Show all available protocol implementations"`
 	Verbose             int          `arg:"-v" help:"Logging verbosity: 0 default, 1 debug output, 2 more debug output" placeholder:"LEVEL"`
 	Quiet               bool         `help:"Suppress the logging output"`
@@ -82,17 +83,17 @@ func main() {
 	}
 
 	if err != nil {
-		var multilineErr types.ErrorWithContent
+		var me types.MultilineError
 		switch {
 		case errors.Is(err, ErrWrongCliArgs):
 			cliParser.WriteHelp(os.Stderr)
-		case chlog.GetLevel() <= chlog.DebugLevel && errors.As(err, &multilineErr):
-			chlog.Error(err.Error(), "details", multilineErr.ContentLines())
+		case chlog.GetLevel() <= chlog.DebugLevel && errors.As(err, &me):
+			chlog.Error(err.Error(), "details", me.ContentLines())
 		}
 		chlog.Error(err.Error())
 		chlog.Fatal("Cannot finish the command. Use -v=1 flag to enable debug output")
 		os.Exit(1)
-	} else {
-		chlog.Info("Done")
 	}
+
+	chlog.Info("Done")
 }

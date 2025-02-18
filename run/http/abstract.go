@@ -2,8 +2,9 @@ package http
 
 import (
 	"context"
-	"github.com/bdragon300/go-asyncapi/run"
 	"io"
+
+	"github.com/bdragon300/go-asyncapi/run"
 )
 
 // Pub

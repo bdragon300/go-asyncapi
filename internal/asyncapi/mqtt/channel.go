@@ -2,10 +2,11 @@ package mqtt
 
 import (
 	"encoding/json"
+	"time"
+
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
-	"time"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -15,13 +16,13 @@ import (
 )
 
 type operationBindings struct {
-	QoS    int  `json:"qos" yaml:"qos"`
-	Retain bool `json:"retain" yaml:"retain"`
-	MessageExpiryInterval int `json:"messageExpiryInterval" yaml:"messageExpiryInterval"` // Seconds
+	QoS                   int  `json:"qos" yaml:"qos"`
+	Retain                bool `json:"retain" yaml:"retain"`
+	MessageExpiryInterval int  `json:"messageExpiryInterval" yaml:"messageExpiryInterval"` // Seconds
 }
 
 func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, parent *render.Channel) (*render.ProtoChannel, error) {
-	golangName := utils.ToGolangName(parent.OriginalName + lo.Capitalize(pb.ProtoName), true)
+	golangName := utils.ToGolangName(parent.OriginalName+lo.Capitalize(pb.ProtoName), true)
 	chanStruct, err := asyncapi.BuildProtoChannelStruct(ctx, channel, parent, pb.ProtoName, golangName)
 	if err != nil {
 		return nil, err

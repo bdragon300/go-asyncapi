@@ -9,11 +9,11 @@ import (
 )
 
 type Parameter struct {
-	Enum 	  []string `json:"enum" yaml:"enum"`
-	Default  string   `json:"default" yaml:"default"`
-	Description string  `json:"description" yaml:"description"`
-	Examples []string `json:"examples" yaml:"examples"`
-	Location    string  `json:"location" yaml:"location"` // TODO: implement
+	Enum        []string `json:"enum" yaml:"enum"`
+	Default     string   `json:"default" yaml:"default"`
+	Description string   `json:"description" yaml:"description"`
+	Examples    []string `json:"examples" yaml:"examples"`
+	Location    string   `json:"location" yaml:"location"` // TODO: implement
 
 	XGoName string `json:"x-go-name" yaml:"x-go-name"`
 

@@ -2,9 +2,10 @@ package udp
 
 import (
 	"context"
-	"github.com/bdragon300/go-asyncapi/run"
 	"io"
 	"net"
+
+	"github.com/bdragon300/go-asyncapi/run"
 )
 
 // Pub

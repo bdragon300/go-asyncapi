@@ -2,9 +2,10 @@ package common
 
 import (
 	"fmt"
-	"github.com/bdragon300/go-asyncapi/internal/log"
 	"path"
 	"strings"
+
+	"github.com/bdragon300/go-asyncapi/internal/log"
 
 	"github.com/bdragon300/go-asyncapi/internal/specurl"
 
@@ -104,7 +105,7 @@ func (c *CompileContext) CurrentObjectURL() specurl.URL {
 	return u
 }
 
-func (c *CompileContext) RegisterNameTop(n string) {  // TODO: rework and remove this method?
+func (c *CompileContext) RegisterNameTop(n string) { // TODO: rework and remove this method?
 	t := c.Stack.Top()
 	t.RegisteredName = n
 	c.Stack.ReplaceTop(t)

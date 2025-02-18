@@ -3,11 +3,12 @@ package render
 import (
 	"cmp"
 	"fmt"
+	"slices"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
-	"slices"
 )
 
 type Channel struct {
@@ -18,11 +19,11 @@ type Channel struct {
 	IsPublisher  bool
 	IsSubscriber bool
 
-	ServersPromises   []*lang.Promise[*Server] // Servers that this channel is bound with. Empty list means "no servers bound".
+	ServersPromises         []*lang.Promise[*Server] // Servers that this channel is bound with. Empty list means "no servers bound".
 	AllActiveServersPromise *lang.ListPromise[common.Renderable]
 
-	ParametersPromises []*lang.Ref // nil if no parameters
-	ParametersType *lang.GoStruct // nil if no parameters
+	ParametersPromises []*lang.Ref    // nil if no parameters
+	ParametersType     *lang.GoStruct // nil if no parameters
 
 	MessagesRefs []*lang.Ref
 
@@ -32,8 +33,8 @@ type Channel struct {
 	// and then filter them by the channel on render stage.
 	AllActiveOperationsPromise *lang.ListPromise[common.Renderable]
 
-	BindingsType             *lang.GoStruct           // nil if no bindings are set for channel at all
-	BindingsPromise          *lang.Promise[*Bindings] // nil if channel bindings are not set
+	BindingsType    *lang.GoStruct           // nil if no bindings are set for channel at all
+	BindingsPromise *lang.Promise[*Bindings] // nil if channel bindings are not set
 
 	ProtoChannels []*ProtoChannel // Proto channels for each supported protocol
 }
@@ -91,9 +92,7 @@ func (c *Channel) BoundMessages() []common.Renderable {
 		op := common.DerefRenderable(o).(*Operation)
 		return op.Messages()
 	})
-	r := utils.WithoutBy(c.Messages(), opMsgs, func(a, b common.Renderable) bool {
-		return common.CheckSameRenderables(a, b)
-	})
+	r := utils.WithoutBy(c.Messages(), opMsgs, common.CheckSameRenderables)
 	return r
 }
 

@@ -5,10 +5,10 @@ import (
 )
 
 type GoSimple struct {
-	TypeName    string // type name
-	IsInterface bool   // true if type is interface, which means it cannot be rendered as pointer  // TODO: use or remove
-	Import      string // optional package name or module to import a type from
-	RuntimeImport bool // true indicates that Import contains a runtime package
+	TypeName      string // type name
+	IsInterface   bool   // true if type is interface, which means it cannot be rendered as pointer  // TODO: use or remove
+	Import        string // optional package name or module to import a type from
+	RuntimeImport bool   // true indicates that Import contains a runtime package
 }
 
 func (p *GoSimple) Kind() common.ObjectKind {

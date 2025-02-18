@@ -2,6 +2,7 @@ package redis
 
 import (
 	"encoding/json"
+
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
@@ -14,7 +15,7 @@ import (
 )
 
 func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, parent *render.Channel) (*render.ProtoChannel, error) {
-	golangName := utils.ToGolangName(parent.OriginalName + lo.Capitalize(pb.ProtoName), true)
+	golangName := utils.ToGolangName(parent.OriginalName+lo.Capitalize(pb.ProtoName), true)
 	chanStruct, err := asyncapi.BuildProtoChannelStruct(ctx, channel, parent, pb.ProtoName, golangName)
 	if err != nil {
 		return nil, err

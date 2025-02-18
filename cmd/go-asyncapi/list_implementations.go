@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/bdragon300/go-asyncapi/implementations"
 	"os"
+
+	"github.com/bdragon300/go-asyncapi/implementations"
 
 	"github.com/samber/lo"
 	"golang.org/x/exp/slices"

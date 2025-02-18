@@ -3,21 +3,22 @@ package renderer
 import (
 	"bytes"
 	"fmt"
+	"slices"
+	"strings"
+	"text/template"
+	"unicode"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
 	"github.com/samber/lo"
-	"slices"
-	"strings"
-	"text/template"
-	"unicode"
 )
 
 func FinishFiles(mng *manager.TemplateRenderManager) (map[string]*bytes.Buffer, error) {
 	states := mng.CommittedStates()
 
-	var res = make(map[string]*bytes.Buffer, len(states))
+	res := make(map[string]*bytes.Buffer, len(states))
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 	logger.Debug("Finish files rendering", "files", len(states))
 
@@ -35,7 +36,7 @@ func FinishFiles(mng *manager.TemplateRenderManager) (map[string]*bytes.Buffer, 
 			logger.Debug("-> Skip empty file", "file", fileName)
 			continue
 		}
-		var b = new(bytes.Buffer)
+		b := new(bytes.Buffer)
 		if strings.HasSuffix(fileName, ".go") {
 			logger.Debug("-> Render preamble", "file", fileName)
 			b, err = renderPreambleTemplate(tpl, mng.RenderOpts, state)
@@ -80,9 +81,9 @@ func renderPreambleTemplate(tpl *template.Template, opts common.RenderOpts, stat
 	var res bytes.Buffer
 
 	tplCtx := &tmpl.CodeTemplateContext{
-		RenderOpts:       opts,
-		PackageName:      state.PackageName,
-		ImportsManager:   state.Imports,
+		RenderOpts:     opts,
+		PackageName:    state.PackageName,
+		ImportsManager: state.Imports,
 	}
 
 	if err := tpl.Execute(&res, tplCtx); err != nil {

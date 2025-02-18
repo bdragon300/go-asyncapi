@@ -1,9 +1,10 @@
 package lang
 
 import (
+	"reflect"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/samber/lo"
-	"reflect"
 )
 
 type UnionStruct struct {

@@ -2,6 +2,10 @@ package main
 
 import (
 	"fmt"
+	"io/fs"
+	"os"
+	"time"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/compiler"
 	"github.com/bdragon300/go-asyncapi/internal/log"
@@ -12,23 +16,20 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/bdragon300/go-asyncapi/templates/infra"
 	"github.com/samber/lo"
-	"io/fs"
-	"os"
-	"time"
 )
 
 type InfraCmd struct {
 	Spec string `arg:"required,positional" help:"AsyncAPI specification file path or url" placeholder:"PATH"`
 
-	Format string `arg:"-f,--format" help:"Output file format" placeholder:"FORMAT"`
-	ConfigFile     string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"PATH"`
+	Format     string `arg:"-f,--format" help:"Output file format" placeholder:"FORMAT"`
+	ConfigFile string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"PATH"`
 	OutputFile string `arg:"-o,--output" help:"Output file path" placeholder:"PATH"`
 
-	TemplateDir string `arg:"-T,--template-dir" help:"Directory with custom templates" placeholder:"DIR"`
-	AllowRemoteRefs bool `arg:"--allow-remote-refs" help:"Allow resolver to fetch the files from remote $ref URLs"`
-	ResolverSearchDir   string        `arg:"--resolver-search-dir" help:"Directory to search the local spec files for [default: current working directory]" placeholder:"PATH"`
-	ResolverTimeout time.Duration `arg:"--resolver-timeout" help:"Timeout for resolver to resolve a spec file" placeholder:"DURATION"`
-	ResolverCommand string        `arg:"--resolver-command" help:"Custom resolver executable to use instead of built-in resolver" placeholder:"PATH"`
+	TemplateDir       string        `arg:"-T,--template-dir" help:"Directory with custom templates" placeholder:"DIR"`
+	AllowRemoteRefs   bool          `arg:"--allow-remote-refs" help:"Allow resolver to fetch the files from remote $ref URLs"`
+	ResolverSearchDir string        `arg:"--resolver-search-dir" help:"Directory to search the local spec files for [default: current working directory]" placeholder:"PATH"`
+	ResolverTimeout   time.Duration `arg:"--resolver-timeout" help:"Timeout for resolver to resolve a spec file" placeholder:"DURATION"`
+	ResolverCommand   string        `arg:"--resolver-command" help:"Custom resolver executable to use instead of built-in resolver" placeholder:"PATH"`
 }
 
 func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
@@ -92,7 +93,7 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	}
 
 	// TODO: -o - prints to stdout (and add this to cli help)
-	f, err := os.OpenFile(cmdConfig.Infra.OutputFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	f, err := os.OpenFile(cmdConfig.Infra.OutputFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
 	if err != nil {
 		return fmt.Errorf("open output file: %w", err)
 	}

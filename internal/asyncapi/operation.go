@@ -2,6 +2,7 @@ package asyncapi
 
 import (
 	"errors"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
@@ -12,12 +13,12 @@ import (
 type OperationAction string
 
 const (
-	OperationActionSend   OperationAction = "send"
+	OperationActionSend    OperationAction = "send"
 	OperationActionReceive OperationAction = "receive"
 )
 
 type Operation struct {
-	Action       OperationAction `json:"action" yaml:"action"`
+	Action       OperationAction        `json:"action" yaml:"action"`
 	Channel      *StandaloneRef         `json:"channel" yaml:"channel"`
 	Title        string                 `json:"title" yaml:"title"`
 	Summary      string                 `json:"summary" yaml:"summary"`
@@ -72,7 +73,7 @@ func (o Operation) build(ctx *common.CompileContext, operationKey string, flags 
 	}
 
 	ctx.Logger.Trace("Bound channel", "ref", o.Channel.Ref)
-	prm := lang.NewPromise[*render.Channel](o.Channel.Ref,nil)
+	prm := lang.NewPromise[*render.Channel](o.Channel.Ref, nil)
 	ctx.PutPromise(prm)
 	res.ChannelPromise = prm
 

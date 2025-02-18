@@ -23,7 +23,7 @@ type (
 		SetContentType(contentType string)
 		SetBindings(bindings MessageBindings)
 
-		SetTopic(topic string)  // Topic may be different from channel name
+		SetTopic(topic string) // Topic may be different from channel name
 	}
 )
 

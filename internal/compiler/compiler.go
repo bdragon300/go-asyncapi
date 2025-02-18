@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/bdragon300/go-asyncapi/internal/log"
-	"github.com/bdragon300/go-asyncapi/internal/resolver"
 	"io"
 	"path"
 	"reflect"
 	"time"
+
+	"github.com/bdragon300/go-asyncapi/internal/log"
+	"github.com/bdragon300/go-asyncapi/internal/resolver"
 
 	"github.com/bdragon300/go-asyncapi/internal/specurl"
 
@@ -20,9 +21,9 @@ import (
 
 func NewModule(specURL *specurl.URL) *Module {
 	return &Module{
-		logger:    log.GetLogger(log.LoggerPrefixCompilation),
-		specURL:   specURL,
-		objects:   make([]common.CompileObject, 0),
+		logger:  log.GetLogger(log.LoggerPrefixCompilation),
+		specURL: specURL,
+		objects: make([]common.CompileObject, 0),
 	}
 }
 
@@ -36,9 +37,9 @@ type Module struct {
 	parsedSpec     compiledObject
 
 	// Set during compilation
-	objects            []common.CompileObject
-	promises           []common.ObjectPromise
-	listPromises       []common.ObjectListPromise
+	objects      []common.CompileObject
+	promises     []common.ObjectPromise
+	listPromises []common.ObjectListPromise
 }
 
 func (c *Module) AddObject(obj common.CompileObject) {
@@ -160,4 +161,3 @@ func (c *Module) decodeSpecFile(specPath string, data io.ReadSeeker) (SpecKind, 
 
 	return "", nil, fmt.Errorf("cannot determine format of a spec file: unknown filename extension: %s", specPath)
 }
-

@@ -2,6 +2,7 @@ package tcp
 
 import (
 	"encoding/json"
+
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"

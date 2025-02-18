@@ -2,13 +2,14 @@ package render
 
 import (
 	"fmt"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/samber/lo"
 )
 
 type Operation struct {
-	OriginalName string  // Actually it isn't used
+	OriginalName string // Actually it isn't used
 	Dummy        bool
 	IsSelectable bool // true if channel should get to selections
 	IsPublisher  bool
@@ -16,7 +17,7 @@ type Operation struct {
 
 	ChannelPromise *lang.Promise[*Channel] // Channel this operation bound with
 
-	BindingsType             *lang.GoStruct           // nil if no bindings are set for operation at all
+	BindingsType    *lang.GoStruct           // nil if no bindings are set for operation at all
 	BindingsPromise *lang.Promise[*Bindings] // nil if no bindings are set for operation at all
 
 	MessagesPromises []*lang.Promise[*Message]
@@ -25,7 +26,7 @@ type Operation struct {
 }
 
 func (o *Operation) Kind() common.ObjectKind {
-	return common.ObjectKindOperation  // TODO: separate Bindings from Channel, leaving only the Promise, and make its own 4 ObjectKinds
+	return common.ObjectKindOperation // TODO: separate Bindings from Channel, leaving only the Promise, and make its own 4 ObjectKinds
 }
 
 func (o *Operation) Selectable() bool {
@@ -101,7 +102,7 @@ type ProtoOperation struct {
 
 	ProtoChannelPromise *lang.Promise[*ProtoChannel]
 	Type                *lang.GoStruct
-	Protocol string
+	Protocol            string
 }
 
 func (p *ProtoOperation) Selectable() bool {

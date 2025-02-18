@@ -3,9 +3,10 @@ package writer
 import (
 	"bytes"
 	"fmt"
-	"github.com/bdragon300/go-asyncapi/internal/log"
 	"os"
 	"path"
+
+	"github.com/bdragon300/go-asyncapi/internal/log"
 )
 
 func WriteBuffersToFiles(files map[string]*bytes.Buffer, baseDir string) error {

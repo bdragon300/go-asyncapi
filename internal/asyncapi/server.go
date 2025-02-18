@@ -11,15 +11,15 @@ import (
 )
 
 type Server struct {
-	Host 		  string                                   `json:"host" yaml:"host"`
+	Host            string                                   `json:"host" yaml:"host"`
 	Protocol        string                                   `json:"protocol" yaml:"protocol"`
 	ProtocolVersion string                                   `json:"protocolVersion" yaml:"protocolVersion"`
-	Pathname		string                                   `json:"pathname" yaml:"pathname"`
+	Pathname        string                                   `json:"pathname" yaml:"pathname"`
 	Description     string                                   `json:"description" yaml:"description"`
 	Variables       types.OrderedMap[string, ServerVariable] `json:"variables" yaml:"variables"`
 	Security        []SecurityRequirement                    `json:"security" yaml:"security"`
 	Tags            []Tag                                    `json:"tags" yaml:"tags"`
-	ExternalDocs   *ExternalDocumentation                            `json:"externalDocs" yaml:"externalDocs"`
+	ExternalDocs    *ExternalDocumentation                   `json:"externalDocs" yaml:"externalDocs"`
 	Bindings        *ServerBindings                          `json:"bindings" yaml:"bindings"`
 
 	XGoName string `json:"x-go-name" yaml:"x-go-name"`
@@ -90,7 +90,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	for _, v := range s.Variables.Entries() {
 		ctx.Logger.Trace("Server variable", "name", v.Key)
 		ref := ctx.PathStackRef("variables", v.Key)
-		prm := lang.NewPromise[*render.ServerVariable](ref,nil)
+		prm := lang.NewPromise[*render.ServerVariable](ref, nil)
 		ctx.PutPromise(prm)
 		res.VariablesPromises.Set(v.Key, prm)
 	}

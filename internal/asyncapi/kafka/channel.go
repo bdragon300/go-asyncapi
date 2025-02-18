@@ -2,9 +2,10 @@ package kafka
 
 import (
 	"encoding/json"
+	"time"
+
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
-	"time"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -22,11 +23,11 @@ type channelBindings struct {
 }
 
 type topicConfiguration struct {
-	CleanupPolicy  []string `json:"cleanup.policy" yaml:"cleanup.policy"`
-	RetentionMs    int      `json:"retention.ms" yaml:"retention.ms"`
-	RetentionBytes    int `json:"retention.bytes" yaml:"retention.bytes"`
-	DeleteRetentionMs int `json:"delete.retention.ms" yaml:"delete.retention.ms"`
-	MaxMessageBytes   int `json:"max.message.bytes" yaml:"max.message.bytes"`
+	CleanupPolicy     []string `json:"cleanup.policy" yaml:"cleanup.policy"`
+	RetentionMs       int      `json:"retention.ms" yaml:"retention.ms"`
+	RetentionBytes    int      `json:"retention.bytes" yaml:"retention.bytes"`
+	DeleteRetentionMs int      `json:"delete.retention.ms" yaml:"delete.retention.ms"`
+	MaxMessageBytes   int      `json:"max.message.bytes" yaml:"max.message.bytes"`
 }
 
 type operationBindings struct {
@@ -35,7 +36,7 @@ type operationBindings struct {
 }
 
 func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, parent *render.Channel) (*render.ProtoChannel, error) {
-	golangName := utils.ToGolangName(parent.OriginalName + lo.Capitalize(pb.ProtoName), true)
+	golangName := utils.ToGolangName(parent.OriginalName+lo.Capitalize(pb.ProtoName), true)
 	chanStruct, err := asyncapi.BuildProtoChannelStruct(ctx, channel, parent, pb.ProtoName, golangName)
 	if err != nil {
 		return nil, err

@@ -2,11 +2,12 @@ package lang
 
 import (
 	"fmt"
-	"github.com/bdragon300/go-asyncapi/internal/log"
-	"github.com/samber/lo"
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/bdragon300/go-asyncapi/internal/log"
+	"github.com/samber/lo"
 
 	"github.com/bdragon300/go-asyncapi/internal/types"
 
@@ -36,17 +37,17 @@ func (s *GoStruct) String() string {
 
 // GoStructField defines the data required to generate a field in Go.
 type GoStructField struct {
-	Name        string
-	MarshalName string
+	Name             string
+	MarshalName      string
 	Description      string
 	Type             common.GolangType
-	ContentTypesFunc func() []string // Returns list of content types associated with the struct
-	ExtraTags        types.OrderedMap[string, string]        // Just append these tags as constant, overwrite other tags on overlap
-	ExtraTagNames    []string                                // Append these tags and fill them the same value as others
-	ExtraTagValues   []string                                // Add these comma-separated values to all tags (excluding ExtraTags)
+	ContentTypesFunc func() []string                  // Returns list of content types associated with the struct
+	ExtraTags        types.OrderedMap[string, string] // Just append these tags as constant, overwrite other tags on overlap
+	ExtraTagNames    []string                         // Append these tags and fill them the same value as others
+	ExtraTagValues   []string                         // Add these comma-separated values to all tags (excluding ExtraTags)
 }
 
-func(f *GoStructField) RenderTags() string {
+func (f *GoStructField) RenderTags() string {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 	tags := f.getTags()
 	logger.Trace("--> Rendering field tags", "field", f.Name, "values", lo.FromEntries(tags.Entries()))

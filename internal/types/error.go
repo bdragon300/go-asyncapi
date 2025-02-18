@@ -30,21 +30,20 @@ func (c CompileError) Is(e error) bool {
 	return ok && v.Path == c.Path || errors.Is(c.Err, e)
 }
 
-type Error error
-type ErrorWithContent struct {
-	Err error
+type MultilineError struct {
+	Err     error
 	Content []byte
 }
 
-func (e ErrorWithContent) Error() string {
+func (e MultilineError) Error() string {
 	return e.Err.Error()
 }
 
-func (e ErrorWithContent) Unwrap() error {
+func (e MultilineError) Unwrap() error {
 	return e.Err
 }
 
-func (e ErrorWithContent) ContentLines() string {
+func (e MultilineError) ContentLines() string {
 	var b strings.Builder
 	rd := bufio.NewReader(bytes.NewReader(e.Content))
 
@@ -59,4 +58,3 @@ func (e ErrorWithContent) ContentLines() string {
 
 	return b.String()
 }
-

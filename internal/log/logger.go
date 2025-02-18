@@ -10,11 +10,11 @@ type LoggerPrefix string
 
 const (
 	LoggerPrefixCompilation LoggerPrefix = "Compilation 🔨"
-	LoggerPrefixResolving LoggerPrefix = "Resolving 📡"
-	LoggerPrefixLinking LoggerPrefix = "Linking 🔗"
-	LoggerPrefixRendering LoggerPrefix = "Rendering 🎨"
-	LoggerPrefixFormatting LoggerPrefix = "Formatting 📐"
-	LoggerPrefixWriting LoggerPrefix = "Writing 📝"
+	LoggerPrefixResolving   LoggerPrefix = "Resolving 📡"
+	LoggerPrefixLinking     LoggerPrefix = "Linking 🔗"
+	LoggerPrefixRendering   LoggerPrefix = "Rendering 🎨"
+	LoggerPrefixFormatting  LoggerPrefix = "Formatting 📐"
+	LoggerPrefixWriting     LoggerPrefix = "Writing 📝"
 )
 
 var loggers = make(map[LoggerPrefix]*Logger)

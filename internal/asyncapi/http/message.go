@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -10,7 +11,7 @@ import (
 )
 
 type messageBindings struct {
-	Headers any `json:"headers" yaml:"headers"` // jsonschema object
+	Headers    any `json:"headers" yaml:"headers"` // jsonschema object
 	StatusCode int `json:"statusCode" yaml:"statusCode"`
 }
 

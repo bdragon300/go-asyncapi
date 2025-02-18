@@ -2,14 +2,15 @@ package renderer
 
 import (
 	"fmt"
+	"path"
+	"text/template"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
-	"path"
-	"text/template"
 )
 
 type renderImplTemplateLoader interface {
@@ -19,7 +20,7 @@ type renderImplTemplateLoader interface {
 
 func RenderImplementations(objects []common.ImplementationObject, mng *manager.TemplateRenderManager) error {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
-	//TODO: logging
+	// TODO: logging
 
 	tplLoader := mng.TemplateLoader.(renderImplTemplateLoader)
 
@@ -62,7 +63,6 @@ func RenderImplementations(objects []common.ImplementationObject, mng *manager.T
 		mng.AddImplementation(obj, directory)
 		mng.Commit()
 	}
-
 
 	return nil
 }

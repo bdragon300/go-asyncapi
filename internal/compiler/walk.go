@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	TagName        = "cgen"
+	TagName = "cgen"
 )
 
 type compiledObject interface {
@@ -148,4 +148,3 @@ func getFieldJSONName(f reflect.StructField) string {
 	}
 	return f.Name
 }
-

@@ -2,6 +2,14 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"io/fs"
+	"os"
+	"path"
+	"slices"
+	"strings"
+	"time"
+
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/render"
 	"github.com/bdragon300/go-asyncapi/internal/resolver"
@@ -12,13 +20,6 @@ import (
 	"github.com/bdragon300/go-asyncapi/templates/client"
 	templates "github.com/bdragon300/go-asyncapi/templates/code"
 	"gopkg.in/yaml.v3"
-	"io"
-	"io/fs"
-	"os"
-	"path"
-	"slices"
-	"strings"
-	"time"
 
 	"github.com/bdragon300/go-asyncapi/internal/specurl"
 
@@ -53,9 +54,9 @@ const (
 )
 
 type GenerateCmd struct {
-	Pub            *generatePubSubArgs         `arg:"subcommand:pub" help:"Generate only the publisher code"`
-	Sub            *generatePubSubArgs         `arg:"subcommand:sub" help:"Generate only the subscriber code"`
-	PubSub         *generatePubSubArgs         `arg:"subcommand:pubsub" help:"Generate both publisher and subscriber code"`
+	Pub    *generatePubSubArgs `arg:"subcommand:pub" help:"Generate only the publisher code"`
+	Sub    *generatePubSubArgs `arg:"subcommand:sub" help:"Generate only the subscriber code"`
+	PubSub *generatePubSubArgs `arg:"subcommand:pubsub" help:"Generate both publisher and subscriber code"`
 
 	TargetDir string `arg:"-t,--target-dir" help:"Directory to save the generated code" placeholder:"DIR"`
 }
@@ -64,18 +65,18 @@ type generatePubSubArgs struct {
 	Spec string `arg:"required,positional" help:"AsyncAPI specification file path or url" placeholder:"PATH"`
 
 	ProjectModule string `arg:"-M,--module" help:"Project module in the generated code. By default, read get from go.mod in the current working directory" placeholder:"MODULE"`
-	RuntimeModule       string        `arg:"--runtime-module" help:"Runtime module path" placeholder:"MODULE"`
+	RuntimeModule string `arg:"--runtime-module" help:"Runtime module path" placeholder:"MODULE"`
 
-	TemplateDir string `arg:"-T,--template-dir" help:"Directory with custom templates" placeholder:"DIR"`
-	PreambleTemplate string `arg:"--preamble-template" help:"Custom preamble template name" placeholder:"NAME"`
-	DisableFormatting bool `arg:"--disable-formatting" help:"Disable code formatting"`
+	TemplateDir       string `arg:"-T,--template-dir" help:"Directory with custom templates" placeholder:"DIR"`
+	PreambleTemplate  string `arg:"--preamble-template" help:"Custom preamble template name" placeholder:"NAME"`
+	DisableFormatting bool   `arg:"--disable-formatting" help:"Disable code formatting"`
 
-	AllowRemoteRefs bool `arg:"--allow-remote-refs" help:"Allow resolver to fetch the files from remote $ref URLs"`
-	ResolverSearchDir   string        `arg:"--resolver-search-dir" help:"Directory to search the local spec files for [default: current working directory]" placeholder:"PATH"`
-	ResolverTimeout time.Duration `arg:"--resolver-timeout" help:"Timeout for resolver to resolve a spec file" placeholder:"DURATION"`
-	ResolverCommand string        `arg:"--resolver-command" help:"Custom resolver executable to use instead of built-in resolver" placeholder:"PATH"`
+	AllowRemoteRefs   bool          `arg:"--allow-remote-refs" help:"Allow resolver to fetch the files from remote $ref URLs"`
+	ResolverSearchDir string        `arg:"--resolver-search-dir" help:"Directory to search the local spec files for [default: current working directory]" placeholder:"PATH"`
+	ResolverTimeout   time.Duration `arg:"--resolver-timeout" help:"Timeout for resolver to resolve a spec file" placeholder:"DURATION"`
+	ResolverCommand   string        `arg:"--resolver-command" help:"Custom resolver executable to use instead of built-in resolver" placeholder:"PATH"`
 
-	ClientApp bool `arg:"--client-app" help:"Generate a client application code as well"`
+	ClientApp     bool   `arg:"--client-app" help:"Generate a client application code as well"`
 	goModTemplate string `arg:"-"`
 }
 
@@ -297,11 +298,11 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (c
 	// Selections
 	for _, item := range conf.Selections {
 		sel := common.ConfigSelectionItem{
-			Protocols:        item.Protocols,
-			ObjectKinds:     item.ObjectKinds,
-			ModuleURLRe:      item.ModuleURLRe,
-			PathRe:           item.PathRe,
-			NameRe: item.NameRe,
+			Protocols:   item.Protocols,
+			ObjectKinds: item.ObjectKinds,
+			ModuleURLRe: item.ModuleURLRe,
+			PathRe:      item.PathRe,
+			NameRe:      item.NameRe,
 			Render: common.ConfigSelectionItemRender{
 				Template:         item.Render.Template,
 				File:             item.Render.File,
@@ -309,7 +310,7 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (c
 				Protocols:        item.Render.Protocols,
 				ProtoObjectsOnly: item.Render.ProtoObjectsOnly,
 			},
-			ReusePackagePath: item.ReusePackagePath,
+			ReusePackagePath:      item.ReusePackagePath,
 			AllSupportedProtocols: lo.Keys(asyncapi.ProtocolBuilders),
 		}
 		logger.Debug("Use selection", "value", sel)
@@ -338,15 +339,15 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (c
 
 func getImplementationOpts(conf toolConfigImplementations) common.RenderImplementationsOpts {
 	return common.RenderImplementationsOpts{
-		Disable:       conf.Disable,
+		Disable:   conf.Disable,
 		Directory: conf.Directory,
 		Protocols: lo.Map(conf.Protocols, func(item toolConfigImplementationProtocol, _ int) common.ConfigImplementationProtocol {
 			return common.ConfigImplementationProtocol{
-				Protocol:  item.Protocol,
-				Name:      item.Name,
-				Disable:   item.Disable,
-				Directory: item.Directory,
-				Package:   item.Package,
+				Protocol:         item.Protocol,
+				Name:             item.Name,
+				Disable:          item.Disable,
+				Directory:        item.Directory,
+				Package:          item.Package,
 				ReusePackagePath: item.ReusePackagePath,
 			}
 		}),
@@ -528,11 +529,11 @@ func getImplementationConfig(conf common.RenderImplementationsOpts, protocol str
 
 	protoConf, _ := lo.Find(conf.Protocols, func(item common.ConfigImplementationProtocol) bool { return item.Protocol == protocol })
 	return common.ConfigImplementationProtocol{
-		Protocol:  protocol,
-		Name:      coalesce(protoConf.Name, protoManifest.Name),
-		Disable:   coalesce(protoConf.Disable, conf.Disable),
-		Directory: coalesce(protoConf.Directory, conf.Directory),
-		Package:   protoConf.Package,
+		Protocol:         protocol,
+		Name:             coalesce(protoConf.Name, protoManifest.Name),
+		Disable:          coalesce(protoConf.Disable, conf.Disable),
+		Directory:        coalesce(protoConf.Directory, conf.Directory),
+		Package:          protoConf.Package,
 		ReusePackagePath: protoConf.ReusePackagePath,
 	}
 }

@@ -2,12 +2,13 @@ package writer
 
 import (
 	"bytes"
-	"github.com/bdragon300/go-asyncapi/internal/log"
-	"github.com/bdragon300/go-asyncapi/internal/types"
-	"github.com/samber/lo"
 	"go/format"
 	"slices"
 	"strings"
+
+	"github.com/bdragon300/go-asyncapi/internal/log"
+	"github.com/bdragon300/go-asyncapi/internal/types"
+	"github.com/samber/lo"
 )
 
 // FormatFiles formats the files in-place in the map using gofmt
@@ -25,7 +26,7 @@ func FormatFiles(files map[string]*bytes.Buffer) error {
 		logger.Debug("File", "name", fileName, "bytes", buf.Len())
 		formatted, err := format.Source(buf.Bytes())
 		if err != nil {
-			return types.ErrorWithContent{err, buf.Bytes()}
+			return types.MultilineError{err, buf.Bytes()}
 		}
 		buf.Reset()
 		buf.Write(formatted)
