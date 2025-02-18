@@ -21,7 +21,7 @@ func (p *GoPointer) Visible() bool {
 }
 
 func (p *GoPointer) GoTemplate() string {
-	return "lang/gopointer"
+	return "code/lang/gopointer"
 }
 
 func (p *GoPointer) String() string {

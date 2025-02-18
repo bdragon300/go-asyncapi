@@ -1,5 +1,5 @@
 {{- /* dot == render.ProtoChannel */}}
-{{define "channel/kafka/newFunction/block1"}}
+{{define "code/proto/kafka/channel/newFunction/block1"}}
     res.topic = res.address.String()
     {{- if .BindingsType}}
         bindings := {{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}()
@@ -8,27 +8,27 @@
         }
     {{- end}}
 {{- end}}
-{{define "channel/kafka/publishMethods/block1"}}
+{{define "code/proto/kafka/channel/publishMethods/block1"}}
     envelope.SetTopic(c.Topic())
 {{- end}}
 
 {{- def .Type}}
-{{template "channel/proto/newFunction" .}}
+{{template "code/proto/channel/newFunction" .}}
 
-{{template "channel/proto/openFunction" .}}
+{{template "code/proto/channel/openFunction" .}}
 
 {{- if ndefined .Type}}
 {{.Type | goDef}}
 
-{{template "channel/proto/commonMethods" .}}
+{{template "code/proto/channel/commonMethods" .}}
 
 func (c {{.Type| goUsage}}) Topic() string {
     return c.topic
 }
 
-{{if .IsPublisher}}{{template "channel/proto/publishMethods" .}}{{end}}
+{{if .IsPublisher}}{{template "code/proto/channel/publishMethods" .}}{{end}}
 
-{{if .IsSubscriber}}{{template "channel/proto/subscribeMethods" .}}{{end}}
+{{if .IsSubscriber}}{{template "code/proto/channel/subscribeMethods" .}}{{end}}
 
-{{template "channel/proto/serverInterface" .}}
+{{template "code/proto/channel/serverInterface" .}}
 {{- end}}

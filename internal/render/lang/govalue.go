@@ -31,7 +31,7 @@ func (gv *GoValue) Visible() bool {
 }
 
 func (gv *GoValue) GoTemplate() string {
-	return "lang/govalue"
+	return "code/lang/govalue"
 }
 
 func (gv *GoValue) Addressable() bool {

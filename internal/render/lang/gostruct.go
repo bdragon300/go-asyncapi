@@ -21,7 +21,7 @@ type GoStruct struct {
 }
 
 func (s *GoStruct) GoTemplate() string {
-	return "lang/gostruct"
+	return "code/lang/gostruct"
 }
 
 func (s *GoStruct) IsStruct() bool {

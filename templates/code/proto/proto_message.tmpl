@@ -1,9 +1,9 @@
 {{- /* dot == render.ProtoMessage */}}
 
-{{define "message/proto/commonMethods"}}
+{{define "code/proto/message/commonMethods"}}
 {{- end}}
 
-{{define "message/proto/marshalMethods"}}
+{{define "code/proto/message/marshalMethods"}}
 {{- range .BoundChannels}}
     {{- if and (isVisible .) (deref .).IsPublisher}}
         func (m *{{ $.OutType | goIDUpper }}) Marshal{{. | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope {{goQualR $.Protocol "EnvelopeWriter"}}) error {
@@ -21,7 +21,7 @@
 {{- end}}
 
 func (m *{{ .OutType | goIDUpper }}) MarshalEnvelope{{ .Protocol | goIDUpper }}(envelope {{goQualR .Protocol "EnvelopeWriter"}}) error {
-    {{- template "message/proto/encoder" .}}
+    {{- template "code/proto/message/encoder" .}}
     envelope.SetContentType({{.EffectiveContentType | goLit}})
     {{- with .HeadersType}}
         envelope.SetHeaders({
@@ -42,7 +42,7 @@ func (m *{{ .OutType | goIDUpper }}) MarshalEnvelope{{ .Protocol | goIDUpper }}(
 {{- end}}
 {{- end}}
 
-{{define "message/proto/unmarshalMethods"}}
+{{define "code/proto/message/unmarshalMethods"}}
 {{- range .BoundChannels}}
     {{- if and (isVisible .) (deref .).IsSubscriber}}
         func (m *{{ $.InType | goIDUpper }}) Unmarshal{{. | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope {{goQualR $.Protocol "EnvelopeReader"}}) error {
@@ -60,7 +60,7 @@ func (m *{{ .OutType | goIDUpper }}) MarshalEnvelope{{ .Protocol | goIDUpper }}(
 {{- end}}
 
 func (m *{{ .InType | goIDUpper }}) UnmarshalEnvelope{{ .Protocol | goIDUpper }}(envelope {{goQualR .Protocol "EnvelopeReader"}}) error {
-    {{- template "message/proto/decoder" .}}
+    {{- template "code/proto/message/decoder" .}}
     {{- with .HeadersType }}
         {{- /* Empty headers should not generate code */}}
         {{- if gt (len .Fields) 0}}
@@ -84,18 +84,18 @@ func (m *{{ .InType | goIDUpper }}) UnmarshalEnvelope{{ .Protocol | goIDUpper }}
 {{- end}}
 {{- end}}
 
-{{define "message/proto/encoder"}}
-{{- with tryTmpl (print "message/proto/encoder/" .EffectiveContentType) .}}
+{{define "code/proto/message/encoder"}}
+{{- with tryTmpl (print "code/proto/mime/messageEncoder/" .EffectiveContentType) .}}
     {{.}}
 {{- else}}
-    {{template "message/proto/encoder/default" .}}
+    {{template "code/proto/mime/messageEncoder/default" .}}
 {{- end}}
 {{- end}}
 
-{{define "message/proto/decoder"}}
-{{- with tryTmpl (print "message/proto/decoder/" .EffectiveContentType) .}}
+{{define "code/proto/message/decoder"}}
+{{- with tryTmpl (print "code/proto/mime/messageDecoder/" .EffectiveContentType) .}}
     {{.}}
 {{- else}}
-    {{template "message/proto/decoder/default" .}}
+    {{template "code/proto/mime/messageDecoder/default" .}}
 {{- end}}
 {{- end}}

@@ -8,7 +8,7 @@ const (
 )
 
 {{- range .ActiveProtocols}}
-{{tryTmpl (print "clientApp/server/" . "/cliMixin") $}}
+{{tryTmpl (print "client/server/" . "/cliMixin") $}}
 {{- end}}
 
 type MainCli struct {
@@ -39,7 +39,7 @@ type DirectionCliCmd struct {
 {{- range .Objects}}
 	{{- if and (eq .Kind "server") (isVisible .)}}
 		type {{. | goIDUpper}}CliCmd struct {
-			{{if tryTmpl (print "clientApp/server/" ((deref .).Protocol) "/cliMixin") .}}{{(deref .).Protocol | goIDUpper}}CliMixin{{end}}
+			{{if tryTmpl (print "client/server/" ((deref .).Protocol) "/cliMixin") .}}{{(deref .).Protocol | goIDUpper}}CliMixin{{end}}
 
 			// Server variables
 			{{- range .Variables.Entries}}
@@ -165,9 +165,9 @@ func main() {
 
 {{- range .Objects}}
 	{{- if and (eq .Kind "channel") (isVisible .)}}
-		{{template "clientApp/channel" .}}
+		{{template "client/channel" .}}
 	{{- else if and (eq .Kind "operation") (isVisible .)}}
-		{{template "clientApp/operation" .}}
+		{{template "client/operation" .}}
 	{{- end}}
 {{- end}}
 

@@ -1,6 +1,6 @@
 {{- /* dot == lang.GoStruct */}}
 
-{{define "lang/gostruct/definition"}}
+{{define "code/lang/gostruct/definition"}}
     {{- if .Description }}
         {{- print (goIDUpper .) "--" .Description | goComment }}
     {{- end }}
@@ -13,7 +13,7 @@
         {{- end }}
     }
 {{- end}}
-{{define "lang/gostruct/usage"}}
+{{define "code/lang/gostruct/usage"}}
     {{- if .HasDefinition }}
         {{- if .Import }}
             {{- goQual .Import (goIDUpper .) }}

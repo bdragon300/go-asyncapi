@@ -11,7 +11,7 @@ type GoArray struct {
 }
 
 func (a *GoArray) GoTemplate() string {
-	return "lang/goarray"
+	return "code/lang/goarray"
 }
 
 func (a *GoArray) String() string {

@@ -1,6 +1,6 @@
 {{- /* dot == render.ProtoServer */}}
 
-{{define "server/proto/newFunction"}}
+{{define "code/proto/server/newFunction"}}
 func New{{ .Server | goIDUpper }}(producer {{goQualR .Protocol "Producer"}}, consumer {{goQualR .Protocol "Consumer"}}) {{ .Type | ptr | goUsage }} {
     return &{{ .Type | goUsage }}{
         producer: producer,
@@ -9,7 +9,7 @@ func New{{ .Server | goIDUpper }}(producer {{goQualR .Protocol "Producer"}}, con
 }
 {{- end}}
 
-{{define "server/proto/connectFunctions"}}
+{{define "code/proto/server/connectFunctions"}}
 {{- if and .IsPublisher .IsSubscriber}}
 {{- with impl .Protocol}}
 
@@ -28,7 +28,7 @@ func (c {{ $.Server | goIDUpper }}Closable) Close() error {
     return err
 }
 
-{{- with tryTmpl (print "server/" $.Protocol "/impl/" .Manifest.Name "/connectFunction") $}}
+{{- with tryTmpl (print "code/proto/" $.Protocol "/server/impl/" .Manifest.Name "/connectFunction") $}}
     {{.}}
 {{- else}}
     func Connect{{ $.Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ $.Server | goIDUpper }}Closable, error) {
@@ -48,7 +48,7 @@ func (c {{ $.Server | goIDUpper }}Closable) Close() error {
 {{- end}}
 
 {{- if $.IsPublisher}}
-    {{- with tryTmpl (print "server/" $.Protocol "/impl/" .Manifest.Name "/connectProducerFunction") $}}
+    {{- with tryTmpl (print "code/proto/" $.Protocol "/server/impl/" .Manifest.Name "/connectProducerFunction") $}}
         {{.}}
     {{- else}}
         func Connect{{ $.Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ $.Server | goIDUpper }}Closable, error) {
@@ -68,7 +68,7 @@ func (c {{ $.Server | goIDUpper }}Closable) Close() error {
 {{- end}}
 
 {{- if $.IsSubscriber}}
-    {{- with tryTmpl (print "server/" $.Protocol "/impl/" .Manifest.Name "/connectConsumerFunction") $}}
+    {{- with tryTmpl (print "code/proto/" $.Protocol "/server/impl/" .Manifest.Name "/connectConsumerFunction") $}}
         {{.}}
     {{- else}}
         func Connect{{ $.Server | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ $.Server | goIDUpper }}Closable, error) {
@@ -90,7 +90,7 @@ func (c {{ $.Server | goIDUpper }}Closable) Close() error {
 {{- end}}
 {{- end}}
 
-{{define "server/proto/channelOpenMethods"}}
+{{define "code/proto/server/channelOpenMethods"}}
 {{- range $channel := .BoundChannels}}
     {{- with (deref .).SelectProtoObject $.Protocol }}
         func (s {{ $.Type | goUsage }}) Open{{ $channel | goIDUpper }}{{$.Protocol | goIDUpper}}(
@@ -105,7 +105,7 @@ func (c {{ $.Server | goIDUpper }}Closable) Close() error {
 {{- end}}
 {{- end}}
 
-{{define "server/proto/operationOpenMethods"}}
+{{define "code/proto/server/operationOpenMethods"}}
 {{- range $operation := .BoundOperations}}
     {{- with (deref .).SelectProtoObject $.Protocol }}
         func (s {{ $.Type | goUsage }}) Open{{ $operation | goIDUpper }}{{$.Protocol | goIDUpper}}(
@@ -120,7 +120,7 @@ func (c {{ $.Server | goIDUpper }}Closable) Close() error {
 {{- end}}
 {{- end}}
 
-{{define "server/proto/commonMethods" }}
+{{define "code/proto/server/commonMethods" }}
 func (s {{ .Type | goUsage }}) Name() string {
     return "{{ . | goIDUpper }}"
 }

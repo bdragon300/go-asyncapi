@@ -1,12 +1,12 @@
 {{- /* dot == lang.GoMap */}}
 
-{{define "lang/gomap/definition"}}
+{{define "code/lang/gomap/definition"}}
     {{- if .Description }}
         {{ print (goIDUpper .) "--" .Description | goComment }}
     {{- end }}
     type {{ . | goIDUpper }} map[{{ .KeyType | goUsage }}]{{ .ValueType | goUsage }}
 {{- end}}
-{{define "lang/gomap/usage"}}
+{{define "code/lang/gomap/usage"}}
     {{- if .HasDefinition }}
         {{if .Import }}
             {{ goQual .Import (goIDUpper .) }}

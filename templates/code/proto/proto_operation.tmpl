@@ -1,6 +1,6 @@
 {{- /* dot == render.ProtoOperation */}}
 
-{{define "operation/proto/newFunction"}}
+{{define "code/proto/operation/newFunction"}}
 func New{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
     {{ with .Channel.ParametersType}}params {{ . | goUsage}},{{end}}
     {{ if .IsPublisher}}publisher {{goQualR .Protocol "Publisher"}},{{end}}
@@ -17,7 +17,7 @@ func New{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
 }
 {{- end}}
 
-{{define "operation/proto/openFunction"}}
+{{define "code/proto/operation/openFunction"}}
 func Open{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
     ctx {{goQual "context.Context"}},
     {{ with .Channel.ParametersType}}params {{. | goUsage}},{{end}}
@@ -68,7 +68,7 @@ func Open{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
 }
 {{- end}}
 
-{{define "operation/proto/commonMethods"}}
+{{define "code/proto/operation/commonMethods"}}
 {{- if .BindingsProtocols | has .Protocol}}
 func (c {{.Type | goUsage}}) Bindings() {{goQualR .Protocol "OperationBindings"}} {
     return {{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}()
@@ -80,7 +80,7 @@ func (o {{ .Type | goUsage }}) Close() error {
 }
 {{- end}}
 
-{{define "operation/proto/publishMethods"}}
+{{define "code/proto/operation/publishMethods"}}
 type {{ . | goIDUpper }}EnvelopeMarshaler{{.Protocol | goIDUpper}} interface {
     Marshal{{. | goIDUpper}}{{.Protocol | goIDUpper}}(envelope {{goQualR .Protocol "EnvelopeWriter"}}) error
 }
@@ -94,7 +94,7 @@ type {{ . | goIDUpper }}EnvelopeMarshaler{{.Protocol | goIDUpper}} interface {
         if err := message.Marshal{{$ | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope); err != nil {
             return err
         }
-        {{ with tryTmpl (print "operation/" $.Protocol "/publishMethods/block1") .}}{{.}}{{end}}
+        {{ with tryTmpl (print "code/proto/" $.Protocol "/operation/publishMethods/block1") .}}{{.}}{{end}}
         {{- if (deref .).BindingsProtocols | has $.Protocol }}
             envelope.SetBindings({{(deref .).BindingsType | goUsage}}{}.{{$.Protocol | goIDUpper}}())
         {{- end}}
@@ -118,7 +118,7 @@ type {{ . | goIDUpper }}EnvelopeMarshaler{{.Protocol | goIDUpper}} interface {
 {{- end}}
 
 
-{{define "operation/proto/subscribeMethods"}}
+{{define "code/proto/operation/subscribeMethods"}}
 type {{ . | goIDUpper }}EnvelopeUnmarshaler{{.Protocol | goIDUpper}} interface {
     Unmarshal{{. | goIDUpper}}{{.Protocol | goIDUpper}}(envelope {{goQualR .Protocol "EnvelopeReader"}}) error
 }
@@ -152,7 +152,7 @@ type {{ . | goIDUpper }}EnvelopeUnmarshaler{{.Protocol | goIDUpper}} interface {
 {{- end}}
 {{- end}}
 
-{{define "operation/proto/serverInterface"}}
+{{define "code/proto/operation/serverInterface"}}
 type {{ . | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
     Open{{. | goIDUpper}}{{.Protocol | goIDUpper}}(ctx {{goQual "context.Context"}}, {{with .Channel.ParametersType}}params {{ . | goUsage }}{{end}}) (*{{ .Type | goUsage }}, error)
     {{if .IsPublisher}}Producer() {{goQualR .Protocol "Producer"}}{{end}}

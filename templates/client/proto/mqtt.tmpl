@@ -3,14 +3,14 @@
     .Server == common.Renderable: Ref -> render.Server or render.Server
     .Kind == "channel" or "operation"
     */}}
-{{define "clientApp/channeloperation/mqtt/github.com/eclipse/paho.mqtt.golang/producer/connect"}}
+{{define "client/channeloperation/mqtt/github.com/eclipse/paho.mqtt.golang/producer/connect"}}
 server, err := {{goPkg (deref .Server).ProtoServer.Type}}Connect{{.Server | goIDUpper}}Producer(ctx, serverURL, nil)
 if err != nil {
     return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
 }
 {{- end}}
 
-{{define "clientApp/channeloperation/mqtt/github.com/eclipse/paho.mqtt.golang/consumer/connect"}}
+{{define "client/channeloperation/mqtt/github.com/eclipse/paho.mqtt.golang/consumer/connect"}}
 server, err := {{goPkg (deref .Server).ProtoServer.Type}}Connect{{.Server | goIDUpper}}Consumer(ctx, serverURL, nil)
 if err != nil {
     return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)

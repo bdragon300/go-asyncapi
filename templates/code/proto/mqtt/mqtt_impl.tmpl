@@ -1,6 +1,6 @@
 {{- /* dot == render.ProtoServer */}}
 
-{{define "server/mqtt/impl/github.com/eclipse/paho.mqtt.golang/connectFunction"}}
+{{define "code/proto/mqtt/server/impl/github.com/eclipse/paho.mqtt.golang/connectFunction"}}
 func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, opts *{{goQual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}}) (*{{ .Server | goIDUpper }}Closable, error) {
     var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
@@ -17,7 +17,7 @@ func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url 
 }
 {{- end}}
 
-{{define "server/mqtt/impl/github.com/eclipse/paho.mqtt.golang/connectProducerFunction"}}
+{{define "code/proto/mqtt/server/impl/github.com/eclipse/paho.mqtt.golang/connectProducerFunction"}}
 func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, opts *{{goQual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}}) (*{{ .Server | goIDUpper }}Closable, error) {
     var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
@@ -33,7 +33,7 @@ func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, 
 }
 {{- end}}
 
-{{define "server/mqtt/impl/github.com/eclipse/paho.mqtt.golang/connectConsumerFunction"}}
+{{define "code/proto/mqtt/server/impl/github.com/eclipse/paho.mqtt.golang/connectConsumerFunction"}}
 func Connect{{ .Server | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, opts *{{goQual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}}) (*{{ .Server | goIDUpper }}Closable, error) {
     var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}

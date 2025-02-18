@@ -1,8 +1,8 @@
 {{- /* dot == lang.GoPointer */}}
 
-{{define "lang/gopointer/definition"}}
+{{define "code/lang/gopointer/definition"}}
     {{- .Type | goDef }}
 {{- end}}
-{{define "lang/gopointer/usage"}}
+{{define "code/lang/gopointer/usage"}}
     {{- if .Type.Addressable}}*{{end}}{{ .Type | goUsage }}
 {{- end}}

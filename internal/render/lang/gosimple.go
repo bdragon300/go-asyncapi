@@ -32,7 +32,7 @@ func (p *GoSimple) IsPointer() bool {
 }
 
 func (p *GoSimple) GoTemplate() string {
-	return "lang/gosimple"
+	return "code/lang/gosimple"
 }
 
 func (p *GoSimple) String() string {

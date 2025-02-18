@@ -12,7 +12,7 @@ type GoTypeAlias struct {
 }
 
 func (p *GoTypeAlias) GoTemplate() string {
-	return "lang/gotypealias"
+	return "code/lang/gotypealias"
 }
 
 func (p *GoTypeAlias) InnerGolangType() common.GolangType {

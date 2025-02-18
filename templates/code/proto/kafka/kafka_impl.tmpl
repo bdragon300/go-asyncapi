@@ -1,6 +1,6 @@
 {{- /* dot == render.ProtoServer */}}
 
-{{define "server/kafka/impl/github.com/twmb/franz-go/connectFunction"}}
+{{define "code/proto/kafka/server/impl/github.com/twmb/franz-go/connectFunction"}}
 func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, opts ...{{goQual "github.com/twmb/franz-go/pkg/kgo.Opt"}}) (*{{ .Server | goIDUpper }}Closable, error) {
     var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
@@ -14,7 +14,7 @@ func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url 
 }
 {{- end}}
 
-{{define "server/kafka/impl/github.com/twmb/franz-go/connectProducerFunction"}}
+{{define "code/proto/kafka/server/impl/github.com/twmb/franz-go/connectProducerFunction"}}
 func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, opts ...{{goQual "github.com/twmb/franz-go/pkg/kgo.Opt"}}) (*{{ .Server | goIDUpper }}Closable, error) {
     var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
@@ -27,7 +27,7 @@ func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, 
 }
 {{- end}}
 
-{{define "server/kafka/impl/github.com/twmb/franz-go/connectConsumerFunction"}}
+{{define "code/proto/kafka/server/impl/github.com/twmb/franz-go/connectConsumerFunction"}}
 func Connect{{ .Server | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, opts ...{{goQual "github.com/twmb/franz-go/pkg/kgo.Opt"}}) (*{{ .Server | goIDUpper }}Closable, error) {
     var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}

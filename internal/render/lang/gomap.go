@@ -11,7 +11,7 @@ type GoMap struct {
 }
 
 func (m *GoMap) GoTemplate() string {
-	return "lang/gomap"
+	return "code/lang/gomap"
 }
 
 func (m *GoMap) String() string {

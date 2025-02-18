@@ -12,7 +12,7 @@ type UnionStruct struct {
 }
 
 func (s *UnionStruct) GoTemplate() string {
-	return "lang/gounion"
+	return "code/lang/gounion"
 }
 
 func (s *UnionStruct) UnionStruct() common.GolangType {

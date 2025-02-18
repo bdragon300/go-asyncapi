@@ -1,6 +1,6 @@
 {{- /* dot == render.ProtoServer */}}
 
-{{define "server/ip/impl/net/connectFunction"}}
+{{define "code/proto/ip/server/impl/net/connectFunction"}}
 func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
     client, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient("", url.Host, url.Scheme)
     if err != nil {
@@ -13,7 +13,7 @@ func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url 
 }
 {{- end}}
 
-{{define "server/ip/impl/net/connectProducerFunction"}}
+{{define "code/proto/ip/server/impl/net/connectProducerFunction"}}
 func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
     producer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient("", url.Host, url.Scheme)
     if err != nil {
@@ -25,7 +25,7 @@ func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, 
 }
 {{- end}}
 
-{{define "server/ip/impl/net/connectConsumerFunction"}}
+{{define "code/proto/ip/server/impl/net/connectConsumerFunction"}}
 func Connect{{ .Server | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
     consumer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient("", url.Host, url.Scheme)
     if err != nil {

@@ -1,12 +1,12 @@
 {{- /* dot == lang.GoTypeAlias */}}
 
-{{define "lang/gotypealias/definition"}}
+{{define "code/lang/gotypealias/definition"}}
     {{- if .Description }}
         {{ print (goIDUpper .) "--" .Description | goComment }}
     {{- end }}
     type {{ . | goIDUpper }} {{ .AliasedType | goDef }}
 {{- end}}
-{{define "lang/gotypealias/usage"}}
+{{define "code/lang/gotypealias/usage"}}
     {{- if .HasDefinition }}
         {{- if .Import }}
             {{- goQual .Import (goIDUpper .) }}

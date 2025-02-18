@@ -1,9 +1,9 @@
 {{- /* dot == lang.GoSimple */}}
 
-{{define "lang/gosimple/definition"}}
+{{define "code/lang/gosimple/definition"}}
     {{-  .Name }}
 {{- end}}
-{{define "lang/gosimple/usage"}}
+{{define "code/lang/gosimple/usage"}}
     {{- if .RuntimeImport}}
         {{- goQualR .Import .Name }}
     {{- else if .Import }}

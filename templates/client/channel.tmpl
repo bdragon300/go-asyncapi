@@ -1,4 +1,4 @@
-{{define "clientApp/channel"}}
+{{define "client/channel"}}
 {{/* dot == common.Renderable: Ref -> render.Channel or render.Channel */}}
 {{- with . | deref}}
 type {{$ | goIDUpper}}Cmd struct {
@@ -27,7 +27,7 @@ func channel{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}
     {{- range .BoundServers}}
         {{$implTemplateCtx := dict "ChannelOrOperation" $ "Server" . "Kind" "channel"}}
         case args.{{. | goIDUpper}}Cmd != nil:
-            {{template "clientApp/pubsub/proto/serverPubSub" $implTemplateCtx}}
+            {{template "client/pubsub/proto/serverPubSub" $implTemplateCtx}}
     {{- end}}
 	default:
 		showCliError("No server selected. Append --help for more information", opts.cliParser)
@@ -38,7 +38,7 @@ func channel{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}
 {{- end}}
 {{- end}}
 
-{{define "clientApp/operation"}}
+{{define "client/operation"}}
 {{/* dot == common.Renderable: Ref -> render.Operation or render.Operation */}}
 {{- with . | deref}}
 type {{$ | goIDUpper}}Cmd struct {
@@ -67,7 +67,7 @@ func operation{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper
     {{- range .Channel.BoundServers}}
         {{$implTemplateCtx := dict "ChannelOrOperation" $ "Server" . "Kind" "operation"}}
         case args.{{. | goIDUpper}}Cmd != nil:
-            {{template "clientApp/pubsub/proto/serverPubSub" $implTemplateCtx}}
+            {{template "client/pubsub/proto/serverPubSub" $implTemplateCtx}}
     {{- end}}
 	default:
 		showCliError("No server selected. Append --help for more information", opts.cliParser)
@@ -78,7 +78,7 @@ func operation{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper
 {{- end}}
 {{- end}}
 
-{{define "clientApp/pubsub/proto/serverPubSub"}}
+{{define "client/pubsub/proto/serverPubSub"}}
 {{- /*
     .ChannelOrOperation == common.Renderable: Ref -> render.Channel or render.Channel or render.Operation or render.Operation;
     .Server == common.Renderable: Ref -> render.Server or render.Server
@@ -111,7 +111,7 @@ if opts.proxyHost != "" {
 
 {{- with impl .Protocol}}
     {{goQual "log/slog.Debug"}}("Using implementation {{.Manifest.Name | toQuotable}}")
-    {{- with tryTmpl (print "clientApp/channeloperation/" $server.Protocol "/" .Manifest.Name "/setup") $}}
+    {{- with tryTmpl (print "client/channeloperation/" $server.Protocol "/" .Manifest.Name "/setup") $}}
         // Implementation-specific code
         {{.}}
         // End of implementation-specific code
@@ -122,7 +122,7 @@ if opts.proxyHost != "" {
 if opts.publish {
     {{- if and .IsPublisher (deref $.ChannelOrOperation).IsPublisher}}
         {{- with impl .Protocol}}
-            {{- with tryTmpl (print "clientApp/channeloperation/" $server.Protocol "/" .Manifest.Name "/producer/connect") $}}
+            {{- with tryTmpl (print "client/channeloperation/" $server.Protocol "/" .Manifest.Name "/producer/connect") $}}
                 // Implementation-specific code
                 {{.}}
                 // End of implementation-specific code
@@ -155,7 +155,7 @@ if opts.publish {
             envelope.SetHeaders(parsedHeaders)
 
             {{- with impl .Protocol}}
-                {{- with tryTmpl (print "clientApp/message/" $server.Protocol "/" .Manifest.Name "/publish") $}}
+                {{- with tryTmpl (print "client/message/" $server.Protocol "/" .Manifest.Name "/publish") $}}
                     // Implementation-specific code
                     {{.}}
                     // End of implementation-specific code
@@ -178,7 +178,7 @@ if opts.publish {
 } else {
     {{- if and .IsSubscriber  (deref $.ChannelOrOperation).IsSubscriber}}
         {{- with impl .Protocol}}
-            {{- with tryTmpl (print "clientApp/channeloperation/" $server.Protocol "/" .Manifest.Name "/consumer/connect") $}}
+            {{- with tryTmpl (print "client/channeloperation/" $server.Protocol "/" .Manifest.Name "/consumer/connect") $}}
                 // Implementation-specific code
                 {{.}}
                 // End of implementation-specific code

@@ -1,16 +1,16 @@
 {{- /* dot == render.ProtoOperation */}}
-{{define "operation/kafka/publishMethods/block1"}}
+{{define "code/proto/kafka/operation/publishMethods/block1"}}
     envelope.SetTopic(o.Channel.Topic())
 {{- end}}
 {{- with deref .}}
     {{ .Type | def }}
-    {{template "operation/proto/newFunction" .}}
-    {{template "operation/proto/openFunction" .}}
+    {{template "code/proto/operation/newFunction" .}}
+    {{template "code/proto/operation/openFunction" .}}
 
     {{ .Type | goDef }}
 
-    {{template "operation/proto/commonMethods" .}}
-    {{if .IsPublisher}}{{template "operation/proto/publishMethods" .}}{{end}}
-    {{if .IsSubscriber}}{{template "operation/proto/subscribeMethods" .}}{{end}}
-    {{template "operation/proto/serverInterface" .}}
+    {{template "code/proto/operation/commonMethods" .}}
+    {{if .IsPublisher}}{{template "code/proto/operation/publishMethods" .}}{{end}}
+    {{if .IsSubscriber}}{{template "code/proto/operation/subscribeMethods" .}}{{end}}
+    {{template "code/proto/operation/serverInterface" .}}
 {{- end}}

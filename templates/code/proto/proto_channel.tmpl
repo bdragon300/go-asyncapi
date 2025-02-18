@@ -1,6 +1,6 @@
 {{- /* dot == render.ProtoChannel */}}
 
-{{define "channel/proto/newFunction"}}
+{{define "code/proto/channel/newFunction"}}
 func New{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
     {{ with .ParametersType}}params {{ . | goUsage}},{{end}}
     {{ if .IsPublisher}}publisher {{goQualR .Protocol "Publisher"}},{{end}}
@@ -11,14 +11,14 @@ func New{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
         {{- if .IsPublisher}}publisher: publisher,{{end}}
         {{- if .IsSubscriber}}subscriber: subscriber,{{end}}
     }
-    {{- with tryTmpl (print "channel/" .Protocol "/newFunction/block1") .}}
+    {{- with tryTmpl (print "code/proto/" .Protocol "/channel/newFunction/block1") .}}
         {{.}}
     {{- end}}
     return &res
 }
 {{- end}}
 
-{{define "channel/proto/openFunction"}}
+{{define "code/proto/channel/openFunction"}}
 func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
     ctx {{goQual "context.Context"}},
     {{ with .ParametersType}}params {{. | goUsage}},{{end}}
@@ -64,7 +64,7 @@ func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
 }
 {{- end}}
 
-{{define "channel/proto/commonMethods"}}
+{{define "code/proto/channel/commonMethods"}}
 func (c {{.Type | goUsage}}) Address() {{goQualR "ParamString"}} {
     return c.address
 }
@@ -90,7 +90,7 @@ func (c {{.Type | goUsage}}) Close() (err error) {
 }
 {{- end}}
 
-{{define "channel/proto/publishMethods"}}
+{{define "code/proto/channel/publishMethods"}}
 type {{ .Channel | goIDUpper }}EnvelopeMarshaler{{.Protocol | goIDUpper}} interface {
     Marshal{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}(envelope {{goQualR .Protocol "EnvelopeWriter"}}) error
 }
@@ -104,7 +104,7 @@ type {{ .Channel | goIDUpper }}EnvelopeMarshaler{{.Protocol | goIDUpper}} interf
         if err := message.Marshal{{$.Channel | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope); err != nil {
             return err
         }
-        {{ with tryTmpl (print "channel/" $.Protocol "/publishMethods/block1") .}}{{.}}{{end}}
+        {{ with tryTmpl (print "code/proto/" $.Protocol "/channel/publishMethods/block1") .}}{{.}}{{end}}
         {{- if (deref .).BindingsProtocols | has $.Protocol }}
             envelope.SetBindings({{(deref .).BindingsType | goUsage}}{}.{{$.Protocol | goIDUpper}}())
         {{- end}}
@@ -135,7 +135,7 @@ func (c {{.Type| goUsage}}) Publish(ctx {{goQual "context.Context"}}, envelopes 
 }
 {{- end}}
 
-{{define "channel/proto/subscribeMethods"}}
+{{define "code/proto/channel/subscribeMethods"}}
 type {{ .Channel | goIDUpper }}EnvelopeUnmarshaler{{.Protocol | goIDUpper}} interface {
     Unmarshal{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}(envelope {{goQualR .Protocol "EnvelopeReader"}}) error
 }
@@ -177,7 +177,7 @@ func (c {{.Type| goUsage}}) Subscribe(ctx {{goQual "context.Context"}}, cb func(
 }
 {{- end}}
 
-{{define "channel/proto/serverInterface"}}
+{{define "code/proto/channel/serverInterface"}}
 type {{ .Channel | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
     Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}(ctx {{goQual "context.Context"}}, {{if .ParametersType}}params {{ .ParametersType | goUsage }}{{end}}) (*{{ .Type | goUsage }}, error)
     {{if .IsPublisher}}Producer() {{goQualR .Protocol "Producer"}}{{end}}

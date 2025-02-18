@@ -1,6 +1,6 @@
 {{- /* dot == render.ProtoServer */}}
 
-{{define "server/ws/impl/github.com/gobwas/ws/connectFunction"}}
+{{define "code/proto/ws/server/impl/github.com/gobwas/ws/connectFunction"}}
 func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
     var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
@@ -14,7 +14,7 @@ func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url 
 }
 {{- end}}
 
-{{define "server/ws/impl/github.com/gobwas/ws/connectProducerFunction"}}
+{{define "code/proto/ws/server/impl/github.com/gobwas/ws/connectProducerFunction"}}
 func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
     var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
@@ -27,7 +27,7 @@ func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, 
 }
 {{- end}}
 
-{{define "server/ws/impl/github.com/gobwas/ws/connectConsumerFunction"}}
+{{define "code/proto/ws/server/impl/github.com/gobwas/ws/connectConsumerFunction"}}
 func Connect{{ .Server | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
     var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}

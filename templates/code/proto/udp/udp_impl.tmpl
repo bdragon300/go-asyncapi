@@ -1,6 +1,6 @@
 {{- /* dot == render.ProtoServer */}}
 
-{{define "server/udp/impl/net/connectFunction"}}
+{{define "code/proto/udp/server/impl/net/connectFunction"}}
 func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, localHost string) (*{{ .Server | goIDUpper }}Closable, error) {
     client := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(localHost, url.Host, url.Scheme)
     consumer, producer := client, client
@@ -10,7 +10,7 @@ func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url 
 }
 {{- end}}
 
-{{define "server/udp/impl/net/connectProducerFunction"}}
+{{define "code/proto/udp/server/impl/net/connectProducerFunction"}}
 func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, localHost string) (*{{ .Server | goIDUpper }}Closable, error) {
     producer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(localHost, url.Host, url.Scheme)
     return &{{ .Server | goIDUpper }}Closable{
@@ -19,7 +19,7 @@ func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, 
 }
 {{- end}}
 
-{{define "server/udp/impl/net/connectConsumerFunction"}}
+{{define "code/proto/udp/server/impl/net/connectConsumerFunction"}}
 func Connect{{ .Server | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, localHost string) (*{{ .Server | goIDUpper }}Closable, error) {
     consumer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(localHost, url.Host, url.Scheme)
     return &{{ .Server | goIDUpper }}Closable{

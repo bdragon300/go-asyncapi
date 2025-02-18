@@ -1,6 +1,6 @@
 {{- /* dot == lang.GoUnion */}}
 
-{{define "lang/gounion/definition"}}
+{{define "code/lang/gounion/definition"}}
 {{ .UnionStruct | goDef }}
 
 func (u *{{ . | goIDUpper }}) UnmarshalJSON(data []byte) (err error) {
@@ -12,6 +12,6 @@ func (u *{{ . | goIDUpper }}) UnmarshalJSON(data []byte) (err error) {
     return
 }
 {{- end}}
-{{define "lang/gounion/usage"}}
-    {{- template "lang/gostruct/usage" .}}
+{{define "code/lang/gounion/usage"}}
+    {{- template "code/lang/gostruct/usage" .}}
 {{- end}}
