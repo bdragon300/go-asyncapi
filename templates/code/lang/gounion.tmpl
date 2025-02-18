@@ -1,11 +1,11 @@
 {{- /* dot == lang.GoUnion */}}
 
 {{define "lang/gounion/definition"}}
-{{ .UnionStruct | godef }}
+{{ .UnionStruct | goDef }}
 
-func (u *{{ . | goid }}) UnmarshalJSON(data []byte) (err error) {
+func (u *{{ . | goIDUpper }}) UnmarshalJSON(data []byte) (err error) {
 {{- range .Fields}}
-    if err = {{goqual "encoding/json.Unmarshal"}}(bytes, {{if and (not .Type.IsPointer) .Type.Addressable}}&{{end}}u{{.Type.TypeName}}; err == nil {
+    if err = {{goQual "encoding/json.Unmarshal"}}(bytes, {{if and (not .Type.IsPointer) .Type.Addressable}}&{{end}}u{{.Type.TypeName}}; err == nil {
         return
     }
 {{- end}}

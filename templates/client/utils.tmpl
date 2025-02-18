@@ -1,4 +1,4 @@
-func readStreamWithContext(ctx {{goqual "context.Context"}}, input {{goqual "io.Reader"}}, payloadSeparator string) <-chan []byte {
+func readStreamWithContext(ctx {{goQual "context.Context"}}, input {{goQual "io.Reader"}}, payloadSeparator string) <-chan []byte {
 	done := make(chan struct{})
 	ch := make(chan []byte)
 	buf := make([]byte, InputStreamBufferSize)
@@ -12,13 +12,13 @@ func readStreamWithContext(ctx {{goqual "context.Context"}}, input {{goqual "io.
 
 	switch payloadSeparator {
 	case "":
-		{{goqual "log/slog.Debug"}}("Reading input as a single message")
+		{{goQual "log/slog.Debug"}}("Reading input as a single message")
 		go func() {
 			defer func() { done <- struct{}{} }()
 			for {
-				n, err := {{goqual "io.ReadFull"}}(input, buf)
-				if err != nil && !{{goqual "errors.Is"}}(err, {{goqual "io.ErrUnexpectedEOF"}}) {
-					{{goqual "log/slog.Error"}}("read stream: " + err.Error())
+				n, err := {{goQual "io.ReadFull"}}(input, buf)
+				if err != nil && !{{goQual "errors.Is"}}(err, {{goQual "io.ErrUnexpectedEOF"}}) {
+					{{goQual "log/slog.Error"}}("read stream: " + err.Error())
 					break
 				}
 				ch <- buf[:n]
@@ -26,15 +26,15 @@ func readStreamWithContext(ctx {{goqual "context.Context"}}, input {{goqual "io.
 		}()
 
 	default:
-		{{goqual "log/slog.Debug"}}("Splitting input by separator", "separator", payloadSeparator)
-		scanner := {{goqual "bufio.NewScanner"}}(input)
+		{{goQual "log/slog.Debug"}}("Splitting input by separator", "separator", payloadSeparator)
+		scanner := {{goQual "bufio.NewScanner"}}(input)
 		scanner.Buffer(buf, InputStreamBufferSize)
 		scanner.Split(splitBySeparator(payloadSeparator))
 		go func() {
 			defer func() { done <- struct{}{} }()
 			for scanner.Scan() {
 				if scanner.Err() != nil {
-					{{goqual "log/slog.Error"}}("read stream: " + scanner.Err().Error())
+					{{goQual "log/slog.Error"}}("read stream: " + scanner.Err().Error())
 					break
 				}
 				ch <- scanner.Bytes()
@@ -45,12 +45,12 @@ func readStreamWithContext(ctx {{goqual "context.Context"}}, input {{goqual "io.
 	return ch
 }
 
-func splitBySeparator(separator string) {{goqual "bufio.SplitFunc"}} {
+func splitBySeparator(separator string) {{goQual "bufio.SplitFunc"}} {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		if atEOF && len(data) == 0 {
 			return 0, nil, nil
 		}
-		if i := {{goqual "strings.Index"}}(string(data), separator); i >= 0 {
+		if i := {{goQual "strings.Index"}}(string(data), separator); i >= 0 {
 			return i + len(separator), data[0:i], nil
 		}
 		if atEOF {
@@ -60,16 +60,16 @@ func splitBySeparator(separator string) {{goqual "bufio.SplitFunc"}} {
 	}
 }
 
-func parseHeaders(headers map[string]string) {{goqualrun "Headers"}} {
-	h := make({{goqualrun "Headers"}}, len(headers))
+func parseHeaders(headers map[string]string) {{goQualR "Headers"}} {
+	h := make({{goQualR "Headers"}}, len(headers))
 	for k, v := range headers {
-		if uv, err := {{goqual "strconv.ParseUint"}}(v, 10, 64); err == nil {
+		if uv, err := {{goQual "strconv.ParseUint"}}(v, 10, 64); err == nil {
 			h[k] = uv
-		} else if iv, err := {{goqual "strconv.Atoi"}}(v); err == nil {
+		} else if iv, err := {{goQual "strconv.Atoi"}}(v); err == nil {
 			h[k] = iv
-		} else if fv, err := {{goqual "strconv.ParseFloat"}}(v, 64); err == nil {
+		} else if fv, err := {{goQual "strconv.ParseFloat"}}(v, 64); err == nil {
 			h[k] = fv
-		} else if bv, err := {{goqual "strconv.ParseBool"}}(v); err == nil {
+		} else if bv, err := {{goQual "strconv.ParseBool"}}(v); err == nil {
 			h[k] = bv
 		} else {
 			h[k] = v
@@ -122,15 +122,15 @@ func unescapeString(s string) string {
 	return string(result)
 }
 
-func showCliError(text string, cliParser *{{goqual "github.com/alexflint/go-arg.Parser"}}) {
+func showCliError(text string, cliParser *{{goQual "github.com/alexflint/go-arg.Parser"}}) {
 	cliParser.Fail(text)
-	{{goqual "os.Exit"}}(1)
+	{{goQual "os.Exit"}}(1)
 }
 
 func cutPayload(b []byte, maxSize int) string {
 	if len(b) > maxSize {
-		return {{goqual "strings.ToValidUTF8"}}(string(b[:maxSize]), "") + "..."
+		return {{goQual "strings.ToValidUTF8"}}(string(b[:maxSize]), "") + "..."
 	} else {
-		return {{goqual "strings.ToValidUTF8"}}(string(b), "")
+		return {{goQual "strings.ToValidUTF8"}}(string(b), "")
 	}
 }

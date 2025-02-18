@@ -2,60 +2,60 @@
 {{- with $server := deref .}}
 
 {{- if .ProtocolVersion}}
-const {{$ | goid}}ProtocolVersion = {{.ProtocolVersion | golit}}
+const {{$ | goIDUpper}}ProtocolVersion = {{.ProtocolVersion | goLit}}
 {{- end}}
 
-func {{$ | goid}}URL(
+func {{$ | goIDUpper}}URL(
 {{- range .Variables.Entries}}
-    {{- .Value | goidorig}} string,
-{{- end }}) (*{{goqual "net/url.URL"}}, error) {
+    {{- .Value | goID}} string,
+{{- end }}) (*{{goQual "net/url.URL"}}, error) {
     {{- if gt .Variables.Len 0}}
         {{- range .Variables.Entries}}
             {{- if .Value.Default}}
-                if {{.Value | goidorig}} == "" {
-                    {{.Value | goidorig}} = {{.Value.Default | golit}}
+                if {{.Value | goID}} == "" {
+                    {{.Value | goID}} = {{.Value.Default | goLit}}
                 }
             {{- end}}
         {{- end}}
         paramMap := map[string]string{
             {{- range .Variables.Entries}}
-                {{.Key | golit}}: {{.Value | goidorig}},
+                {{.Key | goLit}}: {{.Value | goID}},
             {{- end}}
         }
 
-        res := &{{goqual "net/url.URL"}}{Scheme: {{.Protocol | golit}}}
+        res := &{{goQual "net/url.URL"}}{Scheme: {{.Protocol | goLit}}}
         {{- if .Host}}
-            h, err := {{goqualrun "ParamString"}}{Expr: {{.Host | golit}}, Parameters: paramMap}.Expand()
+            h, err := {{goQualR "ParamString"}}{Expr: {{.Host | goLit}}, Parameters: paramMap}.Expand()
             if err != nil {
-                return nil, {{goqual "fmt.Errorf"}}("expand host: %w", err)
+                return nil, {{goQual "fmt.Errorf"}}("expand host: %w", err)
             }
             res.Host = h
         {{- end}}
         {{- if .Pathname}}
-            p, err := {{goqualrun "ParamString"}}{Expr: {{.Pathname | golit}}, Parameters: paramMap}.Expand()
+            p, err := {{goQualR "ParamString"}}{Expr: {{.Pathname | goLit}}, Parameters: paramMap}.Expand()
             if err != nil {
-                return nil, {{goqual "fmt.Errorf"}}.Errorf("expand pathname: %w", err)
+                return nil, {{goQual "fmt.Errorf"}}.Errorf("expand pathname: %w", err)
             }
             res.Path = p
         {{- end}}
 
         return res, nil
     {{- else}}
-        return &{{goqual "net/url.URL"}}{Scheme: {{.Protocol | golit}}, Host: {{.Host | golit}}, Path: {{.Pathname | golit}}}, nil
+        return &{{goQual "net/url.URL"}}{Scheme: {{.Protocol | goLit}}, Host: {{.Host | goLit}}, Path: {{.Pathname | goLit}}}, nil
     {{- end}}
 }
 
 {{- if and .BindingsType (ndefined .BindingsType)}}
-    {{- .BindingsType | godef}}
+    {{- .BindingsType | goDef}}
     {{- range $proto := .BindingsProtocols}}
         {{- $bindingsValue := $server.ProtoBindingsValue $proto}}
-        func (c {{ $server.BindingsType | gousage }}) {{ $proto | goid }}() {{$bindingsValue.Type | gousage}} {
-            b := {{$bindingsValue | gousage}}
+        func (c {{ $server.BindingsType | goUsage }}) {{ $proto | goIDUpper }}() {{$bindingsValue.Type | goUsage}} {
+            b := {{$bindingsValue | goUsage}}
             {{- with $server.Bindings}}
                 {{- $jvals := .JSONValues.GetOrEmpty $proto}}
                 {{- range $jval := $jvals.Entries}}
-                    {{$jval.Key | toCamelCase }} := {{$jval.Value | golit}}
-                    _ = {{goqual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})
+                    {{$jval.Key | toCamelCase }} := {{$jval.Value | goLit}}
+                    _ = {{goQual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})
                 {{- end}}
             {{- end}}
             return b

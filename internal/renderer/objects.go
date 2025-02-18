@@ -70,7 +70,7 @@ func RenderObjects(queue []RenderQueueItem, mng *manager.TemplateRenderManager) 
 		}
 		if len(postponed) == len(queue) {
 			return fmt.Errorf(
-				"missed object definitions, please ensure they are defined by `godef` or `def` functions prior using: \n%w",
+				"missed object definitions, please ensure they are defined by `goDef` or `def` functions prior using: \n%w",
 				errors.Join(lo.Map(postponed, func(item RenderQueueItem, _ int) error { return item.Err })...),
 			)
 		}

@@ -1,32 +1,32 @@
 {{define "clientApp/channel"}}
 {{/* dot == common.Renderable: Ref -> render.Channel or render.Channel */}}
 {{- with . | deref}}
-type {{$ | goid}}Cmd struct {
+type {{$ | goIDUpper}}Cmd struct {
     // Parameters
     {{- range .Parameters}}
-	    {{. | goid}} string `arg:"--{{.Name | toQuotable | toKebabCase}},required" help:"Channel parameter: {{.Name | toQuotable}}"`
+	    {{. | goIDUpper}} string `arg:"--{{.Name | toQuotable | toKebabCase}},required" help:"Channel parameter: {{.Name | toQuotable}}"`
     {{- end}}
 
 	// Servers
     {{- range .BoundServers}}
-	    {{. | goid}}Cmd *{{. | goid}}CliCmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Server: {{.Name | toQuotable}}"`
+	    {{. | goIDUpper}}Cmd *{{. | goIDUpper}}CliCmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Server: {{.Name | toQuotable}}"`
     {{- end}}
 }
 
-func channel{{$ | goid}}(ctx {{"context.Context"}}, args *{{$ | goid}}Cmd, opts channelOptions) error {
+func channel{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}Cmd, opts channelOptions) error {
     {{- if .ParametersType}}
-        channelParams := {{gousage .ParametersType}}{
+        channelParams := {{goUsage .ParametersType}}{
             {{- range .Parameters}}
-                {{. | goid}}: {{gousage (deref .).Type}}(args.{{. | goid}}),
+                {{. | goIDUpper}}: {{goUsage (deref .).Type}}(args.{{. | goIDUpper}}),
             {{- end}}
         }
-	    {{goqual "log/slog.Debug"}}("Channel parameters", "value", channelParams)
+	    {{goQual "log/slog.Debug"}}("Channel parameters", "value", channelParams)
     {{- end}}
 
 	switch {
     {{- range .BoundServers}}
         {{$implTemplateCtx := dict "ChannelOrOperation" $ "Server" . "Kind" "channel"}}
-        case args.{{. | goid}}Cmd != nil:
+        case args.{{. | goIDUpper}}Cmd != nil:
             {{template "clientApp/pubsub/proto/serverPubSub" $implTemplateCtx}}
     {{- end}}
 	default:
@@ -41,32 +41,32 @@ func channel{{$ | goid}}(ctx {{"context.Context"}}, args *{{$ | goid}}Cmd, opts 
 {{define "clientApp/operation"}}
 {{/* dot == common.Renderable: Ref -> render.Operation or render.Operation */}}
 {{- with . | deref}}
-type {{$ | goid}}Cmd struct {
+type {{$ | goIDUpper}}Cmd struct {
     // Parameters
     {{- range .Channel.Parameters}}
-	    {{. | goid}} string `arg:"--{{.Name | toQuotable | toKebabCase}},required" help:"Channel parameter: {{.Name | toQuotable}}"`
+	    {{. | goIDUpper}} string `arg:"--{{.Name | toQuotable | toKebabCase}},required" help:"Channel parameter: {{.Name | toQuotable}}"`
     {{- end}}
 
 	// Servers
     {{- range .Channel.BoundServers}}
-	    {{. | goid}}Cmd *{{. | goid}}CliCmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Server: {{.Name | toQuotable}}"`
+	    {{. | goIDUpper}}Cmd *{{. | goIDUpper}}CliCmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Server: {{.Name | toQuotable}}"`
     {{- end}}
 }
 
-func operation{{$ | goid}}(ctx {{"context.Context"}}, args *{{$ | goid}}Cmd, opts channelOptions) error {
+func operation{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}Cmd, opts channelOptions) error {
     {{- if .Channel.ParametersType}}
-        channelParams := {{gousage .Channel.ParametersType}}{
+        channelParams := {{goUsage .Channel.ParametersType}}{
             {{- range .Channel.Parameters}}
-                {{. | goid}}: {{gousage (deref .).Type}}(args.{{. | goid}}),
+                {{. | goIDUpper}}: {{goUsage (deref .).Type}}(args.{{. | goIDUpper}}),
             {{- end}}
         }
-	    {{goqual "log/slog.Debug"}}("Channel parameters", "value", channelParams)
+	    {{goQual "log/slog.Debug"}}("Channel parameters", "value", channelParams)
     {{- end}}
 
 	switch {
     {{- range .Channel.BoundServers}}
         {{$implTemplateCtx := dict "ChannelOrOperation" $ "Server" . "Kind" "operation"}}
-        case args.{{. | goid}}Cmd != nil:
+        case args.{{. | goIDUpper}}Cmd != nil:
             {{template "clientApp/pubsub/proto/serverPubSub" $implTemplateCtx}}
     {{- end}}
 	default:
@@ -90,72 +90,72 @@ func operation{{$ | goid}}(ctx {{"context.Context"}}, args *{{$ | goid}}Cmd, opt
 {{- end}}
 
 {{- with $server := .Server | deref}}
-serverURL := args.{{$.Server | goid}}Cmd.URL
+serverURL := args.{{$.Server | goIDUpper}}Cmd.URL
 if serverURL == nil {
-    u, err := {{gopkg .ProtoServer.Type}}{{. | goid}}URL(
-        {{range .Variables.Entries}}args.{{$server | goid}}Cmd.{{.Value | goid}},{{end}}
+    u, err := {{goPkg .ProtoServer.Type}}{{. | goIDUpper}}URL(
+        {{range .Variables.Entries}}args.{{$server | goIDUpper}}Cmd.{{.Value | goIDUpper}},{{end}}
     )
     if err != nil {
-        return {{goqual "fmt.Errorf"}}("url: %w", err)
+        return {{goQual "fmt.Errorf"}}("url: %w", err)
     }
     serverURL = u
 }
 if opts.proxyHost != "" {
     if port := serverURL.Port(); port != "" {
-        serverURL.Host = {{goqual "net.JoinHostPort"}}(opts.proxyHost, port)
+        serverURL.Host = {{goQual "net.JoinHostPort"}}(opts.proxyHost, port)
     } else {
         serverURL.Host = opts.proxyHost
     }
 }
-{{goqual "log/slog.Debug"}}("Server URL", "value", serverURL)
+{{goQual "log/slog.Debug"}}("Server URL", "value", serverURL)
 
 {{- with impl .Protocol}}
-    {{goqual "log/slog.Debug"}}("Using implementation {{.Manifest.Name | toQuotable}}")
-    {{- with trytmpl (print "clientApp/channeloperation/" $server.Protocol "/" .Manifest.Name "/setup") $}}
+    {{goQual "log/slog.Debug"}}("Using implementation {{.Manifest.Name | toQuotable}}")
+    {{- with tryTmpl (print "clientApp/channeloperation/" $server.Protocol "/" .Manifest.Name "/setup") $}}
         // Implementation-specific code
         {{.}}
         // End of implementation-specific code
     {{- end}}
 {{end}}
 
-{{goqual "log/slog.Debug"}}("Connecting to server", "name", {{$.Server.Name | golit}}, "url", serverURL)
+{{goQual "log/slog.Debug"}}("Connecting to server", "name", {{$.Server.Name | goLit}}, "url", serverURL)
 if opts.publish {
     {{- if and .IsPublisher (deref $.ChannelOrOperation).IsPublisher}}
         {{- with impl .Protocol}}
-            {{- with trytmpl (print "clientApp/channeloperation/" $server.Protocol "/" .Manifest.Name "/producer/connect") $}}
+            {{- with tryTmpl (print "clientApp/channeloperation/" $server.Protocol "/" .Manifest.Name "/producer/connect") $}}
                 // Implementation-specific code
                 {{.}}
                 // End of implementation-specific code
             {{- else}}
-                server, err := {{gopkg (deref $.Server).ProtoServer.Type}}Connect{{$.Server | goid}}Producer(ctx, serverURL)
+                server, err := {{goPkg (deref $.Server).ProtoServer.Type}}Connect{{$.Server | goIDUpper}}Producer(ctx, serverURL)
                 if err != nil {
-                    return {{goqual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
+                    return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
                 }
             {{- end}}
         {{end}}
         defer server.Close()
 
-        {{goqual "log/slog.Debug"}}("Opening {{$.Kind}}", "name", {{.Name | golit}}{{with (deref $channel).ParametersType}}, "parameters", channelParams{{end}})
-        object, err := server.Open{{$.ChannelOrOperation | goid}}{{.Protocol | goid}}(ctx{{with (deref $channel).ParametersType}}, channelParams{{end}})
+        {{goQual "log/slog.Debug"}}("Opening {{$.Kind}}", "name", {{.Name | goLit}}{{with (deref $channel).ParametersType}}, "parameters", channelParams{{end}})
+        object, err := server.Open{{$.ChannelOrOperation | goIDUpper}}{{.Protocol | goIDUpper}}(ctx{{with (deref $channel).ParametersType}}, channelParams{{end}})
         if err != nil {
-            return {{goqual "fmt.Errorf"}}("open {{$.Kind}}: %w", err)
+            return {{goQual "fmt.Errorf"}}("open {{$.Kind}}: %w", err)
         }
         defer object.Close()
 
-        {{goqual "log/slog.Debug"}}("Reading data to publish to {{$.Kind}}...")
+        {{goQual "log/slog.Debug"}}("Reading data to publish to {{$.Kind}}...")
         // If separator is empty, then don't use scanner and just read everything until EOF
         for b := range readStreamWithContext(ctx, opts.stream, opts.payloadSeparator) {
-            {{with impl .Protocol}}envelope := {{gopkg .}}NewEnvelopeOut(){{end}}
+            {{with impl .Protocol}}envelope := {{goPkg .}}NewEnvelopeOut(){{end}}
             n, err := envelope.Write(b)
             if err != nil {
-                return {{goqual "fmt.Errorf"}}("write envelope: %w", err)
+                return {{goQual "fmt.Errorf"}}("write envelope: %w", err)
             }
-            {{goqual "log/slog.Debug"}}("Read message payload", "bytes", n)
+            {{goQual "log/slog.Debug"}}("Read message payload", "bytes", n)
             parsedHeaders := parseHeaders(opts.publishHeaders)
             envelope.SetHeaders(parsedHeaders)
 
             {{- with impl .Protocol}}
-                {{- with trytmpl (print "clientApp/message/" $server.Protocol "/" .Manifest.Name "/publish") $}}
+                {{- with tryTmpl (print "clientApp/message/" $server.Protocol "/" .Manifest.Name "/publish") $}}
                     // Implementation-specific code
                     {{.}}
                     // End of implementation-specific code
@@ -163,66 +163,66 @@ if opts.publish {
             {{end}}
 
             if opts.debug {
-                {{goqual "log/slog.Debug"}}("Publishing message", "bytes", n, "payload", cutPayload(b, MaxLogPayloadSize), "headers", parsedHeaders)
+                {{goQual "log/slog.Debug"}}("Publishing message", "bytes", n, "payload", cutPayload(b, MaxLogPayloadSize), "headers", parsedHeaders)
             }
             if err := object{{if eq $.ChannelOrOperation.Kind "operation"}}.Channel{{end}}.Publish(ctx, envelope); err != nil {
-                return {{goqual "fmt.Errorf"}}("publish: %w", err)
+                return {{goQual "fmt.Errorf"}}("publish: %w", err)
             }
             if !opts.multipleMessages {
                 break
             }
         }
     {{- else}}
-        return {{goqual "fmt.Errorf"}}("publishing for {{$.Kind}} {{.Name | toQuotable}} is not supported in specification or disabled")
+        return {{goQual "fmt.Errorf"}}("publishing for {{$.Kind}} {{.Name | toQuotable}} is not supported in specification or disabled")
     {{- end}}
 } else {
     {{- if and .IsSubscriber  (deref $.ChannelOrOperation).IsSubscriber}}
         {{- with impl .Protocol}}
-            {{- with trytmpl (print "clientApp/channeloperation/" $server.Protocol "/" .Manifest.Name "/consumer/connect") $}}
+            {{- with tryTmpl (print "clientApp/channeloperation/" $server.Protocol "/" .Manifest.Name "/consumer/connect") $}}
                 // Implementation-specific code
                 {{.}}
                 // End of implementation-specific code
             {{- else}}
-                server, err := {{gopkg ($.Server | deref).ProtoServer.Type}}Connect{{$.Server | goid}}Consumer(ctx, serverURL)
+                server, err := {{goPkg ($.Server | deref).ProtoServer.Type}}Connect{{$.Server | goIDUpper}}Consumer(ctx, serverURL)
                 if err != nil {
-                    return {{goqual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
+                    return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
                 }
             {{- end}}
         {{end}}
         defer server.Close()
 
-        {{goqual "log/slog.Debug"}}("Opening {{$.Kind}}", "name", {{.Name | golit}}{{with (deref $channel).ParametersType}}, "parameters", channelParams{{end}})
-        object, err := server.Open{{$.ChannelOrOperation | goid}}{{.Protocol | goid}}(ctx{{with (deref $channel).ParametersType}}, channelParams{{end}})
+        {{goQual "log/slog.Debug"}}("Opening {{$.Kind}}", "name", {{.Name | goLit}}{{with (deref $channel).ParametersType}}, "parameters", channelParams{{end}})
+        object, err := server.Open{{$.ChannelOrOperation | goIDUpper}}{{.Protocol | goIDUpper}}(ctx{{with (deref $channel).ParametersType}}, channelParams{{end}})
         if err != nil {
-            return {{goqual "fmt.Errorf"}}("open {{$.Kind}}: %w", err)
+            return {{goQual "fmt.Errorf"}}("open {{$.Kind}}: %w", err)
         }
         defer object.Close()
 
-        {{goqual "log/slog.Debug"}}("Subscribing to {{$.Kind}}...", "separator", opts.payloadSeparator)
-        subCtx, cancel := {{goqual "context.WithCancelCause"}}(ctx)
+        {{goQual "log/slog.Debug"}}("Subscribing to {{$.Kind}}...", "separator", opts.payloadSeparator)
+        subCtx, cancel := {{goQual "context.WithCancelCause"}}(ctx)
         defer cancel(nil)
         payloadSeparator := []byte(opts.payloadSeparator)
-        err = object{{if eq $.ChannelOrOperation.Kind "operation"}}.Channel{{end}}.Subscribe(subCtx, func(e {{goqualrun .Protocol "EnvelopeReader"}}) {
-            b, err := {{goqual "io.ReadAll"}}(e)
+        err = object{{if eq $.ChannelOrOperation.Kind "operation"}}.Channel{{end}}.Subscribe(subCtx, func(e {{goQualR .Protocol "EnvelopeReader"}}) {
+            b, err := {{goQual "io.ReadAll"}}(e)
             if err != nil {
-                cancel({{goqual "fmt.Errorf"}}("read: %w", err))
+                cancel({{goQual "fmt.Errorf"}}("read: %w", err))
                 return
             }
             if opts.debug {
                 var p string
                 if len(b) > MaxLogPayloadSize {
-                    p = {{goqual "strings.ToValidUTF8"}}(string(b[:MaxLogPayloadSize]), "") + "..."
+                    p = {{goQual "strings.ToValidUTF8"}}(string(b[:MaxLogPayloadSize]), "") + "..."
                 } else {
-                    p = {{goqual "strings.ToValidUTF8"}}(string(b), "")
+                    p = {{goQual "strings.ToValidUTF8"}}(string(b), "")
                 }
-                {{goqual "log/slog.Debug"}}("Received message", "bytes", len(b), "payload", p, "headers", e.Headers())
+                {{goQual "log/slog.Debug"}}("Received message", "bytes", len(b), "payload", p, "headers", e.Headers())
             }
             if _, err = opts.stream.Write(b); err != nil {
-                cancel({{goqual "fmt.Errorf"}}("write stream: %w", err))
+                cancel({{goQual "fmt.Errorf"}}("write stream: %w", err))
                 return
             }
             if _, err = opts.stream.Write(payloadSeparator); err != nil {
-                cancel({{goqual "fmt.Errorf"}}("write stream: %w", err))
+                cancel({{goQual "fmt.Errorf"}}("write stream: %w", err))
                 return
             }
             if !opts.multipleMessages {
@@ -230,13 +230,13 @@ if opts.publish {
             }
         })
         if err != nil {
-            return {{goqual "fmt.Errorf"}}("subscribe: %w", err)
+            return {{goQual "fmt.Errorf"}}("subscribe: %w", err)
         }
         if err := subCtx.Err(); err != nil {
-            return {{goqual "fmt.Errorf"}}("message processing: %w", err)
+            return {{goQual "fmt.Errorf"}}("message processing: %w", err)
         }
     {{- else}}
-        return {{goqual "fmt.Errorf"}}("subscribing for {{$.Kind}} {{.Name | toQuotable}} is not supported in specification or disabled")
+        return {{goQual "fmt.Errorf"}}("subscribing for {{$.Kind}} {{.Name | toQuotable}} is not supported in specification or disabled")
     {{- end}}
 }
 {{- end}}

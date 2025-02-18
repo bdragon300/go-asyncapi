@@ -25,7 +25,7 @@ m.{{.StructFieldKind | toTitleCase}} = v0
 {{define "correlationID/incoming/varType"}}
 {{- with .CorrelationID}}
 {{$steps := correlationIDExtractionCode . $.OutType false}}
-{{if $steps }}{{last $steps | .VarType | gousage}}{{else}}any{{end}}
+{{if $steps }}{{last $steps | .VarType | goUsage}}{{else}}any{{end}}
 {{- end}}
 {{- end}}
 
@@ -47,6 +47,6 @@ v0 := m.{{.StructFieldKind | untitle}}
 {{define "correlationID/outgoing/varType"}}
 {{- with .CorrelationID}}
 {{$steps := correlationIDExtractionCode . $.InType false}}
-{{if $steps }}{{last $steps | .VarType | gousage}}{{else}}any{{end}}
+{{if $steps }}{{last $steps | .VarType | goUsage}}{{else}}any{{end}}
 {{- end}}
 {{- end}}

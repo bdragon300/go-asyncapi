@@ -5,87 +5,87 @@
 
 {{define "message/proto/marshalMethods"}}
 {{- range .BoundChannels}}
-    {{- if and (visible .) (deref .).IsPublisher}}
-        func (m *{{ $.OutType | goid }}) Marshal{{. | goid}}{{$.Protocol | goid}}(envelope {{goqualrun $.Protocol "EnvelopeWriter"}}) error {
-            return m.MarshalEnvelope{{$.Protocol | goid}}(envelope)
+    {{- if and (isVisible .) (deref .).IsPublisher}}
+        func (m *{{ $.OutType | goIDUpper }}) Marshal{{. | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope {{goQualR $.Protocol "EnvelopeWriter"}}) error {
+            return m.MarshalEnvelope{{$.Protocol | goIDUpper}}(envelope)
         }
     {{- end}}
 {{- end}}
 
 {{- range .BoundOperations}}
-    {{- if and (visible .) (deref .).IsPublisher}}
-        func (m *{{ $.OutType | goid }}) Marshal{{. | goid}}{{$.Protocol | goid}}(envelope {{goqualrun $.Protocol "EnvelopeWriter"}}) error {
-            return m.MarshalEnvelope{{$.Protocol | goid}}(envelope)
+    {{- if and (isVisible .) (deref .).IsPublisher}}
+        func (m *{{ $.OutType | goIDUpper }}) Marshal{{. | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope {{goQualR $.Protocol "EnvelopeWriter"}}) error {
+            return m.MarshalEnvelope{{$.Protocol | goIDUpper}}(envelope)
         }
     {{- end}}
 {{- end}}
 
-func (m *{{ .OutType | goid }}) MarshalEnvelope{{ .Protocol | goid }}(envelope {{goqualrun .Protocol "EnvelopeWriter"}}) error {
+func (m *{{ .OutType | goIDUpper }}) MarshalEnvelope{{ .Protocol | goIDUpper }}(envelope {{goQualR .Protocol "EnvelopeWriter"}}) error {
     {{- template "message/proto/encoder" .}}
-    envelope.SetContentType({{.EffectiveContentType | golit}})
+    envelope.SetContentType({{.EffectiveContentType | goLit}})
     {{- with .HeadersType}}
         envelope.SetHeaders({
         {{- range .Fields}}
-            {{ .Name | golit}}: m.Headers.{{.Name}},
+            {{ .Name | goLit}}: m.Headers.{{.Name}},
         {{- end}}
         })
     {{- else}}
-        envelope.SetHeaders({{goqualrun "Headers"}}(m.Headers))
+        envelope.SetHeaders({{goQualR "Headers"}}(m.Headers))
     {{- end}}
     return nil
 }
 
 {{- if .BindingsProtocols | has .Protocol}}
-    func (c {{.OutType | gousage}}) Bindings{{.Protocol | goid}}() {{goqualrun .Protocol "MessageBindings"}} {
-        return {{.BindingsType | gousage}}{}.{{.Protocol | goid}}()
+    func (c {{.OutType | goUsage}}) Bindings{{.Protocol | goIDUpper}}() {{goQualR .Protocol "MessageBindings"}} {
+        return {{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}()
     }
 {{- end}}
 {{- end}}
 
 {{define "message/proto/unmarshalMethods"}}
 {{- range .BoundChannels}}
-    {{- if and (visible .) (deref .).IsSubscriber}}
-        func (m *{{ $.InType | goid }}) Unmarshal{{. | goid}}{{$.Protocol | goid}}(envelope {{goqualrun $.Protocol "EnvelopeReader"}}) error {
-            return m.UnmarshalEnvelope{{$.Protocol | goid}}(envelope)
+    {{- if and (isVisible .) (deref .).IsSubscriber}}
+        func (m *{{ $.InType | goIDUpper }}) Unmarshal{{. | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope {{goQualR $.Protocol "EnvelopeReader"}}) error {
+            return m.UnmarshalEnvelope{{$.Protocol | goIDUpper}}(envelope)
         }
     {{- end}}
 {{- end}}
 
 {{- range .BoundOperations}}
-    {{- if and (visible .) (deref .).IsSubscriber}}
-        func (m *{{ $.InType | goid }}) Unmarshal{{. | goid}}{{$.Protocol |  goid}}(envelope {{goqualrun $.Protocol "EnvelopeReader"}}) error {
-            return m.UnmarshalEnvelope{{$.Protocol | goid}}(envelope)
+    {{- if and (isVisible .) (deref .).IsSubscriber}}
+        func (m *{{ $.InType | goIDUpper }}) Unmarshal{{. | goIDUpper}}{{$.Protocol |  goIDUpper}}(envelope {{goQualR $.Protocol "EnvelopeReader"}}) error {
+            return m.UnmarshalEnvelope{{$.Protocol | goIDUpper}}(envelope)
         }
     {{- end}}
 {{- end}}
 
-func (m *{{ .InType | goid }}) UnmarshalEnvelope{{ .Protocol | goid }}(envelope {{goqualrun .Protocol "EnvelopeReader"}}) error {
+func (m *{{ .InType | goIDUpper }}) UnmarshalEnvelope{{ .Protocol | goIDUpper }}(envelope {{goQualR .Protocol "EnvelopeReader"}}) error {
     {{- template "message/proto/decoder" .}}
     {{- with .HeadersType }}
         {{- /* Empty headers should not generate code */}}
         {{- if gt (len .Fields) 0}}
             headers := envelope.Headers()
             {{- range .Fields}}
-                if v, ok := headers[{{.Name | golit}}]; ok {
-                    m.headers.{{.Name}} = v.({{.Type| gousage}})
+                if v, ok := headers[{{.Name | goLit}}]; ok {
+                    m.headers.{{.Name}} = v.({{.Type| goUsage}})
                 }
             {{- end}}
         {{- end}}
     {{- else}}
-        m.headers = {{.HeadersFallbackType| gousage}}(envelope.Headers())
+        m.headers = {{.HeadersFallbackType| goUsage}}(envelope.Headers())
     {{- end}}
     return nil
 }
 
 {{- if .BindingsProtocols | has .Protocol}}
-    func (c {{.InType | gousage}}) Bindings{{.Protocol | goid}}() {{goqualrun .Protocol "MessageBindings"}} {
-        return {{.BindingsType | gousage}}{}.{{.Protocol | goid}}()
+    func (c {{.InType | goUsage}}) Bindings{{.Protocol | goIDUpper}}() {{goQualR .Protocol "MessageBindings"}} {
+        return {{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}()
     }
 {{- end}}
 {{- end}}
 
 {{define "message/proto/encoder"}}
-{{- with trytmpl (print "message/proto/encoder/" .EffectiveContentType) .}}
+{{- with tryTmpl (print "message/proto/encoder/" .EffectiveContentType) .}}
     {{.}}
 {{- else}}
     {{template "message/proto/encoder/default" .}}
@@ -93,7 +93,7 @@ func (m *{{ .InType | goid }}) UnmarshalEnvelope{{ .Protocol | goid }}(envelope 
 {{- end}}
 
 {{define "message/proto/decoder"}}
-{{- with trytmpl (print "message/proto/decoder/" .EffectiveContentType) .}}
+{{- with tryTmpl (print "message/proto/decoder/" .EffectiveContentType) .}}
     {{.}}
 {{- else}}
     {{template "message/proto/decoder/default" .}}

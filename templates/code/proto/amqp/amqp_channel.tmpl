@@ -1,9 +1,9 @@
 {{- /* dot == render.ProtoChannel */}}
 {{define "channel/amqp/newFunction/block1"}}
     {{- if and .BindingsType (.BindingsProtocols | has .Protocol)}}
-        bindings := {{ .BindingsType | gousage }}{}.{{.Protocol | goid}}()
+        bindings := {{ .BindingsType | goUsage }}{}.{{.Protocol | goIDUpper}}()
         switch bindings.ChannelType {
-        case {{goqualrun .Protocol "ChannelTypeQueue"}}:
+        case {{goQualR .Protocol "ChannelTypeQueue"}}:
             res.queue = res.address.String()
         default:
             res.routingKey = res.address.String()
@@ -26,19 +26,19 @@
 {{template "channel/proto/openFunction" .}}
 
 {{- if ndefined .Type}}
-{{ .Type | godef }}
+{{ .Type | goDef }}
 
 {{template "channel/proto/commonMethods" .}}
 
-func (c {{ .Type | gousage }}) Exchange() string {
+func (c {{ .Type | goUsage }}) Exchange() string {
     return c.exchange
 }
 
-func (c {{ .Type | gousage }}) Queue() string {
+func (c {{ .Type | goUsage }}) Queue() string {
     return c.queue
 }
 
-func (c {{ .Type | gousage }}) RoutingKey() string {
+func (c {{ .Type | goUsage }}) RoutingKey() string {
     return c.routingKey
 }
 

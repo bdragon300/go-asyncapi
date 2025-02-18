@@ -2,16 +2,16 @@
 {{- with $operation := deref .}}
 
 {{- if and .BindingsType (ndefined .BindingsType) }}
-    {{ .BindingsType | godef }}
+    {{ .BindingsType | goDef }}
     {{- range $proto := .BindingsProtocols }}
         {{- $bindingsValue := $operation.ProtoBindingsValue $proto }}
-        func (c {{ $operation.BindingsType | gousage }}) {{ $proto | goid }}() {{$bindingsValue.Type | gousage}} {
-            b := {{$bindingsValue | gousage}}
+        func (c {{ $operation.BindingsType | goUsage }}) {{ $proto | goIDUpper }}() {{$bindingsValue.Type | goUsage}} {
+            b := {{$bindingsValue | goUsage}}
             {{- with $operation.Bindings }}
                 {{- $jvals := .JSONValues.GetOrEmpty $proto }}
                 {{- range $jvals.Entries}}
-                    {{.Key | toCamelCase }} := {{.Value | golit}}
-                    _ = {{goqual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}), &b.{{.Key}})
+                    {{.Key | toCamelCase }} := {{.Value | goLit}}
+                    _ = {{goQual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}), &b.{{.Key}})
                 {{- end}}
             {{- end}}
             return b

@@ -1,41 +1,41 @@
 {{- /* dot == render.ProtoServer */}}
 
 {{define "server/tcp/impl/net/connectFunction"}}
-func Connect{{ .Server | goid }}Bidi(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}) (*{{ .Server | goid }}Closable, error) {
-    producer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer(url.Host, url.Scheme)
+func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+    producer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewProducer(url.Host, url.Scheme)
     if err != nil {
         return nil, err
     }
-    consumer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer(url.Host, url.Scheme)
+    consumer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewConsumer(url.Host, url.Scheme)
     if err != nil {
         return nil, err
     }
-    return &{{ .Server | goid }}Closable{
-        {{ .Type | gousage }}{producer: producer, consumer: consumer},
+    return &{{ .Server | goIDUpper }}Closable{
+        {{ .Type | goUsage }}{producer: producer, consumer: consumer},
     }, nil
 }
 {{- end}}
 
 {{define "server/tcp/impl/net/connectProducerFunction"}}
-func Connect{{ .Server | goid }}Producer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}) (*{{ .Server | goid }}Closable, error) {
-    producer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer(url.Host, url.Scheme)
+func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+    producer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewProducer(url.Host, url.Scheme)
     if err != nil {
         return nil, err
     }
-    return &{{ .Server | goid }}Closable{
-        {{ .Type | gousage }}{producer: producer},
+    return &{{ .Server | goIDUpper }}Closable{
+        {{ .Type | goUsage }}{producer: producer},
     }, nil
 }
 {{- end}}
 
 {{define "server/tcp/impl/net/connectConsumerFunction"}}
-func Connect{{ .Server | goid }}Consumer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}) (*{{ .Server | goid }}Closable, error) {
-    consumer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer(url.Host, url.Scheme)
+func Connect{{ .Server | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+    consumer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewConsumer(url.Host, url.Scheme)
     if err != nil {
         return nil, err
     }
-    return &{{ .Server | goid }}Closable{
-        {{ .Type | gousage }}{consumer: consumer},
+    return &{{ .Server | goIDUpper }}Closable{
+        {{ .Type | goUsage }}{consumer: consumer},
     }, nil
 }
 {{- end}}

@@ -1,4 +1,4 @@
-package utils
+package resolver
 
 import (
 	"reflect"
@@ -49,7 +49,7 @@ func TestParseCommandLine(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ParseCommandLine(tt.input)
+			got := parseCommandLine(tt.input)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("expect %v, got %v", tt.want, got)
 			}

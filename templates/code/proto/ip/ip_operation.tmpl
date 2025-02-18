@@ -4,7 +4,7 @@
     {{template "operation/proto/newFunction" .}}
     {{template "operation/proto/openFunction" .}}
 
-    {{ .Type | godef }}
+    {{ .Type | goDef }}
 
     {{template "operation/proto/commonMethods" .}}
     {{if .IsPublisher}}{{template "operation/proto/publishMethods" .}}{{end}}

@@ -1,9 +1,9 @@
 {{- /* dot == render.ProtoMessage */}}
 {{- with deref .}}
-    {{- if ndefined (print "MessageMethods" .Protocol (goid .))}}
+    {{- if ndefined (print "MessageMethods" .Protocol (goIDUpper .))}}
         {{template "message/proto/commonMethods" .}}
         {{if .IsPublisher}}{{template "message/proto/marshalMethods" .}}{{end}}
         {{if .IsSubscriber}}{{template "message/proto/unmarshalMethods" .}}{{end}}
     {{- end}}
-    {{- print "MessageMethods" .Protocol (goid .) | def}}
+    {{- print "MessageMethods" .Protocol (goIDUpper .) | def}}
 {{- end}}

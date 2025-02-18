@@ -11,8 +11,8 @@
       - "{{$port}}:1883"
       {{if ndefined "port_18083"}}- "18083:18083"{{def "port_18083"}}{{end}}  # Management UI, creds:admin/public
     volumes:
-      - "{{.Server.Name | goidorig}}-data{{range .ServerVariables}}_{{.Value | goidorig}}{{end}}:/opt/emqx/data"
-      - "{{.Server.Name | goidorig}}-log{{range .ServerVariables}}_{{.Value | goidorig}}{{end}}:/opt/emqx/log"
+      - "{{.Server.Name | goID}}-data{{range .ServerVariables}}_{{.Value | goID}}{{end}}:/opt/emqx/data"
+      - "{{.Server.Name | goID}}-log{{range .ServerVariables}}_{{.Value | goID}}{{end}}:/opt/emqx/log"
     hostname: "{{($server.URL .ServerVariables).Hostname | toQuotable}}"
     restart: on-failure
 {{- end}}
@@ -22,6 +22,6 @@
   .ServerVariables == []common.ConfigServerVariable
   */}}
 {{define "infra/docker/mqtt/volumes"}}
-  "{{.Server.Name | goidorig}}-data{{range .ServerVariables}}_{{.Value | goidorig}}{{end}}":
-  "{{.Server.Name | goidorig}}-log{{range .ServerVariables}}_{{.Value | goidorig}}{{end}}":
+  "{{.Server.Name | goID}}-data{{range .ServerVariables}}_{{.Value | goID}}{{end}}":
+  "{{.Server.Name | goID}}-log{{range .ServerVariables}}_{{.Value | goID}}{{end}}":
 {{- end}}

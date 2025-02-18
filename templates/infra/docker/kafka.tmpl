@@ -10,7 +10,7 @@
     ports:
       - "{{$port}}:9094"
     volumes:
-      - "{{.Server.Name | goidorig}}{{range .ServerVariables}}_{{.Value | goidorig}}{{end}}:/bitnami"
+      - "{{.Server.Name | goID}}{{range .ServerVariables}}_{{.Value | goID}}{{end}}:/bitnami"
     hostname: "{{($server.URL .ServerVariables).Hostname | toQuotable}}"
     restart: on-failure
     environment:
@@ -38,5 +38,5 @@
   .ServerVariables == []common.ConfigServerVariable
   */}}
 {{define "infra/docker/kafka/volumes"}}
-  "{{.Server.Name | goidorig}}{{range .ServerVariables}}_{{.Value | goidorig}}{{end}}":
+  "{{.Server.Name | goID}}{{range .ServerVariables}}_{{.Value | goID}}{{end}}":
 {{- end}}

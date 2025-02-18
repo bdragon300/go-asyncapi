@@ -2,16 +2,16 @@
 {{- with $message := deref .}}
 
 {{- if and .BindingsType (ndefined .BindingsType)}}
-    {{- .BindingsType| godef }}
+    {{- .BindingsType| goDef }}
     {{- range $proto := .BindingsProtocols}}
         {{- $bindingsValue := $message.ProtoBindingsValue $proto}}
-        func (c {{ $message.BindingsType | gousage }}) {{ $proto | goid }}() {{$bindingsValue.Type | gousage}} {
-            b := {{$bindingsValue| gousage}}
+        func (c {{ $message.BindingsType | goUsage }}) {{ $proto | goIDUpper }}() {{$bindingsValue.Type | goUsage}} {
+            b := {{$bindingsValue| goUsage}}
             {{- with $message.Bindings}}
                 {{- $jvals := .JSONValues.GetOrEmpty $proto}}
                 {{- range $jval := $jvals.Entries}}
-                    {{ $jval.Key | toCamelCase }} := {{$jval.Value | golit}}
-                    _ = {{goqual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})
+                    {{ $jval.Key | toCamelCase }} := {{$jval.Value | goLit}}
+                    _ = {{goQual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})
                 {{- end}}
             {{- end}}
             return b
@@ -22,63 +22,63 @@
 {{- $headersType := coalesce .HeadersType .HeadersFallbackType}}
 
 {{- if and (ndefined .OutType) .IsPublisher }}
-{{.OutType| godef}}
+{{.OutType| goDef}}
 
-func (m *{{ .OutType | goid }}) WithPayload(payload {{.PayloadType | gousage}}) *{{ .OutType | goid }} {
+func (m *{{ .OutType | goIDUpper }}) WithPayload(payload {{.PayloadType | goUsage}}) *{{ .OutType | goIDUpper }} {
     m.Payload = payload
     return m
 }
 
-func (m *{{ .OutType | goid }}) WithHeaders(headers {{$headersType | gousage}}) *{{ .OutType | goid }} {
+func (m *{{ .OutType | goIDUpper }}) WithHeaders(headers {{$headersType | goUsage}}) *{{ .OutType | goIDUpper }} {
     m.Headers = headers
     return m
 }
 
-{{- with visible .CorrelationID}}
-func (m {{ $message.OutType | goid }}) SetCorrelationID(value {{template "correlationID/outgoing/varType" $message}}) {
+{{- with isVisible .CorrelationID}}
+func (m {{ $message.OutType | goIDUpper }}) SetCorrelationID(value {{template "correlationID/outgoing/varType" $message}}) {
     {{template "correlationID/setter" $message}}
 }
 {{- end}}
 {{- end}}
 
-{{- if print "Message" (goid $) | ndefined}}
+{{- if print "Message" (goIDUpper $) | ndefined}}
     {{- if .IsSubscriber}}
-        type {{ $ | goid }}IncomingMessage interface {
-            Payload() {{.PayloadType | gousage}}
-            Headers() {{$headersType | gousage}}
-            {{- with visible .CorrelationID}}
+        type {{ $ | goIDUpper }}IncomingMessage interface {
+            Payload() {{.PayloadType | goUsage}}
+            Headers() {{$headersType | goUsage}}
+            {{- with isVisible .CorrelationID}}
             CorrelationID() (value {{template "correlationID/incoming/varType" $message}}, err error)
             {{- end}}
         }
         {{- def .InType }}
 
-        // New{{ $ | goid }}In is meant to be used by the generated code to create a new message. The user code
+        // New{{ $ | goIDUpper }}In is meant to be used by the generated code to create a new message. The user code
         // should not use this function directly.
-        func New{{ $ | goid }}In(payload {{.PayloadType | gousage}}, headers {{$headersType | gousage}}) *{{ .InType| gousage }} {
-            return &{{ .InType | gousage }}{payload: payload, headers: headers}
+        func New{{ $ | goIDUpper }}In(payload {{.PayloadType | goUsage}}, headers {{$headersType | goUsage}}) *{{ .InType| goUsage }} {
+            return &{{ .InType | goUsage }}{payload: payload, headers: headers}
         }
     {{- end}}
 {{- end}}
 
 {{- if and (ndefined .InType) .IsSubscriber }}
-{{.InType| godef}}
+{{.InType| goDef}}
 
-func (m *{{ .InType | goid }}) Payload() {{.PayloadType | gousage}} {
+func (m *{{ .InType | goIDUpper }}) Payload() {{.PayloadType | goUsage}} {
     return m.payload
 }
 
-func (m *{{ .InType | goid }}) Headers() {{$headersType | gousage}} {
+func (m *{{ .InType | goIDUpper }}) Headers() {{$headersType | goUsage}} {
     return m.headers
 }
 
-{{- with visible .CorrelationID}}
-func (m {{ $message.InType | goid }}) CorrelationID() (value {{template "correlationID/incoming/varType" $message}}, err error) {
+{{- with isVisible .CorrelationID}}
+func (m {{ $message.InType | goIDUpper }}) CorrelationID() (value {{template "correlationID/incoming/varType" $message}}, err error) {
     {{template "correlationID/getter" $message}}
     return
 }
 {{- end}}
 {{- end}}
 
-{{- print "Message" (goid $) | def }}
+{{- print "Message" (goIDUpper $) | def }}
 
 {{- end}}

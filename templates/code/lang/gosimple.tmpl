@@ -5,10 +5,10 @@
 {{- end}}
 {{define "lang/gosimple/usage"}}
     {{- if .RuntimeImport}}
-        {{- goqualrun .Import .Name }}
+        {{- goQualR .Import .Name }}
     {{- else if .Import }}
-        {{- goqual .Import .Name }}
+        {{- goQual .Import .Name }}
     {{- else }}
-        {{- gopkg . }}{{ .Name }}
+        {{- goPkg . }}{{ .Name }}
     {{- end }}
 {{- end}}

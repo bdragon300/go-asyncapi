@@ -9,22 +9,22 @@ directories:
 selections:
   - objectKinds: ["schema"]
     render:
-      file: schemas/{{.Object | goid }}.go
+      file: schemas/{{.Object | goIDUpper }}.go
   - objectKinds: ["server"]
     render:
-      file: servers/{{.Object | goid }}.go
+      file: servers/{{.Object | goIDUpper }}.go
   - objectKinds: ["channel"]
     render:
-      file: channels/{{.Object | goid }}.go
+      file: channels/{{.Object | goIDUpper }}.go
   - objectKinds: ["operation"]
     render:
-      file: operations/{{.Object | goid }}.go
+      file: operations/{{.Object | goIDUpper }}.go
   - objectKinds: ["message"]
     render:
-      file: messages/{{.Object | goid }}.go
+      file: messages/{{.Object | goIDUpper }}.go
   - objectKinds: ["parameter"]
     render:
-      file: parameters/{{.Object | goid }}.go
+      file: parameters/{{.Object | goIDUpper }}.go
 
 resolver:
   allowRemoteReferences: false

@@ -2,18 +2,18 @@
 
 {{define "lang/goarray/definition"}}
     {{- if .Description }}
-        {{ print (goid .) "--" .Description | gocomment }}
+        {{ print (goIDUpper .) "--" .Description | goComment }}
     {{- end }}
-    type {{ . | goid }} [{{ if .Size }}{{ .Size }}{{ end }}]{{ .ItemsType | gousage }}
+    type {{ . | goIDUpper }} [{{ if .Size }}{{ .Size }}{{ end }}]{{ .ItemsType | goUsage }}
 {{- end}}
 {{define "lang/goarray/usage"}}
     {{- if .HasDefinition }}
         {{- if .Import }}
-            {{- goqual .Import (goid .) }}
+            {{- goQual .Import (goIDUpper .) }}
         {{- else }}
-            {{- gopkg . }}{{ . | goid }}
+            {{- goPkg . }}{{ . | goIDUpper }}
         {{- end }}
     {{- else -}}
-        [{{ if .Size }}{{ .Size }}{{ end }}]{{ .ItemsType | gousage }}
+        [{{ if .Size }}{{ .Size }}{{ end }}]{{ .ItemsType | goUsage }}
     {{- end }}
 {{- end}}

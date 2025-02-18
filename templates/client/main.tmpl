@@ -8,7 +8,7 @@ const (
 )
 
 {{- range .ActiveProtocols}}
-{{trytmpl (print "clientApp/server/" . "/cliMixin") $}}
+{{tryTmpl (print "clientApp/server/" . "/cliMixin") $}}
 {{- end}}
 
 type MainCli struct {
@@ -23,63 +23,63 @@ type MainCli struct {
 	Headers      map[string]string `arg:"--headers" help:"Message header to send; format: key=value [key=value ...]"`
 	EndOfMessage string            `arg:"--end-of-message" help:"Delimiter that separates the message payloads in stream. Empty string means EOF (or Ctrl-D in interactive terminal)" default:"\n"`
 
-	RunTimeout {{goqual "time.Duration"}} `arg:"--run-timeout" help:"Timeout to run the command. By default, the command runs indefinitely"`
+	RunTimeout {{goQual "time.Duration"}} `arg:"--run-timeout" help:"Timeout to run the command. By default, the command runs indefinitely"`
 }
 
 type DirectionCliCmd struct {
 {{- range .Objects}}
-	{{- if and (eq .Kind "channel") (visible .)}}
-		{{ . | goid }}Cmd *{{ . | goid }}Cmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Channel: {{.Name | toQuotable}}"`
-	{{- else if and (eq .Kind "operation") (visible .)}}
-		{{ . | goid }}Cmd *{{ . | goid }}Cmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Operation: {{.Name | toQuotable}}"`
+	{{- if and (eq .Kind "channel") (isVisible .)}}
+		{{ . | goIDUpper }}Cmd *{{ . | goIDUpper }}Cmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Channel: {{.Name | toQuotable}}"`
+	{{- else if and (eq .Kind "operation") (isVisible .)}}
+		{{ . | goIDUpper }}Cmd *{{ . | goIDUpper }}Cmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Operation: {{.Name | toQuotable}}"`
 	{{- end}}
 {{- end}}
 }
 
 {{- range .Objects}}
-	{{- if and (eq .Kind "server") (visible .)}}
-		type {{. | goid}}CliCmd struct {
-			{{if trytmpl (print "clientApp/server/" ((deref .).Protocol) "/cliMixin") .}}{{(deref .).Protocol | goid}}CliMixin{{end}}
+	{{- if and (eq .Kind "server") (isVisible .)}}
+		type {{. | goIDUpper}}CliCmd struct {
+			{{if tryTmpl (print "clientApp/server/" ((deref .).Protocol) "/cliMixin") .}}{{(deref .).Protocol | goIDUpper}}CliMixin{{end}}
 
 			// Server variables
 			{{- range .Variables.Entries}}
 				{{- with .Value}}
 					{{- if .Default}}
-						{{. | goid}} string `arg:"--{{.Name | toQuotable | toKebabCase}}" help:"Server variable: {{.Name | toQuotable}}" default:"{{.Default | toQuotable}}"`
+						{{. | goIDUpper}} string `arg:"--{{.Name | toQuotable | toKebabCase}}" help:"Server variable: {{.Name | toQuotable}}" default:"{{.Default | toQuotable}}"`
 					{{- else}}
-						{{. | goid}} string `arg:"--{{.Name | toQuotable | toKebabCase}},required" help:"Server variable: {{.Name | toQuotable}}"`
+						{{. | goIDUpper}} string `arg:"--{{.Name | toQuotable | toKebabCase}},required" help:"Server variable: {{.Name | toQuotable}}"`
 					{{- end}}
 				{{- end}}
 			{{- end}}
 
 			// Other
-			URL  *{{goqual "net/url.URL"}} `arg:"--url" help:"Override server URL"`
+			URL  *{{goQual "net/url.URL"}} `arg:"--url" help:"Override server URL"`
 		}
 	{{- end}}
 {{- end}}
 
 type channelOptions struct {
-	cliParser *{{goqual "github.com/alexflint/go-arg.Parser"}}
+	cliParser *{{goQual "github.com/alexflint/go-arg.Parser"}}
 
 	publish          bool
 	debug            bool
 	multipleMessages bool
 	payloadSeparator string
 
-	stream         {{goqual "io.ReadWriter"}}
+	stream         {{goQual "io.ReadWriter"}}
 	publishHeaders map[string]string
 	proxyHost      string
 }
 
 func main() {
 	cliArgs := MainCli{}
-	cliParser := {{goqual "github.com/alexflint/go-arg.MustParse"}}(&cliArgs)
+	cliParser := {{goQual "github.com/alexflint/go-arg.MustParse"}}(&cliArgs)
 
-	logLevel := {{goqual "log/slog.LevelError"}}
+	logLevel := {{goQual "log/slog.LevelError"}}
 	if cliArgs.Debug {
-		logLevel = {{goqual "log/slog.LevelDebug"}}
+		logLevel = {{goQual "log/slog.LevelDebug"}}
 	}
-	{{goqual "log/slog.SetLogLoggerLevel"}}(logLevel)
+	{{goQual "log/slog.SetLogLoggerLevel"}}(logLevel)
 
 	var dirCmd *DirectionCliCmd
 	switch {
@@ -107,45 +107,45 @@ func main() {
 	switch cliArgs.File {
 	case "-":
 		if chanOptions.publish {
-			{{goqual "log/slog.Debug"}}("Writing to stdout")
-			chanOptions.stream = {{goqual "os.Stdout"}}
+			{{goQual "log/slog.Debug"}}("Writing to stdout")
+			chanOptions.stream = {{goQual "os.Stdout"}}
 		} else {
-			{{goqual "log/slog.Debug"}}("Reading from stdin")
-			chanOptions.stream = {{goqual "os.Stdin"}}
+			{{goQual "log/slog.Debug"}}("Reading from stdin")
+			chanOptions.stream = {{goQual "os.Stdin"}}
 		}
 	case "":
 		showCliError("No file specified. Append --help for more information", cliParser)
 	default:
-		flag := {{goqual "os.O_CREATE"}} | {{goqual "os.O_WRONLY"}} | {{goqual "os.O_APPEND"}}
+		flag := {{goQual "os.O_CREATE"}} | {{goQual "os.O_WRONLY"}} | {{goQual "os.O_APPEND"}}
 		if chanOptions.publish {
-			flag = {{goqual "os.O_RDONLY"}}
+			flag = {{goQual "os.O_RDONLY"}}
 		}
-		{{goqual "log/slog.Debug"}}("Opening file", "name", cliArgs.File, "flag", {{goqual "fmt.Sprintf"}}("%#x", flag), "mode", {{goqual "fmt.Sprintf"}}("%#o", OutputFileCreateMode))
-		f, err := {{goqual "os.OpenFile"}}(cliArgs.File, flag, OutputFileCreateMode)
+		{{goQual "log/slog.Debug"}}("Opening file", "name", cliArgs.File, "flag", {{goQual "fmt.Sprintf"}}("%#x", flag), "mode", {{goQual "fmt.Sprintf"}}("%#o", OutputFileCreateMode))
+		f, err := {{goQual "os.OpenFile"}}(cliArgs.File, flag, OutputFileCreateMode)
 		if err != nil {
-			{{goqual "log/slog.Error"}}(err.Error())
-			{{goqual "os.Exit"}}(1)
+			{{goQual "log/slog.Error"}}(err.Error())
+			{{goQual "os.Exit"}}(1)
 		}
 		defer f.Close()
 		chanOptions.stream = f
 	}
 
-	ctx := {{goqual "context.Background"}}()
+	ctx := {{goQual "context.Background"}}()
 	if cliArgs.RunTimeout > 0 {
-		var cancel {{goqual "context.CancelFunc"}}
-		ctx, cancel = {{goqual "context.WithTimeout"}}(ctx, cliArgs.RunTimeout)
+		var cancel {{goQual "context.CancelFunc"}}
+		ctx, cancel = {{goQual "context.WithTimeout"}}(ctx, cliArgs.RunTimeout)
 		defer cancel()
 	}
 
 	var err error
 	switch {
 	{{- range .Objects}}
-		{{- if and (eq .Kind "channel") (visible .)}}
-			case dirCmd.{{. | goid}}Cmd != nil:
-				err = channel{{. | goid}}(ctx, dirCmd.{{. | goid}}Cmd, chanOptions)
-		{{- else if and (eq .Kind "operation") (visible .)}}
-			case dirCmd.{{. | goid}}Cmd != nil:
-				err = operation{{. | goid}}(ctx, dirCmd.{{. | goid}}Cmd, chanOptions)
+		{{- if and (eq .Kind "channel") (isVisible .)}}
+			case dirCmd.{{. | goIDUpper}}Cmd != nil:
+				err = channel{{. | goIDUpper}}(ctx, dirCmd.{{. | goIDUpper}}Cmd, chanOptions)
+		{{- else if and (eq .Kind "operation") (isVisible .)}}
+			case dirCmd.{{. | goIDUpper}}Cmd != nil:
+				err = operation{{. | goIDUpper}}(ctx, dirCmd.{{. | goIDUpper}}Cmd, chanOptions)
 		{{- end}}
 	{{- end}}
 	default:
@@ -153,20 +153,20 @@ func main() {
 	}
 
 	switch {
-	case {{goqual "errors.Is"}}(err, {{goqual "context.DeadlineExceeded"}}):
-		{{goqual "log/slog.Warn"}}("Running timeout exceeded", "err", err)
+	case {{goQual "errors.Is"}}(err, {{goQual "context.DeadlineExceeded"}}):
+		{{goQual "log/slog.Warn"}}("Running timeout exceeded", "err", err)
 	case err != nil:
-		{{goqual "log/slog.Error"}}(err.Error())
-		{{goqual "os.Exit"}}(1)
-	case {{goqual "errors.Is"}}(ctx.Err(), {{goqual "context.DeadlineExceeded"}}):
-		{{goqual "log/slog.Warn"}}("Running timeout exceeded")
+		{{goQual "log/slog.Error"}}(err.Error())
+		{{goQual "os.Exit"}}(1)
+	case {{goQual "errors.Is"}}(ctx.Err(), {{goQual "context.DeadlineExceeded"}}):
+		{{goQual "log/slog.Warn"}}("Running timeout exceeded")
 	}
 }
 
 {{- range .Objects}}
-	{{- if and (eq .Kind "channel") (visible .)}}
+	{{- if and (eq .Kind "channel") (isVisible .)}}
 		{{template "clientApp/channel" .}}
-	{{- else if and (eq .Kind "operation") (visible .)}}
+	{{- else if and (eq .Kind "operation") (isVisible .)}}
 		{{template "clientApp/operation" .}}
 	{{- end}}
 {{- end}}

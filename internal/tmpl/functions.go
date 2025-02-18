@@ -24,14 +24,14 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 
 	// TODO: logging inside functions
 	extraFuncs := template.FuncMap{
-		// Functions that return go code as string
-		"golit": func(val any) (string, error) { return templateGoLit(renderManager, val) },
-		"goid": func(val any) string { return templateGoID(renderManager, val, true) },
-		"goidorig": func(val any) string { return templateGoID(renderManager, val, false) },
-		"gocomment": func(text string) (string, error) { return templateGoComment(text) },
-		"goqual": func(parts ...string) string { return qualifiedName(renderManager, parts...) },
-		"goqualrun": func(parts ...string) string { return qualifiedRuntimeName(renderManager, parts...) },
-		"godef": func(r common.GolangType) (string, error) {
+		// go* functions return Go code snippets
+		"goLit": func(val any) (string, error) { return templateGoLit(renderManager, val) },
+		"goIDUpper": func(val any) string { return templateGoID(renderManager, val, true) },
+		"goID": func(val any) string { return templateGoID(renderManager, val, false) },
+		"goComment": func(text string) (string, error) { return templateGoComment(text) },
+		"goQual": func(parts ...string) string { return templateGoQual(renderManager, parts...) },
+		"goQualR": func(parts ...string) string { return templateGoQualRuntime(renderManager, parts...) },
+		"goDef": func(r common.GolangType) (string, error) {
 			tplName := path.Join(r.GoTemplate(), "definition")
 			renderManager.NamespaceManager.DefineType(r, renderManager, true)
 			if v, ok := r.(golangTypeWrapper); ok {
@@ -43,7 +43,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			}
 			return res, nil
 		},
-		"gopkg": func(obj any) (pkg string, err error) {
+		"goPkg": func(obj any) (pkg string, err error) {
 			switch v := obj.(type) {
 			case common.GolangType:
 				pkg, err = qualifiedTypeGeneratedPackage(renderManager, v)
@@ -61,7 +61,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			}
 			return lo.Ternary(pkg != "", pkg + ".", ""), nil
 		},
-		"gousage": func(r common.GolangType) (string, error) { return templateGoUsage(renderManager, r) },
+		"goUsage": func(r common.GolangType) (string, error) { return templateGoUsage(renderManager, r) },
 
 		// Type helpers
 		"deref": func(r common.Renderable) common.Renderable {
@@ -70,13 +70,13 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			}
 			return common.DerefRenderable(r)
 		},
-		"innertype": func(val common.GolangType) common.GolangType {
+		"innerType": func(val common.GolangType) common.GolangType {
 			if v, ok := any(val).(golangTypeExtractor); ok {
 				return v.InnerGolangType()
 			}
 			return nil
 		},
-		"visible": func(r common.Renderable) common.Renderable {
+		"isVisible": func(r common.Renderable) common.Renderable {
 			return lo.Ternary(!lo.IsNil(r) && r.Visible(), r, nil)
 		},
 		"ptr": func(val common.GolangType) (common.GolangType, error) {
@@ -102,7 +102,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		"tmpl": func(templateName string, ctx any) (string, error) {
 			return templateExecTemplate(renderManager, templateName, ctx)
 		},
-		"trytmpl": func(templateName string, ctx any) (string, error) {
+		"tryTmpl": func(templateName string, ctx any) (string, error) {
 			res, err := templateExecTemplate(renderManager, templateName, ctx)
 			switch {
 			case errors.Is(err, ErrTemplateNotFound):
@@ -205,7 +205,7 @@ func templateGoLit(mng *manager.TemplateRenderManager, val any) (string, error) 
 	return toGoLiteral(val), nil
 }
 
-func templateGoID(mng *manager.TemplateRenderManager, val any, forceCapitalize bool) string {
+func templateGoID(mng *manager.TemplateRenderManager, val any, exportedName bool) string {
 	var res string
 
 	switch v := val.(type) {
@@ -232,7 +232,7 @@ func templateGoID(mng *manager.TemplateRenderManager, val any, forceCapitalize b
 		return ""
 	}
 	exported := true
-	if !forceCapitalize {
+	if !exportedName {
 		exported = unicode.IsUpper(rune(res[0]))
 	}
 	return utils.ToGolangName(res, exported)
@@ -335,7 +335,7 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c *
 				%s = v
 			}`, varValueStmts, nextAnchor)
 			if addValidationCode {
-				fmtErrorf := qualifiedName(mng, "fmt", "Errorf")
+				fmtErrorf := templateGoQual(mng, "fmt", "Errorf")
 				ifExpr += fmt.Sprintf(` else {
 					err = %s("key %%q not found in map on locationPath /%s", %s)
 					return
@@ -360,7 +360,7 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c *
 				return
 			}
 			if addValidationCode {
-				fmtErrorf := qualifiedName(mng, "fmt", "Errorf")
+				fmtErrorf := templateGoQual(mng, "fmt", "Errorf")
 				body = append(body, fmt.Sprintf(`if len(%s) <= %s {
 					err = %s("index %%q is out of range in array of length %%d on locationPath /%s", %s, len(%s))
 					return
@@ -490,12 +490,12 @@ func qualifiedImplementationGeneratedPackage(mng *manager.TemplateRenderManager,
 	return mng.ImportsManager.AddImport(pkgPath, defInfo.Object.Config.Package), nil
 }
 
-func qualifiedName(mng *manager.TemplateRenderManager, parts ...string) string {
+func templateGoQual(mng *manager.TemplateRenderManager, parts ...string) string {
 	pkgPath, pkgName, n := qualifiedToImport(parts)
 	return fmt.Sprintf("%s.%s", mng.ImportsManager.AddImport(pkgPath, pkgName), n)
 }
 
-func qualifiedRuntimeName(mng *manager.TemplateRenderManager, parts ...string) string {
+func templateGoQualRuntime(mng *manager.TemplateRenderManager, parts ...string) string {
 	p := append([]string{mng.RenderOpts.RuntimeModule}, parts...)
 	pkgPath, pkgName, n := qualifiedToImport(p)
 	return fmt.Sprintf("%s.%s", mng.ImportsManager.AddImport(pkgPath, pkgName), n)

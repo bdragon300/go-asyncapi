@@ -6,7 +6,7 @@
 {{- end}}
 
 {{- if ndefined .Type}}
-{{ .Type | godef }}
+{{ .Type | goDef }}
 
 {{template "server/proto/commonMethods" .}}
 {{template "server/proto/channelOpenMethods" .}}

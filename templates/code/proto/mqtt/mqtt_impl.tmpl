@@ -1,50 +1,50 @@
 {{- /* dot == render.ProtoServer */}}
 
 {{define "server/mqtt/impl/github.com/eclipse/paho.mqtt.golang/connectFunction"}}
-func Connect{{ .Server | goid }}Bidi(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}, opts *{{goqual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}}) (*{{ .Server | goid }}Closable, error) {
-    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, opts *{{goQual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+    var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+        bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    client, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(ctx, url.String(), bindings, opts)
+    client, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(ctx, url.String(), bindings, opts)
     if err != nil {
         return nil, err
     }
     producer, consumer := client, client
-    return &{{ .Server | goid }}Closable{
-        {{ .Type | gousage }}{producer: producer, consumer: consumer},
+    return &{{ .Server | goIDUpper }}Closable{
+        {{ .Type | goUsage }}{producer: producer, consumer: consumer},
     }, nil
 }
 {{- end}}
 
 {{define "server/mqtt/impl/github.com/eclipse/paho.mqtt.golang/connectProducerFunction"}}
-func Connect{{ .Server | goid }}Producer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}, opts *{{goqual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}}) (*{{ .Server | goid }}Closable, error) {
-    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, opts *{{goQual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+    var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+        bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    producer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(ctx, url.String(), bindings, opts)
+    producer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(ctx, url.String(), bindings, opts)
     if err != nil {
         return nil, err
     }
-    return &{{ .Server | goid }}Closable{
-        {{ .Type | gousage }}{producer: producer},
+    return &{{ .Server | goIDUpper }}Closable{
+        {{ .Type | goUsage }}{producer: producer},
     }, nil
 }
 {{- end}}
 
 {{define "server/mqtt/impl/github.com/eclipse/paho.mqtt.golang/connectConsumerFunction"}}
-func Connect{{ .Server | goid }}Consumer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}, opts *{{goqual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}}) (*{{ .Server | goid }}Closable, error) {
-    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+func Connect{{ .Server | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, opts *{{goQual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+    var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+        bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    consumer, err := {{with impl .Protocol}}{{gopkg .}}{{end}}NewClient(ctx, url.String(), bindings, opts)
+    consumer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(ctx, url.String(), bindings, opts)
     if err != nil {
         return nil, err
     }
-    return &{{ .Server | goid }}Closable{
-        {{ .Type | gousage }}{consumer: consumer},
+    return &{{ .Server | goIDUpper }}Closable{
+        {{ .Type | goUsage }}{consumer: consumer},
     }, nil
 }
 {{- end}}

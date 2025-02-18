@@ -10,31 +10,31 @@ type KafkaCliMixin struct {
     .Kind == "channel" or "operation"
     */}}
 {{define "clientApp/channeloperation/kafka/github.com/twmb/franz-go/setup"}}
-var clientOptions []{{goqual "github.com/twmb/franz-go/pkg/kgo.Opt"}}
-logLevel := {{goqual "github.com/twmb/franz-go/pkg/kgo.LogLevelNone"}}
+var clientOptions []{{goQual "github.com/twmb/franz-go/pkg/kgo.Opt"}}
+logLevel := {{goQual "github.com/twmb/franz-go/pkg/kgo.LogLevelNone"}}
 if opts.debug {
-    logLevel = {{goqual "github.com/twmb/franz-go/pkg/kgo.LogLevelDebug"}}
+    logLevel = {{goQual "github.com/twmb/franz-go/pkg/kgo.LogLevelDebug"}}
 }
-clientOptions = append(clientOptions, {{goqual "github.com/twmb/franz-go/pkg/kgo.WithLogger"}}({{goqual "github.com/twmb/franz-go/pkg/kgo.BasicLogger"}}({{goqual "os.Stderr"}}, logLevel, nil)))
-clientOptions = append(clientOptions, {{goqual "github.com/twmb/franz-go/pkg/kgo.AllowAutoTopicCreation"}}())
+clientOptions = append(clientOptions, {{goQual "github.com/twmb/franz-go/pkg/kgo.WithLogger"}}({{goQual "github.com/twmb/franz-go/pkg/kgo.BasicLogger"}}({{goQual "os.Stderr"}}, logLevel, nil)))
+clientOptions = append(clientOptions, {{goQual "github.com/twmb/franz-go/pkg/kgo.AllowAutoTopicCreation"}}())
 {{- end}}
 
 {{define "clientApp/channeloperation/kafka/github.com/twmb/franz-go/producer/connect"}}
-server, err := {{gopkg (deref .Server).ProtoServer.Type}}Connect{{.Server | goid}}Producer(ctx, serverURL, clientOptions...)
+server, err := {{goPkg (deref .Server).ProtoServer.Type}}Connect{{.Server | goIDUpper}}Producer(ctx, serverURL, clientOptions...)
 if err != nil {
-    return {{goqual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
+    return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
 }
 {{- end}}
 
 {{define "clientApp/channeloperation/kafka/github.com/twmb/franz-go/consumer/connect"}}
-server, err := {{gopkg (deref .Server).ProtoServer.Type}}Connect{{.Server | goid}}Consumer(ctx, serverURL, clientOptions...)
+server, err := {{goPkg (deref .Server).ProtoServer.Type}}Connect{{.Server | goIDUpper}}Consumer(ctx, serverURL, clientOptions...)
 if err != nil {
-    return {{goqual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
+    return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
 }
 {{- end}}
 
 {{define "clientApp/message/kafka/github.com/twmb/franz-go/publish"}}
-if args.{{.Server | goid}}Cmd.MessageKey != "" {
-    envelope.Key = []byte(args.{{.Server | goid}}Cmd.MessageKey)
+if args.{{.Server | goIDUpper}}Cmd.MessageKey != "" {
+    envelope.Key = []byte(args.{{.Server | goIDUpper}}Cmd.MessageKey)
 }
 {{- end}}

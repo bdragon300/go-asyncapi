@@ -1,41 +1,41 @@
 {{- /* dot == render.ProtoServer */}}
 
 {{define "server/kafka/impl/github.com/twmb/franz-go/connectFunction"}}
-func Connect{{ .Server | goid }}Bidi(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}, opts ...{{goqual "github.com/twmb/franz-go/pkg/kgo.Opt"}}) (*{{ .Server | goid }}Closable, error) {
-    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, opts ...{{goQual "github.com/twmb/franz-go/pkg/kgo.Opt"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+    var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+        bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    producer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer([]string{url.Host}, bindings, opts...)
-    consumer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer([]string{url.Host}, bindings, opts...)
-    return &{{ .Server | goid }}Closable{
-        {{ .Type | gousage }}{producer: producer, consumer: consumer},
+    producer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewProducer([]string{url.Host}, bindings, opts...)
+    consumer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewConsumer([]string{url.Host}, bindings, opts...)
+    return &{{ .Server | goIDUpper }}Closable{
+        {{ .Type | goUsage }}{producer: producer, consumer: consumer},
     }, nil
 }
 {{- end}}
 
 {{define "server/kafka/impl/github.com/twmb/franz-go/connectProducerFunction"}}
-func Connect{{ .Server | goid }}Producer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}, opts ...{{goqual "github.com/twmb/franz-go/pkg/kgo.Opt"}}) (*{{ .Server | goid }}Closable, error) {
-    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, opts ...{{goQual "github.com/twmb/franz-go/pkg/kgo.Opt"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+    var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+        bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    producer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer([]string{url.Host}, bindings, opts...)
-    return &{{ .Server | goid }}Closable{
-        {{ .Type | gousage }}{producer: producer},
+    producer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewProducer([]string{url.Host}, bindings, opts...)
+    return &{{ .Server | goIDUpper }}Closable{
+        {{ .Type | goUsage }}{producer: producer},
     }, nil
 }
 {{- end}}
 
 {{define "server/kafka/impl/github.com/twmb/franz-go/connectConsumerFunction"}}
-func Connect{{ .Server | goid }}Consumer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}, opts ...{{goqual "github.com/twmb/franz-go/pkg/kgo.Opt"}}) (*{{ .Server | goid }}Closable, error) {
-    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+func Connect{{ .Server | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, opts ...{{goQual "github.com/twmb/franz-go/pkg/kgo.Opt"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+    var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+        bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    consumer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer([]string{url.Host}, bindings, opts...)
-    return &{{ .Server | goid }}Closable{
-        {{ .Type | gousage }}{consumer: consumer},
+    consumer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewConsumer([]string{url.Host}, bindings, opts...)
+    return &{{ .Server | goIDUpper }}Closable{
+        {{ .Type | goUsage }}{consumer: consumer},
     }, nil
 }
 {{- end}}

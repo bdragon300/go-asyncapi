@@ -152,9 +152,3 @@ func GetPackageName(directory string) string {
 	}
 	return pkgName
 }
-
-func ReplacePackageName(pkgPath, newPkgName string) string {
-	pkgPath = path.Clean(pkgPath)
-	dir, _ := path.Split(pkgPath)
-	return path.Join(dir, newPkgName)
-}

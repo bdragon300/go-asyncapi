@@ -2,18 +2,18 @@
 
 {{define "lang/gomap/definition"}}
     {{- if .Description }}
-        {{ print (goid .) "--" .Description | gocomment }}
+        {{ print (goIDUpper .) "--" .Description | goComment }}
     {{- end }}
-    type {{ . | goid }} map[{{ .KeyType | gousage }}]{{ .ValueType | gousage }}
+    type {{ . | goIDUpper }} map[{{ .KeyType | goUsage }}]{{ .ValueType | goUsage }}
 {{- end}}
 {{define "lang/gomap/usage"}}
     {{- if .HasDefinition }}
         {{if .Import }}
-            {{ goqual .Import (goid .) }}
+            {{ goQual .Import (goIDUpper .) }}
         {{- else }}
-            {{ gopkg . }}{{ . | goid }}
+            {{ goPkg . }}{{ . | goIDUpper }}
         {{- end }}
     {{- else -}}
-        map[{{ .KeyType | gousage }}]{{ .ValueType | gousage }}
+        map[{{ .KeyType | goUsage }}]{{ .ValueType | goUsage }}
     {{- end }}
 {{- end}}

@@ -2,38 +2,38 @@
 {{- with $channel := deref .}}
 
 {{- if and .ParametersType (ndefined .ParametersType) }}
-    {{ .ParametersType | godef }}
+    {{ .ParametersType | goDef }}
 {{- end }}
 
-func {{$ | goid}}Address({{with .ParametersType}}params {{. | gousage}}{{end}}) {{goqualrun "ParamString"}} {
+func {{$ | goIDUpper}}Address({{with .ParametersType}}params {{. | goUsage}}{{end}}) {{goQualR "ParamString"}} {
 {{- if .ParametersType}}
     paramMap := map[string]string{
     {{- range .Parameters}}
-        {{.Name | golit}}: string(params.{{. | goid }}),
+        {{.Name | goLit}}: string(params.{{. | goIDUpper }}),
     {{- end}}
     }
-    return {{goqualrun "ParamString"}}{
-        Expr: {{ .Address | golit}},
+    return {{goQualR "ParamString"}}{
+        Expr: {{ .Address | goLit}},
         Parameters: paramMap,
     }
 {{- else}}
-    return {{goqualrun "ParamString"}}{
-        Expr: {{ .Address | golit}},
+    return {{goQualR "ParamString"}}{
+        Expr: {{ .Address | goLit}},
     }
 {{- end}}
 }
 
 {{- if and .BindingsType (ndefined .BindingsType) }}
-    {{ .BindingsType | godef }}
+    {{ .BindingsType | goDef }}
     {{- range $proto := .BindingsProtocols }}
         {{- $bindingsValue := $channel.ProtoBindingsValue $proto }}
-        func (c {{ $channel.BindingsType | gousage }}) {{ $proto | goid }}() {{$bindingsValue.Type | gousage}} {
-            b := {{$bindingsValue | gousage}}
+        func (c {{ $channel.BindingsType | goUsage }}) {{ $proto | goIDUpper }}() {{$bindingsValue.Type | goUsage}} {
+            b := {{$bindingsValue | goUsage}}
             {{- with $channel.Bindings }}
                 {{- $jvals := .JSONValues.GetOrEmpty $proto }}
                 {{- range $jvals.Entries}}
-                    {{.Key | toCamelCase }} := {{.Value | golit}}
-                    _ = {{goqual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}), &b.{{.Key}})
+                    {{.Key | toCamelCase }} := {{.Value | goLit}}
+                    _ = {{goQual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}), &b.{{.Key}})
                 {{- end}}
             {{- end}}
             return b

@@ -2,18 +2,18 @@
 
 {{define "lang/gotypealias/definition"}}
     {{- if .Description }}
-        {{ print (goid .) "--" .Description | gocomment }}
+        {{ print (goIDUpper .) "--" .Description | goComment }}
     {{- end }}
-    type {{ . | goid }} {{ .AliasedType | godef }}
+    type {{ . | goIDUpper }} {{ .AliasedType | goDef }}
 {{- end}}
 {{define "lang/gotypealias/usage"}}
     {{- if .HasDefinition }}
         {{- if .Import }}
-            {{- goqual .Import (goid .) }}
+            {{- goQual .Import (goIDUpper .) }}
         {{- else }}
-            {{- gopkg . }}{{ . | goid }}
+            {{- goPkg . }}{{ . | goIDUpper }}
         {{- end }}
     {{- else }}
-        {{- .AliasedType | gousage }}
+        {{- .AliasedType | goUsage }}
     {{- end }}
 {{- end}}

@@ -11,7 +11,7 @@
       - "{{$port}}:5672"
       {{if ndefined "port_15672"}}- "15672:15672"{{def "port_15672"}}{{end}}  # Management UI, creds:user/password
     volumes:
-      - "{{.Server.Name | goidorig}}{{range .ServerVariables}}_{{.Value | goidorig}}{{end}}:/var/lib/rabbitmq"
+      - "{{.Server.Name | goID}}{{range .ServerVariables}}_{{.Value | goID}}{{end}}:/var/lib/rabbitmq"
     hostname: "{{($server.URL .ServerVariables).Hostname | toQuotable}}"
     restart: on-failure
     environment:
@@ -24,5 +24,5 @@
   .ServerVariables == []common.ConfigServerVariable
   */}}
 {{define "infra/docker/amqp/volumes"}}
-  "{{.Server.Name | goidorig}}{{range .ServerVariables}}_{{.Value | goidorig}}{{end}}":
+  "{{.Server.Name | goID}}{{range .ServerVariables}}_{{.Value | goID}}{{end}}":
 {{- end}}

@@ -11,7 +11,6 @@ import (
 
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/specurl"
-	"github.com/bdragon300/go-asyncapi/internal/utils"
 )
 
 const subprocessGracefulShutdownTimeout = 3 * time.Second
@@ -70,7 +69,7 @@ func (r SubprocessSpecFileResolver) getCommand(ctx context.Context) (subprocessS
 		stderr: os.Stderr,
 	}
 
-	args := utils.ParseCommandLine(r.CommandLine)
+	args := parseCommandLine(r.CommandLine)
 	if len(args) == 0 || args[0] == "" {
 		return res, fmt.Errorf("command line is empty")
 	}
@@ -82,4 +81,47 @@ func (r SubprocessSpecFileResolver) getCommand(ctx context.Context) (subprocessS
 	res.command.WaitDelay = subprocessGracefulShutdownTimeout
 
 	return res, nil
+}
+
+// parseCommandLine splits the raw command line string into arguments
+func parseCommandLine(commandLine string) []string {
+	var args []string
+	var arg string
+	var firstQuote rune
+	var escapeNext bool
+
+	for _, c := range commandLine {
+		if escapeNext {
+			arg += string(c)
+			escapeNext = false
+			continue
+		}
+
+		switch c {
+		case ' ':
+			if firstQuote > 0 {
+				arg += string(c)
+			} else if arg != "" {
+				args = append(args, arg)
+				arg = ""
+			}
+		case '"', '\'':
+			switch {
+			case c == firstQuote:
+				firstQuote = 0
+			case firstQuote == 0:
+				firstQuote = c
+			default:
+				arg += string(c)
+			}
+		case '\\':
+			escapeNext = true
+		default:
+			arg += string(c)
+		}
+	}
+	if arg != "" {
+		args = append(args, arg)
+	}
+	return args
 }

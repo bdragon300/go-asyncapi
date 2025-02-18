@@ -2,31 +2,31 @@
 
 {{define "lang/gostruct/definition"}}
     {{- if .Description }}
-        {{- print (goid .) "--" .Description | gocomment }}
+        {{- print (goIDUpper .) "--" .Description | goComment }}
     {{- end }}
-    type {{ . | goid }} struct {
+    type {{ . | goIDUpper }} struct {
         {{- range .Fields }}
             {{- if .Description }}
-                {{ print .Name "--" .Description | gocomment }}
+                {{ print .Name "--" .Description | goComment }}
             {{- end }}
-            {{ .Name }} {{ .Type | gousage }} {{.RenderTags}}
+            {{ .Name }} {{ .Type | goUsage }} {{.RenderTags}}
         {{- end }}
     }
 {{- end}}
 {{define "lang/gostruct/usage"}}
     {{- if .HasDefinition }}
         {{- if .Import }}
-            {{- goqual .Import (goid .) }}
+            {{- goQual .Import (goIDUpper .) }}
         {{- else }}
-            {{- gopkg . }}{{ . | goid }}
+            {{- goPkg . }}{{ . | goIDUpper }}
         {{- end }}
     {{- else -}}
         struct {
             {{- range .Fields }}
                 {{- if .Description }}
-                    {{ print .Name "--" .Description | gocomment }}
+                    {{ print .Name "--" .Description | goComment }}
                 {{- end }}
-                {{ .Name }} {{ .Type | gousage }} {{.RenderTags}}
+                {{ .Name }} {{ .Type | goUsage }} {{.RenderTags}}
             {{- end }}
         }
     {{- end }}

@@ -5,7 +5,7 @@
         {{template "message/proto/encoder/application/yaml" .}}
     {{- else}}
         // Default encoder
-        enc := {{goqual "encoding/json.NewEncoder"}}(envelope)
+        enc := {{goQual "encoding/json.NewEncoder"}}(envelope)
         if err := enc.Encode(m.Payload); err != nil {
             return err
         }
@@ -17,7 +17,7 @@
         {{template "message/proto/decoder/application/yaml" .}}
     {{- else}}
         // Default decoder
-        dec := {{goqual "encoding/json.NewDecoder"}}(envelope)
+        dec := {{goQual "encoding/json.NewDecoder"}}(envelope)
         if err := dec.Decode(&m.payload); err != nil {
             return err
         }
@@ -25,14 +25,14 @@
 {{- end}}
 {{/*TODO: add xml, avro, etc.*/}}
 {{define "message/proto/encoder/application/yaml"}}
-    enc := {{goqual "gopkg.in/yaml.v3.NewEncoder"}}(envelope)
+    enc := {{goQual "gopkg.in/yaml.v3.NewEncoder"}}(envelope)
     if err := enc.Encode(m.Payload); err != nil {
         return err
     }
 {{- end}}
 
 {{define "message/proto/decoder/application/yaml"}}
-    dec := {{goqual "gopkg.in/yaml.v3.NewDecoder"}}(envelope)
+    dec := {{goQual "gopkg.in/yaml.v3.NewDecoder"}}(envelope)
     if err := dec.Decode(&m.payload); err != nil {
         return err
     }

@@ -1,41 +1,41 @@
 {{- /* dot == render.ProtoServer */}}
 
 {{define "server/ws/impl/github.com/gobwas/ws/connectFunction"}}
-func Connect{{ .Server | goid }}Bidi(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}) (*{{ .Server | goid }}Closable, error) {
-    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+    var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+        bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    producer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer(url, bindings)
-    consumer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer(bindings, 10*{{goqual "time.Seconds"}})
-    return &{{ .Server | goid }}Closable{
-        {{ .Type | gousage }}{producer: producer, consumer: consumer},
+    producer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewProducer(url, bindings)
+    consumer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewConsumer(bindings, 10*{{goQual "time.Seconds"}})
+    return &{{ .Server | goIDUpper }}Closable{
+        {{ .Type | goUsage }}{producer: producer, consumer: consumer},
     }, nil
 }
 {{- end}}
 
 {{define "server/ws/impl/github.com/gobwas/ws/connectProducerFunction"}}
-func Connect{{ .Server | goid }}Producer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}) (*{{ .Server | goid }}Closable, error) {
-    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+    var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+        bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    producer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewProducer(url, bindings)
-    return &{{ .Server | goid }}Closable{
-        {{ .Type | gousage }}{producer: producer},
+    producer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewProducer(url, bindings)
+    return &{{ .Server | goIDUpper }}Closable{
+        {{ .Type | goUsage }}{producer: producer},
     }, nil
 }
 {{- end}}
 
 {{define "server/ws/impl/github.com/gobwas/ws/connectConsumerFunction"}}
-func Connect{{ .Server | goid }}Consumer(ctx {{goqual "context.Context"}}, url *{{goqual "net/url.URL"}}) (*{{ .Server | goid }}Closable, error) {
-    var bindings *{{goqualrun .Protocol "ServerBindings"}}
+func Connect{{ .Server | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+    var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goqualrun "ToPtr"}}({{.BindingsType | gousage}}{}.{{.Protocol | goid}}())
+        bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    consumer := {{with impl .Protocol}}{{gopkg .}}{{end}}NewConsumer(bindings, 10*{{goqual "time.Seconds"}})
-    return &{{ .Server | goid }}Closable{
-        {{ .Type | gousage }}{consumer: consumer},
+    consumer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewConsumer(bindings, 10*{{goQual "time.Seconds"}})
+    return &{{ .Server | goIDUpper }}Closable{
+        {{ .Type | goUsage }}{consumer: consumer},
     }, nil
 }
 {{- end}}

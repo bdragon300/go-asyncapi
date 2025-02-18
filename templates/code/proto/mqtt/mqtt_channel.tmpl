@@ -12,11 +12,11 @@
 {{template "channel/proto/openFunction" .}}
 
 {{- if ndefined .Type}}
-{{ .Type | godef }}
+{{ .Type | goDef }}
 
 {{template "channel/proto/commonMethods" .}}
 
-func (c {{.Type| gousage}}) Topic() string {
+func (c {{.Type| goUsage}}) Topic() string {
     return c.topic
 }
 
