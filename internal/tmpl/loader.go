@@ -74,6 +74,7 @@ func parseTemplateFiles(dirs []fs.FS, name string, renderManager *manager.Templa
 
 	res := template.New(name).Funcs(GetTemplateFunctions(renderManager))
 
+	var fileCount int
 	for _, dir := range dirs {
 		var fileNames []string
 		// Recursively find all *.tmpl files in the location
@@ -92,13 +93,20 @@ func parseTemplateFiles(dirs []fs.FS, name string, renderManager *manager.Templa
 			return nil, fmt.Errorf("walk directory: %w", err)
 		}
 		if len(fileNames) == 0 {
-			logger.Warn("-> No *.tmpl files found in the directory")
+			logger.Debug("-> No *.tmpl files found in the directory")
 			continue
 		}
 		if _, err = res.ParseFS(dir, fileNames...); err != nil {
 			return nil, err
 		}
+		fileCount += len(fileNames)
 	}
+
+	if fileCount == 0 {
+		logger.Warn("-> No *.tmpl files found in the directories", "dirs", dirs)
+		return res, nil
+	}
+	logger.Debug("-> Parsed templates", "files", fileCount, "templates", len(res.Templates()))
 
 	return res, nil
 }

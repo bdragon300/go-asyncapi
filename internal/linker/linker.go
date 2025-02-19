@@ -104,7 +104,7 @@ func Stats(sources map[string]ObjectSource) string {
 	promises := lo.FlatMap(lo.Values(sources), func(item ObjectSource, _ int) []common.ObjectPromise { return item.Promises() })
 	listPromises := lo.FlatMap(lo.Values(sources), func(item ObjectSource, _ int) []common.ObjectListPromise { return item.ListPromises() })
 	return fmt.Sprintf(
-		"Linker: %d refs (%d user-defined (%d dangling), %d internal (%d dangling)), %d internal list promises (%d dangling)",
+		"Linker: %d refs: %d user-defined (%d unresolved), %d internal (%d unresolved); %d internal list promises (%d unresolved)",
 		len(promises),
 		lo.CountBy(promises, func(l common.ObjectPromise) bool { return l.Origin() == common.PromiseOriginUser }),
 		lo.CountBy(promises, func(l common.ObjectPromise) bool { return l.Origin() == common.PromiseOriginUser && !l.Assigned() }),

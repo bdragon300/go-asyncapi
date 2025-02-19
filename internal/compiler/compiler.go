@@ -130,7 +130,10 @@ func (c *Module) ExternalSpecs() []*specurl.URL {
 }
 
 func (c *Module) Stats() string {
-	return fmt.Sprintf("%s(%s): %d objects", c.specURL, c.parsedSpecKind, len(c.AllObjects()))
+	return fmt.Sprintf(
+		"%s(%s): %d objects; %d external refs; %d promises; %d list promises",
+		c.specURL, c.parsedSpecKind, len(c.AllObjects()), len(c.ExternalSpecs()), len(c.Promises()), len(c.ListPromises()),
+	)
 }
 
 func (c *Module) decodeSpecFile(specPath string, data io.ReadSeeker) (SpecKind, compiledObject, error) {

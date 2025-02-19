@@ -2,6 +2,7 @@ package tmpl
 
 import (
 	"fmt"
+	"github.com/samber/lo"
 	"net/url"
 	"path"
 	"strconv"
@@ -30,25 +31,37 @@ func unescapeCorrelationIDPathItem(value string) (any, error) {
 	return strings.ReplaceAll(strings.ReplaceAll(value, "~1", "/"), "~0", "~"), nil
 }
 
-// qualifiedToImport converts the qual* template function parameters to qualified name and import package path.
-// And also it returns the package name (the last part of the package path).
+// qualifiedToImport accepts the import expression and splits it into package path and imported name.
+// Additionally, it returns the package name (the last part of the package path).
+//
+// This function accepts the import expression as a single string or a sequence of strings that are joined together.
+// The last part if it is not a path, is considered as a name.
+//
+// Expression syntax is `path/to/package[.name]`.
+//
+// Examples:
+//
+//   qualifiedToImport("a") -> "a", "a", ""
+//   qualifiedToImport("", "a") -> "", "", "a"
+//   qualifiedToImport("a.x") -> "a", "a", "x"
+//   qualifiedToImport("a/b/c") -> "a/b/c", "c", ""
+//   qualifiedToImport("a", "x") -> "a", "a", "x"
+//   qualifiedToImport("a/b.c", "x") -> "a/b.c", "b.c", "x"
+//   qualifiedToImport("n", "d", "a/b.x") -> "n/d/a/b", "b", "x"
+//   qualifiedToImport("n", "d", "a/b.c", "x") -> "n/d/a/b.c", "b.c", "x"
 func qualifiedToImport(exprParts []string) (pkgPath string, pkgName string, name string) {
-	// exprParts["a"] -> ["a", "a", ""]
-	// exprParts["", "a"] -> ["", "", "a"]
-	// exprParts["a.x"] -> ["a", "a", "x"]
-	// exprParts["a/b/c"] -> ["a/b/c", "c", ""]
-	// exprParts["a", "x"] -> ["a", "a", "x"]
-	// exprParts["a/b.c", "x"] -> ["a/b.c", "bc", "x"]
-	// exprParts["n", "d", "a/b.c", "x"] -> ["n/d/a/b.c-e", "b.c-e", "x"]
 	switch len(exprParts) {
 	case 0:
 		panic("Empty parameters, at least one is required")
 	case 1:
 		pkgPath = exprParts[0]
 	default:
-		pkgPath = path.Join(exprParts[:len(exprParts)-1]...) + "." + exprParts[len(exprParts)-1]
+		lastPart := exprParts[len(exprParts)-1]
+		sep := lo.Ternary(strings.Contains(lastPart, "/") || strings.Contains(lastPart, "."), "/", ".")
+		pkgPath = path.Join(exprParts[:len(exprParts)-1]...) + sep + lastPart
 	}
-	// Split the whole expression into package path and name.
+
+	// Split the expression into package path and name.
 	// The name is the sequence after the last dot (package path can contain dots in last part).
 	if pos := strings.LastIndex(pkgPath, "."); pos >= 0 {
 		name = pkgPath[pos+1:]
