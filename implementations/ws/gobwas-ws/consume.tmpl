@@ -1,22 +1,19 @@
 import (
 	"bufio"
 	"context"
+	runWs "github.com/bdragon300/go-asyncapi/run/ws"
+	"github.com/gobwas/ws"
+	"github.com/gobwas/ws/wsutil"
 	"net"
 	"net/http"
 	"strings"
 	"sync"
-	"time"
-
-	runWs "github.com/bdragon300/go-asyncapi/run/ws"
-	"github.com/gobwas/ws"
-	"github.com/gobwas/ws/wsutil"
 )
 
 // TODO: remove httpResponseTimeout, allow to use smth like http.requestHandler or nothing
-func NewConsumer(bindings *runWs.ServerBindings, httpResponseTimeout time.Duration) *ConsumeClient {
+func NewConsumer(bindings *runWs.ServerBindings) *ConsumeClient {
 	return &ConsumeClient{
 		Upgrader:            ws.DefaultHTTPUpgrader,
-		httpResponseTimeout: httpResponseTimeout,
 		bindings:            bindings,
 		connections:         make(map[string]chan *Channel),
 		mu:                  new(sync.RWMutex),
@@ -30,7 +27,6 @@ type HTTPUpgraderInterface interface {
 type ConsumeClient struct {
 	http.ServeMux
 	Upgrader            HTTPUpgraderInterface
-	httpResponseTimeout time.Duration
 	bindings            *runWs.ServerBindings
 	connections         map[string]chan *Channel
 	mu                  *sync.RWMutex
@@ -38,6 +34,7 @@ type ConsumeClient struct {
 
 func (c *ConsumeClient) Subscriber(ctx context.Context, address string, chb *runWs.ChannelBindings, opb *runWs.OperationBindings) (runWs.Subscriber, error) {
 	c.ensureChannel(address, chb, opb) // FIXME: maybe it's better to take the path from bindings?
+	// Wait for a new connection
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
@@ -75,15 +72,12 @@ func (c *ConsumeClient) ensureChannel(channelName string, chb *runWs.ChannelBind
 				return
 			}
 
-			ctx, cancel := context.WithTimeout(req.Context(), c.httpResponseTimeout)
-			defer cancel()
-
 			conn := NewChannel(chb, opb, netConn, false)
 			select {
-			case <-ctx.Done():
+			case <-req.Context().Done():
 				// TODO: error log
 				defer conn.Close()
-				_ = wsutil.WriteServerMessage(netConn, ws.OpClose, []byte("timeout exceeded"))
+				_ = wsutil.WriteServerMessage(netConn, ws.OpClose, []byte("connection closed"))
 			case c.connections[channelName] <- conn:
 			}
 		})

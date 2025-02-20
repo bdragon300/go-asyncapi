@@ -2,8 +2,8 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"sync"
 
-	"github.com/bdragon300/go-asyncapi/run"
 	runWs "github.com/bdragon300/go-asyncapi/run/ws"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
@@ -11,14 +11,14 @@ import (
 
 func NewChannel(chb *runWs.ChannelBindings, opb *runWs.OperationBindings, conn net.Conn, clientSide bool) *Channel {
 	res := Channel{
-		Conn:            conn,
-		clientSide:      clientSide,
-		channelBindings: chb,
+		Conn:              conn,
+		clientSide:        clientSide,
+		channelBindings:   chb,
 		operationBindings: opb,
-		items:           run.NewFanOut[runWs.EnvelopeReader](),
+		envelopes:         make(chan runWs.EnvelopeReader),
+		once:              &sync.Once{},
 	}
 	res.ctx, res.cancel = context.WithCancelCause(context.Background())
-	go res.run()
 	return &res
 }
 
@@ -37,20 +37,29 @@ type Channel struct {
 	clientSide      bool
 	channelBindings *runWs.ChannelBindings
 	operationBindings *runWs.OperationBindings
-	items           *run.FanOut[runWs.EnvelopeReader]
-	ctx        context.Context
+	envelopes         chan runWs.EnvelopeReader
+	ctx               context.Context
 	cancel     context.CancelCauseFunc
+	once              *sync.Once
 }
 
 func (s Channel) Receive(ctx context.Context, cb func(envelope runWs.EnvelopeReader)) error {
-	el := s.items.Add(cb)
-	defer s.items.Remove(el)
+	s.once.Do(func() {
+		go s.listen()
+	})
 
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-s.ctx.Done():
-		return context.Cause(s.ctx)
+	for {
+		select {
+		case v, ok := <-s.envelopes:
+			if !ok {
+				return context.Canceled // channel has been closed
+			}
+			cb(v)
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-s.ctx.Done():
+			return context.Cause(s.ctx)
+		}
 	}
 }
 
@@ -84,13 +93,9 @@ func (s Channel) Close() error {
 	return s.Conn.Close()
 }
 
-func (s Channel) run() {
+func (s Channel) listen() {
 	var err error
-	defer func() {
-		if err != nil {
-			s.cancel(err)
-		}
-	}()
+	defer s.cancel(err)
 
 	for {
 		var msgs []wsutil.Message
@@ -106,8 +111,7 @@ func (s Channel) run() {
 			select {
 			case <-s.ctx.Done():
 				return
-			default:
-				s.items.Put(func() runWs.EnvelopeReader { return NewEnvelopeIn(msg) })
+			case s.envelopes <- NewEnvelopeIn(msg):
 			}
 		}
 	}

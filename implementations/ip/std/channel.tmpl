@@ -3,11 +3,11 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"sync"
 	"syscall"
 
 	"golang.org/x/sys/unix"
 
-	"github.com/bdragon300/go-asyncapi/run"
 	runIP "github.com/bdragon300/go-asyncapi/run/ip"
 )
 
@@ -16,10 +16,10 @@ func NewChannel(conn *net.IPConn, bufferSize int, remoteAddress net.Addr) *Chann
 		IPConn:        conn,
 		remoteAddress: remoteAddress,
 		bufferSize:    bufferSize,
-		items:         run.NewFanOut[runIP.EnvelopeReader](),
+		envelopes:     make(chan runIP.EnvelopeReader),
+		once:          &sync.Once{},
 	}
 	res.ctx, res.cancel = context.WithCancelCause(context.Background())
-	go res.run() // TODO: run once Receive is called (everywhere do this)
 	return &res
 }
 
@@ -29,9 +29,10 @@ type Channel struct {
 	remoteAddress    net.Addr // Ignored if includeIPHeaders is true, see TCP/IP stack docs
 	bufferSize       int
 	includeIPHeaders bool
-	items            *run.FanOut[runIP.EnvelopeReader]
+	envelopes        chan runIP.EnvelopeReader
 	ctx              context.Context
-	cancel           context.CancelCauseFunc
+	cancel 			 context.CancelCauseFunc
+	once             *sync.Once
 }
 
 type ImplementationRecord interface {
@@ -60,14 +61,22 @@ func (c *Channel) Send(_ context.Context, envelopes ...runIP.EnvelopeWriter) err
 }
 
 func (c *Channel) Receive(ctx context.Context, cb func(envelope runIP.EnvelopeReader)) error {
-	el := c.items.Add(cb)
-	defer c.items.Remove(el)
+	c.once.Do(func() {
+		go c.listen()
+	})
 
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-c.ctx.Done():
-		return context.Cause(c.ctx)
+	for {
+		select {
+		case v, ok := <-c.envelopes:
+			if !ok {
+				return context.Canceled  // Subscriber has been closed
+			}
+			cb(v)
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-c.ctx.Done():
+			return c.ctx.Err()
+		}
 	}
 }
 
@@ -98,30 +107,30 @@ func (c *Channel) Close() error {
 	return c.IPConn.Close()
 }
 
-func (c *Channel) run() {
-	var ok bool
+func (c *Channel) listen() {
+	var err error
+	defer c.cancel(err)
 
+	var n, ver int
 	for {
-		select {
-		case <-c.ctx.Done():
-			return
-		default:
-		}
-
 		buf := make([]byte, c.bufferSize) // TODO: sync.Pool
-		n, err := c.IPConn.Read(buf)
+		n, err = c.IPConn.Read(buf)
 		if err != nil {
-			c.cancel(err)
 			return
 		}
 
-		var po, ver int
-		if po, ok = ipv4PayloadOffset(n, buf); ok {
+		po, ok := ipv4PayloadOffset(n, buf)
+		if ok {
 			ver = 4
 		} else if po, ok = ipv6PayloadOffset(n, buf); ok {
 			ver = 6
 		}
-		c.items.Put(func() runIP.EnvelopeReader { return NewEnvelopeIn(buf[:po], buf[po:n], ver) })
+
+		select {
+		case <-c.ctx.Done():
+			return
+		case c.envelopes <- NewEnvelopeIn(buf[:po], buf[po:n], ver):
+		}
 	}
 }
 

@@ -1,42 +1,36 @@
 import (
 	"context"
 
-	"github.com/bdragon300/go-asyncapi/run"
 	runHttp "github.com/bdragon300/go-asyncapi/run/http"
 )
 
 func NewSubscriber(chb *runHttp.ChannelBindings, opb *runHttp.OperationBindings) *Subscriber {
-	res := Subscriber{
+	return &Subscriber{
 		channelBindings: chb,
 		operationBindings: opb,
-		items:           run.NewFanOut[runHttp.EnvelopeReader](),
 	}
-	res.ctx, res.cancel = context.WithCancelCause(context.Background())
-
-	return &res
 }
 
 type Subscriber struct {
 	channelBindings *runHttp.ChannelBindings
 	operationBindings *runHttp.OperationBindings
-	items           *run.FanOut[runHttp.EnvelopeReader]
-	ctx      context.Context
-	cancel   context.CancelCauseFunc
+	envelopes chan runHttp.EnvelopeReader
 }
 
 func (s *Subscriber) Receive(ctx context.Context, cb func(envelope runHttp.EnvelopeReader)) error {
-	el := s.items.Add(cb)
-	defer s.items.Remove(el)
-
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-s.ctx.Done():
-		return context.Cause(s.ctx)
+	for {
+		select {
+		case v, ok := <-s.envelopes:
+			if !ok {
+				return context.Canceled  // Subscriber has been closed
+			}
+			cb(v)
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
 }
 
 func (s *Subscriber) Close() error {
-	s.cancel(nil)
 	return nil
 }

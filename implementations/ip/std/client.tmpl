@@ -36,14 +36,14 @@ func NewClient(localHost, remoteHost, protocolFamily string) (*Client, error) {
 
 type Client struct {
 	Config              net.ListenConfig
-	localAddress        string
-	localProtocolFamily string
-	remoteAddress       string
-
 	// MaxEnvelopeSize is the maximum size of received envelopes. It should be set to the maximum
 	// expected size of the IP datagram that can be received. If the size of the received datagram
 	// exceeds this value, the datagram will be truncated and the rest of the data will be lost. By default, it is 1024.
 	MaxEnvelopeSize int
+
+	localAddress        string
+	localProtocolFamily string
+	remoteAddress       string
 }
 
 func (c *Client) Subscriber(ctx context.Context, _ string, _ *runIP.ChannelBindings, _ *runIP.OperationBindings) (runIP.Subscriber, error) {

@@ -1,8 +1,5 @@
 import (
 	"context"
-	"errors"
-	"sync"
-
 	runMqtt "github.com/bdragon300/go-asyncapi/run/mqtt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
@@ -13,8 +10,6 @@ type PublishChannel struct {
 
 	channelBindings *runMqtt.ChannelBindings
 	operationBindings *runMqtt.OperationBindings
-	instances       int
-	mu        *sync.Mutex
 	ctx       context.Context
 	cancel    context.CancelFunc
 }
@@ -42,23 +37,13 @@ func (r *PublishChannel) Send(ctx context.Context, envelopes ...runMqtt.Envelope
 				return tok.Error()
 			}
 		case <-r.ctx.Done():
-			return errors.New("channel closed")
+			return r.ctx.Err()
 		}
 	}
 	return nil
 }
 
 func (r *PublishChannel) Close() error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	if r.instances <= 0 {
-		return errors.New("channel already closed")
-	}
-
-	r.instances--
-	if r.instances == 0 {
-		r.cancel()
-	}
+	r.cancel()
 	return nil
 }

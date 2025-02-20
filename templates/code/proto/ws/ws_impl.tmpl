@@ -7,7 +7,7 @@ func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url 
         bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
     producer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewProducer(url, bindings)
-    consumer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewConsumer(bindings, 10*{{goQual "time.Seconds"}})
+    consumer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewConsumer(bindings)
     return &{{ .Server | goIDUpper }}Closable{
         {{ .Type | goUsage }}{producer: producer, consumer: consumer},
     }, nil
@@ -33,7 +33,7 @@ func Connect{{ .Server | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, 
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    consumer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewConsumer(bindings, 10*{{goQual "time.Seconds"}})
+    consumer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewConsumer(bindings)
     return &{{ .Server | goIDUpper }}Closable{
         {{ .Type | goUsage }}{consumer: consumer},
     }, nil

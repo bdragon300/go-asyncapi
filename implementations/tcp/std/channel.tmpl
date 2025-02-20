@@ -2,8 +2,8 @@ import (
 	"bufio"
 	"context"
 	"net"
+	"sync"
 
-	"github.com/bdragon300/go-asyncapi/run"
 	runTCP "github.com/bdragon300/go-asyncapi/run/tcp"
 )
 
@@ -12,10 +12,11 @@ func NewChannel(conn *net.TCPConn, scanner *bufio.Scanner, maxEnvelopeSize int) 
 		TCPConn:         conn,
 		scanner:         scanner,
 		maxEnvelopeSize: maxEnvelopeSize,
-		items:           run.NewFanOut[runTCP.EnvelopeReader](),
+		envelopes:       make(chan runTCP.EnvelopeReader),
+		once:            &sync.Once{},
 	}
 	res.ctx, res.cancel = context.WithCancelCause(context.Background())
-	go res.run()
+	go res.listen()
 	return &res
 }
 
@@ -23,9 +24,10 @@ type Channel struct {
 	*net.TCPConn
 	scanner         *bufio.Scanner
 	maxEnvelopeSize int
-	items           *run.FanOut[runTCP.EnvelopeReader]
+	envelopes       chan runTCP.EnvelopeReader
 	ctx             context.Context
 	cancel          context.CancelCauseFunc
+	once            *sync.Once
 }
 
 type ImplementationRecord interface {
@@ -43,14 +45,22 @@ func (c *Channel) Send(_ context.Context, envelopes ...runTCP.EnvelopeWriter) er
 }
 
 func (c *Channel) Receive(ctx context.Context, cb func(envelope runTCP.EnvelopeReader)) error {
-	el := c.items.Add(cb)
-	defer c.items.Remove(el)
+	c.once.Do(func() {
+		go c.listen()
+	})
 
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-c.ctx.Done():
-		return context.Cause(c.ctx)
+	for {
+		select {
+		case v, ok := <-c.envelopes:
+			if !ok {
+				return context.Canceled // channel has been closed
+			}
+			cb(v)
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-c.ctx.Done():
+			return context.Cause(c.ctx)
+		}
 	}
 }
 
@@ -59,25 +69,34 @@ func (c *Channel) Close() error {
 	return c.TCPConn.Close()
 }
 
-func (c *Channel) run() {
+func (c *Channel) listen() {
+	var err error
+	defer c.cancel(err)
+
 	for {
 		// TODO: oob
 		buf := make([]byte, c.maxEnvelopeSize) // TODO: sync.Pool
+		var b []byte
 		switch {
 		case c.scanner != nil:
 			c.scanner.Buffer(buf, c.maxEnvelopeSize)
 			if !c.scanner.Scan() {
-				c.cancel(c.scanner.Err())
+				err = c.scanner.Err()
 				return
 			}
-			c.items.Put(func() runTCP.EnvelopeReader { return NewEnvelopeIn(c.scanner.Bytes()) })
+			b = c.scanner.Bytes()
 		default:
-			n, err := c.TCPConn.Read(buf)
-			if err != nil {
-				c.cancel(err)
+			var n int
+			if n, err = c.TCPConn.Read(buf); err != nil {
 				return
 			}
-			c.items.Put(func() runTCP.EnvelopeReader { return NewEnvelopeIn(buf[:n]) })
+			b = buf[:n]
+		}
+
+		select {
+		case <-c.ctx.Done():
+			return
+		case c.envelopes <- NewEnvelopeIn(b):
 		}
 	}
 }

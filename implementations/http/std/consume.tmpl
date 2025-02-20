@@ -1,26 +1,25 @@
 import (
 	"context"
+	runHttp "github.com/bdragon300/go-asyncapi/run/http"
 	"net/http"
 	"strings"
 	"sync"
-
-	"github.com/bdragon300/go-asyncapi/run"
-	runHttp "github.com/bdragon300/go-asyncapi/run/http"
 )
 
 func NewConsumer(bindings *runHttp.ServerBindings) *ConsumeClient {
 	return &ConsumeClient{
 		bindings:    bindings,
-		subscribers: make(map[string]*run.FanOut[*EnvelopeIn]),
 		mu:          &sync.RWMutex{},
+		subscribers: make(map[string]chan runHttp.EnvelopeReader),
 	}
 }
 
 type ConsumeClient struct {
 	http.ServeMux
 	bindings    *runHttp.ServerBindings
-	subscribers map[string]*run.FanOut[*EnvelopeIn]
 	mu          *sync.RWMutex
+	// subscribers are envelope queues by channel name
+	subscribers map[string]chan runHttp.EnvelopeReader
 }
 
 func (c *ConsumeClient) Subscriber(_ context.Context, address string, chb *runHttp.ChannelBindings, opb *runHttp.OperationBindings) (runHttp.Subscriber, error) {
@@ -29,26 +28,13 @@ func (c *ConsumeClient) Subscriber(_ context.Context, address string, chb *runHt
 
 	c.ensureChannel(address, opb)
 	subscriber := NewSubscriber(chb, opb)
-	element := c.subscribers[address].Add(func(msg *EnvelopeIn) {
-		subscriber.items.Put(func() runHttp.EnvelopeReader {
-			return NewEnvelopeIn(msg.Clone(context.Background()), msg.ResponseWriter)
-		})
-	})
-
-	// Remove a subscriber from the list when it has been closed
-	go func() {
-		<-subscriber.ctx.Done()
-		c.mu.Lock()
-		defer c.mu.Unlock()
-		c.subscribers[address].Remove(element)
-	}()
 
 	return subscriber, nil
 }
 
 func (c *ConsumeClient) ensureChannel(channelName string, opb *runHttp.OperationBindings) {
-	if _, ok := c.subscribers[channelName]; !ok { // HandleFunc panics if called more than once for the same channel
-		c.subscribers[channelName] = run.NewFanOut[*EnvelopeIn]()
+	if _, ok := c.subscribers[channelName]; !ok {
+		c.subscribers[channelName] = make(chan runHttp.EnvelopeReader)
 		c.HandleFunc(channelName, func(w http.ResponseWriter, req *http.Request) {
 			if opb != nil {
 				needMethod := opb.Method
@@ -64,7 +50,7 @@ func (c *ConsumeClient) ensureChannel(channelName string, opb *runHttp.Operation
 				http.Error(w, "channel not found", http.StatusNotFound)
 				return
 			}
-			c.subscribers[channelName].Put(func() *EnvelopeIn { return NewEnvelopeIn(req, w) })
+			c.subscribers[channelName] <- NewEnvelopeIn(req, w)
 		})
 	}
 }

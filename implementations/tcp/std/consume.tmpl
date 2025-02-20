@@ -32,6 +32,7 @@ type ConsumeClient struct {
 }
 
 func (c *ConsumeClient) Subscriber(_ context.Context, _ string, _ *runTCP.ChannelBindings, _*runTCP.OperationBindings) (runTCP.Subscriber, error) {
+	// Wait for a new connection
 	conn, err := c.AcceptTCP()
 	if err != nil {
 		return nil, err

@@ -26,6 +26,5 @@ func (p PublishChannel) Send(ctx context.Context, envelopes ...runRedis.Envelope
 }
 
 func (p PublishChannel) Close() error {
-	// Do nothing
 	return nil
 }

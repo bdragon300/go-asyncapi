@@ -1,8 +1,8 @@
 import (
 	"context"
 	"net"
+	"sync"
 
-	"github.com/bdragon300/go-asyncapi/run"
 	runUDP "github.com/bdragon300/go-asyncapi/run/udp"
 )
 
@@ -11,10 +11,10 @@ func NewChannel(conn *net.UDPConn, bufferSize int, defaultRemoteAddress net.Addr
 		UDPConn:              conn,
 		defaultRemoteAddress: defaultRemoteAddress,
 		bufferSize:           bufferSize,
-		items:                run.NewFanOut[runUDP.EnvelopeReader](),
+		envelopes:            make(chan runUDP.EnvelopeReader),
+		once:                 &sync.Once{},
 	}
 	res.ctx, res.cancel = context.WithCancelCause(context.Background())
-	go res.run() // TODO: run once Receive is called (everywhere do this)
 	return &res
 }
 
@@ -22,10 +22,11 @@ type Channel struct {
 	*net.UDPConn
 
 	defaultRemoteAddress net.Addr
-	bufferSize           int
-	items                *run.FanOut[runUDP.EnvelopeReader]
-	ctx                  context.Context
+	bufferSize int
+	envelopes  chan runUDP.EnvelopeReader
+	ctx        context.Context
 	cancel               context.CancelCauseFunc
+	once 			     *sync.Once
 }
 
 type ImplementationRecord interface {
@@ -48,14 +49,22 @@ func (c *Channel) Send(_ context.Context, envelopes ...runUDP.EnvelopeWriter) er
 }
 
 func (c *Channel) Receive(ctx context.Context, cb func(envelope runUDP.EnvelopeReader)) error {
-	el := c.items.Add(cb)
-	defer c.items.Remove(el)
+	c.once.Do(func() {
+		go c.listen()
+	})
 
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-c.ctx.Done():
-		return context.Cause(c.ctx)
+	for {
+		select {
+		case v, ok := <-c.envelopes:
+			if !ok {
+				return context.Canceled // channel has been closed
+			}
+			cb(v)
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-c.ctx.Done():
+			return context.Cause(c.ctx)
+		}
 	}
 }
 
@@ -64,20 +73,21 @@ func (c *Channel) Close() error {
 	return c.UDPConn.Close()
 }
 
-func (c *Channel) run() {
+func (c *Channel) listen() {
+	var err error
+	defer c.cancel(err)
+
+	var n int
+	var addr net.Addr
 	for {
+		buf := make([]byte, c.bufferSize) // TODO: sync.Pool
+		if n, addr, err = c.UDPConn.ReadFrom(buf); err != nil {
+			return
+		}
 		select {
 		case <-c.ctx.Done():
 			return
-		default:
+		case c.envelopes <- NewEnvelopeIn(buf[:n], addr):
 		}
-
-		buf := make([]byte, c.bufferSize) // TODO: sync.Pool
-		n, addr, err := c.UDPConn.ReadFrom(buf)
-		if err != nil {
-			c.cancel(err)
-			return
-		}
-		c.items.Put(func() runUDP.EnvelopeReader { return NewEnvelopeIn(buf[:n], addr) })
 	}
 }
