@@ -64,7 +64,7 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 
 	// TODO: refactor RenderOpts -- it almost not needed here, it's related to codegen.
 	//       Also consider to include add ConfigInfraServer (replace RenderOpts to interface in manager?)
-	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Directories.Target, false)
+	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Code.TargetDir, false)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
 	}
@@ -73,9 +73,9 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	// Module objects
 	logger.Debug("Run objects rendering")
 	templateDirs := []fs.FS{infra.TemplateFS}
-	if cmdConfig.Directories.Templates != "" {
-		logger.Debug("Custom templates location", "directory", cmdConfig.Directories.Templates)
-		templateDirs = append(templateDirs, os.DirFS(cmdConfig.Directories.Templates))
+	if cmdConfig.Code.TemplatesDir != "" {
+		logger.Debug("Custom templates location", "directory", cmdConfig.Code.TemplatesDir)
+		templateDirs = append(templateDirs, os.DirFS(cmdConfig.Code.TemplatesDir))
 	}
 	tplLoader := tmpl.NewTemplateLoader(mainTemplateName, templateDirs...)
 	logger.Trace("Parse templates", "dirs", templateDirs)
@@ -124,7 +124,7 @@ func cliInfraMergeConfig(globalConfig toolConfig, cmd *InfraCmd) (toolConfig, er
 	}
 	res.Infra.OutputFile = coalesce(cmd.OutputFile, outputFile)
 
-	res.Directories.Templates = coalesce(cmd.TemplateDir, globalConfig.Directories.Templates)
+	res.Code.TemplatesDir = coalesce(cmd.TemplateDir, globalConfig.Code.TemplatesDir)
 
 	res.Resolver.AllowRemoteReferences = coalesce(cmd.AllowRemoteRefs, globalConfig.Resolver.AllowRemoteReferences)
 	res.Resolver.SearchDirectory = coalesce(cmd.ResolverSearchDir, globalConfig.Resolver.SearchDirectory)

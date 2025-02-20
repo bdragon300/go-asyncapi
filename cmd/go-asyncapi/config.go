@@ -12,23 +12,17 @@ import (
 
 type (
 	toolConfig struct {
-		ConfigVersion int                   `yaml:"configVersion"`
-		ProjectModule string                `yaml:"projectModule"`
-		RuntimeModule string                `yaml:"runtimeModule"`
-		Directories   toolConfigDirectories `yaml:"directories"`
+		ConfigVersion int    `yaml:"configVersion"`
+		ProjectModule string `yaml:"projectModule"`
+		RuntimeModule string `yaml:"runtimeModule"`
 
-		Selections []toolConfigSelection `yaml:"selections"`
-		Resolver   toolConfigResolver    `yaml:"resolver"`
-		Render     toolConfigRender      `yaml:"render"`
+		Selections      []toolConfigSelection      `yaml:"selections"`
+		Resolver        toolConfigResolver         `yaml:"resolver"`
+		Implementations []toolConfigImplementation `yaml:"implementations"`
 
-		Implementations toolConfigImplementations `yaml:"implementations"`
-		Client          toolConfigClient          `yaml:"client"`
-		Infra           toolConfigInfra           `yaml:"infra"`
-	}
-
-	toolConfigDirectories struct {
-		Templates string `yaml:"templates"`
-		Target    string `yaml:"target"`
+		Code   toolConfigCode   `yaml:"code"`
+		Client toolConfigClient `yaml:"client"`
+		Infra  toolConfigInfra  `yaml:"infra"`
 	}
 
 	toolConfigSelection struct {
@@ -56,18 +50,17 @@ type (
 		Command               string        `yaml:"command"`
 	}
 
-	toolConfigRender struct {
+	toolConfigCode struct {
 		PreambleTemplate  string `yaml:"preambleTemplate"`
 		DisableFormatting bool   `yaml:"disableFormatting"`
+		TemplatesDir      string `yaml:"templatesDir"`
+		TargetDir         string `yaml:"targetDir"`
+
+		DisableImplementations bool   `yaml:"disableImplementations"`
+		ImplementationsDir     string `yaml:"implementationsDir"` // Template expression, relative to the target directory
 	}
 
-	toolConfigImplementations struct {
-		Disable   bool                               `yaml:"disable"`
-		Directory string                             `yaml:"directory"` // Template expression, relative to the target directory
-		Protocols []toolConfigImplementationProtocol `yaml:"protocols"`
-	}
-
-	toolConfigImplementationProtocol struct {
+	toolConfigImplementation struct {
 		Protocol         string `yaml:"protocol"`
 		Name             string `yaml:"name"`
 		Disable          bool   `yaml:"disable"`
@@ -126,8 +119,8 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 	res.ConfigVersion = coalesce(userConf.ConfigVersion, defaultConf.ConfigVersion)
 	res.ProjectModule = coalesce(userConf.ProjectModule, defaultConf.ProjectModule)
 	res.RuntimeModule = coalesce(userConf.RuntimeModule, defaultConf.RuntimeModule)
-	res.Directories.Templates = coalesce(userConf.Directories.Templates, defaultConf.Directories.Templates)
-	res.Directories.Target = coalesce(userConf.Directories.Target, defaultConf.Directories.Target)
+	res.Code.TemplatesDir = coalesce(userConf.Code.TemplatesDir, defaultConf.Code.TemplatesDir)
+	res.Code.TargetDir = coalesce(userConf.Code.TargetDir, defaultConf.Code.TargetDir)
 
 	// *Replace* selections
 	res.Selections = defaultConf.Selections
@@ -140,15 +133,15 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 	res.Resolver.Timeout = coalesce(userConf.Resolver.Timeout, defaultConf.Resolver.Timeout)
 	res.Resolver.Command = coalesce(userConf.Resolver.Command, defaultConf.Resolver.Command)
 
-	res.Render.PreambleTemplate = coalesce(userConf.Render.PreambleTemplate, defaultConf.Render.PreambleTemplate)
-	res.Render.DisableFormatting = coalesce(userConf.Render.DisableFormatting, defaultConf.Render.DisableFormatting)
+	res.Code.PreambleTemplate = coalesce(userConf.Code.PreambleTemplate, defaultConf.Code.PreambleTemplate)
+	res.Code.DisableFormatting = coalesce(userConf.Code.DisableFormatting, defaultConf.Code.DisableFormatting)
 
-	res.Implementations.Disable = coalesce(userConf.Implementations.Disable, defaultConf.Implementations.Disable)
-	res.Implementations.Directory = coalesce(userConf.Implementations.Directory, defaultConf.Implementations.Directory)
-	res.Implementations.Protocols = defaultConf.Implementations.Protocols
+	res.Code.DisableImplementations = coalesce(userConf.Code.DisableImplementations, defaultConf.Code.DisableImplementations)
+	res.Code.ImplementationsDir = coalesce(userConf.Code.ImplementationsDir, defaultConf.Code.ImplementationsDir)
+	res.Implementations = defaultConf.Implementations
 	// *Replace* implementations.protocols
-	if len(userConf.Implementations.Protocols) > 0 {
-		res.Implementations.Protocols = userConf.Implementations.Protocols
+	if len(userConf.Implementations) > 0 {
+		res.Implementations = userConf.Implementations
 	}
 
 	res.Client.GoModTemplate = coalesce(userConf.Client.GoModTemplate, defaultConf.Client.GoModTemplate)

@@ -1,10 +1,5 @@
 configVersion: 1
-projectModule:
 runtimeModule: github.com/bdragon300/go-asyncapi/run
-
-directories:
-  templates:
-  target: ./asyncapi
 
 selections:
   - objectKinds: ["schema"]
@@ -27,17 +22,12 @@ selections:
       file: parameters/{{.Object | goIDUpper }}.go
 
 resolver:
-  allowRemoteReferences: false
-  searchDirectory:
   timeout: 30s
-  command:
 
-render:
+code:
   preambleTemplate: preamble.tmpl
-  disableFormatting: false
-
-implementations:
-  directory: impl/{{ .Manifest.Protocol }}
+  targetDir: ./asyncapi
+  implementationsDir: impl/{{ .Manifest.Protocol }}
 
 client:
   outputFile: ./client

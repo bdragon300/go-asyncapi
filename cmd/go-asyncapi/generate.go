@@ -71,6 +71,9 @@ type generatePubSubArgs struct {
 	PreambleTemplate  string `arg:"--preamble-template" help:"Custom preamble template name" placeholder:"NAME"`
 	DisableFormatting bool   `arg:"--disable-formatting" help:"Disable code formatting"`
 
+	ImplementationsDir     string `arg:"--implementations-dir" help:"Directory to save the implementations code" placeholder:"DIR"`
+	DisableImplementations bool   `arg:"--disable-implementations" help:"Generate code without implementations"`
+
 	AllowRemoteRefs   bool          `arg:"--allow-remote-refs" help:"Allow resolver to fetch the files from remote $ref URLs"`
 	ResolverSearchDir string        `arg:"--resolver-search-dir" help:"Directory to search the local spec files for [default: current working directory]" placeholder:"PATH"`
 	ResolverTimeout   time.Duration `arg:"--resolver-timeout" help:"Timeout for resolver to resolve a spec file" placeholder:"DURATION"`
@@ -96,7 +99,7 @@ func cliGenerate(cmd *GenerateCmd, globalConfig toolConfig) error {
 	}
 
 	compileOpts := getCompileOpts(cmdConfig, isPub, isSub)
-	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Directories.Target, true)
+	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Code.TargetDir, true)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
 	}
@@ -120,7 +123,7 @@ func cliGenerate(cmd *GenerateCmd, globalConfig toolConfig) error {
 	logger.Debug("Renders protocols", "value", activeProtocols)
 
 	// Implementations
-	implementationOpts := getImplementationOpts(cmdConfig.Implementations)
+	implementationOpts := getImplementationOpts(cmdConfig)
 	if !implementationOpts.Disable {
 		tplLoader := tmpl.NewTemplateLoader(mainTemplateName, implementations.ImplementationFS)
 		renderManager.TemplateLoader = tplLoader
@@ -147,9 +150,9 @@ func cliGenerate(cmd *GenerateCmd, globalConfig toolConfig) error {
 	// Module objects
 	logger.Debug("Run objects rendering")
 	templateDirs := []fs.FS{templates.TemplateFS}
-	if cmdConfig.Directories.Templates != "" {
-		logger.Debug("Custom templates location", "directory", cmdConfig.Directories.Templates)
-		templateDirs = append(templateDirs, os.DirFS(cmdConfig.Directories.Templates))
+	if cmdConfig.Code.TemplatesDir != "" {
+		logger.Debug("Custom templates location", "directory", cmdConfig.Code.TemplatesDir)
+		templateDirs = append(templateDirs, os.DirFS(cmdConfig.Code.TemplatesDir))
 	}
 	tplLoader := tmpl.NewTemplateLoader(mainTemplateName, templateDirs...)
 	logger.Trace("Parse templates", "dirs", templateDirs)
@@ -168,9 +171,9 @@ func cliGenerate(cmd *GenerateCmd, globalConfig toolConfig) error {
 	if pubSubOpts.ClientApp {
 		logger.Debug("Run client app rendering")
 		templateDirs = []fs.FS{templates.TemplateFS, client.TemplateFS}
-		if cmdConfig.Directories.Templates != "" {
-			logger.Debug("Custom templates location", "directory", cmdConfig.Directories.Templates)
-			templateDirs = append(templateDirs, os.DirFS(cmdConfig.Directories.Templates))
+		if cmdConfig.Code.TemplatesDir != "" {
+			logger.Debug("Custom templates location", "directory", cmdConfig.Code.TemplatesDir)
+			templateDirs = append(templateDirs, os.DirFS(cmdConfig.Code.TemplatesDir))
 		}
 		tplLoader = tmpl.NewTemplateLoader(mainTemplateName, templateDirs...)
 		logger.Trace("Parse templates", "dirs", templateDirs)
@@ -208,7 +211,7 @@ func cliGenerate(cmd *GenerateCmd, globalConfig toolConfig) error {
 	// Writing
 	//
 	logger.Debug("Run writing")
-	if err = writer.WriteBuffersToFiles(files, cmdConfig.Directories.Target); err != nil {
+	if err = writer.WriteBuffersToFiles(files, cmdConfig.Code.TargetDir); err != nil {
 		return fmt.Errorf("writing: %w", err)
 	}
 	logger.Debug("Writing complete")
@@ -250,15 +253,18 @@ func cliGenerateMergeConfig(globalConfig toolConfig, cmd *GenerateCmd, generateA
 
 	res.ProjectModule = coalesce(generateArgs.ProjectModule, res.ProjectModule)
 	res.RuntimeModule = coalesce(generateArgs.RuntimeModule, res.RuntimeModule)
-	res.Directories.Templates = coalesce(generateArgs.TemplateDir, res.Directories.Templates)
-	res.Directories.Target = coalesce(cmd.TargetDir, res.Directories.Target)
 
 	res.Resolver.AllowRemoteReferences = coalesce(generateArgs.AllowRemoteRefs, res.Resolver.AllowRemoteReferences)
 	res.Resolver.SearchDirectory = coalesce(generateArgs.ResolverSearchDir, res.Resolver.SearchDirectory)
 	res.Resolver.Timeout = coalesce(generateArgs.ResolverTimeout, res.Resolver.Timeout)
 	res.Resolver.Command = coalesce(generateArgs.ResolverCommand, res.Resolver.Command)
-	res.Render.PreambleTemplate = coalesce(generateArgs.PreambleTemplate, res.Render.PreambleTemplate)
-	res.Render.DisableFormatting = coalesce(generateArgs.DisableFormatting, res.Render.DisableFormatting)
+
+	res.Code.TemplatesDir = coalesce(generateArgs.TemplateDir, res.Code.TemplatesDir)
+	res.Code.TargetDir = coalesce(cmd.TargetDir, res.Code.TargetDir)
+	res.Code.PreambleTemplate = coalesce(generateArgs.PreambleTemplate, res.Code.PreambleTemplate)
+	res.Code.DisableFormatting = coalesce(generateArgs.DisableFormatting, res.Code.DisableFormatting)
+	res.Code.ImplementationsDir = coalesce(generateArgs.ImplementationsDir, res.Code.ImplementationsDir)
+	res.Code.DisableImplementations = coalesce(generateArgs.DisableImplementations, res.Code.DisableImplementations)
 
 	res.Client.GoModTemplate = coalesce(generateArgs.goModTemplate, res.Client.GoModTemplate)
 
@@ -291,8 +297,8 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (c
 	res := common.RenderOpts{
 		RuntimeModule:     conf.RuntimeModule,
 		TargetDir:         targetDir,
-		DisableFormatting: conf.Render.DisableFormatting,
-		PreambleTemplate:  conf.Render.PreambleTemplate,
+		DisableFormatting: conf.Code.DisableFormatting,
+		PreambleTemplate:  conf.Code.PreambleTemplate,
 	}
 
 	// Selections
@@ -337,11 +343,11 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (c
 	return res, nil
 }
 
-func getImplementationOpts(conf toolConfigImplementations) common.RenderImplementationsOpts {
+func getImplementationOpts(conf toolConfig) common.RenderImplementationsOpts {
 	return common.RenderImplementationsOpts{
-		Disable:   conf.Disable,
-		Directory: conf.Directory,
-		Protocols: lo.Map(conf.Protocols, func(item toolConfigImplementationProtocol, _ int) common.ConfigImplementationProtocol {
+		Disable:   conf.Code.DisableImplementations,
+		Directory: conf.Code.ImplementationsDir,
+		Protocols: lo.Map(conf.Implementations, func(item toolConfigImplementation, _ int) common.ConfigImplementationProtocol {
 			return common.ConfigImplementationProtocol{
 				Protocol:         item.Protocol,
 				Name:             item.Name,

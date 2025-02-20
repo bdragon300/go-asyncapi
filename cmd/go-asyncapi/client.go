@@ -71,8 +71,8 @@ func cliClient(cmd *ClientCmd, globalConfig toolConfig) error {
 			Spec:              cmd.Spec,
 			ProjectModule:     projectModule,
 			RuntimeModule:     cmdConfig.RuntimeModule,
-			TemplateDir:       cmdConfig.Directories.Templates,
-			PreambleTemplate:  cmdConfig.Render.PreambleTemplate,
+			TemplateDir:       cmdConfig.Code.TemplatesDir,
+			PreambleTemplate:  cmdConfig.Code.PreambleTemplate,
 			AllowRemoteRefs:   cmdConfig.Resolver.AllowRemoteReferences,
 			ResolverSearchDir: cmdConfig.Resolver.SearchDirectory,
 			ResolverTimeout:   cmdConfig.Resolver.Timeout,
@@ -158,8 +158,8 @@ func cliClientMergeConfig(globalConfig toolConfig, cmd *ClientCmd) toolConfig {
 	res.Client.GoModTemplate = coalesce(cmd.GoModTemplate, globalConfig.Client.GoModTemplate)
 	res.Client.TempDir = coalesce(cmd.TempDir, globalConfig.Client.TempDir)
 
-	res.Directories.Templates = coalesce(cmd.TemplateDir, globalConfig.Directories.Templates)
-	res.Render.PreambleTemplate = coalesce(cmd.PreambleTemplate, globalConfig.Render.PreambleTemplate)
+	res.Code.TemplatesDir = coalesce(cmd.TemplateDir, globalConfig.Code.TemplatesDir)
+	res.Code.PreambleTemplate = coalesce(cmd.PreambleTemplate, globalConfig.Code.PreambleTemplate)
 
 	res.RuntimeModule = coalesce(cmd.RuntimeModule, globalConfig.RuntimeModule)
 	res.Resolver.AllowRemoteReferences = coalesce(cmd.AllowRemoteRefs, globalConfig.Resolver.AllowRemoteReferences)
