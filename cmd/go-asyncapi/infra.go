@@ -19,17 +19,17 @@ import (
 )
 
 type InfraCmd struct {
-	Spec string `arg:"required,positional" help:"AsyncAPI specification file path or url" placeholder:"PATH"`
+	Spec string `arg:"required,positional" help:"AsyncAPI document file or url" placeholder:"FILE"`
 
-	Format     string `arg:"-f,--format" help:"Output file format" placeholder:"FORMAT"`
-	ConfigFile string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"PATH"`
-	OutputFile string `arg:"-o,--output" help:"Output file path" placeholder:"PATH"`
+	Format     string `arg:"-f,--format" help:"Output file format" placeholder:"NAME"`
+	ConfigFile string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"FILE"`
+	OutputFile string `arg:"-o,--output" help:"Output file path" placeholder:"FILE"`
 
-	TemplateDir       string        `arg:"-T,--template-dir" help:"Directory with custom templates" placeholder:"DIR"`
+	TemplateDir       string        `arg:"-T,--template-dir" help:"User templates directory" placeholder:"DIR"`
 	AllowRemoteRefs   bool          `arg:"--allow-remote-refs" help:"Allow resolver to fetch the files from remote $ref URLs"`
-	ResolverSearchDir string        `arg:"--resolver-search-dir" help:"Directory to search the local spec files for [default: current working directory]" placeholder:"PATH"`
-	ResolverTimeout   time.Duration `arg:"--resolver-timeout" help:"Timeout for resolver to resolve a spec file" placeholder:"DURATION"`
-	ResolverCommand   string        `arg:"--resolver-command" help:"Custom resolver executable to use instead of built-in resolver" placeholder:"PATH"`
+	ResolverSearchDir string        `arg:"--resolver-search-dir" help:"Directory to search the local spec files for [default: current working directory]" placeholder:"DIR"`
+	ResolverTimeout   time.Duration `arg:"--resolver-timeout" help:"Timeout for resolver to resolve a spec file, e.g. 30s, 2m, etc." placeholder:"DURATION"`
+	ResolverCommand   string        `arg:"--resolver-command" help:"Custom resolver executable to use instead of built-in resolver" placeholder:"EXECUTABLE"`
 }
 
 func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
@@ -77,7 +77,7 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 		logger.Debug("Custom templates location", "directory", cmdConfig.Code.TemplatesDir)
 		templateDirs = append(templateDirs, os.DirFS(cmdConfig.Code.TemplatesDir))
 	}
-	tplLoader := tmpl.NewTemplateLoader(mainTemplateName, templateDirs...)
+	tplLoader := tmpl.NewTemplateLoader(defaultMainTemplateName, templateDirs...)
 	logger.Trace("Parse templates", "dirs", templateDirs)
 	renderManager.TemplateLoader = tplLoader
 	if err = tplLoader.ParseRecursive(renderManager); err != nil {

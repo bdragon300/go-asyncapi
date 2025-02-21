@@ -15,19 +15,22 @@ import (
 	"github.com/alexflint/go-arg"
 )
 
-const defaultConfigFileName = "default_config.yaml"
+const (
+	defaultConfigFileName   = "default_config.yaml"
+	defaultMainTemplateName = "main.tmpl"
+)
 
 var ErrWrongCliArgs = errors.New("cli args")
 
 type cli struct {
-	GenerateCmd         *GenerateCmd `arg:"subcommand:generate" help:"Generate the code based on AsyncAPI document"`
-	ClientCmd           *ClientCmd   `arg:"subcommand:client" help:"Build the client executable based on AsyncAPI document (requires Go toolchain installed)"`
-	InfraCmd            *InfraCmd    `arg:"subcommand:infra" help:"Generate the infrastructure code based on AsyncAPI document"`
-	ListImplementations *struct{}    `arg:"subcommand:list-implementations" help:"Show all available protocol implementations"`
-	Verbose             int          `arg:"-v" help:"Logging verbosity: 0 default, 1 debug output, 2 more debug output" placeholder:"LEVEL"`
-	Quiet               bool         `help:"Suppress the logging output"`
+	CodeCmd             *CodeCmd   `arg:"subcommand:code" help:"Generate the code"`
+	ClientCmd           *ClientCmd `arg:"subcommand:client" help:"Build the client executable (requires Go toolchain installed)"`
+	InfraCmd            *InfraCmd  `arg:"subcommand:infra" help:"Generate the infrastructure setup files"`
+	ListImplementations *struct{}  `arg:"subcommand:list-implementations" help:"Show all available protocol implementations"`
+	Verbose             int        `arg:"-v" help:"Verbose output: 1 (debug), 2 (trace)" placeholder:"LEVEL"`
+	Quiet               bool       `help:"Suppress the logging output"`
 
-	ConfigFile string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"PATH"`
+	ConfigFile string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"FILE"`
 }
 
 func main() {
@@ -71,8 +74,8 @@ func main() {
 	mergedConfig := mergeConfig(builtinConfig, userConfig)
 
 	switch {
-	case cliArgs.GenerateCmd != nil:
-		err = cliGenerate(cliArgs.GenerateCmd, mergedConfig)
+	case cliArgs.CodeCmd != nil:
+		err = cliCode(cliArgs.CodeCmd, mergedConfig)
 	case cliArgs.ClientCmd != nil:
 		err = cliClient(cliArgs.ClientCmd, mergedConfig)
 	case cliArgs.InfraCmd != nil:

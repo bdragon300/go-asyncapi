@@ -51,6 +51,8 @@ type (
 	}
 
 	toolConfigCode struct {
+		OnlyPublish       bool   `yaml:"onlyPublish"`
+		OnlySubscribe     bool   `yaml:"onlySubscribe"`
 		PreambleTemplate  string `yaml:"preambleTemplate"`
 		DisableFormatting bool   `yaml:"disableFormatting"`
 		TemplatesDir      string `yaml:"templatesDir"`

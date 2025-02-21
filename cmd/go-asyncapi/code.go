@@ -49,44 +49,36 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
-const (
-	mainTemplateName = "main.tmpl"
-)
-
-type GenerateCmd struct {
-	Pub    *generatePubSubArgs `arg:"subcommand:pub" help:"Generate only the publisher code"`
-	Sub    *generatePubSubArgs `arg:"subcommand:sub" help:"Generate only the subscriber code"`
-	PubSub *generatePubSubArgs `arg:"subcommand:pubsub" help:"Generate both publisher and subscriber code"`
+type CodeCmd struct {
+	Spec string `arg:"required,positional" help:"AsyncAPI document file or url" placeholder:"FILE"`
 
 	TargetDir string `arg:"-t,--target-dir" help:"Directory to save the generated code" placeholder:"DIR"`
-}
 
-type generatePubSubArgs struct {
-	Spec string `arg:"required,positional" help:"AsyncAPI specification file path or url" placeholder:"PATH"`
+	OnlyPub bool `arg:"--only-pub" help:"Generate only the publisher code"`
+	OnlySub bool `arg:"--only-sub" help:"Generate only the subscriber code"`
 
-	ProjectModule string `arg:"-M,--module" help:"Project module in the generated code. By default, read get from go.mod in the current working directory" placeholder:"MODULE"`
+	ProjectModule string `arg:"-M,--module" help:"Project module name in the generated code. By default, read get from go.mod in the current working directory" placeholder:"MODULE"`
 	RuntimeModule string `arg:"--runtime-module" help:"Runtime module path" placeholder:"MODULE"`
 
-	TemplateDir       string `arg:"-T,--template-dir" help:"Directory with custom templates" placeholder:"DIR"`
-	PreambleTemplate  string `arg:"--preamble-template" help:"Custom preamble template name" placeholder:"NAME"`
+	TemplateDir       string `arg:"-T,--template-dir" help:"User templates directory" placeholder:"DIR"`
+	PreambleTemplate  string `arg:"--preamble-template" help:"Preamble template name" placeholder:"NAME"`
 	DisableFormatting bool   `arg:"--disable-formatting" help:"Disable code formatting"`
 
-	ImplementationsDir     string `arg:"--implementations-dir" help:"Directory to save the implementations code" placeholder:"DIR"`
-	DisableImplementations bool   `arg:"--disable-implementations" help:"Generate code without implementations"`
+	ImplementationsDir     string `arg:"--implementations-dir" help:"Target subdirectory to save the implementations code" placeholder:"DIR"`
+	DisableImplementations bool   `arg:"--disable-implementations" help:"Do not generate implementations code"`
 
 	AllowRemoteRefs   bool          `arg:"--allow-remote-refs" help:"Allow resolver to fetch the files from remote $ref URLs"`
 	ResolverSearchDir string        `arg:"--resolver-search-dir" help:"Directory to search the local spec files for [default: current working directory]" placeholder:"PATH"`
-	ResolverTimeout   time.Duration `arg:"--resolver-timeout" help:"Timeout for resolver to resolve a spec file" placeholder:"DURATION"`
-	ResolverCommand   string        `arg:"--resolver-command" help:"Custom resolver executable to use instead of built-in resolver" placeholder:"PATH"`
+	ResolverTimeout   time.Duration `arg:"--resolver-timeout" help:"Timeout for resolver to resolve a spec file, e.g. 30s, 2m, etc." placeholder:"DURATION"`
+	ResolverCommand   string        `arg:"--resolver-command" help:"Custom resolver executable to use instead of built-in resolver" placeholder:"EXECUTABLE"`
 
-	ClientApp     bool   `arg:"--client-app" help:"Generate a client application code as well"`
+	ClientApp     bool   `arg:"--client-app" help:"Generate the sample client application code as well"`
 	goModTemplate string `arg:"-"`
 }
 
-func cliGenerate(cmd *GenerateCmd, globalConfig toolConfig) error {
+func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 	logger := log.GetLogger("")
-	isPub, isSub, pubSubOpts := getPubSubVariant(cmd)
-	cmdConfig := cliGenerateMergeConfig(globalConfig, cmd, pubSubOpts)
+	cmdConfig := cliCodeMergeConfig(globalConfig, cmd)
 
 	if logger.GetLevel() == log.TraceLevel {
 		buf := lo.Must(yaml.Marshal(cmdConfig))
@@ -94,11 +86,7 @@ func cliGenerate(cmd *GenerateCmd, globalConfig toolConfig) error {
 	}
 
 	asyncapi.ProtocolBuilders = protocolBuilders()
-	if !isSub && !isPub {
-		return fmt.Errorf("%w: publisher, subscriber or both are required in args", ErrWrongCliArgs)
-	}
-
-	compileOpts := getCompileOpts(cmdConfig, isPub, isSub)
+	compileOpts := getCompileOpts(cmdConfig)
 	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Code.TargetDir, true)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
@@ -109,7 +97,7 @@ func cliGenerate(cmd *GenerateCmd, globalConfig toolConfig) error {
 	// Compilation & linking
 	//
 	fileResolver := getResolver(cmdConfig)
-	specURL := specurl.Parse(pubSubOpts.Spec)
+	specURL := specurl.Parse(cmd.Spec)
 	modules, err := runCompilationLinking(fileResolver, specURL, compileOpts)
 	if err != nil {
 		return fmt.Errorf("compilation: %w", err)
@@ -125,7 +113,7 @@ func cliGenerate(cmd *GenerateCmd, globalConfig toolConfig) error {
 	// Implementations
 	implementationOpts := getImplementationOpts(cmdConfig)
 	if !implementationOpts.Disable {
-		tplLoader := tmpl.NewTemplateLoader(mainTemplateName, implementations.ImplementationFS)
+		tplLoader := tmpl.NewTemplateLoader(defaultMainTemplateName, implementations.ImplementationFS)
 		renderManager.TemplateLoader = tplLoader
 
 		supportedProtocols := lo.Keys(asyncapi.ProtocolBuilders)
@@ -154,7 +142,7 @@ func cliGenerate(cmd *GenerateCmd, globalConfig toolConfig) error {
 		logger.Debug("Custom templates location", "directory", cmdConfig.Code.TemplatesDir)
 		templateDirs = append(templateDirs, os.DirFS(cmdConfig.Code.TemplatesDir))
 	}
-	tplLoader := tmpl.NewTemplateLoader(mainTemplateName, templateDirs...)
+	tplLoader := tmpl.NewTemplateLoader(defaultMainTemplateName, templateDirs...)
 	logger.Trace("Parse templates", "dirs", templateDirs)
 	renderManager.TemplateLoader = tplLoader
 	if err = tplLoader.ParseRecursive(renderManager); err != nil {
@@ -168,14 +156,14 @@ func cliGenerate(cmd *GenerateCmd, globalConfig toolConfig) error {
 	logger.Debug("Objects rendering complete")
 
 	// Client app
-	if pubSubOpts.ClientApp {
+	if cmd.ClientApp {
 		logger.Debug("Run client app rendering")
 		templateDirs = []fs.FS{templates.TemplateFS, client.TemplateFS}
 		if cmdConfig.Code.TemplatesDir != "" {
 			logger.Debug("Custom templates location", "directory", cmdConfig.Code.TemplatesDir)
 			templateDirs = append(templateDirs, os.DirFS(cmdConfig.Code.TemplatesDir))
 		}
-		tplLoader = tmpl.NewTemplateLoader(mainTemplateName, templateDirs...)
+		tplLoader = tmpl.NewTemplateLoader(defaultMainTemplateName, templateDirs...)
 		logger.Trace("Parse templates", "dirs", templateDirs)
 		renderManager.TemplateLoader = tplLoader
 		if err = tplLoader.ParseRecursive(renderManager); err != nil {
@@ -248,42 +236,34 @@ func protocolBuilders() map[string]asyncapi.ProtocolBuilder {
 	}
 }
 
-func cliGenerateMergeConfig(globalConfig toolConfig, cmd *GenerateCmd, generateArgs *generatePubSubArgs) toolConfig {
+func cliCodeMergeConfig(globalConfig toolConfig, cmd *CodeCmd) toolConfig {
 	res := globalConfig
 
-	res.ProjectModule = coalesce(generateArgs.ProjectModule, res.ProjectModule)
-	res.RuntimeModule = coalesce(generateArgs.RuntimeModule, res.RuntimeModule)
+	res.ProjectModule = coalesce(cmd.ProjectModule, res.ProjectModule)
+	res.RuntimeModule = coalesce(cmd.RuntimeModule, res.RuntimeModule)
 
-	res.Resolver.AllowRemoteReferences = coalesce(generateArgs.AllowRemoteRefs, res.Resolver.AllowRemoteReferences)
-	res.Resolver.SearchDirectory = coalesce(generateArgs.ResolverSearchDir, res.Resolver.SearchDirectory)
-	res.Resolver.Timeout = coalesce(generateArgs.ResolverTimeout, res.Resolver.Timeout)
-	res.Resolver.Command = coalesce(generateArgs.ResolverCommand, res.Resolver.Command)
+	res.Resolver.AllowRemoteReferences = coalesce(cmd.AllowRemoteRefs, res.Resolver.AllowRemoteReferences)
+	res.Resolver.SearchDirectory = coalesce(cmd.ResolverSearchDir, res.Resolver.SearchDirectory)
+	res.Resolver.Timeout = coalesce(cmd.ResolverTimeout, res.Resolver.Timeout)
+	res.Resolver.Command = coalesce(cmd.ResolverCommand, res.Resolver.Command)
 
-	res.Code.TemplatesDir = coalesce(generateArgs.TemplateDir, res.Code.TemplatesDir)
+	res.Code.OnlyPublish = coalesce(cmd.OnlyPub, res.Code.OnlyPublish)
+	res.Code.OnlySubscribe = coalesce(cmd.OnlySub, res.Code.OnlySubscribe)
+	res.Code.TemplatesDir = coalesce(cmd.TemplateDir, res.Code.TemplatesDir)
 	res.Code.TargetDir = coalesce(cmd.TargetDir, res.Code.TargetDir)
-	res.Code.PreambleTemplate = coalesce(generateArgs.PreambleTemplate, res.Code.PreambleTemplate)
-	res.Code.DisableFormatting = coalesce(generateArgs.DisableFormatting, res.Code.DisableFormatting)
-	res.Code.ImplementationsDir = coalesce(generateArgs.ImplementationsDir, res.Code.ImplementationsDir)
-	res.Code.DisableImplementations = coalesce(generateArgs.DisableImplementations, res.Code.DisableImplementations)
+	res.Code.PreambleTemplate = coalesce(cmd.PreambleTemplate, res.Code.PreambleTemplate)
+	res.Code.DisableFormatting = coalesce(cmd.DisableFormatting, res.Code.DisableFormatting)
+	res.Code.ImplementationsDir = coalesce(cmd.ImplementationsDir, res.Code.ImplementationsDir)
+	res.Code.DisableImplementations = coalesce(cmd.DisableImplementations, res.Code.DisableImplementations)
 
-	res.Client.GoModTemplate = coalesce(generateArgs.goModTemplate, res.Client.GoModTemplate)
+	res.Client.GoModTemplate = coalesce(cmd.goModTemplate, res.Client.GoModTemplate)
 
 	return res
 }
 
-func getPubSubVariant(cmd *GenerateCmd) (pub bool, sub bool, variant *generatePubSubArgs) {
-	switch {
-	case cmd.PubSub != nil:
-		return true, true, cmd.PubSub
-	case cmd.Pub != nil:
-		return true, false, cmd.Pub
-	case cmd.Sub != nil:
-		return false, true, cmd.Sub
-	}
-	return
-}
-
-func getCompileOpts(cfg toolConfig, isPub, isSub bool) common.CompileOpts {
+func getCompileOpts(cfg toolConfig) common.CompileOpts {
+	isPub := cfg.Code.OnlyPublish || !cfg.Code.OnlySubscribe
+	isSub := cfg.Code.OnlySubscribe || !cfg.Code.OnlyPublish
 	return common.CompileOpts{
 		AllowRemoteRefs:     cfg.Resolver.AllowRemoteReferences,
 		RuntimeModule:       cfg.RuntimeModule,

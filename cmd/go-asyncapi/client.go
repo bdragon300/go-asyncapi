@@ -16,6 +16,7 @@ import (
 	"github.com/samber/lo"
 )
 
+// Go toolchain command and its subcommands called to build the client executable
 const (
 	toolchainCommand  = "go"
 	goGetSubcommand   = "get"
@@ -23,23 +24,23 @@ const (
 )
 
 type ClientCmd struct {
-	Spec string `arg:"required,positional" help:"AsyncAPI specification file path or url" placeholder:"PATH"`
+	Spec string `arg:"required,positional" help:"AsyncAPI document file or url" placeholder:"FILE"`
 
-	ConfigFile       string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"PATH"`
-	OutputExecFile   string `arg:"-o,--output" help:"Executable output file path" placeholder:"PATH"`
-	OutputSourceFile string `arg:"--output-source" help:"Source code output file path" placeholder:"PATH"`
+	ConfigFile       string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"FILE"`
+	OutputExecFile   string `arg:"-o,--output" help:"Executable output file name" placeholder:"FILE"`
+	OutputSourceFile string `arg:"--output-source" help:"Source code output file path" placeholder:"FILE"`
 	KeepSource       bool   `arg:"--keep-source" help:"Do not automatically remove the generated code on exit"`
 
-	TemplateDir      string `arg:"-T,--template-dir" help:"Directory with custom templates" placeholder:"DIR"`
+	TemplateDir      string `arg:"-T,--template-dir" help:"User templates directory" placeholder:"DIR"`
 	TempDir          string `arg:"--temp-dir" help:"Temporary directory to store the generated code. Implies --keep-source as well" placeholder:"DIR"`
-	PreambleTemplate string `arg:"--preamble-template" help:"Custom preamble template name" placeholder:"NAME"`
+	PreambleTemplate string `arg:"--preamble-template" help:"Preamble template name" placeholder:"NAME"`
 	GoModTemplate    string `arg:"--go-mod-template" help:"Custom go.mod template name" placeholder:"NAME"`
 
 	RuntimeModule     string        `arg:"--runtime-module" help:"Runtime module name" placeholder:"MODULE"`
 	AllowRemoteRefs   bool          `arg:"--allow-remote-refs" help:"Allow resolver to fetch the files from remote $ref URLs"`
-	ResolverSearchDir string        `arg:"--resolver-search-dir" help:"Directory to search the local spec files for [default: current working directory]" placeholder:"PATH"`
-	ResolverTimeout   time.Duration `arg:"--resolver-timeout" help:"Timeout for resolver to resolve a spec file" placeholder:"DURATION"`
-	ResolverCommand   string        `arg:"--resolver-command" help:"Custom resolver executable to use instead of built-in resolver" placeholder:"PATH"`
+	ResolverSearchDir string        `arg:"--resolver-search-dir" help:"Directory to search the local spec files for [default: current working directory]" placeholder:"DIR"`
+	ResolverTimeout   time.Duration `arg:"--resolver-timeout" help:"Timeout for resolver to resolve a spec file, e.g. 30s, 2m, etc." placeholder:"DURATION"`
+	ResolverCommand   string        `arg:"--resolver-command" help:"Custom resolver executable to use instead of built-in resolver" placeholder:"EXECUTABLE"`
 }
 
 func cliClient(cmd *ClientCmd, globalConfig toolConfig) error {
@@ -65,22 +66,21 @@ func cliClient(cmd *ClientCmd, globalConfig toolConfig) error {
 	logger.Debug("Generated code location", "directory", targetDir)
 
 	logger.Debug("Generate the client code", "targetDir", targetDir, "module", projectModule)
-	generateCmd := &GenerateCmd{
-		TargetDir: targetDir,
-		PubSub: &generatePubSubArgs{
-			Spec:              cmd.Spec,
-			ProjectModule:     projectModule,
-			RuntimeModule:     cmdConfig.RuntimeModule,
-			TemplateDir:       cmdConfig.Code.TemplatesDir,
-			PreambleTemplate:  cmdConfig.Code.PreambleTemplate,
-			AllowRemoteRefs:   cmdConfig.Resolver.AllowRemoteReferences,
-			ResolverSearchDir: cmdConfig.Resolver.SearchDirectory,
-			ResolverTimeout:   cmdConfig.Resolver.Timeout,
-			ResolverCommand:   cmdConfig.Resolver.Command,
-			ClientApp:         true,
-		},
+	generateCmd := &CodeCmd{
+		TargetDir:         targetDir,
+		Spec:              cmd.Spec,
+		ProjectModule:     projectModule,
+		RuntimeModule:     cmdConfig.RuntimeModule,
+		TemplateDir:       cmdConfig.Code.TemplatesDir,
+		PreambleTemplate:  cmdConfig.Code.PreambleTemplate,
+		AllowRemoteRefs:   cmdConfig.Resolver.AllowRemoteReferences,
+		ResolverSearchDir: cmdConfig.Resolver.SearchDirectory,
+		ResolverTimeout:   cmdConfig.Resolver.Timeout,
+		ResolverCommand:   cmdConfig.Resolver.Command,
+		ClientApp:         true,
+		goModTemplate:     cmdConfig.Client.GoModTemplate,
 	}
-	if err := cliGenerate(generateCmd, cmdConfig); err != nil {
+	if err := cliCode(generateCmd, cmdConfig); err != nil {
 		return fmt.Errorf("generate client code: %w", err)
 	}
 
