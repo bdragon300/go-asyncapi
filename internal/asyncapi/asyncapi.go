@@ -34,10 +34,15 @@
 package asyncapi
 
 import (
+	"fmt"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
 	"github.com/bdragon300/go-asyncapi/internal/types"
+	"golang.org/x/mod/semver"
 )
+
+const minAsyncAPIVersion = "3.0.0"
 
 // AsyncAPI is the root document object of the AsyncAPI document. [AsyncAPI specification].
 //
@@ -54,17 +59,28 @@ type AsyncAPI struct {
 }
 
 func (a AsyncAPI) Compile(ctx *common.CompileContext) error {
-	obj := a.build(ctx)
+	obj, err := a.build(ctx)
+	if err != nil {
+		return err
+	}
 	ctx.PutObject(obj)
 	return nil
 }
 
-func (a AsyncAPI) build(ctx *common.CompileContext) *render.AsyncAPI {
+func (a AsyncAPI) build(ctx *common.CompileContext) (*render.AsyncAPI, error) {
 	ctx.Logger.Trace("AsyncAPI root object")
 	res := &render.AsyncAPI{
 		DefaultContentType: a.DefaultContentType,
 	}
-	return res
+
+	if a.Asyncapi == "" || !semver.IsValid("v"+a.Asyncapi) {
+		return nil, types.CompileError{Err: fmt.Errorf("bad asyncapi version: %q", a.Asyncapi), Path: ctx.CurrentPositionRef()}
+	}
+	if semver.Compare("v"+a.Asyncapi, "v"+minAsyncAPIVersion) < 0 {
+		ctx.Logger.Warn("AsyncAPI version is not supported by the go-asyncapi, the result may contain errors", "version", a.Asyncapi, "minVersion", minAsyncAPIVersion)
+	}
+
+	return res, nil
 }
 
 type InfoItem struct {
