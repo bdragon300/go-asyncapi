@@ -17,6 +17,8 @@ import (
 	"unicode"
 )
 
+// GetTemplateFunctions returns a map of functions to use in templates. These functions include all
+// [github.com/go-sprout/sprout] functions and go-asyncapi specific functions.
 func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template.FuncMap {
 	type golangTypeExtractor interface {
 		InnerGolangType() common.GolangType
@@ -33,7 +35,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		"goQualR": func(parts ...string) string { return templateGoQualRuntime(renderManager, parts...) },
 		"goDef": func(r common.GolangType) (string, error) {
 			tplName := path.Join(r.GoTemplate(), "definition")
-			renderManager.NamespaceManager.DefineType(r, renderManager, true)
+			renderManager.NamespaceManager.DefineType(r, renderManager, 1)
 			if v, ok := r.(golangTypeWrapper); ok {
 				r = v.UnwrapGolangType()
 			}
@@ -120,7 +122,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 				switch v := o.(type) {
 				case common.GolangType:
 					if !lo.IsNil(o) {
-						renderManager.NamespaceManager.DefineType(v, renderManager, false)
+						renderManager.NamespaceManager.DefineType(v, renderManager, 0)
 					}
 				case string:
 					if o != "" {
@@ -153,6 +155,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 	return lo.Assign(sproutFunctions, extraFuncs)
 }
 
+// templateGoDefined returns true if the value is in template's namespace.
 func templateGoDefined(mng *manager.TemplateRenderManager, r any) bool {
 	if lo.IsNil(r) {
 		return false
@@ -161,7 +164,7 @@ func templateGoDefined(mng *manager.TemplateRenderManager, r any) bool {
 	switch v := r.(type) {
 	case common.GolangType:
 		o, found := mng.NamespaceManager.FindType(v)
-		return found && o.Actual
+		return found && o.Priority > 0
 	case string:
 		return mng.NamespaceManager.IsNameDefined(v)
 	}
@@ -173,6 +176,20 @@ type golangTypeWrapper interface {
 	UnwrapGolangType() common.GolangType
 }
 
+// templateGoUsage returns a Go code snippet that represents the usage of the given Go type. If this type is defined
+// in other module, the necessary import is also added to the current file and the returned value contains the package
+// name as well. If the type is not defined yet, it returns ErrNotDefined.
+//
+// Type usage snippet uses for example in function parameters of this type, variable definitions of this type, etc.
+//
+// For example, consider for the [lang.GoStruct] object representing this struct
+//
+//  type MyStruct struct {
+//      Field1 string
+//      Field2 int
+//  }
+//
+// the function returns "MyStruct". Or "pkg.MyStruct" if the struct is defined in ``github.com/path/to/pkg'' module.
 func templateGoUsage(mng *manager.TemplateRenderManager, r common.GolangType) (string, error) {
 	tplName := path.Join(r.GoTemplate(), "usage")
 	if v, ok := r.(golangTypeWrapper); ok {
@@ -185,6 +202,8 @@ func templateGoUsage(mng *manager.TemplateRenderManager, r common.GolangType) (s
 	return res, nil
 }
 
+// templateExecTemplate executes the template with the given name and context from other template. This differs from
+// ``template'' directive in that it can receive dynamic template name.
 func templateExecTemplate(mng *manager.TemplateRenderManager, templateName string, ctx any) (string, error) {
 	var bld strings.Builder
 
@@ -198,6 +217,7 @@ func templateExecTemplate(mng *manager.TemplateRenderManager, templateName strin
 	return bld.String(), nil
 }
 
+// templateGoLit returns a Go literal for the given value.
 func templateGoLit(mng *manager.TemplateRenderManager, val any) (string, error) {
 	if v, ok := val.(common.GolangType); ok {
 		return templateGoUsage(mng, v)
@@ -205,6 +225,42 @@ func templateGoLit(mng *manager.TemplateRenderManager, val any) (string, error) 
 	return toGoLiteral(val), nil
 }
 
+// toGoLiteral returns a Go code string with literal for the given value.
+func toGoLiteral(val any) string {
+	var res string
+	switch val.(type) {
+	case bool, string, int, complex128:
+		// default constant types can be left bare
+		return fmt.Sprintf("%#v", val)
+	case float64:
+		res = fmt.Sprintf("%#v", val)
+		if !strings.Contains(res, ".") && !strings.Contains(res, "e") {
+			// If the formatted value is not in scientific notation, and does not have a dot, then
+			// we add ".0". Otherwise, it will be interpreted as an int.
+			// See: https://github.com/golang/go/issues/26363
+			res += ".0"
+		}
+		return res
+	case float32, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr:
+		// other built-in types need specific type info
+		return fmt.Sprintf("%T(%#v)", val, val)
+	case complex64:
+		// fmt package already renders parenthesis for complex64
+		return fmt.Sprintf("%T%#v", val, val)
+	}
+
+	panic(fmt.Sprintf("unsupported type for literal: %T", val))
+}
+
+// templateGoID returns a Go identifier for the given value. The exportedName argument controls if the returned
+// identifier should be exported (start with an uppercase letter) or not.
+//
+// If value is an object (common.GolangType or lang.Ref or any common.Renderable object like channel or parameter),
+// the function returns its name as Go identifier.
+// Considers the document references names, aliases, x-go-name tags and so on.
+// For that, it calls object's Name method and make a Go identifier from it.
+//
+// If value is a string, the function just makes a Go identifier.
 func templateGoID(mng *manager.TemplateRenderManager, val any, exportedName bool) string {
 	var res string
 
@@ -238,6 +294,8 @@ func templateGoID(mng *manager.TemplateRenderManager, val any, exportedName bool
 	return utils.ToGolangName(res, exported)
 }
 
+// templateGoComment returns a Go comment for the given text. If the text contains newlines, it is formatted as a block
+// comment. Otherwise, it is formatted as a line comment.
 func templateGoComment(text string) (string, error) {
 	if strings.HasPrefix(text, "//") || strings.HasPrefix(text, "/*") {
 		// automatic formatting disabled.
@@ -278,6 +336,10 @@ type correlationIDExtractionStep struct {
 	VarType         common.GolangType
 }
 
+// templateCorrelationIDExtractionCode generates Go code to extract a variable from a struct for the correlation id
+// getter and setter method.
+//
+// The function returns a list of extract steps. Each step contains one or more lines of Go code and some meta information.
 func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c *render.CorrelationID, varStruct *lang.GoStruct, addValidationCode bool) (items []correlationIDExtractionStep, err error) {
 	// TODO: consider also AdditionalProperties in object
 	logger := log.GetLogger(log.LoggerPrefixRendering)
@@ -299,7 +361,7 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c *
 		anchor := fmt.Sprintf("v%d", pathIdx)
 		nextAnchor := fmt.Sprintf("v%d", pathIdx+1)
 
-		memberName, err2 := unescapeCorrelationIDPathItem(locationPath[pathIdx])
+		memberName, err2 := unescapeJSONPointerFragmentPart(locationPath[pathIdx])
 		if err2 != nil {
 			err = fmt.Errorf("cannot unescape CorrelationID locationPath %q, item %q: %w", locationPath, locationPath[pathIdx], err)
 			return
@@ -320,13 +382,12 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c *
 			baseType = fld.Type
 			body = []string{fmt.Sprintf("%s := %s", nextAnchor, varValueStmts)}
 		case *lang.GoMap:
-			// TODO: x-parameter in correlationIDs spec section to set numbers as "0" for string keys or 0 for int keys
 			logger.Trace("---> GoMap", "locationPath", locationPath[:pathIdx], "member", memberName, "object", typ.String())
 			varValueStmts = fmt.Sprintf("%s[%s]", anchor, toGoLiteral(memberName))
 			baseType = typ.ValueType
 			// TODO: replace templateGoUsage calls to smth another to remove import from impl, this is a potential circular import
 			varExpr := fmt.Sprintf("var %s %s", nextAnchor, lo.Must(templateGoUsage(mng, typ.ValueType)))
-			if typ.ValueType.Addressable() {
+			if typ.ValueType.CanBeAddressed() {
 				// Append ` = new(TYPE)` to initialize a pointer
 				varExpr += fmt.Sprintf(" = new(%s)", lo.Must(templateGoUsage(mng, typ.ValueType)))
 			}
@@ -441,10 +502,9 @@ type definable interface {
 	ObjectHasDefinition() bool
 }
 
-// qualifiedTypeGeneratedPackage adds the package where the obj is defined to the import list of the current module
-// (if it's not there yet). Returns the import alias.
-// If import is not needed (obj is defined in current package), returns empty string. If obj was not defined anywhere
-// yet, returns ErrNotDefined.
+// qualifiedTypeGeneratedPackage returns the package name or alias of module where the object is defined to use this name
+// further in the generated code. If object is already defined in *current module*, returns empty string with no error.
+// If we don't know where the object is defined, returns ErrNotDefined.
 func qualifiedTypeGeneratedPackage(mng *manager.TemplateRenderManager, obj common.GolangType) (string, error) {
 	nsType, defined := mng.NamespaceManager.FindType(obj)
 	if !defined {
@@ -490,13 +550,22 @@ func qualifiedImplementationGeneratedPackage(mng *manager.TemplateRenderManager,
 	return mng.ImportsManager.AddImport(pkgPath, defInfo.Object.Config.Package), nil
 }
 
+// templateGoQual returns a qualified name of the object in the generated code. Adds the import to the current file
+// if needed.
+//
+// Receives the import path and the object name in format ``path/to/package.name``. For example, ``net/url.URL'' or
+// ``golang.org/x/net/ipv4.Conn``. This could be a single string or a sequence of strings that are joined together.
+//
+// Returns the qualified name of the object that is used to access it in the generated code. For example, ``url.URL`` or
+// ``ipv4.Conn`` for the examples above.
 func templateGoQual(mng *manager.TemplateRenderManager, parts ...string) string {
 	pkgPath, pkgName, n := qualifiedToImport(parts)
 	return fmt.Sprintf("%s.%s", mng.ImportsManager.AddImport(pkgPath, pkgName), n)
 }
 
+// templateGoQualRuntime returns a qualified name of the object in the generated code. Adds the import to the runtime.
+// Works like templateGoQual but prepends the runtime package to the import path.
 func templateGoQualRuntime(mng *manager.TemplateRenderManager, parts ...string) string {
 	p := append([]string{mng.RenderOpts.RuntimeModule}, parts...)
-	pkgPath, pkgName, n := qualifiedToImport(p)
-	return fmt.Sprintf("%s.%s", mng.ImportsManager.AddImport(pkgPath, pkgName), n)
+	return templateGoQual(mng, p...)
 }

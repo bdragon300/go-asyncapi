@@ -22,6 +22,7 @@ type xGoType struct {
 	Hint     xGoTypeHint          `json:"hint" yaml:"hint"`
 }
 
+// buildXGoType builds a GolangType from x-go-type field value
 func buildXGoType(xGoTypeValue *types.Union2[string, xGoType]) (golangType common.GolangType) {
 	t := &lang.GoSimple{}
 

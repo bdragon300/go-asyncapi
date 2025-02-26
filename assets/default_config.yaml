@@ -21,8 +21,9 @@ selections:
     render:
       file: parameters/{{.Object | goIDUpper }}.go
 
-resolver:
+locator:
   timeout: 30s
+  searchDirectory: .
 
 code:
   preambleTemplate: preamble.tmpl

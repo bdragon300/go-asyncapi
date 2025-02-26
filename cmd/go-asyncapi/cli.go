@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"time"
 
 	"github.com/bdragon300/go-asyncapi/assets"
 	"github.com/bdragon300/go-asyncapi/internal/log"
@@ -16,8 +17,9 @@ import (
 )
 
 const (
-	defaultConfigFileName   = "default_config.yaml"
-	defaultMainTemplateName = "main.tmpl"
+	defaultConfigFileName                   = "default_config.yaml"
+	defaultMainTemplateName                 = "main.tmpl"
+	defaultSubprocessLocatorShutdownTimeout = 3 * time.Second
 )
 
 var ErrWrongCliArgs = errors.New("cli args")
@@ -48,8 +50,10 @@ func main() {
 		chlog.SetLevel(chlog.InfoLevel)
 	case 1:
 		chlog.SetLevel(chlog.DebugLevel)
-	default:
+	case 2:
 		chlog.SetLevel(log.TraceLevel)
+	default:
+		cliParser.Fail("Invalid verbosity level, use 0, 1 or 2")
 	}
 	if cliArgs.Quiet {
 		chlog.SetOutput(io.Discard)

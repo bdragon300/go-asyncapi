@@ -7,9 +7,10 @@ import (
 	"github.com/samber/lo"
 )
 
-func SelectObjects(objects []common.CompileObject, selection common.ConfigSelectionItem) []common.CompileObject {
+// Select filters the given artifacts from list based on the given selection.
+func Select(artifacts []common.CompileArtifact, selection common.ConfigSelectionItem) []common.CompileArtifact {
 	filtersChain := buildFiltersChain(selection)
-	res := lo.Filter(objects, func(object common.CompileObject, _ int) bool {
+	res := lo.Filter(artifacts, func(object common.CompileArtifact, _ int) bool {
 		for _, filter := range filtersChain {
 			if !filter(object) {
 				return false
@@ -20,19 +21,20 @@ func SelectObjects(objects []common.CompileObject, selection common.ConfigSelect
 	return res
 }
 
-type filterFunc func(common.CompileObject) bool
+type filterFunc func(common.CompileArtifact) bool
 
 type protoObjectSelector interface {
 	SelectProtoObject(protocol string) common.Renderable
 }
 
 func buildFiltersChain(selection common.ConfigSelectionItem) []filterFunc {
+	// TODO: trace logging in every filter
 	var filterChain []filterFunc
-	filterChain = append(filterChain, func(object common.CompileObject) bool {
+	filterChain = append(filterChain, func(object common.CompileArtifact) bool {
 		return object.Selectable()
 	})
 	if len(selection.Protocols) > 0 {
-		filterChain = append(filterChain, func(object common.CompileObject) bool {
+		filterChain = append(filterChain, func(object common.CompileArtifact) bool {
 			// Check if object has at least one of the proto objects of the given protocols
 			if o, ok := object.Renderable.(protoObjectSelector); ok {
 				return lo.SomeBy(selection.Protocols, func(protocol string) bool {
@@ -43,25 +45,25 @@ func buildFiltersChain(selection common.ConfigSelectionItem) []filterFunc {
 		})
 	}
 	if len(selection.ObjectKinds) > 0 {
-		filterChain = append(filterChain, func(object common.CompileObject) bool {
+		filterChain = append(filterChain, func(object common.CompileArtifact) bool {
 			return lo.Contains(selection.ObjectKinds, string(object.Kind()))
 		})
 	}
 	if selection.ModuleURLRe != "" {
 		re := regexp.MustCompile(selection.ModuleURLRe)
-		filterChain = append(filterChain, func(object common.CompileObject) bool {
-			return re.MatchString(object.ObjectURL.SpecID)
+		filterChain = append(filterChain, func(object common.CompileArtifact) bool {
+			return re.MatchString(object.ObjectURL.Location())
 		})
 	}
 	if selection.PathRe != "" {
 		re := regexp.MustCompile(selection.PathRe)
-		filterChain = append(filterChain, func(object common.CompileObject) bool {
-			return re.MatchString(object.ObjectURL.PointerRef())
+		filterChain = append(filterChain, func(object common.CompileArtifact) bool {
+			return re.MatchString(object.ObjectURL.PointerString())
 		})
 	}
 	if selection.NameRe != "" {
 		re := regexp.MustCompile(selection.NameRe)
-		filterChain = append(filterChain, func(object common.CompileObject) bool {
+		filterChain = append(filterChain, func(object common.CompileArtifact) bool {
 			return re.MatchString(object.Renderable.Name())
 		})
 	}

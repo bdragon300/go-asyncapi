@@ -5,7 +5,7 @@ import (
 )
 
 type ComponentsItem struct {
-	Schemas types.OrderedMap[string, Object] `json:"schemas" yaml:"schemas" cgen:"components,marshal,definition,selectable"`
+	Schemas types.OrderedMap[string, Object] `json:"schemas" yaml:"schemas" cgen:"components,data_model,definition,selectable"`
 
 	Servers    types.OrderedMap[string, Server]    `json:"servers" yaml:"servers" cgen:"components"`
 	Channels   types.OrderedMap[string, Channel]   `json:"channels" yaml:"channels" cgen:"components"`

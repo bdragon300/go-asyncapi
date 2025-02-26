@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/md5"
 	"encoding/base32"
+	"fmt"
 	"go/token"
 	"os"
 	"path"
@@ -22,7 +23,8 @@ var (
 	fileNameReplaceRe   = regexp.MustCompile("[^a-zA-Z0-9_-]+")
 )
 
-// Initialisms are the commonly used acronyms inside identifiers, that code linters want they to be in upper case
+// initialisms are the commonly used acronyms inside identifiers, that should be written upper case according to the
+// Go code style guide.
 var initialisms = []string{
 	// Got from https://github.com/golang/lint/blob/6edffad5e6160f5949cdefc81710b2706fbcd4f6/lint.go#L770
 	"Acl", "Api", "Ascii", "Cpu", "Css", "Dns", "Eof", "Guid", "Html", "Http", "Https", "Id", "Ip", "Json", "Lhs",
@@ -33,6 +35,11 @@ var initialisms = []string{
 }
 var initialismsTrie = ahocorasick.NewTrieBuilder().AddStrings(initialisms).Build()
 
+// ToGolangName converts any string to a valid Golang name. The exported argument determines if the result
+// should be the exported name (start with an uppercase letter) or not.
+//
+// This function removes the invalid characters from source string, converts it to camel case or pascal case,
+// makes initialisms uppercase, ensuring that the result doesn't conflict with Golang reserved keywords.
 func ToGolangName(rawString string, exported bool) string {
 	if rawString == "" {
 		return ""
@@ -63,9 +70,9 @@ func ToGolangName(rawString string, exported bool) string {
 	return str
 }
 
-// transformInitialisms transforms possible initialisms to upper case in a name in camel case or pascal case.
-func transformInitialisms(name string) string {
-	source := []byte(name)
+// transformInitialisms receives a string in camel case or pascal case and transforms all possible initialisms to upper case.
+func transformInitialisms(s string) string {
+	source := []byte(s)
 	res := make([]byte, len(source))
 
 	var last int64
@@ -102,14 +109,23 @@ func transformInitialisms(name string) string {
 	return string(res)
 }
 
+// JoinNonemptyStrings joins non-empty strings with a separator.
 func JoinNonemptyStrings(sep string, s ...string) string {
 	return strings.Join(lo.Compact(s), sep)
 }
 
+// ToGoFilePath converts any path-looking string to the valid path to Go source file path and returns it.
+//
+// If the path is empty, the function returns a constant file name.
+//
+// While converting, the function shortens the path by eliminating the dot parts, removes invalid characters from
+// every part, converting the rest to snake case.
+// If an item contains invalid characters only, it is replaced by hash string of the original string to make it non-empty.
+// The last part also will have ".go" file extension.
 func ToGoFilePath(pathString string) string {
 	if pathString == "" {
 		hsh := md5.New()
-		return "empty" + normalizePathItem(base32.StdEncoding.EncodeToString(hsh.Sum([]byte(pathString))))
+		return fmt.Sprintf("empty%s.go", normalizePathItem(base32.StdEncoding.EncodeToString(hsh.Sum([]byte(pathString)))))
 	}
 
 	directory, file := path.Split(path.Clean(pathString))
@@ -126,9 +142,13 @@ func ToGoFilePath(pathString string) string {
 	return path.Join(directory, normFile+".go")
 }
 
-func normalizePathItem(name string) string {
+// normalizePathItem converts a string to a valid path item.
+//
+// The function removes invalid characters from the string, converts it to snake case. If string contains the
+// invalid characters only, it is replaced by hash string of the original string to make it non-empty.
+func normalizePathItem(s string) string {
 	// Replace everything except alphanumerics to underscores
-	newString := string(fileNameReplaceRe.ReplaceAll([]byte(name), []byte("_")))
+	newString := string(fileNameReplaceRe.ReplaceAll([]byte(s), []byte("_")))
 
 	// Cut underscores that may appear at string endings
 	newString = strings.Trim(newString, "_")
@@ -137,12 +157,14 @@ func normalizePathItem(name string) string {
 	// In this case, the filename will be the md5 hash from original rawPath in base32 form
 	if newString == "" {
 		hsh := md5.New()
-		newString = "empty" + normalizePathItem(base32.StdEncoding.EncodeToString(hsh.Sum([]byte(name))))
+		newString = "empty" + normalizePathItem(base32.StdEncoding.EncodeToString(hsh.Sum([]byte(s))))
 	}
 
 	return lo.SnakeCase(newString)
 }
 
+// GetPackageName returns the last part of the directory path as a package name. If the directory is empty, the function
+// returns "main".
 func GetPackageName(directory string) string {
 	directory = path.Clean(directory)
 	_, pkgName := path.Split(directory)

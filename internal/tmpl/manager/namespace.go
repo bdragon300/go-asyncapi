@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"cmp"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/samber/lo"
@@ -8,50 +9,50 @@ import (
 	"strings"
 )
 
+// NamespaceManager manages the template namespace, that is used for conditional rendering functionality in the templates.
+// It keeps the rendered definitions of rendered Go types and names that was explicitly defined.
+// This functionality could remind the "preprocessor" in C/C++, but for Go templates.
 type NamespaceManager struct {
 	types               []NamespaceTypeItem
 	names               []string
 }
 
-func (s *NamespaceManager) DefineType(obj common.GolangType, renderManager *TemplateRenderManager, actual bool) {
-	found := lo.ContainsBy(s.types, func(def NamespaceTypeItem) bool {
-		return def.Object == obj && def.Actual == actual
+// DefineType adds the [common.GolangType] object's definition to the namespace, remembering the current file and package
+// from the render manager. The priority sets the definition priority for the same object -- the higher priority wins.
+func (s *NamespaceManager) DefineType(obj common.GolangType, renderManager *TemplateRenderManager, priority int) {
+	found := lo.ContainsBy(s.types, func(item NamespaceTypeItem) bool {
+		return item.Object == obj && item.Priority >= priority
 	})
 	if !found {
 		s.types = append(s.types, NamespaceTypeItem{
-			Object: obj,
-			Selection: renderManager.CurrentSelection,
-			Actual: actual,
-			FileName: renderManager.FileName,
+			Object:      obj,
+			Selection:   renderManager.CurrentSelection,
+			Priority:    priority,
+			FileName:    renderManager.FileName,
 			PackageName: renderManager.PackageName,
 		})
 	}
 }
 
+// DefineName adds the name to the namespace.
 func (s *NamespaceManager) DefineName(name string) {
 	if !lo.Contains(s.names, name) {
 		s.names = append(s.names, name)
 	}
 }
 
+// FindType searches for definition of the object in the namespace. The function returns the definition with the highest
+// priority, if found. Otherwise, returns false.
 func (s *NamespaceManager) FindType(obj common.GolangType) (NamespaceTypeItem, bool) {
 	found := lo.Filter(s.types, func(def NamespaceTypeItem, _ int) bool {
 		return def.Object == obj
 	})
-	// Return the "actual" definition first, if any
-	slices.SortFunc(found, func(a, b NamespaceTypeItem) int {
-		switch {
-		case a.Actual && !b.Actual:
-			return 1
-		case !a.Actual && b.Actual:
-			return -1
-		}
-		return 0
-	})
+	slices.SortFunc(found, func(a, b NamespaceTypeItem) int { return cmp.Compare(a.Priority, b.Priority)})
 
 	return lo.Last(found)
 }
 
+// IsNameDefined checks if the name is defined in the namespace.
 func (s *NamespaceManager) IsNameDefined(name string) bool {
 	return lo.Contains(s.names, name)
 }
@@ -75,7 +76,5 @@ type NamespaceTypeItem struct {
 	Selection common.ConfigSelectionItem
 	FileName string
 	PackageName string
-	// Actual is true when this definition is the actual definition of the object, and false when it is a deferred definition.
-	// E.g. defined by `def` template function
-	Actual bool
+	Priority int
 }

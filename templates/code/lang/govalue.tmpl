@@ -2,7 +2,8 @@
 
 {{define "code/lang/govalue/usage"}}
     {{- if .Type }}
-        {{- if .Type.IsPointer }}
+        {{- if .Type.CanBeDereferenced }}
+            {{- /* Type is a pointer */}}
             {{- if .Empty }}
                 {{- if .EmptyCurlyBrackets }}
                     {{- /* &{} -> ToPtr({}) */}}{{ goQualR "ToPtr"}}({})
@@ -12,33 +13,34 @@
             {{- else if .LiteralValue }}
                 {{- with innerType .Type }}
                     {{- /* &int(123) -> ToPtr(int(123)) */}}
-                    {{- goQualR "ToPtr"}}({{ . | goUsage }}({{template "code/lang/gotypealias/value_expr" .}}))
+                    {{- goQualR "ToPtr"}}({{ . | goUsage }}({{template "code/lang/gotypedefinition/value_expr" .}}))
                 {{- else }}
                     {{- /* &123 -> ToPtr(123) */}}
-                    {{- goQualR "ToPtr"}}({{template "code/lang/gotypealias/value_expr" .}})
+                    {{- goQualR "ToPtr"}}({{template "code/lang/gotypedefinition/value_expr" .}})
                 {{- end }}
             {{- else }}
                 {{- /* &AnyType{}; &map[string]int{}; &[]int{} */}}&{{- .Type | goUsage }}
                 {{- if .LiteralValue }}
-                    {{- /* int(123) */}}({{template "code/lang/gotypealias/value_expr" .}})
+                    {{- /* int(123) */}}({{template "code/lang/gotypedefinition/value_expr" .}})
                 {{- else }}
-                    {{- template "code/lang/gotypealias/value_expr" . }}
+                    {{- template "code/lang/gotypedefinition/value_expr" . }}
                 {{- end }}
             {{- end }}
         {{- else }}
+            {{- /* Type isn't a pointer */}}
             {{- .Type | goUsage }}
             {{- if .LiteralValue }}
-                {{- /* int(123) */}}({{template "code/lang/gotypealias/value_expr" .}})
+                {{- /* int(123) */}}({{template "code/lang/gotypedefinition/value_expr" .}})
             {{- else }}
-                {{- template "code/lang/gotypealias/value_expr" . }}
+                {{- template "code/lang/gotypedefinition/value_expr" . }}
             {{- end }}
         {{- end }}
     {{- else }}
-        {{- template "code/lang/gotypealias/value_expr" .}}
+        {{- template "code/lang/gotypedefinition/value_expr" .}}
     {{- end }}
 {{- end}}
 
-{{define "code/lang/gotypealias/value_expr"}}
+{{define "code/lang/gotypedefinition/value_expr"}}
     {{- if .LiteralValue }}
         {{- /* Literal */}}{{  .LiteralValue | goLit }}
     {{- else if .MapValues.Len }}

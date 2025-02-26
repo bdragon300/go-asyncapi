@@ -1,4 +1,4 @@
-package resolver
+package locator
 
 import (
 	"bytes"
@@ -9,34 +9,43 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/bdragon300/go-asyncapi/internal/log"
-	"github.com/bdragon300/go-asyncapi/internal/specurl"
 )
 
-const subprocessGracefulShutdownTimeout = 3 * time.Second
-
-// SubprocessSpecFileResolver is the resolver based on user-defined command. Both local and remote specs are resolved
-// by running this command as subprocess, which read specPath from stdin and write spec content to stdout.
-type SubprocessSpecFileResolver struct {
+// Subprocess locator reads the document contents from the shell command output.
+//
+// The locator runs the command specified in the CommandLine field and passes the document url as the first line of the
+// command's stdin, and expects the document contents from the command's stdout. After that the command should exit.
+type Subprocess struct {
+	// CommandLine is the command line to run.
 	CommandLine string
-	RunTimeout  time.Duration
-	Logger      *log.Logger
+	// If set, RunTimeout is the maximum time the command is allowed to run. If the command didn't finish within timeout,
+	// it receives a SIGTERM signal and the ShutdownTimeout start to tick. If shutdown timeout is reached and the
+	// command still runs, the command is killed with a SIGKILL signal.
+	RunTimeout time.Duration
+	// If set, ShutdownTimeout is the time to wait for the command to finish after the SIGTERM signal is sent before
+	// killing it with a SIGKILL signal.
+	ShutdownTimeout time.Duration
+	Logger          *log.Logger
 }
 
-type subprocessSpecCommand struct {
+type subprocessCommand struct {
 	command *exec.Cmd
 	stdin   io.ReadWriter
 	stdout  io.ReadWriter
 	stderr  io.ReadWriter
 }
 
-func (r SubprocessSpecFileResolver) Resolve(specPath *specurl.URL) (io.ReadCloser, error) {
+// Locate reads the given document URI by running the command specified in the CommandLine field. Function blocks
+// until the command finishes or terminates. Returns an io.ReadCloser to the command output contents.
+func (r Subprocess) Locate(docURL *jsonpointer.JSONPointer) (io.ReadCloser, error) {
 	r.Logger.Info(
-		"Resolving spec by command",
-		"specPath", specPath,
+		"Run the command",
+		"document", docURL,
 		"commandLine", r.CommandLine,
-		"timeout", r.RunTimeout,
-		"gracefulShutdownTimeout", subprocessGracefulShutdownTimeout,
+		"runTimeout", r.RunTimeout,
+		"shutdownTimeout", r.ShutdownTimeout,
 	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), r.RunTimeout)
@@ -46,11 +55,11 @@ func (r SubprocessSpecFileResolver) Resolve(specPath *specurl.URL) (io.ReadClose
 	if err != nil {
 		return nil, fmt.Errorf("get command: %w", err)
 	}
-	r.Logger.Debug("Run command", "cmd", cmd.command, "stdinData", specPath.SpecID)
+	r.Logger.Debug("Run command", "cmd", cmd.command, "stdinData", docURL.Location())
 	if err = cmd.command.Start(); err != nil {
 		return nil, fmt.Errorf("start command: %w", err)
 	}
-	if _, err = fmt.Fprintln(cmd.stdin, specPath.SpecID); err != nil {
+	if _, err = fmt.Fprintln(cmd.stdin, docURL.Location()); err != nil {
 		return nil, fmt.Errorf("write to stdin: %w", err)
 	}
 
@@ -62,8 +71,8 @@ func (r SubprocessSpecFileResolver) Resolve(specPath *specurl.URL) (io.ReadClose
 	return io.NopCloser(cmd.stdout), nil
 }
 
-func (r SubprocessSpecFileResolver) getCommand(ctx context.Context) (subprocessSpecCommand, error) {
-	res := subprocessSpecCommand{
+func (r Subprocess) getCommand(ctx context.Context) (subprocessCommand, error) {
+	res := subprocessCommand{
 		stdin:  bytes.NewBuffer(make([]byte, 0)),
 		stdout: bytes.NewBuffer(make([]byte, 0)),
 		stderr: os.Stderr,
@@ -78,12 +87,12 @@ func (r SubprocessSpecFileResolver) getCommand(ctx context.Context) (subprocessS
 	res.command.Stdout = res.stdout
 	res.command.Stdin = res.stdin
 	res.command.Stderr = res.stderr
-	res.command.WaitDelay = subprocessGracefulShutdownTimeout
+	res.command.WaitDelay = r.ShutdownTimeout
 
 	return res, nil
 }
 
-// parseCommandLine splits the raw command line string into arguments
+// parseCommandLine splits the raw shell command line string into arguments
 func parseCommandLine(commandLine string) []string {
 	var args []string
 	var arg string

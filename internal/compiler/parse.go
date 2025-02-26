@@ -4,15 +4,15 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
 )
 
-type SpecKind string
+type DocumentKind string
 
 const (
-	SpecKindAsyncapi   SpecKind = "asyncapi"
-	SpecKindJsonschema SpecKind = "jsonschema"
-	SpecKindOpenapi    SpecKind = "openapi"
+	DocumentKindAsyncapi   DocumentKind = "asyncapi"
+	DocumentKindJsonschema DocumentKind = "jsonschema"
+	DocumentKindOpenapi    DocumentKind = "openapi"
 )
 
-type specTypeTest struct {
+type documentFormatTester struct {
 	Asyncapi string `json:"asyncapi" yaml:"asyncapi"`
 	Openapi  string `json:"openapi" yaml:"openapi"`
 }
@@ -21,15 +21,16 @@ type anyDecoder interface {
 	Decode(v any) error
 }
 
-func guessSpecKind(decoder anyDecoder) (SpecKind, compiledObject, error) {
-	test := specTypeTest{}
+// guessDocumentKind tries to guess the document kind by its contents.
+func guessDocumentKind(decoder anyDecoder) (DocumentKind, compiledObject, error) {
+	test := documentFormatTester{}
 
 	if err := decoder.Decode(&test); err != nil {
 		return "", nil, err
 	}
 	switch {
 	case test.Asyncapi != "":
-		return SpecKindAsyncapi, &asyncapi.AsyncAPI{}, nil
+		return DocumentKindAsyncapi, &asyncapi.AsyncAPI{}, nil
 	case test.Openapi != "":
 		panic("openapi not implemented") // TODO
 	}

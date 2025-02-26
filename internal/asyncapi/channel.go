@@ -72,7 +72,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 	} else {
 		ctx.Logger.Trace("Channel for all servers")
 	}
-	prm := lang.NewListCbPromise[common.Renderable](func(item common.CompileObject, path []string) bool {
+	prm := lang.NewListCbPromise[common.Renderable](func(item common.CompileArtifact, path []string) bool {
 		if len(path) < 2 || len(path) >= 2 && path[0] != "servers" {
 			return false
 		}
@@ -119,7 +119,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 	}
 
 	// All known Operations
-	prmOp := lang.NewListCbPromise[common.Renderable](func(item common.CompileObject, path []string) bool {
+	prmOp := lang.NewListCbPromise[common.Renderable](func(item common.CompileArtifact, path []string) bool {
 		if len(path) < 2 || len(path) >= 2 && path[0] != "operations" {
 			return false
 		}

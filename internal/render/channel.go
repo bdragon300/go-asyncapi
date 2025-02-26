@@ -11,54 +11,75 @@ import (
 	"github.com/samber/lo"
 )
 
+// Channel represents the channel object.
 type Channel struct {
-	OriginalName string // Channel name, typically equals to Channel key, can get overridden in x-go-name
-	Address      string
-	Dummy        bool
-	IsSelectable bool // true if channel should get to selections
-	IsPublisher  bool
+	// OriginalName is the name of the channel as it was defined in the AsyncAPI document.
+	OriginalName string
+	// Address is channel address raw value.
+	Address string
+
+	// Dummy is true when channel is ignored (x-ignore: true)
+	Dummy bool
+	// IsSelectable is true if channel should get to selections
+	IsSelectable bool
+	// IsPublisher is true if the generation of publisher code is enabled
+	IsPublisher bool
+	// IsSubscriber is true if the generation of subscriber code is enabled
 	IsSubscriber bool
 
-	ServersPromises         []*lang.Promise[*Server] // Servers that this channel is bound with. Empty list means "no servers bound".
+	// ServersPromises is a list of servers that this channel is bound with. Empty if no servers are set.
+	ServersPromises []*lang.Promise[*Server]
+	// AllActiveServersPromise contains all active servers in the document. It is used when servers field is not set
+	// for the channel, which means that the channel is bound to all active servers.
 	AllActiveServersPromise *lang.ListPromise[common.Renderable]
 
-	ParametersPromises []*lang.Ref    // nil if no parameters
-	ParametersType     *lang.GoStruct // nil if no parameters
+	// ParametersPromises is a list of refs to channel parameters.
+	ParametersPromises []*lang.Ref
+	// ParametersType is a Go struct for channel parameters. Nil if no parameters are set.
+	ParametersType *lang.GoStruct
 
+	// MessagesRefs is a list of messages listed in the channel definition in document.
 	MessagesRefs []*lang.Ref
 
-	// All operations we know about for further selecting ones that are bound to this channel
-	// We can't collect here just the operations already bound with this channel, because the channel in operation
-	// is also a promise, and the order of promises resolving is not guaranteed. So we just collect all operations
-	// and then filter them by the channel on render stage.
+	// AllActiveOperationsPromise contains all active operations in the document.
+	//
+	// On compiling stage we don't know which operations are bound to a particular channel.
+	// So we just collect all operations to this field and postpone filtering them until the rendering stage.
+	//
+	// We could use a promise callback to filter operations by channel, but the channel in operation is also a promise,
+	// and the order of promises resolving is not guaranteed.
 	AllActiveOperationsPromise *lang.ListPromise[common.Renderable]
 
-	BindingsType    *lang.GoStruct           // nil if no bindings are set for channel at all
-	BindingsPromise *lang.Promise[*Bindings] // nil if channel bindings are not set
+	// BindingsType is a Go struct for channel bindings. Nil if no bindings are set.
+	BindingsType *lang.GoStruct
+	// BindingsPromise is a promise to channel bindings contents. Nil if no bindings are set.
+	BindingsPromise *lang.Promise[*Bindings]
 
-	ProtoChannels []*ProtoChannel // Proto channels for each supported protocol
+	// ProtoChannels is a list of prebuilt ProtoChannel objects for each supported protocol
+	ProtoChannels []*ProtoChannel
 }
 
-func (c *Channel) Kind() common.ObjectKind {
-	return common.ObjectKindChannel
+// Parameters returns a list of [lang.Ref] to Parameter.
+func (c *Channel) Parameters() []common.Renderable {
+	r := lo.Map(c.ParametersPromises, func(prm *lang.Ref, _ int) common.Renderable { return prm })
+	return r
 }
 
-func (c *Channel) Selectable() bool {
-	return !c.Dummy && c.IsSelectable // Select only the channels defined in the `channels` section
+// Messages returns a list of [lang.Ref] to Message.
+func (c *Channel) Messages() []common.Renderable {
+	return lo.Map(c.MessagesRefs, func(prm *lang.Ref, _ int) common.Renderable { return prm })
 }
 
-func (c *Channel) Visible() bool {
-	return !c.Dummy
+// Bindings returns the [Bindings] object or nil if no bindings are set.
+func (c *Channel) Bindings() *Bindings {
+	if c.BindingsPromise != nil {
+		return c.BindingsPromise.T()
+	}
+	return nil
 }
 
-func (c *Channel) Name() string {
-	return c.OriginalName
-}
-
-func (c *Channel) String() string {
-	return "Channel " + c.OriginalName
-}
-
+// SelectProtoObject returns a selectable ProtoChannel object for the given protocol or nil if not found or if
+// ProtoChannel is not selectable.
 func (c *Channel) SelectProtoObject(protocol string) common.Renderable {
 	res := lo.Filter(c.ProtoChannels, func(p *ProtoChannel, _ int) bool {
 		return p.Selectable() && p.Protocol == protocol
@@ -69,6 +90,7 @@ func (c *Channel) SelectProtoObject(protocol string) common.Renderable {
 	return nil
 }
 
+// BoundServers returns a list of Server or lang.Ref to Server objects that this channel is bound with.
 func (c *Channel) BoundServers() []common.Renderable {
 	if c.Dummy {
 		return nil
@@ -86,6 +108,7 @@ func (c *Channel) BoundServers() []common.Renderable {
 	return res
 }
 
+// BoundMessages returns a list of Message or lang.Ref to Message objects that this channel is bound with.
 func (c *Channel) BoundMessages() []common.Renderable {
 	ops := c.BoundOperations()
 	opMsgs := lo.FlatMap(ops, func(o common.Renderable, _ int) []common.Renderable {
@@ -96,6 +119,7 @@ func (c *Channel) BoundMessages() []common.Renderable {
 	return r
 }
 
+// BoundOperations returns a list of Operation or lang.Ref to Operation objects that this channel is bound with.
 func (c *Channel) BoundOperations() []common.Renderable {
 	if c.Dummy {
 		return nil
@@ -109,13 +133,7 @@ func (c *Channel) BoundOperations() []common.Renderable {
 	return r
 }
 
-func (c *Channel) Bindings() *Bindings {
-	if c.BindingsPromise != nil {
-		return c.BindingsPromise.T()
-	}
-	return nil
-}
-
+// BindingsProtocols returns a list of protocols that have bindings defined for this channel.
 func (c *Channel) BindingsProtocols() (res []string) {
 	if c.BindingsType == nil {
 		return nil
@@ -127,9 +145,12 @@ func (c *Channel) BindingsProtocols() (res []string) {
 	return lo.Uniq(res)
 }
 
+// ProtoBindingsValue returns the struct initialization [lang.GoValue] of BindingsType for the given protocol.
+// The returned value contains all constant bindings values defined in document for the protocol.
+// If no bindings are set for the protocol, returns an empty [lang.GoValue].
 func (c *Channel) ProtoBindingsValue(protoName string) common.Renderable {
 	res := &lang.GoValue{
-		Type:               &lang.GoSimple{TypeName: "ChannelBindings", Import: protoName, RuntimeImport: true},
+		Type:               &lang.GoSimple{TypeName: "ChannelBindings", Import: protoName, IsRuntimeImport: true},
 		EmptyCurlyBrackets: true,
 	}
 	if c.BindingsPromise != nil {
@@ -140,19 +161,30 @@ func (c *Channel) ProtoBindingsValue(protoName string) common.Renderable {
 	return res
 }
 
-func (c *Channel) Parameters() []common.Renderable {
-	r := lo.Map(c.ParametersPromises, func(prm *lang.Ref, _ int) common.Renderable { return prm })
-	return r
+func (c *Channel) Name() string {
+	return c.OriginalName
 }
 
-func (c *Channel) Messages() []common.Renderable {
-	return lo.Map(c.MessagesRefs, func(prm *lang.Ref, _ int) common.Renderable { return prm })
+func (c *Channel) Kind() common.ObjectKind {
+	return common.ObjectKindChannel
+}
+
+func (c *Channel) Selectable() bool {
+	return !c.Dummy && c.IsSelectable // Select only the channels defined in the `channels` section
+}
+
+func (c *Channel) Visible() bool {
+	return !c.Dummy
+}
+
+func (c *Channel) String() string {
+	return "Channel " + c.OriginalName
 }
 
 type ProtoChannel struct {
 	*Channel
-	Type *lang.GoStruct
-
+	// Type is a protocol-specific channel's Go struct
+	Type     *lang.GoStruct
 	Protocol string
 }
 

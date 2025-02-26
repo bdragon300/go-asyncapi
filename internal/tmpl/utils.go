@@ -1,7 +1,6 @@
 package tmpl
 
 import (
-	"fmt"
 	"github.com/samber/lo"
 	"net/url"
 	"path"
@@ -9,12 +8,31 @@ import (
 	"strings"
 )
 
-func unescapeCorrelationIDPathItem(value string) (any, error) {
+// unescapeJSONPointerFragmentPart unescapes a path item in JSON Pointer. Returns the unescaped string if it is a string,
+// or int if it is a number.
+//
+// JSON Pointer path part is encoded according the [RFC3986 Section 2] and [RFC6901 Section 3]. This function decodes
+// the path part according to these specifications.
+//
+// Additionally, a number part can explicitly be quoted (double or single quotes) to force interpret them as a string.
+// It helps to specify if this part addresses an array index or a numeric object key.
+// For examples below, this function returns "123" as a string:
+//
+//  https://example.com/resource#/foo/"123"/bar
+//  https://example.com/resource#/foo/'123'/bar
+//
+// Such quoting is *not recommended* as the common practice because it does not comply with the JSON Pointer specification,
+// but may be used as a workaround for some rare cases.
+//
+// [RFC6901 Section 3]: https://tools.ietf.org/html/rfc6901#section-3)
+// [RFC3986 Section 2]: https://tools.ietf.org/html/rfc3986#section-2
+func unescapeJSONPointerFragmentPart(value string) (any, error) {
+	// Number path items are treated as integers
 	if v, err := strconv.Atoi(value); err == nil {
-		return v, nil // Number path items are treated as integers
+		return v, nil
 	}
 
-	// Unquote path item if it is quoted. Quoted forces a path item to be treated as a string, not number.
+	// Unquote quoted numbers, which forces them to be treated as a string, not as a number.
 	quoted := strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"") ||
 		strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'")
 	if quoted {
@@ -72,30 +90,4 @@ func qualifiedToImport(exprParts []string) (pkgPath string, pkgName string, name
 		pkgName = pkgPath[pos+1:]
 	}
 	return
-}
-
-func toGoLiteral(val any) string {
-	var res string
-	switch val.(type) {
-	case bool, string, int, complex128:
-		// default constant types can be left bare
-		return fmt.Sprintf("%#v", val)
-	case float64:
-		res = fmt.Sprintf("%#v", val)
-		if !strings.Contains(res, ".") && !strings.Contains(res, "e") {
-			// If the formatted value is not in scientific notation, and does not have a dot, then
-			// we add ".0". Otherwise, it will be interpreted as an int.
-			// See: https://github.com/golang/go/issues/26363
-			res += ".0"
-		}
-		return res
-	case float32, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr:
-		// other built-in types need specific type info
-		return fmt.Sprintf("%T(%#v)", val, val)
-	case complex64:
-		// fmt package already renders parenthesis for complex64
-		return fmt.Sprintf("%T%#v", val, val)
-	}
-
-	panic(fmt.Sprintf("unsupported type for literal: %T", val))
 }

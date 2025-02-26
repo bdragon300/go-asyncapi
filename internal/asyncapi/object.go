@@ -136,6 +136,7 @@ func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]str
 	return golangType, nil
 }
 
+// getTypeName returns the jsonschema type name of the object. It also returns whether the object is nullable.
 func (o Object) getTypeName(ctx *common.CompileContext) (typeName string, nullable bool, err error) {
 	schemaType := o.Type
 	typeName = schemaType.V0
@@ -219,14 +220,14 @@ func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.Sch
 	if aliasedType != nil {
 		_, isComponent := flags[common.SchemaTagComponent]
 		_, hasDefinition := flags[common.SchemaTagDefinition]
-		golangType = &lang.GoTypeAlias{
+		golangType = &lang.GoTypeDefinition{
 			BaseType: lang.BaseType{
 				OriginalName:  ctx.GenerateObjName(o.Title, ""),
 				Description:   o.Description,
 				HasDefinition: hasDefinition,
 				ObjectKind:    lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
 			},
-			AliasedType: aliasedType,
+			RedefinedType: aliasedType,
 		}
 	}
 
@@ -263,10 +264,10 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 	// TODO: cache the object name in case any sub-schemas recursively reference it
 
 	var contentTypesFunc func() []string
-	_, isMarshal := flags[common.SchemaTagMarshal]
-	if isMarshal {
-		ctx.Logger.Trace("Object struct is marshalable")
-		messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.CompileObject, _ []string) bool {
+	_, isDataModel := flags[common.SchemaTagDataModel]
+	if isDataModel {
+		ctx.Logger.Trace("Object struct is data model")
+		messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.CompileArtifact, _ []string) bool {
 			_, ok := item.Renderable.(*render.Message)
 			return ok
 		}, nil)
@@ -345,13 +346,13 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 		case 1:
 			ctx.Logger.Trace("Object additional properties", "type", "boolean")
 			if o.AdditionalProperties.V1 { // "additionalProperties: true" -- allow any additional properties
-				valTyp := lang.GoTypeAlias{
+				valTyp := lang.GoTypeDefinition{
 					BaseType: lang.BaseType{
 						OriginalName:  ctx.GenerateObjName(propName, "AdditionalPropertiesValue"),
 						Description:   "",
 						HasDefinition: false,
 					},
-					AliasedType: &lang.GoSimple{TypeName: "any", IsInterface: true},
+					RedefinedType: &lang.GoSimple{TypeName: "any", IsInterface: true},
 				}
 				f := lang.GoStructField{
 					Name: "AdditionalProperties",
@@ -397,13 +398,13 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 		res.ItemsType = prm
 	case o.Items == nil || o.Items.Selector == 1: // No items or Several types for each item sequentially
 		ctx.Logger.Trace("Object items", "typesCount", "zero or several")
-		valTyp := lang.GoTypeAlias{
+		valTyp := lang.GoTypeDefinition{
 			BaseType: lang.BaseType{
 				OriginalName:  ctx.GenerateObjName(objName, "ItemsItemValue"),
 				Description:   "",
 				HasDefinition: false,
 			},
-			AliasedType: &lang.GoSimple{TypeName: "any", IsInterface: true},
+			RedefinedType: &lang.GoSimple{TypeName: "any", IsInterface: true},
 		}
 		res.ItemsType = &lang.GoMap{
 			BaseType: lang.BaseType{
@@ -435,7 +436,7 @@ func (o Object) buildUnionStruct(ctx *common.CompileContext, flags map[common.Sc
 	}
 
 	// Collect all messages to retrieve struct field tags
-	messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.CompileObject, _ []string) bool {
+	messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.CompileArtifact, _ []string) bool {
 		_, ok := item.Renderable.(*render.Message)
 		return ok
 	}, nil)
@@ -463,6 +464,7 @@ func (o Object) buildUnionStruct(ctx *common.CompileContext, flags map[common.Sc
 	return &res, nil
 }
 
+// xGoTagsInfo returns the x-go-tags and x-go-tags-values from the object.
 func (o Object) xGoTagsInfo(ctx *common.CompileContext) (xTags types.OrderedMap[string, string], xTagNames []string, xTagValues []string) {
 	if o.XGoTags != nil {
 		switch o.XGoTags.Selector {

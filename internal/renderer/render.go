@@ -1,3 +1,23 @@
+// Package renderer contains the rendering stage logic.
+//
+// Function in this package (renderers) take the artifacts queue and implementations, pass them to the
+// templates and produce the final output contents.
+//
+// Renderer functions rely on the manager.TemplateRenderManager. This
+// is an assistant object that keeps the files state consistent (including the imports, namespace, etc.) and accumulates
+// their rendered content. See TemplateRenderManager docs for more information.
+//
+// Roughly, the rendering process looks like this:
+//
+//  1. Before the rendering, the caller builds the objects queue by applying the config "selections" to the
+//     artifacts in compiled documents. Also, it loads the templates.
+//  2. The caller calls the renderer, passing the queue, implementations, and manager.TemplateRenderManager and
+//     the options.
+//  3. The renderer function iterates over the queue, invokes the templates, and commits the results to the rendering manager.
+//  4. In the same way, the caller may additionally run other renderers, for example, to attach some output to the result.
+//  3. Calling the FinishFiles extracts the output from the render manager, postprocesses it, and returns the file's content.
+//
+// Thus, after the FinishFiles is called, the renderer stage is considered finished.
 package renderer
 
 import (
@@ -15,6 +35,8 @@ import (
 	"github.com/samber/lo"
 )
 
+// FinishFiles extracts file's content from TemplateRenderManager, filters out the empty files, renders the preamble
+// before each *.go file. Function returns the finished content buffers for all files.
 func FinishFiles(mng *manager.TemplateRenderManager) (map[string]*bytes.Buffer, error) {
 	states := mng.CommittedStates()
 
@@ -32,11 +54,14 @@ func FinishFiles(mng *manager.TemplateRenderManager) (map[string]*bytes.Buffer, 
 	for _, fileName := range keys {
 		state := states[fileName]
 		logger.Debug("Render file", "file", fileName, "package", state.PackageName, "imports", state.Imports.String())
+		// Skip empty buffers. Spaces and tabs are not considered as a content.
 		if !bytes.ContainsFunc(state.Buffer.Bytes(), unicode.IsLetter) {
 			logger.Debug("-> Skip empty file", "file", fileName)
 			continue
 		}
+
 		b := new(bytes.Buffer)
+		// Prepend the content with preamble if it's a Go file.
 		if strings.HasSuffix(fileName, ".go") {
 			logger.Debug("-> Render preamble", "file", fileName)
 			b, err = renderPreambleTemplate(tpl, mng.RenderOpts, state)
@@ -53,6 +78,8 @@ func FinishFiles(mng *manager.TemplateRenderManager) (map[string]*bytes.Buffer, 
 	return res, nil
 }
 
+// renderObjectInlineTemplate renders a small template snippet, passing the object, CodeTemplateContext and all
+// standard template functions. The result puts to the given template manager.
 func renderObjectInlineTemplate(item RenderQueueItem, text string, mng *manager.TemplateRenderManager) (string, error) {
 	tplCtx := &tmpl.CodeTemplateContext{
 		RenderOpts:       mng.RenderOpts,
@@ -65,6 +92,8 @@ func renderObjectInlineTemplate(item RenderQueueItem, text string, mng *manager.
 	return renderInlineTemplate(text, tplCtx, mng)
 }
 
+// renderInlineTemplate renders a small template snippet, with any context and with standard template functions.
+// The result puts to the given template manager.
 func renderInlineTemplate(text string, tplCtx any, renderManager *manager.TemplateRenderManager) (string, error) {
 	var res bytes.Buffer
 	tpl, err := template.New("").Funcs(tmpl.GetTemplateFunctions(renderManager)).Parse(text)

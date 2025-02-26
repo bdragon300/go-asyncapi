@@ -11,7 +11,7 @@ import (
 	"github.com/samber/lo"
 )
 
-// FormatFiles formats the files in-place in the map using gofmt
+// FormatFiles formats the file buffers in-place applying go fmt.
 func FormatFiles(files map[string]*bytes.Buffer) error {
 	logger := log.GetLogger(log.LoggerPrefixFormatting)
 

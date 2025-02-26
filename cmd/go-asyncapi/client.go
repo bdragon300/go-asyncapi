@@ -24,7 +24,7 @@ const (
 )
 
 type ClientCmd struct {
-	Spec string `arg:"required,positional" help:"AsyncAPI document file or url" placeholder:"FILE"`
+	Document string `arg:"required,positional" help:"AsyncAPI document file or url" placeholder:"FILE"`
 
 	ConfigFile       string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"FILE"`
 	OutputExecFile   string `arg:"-o,--output" help:"Executable output file name" placeholder:"FILE"`
@@ -36,11 +36,11 @@ type ClientCmd struct {
 	PreambleTemplate string `arg:"--preamble-template" help:"Preamble template name" placeholder:"NAME"`
 	GoModTemplate    string `arg:"--go-mod-template" help:"Custom go.mod template name" placeholder:"NAME"`
 
-	RuntimeModule     string        `arg:"--runtime-module" help:"Runtime module name" placeholder:"MODULE"`
-	AllowRemoteRefs   bool          `arg:"--allow-remote-refs" help:"Allow resolver to fetch the files from remote $ref URLs"`
-	ResolverSearchDir string        `arg:"--resolver-search-dir" help:"Directory to search the local spec files for [default: current working directory]" placeholder:"DIR"`
-	ResolverTimeout   time.Duration `arg:"--resolver-timeout" help:"Timeout for resolver to resolve a spec file, e.g. 30s, 2m, etc." placeholder:"DURATION"`
-	ResolverCommand   string        `arg:"--resolver-command" help:"Custom resolver executable to use instead of built-in resolver" placeholder:"EXECUTABLE"`
+	RuntimeModule    string        `arg:"--runtime-module" help:"Runtime module name" placeholder:"MODULE"`
+	AllowRemoteRefs  bool          `arg:"--allow-remote-refs" help:"Allow locator to fetch the files from remote $ref URLs"`
+	LocatorSearchDir string        `arg:"--locator-search-dir" help:"Directory to search the documents for [default: current working directory]" placeholder:"PATH"`
+	LocatorTimeout   time.Duration `arg:"--locator-timeout" help:"Timeout for locator to read a document. Format: 30s, 2m, etc." placeholder:"DURATION"`
+	LocatorCommand   string        `arg:"--locator-command" help:"Custom locator command to use instead of built-in locator" placeholder:"COMMAND"`
 }
 
 func cliClient(cmd *ClientCmd, globalConfig toolConfig) error {
@@ -65,26 +65,26 @@ func cliClient(cmd *ClientCmd, globalConfig toolConfig) error {
 	}
 	logger.Debug("Generated code location", "directory", targetDir)
 
+	// Generate the client code
 	logger.Debug("Generate the client code", "targetDir", targetDir, "module", projectModule)
 	generateCmd := &CodeCmd{
-		TargetDir:         targetDir,
-		Spec:              cmd.Spec,
-		ProjectModule:     projectModule,
-		RuntimeModule:     cmdConfig.RuntimeModule,
-		TemplateDir:       cmdConfig.Code.TemplatesDir,
-		PreambleTemplate:  cmdConfig.Code.PreambleTemplate,
-		AllowRemoteRefs:   cmdConfig.Resolver.AllowRemoteReferences,
-		ResolverSearchDir: cmdConfig.Resolver.SearchDirectory,
-		ResolverTimeout:   cmdConfig.Resolver.Timeout,
-		ResolverCommand:   cmdConfig.Resolver.Command,
-		ClientApp:         true,
-		goModTemplate:     cmdConfig.Client.GoModTemplate,
+		TargetDir:        targetDir,
+		Document:         cmd.Document,
+		ProjectModule:    projectModule,
+		RuntimeModule:    cmdConfig.RuntimeModule,
+		TemplateDir:      cmdConfig.Code.TemplatesDir,
+		PreambleTemplate: cmdConfig.Code.PreambleTemplate,
+		AllowRemoteRefs:  cmdConfig.Locator.AllowRemoteReferences,
+		LocatorSearchDir: cmdConfig.Locator.SearchDirectory,
+		LocatorTimeout:   cmdConfig.Locator.Timeout,
+		LocatorCommand:   cmdConfig.Locator.Command,
+		ClientApp:        true,
+		goModTemplate:    cmdConfig.Client.GoModTemplate,
 	}
 	if err := cliCode(generateCmd, cmdConfig); err != nil {
 		return fmt.Errorf("generate client code: %w", err)
 	}
 
-	sourceFile := path.Join(targetDir, cmdConfig.Client.OutputSourceFile)
 	outputFile := cmdConfig.Client.OutputFile
 	if outputFile == "" {
 		outputFile = "client"
@@ -94,10 +94,13 @@ func cliClient(cmd *ClientCmd, globalConfig toolConfig) error {
 	}
 	absoluteOutputFile, err := filepath.Abs(outputFile)
 	if err != nil {
-		return fmt.Errorf("resolve output file path: %w", err)
+		return fmt.Errorf("output file path: %w", err)
 	}
+
+	// Run Go build
+	sourceFile := path.Join(targetDir, cmdConfig.Client.OutputSourceFile)
 	logger.Debug("Compile the executable", "sourceFile", sourceFile, "outputFile", absoluteOutputFile)
-	err = compileClientApp(sourceFile, absoluteOutputFile)
+	err = runGoBuild(sourceFile, absoluteOutputFile)
 	switch {
 	case errors.Is(err, exec.ErrNotFound):
 		logger.Error(
@@ -114,7 +117,7 @@ func cliClient(cmd *ClientCmd, globalConfig toolConfig) error {
 	return nil
 }
 
-func compileClientApp(sourceFile, outputFile string) error {
+func runGoBuild(sourceFile, outputFile string) error {
 	logger := log.GetLogger("")
 	toolchainPath, err := exec.LookPath(toolchainCommand)
 	if err != nil {
@@ -162,10 +165,10 @@ func cliClientMergeConfig(globalConfig toolConfig, cmd *ClientCmd) toolConfig {
 	res.Code.PreambleTemplate = coalesce(cmd.PreambleTemplate, globalConfig.Code.PreambleTemplate)
 
 	res.RuntimeModule = coalesce(cmd.RuntimeModule, globalConfig.RuntimeModule)
-	res.Resolver.AllowRemoteReferences = coalesce(cmd.AllowRemoteRefs, globalConfig.Resolver.AllowRemoteReferences)
-	res.Resolver.SearchDirectory = coalesce(cmd.ResolverSearchDir, globalConfig.Resolver.SearchDirectory)
-	res.Resolver.Timeout = coalesce(cmd.ResolverTimeout, globalConfig.Resolver.Timeout)
-	res.Resolver.Command = coalesce(cmd.ResolverCommand, globalConfig.Resolver.Command)
+	res.Locator.AllowRemoteReferences = coalesce(cmd.AllowRemoteRefs, globalConfig.Locator.AllowRemoteReferences)
+	res.Locator.SearchDirectory = coalesce(cmd.LocatorSearchDir, globalConfig.Locator.SearchDirectory)
+	res.Locator.Timeout = coalesce(cmd.LocatorTimeout, globalConfig.Locator.Timeout)
+	res.Locator.Command = coalesce(cmd.LocatorCommand, globalConfig.Locator.Command)
 
 	return res
 }

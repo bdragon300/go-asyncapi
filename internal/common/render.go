@@ -18,32 +18,37 @@ const (
 	ObjectKindAsyncAPI = "asyncapi"
 )
 
+// Renderable is an interface that any compilation artifact matches.
 type Renderable interface { // TODO: rename
+	// Name returns the name of the object as it was defined in the AsyncAPI document. This method is suitable
+	// for rendering the object through a ref. So we can render the object under ref's Name, which is necessary,
+	// for example, for rendering servers, channels, etc.
+	Name() string
 	Kind() ObjectKind
 	// Selectable returns true if object can be picked for selections to invoke the template. If false, the object
 	// does not get to selections but still can be indirectly rendered inside the templates.
 	Selectable() bool
-	// Visible returns true if object contents is visible in rendered result.
+	// Visible returns true if object contents is visible in rendered code.
 	Visible() bool
 	// String is just a string representation of the object for logging and debugging purposes.
 	String() string
-	// Name returns the name of the object as it was defined in the AsyncAPI document. Suitable if we render
-	// the object through a promise -- object's name should be taken from the promise, which is also is Renderable.
-	Name() string
 }
 
 type renderableWrapper interface {
 	UnwrapRenderable() Renderable
 }
 
-// TODO: detect ref loops to avoid infinite recursion
+// DerefRenderable unwraps and the underlying object if it was wrapped in a promise or another wrapper.
 func DerefRenderable(obj Renderable) Renderable {
+	// TODO: detect ref loops to avoid infinite recursion
 	if w, ok := obj.(renderableWrapper); ok {
 		return w.UnwrapRenderable()
 	}
 	return obj
 }
 
+// CheckSameRenderables checks if two Renderables are eventually the same object. It extracts the object from the
+// promises and wrappers if necessary.
 func CheckSameRenderables(a, b Renderable) bool {
 	return DerefRenderable(a) == DerefRenderable(b)
 }

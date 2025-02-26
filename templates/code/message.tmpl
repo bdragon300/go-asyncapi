@@ -19,8 +19,6 @@
     {{- end}}
 {{- end }}
 
-{{- $headersType := coalesce .HeadersType .HeadersFallbackType}}
-
 {{- if and (ndefined .OutType) .IsPublisher }}
 {{.OutType| goDef}}
 
@@ -29,7 +27,7 @@ func (m *{{ .OutType | goIDUpper }}) WithPayload(payload {{.PayloadType | goUsag
     return m
 }
 
-func (m *{{ .OutType | goIDUpper }}) WithHeaders(headers {{$headersType | goUsage}}) *{{ .OutType | goIDUpper }} {
+func (m *{{ .OutType | goIDUpper }}) WithHeaders(headers {{.HeadersType | goUsage}}) *{{ .OutType | goIDUpper }} {
     m.Headers = headers
     return m
 }
@@ -45,7 +43,7 @@ func (m {{ $message.OutType | goIDUpper }}) SetCorrelationID(value {{template "c
     {{- if .IsSubscriber}}
         type {{ $ | goIDUpper }}IncomingMessage interface {
             Payload() {{.PayloadType | goUsage}}
-            Headers() {{$headersType | goUsage}}
+            Headers() {{.HeadersType | goUsage}}
             {{- with isVisible .CorrelationID}}
             CorrelationID() (value {{template "code/correlationID/incoming/varType" $message}}, err error)
             {{- end}}
@@ -54,7 +52,7 @@ func (m {{ $message.OutType | goIDUpper }}) SetCorrelationID(value {{template "c
 
         // New{{ $ | goIDUpper }}In is meant to be used by the generated code to create a new message. The user code
         // should not use this function directly.
-        func New{{ $ | goIDUpper }}In(payload {{.PayloadType | goUsage}}, headers {{$headersType | goUsage}}) *{{ .InType| goUsage }} {
+        func New{{ $ | goIDUpper }}In(payload {{.PayloadType | goUsage}}, headers {{.HeadersType | goUsage}}) *{{ .InType| goUsage }} {
             return &{{ .InType | goUsage }}{payload: payload, headers: headers}
         }
     {{- end}}
@@ -67,7 +65,7 @@ func (m *{{ .InType | goIDUpper }}) Payload() {{.PayloadType | goUsage}} {
     return m.payload
 }
 
-func (m *{{ .InType | goIDUpper }}) Headers() {{$headersType | goUsage}} {
+func (m *{{ .InType | goIDUpper }}) Headers() {{.HeadersType | goUsage}} {
     return m.headers
 }
 

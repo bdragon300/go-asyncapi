@@ -7,14 +7,17 @@ import (
 	"github.com/samber/lo"
 )
 
+// UnionStruct represents a union struct, a special case of Go struct.
+//
+// Union struct is a struct that can be one of the several types.
+// This struct is used to be generated the Go code from polymorphic jsonschema parts, such as $allOf, $oneOf, $anyOf.
+// So, the data that matches such schema can be unmarshalled to the union type and addressed from the user code and
+// be marshalled back.
 type UnionStruct struct {
 	GoStruct
 }
 
-func (s *UnionStruct) GoTemplate() string {
-	return "code/lang/gounion"
-}
-
+// UnionStruct return the Go code of union struct definition.
 func (s *UnionStruct) UnionStruct() common.GolangType {
 	onlyStructs := lo.EveryBy(s.Fields, func(item GoStructField) bool {
 		return isTypeStruct(item.Type)
@@ -40,6 +43,10 @@ func (s *UnionStruct) String() string {
 		return "UnionStruct /" + s.Import + "." + s.OriginalName
 	}
 	return "UnionStruct " + s.OriginalName
+}
+
+func (s *UnionStruct) GoTemplate() string {
+	return "code/lang/gounion"
 }
 
 func isTypeStruct(typ common.GolangType) bool {

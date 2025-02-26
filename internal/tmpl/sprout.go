@@ -24,6 +24,7 @@ import (
 var sproutFunctions sprout.FunctionMap
 
 func init() {
+	// https://docs.atom.codes/sprout/registries/list-of-all-registries
 	handler := sprout.New()
 	lo.Must0(handler.AddRegistries(
 		checksum.NewRegistry(),

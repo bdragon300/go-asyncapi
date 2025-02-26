@@ -11,6 +11,10 @@ import (
 )
 
 // TODO: use `maps` package features below
+
+// OrderedMap is a map that preserves the global order of keys.
+// This is important for keeping the tool's result the same across runs.
+// This map contains the unmarshaling logic for JSON and YAML. Not thread-safe.
 type OrderedMap[K comparable, V any] struct {
 	data map[K]V
 	keys []K
@@ -58,11 +62,13 @@ func (o *OrderedMap[K, V]) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
+// Get returns the value for the given key or false if the key is not found.
 func (o OrderedMap[K, V]) Get(key K) (V, bool) {
 	v, ok := o.data[key]
 	return v, ok
 }
 
+// MustGet returns the value for the given key or panics if the key is not found.
 func (o OrderedMap[K, V]) MustGet(key K) V {
 	v, ok := o.Get(key)
 	if !ok {
@@ -71,6 +77,7 @@ func (o OrderedMap[K, V]) MustGet(key K) V {
 	return v
 }
 
+// GetOrEmpty returns the value for the given key or zero value if the key is not found.
 func (o OrderedMap[K, V]) GetOrEmpty(key K) (res V) {
 	if v, ok := o.Get(key); ok {
 		return v
@@ -78,11 +85,13 @@ func (o OrderedMap[K, V]) GetOrEmpty(key K) (res V) {
 	return
 }
 
+// Has returns true if the key is found in the map.
 func (o OrderedMap[K, V]) Has(key K) bool {
 	_, ok := o.data[key]
 	return ok
 }
 
+// Set sets the value for a given key. Places the key to the end of the order, even if it already exists.
 func (o *OrderedMap[K, V]) Set(key K, value V) {
 	if o.data == nil {
 		o.data = make(map[K]V)
@@ -94,6 +103,7 @@ func (o *OrderedMap[K, V]) Set(key K, value V) {
 	o.keys = append(o.keys, key)
 }
 
+// Delete removes the key from the map and returns true if key was found.
 func (o *OrderedMap[K, V]) Delete(key K) bool {
 	if o.data == nil {
 		return false
@@ -107,19 +117,21 @@ func (o *OrderedMap[K, V]) Delete(key K) bool {
 	return true
 }
 
+// Keys returns the keys of the map in the order they were added.
 func (o OrderedMap[K, V]) Keys() []K {
 	return o.keys
 }
 
+// Entries returns the entries of the map in the order the keys were added.
 func (o OrderedMap[K, V]) Entries() []lo.Entry[K, V] {
 	return lo.Map(o.keys, func(item K, _ int) lo.Entry[K, V] {
 		return lo.Entry[K, V]{Key: item, Value: o.data[item]}
 	})
 }
 
+// Len returns the number of items in the map.
 func (o OrderedMap[K, V]) Len() int {
 	return len(o.data)
 }
 
-func (o OrderedMap[K, V]) OrderedMap() {
-}
+func (o OrderedMap[K, V]) OrderedMap() {}

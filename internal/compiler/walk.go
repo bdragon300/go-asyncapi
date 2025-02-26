@@ -8,10 +8,6 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 )
 
-const (
-	TagName = "cgen"
-)
-
 type compiledObject interface {
 	Compile(ctx *common.CompileContext) error
 }
@@ -24,7 +20,16 @@ type union interface {
 	CurrentValue() any
 }
 
+// WalkAndCompile recursively walks through the object and run the compilation logic on each one.
+//
+// The main aim of this function is to traverse the object and call the Compile method on every object that have it.
+// We use the BFS tree traversal algorithm here. Once any Compile call returns an error, the function stops immediately
+// and returns this error.
+//
+// Additionally, the function keeps the compile context up-to-date, maintaining the document path stack and field's
+// flags (tags).
 func WalkAndCompile(ctx *common.CompileContext, object reflect.Value) error {
+	// Special types
 	switch v := object.Interface().(type) {
 	case orderedMap:
 		mEntries := object.MethodByName("Entries")
@@ -84,6 +89,7 @@ func WalkAndCompile(ctx *common.CompileContext, object reflect.Value) error {
 	return nil
 }
 
+// traverse calls the object.Compile method if it has it and runs WalkAndCompile on the object.
 func traverse(ctx *common.CompileContext, object reflect.Value) error {
 	// BFS tree traversal
 	if v, ok := object.Interface().(compiledObject); ok {
@@ -101,8 +107,12 @@ func traverse(ctx *common.CompileContext, object reflect.Value) error {
 	return WalkAndCompile(ctx, object)
 }
 
+// parseTags parses the tool's Go struct tag expression into map of tags. Returns nil if tool's tag has not found or no
+// Go struct tags defined for the field.
+//
+// E.g. `json:"name,omitempty" cgen:"foo=bar,baz"` gives `{"foo": "bar", "baz": ""}`.
 func parseTags(field reflect.StructField) (tags map[common.SchemaTag]string) {
-	tagVal, ok := field.Tag.Lookup(TagName)
+	tagVal, ok := field.Tag.Lookup(common.SchemaTagName)
 	if !ok {
 		return nil
 	}
@@ -124,10 +134,10 @@ func pushStack(ctx *common.CompileContext, pathItem string, flags map[common.Sch
 		flags = make(map[common.SchemaTag]string)
 	}
 
-	// Inherit `marshal` from parent
+	// Inherited tags
 	if len(ctx.Stack.Items()) > 0 {
-		if _, ok := ctx.Stack.Top().Flags[common.SchemaTagMarshal]; ok {
-			flags[common.SchemaTagMarshal] = ctx.Stack.Top().Flags[common.SchemaTagMarshal]
+		if _, ok := ctx.Stack.Top().Flags[common.SchemaTagDataModel]; ok {
+			flags[common.SchemaTagDataModel] = ctx.Stack.Top().Flags[common.SchemaTagDataModel]
 		}
 	}
 	item := common.ContextStackItem{
@@ -138,6 +148,7 @@ func pushStack(ctx *common.CompileContext, pathItem string, flags map[common.Sch
 	ctx.Stack.Push(item)
 }
 
+// getFieldJSONName returns the JSON marshaller field name from the struct field.
 func getFieldJSONName(f reflect.StructField) string {
 	if tagVal, ok := f.Tag.Lookup("json"); ok {
 		parts := strings.Split(tagVal, ",")

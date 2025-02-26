@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net/http"
 	"os"
 	"path"
 	"slices"
 	"strings"
 	"time"
 
+	"github.com/bdragon300/go-asyncapi/internal/locator"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/render"
-	"github.com/bdragon300/go-asyncapi/internal/resolver"
 	"github.com/bdragon300/go-asyncapi/internal/selector"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
@@ -21,7 +22,7 @@ import (
 	templates "github.com/bdragon300/go-asyncapi/templates/code"
 	"gopkg.in/yaml.v3"
 
-	"github.com/bdragon300/go-asyncapi/internal/specurl"
+	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/tcp"
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/udp"
@@ -35,12 +36,10 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/mqtt"
 
 	"github.com/bdragon300/go-asyncapi/implementations"
-	"github.com/bdragon300/go-asyncapi/internal/asyncapi/amqp"
-	"github.com/bdragon300/go-asyncapi/internal/asyncapi/http"
-	"github.com/bdragon300/go-asyncapi/internal/asyncapi/kafka"
-	stdHTTP "net/http"
-
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/amqp"
+	asyncapiHTTP "github.com/bdragon300/go-asyncapi/internal/asyncapi/http"
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/kafka"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/compiler"
 	"github.com/bdragon300/go-asyncapi/internal/linker"
@@ -50,7 +49,7 @@ import (
 )
 
 type CodeCmd struct {
-	Spec string `arg:"required,positional" help:"AsyncAPI document file or url" placeholder:"FILE"`
+	Document string `arg:"required,positional" help:"AsyncAPI document file or url" placeholder:"FILE"`
 
 	TargetDir string `arg:"-t,--target-dir" help:"Directory to save the generated code" placeholder:"DIR"`
 
@@ -64,13 +63,13 @@ type CodeCmd struct {
 	PreambleTemplate  string `arg:"--preamble-template" help:"Preamble template name" placeholder:"NAME"`
 	DisableFormatting bool   `arg:"--disable-formatting" help:"Disable code formatting"`
 
-	ImplementationsDir     string `arg:"--implementations-dir" help:"Target subdirectory to save the implementations code" placeholder:"DIR"`
+	ImplementationsDir     string `arg:"--implementations-dir" help:"Directory to save the implementations code, counts from target dir" placeholder:"DIR"`
 	DisableImplementations bool   `arg:"--disable-implementations" help:"Do not generate implementations code"`
 
-	AllowRemoteRefs   bool          `arg:"--allow-remote-refs" help:"Allow resolver to fetch the files from remote $ref URLs"`
-	ResolverSearchDir string        `arg:"--resolver-search-dir" help:"Directory to search the local spec files for [default: current working directory]" placeholder:"PATH"`
-	ResolverTimeout   time.Duration `arg:"--resolver-timeout" help:"Timeout for resolver to resolve a spec file, e.g. 30s, 2m, etc." placeholder:"DURATION"`
-	ResolverCommand   string        `arg:"--resolver-command" help:"Custom resolver executable to use instead of built-in resolver" placeholder:"EXECUTABLE"`
+	AllowRemoteRefs  bool          `arg:"--allow-remote-refs" help:"Allow locator to fetch the documents from remote hosts"`
+	LocatorSearchDir string        `arg:"--locator-search-dir" help:"Directory to search the documents for [default: current working directory]" placeholder:"PATH"`
+	LocatorTimeout   time.Duration `arg:"--locator-timeout" help:"Timeout for locator to read a document. Format: 30s, 2m, etc." placeholder:"DURATION"`
+	LocatorCommand   string        `arg:"--locator-command" help:"Custom locator command to use instead of built-in locator" placeholder:"COMMAND"`
 
 	ClientApp     bool   `arg:"--client-app" help:"Generate the sample client application code as well"`
 	goModTemplate string `arg:"-"`
@@ -96,9 +95,12 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 	//
 	// Compilation & linking
 	//
-	fileResolver := getResolver(cmdConfig)
-	specURL := specurl.Parse(cmd.Spec)
-	modules, err := runCompilationLinking(fileResolver, specURL, compileOpts)
+	fileLocator := getLocator(cmdConfig)
+	rootDocumentURL, err := jsonpointer.Parse(cmd.Document)
+	if err != nil {
+		return fmt.Errorf("parse URL: %w", err)
+	}
+	documents, err := runCompilationAndLinking(fileLocator, rootDocumentURL, compileOpts)
 	if err != nil {
 		return fmt.Errorf("compilation: %w", err)
 	}
@@ -106,8 +108,8 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 	//
 	// Rendering
 	//
-	mainModule := modules[specURL.SpecID]
-	activeProtocols := collectActiveProtocols(mainModule.AllObjects())
+	rootDocument := documents[rootDocumentURL.Location()]
+	activeProtocols := collectActiveProtocols(rootDocument.Artifacts())
 	logger.Debug("Renders protocols", "value", activeProtocols)
 
 	// Implementations
@@ -122,7 +124,7 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 			logger.Warn("Some protocols have no implementations", "protocols", lo.Without(activeProtocols, protocols...))
 		}
 
-		// Render only implementations for protocols that are actually used in the spec
+		// Render only implementations for protocols that are actually used in document
 		slices.Sort(protocols)
 		logger.Debug("Run implementations rendering", "protocols", protocols)
 		implObjects, err := getImplementations(implementationOpts, protocols)
@@ -135,7 +137,7 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 		logger.Debug("Implementations rendering complete")
 	}
 
-	// Module objects
+	// Document objects
 	logger.Debug("Run objects rendering")
 	templateDirs := []fs.FS{templates.TemplateFS}
 	if cmdConfig.Code.TemplatesDir != "" {
@@ -148,7 +150,7 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 	if err = tplLoader.ParseRecursive(renderManager); err != nil {
 		return fmt.Errorf("parse templates: %w", err)
 	}
-	allObjects := lo.FlatMap(lo.Values(modules), func(m *compiler.Module, _ int) []common.CompileObject { return m.AllObjects() })
+	allObjects := lo.FlatMap(lo.Values(documents), func(m *compiler.Document, _ int) []common.CompileArtifact { return m.Artifacts() })
 	renderQueue := selectObjects(allObjects, renderOpts.Selections)
 	if err = renderer.RenderObjects(renderQueue, renderManager); err != nil {
 		return fmt.Errorf("render objects: %w", err)
@@ -208,8 +210,10 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 	return nil
 }
 
-func collectActiveProtocols(allObjects []common.CompileObject) []string {
-	return lo.Uniq(lo.FilterMap(allObjects, func(obj common.CompileObject, _ int) (string, bool) {
+// collectActiveProtocols returns a list of protocols that are used in servers that are active and selectable, i.e.
+// those, which will appear in the generated code.
+func collectActiveProtocols(allObjects []common.CompileArtifact) []string {
+	return lo.Uniq(lo.FilterMap(allObjects, func(obj common.CompileArtifact, _ int) (string, bool) {
 		if obj.Kind() != common.ObjectKindServer && !obj.Selectable() || !obj.Visible() {
 			return "", false
 		}
@@ -224,15 +228,15 @@ func collectActiveProtocols(allObjects []common.CompileObject) []string {
 
 func protocolBuilders() map[string]asyncapi.ProtocolBuilder {
 	return map[string]asyncapi.ProtocolBuilder{
-		amqp.Builder.ProtocolName():  amqp.Builder,
-		http.Builder.ProtocolName():  http.Builder,
-		kafka.Builder.ProtocolName(): kafka.Builder,
-		mqtt.Builder.ProtocolName():  mqtt.Builder,
-		ws.Builder.ProtocolName():    ws.Builder,
-		redis.Builder.ProtocolName(): redis.Builder,
-		ip.Builder.ProtocolName():    ip.Builder,
-		tcp.Builder.ProtocolName():   tcp.Builder,
-		udp.Builder.ProtocolName():   udp.Builder,
+		amqp.Builder.ProtocolName():         amqp.Builder,
+		asyncapiHTTP.Builder.ProtocolName(): asyncapiHTTP.Builder,
+		kafka.Builder.ProtocolName():        kafka.Builder,
+		mqtt.Builder.ProtocolName():         mqtt.Builder,
+		ws.Builder.ProtocolName():           ws.Builder,
+		redis.Builder.ProtocolName():        redis.Builder,
+		ip.Builder.ProtocolName():           ip.Builder,
+		tcp.Builder.ProtocolName():          tcp.Builder,
+		udp.Builder.ProtocolName():          udp.Builder,
 	}
 }
 
@@ -242,10 +246,10 @@ func cliCodeMergeConfig(globalConfig toolConfig, cmd *CodeCmd) toolConfig {
 	res.ProjectModule = coalesce(cmd.ProjectModule, res.ProjectModule)
 	res.RuntimeModule = coalesce(cmd.RuntimeModule, res.RuntimeModule)
 
-	res.Resolver.AllowRemoteReferences = coalesce(cmd.AllowRemoteRefs, res.Resolver.AllowRemoteReferences)
-	res.Resolver.SearchDirectory = coalesce(cmd.ResolverSearchDir, res.Resolver.SearchDirectory)
-	res.Resolver.Timeout = coalesce(cmd.ResolverTimeout, res.Resolver.Timeout)
-	res.Resolver.Command = coalesce(cmd.ResolverCommand, res.Resolver.Command)
+	res.Locator.AllowRemoteReferences = coalesce(cmd.AllowRemoteRefs, res.Locator.AllowRemoteReferences)
+	res.Locator.SearchDirectory = coalesce(cmd.LocatorSearchDir, res.Locator.SearchDirectory)
+	res.Locator.Timeout = coalesce(cmd.LocatorTimeout, res.Locator.Timeout)
+	res.Locator.Command = coalesce(cmd.LocatorCommand, res.Locator.Command)
 
 	res.Code.OnlyPublish = coalesce(cmd.OnlyPub, res.Code.OnlyPublish)
 	res.Code.OnlySubscribe = coalesce(cmd.OnlySub, res.Code.OnlySubscribe)
@@ -265,7 +269,7 @@ func getCompileOpts(cfg toolConfig) common.CompileOpts {
 	isPub := cfg.Code.OnlyPublish || !cfg.Code.OnlySubscribe
 	isSub := cfg.Code.OnlySubscribe || !cfg.Code.OnlyPublish
 	return common.CompileOpts{
-		AllowRemoteRefs:     cfg.Resolver.AllowRemoteReferences,
+		AllowRemoteRefs:     cfg.Locator.AllowRemoteReferences,
 		RuntimeModule:       cfg.RuntimeModule,
 		GeneratePublishers:  isPub,
 		GenerateSubscribers: isSub,
@@ -340,12 +344,13 @@ func getImplementationOpts(conf toolConfig) common.RenderImplementationsOpts {
 	}
 }
 
-func selectObjects(allObjects []common.CompileObject, selections []common.ConfigSelectionItem) (res []renderer.RenderQueueItem) {
+// selectObjects returns objects that match the selections.
+func selectObjects(allObjects []common.CompileArtifact, selections []common.ConfigSelectionItem) (res []renderer.RenderQueueItem) {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
 	for _, selection := range selections {
 		logger.Debug("Select objects", "selection", selection)
-		selectedObjects := selector.SelectObjects(allObjects, selection)
+		selectedObjects := selector.Select(allObjects, selection)
 		for _, obj := range selectedObjects {
 			logger.Debug("-> Selected", "object", obj)
 			res = append(res, renderer.RenderQueueItem{Selection: selection, Object: obj})
@@ -354,6 +359,7 @@ func selectObjects(allObjects []common.CompileObject, selections []common.Config
 	return
 }
 
+// getProjectModule returns the module name from the go.mod file in the current working directory.
 func getProjectModule() (string, error) {
 	pwd, err := os.Getwd()
 	if err != nil {
@@ -376,75 +382,81 @@ func getProjectModule() (string, error) {
 	return modpath, nil
 }
 
-func getResolver(conf toolConfig) resolver.SpecFileResolver {
-	logger := log.GetLogger(log.LoggerPrefixResolving)
-	if conf.Resolver.Command != "" {
-		return resolver.SubprocessSpecFileResolver{
-			CommandLine: conf.Resolver.Command,
-			RunTimeout:  conf.Resolver.Timeout,
-			Logger:      logger,
-		}
-	}
-	return resolver.DefaultSpecFileResolver{
-		Client:  stdHTTP.DefaultClient,
-		Timeout: conf.Resolver.Timeout,
-		BaseDir: conf.Resolver.SearchDirectory,
-		Logger:  logger,
-	}
+type documentLocator interface {
+	Locate(docURL *jsonpointer.JSONPointer) (io.ReadCloser, error)
 }
 
-func runCompilationLinking(fileResolver resolver.SpecFileResolver, specURL *specurl.URL, compileOpts common.CompileOpts) (map[string]*compiler.Module, error) {
+func getLocator(conf toolConfig) documentLocator {
+	logger := log.GetLogger(log.LoggerPrefixLocating)
+	if conf.Locator.Command != "" {
+		return locator.Subprocess{
+			CommandLine:     conf.Locator.Command,
+			RunTimeout:      conf.Locator.Timeout,
+			ShutdownTimeout: defaultSubprocessLocatorShutdownTimeout,
+			Logger:          logger,
+		}
+	}
+	res := locator.Default{
+		Client:    &http.Client{Timeout: conf.Locator.Timeout},
+		Directory: conf.Locator.SearchDirectory,
+		Logger:    logger,
+	}
+	return res
+}
+
+func runCompilationAndLinking(locator documentLocator, docURL *jsonpointer.JSONPointer, compileOpts common.CompileOpts) (map[string]*compiler.Document, error) {
 	logger := log.GetLogger("")
 
 	logger.Debug("Run compilation")
-	modules, err := runCompilation(specURL, compileOpts, fileResolver)
+	documents, err := runCompilation(docURL, compileOpts, locator)
 	if err != nil {
 		return nil, err
 	}
-	logger.Debug("Compilation complete", "files", len(modules))
-	objSources := lo.MapValues(modules, func(value *compiler.Module, _ string) linker.ObjectSource { return value })
+	logger.Debug("Compilation complete", "files", len(documents))
+	objSources := lo.MapValues(documents, func(value *compiler.Document, _ string) linker.ObjectSource { return value })
 
 	logger.Debug("Run linking")
 	if err = runLinking(objSources); err != nil {
 		return nil, fmt.Errorf("linking: %w", err)
 	}
 	logger.Debug("Linking complete")
-	return modules, nil
+	return documents, nil
 }
 
-func runCompilation(specURL *specurl.URL, compileOpts common.CompileOpts, fileResolver resolver.SpecFileResolver) (map[string]*compiler.Module, error) {
+func runCompilation(docURL *jsonpointer.JSONPointer, compileOpts common.CompileOpts, locator documentLocator) (map[string]*compiler.Document, error) {
 	logger := log.GetLogger(log.LoggerPrefixCompilation)
-	compileQueue := []*specurl.URL{specURL}      // Queue of specIDs to compile
-	modules := make(map[string]*compiler.Module) // Compilers by spec id
+	compileQueue := []*jsonpointer.JSONPointer{docURL} // Queue of document urls to compile
+	documents := make(map[string]*compiler.Document)   // Documents by url
 	for len(compileQueue) > 0 {
-		specURL, compileQueue = compileQueue[0], compileQueue[1:] // Pop an item from queue
-		if _, ok := modules[specURL.SpecID]; ok {
-			continue // Skip if a spec file has been already compiled
+		docURL, compileQueue = compileQueue[0], compileQueue[1:] // Pop an item from queue
+		if _, ok := documents[docURL.Location()]; ok {
+			continue // Skip if a document has been already compiled
 		}
 
-		logger.Info("Compile a spec", "specURL", specURL)
-		module := compiler.NewModule(specURL)
-		modules[specURL.SpecID] = module
+		logger.Info("Compile a document", "url", docURL)
+		document := compiler.NewDocument(docURL)
+		documents[docURL.Location()] = document
 
-		if !compileOpts.AllowRemoteRefs && specURL.IsRemote() {
+		if !compileOpts.AllowRemoteRefs && docURL.URI != nil {
 			return nil, fmt.Errorf(
 				"%s: external requests are forbidden by default for security reasons, use --allow-remote-refs flag to allow them",
-				specURL,
+				docURL,
 			)
 		}
-		logger.Debug("Loading a spec", "specURL", specURL)
-		if err := module.Load(fileResolver); err != nil {
-			return nil, fmt.Errorf("load a spec: %w", err)
+		logger.Debug("Loading a document", "url", docURL)
+		if err := document.Load(locator); err != nil {
+			return nil, fmt.Errorf("load a document: %w", err)
 		}
-		logger.Debug("Compilation a spec", "specURL", specURL)
-		if err := module.Compile(common.NewCompileContext(specURL, compileOpts)); err != nil {
-			return nil, fmt.Errorf("compilation a spec: %w", err)
+		logger.Debug("Compiling a document", "url", docURL)
+		if err := document.Compile(common.NewCompileContext(docURL, compileOpts)); err != nil {
+			return nil, fmt.Errorf("compilation a document: %w", err)
 		}
-		logger.Debugf("Compiler stats: %s", module.Stats())
-		compileQueue = lo.Flatten([][]*specurl.URL{compileQueue, module.ExternalSpecs()}) // Extend queue with remote specPaths
+		logger.Debugf("Compiler stats: %s", document.Stats())
+		// Add external URLs to the compile queue
+		compileQueue = lo.Flatten([][]*jsonpointer.JSONPointer{compileQueue, document.ExternalURLs()})
 	}
 
-	return modules, nil
+	return documents, nil
 }
 
 func getImplementations(conf common.RenderImplementationsOpts, protocols []string) ([]common.ImplementationObject, error) {
@@ -477,27 +489,27 @@ func runLinking(objSources map[string]linker.ObjectSource) error {
 	logger := log.GetLogger(log.LoggerPrefixLinking)
 
 	// Linking refs
-	linker.AssignRefs(objSources)
-	danglingRefs := linker.DanglingRefs(objSources)
+	linker.ResolvePromises(objSources)
+	unresolved := linker.UnresolvedPromises(objSources)
 	logger.Debugf("Linker stats: %s", linker.Stats(objSources))
-	if len(danglingRefs) > 0 {
-		logger.Error("Some refs remain dangling", "refs", danglingRefs)
+	if len(unresolved) > 0 {
+		logger.Error("Some refs remain dangling", "refs", unresolved)
 		return fmt.Errorf("cannot resolve all refs")
 	}
 
 	// Linking list promises
 	logger.Debug("Run linking the list promises")
-	linker.AssignListPromises(objSources)
-	danglingPromises := linker.DanglingPromisesCount(objSources)
+	linker.ResolveListPromises(objSources)
+	unresolvedCount := linker.UnresolvedPromisesCount(objSources)
 	logger.Debugf("Linker stats: %s", linker.Stats(objSources))
-	if danglingPromises > 0 {
-		logger.Error("Cannot assign internal list promises", "promises", danglingPromises)
+	if unresolvedCount > 0 {
+		logger.Error("Cannot assign internal list promises", "promises", unresolvedCount)
 		return fmt.Errorf("cannot finish linking")
 	}
 
 	refsCount := lo.SumBy(lo.Values(objSources), func(item linker.ObjectSource) int {
 		return lo.CountBy(item.Promises(), func(p common.ObjectPromise) bool {
-			return p.Origin() == common.PromiseOriginUser
+			return p.Origin() == common.PromiseOriginRef
 		})
 	})
 	logger.Info("Linking complete", "refs", refsCount)
@@ -538,6 +550,7 @@ func loadImplementationsManifest() (implementations.ImplManifest, error) {
 	return meta, nil
 }
 
+// coalesce return the first non-zero value from the list of arguments.
 func coalesce[T comparable](vals ...T) T {
 	res, _ := lo.Coalesce(vals...)
 	return res

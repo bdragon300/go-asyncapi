@@ -9,6 +9,8 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/log"
 )
 
+// WriteBuffersToFiles receives the buffers by file name and writes the buffers to files in the baseDir directory.
+// Files are truncated if they already exist or created if they don't.
 func WriteBuffersToFiles(files map[string]*bytes.Buffer, baseDir string) error {
 	logger := log.GetLogger(log.LoggerPrefixWriting)
 
@@ -35,6 +37,7 @@ func WriteBuffersToFiles(files map[string]*bytes.Buffer, baseDir string) error {
 	return nil
 }
 
+// ensureDir ensures that the directory at the given path exists. If not, creates it recursively.
 func ensureDir(path string) error {
 	if info, err := os.Stat(path); os.IsNotExist(err) {
 		if err2 := os.MkdirAll(path, 0o755); err2 != nil {

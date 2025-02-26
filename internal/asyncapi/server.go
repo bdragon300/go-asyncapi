@@ -62,7 +62,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	}
 
 	// Channels which are bound to this server
-	prm := lang.NewListCbPromise[common.Renderable](func(item common.CompileObject, path []string) bool {
+	prm := lang.NewListCbPromise[common.Renderable](func(item common.CompileArtifact, path []string) bool {
 		if len(path) < 2 || len(path) >= 2 && path[0] != "channels" {
 			return false
 		}
@@ -95,24 +95,14 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		res.VariablesPromises.Set(v.Key, prm)
 	}
 
-	protoBuilder, ok := ProtocolBuilders[s.Protocol]
-	if !ok {
+	if _, ok := ProtocolBuilders[s.Protocol]; !ok {
 		ctx.Logger.Warn("Skip unsupported server protocol", "proto", s.Protocol)
-		protoStruct, err := BuildProtoServerStruct(ctx, &s, &res, "")
-		if err != nil {
-			return nil, err
-		}
-		res.ProtoServer = &render.ProtoServer{Server: &res, Type: protoStruct}
+		res.ProtoServer = BuildProtoServer(ctx, &s, &res, "")
 		return &res, nil
 	}
 
-	ctx.Logger.Trace("Server", "proto", protoBuilder.ProtocolName())
-
-	protoServer, err := protoBuilder.BuildServer(ctx, &s, &res)
-	if err != nil {
-		return nil, err
-	}
-	res.ProtoServer = protoServer
+	ctx.Logger.Trace("Server", "proto", s.Protocol)
+	res.ProtoServer = BuildProtoServer(ctx, &s, &res, s.Protocol)
 
 	return &res, nil
 }

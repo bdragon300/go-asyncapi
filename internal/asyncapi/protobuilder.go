@@ -14,9 +14,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// ProtocolBuilder is an interface for builder objects, that does the protocol-specific building of the channel,
+// bindings.
 type ProtocolBuilder interface {
 	BuildChannel(ctx *common.CompileContext, channel *Channel, parent *render.Channel) (*render.ProtoChannel, error)
-	BuildServer(ctx *common.CompileContext, server *Server, parent *render.Server) (*render.ProtoServer, error)
 
 	BuildMessageBindings(ctx *common.CompileContext, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error)
 	BuildOperationBindings(ctx *common.CompileContext, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error)
@@ -28,12 +29,8 @@ type ProtocolBuilder interface {
 
 var ProtocolBuilders map[string]ProtocolBuilder // TODO: replace the global variable to smth better
 
-func BuildProtoChannelStruct(
-	ctx *common.CompileContext,
-	source *Channel,
-	target *render.Channel,
-	protoName, golangName string,
-) (*lang.GoStruct, error) {
+// BuildProtoChannelStruct builds a Go struct for the channel. This function is called from protocol builders.
+func BuildProtoChannelStruct(ctx *common.CompileContext, source *Channel, target *render.Channel, protoName, golangName string) *lang.GoStruct {
 	chanStruct := lang.GoStruct{
 		BaseType: lang.BaseType{
 			OriginalName:  golangName,
@@ -71,15 +68,10 @@ func BuildProtoChannelStruct(
 		})
 	}
 
-	return &chanStruct, nil
+	return &chanStruct
 }
 
-func BuildProtoServerStruct(
-	ctx *common.CompileContext,
-	source *Server,
-	target *render.Server,
-	protoName string,
-) (*lang.GoStruct, error) {
+func BuildProtoServer(ctx *common.CompileContext, source *Server, target *render.Server, protoName string) *render.ProtoServer {
 	srvStruct := lang.GoStruct{
 		BaseType: lang.BaseType{
 			OriginalName:  target.OriginalName,
@@ -104,7 +96,10 @@ func BuildProtoServerStruct(
 	}
 	srvStruct.Fields = append(srvStruct.Fields, fld)
 
-	return &srvStruct, nil
+	return &render.ProtoServer{
+		Server: target,
+		Type:   &srvStruct,
+	}
 }
 
 func BuildProtoOperation(ctx *common.CompileContext, source *Operation, target *render.Operation, proto string) *render.ProtoOperation {

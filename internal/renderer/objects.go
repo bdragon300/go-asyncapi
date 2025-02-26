@@ -16,7 +16,7 @@ import (
 
 type RenderQueueItem struct {
 	Selection common.ConfigSelectionItem
-	Object    common.CompileObject
+	Object    common.CompileArtifact
 	Err       error
 }
 
@@ -28,7 +28,7 @@ func RenderObjects(queue []RenderQueueItem, mng *manager.TemplateRenderManager) 
 	for len(queue) > 0 {
 		for _, item := range queue {
 			logger.Debug("Render", "object", item.Object.String())
-			mng.BeginCodeObject(item.Object.Renderable, item.Selection)
+			mng.SetCodeObject(item.Object.Renderable, item.Selection)
 
 			logger.Trace("-> Render file name expression", "object", item.Object.String(), "template", item.Selection.Render.File)
 			fileName, err := renderObjectInlineTemplate(item, item.Selection.Render.File, mng)

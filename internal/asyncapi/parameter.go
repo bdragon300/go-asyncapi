@@ -38,13 +38,13 @@ func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (commo
 	parName, _ := lo.Coalesce(p.XGoName, parameterKey)
 	res := &render.Parameter{
 		OriginalName: parName,
-		Type: &lang.GoTypeAlias{
+		Type: &lang.GoTypeDefinition{
 			BaseType: lang.BaseType{
 				OriginalName:  ctx.GenerateObjName(parName, ""),
 				Description:   p.Description,
 				HasDefinition: true,
 			},
-			AliasedType: &lang.GoSimple{TypeName: "string"},
+			RedefinedType: &lang.GoSimple{TypeName: "string"},
 		},
 	}
 

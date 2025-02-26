@@ -9,13 +9,34 @@ import (
 	"github.com/samber/lo"
 )
 
+// GoValue represents a Go value of any other type that can be rendered in Go code.
+//
+// This value can be a constant, a struct, array or map initialization expression. This is suitable when some data
+// from the AsyncAPI document should get to the code as initialization value of some type. For example, the AsyncAPI bindings.
 type GoValue struct {
-	Type               common.GolangType             // if not nil then it will be rendered before value
-	EmptyCurlyBrackets bool                          // If GoValue is empty: `{}` if true, or `nil` otherwise
-	LiteralValue       any                           // Render as literal value
-	ArrayValues        []any                         // Render as array/slice initialization in curly brackets
-	StructValues       types.OrderedMap[string, any] // Render as struct inline definition with following field values in curly brackets
-	MapValues          types.OrderedMap[string, any] // Render as map initialization in curly brackets
+	// Type is the type that is rendered before the value, e.g. ``int(123)'' or ``map[string]string{"123", "456"}''.
+	// If nil, the value will be rendered as a bare untyped value, like ``123'' or ``{"123", "456"}''.
+	Type common.GolangType
+	// EmptyCurlyBrackets affects to the rendering if Empty returns true. If true, then empty value will
+	// be rendered as ``{}``, otherwise as ``nil``.
+	EmptyCurlyBrackets bool // If GoValue is empty: `{}` if true, or `nil` otherwise
+	// LiteralValue is a value that should be rendered as a literal value, like ``123`` or ``"hello"``.
+	LiteralValue any
+	// ArrayValues is a list of values that should be rendered as an array/slice initialization in curly brackets.
+	ArrayValues []any
+	// StructValues is a list of key-value pairs that should be rendered as a struct initialization in curly brackets.
+	StructValues types.OrderedMap[string, any]
+	// MapValues is a list of key-value pairs that should be rendered as a map initialization in curly brackets.
+	MapValues types.OrderedMap[string, any]
+}
+
+// Empty returns true if the GoValue represents nil or empty or zero value.
+func (gv *GoValue) Empty() bool {
+	return gv.LiteralValue == nil && gv.StructValues.Len() == 0 && gv.MapValues.Len() == 0 && gv.ArrayValues == nil
+}
+
+func (gv *GoValue) Name() string {
+	return ""
 }
 
 func (gv *GoValue) Kind() common.ObjectKind {
@@ -28,26 +49,6 @@ func (gv *GoValue) Selectable() bool {
 
 func (gv *GoValue) Visible() bool {
 	return true
-}
-
-func (gv *GoValue) GoTemplate() string {
-	return "code/lang/govalue"
-}
-
-func (gv *GoValue) Addressable() bool {
-	return gv.Type != nil && gv.Type.Addressable()
-}
-
-func (gv *GoValue) IsPointer() bool {
-	return gv.Type != nil && gv.Type.IsPointer()
-}
-
-func (gv *GoValue) Name() string {
-	return ""
-}
-
-func (gv *GoValue) Empty() bool {
-	return gv.LiteralValue == nil && gv.StructValues.Len() == 0 && gv.MapValues.Len() == 0 && gv.ArrayValues == nil
 }
 
 func (gv *GoValue) String() string {
@@ -64,12 +65,32 @@ func (gv *GoValue) String() string {
 	return "GoValue nil"
 }
 
-func ConstructGoValue(value any, excludeFields []string, overrideType common.GolangType) *GoValue {
+func (gv *GoValue) CanBeAddressed() bool {
+	return gv.Type != nil && gv.Type.CanBeAddressed()
+}
+
+func (gv *GoValue) CanBeDereferenced() bool {
+	return gv.Type != nil && gv.Type.CanBeDereferenced()
+}
+
+func (gv *GoValue) GoTemplate() string {
+	return "code/lang/govalue"
+}
+
+// ConstructGoValue constructs a GoValue representation of given Golang type to render it in the generated Go code.
+//
+// The function receives the value to be represented, optional list of fields to exclude from the struct definitions
+// (applies to the nested structs as well). The function also receives the outputType that will be substituted to
+// the GoValue.Type field -- this parameter exists mainly for the convenience of the caller.
+//
+// This function is helpful, for example, if we have a struct and want to see the same struct (maybe with minor changes)
+// in the generated Go code. In the project this function is used to bring the AsyncAPI bindings structs to the generated Go code.
+func ConstructGoValue(value any, excludeStructFields []string, outputType common.GolangType) *GoValue {
 	type stringAnyMap interface {
 		Entries() []lo.Entry[string, any]
 	}
 
-	res := GoValue{Type: overrideType}
+	res := GoValue{Type: outputType}
 	if value == nil {
 		return &res
 	}
@@ -77,7 +98,7 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 	switch v := value.(type) {
 	case stringAnyMap:
 		for _, e := range v.Entries() {
-			res.StructValues.Set(e.Key, ConstructGoValue(e.Value, excludeFields, nil))
+			res.StructValues.Set(e.Key, ConstructGoValue(e.Value, excludeStructFields, nil))
 		}
 		return &res
 	case *GoValue:
@@ -110,7 +131,7 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 		res.EmptyCurlyBrackets = true
 
 		for i := 0; i < rval.Len(); i++ {
-			res.ArrayValues = append(res.ArrayValues, ConstructGoValue(rval.Index(i).Interface(), excludeFields, nil))
+			res.ArrayValues = append(res.ArrayValues, ConstructGoValue(rval.Index(i).Interface(), excludeStructFields, nil))
 		}
 		return &res
 	case reflect.Map:
@@ -134,7 +155,7 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 		res.EmptyCurlyBrackets = true
 
 		for _, k := range rval.MapKeys() {
-			res.MapValues.Set(k.String(), ConstructGoValue(rval.MapIndex(k).Interface(), excludeFields, nil))
+			res.MapValues.Set(k.String(), ConstructGoValue(rval.MapIndex(k).Interface(), excludeStructFields, nil))
 		}
 		return &res
 	case reflect.Struct:
@@ -148,19 +169,19 @@ func ConstructGoValue(value any, excludeFields []string, overrideType common.Gol
 		for i := 0; i < rval.NumField(); i++ {
 			ftyp := rtyp.Field(i)
 			fval := rval.Field(i)
-			if fval.IsZero() || lo.Contains(excludeFields, ftyp.Name) {
+			if fval.IsZero() || lo.Contains(excludeStructFields, ftyp.Name) {
 				continue // Skip empty values in struct initializations, or if it excluded
 			}
-			res.StructValues.Set(ftyp.Name, ConstructGoValue(fval.Interface(), excludeFields, nil))
+			res.StructValues.Set(ftyp.Name, ConstructGoValue(fval.Interface(), excludeStructFields, nil))
 		}
 		return &res
 	case reflect.Pointer, reflect.Interface:
 		pval := reflect.Indirect(rval)
-		val := ConstructGoValue(pval.Interface(), excludeFields, nil)
-		return &GoValue{LiteralValue: val, Type: &GoPointer{Type: overrideType}}
+		val := ConstructGoValue(pval.Interface(), excludeStructFields, nil)
+		return &GoValue{LiteralValue: val, Type: &GoPointer{Type: outputType}}
 	case reflect.String, reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Float32, reflect.Float64:
-		return &GoValue{LiteralValue: rval.Interface(), Type: overrideType}
+		return &GoValue{LiteralValue: rval.Interface(), Type: outputType}
 	}
 
 	panic(fmt.Errorf("cannot construct Value from a value of type %T", value))

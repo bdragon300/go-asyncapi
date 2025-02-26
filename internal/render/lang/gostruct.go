@@ -14,10 +14,18 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 )
 
-// GoStruct defines the data required to generate a struct in Go.
+// GoStruct represents a Go struct.
 type GoStruct struct {
 	BaseType
+	// Fields is a list of fields in the struct. If empty, then the struct is empty.
 	Fields []GoStructField
+}
+
+func (s *GoStruct) String() string {
+	if s.Import != "" {
+		return "GoStruct /" + s.Import + "." + s.OriginalName
+	}
+	return "GoStruct " + s.OriginalName
 }
 
 func (s *GoStruct) GoTemplate() string {
@@ -28,25 +36,28 @@ func (s *GoStruct) IsStruct() bool {
 	return true
 }
 
-func (s *GoStruct) String() string {
-	if s.Import != "" {
-		return "GoStruct /" + s.Import + "." + s.OriginalName
-	}
-	return "GoStruct " + s.OriginalName
-}
-
-// GoStructField defines the data required to generate a field in Go.
+// GoStructField represents a field in a Go struct (without generics support).
 type GoStructField struct {
-	Name             string
-	MarshalName      string
-	Description      string
-	Type             common.GolangType
-	ContentTypesFunc func() []string                  // Returns list of content types associated with the struct
-	ExtraTags        types.OrderedMap[string, string] // Just append these tags as constant, overwrite other tags on overlap
-	ExtraTagNames    []string                         // Append these tags and fill them the same value as others
-	ExtraTagValues   []string                         // Add these comma-separated values to all tags (excluding ExtraTags)
+	// Name is the name of the field.
+	Name string
+	// MarshalName is the name of the field for marshaling/unmarshaling. It appears in the struct tag, like `json:"marshal_name"`.
+	MarshalName string
+	// Description is an optional field description. Renders as Go doc comment.
+	Description string
+	// Type is the type of the field.
+	Type common.GolangType
+	// ContentTypesFunc callback returns a list of content types associated with the struct. Used to compose a struct tag on the rendering stage.
+	ContentTypesFunc func() []string
+	// ExtraTags is extra tags and their values to append to the struct tag. If a tag already exists, it is overwritten.
+	ExtraTags types.OrderedMap[string, string]
+	// ExtraTagNames are extra tags to append to the struct tag, their values will be filled with the same name as other tags.
+	ExtraTagNames []string
+	// ExtraTagValues are the values to append as comma-separated string to all tags (excluding ExtraTags).
+	// E.g. []{"omitempty", "string"} will be appended as ``,omitempty,string'' to all tags.
+	ExtraTagValues []string
 }
 
+// RenderTags returns the Go struct field tag contents. E.g. “json:"name,omitempty,string" xml:"name"”.
 func (f *GoStructField) RenderTags() string {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 	tags := f.getTags()

@@ -8,21 +8,97 @@ import (
 	"github.com/samber/lo"
 )
 
+// Operation represents an operation object.
 type Operation struct {
-	OriginalName string // Actually it isn't used
-	Dummy        bool
-	IsSelectable bool // true if channel should get to selections
-	IsPublisher  bool
+	// OriginalName is the name of the operation as it was defined in the AsyncAPI document.
+	OriginalName string
+	// Dummy is true when operation is ignored (x-ignore: true)
+	Dummy bool
+
+	// IsSelectable is true if operation should get to selections
+	IsSelectable bool
+	// IsPublisher is true if the generation of publisher code is enabled
+	IsPublisher bool
+	// IsSubscriber is true if the generation of subscriber code is enabled
 	IsSubscriber bool
 
-	ChannelPromise *lang.Promise[*Channel] // Channel this operation bound with
+	// ChannelPromise is the channel that this operation is bound with.
+	ChannelPromise *lang.Promise[*Channel]
 
-	BindingsType    *lang.GoStruct           // nil if no bindings are set for operation at all
-	BindingsPromise *lang.Promise[*Bindings] // nil if no bindings are set for operation at all
+	// BindingsType is a Go struct for operation bindings. Nil if no bindings are set.
+	BindingsType *lang.GoStruct
+	// BindingsPromise is a promise to operation bindings contents. Nil if no bindings are set.
+	BindingsPromise *lang.Promise[*Bindings]
 
+	// MessagesPromises is a list of messages listed in the operation definition in document.
 	MessagesPromises []*lang.Promise[*Message]
 
-	ProtoOperations []*ProtoOperation // Proto operations for each protocol that ChannelPromise has
+	// ProtoOperations is a list of prebuilt ProtoOperation objects for each supported protocol
+	ProtoOperations []*ProtoOperation
+}
+
+// Channel returns the Channel that this operation is bound with.
+func (o *Operation) Channel() *Channel {
+	return o.ChannelPromise.T()
+}
+
+// Bindings returns the [Bindings] object or nil if no bindings are set.
+func (o *Operation) Bindings() *Bindings {
+	return o.BindingsPromise.T()
+}
+
+// Messages returns a list of Message or lang.Ref to Message, that are listed in the operation definition in the document.
+func (o *Operation) Messages() []common.Renderable {
+	return lo.Map(o.MessagesPromises, func(prm *lang.Promise[*Message], _ int) common.Renderable { return prm.T() })
+}
+
+// SelectProtoObject returns the ProtoOperation object for the given protocol or nil if not found or if
+// ProtoOperation is not selectable.
+func (o *Operation) SelectProtoObject(protocol string) common.Renderable {
+	res := lo.Filter(o.ProtoOperations, func(p *ProtoOperation, _ int) bool {
+		return p.Selectable() && p.Protocol == protocol
+	})
+	if len(res) > 0 {
+		return res[0]
+	}
+	return nil
+}
+
+// BoundMessages returns a list of Message that are bound to this operation.
+func (o *Operation) BoundMessages() []common.Renderable {
+	return o.Messages()
+}
+
+// BindingsProtocols returns a list of protocols that have bindings defined for this operation.
+func (o *Operation) BindingsProtocols() (res []string) {
+	if o.BindingsType == nil {
+		return nil
+	}
+	if o.BindingsPromise != nil {
+		res = append(res, o.BindingsPromise.T().Values.Keys()...)
+		res = append(res, o.BindingsPromise.T().JSONValues.Keys()...)
+	}
+	return lo.Uniq(res)
+}
+
+// ProtoBindingsValue returns the struct initialization [lang.GoValue] of BindingsType for the given protocol.
+// The returned value contains all constant bindings values defined in document for the protocol.
+// If no bindings are set for the protocol, returns an empty [lang.GoValue].
+func (o *Operation) ProtoBindingsValue(protoName string) common.Renderable {
+	res := &lang.GoValue{
+		Type:               &lang.GoSimple{TypeName: "OperationBindings", Import: protoName, IsRuntimeImport: true},
+		EmptyCurlyBrackets: true,
+	}
+	if o.BindingsPromise != nil {
+		if b, ok := o.BindingsPromise.T().Values.Get(protoName); ok {
+			res = b
+		}
+	}
+	return res
+}
+
+func (o *Operation) Name() string {
+	return o.OriginalName
 }
 
 func (o *Operation) Kind() common.ObjectKind {
@@ -43,66 +119,13 @@ func (o *Operation) String() string {
 	return "Operation " + o.OriginalName
 }
 
-func (o *Operation) Name() string {
-	return o.OriginalName
-}
-
-func (o *Operation) SelectProtoObject(protocol string) common.Renderable {
-	res := lo.Filter(o.ProtoOperations, func(p *ProtoOperation, _ int) bool {
-		return p.Selectable() && p.Protocol == protocol
-	})
-	if len(res) > 0 {
-		return res[0]
-	}
-	return nil
-}
-
-func (o *Operation) Channel() *Channel {
-	return o.ChannelPromise.T()
-}
-
-func (o *Operation) Bindings() *Bindings {
-	return o.BindingsPromise.T()
-}
-
-func (o *Operation) Messages() []common.Renderable {
-	return lo.Map(o.MessagesPromises, func(prm *lang.Promise[*Message], _ int) common.Renderable { return prm.T() })
-}
-
-func (o *Operation) BoundMessages() []common.Renderable {
-	return o.Messages()
-}
-
-func (o *Operation) BindingsProtocols() (res []string) {
-	if o.BindingsType == nil {
-		return nil
-	}
-	if o.BindingsPromise != nil {
-		res = append(res, o.BindingsPromise.T().Values.Keys()...)
-		res = append(res, o.BindingsPromise.T().JSONValues.Keys()...)
-	}
-	return lo.Uniq(res)
-}
-
-func (o *Operation) ProtoBindingsValue(protoName string) common.Renderable {
-	res := &lang.GoValue{
-		Type:               &lang.GoSimple{TypeName: "OperationBindings", Import: protoName, RuntimeImport: true},
-		EmptyCurlyBrackets: true,
-	}
-	if o.BindingsPromise != nil {
-		if b, ok := o.BindingsPromise.T().Values.Get(protoName); ok {
-			res = b
-		}
-	}
-	return res
-}
-
 type ProtoOperation struct {
 	*Operation
-
+	// ProtoChannelPromise is ProtoChannel with the same Protocol in the bound Channel.
 	ProtoChannelPromise *lang.Promise[*ProtoChannel]
-	Type                *lang.GoStruct
-	Protocol            string
+	// Type is a protocol-specific operation's Go struct
+	Type     *lang.GoStruct
+	Protocol string
 }
 
 func (p *ProtoOperation) Selectable() bool {
@@ -113,6 +136,7 @@ func (p *ProtoOperation) String() string {
 	return fmt.Sprintf("ProtoOperation[%s] %s", p.Protocol, p.OriginalName)
 }
 
+// ProtoChannel returns the ProtoChannel with the same Protocol in the bound Channel.
 func (p *ProtoOperation) ProtoChannel() *ProtoChannel {
 	return p.ProtoChannelPromise.T()
 }

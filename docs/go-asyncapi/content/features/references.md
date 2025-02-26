@@ -1,7 +1,7 @@
 ---
 title: "References"
 weight: 310
-description: "go-asyncapi can resolve references ($ref) to objects in the same document, in local or remote file. Custom resolver is supported for more complex scenarios" 
+description: "go-asyncapi can resolve references ($ref) to objects in the same document, in local or remote file. Custom locator is supported for more complex scenarios" 
 ---
 
 # References
@@ -107,7 +107,7 @@ esac
 {{< /tab >}}
 {{< tab "Usage" >}}
 ```shell
-go-asyncapi generate pubsub --allow-remote-refs --resolver-command my-resolver.sh asyncapi-spec.yaml
+go-asyncapi generate pubsub --allow-remote-refs --locator-command my-locator.sh asyncapi-spec.yaml
 ```
 {{< /tab >}}
 {{< /tabs >}}

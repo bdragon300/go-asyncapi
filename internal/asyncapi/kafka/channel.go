@@ -37,10 +37,7 @@ type operationBindings struct {
 
 func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, parent *render.Channel) (*render.ProtoChannel, error) {
 	golangName := utils.ToGolangName(parent.OriginalName+lo.Capitalize(pb.ProtoName), true)
-	chanStruct, err := asyncapi.BuildProtoChannelStruct(ctx, channel, parent, pb.ProtoName, golangName)
-	if err != nil {
-		return nil, err
-	}
+	chanStruct := asyncapi.BuildProtoChannelStruct(ctx, channel, parent, pb.ProtoName, golangName)
 
 	chanStruct.Fields = append(chanStruct.Fields, lang.GoStructField{Name: "topic", Type: &lang.GoSimple{TypeName: "string"}})
 
@@ -53,7 +50,7 @@ func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncap
 
 func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	var bindings channelBindings
-	if err = types.UnmarshalRawsUnion2(rawData, &bindings); err != nil {
+	if err = types.UnmarshalRawMessageUnion2(rawData, &bindings); err != nil {
 		err = types.CompileError{Err: err, Path: ctx.PathStackRef(), Proto: pb.ProtoName}
 		return
 	}
@@ -99,7 +96,7 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 
 func (pb ProtoBuilder) BuildOperationBindings(ctx *common.CompileContext, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	var bindings operationBindings
-	if err = types.UnmarshalRawsUnion2(rawData, &bindings); err != nil {
+	if err = types.UnmarshalRawMessageUnion2(rawData, &bindings); err != nil {
 		err = types.CompileError{Err: err, Path: ctx.PathStackRef(), Proto: pb.ProtoName}
 		return
 	}

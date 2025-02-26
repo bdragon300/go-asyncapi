@@ -8,6 +8,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Union2 is a union type that can hold one of two types. Typically, this is used for handling the JSON or YAML objects,
+// that can be marshalled/unmarshalled to different types.
+//
+// The union is represented as two fields, V0 and V1. The Selector field can have a value 0 or 1, indicating which of
+// the two fields, V0 or V1 are currently active.
 type Union2[T0, T1 any] struct {
 	V0       T0
 	V1       T1
@@ -51,6 +56,7 @@ func (ju *Union2[T0, T1]) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
+// CurrentValue returns the currently active value in the union.
 func (ju *Union2[T0, T1]) CurrentValue() any {
 	switch ju.Selector {
 	case 0:
@@ -62,6 +68,9 @@ func (ju *Union2[T0, T1]) CurrentValue() any {
 	}
 }
 
+// ToUnion2 converts a value to an Union2 object. If v can get converted to T0 and T1, it creates a new Union2 object
+// with the Selector set to 0 or 1, depending on the type. If the value cannot be converted to any of the types,
+// the function panics.
 func ToUnion2[T0, T1 any](v any) *Union2[T0, T1] {
 	val := reflect.ValueOf(v)
 	zero0 := new(T0)
@@ -75,7 +84,9 @@ func ToUnion2[T0, T1 any](v any) *Union2[T0, T1] {
 	panic(fmt.Sprintf("v is not convertable neither to type %T nor to type %T", zero0, zero1))
 }
 
-func UnmarshalRawsUnion2(union Union2[json.RawMessage, yaml.Node], target any) error {
+// UnmarshalRawMessageUnion2 is utility that unmarshals the Union2 that holds the json.RawMessage and yaml.Node types
+// to the target object.
+func UnmarshalRawMessageUnion2(union Union2[json.RawMessage, yaml.Node], target any) error {
 	switch union.Selector {
 	case 0:
 		if err := json.Unmarshal(union.V0, target); err != nil {
@@ -89,6 +100,11 @@ func UnmarshalRawsUnion2(union Union2[json.RawMessage, yaml.Node], target any) e
 	return nil
 }
 
+// Union3 is a union type that can hold one of three types. Typically, this is used for handling the JSON or YAML objects,
+// that can be marshalled/unmarshalled to different types.
+//
+// The union is represented as three fields, V0, V1 and V2. The Selector field can have a value 0, 1 or 2, indicating
+// which of the three fields, V0, V1 or V2 are currently active.
 type Union3[T0, T1, T2 any] struct {
 	V0       T0
 	V1       T1
@@ -137,6 +153,7 @@ func (ju *Union3[T0, T1, T2]) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
+// CurrentValue returns the currently active value in the union.
 func (ju *Union3[T0, T1, T2]) CurrentValue() any {
 	switch ju.Selector {
 	case 0:

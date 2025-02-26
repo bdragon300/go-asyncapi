@@ -4,7 +4,7 @@
     {{- if .Description }}
         {{ print (goIDUpper .) "--" .Description | goComment }}
     {{- end }}
-    type {{ . | goIDUpper }} [{{ if .Size }}{{ .Size }}{{ end }}]{{ .ItemsType | goUsage }}
+    type {{ . | goIDUpper }} [{{ with .Size }}{{.}}{{ end }}]{{ .ItemsType | goUsage }}
 {{- end}}
 {{define "code/lang/goarray/usage"}}
     {{- if .HasDefinition }}
@@ -14,6 +14,6 @@
             {{- goPkg . }}{{ . | goIDUpper }}
         {{- end }}
     {{- else -}}
-        [{{ if .Size }}{{ .Size }}{{ end }}]{{ .ItemsType | goUsage }}
+        [{{ with .Size }}{{.}}{{ end }}]{{ .ItemsType | goUsage }}
     {{- end }}
 {{- end}}

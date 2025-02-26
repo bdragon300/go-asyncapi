@@ -6,11 +6,13 @@ import (
 
 const TraceLevel chlog.Level = -5
 
+// LoggerPrefix denotes the current build stage in logs. These prefixes should be used everywhere for logging to keep
+// the tool's log output consistent.
 type LoggerPrefix string
 
 const (
 	LoggerPrefixCompilation LoggerPrefix = "Compilation 🔨"
-	LoggerPrefixResolving   LoggerPrefix = "Resolving 📡"
+	LoggerPrefixLocating    LoggerPrefix = "Locating 📡"
 	LoggerPrefixLinking     LoggerPrefix = "Linking 🔗"
 	LoggerPrefixRendering   LoggerPrefix = "Rendering 🎨"
 	LoggerPrefixFormatting  LoggerPrefix = "Formatting 📐"
@@ -19,6 +21,7 @@ const (
 
 var loggers = make(map[LoggerPrefix]*Logger)
 
+// GetLogger returns a logger for the given prefix. If the logger does not exist, it is created.
 func GetLogger(prefix LoggerPrefix) *Logger {
 	if _, ok := loggers[prefix]; !ok {
 		loggers[prefix] = &Logger{Logger: chlog.Default().WithPrefix(string(prefix))}

@@ -4,7 +4,7 @@
     {{-  .Name }}
 {{- end}}
 {{define "code/lang/gosimple/usage"}}
-    {{- if .RuntimeImport}}
+    {{- if .IsRuntimeImport}}
         {{- goQualR .Import .Name }}
     {{- else if .Import }}
         {{- goQual .Import .Name }}

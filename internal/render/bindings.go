@@ -6,13 +6,14 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/types"
 )
 
-// Bindings never renders itself, only as a part of other object
+// Bindings represents the bindings object. It's used for all binding types: channel, operation, message, and server.
 type Bindings struct {
-	OriginalName string // Actually it isn't used
+	OriginalName string
 
-	Values types.OrderedMap[string, *lang.GoValue] // Binding values by protocol
-	// Value of jsonschema fields as json marshalled strings
-	JSONValues types.OrderedMap[string, types.OrderedMap[string, string]] // Binbing values by protocol
+	// Values is constant bindings values by protocol
+	Values types.OrderedMap[string, *lang.GoValue]
+	// JSONValues is jsonschema bindings values by protocol
+	JSONValues types.OrderedMap[string, types.OrderedMap[string, string]]
 }
 
 func (b *Bindings) Kind() common.ObjectKind {

@@ -5,8 +5,10 @@ import (
 	"github.com/samber/lo"
 )
 
-const fallbackContentType = "application/json" // Default content type if it omitted in spec
+// DefaultContentType is the default content type to use if none is set.
+const DefaultContentType = "application/json"
 
+// AsyncAPI represents the root of the AsyncAPI document.
 type AsyncAPI struct {
 	DefaultContentType string
 }
@@ -24,7 +26,7 @@ func (a *AsyncAPI) Visible() bool {
 }
 
 func (a *AsyncAPI) EffectiveDefaultContentType() string {
-	res, _ := lo.Coalesce(a.DefaultContentType, fallbackContentType)
+	res, _ := lo.Coalesce(a.DefaultContentType, DefaultContentType)
 	return res
 }
 

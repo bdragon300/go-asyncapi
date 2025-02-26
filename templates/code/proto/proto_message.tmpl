@@ -23,9 +23,10 @@
 func (m *{{ .OutType | goIDUpper }}) MarshalEnvelope{{ .Protocol | goIDUpper }}(envelope {{goQualR .Protocol "EnvelopeWriter"}}) error {
     {{- template "code/proto/message/encoder" .}}
     envelope.SetContentType({{.EffectiveContentType | goLit}})
-    {{- with .HeadersType}}
+    {{- if .HeadersTypePromise}}
+        {{- /* Headers schema is defined */}}
         envelope.SetHeaders({
-        {{- range .Fields}}
+        {{- range .HeadersType.Fields}}
             {{ .Name | goLit}}: m.Headers.{{.Name}},
         {{- end}}
         })
@@ -61,18 +62,18 @@ func (m *{{ .OutType | goIDUpper }}) MarshalEnvelope{{ .Protocol | goIDUpper }}(
 
 func (m *{{ .InType | goIDUpper }}) UnmarshalEnvelope{{ .Protocol | goIDUpper }}(envelope {{goQualR .Protocol "EnvelopeReader"}}) error {
     {{- template "code/proto/message/decoder" .}}
-    {{- with .HeadersType }}
-        {{- /* Empty headers should not generate code */}}
-        {{- if gt (len .Fields) 0}}
+    {{- if .HeadersTypePromise }}
+        {{- /* Headers schema is defined */}}
+        {{- if gt (len .HeadersType.Fields) 0}}
             headers := envelope.Headers()
-            {{- range .Fields}}
+            {{- range .HeadersType.Fields}}
                 if v, ok := headers[{{.Name | goLit}}]; ok {
                     m.headers.{{.Name}} = v.({{.Type| goUsage}})
                 }
             {{- end}}
         {{- end}}
     {{- else}}
-        m.headers = {{.HeadersFallbackType| goUsage}}(envelope.Headers())
+        m.headers = {{.HeadersTypeDefault | goUsage}}(envelope.Headers())
     {{- end}}
     return nil
 }

@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+// CompileError is an error that occurred during the compilation stage. Contains the failed document entity path and
+// optionally the protocol name.
 type CompileError struct {
 	Err   error
 	Path  string
@@ -30,6 +32,7 @@ func (c CompileError) Is(e error) bool {
 	return ok && v.Path == c.Path || errors.Is(c.Err, e)
 }
 
+// MultilineError is an error that contains the multiline content along with the error message.
 type MultilineError struct {
 	Err     error
 	Content []byte
@@ -43,6 +46,7 @@ func (e MultilineError) Unwrap() error {
 	return e.Err
 }
 
+// ContentLines returns the multiline content with line numbers.
 func (e MultilineError) ContentLines() string {
 	var b strings.Builder
 	rd := bufio.NewReader(bytes.NewReader(e.Content))

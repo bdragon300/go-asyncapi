@@ -10,6 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Structures, that represent the tool's configuration file
 type (
 	toolConfig struct {
 		ConfigVersion int    `yaml:"configVersion"`
@@ -17,7 +18,7 @@ type (
 		RuntimeModule string `yaml:"runtimeModule"`
 
 		Selections      []toolConfigSelection      `yaml:"selections"`
-		Resolver        toolConfigResolver         `yaml:"resolver"`
+		Locator         toolConfigLocator          `yaml:"locator"`
 		Implementations []toolConfigImplementation `yaml:"implementations"`
 
 		Code   toolConfigCode   `yaml:"code"`
@@ -43,7 +44,7 @@ type (
 		Package          string   `yaml:"package"`
 	}
 
-	toolConfigResolver struct {
+	toolConfigLocator struct {
 		AllowRemoteReferences bool          `yaml:"allowRemoteReferences"`
 		SearchDirectory       string        `yaml:"searchDirectory"`
 		Timeout               time.Duration `yaml:"timeout"`
@@ -91,6 +92,7 @@ type (
 	}
 )
 
+// loadConfig loads and parses the configuration file from the given filesystem.
 func loadConfig(filesystem fs.FS, fileName string) (toolConfig, error) {
 	f, err := filesystem.Open(fileName)
 	if err != nil {
@@ -115,6 +117,7 @@ func parseConfigFile(f io.Reader) (toolConfig, error) {
 	return conf, nil
 }
 
+// mergeConfig merges the default configuration with the user-provided one.
 func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 	var res toolConfig
 
@@ -130,10 +133,10 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 		res.Selections = userConf.Selections
 	}
 
-	res.Resolver.AllowRemoteReferences = coalesce(userConf.Resolver.AllowRemoteReferences, defaultConf.Resolver.AllowRemoteReferences)
-	res.Resolver.SearchDirectory = coalesce(userConf.Resolver.SearchDirectory, defaultConf.Resolver.SearchDirectory)
-	res.Resolver.Timeout = coalesce(userConf.Resolver.Timeout, defaultConf.Resolver.Timeout)
-	res.Resolver.Command = coalesce(userConf.Resolver.Command, defaultConf.Resolver.Command)
+	res.Locator.AllowRemoteReferences = coalesce(userConf.Locator.AllowRemoteReferences, defaultConf.Locator.AllowRemoteReferences)
+	res.Locator.SearchDirectory = coalesce(userConf.Locator.SearchDirectory, defaultConf.Locator.SearchDirectory)
+	res.Locator.Timeout = coalesce(userConf.Locator.Timeout, defaultConf.Locator.Timeout)
+	res.Locator.Command = coalesce(userConf.Locator.Command, defaultConf.Locator.Command)
 
 	res.Code.PreambleTemplate = coalesce(userConf.Code.PreambleTemplate, defaultConf.Code.PreambleTemplate)
 	res.Code.DisableFormatting = coalesce(userConf.Code.DisableFormatting, defaultConf.Code.DisableFormatting)

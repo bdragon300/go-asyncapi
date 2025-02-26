@@ -8,9 +8,9 @@ import (
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/compiler"
+	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/renderer"
-	"github.com/bdragon300/go-asyncapi/internal/specurl"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
 	"github.com/bdragon300/go-asyncapi/internal/types"
@@ -19,17 +19,17 @@ import (
 )
 
 type InfraCmd struct {
-	Spec string `arg:"required,positional" help:"AsyncAPI document file or url" placeholder:"FILE"`
+	Document string `arg:"required,positional" help:"AsyncAPI document file or url" placeholder:"FILE"`
 
 	Format     string `arg:"-f,--format" help:"Output file format" placeholder:"NAME"`
 	ConfigFile string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"FILE"`
 	OutputFile string `arg:"-o,--output" help:"Output file path" placeholder:"FILE"`
 
-	TemplateDir       string        `arg:"-T,--template-dir" help:"User templates directory" placeholder:"DIR"`
-	AllowRemoteRefs   bool          `arg:"--allow-remote-refs" help:"Allow resolver to fetch the files from remote $ref URLs"`
-	ResolverSearchDir string        `arg:"--resolver-search-dir" help:"Directory to search the local spec files for [default: current working directory]" placeholder:"DIR"`
-	ResolverTimeout   time.Duration `arg:"--resolver-timeout" help:"Timeout for resolver to resolve a spec file, e.g. 30s, 2m, etc." placeholder:"DURATION"`
-	ResolverCommand   string        `arg:"--resolver-command" help:"Custom resolver executable to use instead of built-in resolver" placeholder:"EXECUTABLE"`
+	TemplateDir      string        `arg:"-T,--template-dir" help:"User templates directory" placeholder:"DIR"`
+	AllowRemoteRefs  bool          `arg:"--allow-remote-refs" help:"Allow locator to fetch the files from remote $ref URLs"`
+	LocatorSearchDir string        `arg:"--locator-search-dir" help:"Directory to search the documents for [default: current working directory]" placeholder:"PATH"`
+	LocatorTimeout   time.Duration `arg:"--locator-timeout" help:"Timeout for locator to read a document. Format: 30s, 2m, etc." placeholder:"DURATION"`
+	LocatorCommand   string        `arg:"--locator-command" help:"Custom locator command to use instead of built-in locator" placeholder:"COMMAND"`
 }
 
 func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
@@ -42,15 +42,18 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	//
 	// Compilation & linking
 	//
-	fileResolver := getResolver(cmdConfig)
-	specURL := specurl.Parse(cmd.Spec)
+	fileLocator := getLocator(cmdConfig)
+	docURL, err := jsonpointer.Parse(cmd.Document)
+	if err != nil {
+		return fmt.Errorf("parse URL: %w", err)
+	}
 	compileOpts := common.CompileOpts{
-		AllowRemoteRefs:     cmdConfig.Resolver.AllowRemoteReferences,
+		AllowRemoteRefs:     cmdConfig.Locator.AllowRemoteReferences,
 		RuntimeModule:       cmdConfig.RuntimeModule,
 		GeneratePublishers:  true,
 		GenerateSubscribers: true,
 	}
-	modules, err := runCompilationLinking(fileResolver, specURL, compileOpts)
+	documents, err := runCompilationAndLinking(fileLocator, docURL, compileOpts)
 	if err != nil {
 		return fmt.Errorf("compilation: %w", err)
 	}
@@ -58,8 +61,8 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	//
 	// Rendering
 	//
-	mainModule := modules[specURL.SpecID]
-	activeProtocols := collectActiveProtocols(mainModule.AllObjects())
+	rootDocument := documents[docURL.Location()]
+	activeProtocols := collectActiveProtocols(rootDocument.Artifacts())
 	logger.Debug("Renders protocols", "value", activeProtocols)
 
 	// TODO: refactor RenderOpts -- it almost not needed here, it's related to codegen.
@@ -70,7 +73,7 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	}
 	renderManager := manager.NewTemplateRenderManager(renderOpts)
 
-	// Module objects
+	// Document objects
 	logger.Debug("Run objects rendering")
 	templateDirs := []fs.FS{infra.TemplateFS}
 	if cmdConfig.Code.TemplatesDir != "" {
@@ -83,10 +86,10 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	if err = tplLoader.ParseRecursive(renderManager); err != nil {
 		return fmt.Errorf("parse templates: %w", err)
 	}
-	allObjects := lo.FlatMap(lo.Values(modules), func(m *compiler.Module, _ int) []common.CompileObject { return m.AllObjects() })
+	allObjects := lo.FlatMap(lo.Values(documents), func(m *compiler.Document, _ int) []common.CompileArtifact { return m.Artifacts() })
 	renderQueue := selectObjects(allObjects, renderOpts.Selections)
 	// TODO: check if all server variables are set in config, error if not
-	serverVariables := toServerConfig(cmdConfig.Infra.Servers)
+	serverVariables := getInfraServerConfig(cmdConfig.Infra.Servers)
 
 	if err = renderer.RenderInfra(renderQueue, activeProtocols, cmdConfig.Infra.OutputFile, serverVariables, renderManager); err != nil {
 		return fmt.Errorf("render infra: %w", err)
@@ -126,15 +129,15 @@ func cliInfraMergeConfig(globalConfig toolConfig, cmd *InfraCmd) (toolConfig, er
 
 	res.Code.TemplatesDir = coalesce(cmd.TemplateDir, globalConfig.Code.TemplatesDir)
 
-	res.Resolver.AllowRemoteReferences = coalesce(cmd.AllowRemoteRefs, globalConfig.Resolver.AllowRemoteReferences)
-	res.Resolver.SearchDirectory = coalesce(cmd.ResolverSearchDir, globalConfig.Resolver.SearchDirectory)
-	res.Resolver.Timeout = coalesce(cmd.ResolverTimeout, globalConfig.Resolver.Timeout)
-	res.Resolver.Command = coalesce(cmd.ResolverCommand, globalConfig.Resolver.Command)
+	res.Locator.AllowRemoteReferences = coalesce(cmd.AllowRemoteRefs, globalConfig.Locator.AllowRemoteReferences)
+	res.Locator.SearchDirectory = coalesce(cmd.LocatorSearchDir, globalConfig.Locator.SearchDirectory)
+	res.Locator.Timeout = coalesce(cmd.LocatorTimeout, globalConfig.Locator.Timeout)
+	res.Locator.Command = coalesce(cmd.LocatorCommand, globalConfig.Locator.Command)
 
 	return res, nil
 }
 
-func toServerConfig(servers []toolConfigInfraServer) []common.ConfigInfraServer {
+func getInfraServerConfig(servers []toolConfigInfraServer) []common.ConfigInfraServer {
 	res := make([]common.ConfigInfraServer, 0)
 
 	for _, server := range servers {
