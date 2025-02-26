@@ -193,7 +193,7 @@ func (m *Message) Visible() bool {
 }
 
 func (m *Message) String() string {
-	return "Message " + m.OriginalName
+	return "Message(" + m.OriginalName + ")"
 }
 
 type ProtoMessage struct {
@@ -206,7 +206,7 @@ func (p *ProtoMessage) Selectable() bool {
 }
 
 func (p *ProtoMessage) String() string {
-	return fmt.Sprintf("ProtoMessage[%s] %s", p.Protocol, p.OriginalName)
+	return fmt.Sprintf("ProtoMessage[%s](%s)", p.Protocol, p.OriginalName)
 }
 
 // isBound returns true if the message is bound to the protocol

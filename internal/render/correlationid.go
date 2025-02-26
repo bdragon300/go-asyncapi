@@ -42,5 +42,5 @@ func (c *CorrelationID) Visible() bool {
 }
 
 func (c *CorrelationID) String() string {
-	return "CorrelationID " + c.OriginalName
+	return "CorrelationID(" + c.OriginalName + ")"
 }

@@ -54,15 +54,15 @@ func (gv *GoValue) Visible() bool {
 func (gv *GoValue) String() string {
 	switch {
 	case gv.LiteralValue != nil:
-		return fmt.Sprintf("GoValue %v", gv.LiteralValue)
+		return fmt.Sprintf("GoValue:%v", gv.LiteralValue)
 	case gv.StructValues.Len() > 0:
-		return fmt.Sprintf("GoValue {%v...}", lo.Slice(gv.StructValues.Entries(), 0, 2))
+		return fmt.Sprintf("GoValue:{%v...}", lo.Slice(gv.StructValues.Entries(), 0, 2))
 	case gv.MapValues.Len() > 0:
-		return fmt.Sprintf("GoValue {%v...}", lo.Slice(gv.MapValues.Entries(), 0, 2))
+		return fmt.Sprintf("GoValue:{%v...}", lo.Slice(gv.MapValues.Entries(), 0, 2))
 	case gv.ArrayValues != nil:
-		return fmt.Sprintf("GoValue {%v...}", lo.Slice(gv.ArrayValues, 0, 2))
+		return fmt.Sprintf("GoValue:{%v...}", lo.Slice(gv.ArrayValues, 0, 2))
 	}
-	return "GoValue nil"
+	return "GoValue:nil"
 }
 
 func (gv *GoValue) CanBeAddressed() bool {

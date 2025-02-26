@@ -169,7 +169,7 @@ func (s *Server) Visible() bool {
 }
 
 func (s *Server) String() string {
-	return fmt.Sprintf("Server[%s] %s", s.Protocol, s.OriginalName)
+	return fmt.Sprintf("Server[%s](%s)", s.Protocol, s.OriginalName)
 }
 
 type ProtoServer struct {
@@ -183,5 +183,5 @@ func (p *ProtoServer) Selectable() bool {
 }
 
 func (p *ProtoServer) String() string {
-	return "ProtoServer " + p.OriginalName
+	return "ProtoServer(" + p.OriginalName + ")"
 }

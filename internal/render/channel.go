@@ -178,7 +178,7 @@ func (c *Channel) Visible() bool {
 }
 
 func (c *Channel) String() string {
-	return "Channel " + c.OriginalName
+	return "Channel(" + c.OriginalName + ")"
 }
 
 type ProtoChannel struct {
@@ -193,7 +193,7 @@ func (p *ProtoChannel) Selectable() bool {
 }
 
 func (p *ProtoChannel) String() string {
-	return fmt.Sprintf("ProtoChannel[%s] %s", p.Protocol, p.OriginalName)
+	return fmt.Sprintf("ProtoChannel[%s](%s)", p.Protocol, p.OriginalName)
 }
 
 // isBound returns true if channel is bound to at least one server with supported protocol

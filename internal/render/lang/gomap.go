@@ -1,6 +1,8 @@
 package lang
 
 import (
+	"fmt"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 )
 
@@ -15,9 +17,9 @@ type GoMap struct {
 
 func (m *GoMap) String() string {
 	if m.Import != "" {
-		return "GoMap /" + m.Import + "." + m.OriginalName
+		return fmt.Sprintf("GoMap(%s.%s)", m.Import, m.OriginalName)
 	}
-	return "GoMap " + m.OriginalName
+	return "GoMap(" + m.OriginalName + ")"
 }
 
 func (m *GoMap) GoTemplate() string {

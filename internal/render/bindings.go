@@ -29,7 +29,7 @@ func (b *Bindings) Visible() bool {
 }
 
 func (b *Bindings) String() string {
-	return "Bindings " + b.OriginalName
+	return "Bindings(" + b.OriginalName + ")"
 }
 
 func (b *Bindings) Name() string {

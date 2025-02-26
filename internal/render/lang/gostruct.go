@@ -23,9 +23,9 @@ type GoStruct struct {
 
 func (s *GoStruct) String() string {
 	if s.Import != "" {
-		return "GoStruct /" + s.Import + "." + s.OriginalName
+		return fmt.Sprintf("GoStruct(%s.%s)", s.Import, s.OriginalName)
 	}
-	return "GoStruct " + s.OriginalName
+	return "GoStruct(" + s.OriginalName + ")"
 }
 
 func (s *GoStruct) GoTemplate() string {

@@ -155,7 +155,7 @@ func (r *GolangTypePromise) Visible() bool {
 }
 
 func (r *GolangTypePromise) String() string {
-	return "GolangTypePromise -> " + r.ref
+	return "GolangTypePromise->" + r.ref
 }
 
 func (r *GolangTypePromise) CanBeAddressed() bool {

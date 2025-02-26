@@ -69,7 +69,7 @@ func (r *Ref) String() string {
 		b.WriteString("]")
 	}
 
-	b.WriteString(" -> ")
+	b.WriteString("->")
 	b.WriteString(r.ref)
 	return b.String()
 }

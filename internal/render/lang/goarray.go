@@ -1,6 +1,8 @@
 package lang
 
 import (
+	"fmt"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 )
 
@@ -15,9 +17,9 @@ type GoArray struct {
 
 func (a *GoArray) String() string {
 	if a.Import != "" {
-		return "GoArray /" + a.Import + "." + a.OriginalName
+		return fmt.Sprintf("GoArray(%s.%s)", a.Import, a.OriginalName)
 	}
-	return "GoArray " + a.OriginalName
+	return "GoArray(" + a.OriginalName + ")"
 }
 
 func (a *GoArray) GoTemplate() string {

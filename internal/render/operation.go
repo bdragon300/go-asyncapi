@@ -116,7 +116,7 @@ func (o *Operation) Visible() bool {
 }
 
 func (o *Operation) String() string {
-	return "Operation " + o.OriginalName
+	return "Operation(" + o.OriginalName + ")"
 }
 
 type ProtoOperation struct {
@@ -133,7 +133,7 @@ func (p *ProtoOperation) Selectable() bool {
 }
 
 func (p *ProtoOperation) String() string {
-	return fmt.Sprintf("ProtoOperation[%s] %s", p.Protocol, p.OriginalName)
+	return fmt.Sprintf("ProtoOperation[%s](%s)", p.Protocol, p.OriginalName)
 }
 
 // ProtoChannel returns the ProtoChannel with the same Protocol in the bound Channel.

@@ -33,5 +33,5 @@ func (s *ServerVariable) Visible() bool {
 }
 
 func (s *ServerVariable) String() string {
-	return "ServerVariable " + s.OriginalName
+	return "ServerVariable(" + s.OriginalName + ")"
 }

@@ -1,6 +1,7 @@
 package lang
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -40,9 +41,9 @@ func (s *UnionStruct) UnionStruct() common.GolangType {
 
 func (s *UnionStruct) String() string {
 	if s.Import != "" {
-		return "UnionStruct /" + s.Import + "." + s.OriginalName
+		return fmt.Sprintf("UnionStruct(%s.%s)", s.Import, s.OriginalName)
 	}
-	return "UnionStruct " + s.OriginalName
+	return "UnionStruct(" + s.OriginalName + ")"
 }
 
 func (s *UnionStruct) GoTemplate() string {

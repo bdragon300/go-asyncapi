@@ -26,7 +26,7 @@ func (p *GoPointer) Visible() bool {
 }
 
 func (p *GoPointer) String() string {
-	return "GoPointer -> " + p.Type.String()
+	return "GoPointer->" + p.Type.String()
 }
 
 func (p *GoPointer) CanBeAddressed() bool {

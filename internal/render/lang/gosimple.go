@@ -1,6 +1,8 @@
 package lang
 
 import (
+	"fmt"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 )
 
@@ -36,9 +38,9 @@ func (p *GoSimple) Visible() bool {
 
 func (p *GoSimple) String() string {
 	if p.Import != "" {
-		return "GoSimple /" + p.Import + "." + p.TypeName
+		return fmt.Sprintf("GoSimple(%s.%s)", p.Import, p.TypeName)
 	}
-	return "GoSimple " + p.TypeName
+	return "GoSimple(" + p.TypeName + ")"
 }
 
 func (p *GoSimple) CanBeAddressed() bool {
