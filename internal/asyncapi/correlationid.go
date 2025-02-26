@@ -19,9 +19,7 @@ type CorrelationID struct {
 }
 
 func (c CorrelationID) Compile(ctx *common.CompileContext) error {
-	// TODO: move this code from everywhere to single place?
-	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
-	obj, err := c.build(ctx, ctx.Stack.Top().PathItem)
+	obj, err := c.build(ctx, ctx.Stack.Top().Key)
 	if err != nil {
 		return err
 	}
@@ -40,7 +38,7 @@ func (c CorrelationID) build(ctx *common.CompileContext, correlationIDKey string
 
 	locationParts := strings.SplitN(c.Location, "#", 2)
 	if len(locationParts) < 2 {
-		return nil, types.CompileError{Err: errors.New("no fragment part in location"), Path: ctx.PathStackRef()}
+		return nil, types.CompileError{Err: errors.New("no fragment part in location"), Path: ctx.CurrentPositionRef()}
 	}
 
 	var structField render.CorrelationIDStructFieldKind
@@ -52,15 +50,15 @@ func (c CorrelationID) build(ctx *common.CompileContext, correlationIDKey string
 	default:
 		return nil, types.CompileError{
 			Err:  errors.New("location source must point only to header or payload"),
-			Path: ctx.PathStackRef(),
+			Path: ctx.CurrentPositionRef(),
 		}
 	}
 
 	if !strings.HasPrefix(locationParts[1], "/") {
-		return nil, types.CompileError{Err: errors.New("fragment part must start with a slash"), Path: ctx.PathStackRef()}
+		return nil, types.CompileError{Err: errors.New("fragment part must start with a slash"), Path: ctx.CurrentPositionRef()}
 	}
 	if locationParts[1] == "/" {
-		return nil, types.CompileError{Err: errors.New("location must not point to root of message/header"), Path: ctx.PathStackRef()}
+		return nil, types.CompileError{Err: errors.New("location must not point to root of message/header"), Path: ctx.CurrentPositionRef()}
 	}
 
 	locationPath := strings.Split(locationParts[1], "/")[1:]

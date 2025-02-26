@@ -140,10 +140,9 @@ func pushStack(ctx *common.CompileContext, pathItem string, flags map[common.Sch
 			flags[common.SchemaTagDataModel] = ctx.Stack.Top().Flags[common.SchemaTagDataModel]
 		}
 	}
-	item := common.ContextStackItem{
-		PathItem:       pathItem,
-		Flags:          flags,
-		RegisteredName: "",
+	item := common.DocumentTreeItem{
+		Key:   pathItem,
+		Flags: flags,
 	}
 	ctx.Stack.Push(item)
 }

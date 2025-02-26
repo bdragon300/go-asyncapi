@@ -36,8 +36,7 @@ type Message struct {
 }
 
 func (m Message) Compile(ctx *common.CompileContext) error {
-	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
-	obj, err := m.build(ctx, ctx.Stack.Top().PathItem)
+	obj, err := m.build(ctx, ctx.Stack.Top().Key)
 	if err != nil {
 		return err
 	}
@@ -113,14 +112,14 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 
 	if m.Headers != nil {
 		ctx.Logger.Trace("Message headers")
-		ref := ctx.PathStackRef("headers")
+		ref := ctx.CurrentPositionRef("headers")
 		res.HeadersTypePromise = lang.NewGolangTypePromise(ref, nil)
 		res.HeadersTypePromise.AssignErrorNote = "Probably the headers schema has type other than of 'object'?"
 		ctx.PutPromise(res.HeadersTypePromise)
 	}
 	if m.Payload != nil {
 		ctx.Logger.Trace("Message payload")
-		ref := ctx.PathStackRef("payload")
+		ref := ctx.CurrentPositionRef("payload")
 		res.PayloadTypePromise = lang.NewGolangTypePromise(ref, nil)
 		ctx.PutPromise(res.PayloadTypePromise)
 	}
@@ -136,7 +135,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 			},
 		}
 
-		ref := ctx.PathStackRef("bindings")
+		ref := ctx.CurrentPositionRef("bindings")
 		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, nil)
 		ctx.PutPromise(res.BindingsPromise)
 	}
@@ -144,7 +143,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	// Link to CorrelationID if any
 	if m.CorrelationID != nil {
 		ctx.Logger.Trace("Message correlationId")
-		ref := ctx.PathStackRef("correlationId")
+		ref := ctx.CurrentPositionRef("correlationId")
 		res.CorrelationIDPromise = lang.NewPromise[*render.CorrelationID](ref, nil)
 		ctx.PutPromise(res.CorrelationIDPromise)
 	}

@@ -44,7 +44,7 @@ func (pb ProtoBuilder) BuildOperationBindings(
 ) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	var bindings operationBindings
 	if err = types.UnmarshalRawMessageUnion2(rawData, &bindings); err != nil {
-		err = types.CompileError{Err: err, Path: ctx.PathStackRef(), Proto: pb.ProtoName}
+		err = types.CompileError{Err: err, Path: ctx.CurrentPositionRef(), Proto: pb.ProtoName}
 		return
 	}
 	vals = lang.ConstructGoValue(bindings, []string{"MessageExpiryInterval"}, &lang.GoSimple{TypeName: "OperationBindings", Import: ctx.RuntimeModule(pb.ProtoName)})

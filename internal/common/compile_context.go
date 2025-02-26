@@ -3,7 +3,6 @@ package common
 import (
 	"fmt"
 	"path"
-	"strings"
 
 	"github.com/bdragon300/go-asyncapi/internal/log"
 
@@ -53,10 +52,11 @@ type CompileOpts struct {
 	GenerateSubscribers bool
 }
 
-type ContextStackItem struct {
-	PathItem       string
-	Flags          map[SchemaTag]string
-	RegisteredName string // TODO: remove in favor of OriginalName in render structures
+type DocumentTreeItem struct {
+	// Key is the key of the object in the document tree. For example, a section key in yaml file.
+	Key string
+	// Flags are the tool's struct tags assigned to the appropriate field.
+	Flags map[SchemaTag]string
 }
 
 // NewCompileContext returns a new compilation context with the given document URL and compiler options.
@@ -75,7 +75,7 @@ func NewCompileContext(u *jsonpointer.JSONPointer, compileOpts CompileOpts) *Com
 type CompileContext struct {
 	Storage CompilationStorage
 	// Stack keeps the current position in the document tree
-	Stack       types.SimpleStack[ContextStackItem]
+	Stack       types.SimpleStack[DocumentTreeItem]
 	Logger      *CompilerLogger
 	CompileOpts CompileOpts
 	documentURL *jsonpointer.JSONPointer
@@ -83,12 +83,22 @@ type CompileContext struct {
 
 // PutObject adds a Renderable as artifact to the storage.
 func (c *CompileContext) PutObject(obj Renderable) {
-	c.Logger.Debug("Built", "object", obj.String(), "addr", fmt.Sprintf("%p", obj), "type", fmt.Sprintf("%T", obj))
-	c.Storage.AddArtifact(CompileArtifact{Renderable: obj, ObjectURL: c.CurrentObjectURL()})
+	// JSON Pointer to the current position in the document
+	u := c.Storage.DocumentURL()
+	u.Pointer = c.pathStack()
+
+	c.Logger.Debug(
+		"Built",
+		"object", obj.String(),
+		"url", u.String(),
+		"memoryAddress", fmt.Sprintf("%p", obj),
+		"goType", fmt.Sprintf("%T", obj),
+	)
+	c.Storage.AddArtifact(CompileArtifact{Renderable: obj, ObjectURL: u})
 }
 
-// PutPromise adds a promise to the storage. If the promise points to an external document, the document path is also
-// added to the list of external documents.
+// PutPromise adds a promise to the storage. If the promise points to an external document instead of the current
+// document, this ref is also gets to the external refs list.
 func (c *CompileContext) PutPromise(p ObjectPromise) {
 	ref := lo.Must(jsonpointer.Parse(p.Ref()))
 	if ref.Location() != "" {
@@ -102,32 +112,15 @@ func (c *CompileContext) PutListPromise(p ObjectListPromise) {
 	c.Storage.AddListPromise(p)
 }
 
-// PathStackRef returns the current position in document in URL fragment format, e.g. "#/path/to/object".
-// The returned path is URL-encoded.
-func (c *CompileContext) PathStackRef(joinParts ...string) string {
-	parts := c.pathStack()
-	if len(joinParts) > 0 {
-		parts = append(parts, joinParts...)
-	}
+// CurrentPositionRef returns a $ref string to the current position in document, e.g. "#/path/to/object",
+// appending the optional parts at the end.
+func (c *CompileContext) CurrentPositionRef(extraParts ...string) string {
+	parts := append(c.pathStack(), extraParts...)
 	return jsonpointer.PointerString(parts...)
 }
 
 func (c *CompileContext) pathStack() []string {
-	return lo.Map(c.Stack.Items(), func(item ContextStackItem, _ int) string { return item.PathItem })
-}
-
-// CurrentObjectURL returns the full URL of the current object in the document, i.e. mandatory document path + fragment.
-// The fragment is built from the current position in the document. E.g. "file:///path/to/spec.yaml#/path/to/object".
-func (c *CompileContext) CurrentObjectURL() jsonpointer.JSONPointer {
-	u := c.Storage.DocumentURL()
-	u.Pointer = c.pathStack()
-	return u
-}
-
-func (c *CompileContext) RegisterNameTop(n string) { // TODO: rework and remove this method?
-	t := c.Stack.Top()
-	t.RegisteredName = n
-	c.Stack.ReplaceTop(t)
+	return lo.Map(c.Stack.Items(), func(item DocumentTreeItem, _ int) string { return item.Key })
 }
 
 // RuntimeModule returns the import path of the runtime module with optional subpackage,
@@ -137,18 +130,10 @@ func (c *CompileContext) RuntimeModule(subPackage string) string {
 }
 
 // GenerateObjName generates a valid Go object name from any given string appending the optional suffix.
-// If name is empty, the method generates a name from the current object position in document.
+// If name is empty, object's key on the current position in document is used.
 func (c *CompileContext) GenerateObjName(name, suffix string) string {
 	if name == "" {
-		// Use names of registered object from current stack (that were set by RegisterNameTop call)
-		items := lo.FilterMap(c.Stack.Items(), func(item ContextStackItem, _ int) (string, bool) {
-			return item.RegisteredName, item.RegisteredName != ""
-		})
-		// Otherwise if no registered objects in stack, just use path
-		if len(items) == 0 {
-			items = c.pathStack()
-		}
-		name = strings.Join(items, "_")
+		name = c.Stack.Top().Key
 	}
 	return utils.ToGolangName(name, true) + suffix
 }
@@ -156,7 +141,7 @@ func (c *CompileContext) GenerateObjName(name, suffix string) string {
 func (c *CompileContext) WithResultsStore(store CompilationStorage) *CompileContext {
 	res := CompileContext{
 		Storage:     store,
-		Stack:       types.SimpleStack[ContextStackItem]{},
+		Stack:       types.SimpleStack[DocumentTreeItem]{},
 		documentURL: c.documentURL,
 		Logger:      c.Logger,
 		CompileOpts: c.CompileOpts,

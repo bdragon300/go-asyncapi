@@ -29,8 +29,7 @@ type Server struct {
 }
 
 func (s Server) Compile(ctx *common.CompileContext) error {
-	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
-	obj, err := s.build(ctx, ctx.Stack.Top().PathItem)
+	obj, err := s.build(ctx, ctx.Stack.Top().Key)
 	if err != nil {
 		return err
 	}
@@ -81,7 +80,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 			},
 		}
 
-		ref := ctx.PathStackRef("bindings")
+		ref := ctx.CurrentPositionRef("bindings")
 		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, nil)
 		ctx.PutPromise(res.BindingsPromise)
 	}
@@ -89,7 +88,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	// Server variables
 	for _, v := range s.Variables.Entries() {
 		ctx.Logger.Trace("Server variable", "name", v.Key)
-		ref := ctx.PathStackRef("variables", v.Key)
+		ref := ctx.CurrentPositionRef("variables", v.Key)
 		prm := lang.NewPromise[*render.ServerVariable](ref, nil)
 		ctx.PutPromise(prm)
 		res.VariablesPromises.Set(v.Key, prm)

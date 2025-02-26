@@ -37,8 +37,7 @@ type Operation struct {
 }
 
 func (o Operation) Compile(ctx *common.CompileContext) error {
-	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
-	obj, err := o.build(ctx, ctx.Stack.Top().PathItem, ctx.Stack.Top().Flags)
+	obj, err := o.build(ctx, ctx.Stack.Top().Key, ctx.Stack.Top().Flags)
 	if err != nil {
 		return err
 	}
@@ -69,7 +68,7 @@ func (o Operation) build(ctx *common.CompileContext, operationKey string, flags 
 	}
 
 	if o.Channel == nil {
-		return nil, types.CompileError{Err: errors.New("channel field is empty"), Path: ctx.PathStackRef()}
+		return nil, types.CompileError{Err: errors.New("channel field is empty"), Path: ctx.CurrentPositionRef()}
 	}
 
 	ctx.Logger.Trace("Bound channel", "ref", o.Channel.Ref)
@@ -80,7 +79,7 @@ func (o Operation) build(ctx *common.CompileContext, operationKey string, flags 
 	if o.Bindings != nil {
 		ctx.Logger.Trace("Found operation bindings")
 
-		ref := ctx.PathStackRef("bindings")
+		ref := ctx.CurrentPositionRef("bindings")
 		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, nil)
 		ctx.PutPromise(res.BindingsPromise)
 

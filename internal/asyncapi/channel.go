@@ -30,8 +30,7 @@ type Channel struct {
 }
 
 func (c Channel) Compile(ctx *common.CompileContext) error {
-	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
-	obj, err := c.build(ctx, ctx.Stack.Top().PathItem, ctx.Stack.Top().Flags)
+	obj, err := c.build(ctx, ctx.Stack.Top().Key, ctx.Stack.Top().Flags)
 	if err != nil {
 		return err
 	}
@@ -93,7 +92,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 		}
 		for _, paramName := range c.Parameters.Keys() {
 			ctx.Logger.Trace("Channel parameter", "name", paramName)
-			ref := ctx.PathStackRef("parameters", paramName)
+			ref := ctx.CurrentPositionRef("parameters", paramName)
 			prmType := lang.NewGolangTypePromise(ref, func(obj common.Renderable) common.GolangType {
 				return obj.(*render.Parameter).Type
 			})
@@ -112,7 +111,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 
 	for _, msgName := range c.Messages.Keys() {
 		ctx.Logger.Trace("Channel message", "name", msgName)
-		ref := ctx.PathStackRef("messages", msgName)
+		ref := ctx.CurrentPositionRef("messages", msgName)
 		prm2 := lang.NewRef(ref, msgName, lo.ToPtr(true))
 		ctx.PutPromise(prm2)
 		res.MessagesRefs = append(res.MessagesRefs, prm2)
@@ -132,7 +131,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 	if c.Bindings != nil {
 		ctx.Logger.Trace("Found channel bindings")
 
-		ref := ctx.PathStackRef("bindings")
+		ref := ctx.CurrentPositionRef("bindings")
 		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, nil)
 		ctx.PutPromise(res.BindingsPromise)
 

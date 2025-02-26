@@ -65,7 +65,7 @@ func (b *Bindings) build(
 			vals, jsonVals, err = builder.BuildServerBindings(ctx, e.Value)
 		}
 		if err != nil {
-			return nil, types.CompileError{Err: fmt.Errorf("bindings build: %w", err), Path: ctx.PathStackRef(), Proto: e.Key}
+			return nil, types.CompileError{Err: fmt.Errorf("bindings build: %w", err), Path: ctx.CurrentPositionRef(), Proto: e.Key}
 		}
 		if vals != nil {
 			ctx.Logger.Trace("Have bindings values", "proto", builder.ProtocolName(), "value", vals)
@@ -107,8 +107,7 @@ type MessageBindings struct {
 }
 
 func (b *MessageBindings) Compile(ctx *common.CompileContext) error {
-	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
-	obj, err := b.build(ctx, bindingsKindMessage, ctx.Stack.Top().PathItem)
+	obj, err := b.build(ctx, bindingsKindMessage, ctx.Stack.Top().Key)
 	if err != nil {
 		return err
 	}
@@ -121,8 +120,7 @@ type OperationBinding struct {
 }
 
 func (b *OperationBinding) Compile(ctx *common.CompileContext) error {
-	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
-	obj, err := b.build(ctx, bindingsKindOperation, ctx.Stack.Top().PathItem)
+	obj, err := b.build(ctx, bindingsKindOperation, ctx.Stack.Top().Key)
 	if err != nil {
 		return err
 	}
@@ -135,8 +133,7 @@ type ChannelBindings struct {
 }
 
 func (b *ChannelBindings) Compile(ctx *common.CompileContext) error {
-	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
-	obj, err := b.build(ctx, bindingsKindChannel, ctx.Stack.Top().PathItem)
+	obj, err := b.build(ctx, bindingsKindChannel, ctx.Stack.Top().Key)
 	if err != nil {
 		return err
 	}
@@ -149,8 +146,7 @@ type ServerBindings struct {
 }
 
 func (b *ServerBindings) Compile(ctx *common.CompileContext) error {
-	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
-	obj, err := b.build(ctx, bindingsKindServer, ctx.Stack.Top().PathItem)
+	obj, err := b.build(ctx, bindingsKindServer, ctx.Stack.Top().Key)
 	if err != nil {
 		return err
 	}

@@ -77,8 +77,7 @@ type Object struct {
 }
 
 func (o Object) Compile(ctx *common.CompileContext) error {
-	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
-	obj, err := o.build(ctx, ctx.Stack.Top().Flags, ctx.Stack.Top().PathItem)
+	obj, err := o.build(ctx, ctx.Stack.Top().Flags, ctx.Stack.Top().Key)
 	if err != nil {
 		return err
 	}
@@ -153,7 +152,7 @@ func (o Object) getTypeName(ctx *common.CompileContext) (typeName string, nullab
 		case nullable: // Null only -> 'any', that can be only nil
 			typeName = "null"
 		default:
-			err = types.CompileError{Err: errors.New("empty object type"), Path: ctx.PathStackRef()}
+			err = types.CompileError{Err: errors.New("empty object type"), Path: ctx.CurrentPositionRef()}
 			return
 		}
 		ctx.Logger.Trace(fmt.Sprintf("Multitype object type inferred as %q", typeName))
@@ -214,7 +213,7 @@ func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.Sch
 		ctx.Logger.Trace("Object", "type", "string")
 		aliasedType = &lang.GoSimple{TypeName: "string"}
 	default:
-		return nil, types.CompileError{Err: fmt.Errorf("unknown jsonschema type %q", typeName), Path: ctx.PathStackRef()}
+		return nil, types.CompileError{Err: fmt.Errorf("unknown jsonschema type %q", typeName), Path: ctx.CurrentPositionRef()}
 	}
 
 	if aliasedType != nil {
@@ -291,7 +290,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 	// regular properties
 	for _, entry := range o.Properties.Entries() {
 		ctx.Logger.Trace("Object property", "name", entry.Key)
-		ref := ctx.PathStackRef("properties", entry.Key)
+		ref := ctx.CurrentPositionRef("properties", entry.Key)
 		prm := lang.NewGolangTypePromise(ref, nil)
 		ctx.PutPromise(prm)
 
@@ -322,7 +321,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 		switch o.AdditionalProperties.Selector {
 		case 0: // "additionalProperties:" is an object
 			ctx.Logger.Trace("Object additional properties", "type", "object")
-			ref := ctx.PathStackRef("additionalProperties")
+			ref := ctx.CurrentPositionRef("additionalProperties")
 			prm := lang.NewGolangTypePromise(ref, nil)
 			ctx.PutPromise(prm)
 			xTags, xTagNames, xTagVals := o.AdditionalProperties.V0.xGoTagsInfo(ctx)
@@ -392,7 +391,7 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 	switch {
 	case o.Items != nil && o.Items.Selector == 0: // Only one "type:" of items
 		ctx.Logger.Trace("Object items", "typesCount", "single")
-		ref := ctx.PathStackRef("items")
+		ref := ctx.CurrentPositionRef("items")
 		prm := lang.NewGolangTypePromise(ref, nil)
 		ctx.PutPromise(prm)
 		res.ItemsType = prm
@@ -443,19 +442,19 @@ func (o Object) buildUnionStruct(ctx *common.CompileContext, flags map[common.Sc
 	ctx.PutListPromise(messagesPrm)
 
 	res.Fields = lo.Times(len(o.OneOf), func(index int) lang.GoStructField {
-		ref := ctx.PathStackRef("oneOf", strconv.Itoa(index))
+		ref := ctx.CurrentPositionRef("oneOf", strconv.Itoa(index))
 		prm := lang.NewGolangTypePromise(ref, nil)
 		ctx.PutPromise(prm)
 		return lang.GoStructField{Type: &lang.GoPointer{Type: prm}}
 	})
 	res.Fields = append(res.Fields, lo.Times(len(o.AnyOf), func(index int) lang.GoStructField {
-		ref := ctx.PathStackRef("anyOf", strconv.Itoa(index))
+		ref := ctx.CurrentPositionRef("anyOf", strconv.Itoa(index))
 		prm := lang.NewGolangTypePromise(ref, nil)
 		ctx.PutPromise(prm)
 		return lang.GoStructField{Type: &lang.GoPointer{Type: prm}}
 	})...)
 	res.Fields = append(res.Fields, lo.Times(len(o.AllOf), func(index int) lang.GoStructField {
-		ref := ctx.PathStackRef("allOf", strconv.Itoa(index))
+		ref := ctx.CurrentPositionRef("allOf", strconv.Itoa(index))
 		prm := lang.NewGolangTypePromise(ref, nil)
 		ctx.PutPromise(prm)
 		return lang.GoStructField{Type: prm}

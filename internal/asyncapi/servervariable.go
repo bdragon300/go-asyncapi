@@ -15,8 +15,7 @@ type ServerVariable struct {
 }
 
 func (sv ServerVariable) Compile(ctx *common.CompileContext) error {
-	ctx.RegisterNameTop(ctx.Stack.Top().PathItem)
-	obj, err := sv.build(ctx, ctx.Stack.Top().PathItem)
+	obj, err := sv.build(ctx, ctx.Stack.Top().Key)
 	if err != nil {
 		return err
 	}

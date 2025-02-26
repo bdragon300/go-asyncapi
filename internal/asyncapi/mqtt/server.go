@@ -29,7 +29,7 @@ type lastWill struct {
 func (pb ProtoBuilder) BuildServerBindings(ctx *common.CompileContext, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	var bindings serverBindings
 	if err = types.UnmarshalRawMessageUnion2(rawData, &bindings); err != nil {
-		return vals, jsonVals, types.CompileError{Err: err, Path: ctx.PathStackRef(), Proto: pb.ProtoName}
+		return vals, jsonVals, types.CompileError{Err: err, Path: ctx.CurrentPositionRef(), Proto: pb.ProtoName}
 	}
 	vals = lang.ConstructGoValue(bindings, []string{"LastWill"}, &lang.GoSimple{TypeName: "ServerBindings", Import: ctx.RuntimeModule(pb.ProtoName)})
 	if bindings.LastWill != nil {
