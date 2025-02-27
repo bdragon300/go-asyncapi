@@ -2,10 +2,12 @@ package render
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 )
 
 // ServerVariable represents the server variable object.
 type ServerVariable struct {
+	lang.BasePositioned
 	// OriginalName is the name of the server variable as it was defined in the AsyncAPI document.
 	OriginalName string
 	// Description is an optional server variable description. Renders as Go doc comment.
@@ -20,8 +22,8 @@ func (s *ServerVariable) Name() string {
 	return s.OriginalName
 }
 
-func (s *ServerVariable) Kind() common.ObjectKind {
-	return common.ObjectKindOther
+func (s *ServerVariable) Kind() common.ArtifactKind {
+	return common.ArtifactKindOther
 }
 
 func (s *ServerVariable) Selectable() bool {

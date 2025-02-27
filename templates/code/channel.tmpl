@@ -1,4 +1,4 @@
-{{- /* dot == render.Renderable: Ref -> render.Channel or render.Channel */}}
+{{- /* dot == common.Artifact: Ref -> render.Channel or render.Channel */}}
 {{- with $channel := deref .}}
 
 {{- if and .ParametersType (ndefined .ParametersType) }}

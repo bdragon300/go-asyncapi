@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
+
 	"github.com/bdragon300/go-asyncapi/internal/locator"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/render"
@@ -36,7 +38,6 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/mqtt"
 
 	"github.com/bdragon300/go-asyncapi/implementations"
-	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/amqp"
 	asyncapiHTTP "github.com/bdragon300/go-asyncapi/internal/asyncapi/http"
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/kafka"
@@ -75,6 +76,20 @@ type CodeCmd struct {
 	goModTemplate string `arg:"-"`
 }
 
+// protocolBuilders is a list of protocol-specific artifact builders. This list determines the global list of
+// protocols supported by go-asyncapi.
+var protocolBuilders = []compile.ProtocolBuilder{
+	amqp.ProtoBuilder{},
+	asyncapiHTTP.ProtoBuilder{},
+	kafka.ProtoBuilder{},
+	mqtt.ProtoBuilder{},
+	ws.ProtoBuilder{},
+	redis.ProtoBuilder{},
+	ip.ProtoBuilder{},
+	tcp.ProtoBuilder{},
+	udp.ProtoBuilder{},
+}
+
 func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 	logger := log.GetLogger("")
 	cmdConfig := cliCodeMergeConfig(globalConfig, cmd)
@@ -84,9 +99,9 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 		logger.Trace("Use the resulting config", "value", string(buf))
 	}
 
-	asyncapi.ProtocolBuilders = protocolBuilders()
+	supportedProtocols := lo.Map(protocolBuilders, func(item compile.ProtocolBuilder, _ int) string { return item.Protocol() })
 	compileOpts := getCompileOpts(cmdConfig)
-	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Code.TargetDir, true)
+	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Code.TargetDir, true, supportedProtocols)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
 	}
@@ -100,7 +115,7 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 	if err != nil {
 		return fmt.Errorf("parse URL: %w", err)
 	}
-	documents, err := runCompilationAndLinking(fileLocator, rootDocumentURL, compileOpts)
+	documents, err := runCompilationAndLinking(fileLocator, rootDocumentURL, compileOpts, protocolBuilders)
 	if err != nil {
 		return fmt.Errorf("compilation: %w", err)
 	}
@@ -118,7 +133,6 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 		tplLoader := tmpl.NewTemplateLoader(defaultMainTemplateName, implementations.ImplementationFS)
 		renderManager.TemplateLoader = tplLoader
 
-		supportedProtocols := lo.Keys(asyncapi.ProtocolBuilders)
 		protocols := lo.Intersect(supportedProtocols, activeProtocols)
 		if len(protocols) < len(activeProtocols) {
 			logger.Warn("Some protocols have no implementations", "protocols", lo.Without(activeProtocols, protocols...))
@@ -150,10 +164,11 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 	if err = tplLoader.ParseRecursive(renderManager); err != nil {
 		return fmt.Errorf("parse templates: %w", err)
 	}
-	allObjects := lo.FlatMap(lo.Values(documents), func(m *compiler.Document, _ int) []common.CompileArtifact { return m.Artifacts() })
-	renderQueue := selectObjects(allObjects, renderOpts.Selections)
-	if err = renderer.RenderObjects(renderQueue, renderManager); err != nil {
-		return fmt.Errorf("render objects: %w", err)
+	allArtifacts := lo.FlatMap(lo.Values(documents), func(m *compiler.Document, _ int) []common.Artifact { return m.Artifacts() })
+	logger.Debug("Select artifacts")
+	renderQueue := selectArtifacts(allArtifacts, renderOpts.Selections)
+	if err = renderer.RenderArtifacts(renderQueue, renderManager); err != nil {
+		return fmt.Errorf("render artifacts: %w", err)
 	}
 	logger.Debug("Objects rendering complete")
 
@@ -212,32 +227,18 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 
 // collectActiveProtocols returns a list of protocols that are used in servers that are active and selectable, i.e.
 // those, which will appear in the generated code.
-func collectActiveProtocols(allObjects []common.CompileArtifact) []string {
-	return lo.Uniq(lo.FilterMap(allObjects, func(obj common.CompileArtifact, _ int) (string, bool) {
-		if obj.Kind() != common.ObjectKindServer && !obj.Selectable() || !obj.Visible() {
+func collectActiveProtocols(allObjects []common.Artifact) []string {
+	return lo.Uniq(lo.FilterMap(allObjects, func(obj common.Artifact, _ int) (string, bool) {
+		if obj.Kind() != common.ArtifactKindServer && !obj.Selectable() || !obj.Visible() {
 			return "", false
 		}
-		obj2 := common.DerefRenderable(obj.Renderable)
+		obj2 := common.DerefArtifact(obj)
 		v, ok := obj2.(*render.Server)
 		if !ok {
 			return "", false
 		}
 		return v.Protocol, true
 	}))
-}
-
-func protocolBuilders() map[string]asyncapi.ProtocolBuilder {
-	return map[string]asyncapi.ProtocolBuilder{
-		amqp.Builder.ProtocolName():         amqp.Builder,
-		asyncapiHTTP.Builder.ProtocolName(): asyncapiHTTP.Builder,
-		kafka.Builder.ProtocolName():        kafka.Builder,
-		mqtt.Builder.ProtocolName():         mqtt.Builder,
-		ws.Builder.ProtocolName():           ws.Builder,
-		redis.Builder.ProtocolName():        redis.Builder,
-		ip.Builder.ProtocolName():           ip.Builder,
-		tcp.Builder.ProtocolName():          tcp.Builder,
-		udp.Builder.ProtocolName():          udp.Builder,
-	}
 }
 
 func cliCodeMergeConfig(globalConfig toolConfig, cmd *CodeCmd) toolConfig {
@@ -265,10 +266,10 @@ func cliCodeMergeConfig(globalConfig toolConfig, cmd *CodeCmd) toolConfig {
 	return res
 }
 
-func getCompileOpts(cfg toolConfig) common.CompileOpts {
+func getCompileOpts(cfg toolConfig) compile.CompilationOpts {
 	isPub := cfg.Code.OnlyPublish || !cfg.Code.OnlySubscribe
 	isSub := cfg.Code.OnlySubscribe || !cfg.Code.OnlyPublish
-	return common.CompileOpts{
+	return compile.CompilationOpts{
 		AllowRemoteRefs:     cfg.Locator.AllowRemoteReferences,
 		RuntimeModule:       cfg.RuntimeModule,
 		GeneratePublishers:  isPub,
@@ -276,7 +277,7 @@ func getCompileOpts(cfg toolConfig) common.CompileOpts {
 	}
 }
 
-func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (common.RenderOpts, error) {
+func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool, allProtocols []string) (common.RenderOpts, error) {
 	logger := log.GetLogger("")
 	res := common.RenderOpts{
 		RuntimeModule:     conf.RuntimeModule,
@@ -288,11 +289,11 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (c
 	// Selections
 	for _, item := range conf.Selections {
 		sel := common.ConfigSelectionItem{
-			Protocols:   item.Protocols,
-			ObjectKinds: item.ObjectKinds,
-			ModuleURLRe: item.ModuleURLRe,
-			PathRe:      item.PathRe,
-			NameRe:      item.NameRe,
+			Protocols:     item.Protocols,
+			ArtifactKinds: item.ArtifactKinds,
+			ModuleURLRe:   item.ModuleURLRe,
+			PathRe:        item.PathRe,
+			NameRe:        item.NameRe,
 			Render: common.ConfigSelectionItemRender{
 				Template:         item.Render.Template,
 				File:             item.Render.File,
@@ -301,7 +302,7 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (c
 				ProtoObjectsOnly: item.Render.ProtoObjectsOnly,
 			},
 			ReusePackagePath:      item.ReusePackagePath,
-			AllSupportedProtocols: lo.Keys(asyncapi.ProtocolBuilders),
+			AllSupportedProtocols: allProtocols,
 		}
 		logger.Debug("Use selection", "value", sel)
 		res.Selections = append(res.Selections, sel)
@@ -344,17 +345,17 @@ func getImplementationOpts(conf toolConfig) common.RenderImplementationsOpts {
 	}
 }
 
-// selectObjects returns objects that match the selections.
-func selectObjects(allObjects []common.CompileArtifact, selections []common.ConfigSelectionItem) (res []renderer.RenderQueueItem) {
-	logger := log.GetLogger(log.LoggerPrefixRendering)
+// selectArtifacts returns objects that match the selections.
+func selectArtifacts(artifacts []common.Artifact, selections []common.ConfigSelectionItem) (res []renderer.RenderQueueItem) {
+	logger := log.GetLogger("")
 
 	for _, selection := range selections {
-		logger.Debug("Select objects", "selection", selection)
-		selectedObjects := selector.Select(allObjects, selection)
-		for _, obj := range selectedObjects {
-			logger.Debug("-> Selected", "object", obj)
+		logger.Trace("-> Process selection", "selection", selection)
+		selected := selector.Select(artifacts, selection)
+		for _, obj := range selected {
 			res = append(res, renderer.RenderQueueItem{Selection: selection, Object: obj})
 		}
+		logger.Debug("-> Selected", "artifacts", len(selected))
 	}
 	return
 }
@@ -404,11 +405,17 @@ func getLocator(conf toolConfig) documentLocator {
 	return res
 }
 
-func runCompilationAndLinking(locator documentLocator, docURL *jsonpointer.JSONPointer, compileOpts common.CompileOpts) (map[string]*compiler.Document, error) {
+func runCompilationAndLinking(
+	locator documentLocator,
+	docURL *jsonpointer.JSONPointer,
+	compileOpts compile.CompilationOpts,
+	protoBuilders []compile.ProtocolBuilder,
+) (map[string]*compiler.Document, error) {
 	logger := log.GetLogger("")
 
 	logger.Debug("Run compilation")
-	documents, err := runCompilation(docURL, compileOpts, locator)
+	compileContext := compile.NewCompileContext(compileOpts, protoBuilders)
+	documents, err := runCompilation(docURL, compileContext, locator)
 	if err != nil {
 		return nil, err
 	}
@@ -423,7 +430,11 @@ func runCompilationAndLinking(locator documentLocator, docURL *jsonpointer.JSONP
 	return documents, nil
 }
 
-func runCompilation(docURL *jsonpointer.JSONPointer, compileOpts common.CompileOpts, locator documentLocator) (map[string]*compiler.Document, error) {
+func runCompilation(
+	docURL *jsonpointer.JSONPointer,
+	compileContext *compile.Context,
+	locator documentLocator,
+) (map[string]*compiler.Document, error) {
 	logger := log.GetLogger(log.LoggerPrefixCompilation)
 	compileQueue := []*jsonpointer.JSONPointer{docURL} // Queue of document urls to compile
 	documents := make(map[string]*compiler.Document)   // Documents by url
@@ -437,7 +448,7 @@ func runCompilation(docURL *jsonpointer.JSONPointer, compileOpts common.CompileO
 		document := compiler.NewDocument(docURL)
 		documents[docURL.Location()] = document
 
-		if !compileOpts.AllowRemoteRefs && docURL.URI != nil {
+		if !compileContext.CompileOpts.AllowRemoteRefs && docURL.URI != nil {
 			return nil, fmt.Errorf(
 				"%s: external requests are forbidden by default for security reasons, use --allow-remote-refs flag to allow them",
 				docURL,
@@ -448,7 +459,7 @@ func runCompilation(docURL *jsonpointer.JSONPointer, compileOpts common.CompileO
 			return nil, fmt.Errorf("load a document: %w", err)
 		}
 		logger.Debug("Compiling a document", "url", docURL)
-		if err := document.Compile(common.NewCompileContext(docURL, compileOpts)); err != nil {
+		if err := document.Compile(compileContext); err != nil {
 			return nil, fmt.Errorf("compilation a document: %w", err)
 		}
 		logger.Debugf("Compiler stats: %s", document.Stats())

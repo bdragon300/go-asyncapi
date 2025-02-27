@@ -7,13 +7,13 @@ import (
 	"github.com/samber/lo"
 )
 
-type promiseAssignCbFunc[T common.Renderable] func(obj common.Renderable) T
+type promiseAssignCbFunc[T common.Artifact] func(obj common.Artifact) T
 
 // NewPromise returns a new promise, that addresses the object by ref URL.
 //
 // If assignCb is not nil, it will be called when linker assigns the object to the promise and its return value will be
 // assigned to the target. This callback could be used to convert the object or do some additional checks.
-func NewPromise[T common.Renderable](ref string, assignCb promiseAssignCbFunc[T]) *Promise[T] {
+func NewPromise[T common.Artifact](ref string, assignCb promiseAssignCbFunc[T]) *Promise[T] {
 	return newPromise[T](ref, common.PromiseOriginInternal, nil, assignCb)
 }
 
@@ -24,11 +24,11 @@ func NewPromise[T common.Renderable](ref string, assignCb promiseAssignCbFunc[T]
 //
 // If assignCb is not nil, it will be called to get the value to assign to target.
 // This callback could be used for type converting or do some additional checks.
-func NewCbPromise[T common.Renderable](findCb common.PromiseFindCbFunc, assignCb promiseAssignCbFunc[T]) *Promise[T] {
+func NewCbPromise[T common.Artifact](findCb common.PromiseFindCbFunc, assignCb promiseAssignCbFunc[T]) *Promise[T] {
 	return newPromise("", common.PromiseOriginInternal, findCb, assignCb)
 }
 
-func newPromise[T common.Renderable](
+func newPromise[T common.Artifact](
 	ref string,
 	origin common.PromiseOrigin,
 	findCb common.PromiseFindCbFunc,
@@ -44,7 +44,7 @@ func newPromise[T common.Renderable](
 //
 // Basically, the promise is just a pointer (nil initially) with metadata how to find an object(s) it should point to.
 // The target object can be addresses by ref URL or by a callback function.
-type Promise[T common.Renderable] struct {
+type Promise[T common.Artifact] struct {
 	// AssignErrorNote is the additional note to be shown in error message when assignment fails
 	AssignErrorNote string
 
@@ -58,7 +58,7 @@ type Promise[T common.Renderable] struct {
 }
 
 // Assign binds the object to the promise. Called by the linker.
-func (r *Promise[T]) Assign(obj common.Renderable) {
+func (r *Promise[T]) Assign(obj common.Artifact) {
 	if r.assignCb != nil {
 		r.target = r.assignCb(obj)
 		r.assigned = true
@@ -135,6 +135,7 @@ func NewGolangTypePromise(ref string, assignCb promiseAssignCbFunc[common.Golang
 
 // GolangTypePromise is the promise object that can be substituted where the GolangType is expected.
 type GolangTypePromise struct {
+	BasePositioned
 	Promise[common.GolangType]
 }
 
@@ -142,7 +143,7 @@ func (r *GolangTypePromise) Name() string {
 	return r.target.Name()
 }
 
-func (r *GolangTypePromise) Kind() common.ObjectKind {
+func (r *GolangTypePromise) Kind() common.ArtifactKind {
 	return r.target.Kind()
 }
 
@@ -155,7 +156,7 @@ func (r *GolangTypePromise) Visible() bool {
 }
 
 func (r *GolangTypePromise) String() string {
-	return "GolangTypePromise->" + r.ref
+	return "GolangTypePromise -> " + r.ref
 }
 
 func (r *GolangTypePromise) CanBeAddressed() bool {
@@ -170,8 +171,8 @@ func (r *GolangTypePromise) GoTemplate() string {
 	return r.target.GoTemplate()
 }
 
-func (r *GolangTypePromise) UnwrapRenderable() common.Renderable {
-	return common.DerefRenderable(r.target)
+func (r *GolangTypePromise) Unwrap() common.Artifact {
+	return common.DerefArtifact(r.target)
 }
 
 // NewListCbPromise returns a new promise, that uses find callback to find the list of objects. Linker calls this
@@ -182,13 +183,13 @@ func (r *GolangTypePromise) UnwrapRenderable() common.Renderable {
 //
 // If assignItemCb is not nil, it will be called for every target object to get the values list to assign to target.
 // This callback could be used for type converting or do some additional checks.
-func NewListCbPromise[T common.Renderable](findItemCb common.PromiseFindCbFunc, assignItemCb promiseAssignCbFunc[T]) *ListPromise[T] {
+func NewListCbPromise[T common.Artifact](findItemCb common.PromiseFindCbFunc, assignItemCb promiseAssignCbFunc[T]) *ListPromise[T] {
 	return &ListPromise[T]{findCb: findItemCb, assignItemCb: assignItemCb}
 }
 
 // ListPromise is the promise object like ObjectPromise but can target to list of objects. It can't be referenced by
 // ref and intended only for internal use.
-type ListPromise[T common.Renderable] struct {
+type ListPromise[T common.Artifact] struct {
 	// AssignErrorNote is the optional error message additional note to be shown to user when assignment fails
 	AssignErrorNote string
 
@@ -200,9 +201,9 @@ type ListPromise[T common.Renderable] struct {
 }
 
 // AssignList binds the list of objects to the promise. Called by the linker.
-func (r *ListPromise[T]) AssignList(objs []common.Renderable) {
+func (r *ListPromise[T]) AssignList(objs []common.Artifact) {
 	if r.assignItemCb != nil {
-		r.targets = lo.Map(objs, func(item common.Renderable, _ int) T {
+		r.targets = lo.Map(objs, func(item common.Artifact, _ int) T {
 			return r.assignItemCb(item)
 		})
 		r.assigned = true

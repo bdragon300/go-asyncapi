@@ -2,10 +2,26 @@ package lang
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 )
+
+// BasePositioned holds a JSON Pointer to a current object position in the AsyncAPI document.
+// It is a utility type intended to be embedded in other types, don't use it directly.
+type BasePositioned struct {
+	pointer jsonpointer.JSONPointer
+}
+
+func (b *BasePositioned) Pointer() jsonpointer.JSONPointer {
+	return b.pointer
+}
+
+func (b *BasePositioned) SetPointer(pointer jsonpointer.JSONPointer) {
+	b.pointer = pointer
+}
 
 // BaseType is a base for the types representing the basic Go type.
 type BaseType struct {
+	BasePositioned
 	// OriginalName is the name of the type as it appears in the AsyncAPI document.
 	OriginalName string
 	// Description is optional description. Renders as Go doc comment.
@@ -17,16 +33,16 @@ type BaseType struct {
 	HasDefinition bool
 	// Import is an optional external (or runtime) module to import a type from. E.g. "github.com/your/module"
 	Import string
-	// ObjectKind for types in [lang] package has values ObjectKindOther or ObjectKindSchema
-	ObjectKind common.ObjectKind
+	// ArtifactKind for types in [lang] package has values ArtifactKindOther or ArtifactKindSchema
+	ArtifactKind common.ArtifactKind
 }
 
 func (b *BaseType) Name() string {
 	return b.OriginalName
 }
 
-func (b *BaseType) Kind() common.ObjectKind {
-	return b.ObjectKind
+func (b *BaseType) Kind() common.ArtifactKind {
+	return b.ArtifactKind
 }
 
 func (b *BaseType) Selectable() bool {

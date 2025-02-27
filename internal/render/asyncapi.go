@@ -2,6 +2,7 @@ package render
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/samber/lo"
 )
 
@@ -10,11 +11,16 @@ const DefaultContentType = "application/json"
 
 // AsyncAPI represents the root of the AsyncAPI document.
 type AsyncAPI struct {
+	lang.BasePositioned
 	DefaultContentType string
 }
 
-func (a *AsyncAPI) Kind() common.ObjectKind {
-	return common.ObjectKindAsyncAPI
+func (a *AsyncAPI) Name() string {
+	return ""
+}
+
+func (a *AsyncAPI) Kind() common.ArtifactKind {
+	return common.ArtifactKindAsyncAPI
 }
 
 func (a *AsyncAPI) Selectable() bool {
@@ -32,8 +38,4 @@ func (a *AsyncAPI) EffectiveDefaultContentType() string {
 
 func (a *AsyncAPI) String() string {
 	return "AsyncAPI"
-}
-
-func (a *AsyncAPI) Name() string {
-	return ""
 }

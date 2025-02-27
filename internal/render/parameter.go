@@ -2,10 +2,12 @@ package render
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 )
 
 // Parameter represents a channel parameter object.
 type Parameter struct {
+	lang.BasePositioned
 	// OriginalName is the name of the parameter as it was defined in the AsyncAPI document.
 	OriginalName string
 	// Type is the Go type of the parameter. Usually, it's ``string''.
@@ -16,8 +18,8 @@ func (p *Parameter) Name() string {
 	return p.OriginalName
 }
 
-func (p *Parameter) Kind() common.ObjectKind {
-	return common.ObjectKindParameter
+func (p *Parameter) Kind() common.ArtifactKind {
+	return common.ArtifactKindParameter
 }
 
 func (p *Parameter) Selectable() bool {

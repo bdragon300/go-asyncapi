@@ -5,11 +5,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 )
 
 type compiledObject interface {
-	Compile(ctx *common.CompileContext) error
+	Compile(ctx *compile.Context) error
 }
 
 type orderedMap interface {
@@ -28,7 +30,7 @@ type union interface {
 //
 // Additionally, the function keeps the compile context up-to-date, maintaining the document path stack and field's
 // flags (tags).
-func WalkAndCompile(ctx *common.CompileContext, object reflect.Value) error {
+func WalkAndCompile(ctx *compile.Context, object reflect.Value) error {
 	// Special types
 	switch v := object.Interface().(type) {
 	case orderedMap:
@@ -90,7 +92,7 @@ func WalkAndCompile(ctx *common.CompileContext, object reflect.Value) error {
 }
 
 // traverse calls the object.Compile method if it has it and runs WalkAndCompile on the object.
-func traverse(ctx *common.CompileContext, object reflect.Value) error {
+func traverse(ctx *compile.Context, object reflect.Value) error {
 	// BFS tree traversal
 	if v, ok := object.Interface().(compiledObject); ok {
 		if (object.Kind() == reflect.Pointer || object.Kind() == reflect.Interface) && object.IsNil() {
@@ -129,7 +131,7 @@ func parseTags(field reflect.StructField) (tags map[common.SchemaTag]string) {
 	return
 }
 
-func pushStack(ctx *common.CompileContext, pathItem string, flags map[common.SchemaTag]string) {
+func pushStack(ctx *compile.Context, pathItem string, flags map[common.SchemaTag]string) {
 	if flags == nil {
 		flags = make(map[common.SchemaTag]string)
 	}
@@ -140,7 +142,7 @@ func pushStack(ctx *common.CompileContext, pathItem string, flags map[common.Sch
 			flags[common.SchemaTagDataModel] = ctx.Stack.Top().Flags[common.SchemaTagDataModel]
 		}
 	}
-	item := common.DocumentTreeItem{
+	item := compile.DocumentTreeItem{
 		Key:   pathItem,
 		Flags: flags,
 	}

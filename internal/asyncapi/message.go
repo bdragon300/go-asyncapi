@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/samber/lo"
@@ -35,16 +36,16 @@ type Message struct {
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
-func (m Message) Compile(ctx *common.CompileContext) error {
+func (m Message) Compile(ctx *compile.Context) error {
 	obj, err := m.build(ctx, ctx.Stack.Top().Key)
 	if err != nil {
 		return err
 	}
-	ctx.PutObject(obj)
+	ctx.PutArtifact(obj)
 	return nil
 }
 
-func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Renderable, error) {
+func (m Message) build(ctx *compile.Context, messageKey string) (common.Artifact, error) {
 	if m.XIgnore {
 		ctx.Logger.Debug("Message denoted to be ignored")
 		return &render.Message{Dummy: true}, nil
@@ -85,26 +86,28 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", res.ContentType))
 
 	// Gather all channels and operations to find out further (after linking) which ones are bound with this message
-	prmCh := lang.NewListCbPromise[common.Renderable](func(item common.CompileArtifact, path []string) bool {
+	prmCh := lang.NewListCbPromise[common.Artifact](func(item common.Artifact) bool {
+		path := item.Pointer().Pointer
 		if len(path) < 2 || len(path) >= 2 && path[0] != "channels" {
 			return false
 		}
-		return item.Kind() == common.ObjectKindChannel && item.Visible()
+		return item.Kind() == common.ArtifactKindChannel && item.Visible()
 	}, nil)
 	res.AllActiveChannelsPromise = prmCh
 	ctx.PutListPromise(prmCh)
 
-	prmOp := lang.NewListCbPromise[common.Renderable](func(item common.CompileArtifact, path []string) bool {
+	prmOp := lang.NewListCbPromise[common.Artifact](func(item common.Artifact) bool {
+		path := item.Pointer().Pointer
 		if len(path) < 2 || len(path) >= 2 && path[0] != "operations" {
 			return false
 		}
-		return item.Kind() == common.ObjectKindOperation && item.Visible()
+		return item.Kind() == common.ArtifactKindOperation && item.Visible()
 	}, nil)
 	res.AllActiveOperationsPromise = prmOp
 	ctx.PutListPromise(prmOp)
 
-	prmAsyncAPI := lang.NewCbPromise[*render.AsyncAPI](func(item common.CompileArtifact, _ []string) bool {
-		_, ok := item.Renderable.(*render.AsyncAPI)
+	prmAsyncAPI := lang.NewCbPromise[*render.AsyncAPI](func(item common.Artifact) bool {
+		_, ok := item.(*render.AsyncAPI)
 		return ok
 	}, nil)
 	res.AsyncAPIPromise = prmAsyncAPI
@@ -152,7 +155,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	// Here we don't know yet which channels this message is bound with, so we don't have the protocols list to compile.
 	ctx.Logger.Trace("Prebuild the messages for every supported protocol")
 	var protoMessages []*render.ProtoMessage
-	for proto := range ProtocolBuilders {
+	for _, proto := range ctx.SupportedProtocols() {
 		ctx.Logger.Trace("Message", "proto", proto)
 		protoMessages = append(protoMessages, &render.ProtoMessage{
 			Message:  &res,
@@ -164,7 +167,7 @@ func (m Message) build(ctx *common.CompileContext, messageKey string) (common.Re
 	return &res, nil
 }
 
-func (m Message) buildInOutStructs(ctx *common.CompileContext, message render.Message, msgName string) (in, out *lang.GoStruct) {
+func (m Message) buildInOutStructs(ctx *compile.Context, message render.Message, msgName string) (in, out *lang.GoStruct) {
 	headerType := message.HeadersTypeDefault
 	if message.HeadersTypePromise != nil {
 		headerType = message.HeadersTypePromise

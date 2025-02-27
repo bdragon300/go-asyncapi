@@ -10,6 +10,7 @@ import (
 
 // Operation represents an operation object.
 type Operation struct {
+	lang.BasePositioned
 	// OriginalName is the name of the operation as it was defined in the AsyncAPI document.
 	OriginalName string
 	// Dummy is true when operation is ignored (x-ignore: true)
@@ -48,13 +49,13 @@ func (o *Operation) Bindings() *Bindings {
 }
 
 // Messages returns a list of Message or lang.Ref to Message, that are listed in the operation definition in the document.
-func (o *Operation) Messages() []common.Renderable {
-	return lo.Map(o.MessagesPromises, func(prm *lang.Promise[*Message], _ int) common.Renderable { return prm.T() })
+func (o *Operation) Messages() []common.Artifact {
+	return lo.Map(o.MessagesPromises, func(prm *lang.Promise[*Message], _ int) common.Artifact { return prm.T() })
 }
 
 // SelectProtoObject returns the ProtoOperation object for the given protocol or nil if not found or if
 // ProtoOperation is not selectable.
-func (o *Operation) SelectProtoObject(protocol string) common.Renderable {
+func (o *Operation) SelectProtoObject(protocol string) common.Artifact {
 	res := lo.Filter(o.ProtoOperations, func(p *ProtoOperation, _ int) bool {
 		return p.Selectable() && p.Protocol == protocol
 	})
@@ -65,7 +66,7 @@ func (o *Operation) SelectProtoObject(protocol string) common.Renderable {
 }
 
 // BoundMessages returns a list of Message that are bound to this operation.
-func (o *Operation) BoundMessages() []common.Renderable {
+func (o *Operation) BoundMessages() []common.Artifact {
 	return o.Messages()
 }
 
@@ -84,7 +85,7 @@ func (o *Operation) BindingsProtocols() (res []string) {
 // ProtoBindingsValue returns the struct initialization [lang.GoValue] of BindingsType for the given protocol.
 // The returned value contains all constant bindings values defined in document for the protocol.
 // If no bindings are set for the protocol, returns an empty [lang.GoValue].
-func (o *Operation) ProtoBindingsValue(protoName string) common.Renderable {
+func (o *Operation) ProtoBindingsValue(protoName string) common.Artifact {
 	res := &lang.GoValue{
 		Type:               &lang.GoSimple{TypeName: "OperationBindings", Import: protoName, IsRuntimeImport: true},
 		EmptyCurlyBrackets: true,
@@ -101,8 +102,8 @@ func (o *Operation) Name() string {
 	return o.OriginalName
 }
 
-func (o *Operation) Kind() common.ObjectKind {
-	return common.ObjectKindOperation // TODO: separate Bindings from Channel, leaving only the Promise, and make its own 4 ObjectKinds
+func (o *Operation) Kind() common.ArtifactKind {
+	return common.ArtifactKindOperation // TODO: separate Bindings from Channel, leaving only the Promise, and make its own 4 ArtifactKinds
 }
 
 func (o *Operation) Selectable() bool {
@@ -143,8 +144,8 @@ func (p *ProtoOperation) ProtoChannel() *ProtoChannel {
 
 // isBound returns true if operation is bound to at least one server with supported protocol
 func (p *ProtoOperation) isBound() bool {
-	protos := lo.Map(p.ChannelPromise.T().BoundServers(), func(s common.Renderable, _ int) string {
-		srv := common.DerefRenderable(s).(*Server)
+	protos := lo.Map(p.ChannelPromise.T().BoundServers(), func(s common.Artifact, _ int) string {
+		srv := common.DerefArtifact(s).(*Server)
 		return srv.Protocol
 	})
 	r := lo.Contains(protos, p.Protocol)

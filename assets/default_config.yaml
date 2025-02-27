@@ -2,22 +2,22 @@ configVersion: 1
 runtimeModule: github.com/bdragon300/go-asyncapi/run
 
 selections:
-  - objectKinds: ["schema"]
+  - artifactKinds: ["schema"]
     render:
       file: schemas/{{.Object | goIDUpper }}.go
-  - objectKinds: ["server"]
+  - artifactKinds: ["server"]
     render:
       file: servers/{{.Object | goIDUpper }}.go
-  - objectKinds: ["channel"]
+  - artifactKinds: ["channel"]
     render:
       file: channels/{{.Object | goIDUpper }}.go
-  - objectKinds: ["operation"]
+  - artifactKinds: ["operation"]
     render:
       file: operations/{{.Object | goIDUpper }}.go
-  - objectKinds: ["message"]
+  - artifactKinds: ["message"]
     render:
       file: messages/{{.Object | goIDUpper }}.go
-  - objectKinds: ["parameter"]
+  - artifactKinds: ["parameter"]
     render:
       file: parameters/{{.Object | goIDUpper }}.go
 

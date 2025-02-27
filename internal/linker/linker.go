@@ -35,7 +35,7 @@ import (
 )
 
 type ObjectSource interface {
-	Artifacts() []common.CompileArtifact // TODO: make this as interface and move promise.go to linker
+	Artifacts() []common.Artifact // TODO: make this as interface and move promise.go to linker
 	Promises() []common.ObjectPromise
 	ListPromises() []common.ObjectListPromise
 }
@@ -86,7 +86,7 @@ func ResolveListPromises(sources map[string]ObjectSource) {
 				}
 				if res, ok := resolveListPromise(p, docURL, sources); ok {
 					targets := strings.Join(
-						lo.Map(lo.Slice(res, 0, 2), func(item common.Renderable, _ int) string { return item.String() }),
+						lo.Map(lo.Slice(res, 0, 2), func(item common.Artifact, _ int) string { return item.String() }),
 						", ",
 					)
 					if len(res) > 2 {
@@ -139,7 +139,7 @@ func Stats(sources map[string]ObjectSource) string {
 
 // TODO: detect ref loops to avoid infinite recursion
 // TODO: external refs can not be resolved at first time -- leave them unresolved
-func resolvePromise(p common.ObjectPromise, docPath string, sources map[string]ObjectSource) (common.Renderable, bool) {
+func resolvePromise(p common.ObjectPromise, docPath string, sources map[string]ObjectSource) (common.Artifact, bool) {
 	var ref *jsonpointer.JSONPointer
 	var cb, userCb common.PromiseFindCbFunc
 
@@ -156,9 +156,9 @@ func resolvePromise(p common.ObjectPromise, docPath string, sources map[string]O
 		if ref.Location() != "" {
 			target = ref.Location()
 		}
-		cb = func(_ common.CompileArtifact, path []string) bool { return ref.MatchPointer(path) }
+		cb = func(item common.Artifact) bool { return ref.MatchPointer(item.Pointer().Pointer) }
 	}
-	found := lo.Filter(srcObjects, func(obj common.CompileArtifact, _ int) bool { return cb(obj, obj.ObjectURL.Pointer) })
+	found := lo.Filter(srcObjects, func(obj common.Artifact, _ int) bool { return cb(obj) })
 	if len(found) != 1 {
 		panic(fmt.Sprintf("Ref %q must point to one object, but %d objects found", p.Ref(), len(found)))
 	}
@@ -167,10 +167,10 @@ func resolvePromise(p common.ObjectPromise, docPath string, sources map[string]O
 
 	// If we set a callback, let it decide which objects should get to promise, don't do recursive resolving
 	if userCb != nil {
-		return obj.Renderable, true
+		return obj, true
 	}
 
-	switch v := obj.Renderable.(type) {
+	switch v := obj.(type) {
 	case common.ObjectPromise:
 		if !v.Assigned() {
 			return nil, false
@@ -178,24 +178,24 @@ func resolvePromise(p common.ObjectPromise, docPath string, sources map[string]O
 		return resolvePromise(v, target, sources)
 	case common.ObjectListPromise:
 		panic(fmt.Sprintf("Ref %q must point to one object, but it points to another list promise", p.Ref()))
-	case common.Renderable:
+	case common.Artifact:
 		return v, true
 	default:
 		panic(fmt.Sprintf("Ref %q points to an object of unexpected type %T", p.Ref(), v))
 	}
 }
 
-func resolveListPromise(p common.ObjectListPromise, docURL string, sources map[string]ObjectSource) ([]common.Renderable, bool) {
+func resolveListPromise(p common.ObjectListPromise, docURL string, sources map[string]ObjectSource) ([]common.Artifact, bool) {
 	// Exclude links from selection in order to avoid duplicates in list
 	cb := p.FindCallback()
 	if cb == nil {
 		panic("List promise must have a callback, this is a bug")
 	}
 	srcObjects := sources[docURL].Artifacts()
-	found := lo.Filter(srcObjects, func(obj common.CompileArtifact, _ int) bool {
-		return cb(obj, obj.ObjectURL.Pointer)
+	found := lo.Filter(srcObjects, func(obj common.Artifact, _ int) bool {
+		return cb(obj)
 	})
 
 	// Let the callaback decide which objects should be promise targets, don't do recursive resolving
-	return lo.Map(found, func(item common.CompileArtifact, _ int) common.Renderable { return item.Renderable }), true
+	return found, true
 }

@@ -1,13 +1,7 @@
 package kafka
 
-type ProtoBuilder struct {
-	ProtoName string
-}
+type ProtoBuilder struct{}
 
-var Builder = ProtoBuilder{
-	ProtoName: "kafka",
-}
-
-func (pb ProtoBuilder) ProtocolName() string {
-	return pb.ProtoName
+func (pb ProtoBuilder) Protocol() string {
+	return "kafka"
 }

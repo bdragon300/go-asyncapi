@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
+
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
-	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/samber/lo"
@@ -35,27 +36,27 @@ type operationBindings struct {
 	ClientID any `json:"clientId" yaml:"clientId"` // jsonschema object
 }
 
-func (pb ProtoBuilder) BuildChannel(ctx *common.CompileContext, channel *asyncapi.Channel, parent *render.Channel) (*render.ProtoChannel, error) {
-	golangName := utils.ToGolangName(parent.OriginalName+lo.Capitalize(pb.ProtoName), true)
-	chanStruct := asyncapi.BuildProtoChannelStruct(ctx, channel, parent, pb.ProtoName, golangName)
+func (pb ProtoBuilder) BuildChannel(ctx *compile.Context, channel *asyncapi.Channel, parent *render.Channel) (*render.ProtoChannel, error) {
+	golangName := utils.ToGolangName(parent.OriginalName+lo.Capitalize(pb.Protocol()), true)
+	chanStruct := asyncapi.BuildProtoChannelStruct(ctx, channel, parent, pb.Protocol(), golangName)
 
 	chanStruct.Fields = append(chanStruct.Fields, lang.GoStructField{Name: "topic", Type: &lang.GoSimple{TypeName: "string"}})
 
 	return &render.ProtoChannel{
 		Channel:  parent,
 		Type:     chanStruct,
-		Protocol: pb.ProtoName,
+		Protocol: pb.Protocol(),
 	}, nil
 }
 
-func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
+func (pb ProtoBuilder) BuildChannelBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	var bindings channelBindings
 	if err = types.UnmarshalRawMessageUnion2(rawData, &bindings); err != nil {
-		err = types.CompileError{Err: err, Path: ctx.CurrentPositionRef(), Proto: pb.ProtoName}
+		err = types.CompileError{Err: err, Path: ctx.CurrentPositionRef(), Proto: pb.Protocol()}
 		return
 	}
 
-	vals = lang.ConstructGoValue(bindings, []string{"Partitions", "Replicas", "TopicConfiguration"}, &lang.GoSimple{TypeName: "ChannelBindings", Import: ctx.RuntimeModule(pb.ProtoName)})
+	vals = lang.ConstructGoValue(bindings, []string{"Partitions", "Replicas", "TopicConfiguration"}, &lang.GoSimple{TypeName: "ChannelBindings", Import: ctx.RuntimeModule(pb.Protocol())})
 	if bindings.Partitions != nil {
 		vals.StructValues.Set("Partitions", *bindings.Partitions)
 	}
@@ -63,11 +64,11 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 		vals.StructValues.Set("Replicas", *bindings.Replicas)
 	}
 	if bindings.TopicConfiguration != nil {
-		tcVals := lang.ConstructGoValue(*bindings.TopicConfiguration, []string{"CleanupPolicy", "RetentionMs", "DeleteRetentionMs"}, &lang.GoSimple{TypeName: "TopicConfiguration", Import: ctx.RuntimeModule(pb.ProtoName)})
+		tcVals := lang.ConstructGoValue(*bindings.TopicConfiguration, []string{"CleanupPolicy", "RetentionMs", "DeleteRetentionMs"}, &lang.GoSimple{TypeName: "TopicConfiguration", Import: ctx.RuntimeModule(pb.Protocol())})
 
 		// TopicConfiguration->CleanupPolicy
 		if len(bindings.TopicConfiguration.CleanupPolicy) > 0 {
-			cpVal := &lang.GoValue{Type: &lang.GoSimple{TypeName: "TopicCleanupPolicy", Import: ctx.RuntimeModule(pb.ProtoName)}, EmptyCurlyBrackets: true}
+			cpVal := &lang.GoValue{Type: &lang.GoSimple{TypeName: "TopicCleanupPolicy", Import: ctx.RuntimeModule(pb.Protocol())}, EmptyCurlyBrackets: true}
 			switch {
 			case lo.Contains(bindings.TopicConfiguration.CleanupPolicy, "delete"):
 				cpVal.StructValues.Set("Delete", true)
@@ -94,17 +95,17 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *common.CompileContext, rawData 
 	return
 }
 
-func (pb ProtoBuilder) BuildOperationBindings(ctx *common.CompileContext, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
+func (pb ProtoBuilder) BuildOperationBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	var bindings operationBindings
 	if err = types.UnmarshalRawMessageUnion2(rawData, &bindings); err != nil {
-		err = types.CompileError{Err: err, Path: ctx.CurrentPositionRef(), Proto: pb.ProtoName}
+		err = types.CompileError{Err: err, Path: ctx.CurrentPositionRef(), Proto: pb.Protocol()}
 		return
 	}
 
 	if bindings.GroupID != nil {
 		v, err2 := json.Marshal(bindings.GroupID)
 		if err2 != nil {
-			err = types.CompileError{Err: err2, Path: ctx.CurrentPositionRef(), Proto: pb.ProtoName}
+			err = types.CompileError{Err: err2, Path: ctx.CurrentPositionRef(), Proto: pb.Protocol()}
 			return
 		}
 		jsonVals.Set("GroupID", string(v))
@@ -112,7 +113,7 @@ func (pb ProtoBuilder) BuildOperationBindings(ctx *common.CompileContext, rawDat
 	if bindings.ClientID != nil {
 		v, err2 := json.Marshal(bindings.ClientID)
 		if err2 != nil {
-			err = types.CompileError{Err: err2, Path: ctx.CurrentPositionRef(), Proto: pb.ProtoName}
+			err = types.CompileError{Err: err2, Path: ctx.CurrentPositionRef(), Proto: pb.Protocol()}
 			return
 		}
 		jsonVals.Set("ClientID", string(v))

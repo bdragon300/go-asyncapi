@@ -21,7 +21,7 @@ const (
 // linker calls the Assign method to bind the object to the promise.
 type ObjectPromise interface {
 	// Assign binds the object to the promise. Called by the linker.
-	Assign(obj Renderable)
+	Assign(obj Artifact)
 	// Assigned returns true if the object is already bound to the promise.
 	Assigned() bool
 	// Ref returns the reference to the object if any.
@@ -39,7 +39,7 @@ type ObjectPromise interface {
 // ref and intended only for internal use.
 type ObjectListPromise interface {
 	// AssignList binds the list of objects to the promise. Called by the linker.
-	AssignList(objs []Renderable)
+	AssignList(objs []Artifact)
 	// Assigned returns true if the list of objects is already bound to the promise.
 	Assigned() bool
 	// FindCallback returns the callback function to find the object in the storage.
@@ -49,4 +49,4 @@ type ObjectListPromise interface {
 	FindCallback() PromiseFindCbFunc
 }
 
-type PromiseFindCbFunc func(item CompileArtifact, path []string) bool
+type PromiseFindCbFunc func(item Artifact) bool

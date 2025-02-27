@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/compiler"
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
@@ -47,13 +49,13 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	if err != nil {
 		return fmt.Errorf("parse URL: %w", err)
 	}
-	compileOpts := common.CompileOpts{
+	compileOpts := compile.CompilationOpts{
 		AllowRemoteRefs:     cmdConfig.Locator.AllowRemoteReferences,
 		RuntimeModule:       cmdConfig.RuntimeModule,
 		GeneratePublishers:  true,
 		GenerateSubscribers: true,
 	}
-	documents, err := runCompilationAndLinking(fileLocator, docURL, compileOpts)
+	documents, err := runCompilationAndLinking(fileLocator, docURL, compileOpts, protocolBuilders)
 	if err != nil {
 		return fmt.Errorf("compilation: %w", err)
 	}
@@ -67,7 +69,7 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 
 	// TODO: refactor RenderOpts -- it almost not needed here, it's related to codegen.
 	//       Also consider to include add ConfigInfraServer (replace RenderOpts to interface in manager?)
-	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Code.TargetDir, false)
+	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Code.TargetDir, false, nil)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
 	}
@@ -86,8 +88,9 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	if err = tplLoader.ParseRecursive(renderManager); err != nil {
 		return fmt.Errorf("parse templates: %w", err)
 	}
-	allObjects := lo.FlatMap(lo.Values(documents), func(m *compiler.Document, _ int) []common.CompileArtifact { return m.Artifacts() })
-	renderQueue := selectObjects(allObjects, renderOpts.Selections)
+	allObjects := lo.FlatMap(lo.Values(documents), func(m *compiler.Document, _ int) []common.Artifact { return m.Artifacts() })
+	logger.Debug("Select objects")
+	renderQueue := selectArtifacts(allObjects, renderOpts.Selections)
 	// TODO: check if all server variables are set in config, error if not
 	serverVariables := getInfraServerConfig(cmdConfig.Infra.Servers)
 

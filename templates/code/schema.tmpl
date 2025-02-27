@@ -1,4 +1,4 @@
-{{- /* dot == render.Renderable: Ref -> lang.* or lang.* */}}
+{{- /* dot == common.Artifact: Ref -> lang.* or lang.* */}}
 {{- with deref . }}
     {{- if ndefined . }}
         {{ . | goDef }}

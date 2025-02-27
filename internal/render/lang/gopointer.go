@@ -6,6 +6,7 @@ import (
 
 // GoPointer is a type representing a pointer type to another Go type. It acts as a wrapper for the inner type.
 type GoPointer struct {
+	BasePositioned
 	Type common.GolangType
 }
 
@@ -13,7 +14,7 @@ func (p *GoPointer) Name() string {
 	return p.Type.Name()
 }
 
-func (p *GoPointer) Kind() common.ObjectKind {
+func (p *GoPointer) Kind() common.ArtifactKind {
 	return p.Type.Kind()
 }
 
@@ -26,7 +27,7 @@ func (p *GoPointer) Visible() bool {
 }
 
 func (p *GoPointer) String() string {
-	return "GoPointer->" + p.Type.String()
+	return "GoPointer -> " + p.Type.String()
 }
 
 func (p *GoPointer) CanBeAddressed() bool {

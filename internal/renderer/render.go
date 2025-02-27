@@ -85,7 +85,7 @@ func renderObjectInlineTemplate(item RenderQueueItem, text string, mng *manager.
 		RenderOpts:       mng.RenderOpts,
 		CurrentSelection: item.Selection,
 		PackageName:      item.Selection.Render.Package,
-		Object:           item.Object.Renderable,
+		Object:           item.Object,
 		ImportsManager:   mng.ImportsManager,
 	}
 

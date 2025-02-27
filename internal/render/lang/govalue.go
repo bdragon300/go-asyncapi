@@ -14,6 +14,7 @@ import (
 // This value can be a constant, a struct, array or map initialization expression. This is suitable when some data
 // from the AsyncAPI document should get to the code as initialization value of some type. For example, the AsyncAPI bindings.
 type GoValue struct {
+	BasePositioned
 	// Type is the type that is rendered before the value, e.g. ``int(123)'' or ``map[string]string{"123", "456"}''.
 	// If nil, the value will be rendered as a bare untyped value, like ``123'' or ``{"123", "456"}''.
 	Type common.GolangType
@@ -39,8 +40,8 @@ func (gv *GoValue) Name() string {
 	return ""
 }
 
-func (gv *GoValue) Kind() common.ObjectKind {
-	return common.ObjectKindOther
+func (gv *GoValue) Kind() common.ArtifactKind {
+	return common.ArtifactKindOther
 }
 
 func (gv *GoValue) Selectable() bool {

@@ -13,6 +13,7 @@ import (
 
 // Server represents the server object.
 type Server struct {
+	lang.BasePositioned
 	// OriginalName is the name of the server as it was defined in the AsyncAPI document.
 	OriginalName string
 	// Host is the server host raw value.
@@ -40,7 +41,7 @@ type Server struct {
 	//
 	// We could use a promise callback to filter channels by server, but the server in channel is also a promise,
 	// and the order of promises resolving is not guaranteed.
-	AllActiveChannelsPromise *lang.ListPromise[common.Renderable]
+	AllActiveChannelsPromise *lang.ListPromise[common.Artifact]
 
 	// VariablesPromises is a list of server variables defined for this server.
 	VariablesPromises types.OrderedMap[string, *lang.Promise[*ServerVariable]]
@@ -73,7 +74,7 @@ func (s *Server) Bindings() (res *Bindings) {
 
 // SelectProtoObject returns the ProtoServer object for the requested protocol. Returns nil if the server is not
 // selectable or has another protocol
-func (s *Server) SelectProtoObject(protocol string) common.Renderable {
+func (s *Server) SelectProtoObject(protocol string) common.Artifact {
 	if s.ProtoServer.Selectable() && s.ProtoServer.Protocol == protocol {
 		return s.ProtoServer
 	}
@@ -81,21 +82,21 @@ func (s *Server) SelectProtoObject(protocol string) common.Renderable {
 }
 
 // BoundChannels returns a list of channels that are bound to this server.
-func (s *Server) BoundChannels() []common.Renderable {
-	r := lo.Filter(s.AllActiveChannelsPromise.T(), func(r common.Renderable, _ int) bool {
-		ch := common.DerefRenderable(r).(*Channel)
-		return lo.ContainsBy(ch.BoundServers(), func(item common.Renderable) bool {
-			return common.CheckSameRenderables(s, item)
+func (s *Server) BoundChannels() []common.Artifact {
+	r := lo.Filter(s.AllActiveChannelsPromise.T(), func(r common.Artifact, _ int) bool {
+		ch := common.DerefArtifact(r).(*Channel)
+		return lo.ContainsBy(ch.BoundServers(), func(item common.Artifact) bool {
+			return common.CheckSameArtifacts(s, item)
 		})
 	})
 	return r
 }
 
 // BoundOperations returns a list of operations that are bound to this server.
-func (s *Server) BoundOperations() []common.Renderable {
+func (s *Server) BoundOperations() []common.Artifact {
 	chans := s.BoundChannels()
-	ops := lo.FlatMap(chans, func(c common.Renderable, _ int) []common.Renderable {
-		ch := common.DerefRenderable(c).(*Channel)
+	ops := lo.FlatMap(chans, func(c common.Artifact, _ int) []common.Artifact {
+		ch := common.DerefArtifact(c).(*Channel)
 		return ch.BoundOperations()
 	})
 	return ops
@@ -116,7 +117,7 @@ func (s *Server) BindingsProtocols() (res []string) {
 // ProtoBindingsValue returns the struct initialization [lang.GoValue] of BindingsType for the given protocol.
 // The returned value contains all constant bindings values defined in document for the protocol.
 // If no bindings are set for the protocol, returns an empty [lang.GoValue].
-func (s *Server) ProtoBindingsValue(protoName string) common.Renderable {
+func (s *Server) ProtoBindingsValue(protoName string) common.Artifact {
 	res := &lang.GoValue{
 		Type:               &lang.GoSimple{TypeName: "ServerBindings", Import: protoName, IsRuntimeImport: true},
 		EmptyCurlyBrackets: true,
@@ -156,8 +157,8 @@ func (s *Server) Name() string {
 	return s.OriginalName
 }
 
-func (s *Server) Kind() common.ObjectKind {
-	return common.ObjectKindServer
+func (s *Server) Kind() common.ArtifactKind {
+	return common.ArtifactKindServer
 }
 
 func (s *Server) Selectable() bool {

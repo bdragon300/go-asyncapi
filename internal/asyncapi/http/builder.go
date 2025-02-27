@@ -1,13 +1,7 @@
 package http
 
-type ProtoBuilder struct {
-	ProtoName string
-}
+type ProtoBuilder struct{}
 
-var Builder = ProtoBuilder{
-	ProtoName: "http",
-}
-
-func (pb ProtoBuilder) ProtocolName() string {
-	return pb.ProtoName
+func (pb ProtoBuilder) Protocol() string {
+	return "http"
 }

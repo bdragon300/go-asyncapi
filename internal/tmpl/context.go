@@ -22,7 +22,7 @@ type CodeTemplateContext struct {
 	// RenderOpts is the render options. Comes from tool's config and cli flags.
 	RenderOpts       common.RenderOpts
 	// Object is the current object to render.
-	Object         common.Renderable
+	Object         common.Artifact
 	// CurrentSelection is the config selection that is used to select the Object.
 	CurrentSelection common.ConfigSelectionItem
 	// PackageName is the package name of the current file.
@@ -46,7 +46,7 @@ type ClientAppTemplateContext struct {
 	// RenderOpts is the render options. Comes from tool's config and cli flags.
 	RenderOpts       common.RenderOpts
 	// Objects is rendering objects queue.
-	Objects         []common.Renderable
+	Objects         []common.Artifact
 	// ActiveProtocols is a list of supported protocols, that are used in AsyncAPI document.
 	ActiveProtocols []string
 }
@@ -56,7 +56,7 @@ type InfraTemplateContext struct {
 	// ServerConfig is servers tool config for infra generation process
 	ServerConfig []common.ConfigInfraServer
 	// Objects is rendering objects queue.
-	Objects      []common.Renderable
+	Objects      []common.Artifact
 	// ActiveProtocols is a list of supported protocols, that are used in AsyncAPI document.
 	ActiveProtocols []string
 }

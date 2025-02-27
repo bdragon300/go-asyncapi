@@ -1,4 +1,4 @@
-{{- /* dot == render.Renderable: Ref -> render.Operation or render.Operation */}}
+{{- /* dot == common.Artifact: Ref -> render.Operation or render.Operation */}}
 {{- with $operation := deref .}}
 
 {{- if and .BindingsType (ndefined .BindingsType) }}

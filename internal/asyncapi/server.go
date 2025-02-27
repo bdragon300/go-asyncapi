@@ -1,6 +1,7 @@
 package asyncapi
 
 import (
+	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/samber/lo"
 
@@ -28,16 +29,16 @@ type Server struct {
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
-func (s Server) Compile(ctx *common.CompileContext) error {
+func (s Server) Compile(ctx *compile.Context) error {
 	obj, err := s.build(ctx, ctx.Stack.Top().Key)
 	if err != nil {
 		return err
 	}
-	ctx.PutObject(obj)
+	ctx.PutArtifact(obj)
 	return nil
 }
 
-func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Renderable, error) {
+func (s Server) build(ctx *compile.Context, serverKey string) (common.Artifact, error) {
 	_, isSelectable := ctx.Stack.Top().Flags[common.SchemaTagSelectable]
 	if s.XIgnore {
 		ctx.Logger.Debug("Server denoted to be ignored")
@@ -61,11 +62,12 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 	}
 
 	// Channels which are bound to this server
-	prm := lang.NewListCbPromise[common.Renderable](func(item common.CompileArtifact, path []string) bool {
+	prm := lang.NewListCbPromise[common.Artifact](func(item common.Artifact) bool {
+		path := item.Pointer().Pointer
 		if len(path) < 2 || len(path) >= 2 && path[0] != "channels" {
 			return false
 		}
-		return item.Kind() == common.ObjectKindChannel && item.Visible()
+		return item.Kind() == common.ArtifactKindChannel && item.Visible()
 	}, nil)
 	ctx.PutListPromise(prm)
 	res.AllActiveChannelsPromise = prm
@@ -94,7 +96,7 @@ func (s Server) build(ctx *common.CompileContext, serverKey string) (common.Rend
 		res.VariablesPromises.Set(v.Key, prm)
 	}
 
-	if _, ok := ProtocolBuilders[s.Protocol]; !ok {
+	if _, ok := ctx.GetProtocolBuilder(s.Protocol); !ok {
 		ctx.Logger.Warn("Skip unsupported server protocol", "proto", s.Protocol)
 		res.ProtoServer = BuildProtoServer(ctx, &s, &res, "")
 		return &res, nil

@@ -1,13 +1,7 @@
 package udp
 
-type ProtoBuilder struct {
-	ProtoName string
-}
+type ProtoBuilder struct{}
 
-var Builder = ProtoBuilder{
-	ProtoName: "udp",
-}
-
-func (pb ProtoBuilder) ProtocolName() string {
-	return pb.ProtoName
+func (pb ProtoBuilder) Protocol() string {
+	return "udp"
 }

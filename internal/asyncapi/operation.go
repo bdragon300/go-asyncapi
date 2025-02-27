@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
 	"github.com/bdragon300/go-asyncapi/internal/render"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/types"
@@ -36,16 +37,16 @@ type Operation struct {
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
-func (o Operation) Compile(ctx *common.CompileContext) error {
+func (o Operation) Compile(ctx *compile.Context) error {
 	obj, err := o.build(ctx, ctx.Stack.Top().Key, ctx.Stack.Top().Flags)
 	if err != nil {
 		return err
 	}
-	ctx.PutObject(obj)
+	ctx.PutArtifact(obj)
 	return nil
 }
 
-func (o Operation) build(ctx *common.CompileContext, operationKey string, flags map[common.SchemaTag]string) (common.Renderable, error) {
+func (o Operation) build(ctx *compile.Context, operationKey string, flags map[common.SchemaTag]string) (common.Artifact, error) {
 	ignore := o.XIgnore ||
 		o.Action == OperationActionSend && !ctx.CompileOpts.GeneratePublishers ||
 		o.Action == OperationActionReceive && !ctx.CompileOpts.GenerateSubscribers
@@ -104,7 +105,7 @@ func (o Operation) build(ctx *common.CompileContext, operationKey string, flags 
 	// channel is bound with -- it will be known only after linking stage.
 	// So we just compile the proto operations for all supported protocols.
 	ctx.Logger.Trace("Prebuild the operations for every supported protocol")
-	for proto := range ProtocolBuilders {
+	for _, proto := range ctx.SupportedProtocols() {
 		ctx.Logger.Trace("Operation", "proto", proto)
 		res.ProtoOperations = append(res.ProtoOperations, BuildProtoOperation(ctx, &o, res, proto))
 	}

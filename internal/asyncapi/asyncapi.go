@@ -36,7 +36,8 @@ package asyncapi
 import (
 	"fmt"
 
-	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
+
 	"github.com/bdragon300/go-asyncapi/internal/render"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"golang.org/x/mod/semver"
@@ -58,16 +59,16 @@ type AsyncAPI struct {
 	Components         ComponentsItem                      `json:"components" yaml:"components"`
 }
 
-func (a AsyncAPI) Compile(ctx *common.CompileContext) error {
+func (a AsyncAPI) Compile(ctx *compile.Context) error {
 	obj, err := a.build(ctx)
 	if err != nil {
 		return err
 	}
-	ctx.PutObject(obj)
+	ctx.PutArtifact(obj)
 	return nil
 }
 
-func (a AsyncAPI) build(ctx *common.CompileContext) (*render.AsyncAPI, error) {
+func (a AsyncAPI) build(ctx *compile.Context) (*render.AsyncAPI, error) {
 	ctx.Logger.Trace("AsyncAPI root object")
 	res := &render.AsyncAPI{
 		DefaultContentType: a.DefaultContentType,

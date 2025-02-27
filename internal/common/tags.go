@@ -17,7 +17,7 @@ const (
 	SchemaTagDefinition SchemaTag = "definition"
 
 	// SchemaTagComponent is special tag for top-level entities in `components` section. Basically it affects if the
-	// jsonschema object are considered as schema with [ObjectKindSchema] kind or inlined object with [ObjectKindOther] kind.
+	// jsonschema object are considered as schema with [ArtifactKindSchema] kind or inlined object with [ArtifactKindOther] kind.
 	SchemaTagComponent SchemaTag = "components"
 
 	// SchemaTagDataModel marks the jsonschema objects and all its nested objects as data models.

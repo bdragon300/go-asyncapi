@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
+
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
 	"github.com/bdragon300/go-asyncapi/internal/types"
@@ -18,16 +20,16 @@ type CorrelationID struct {
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
-func (c CorrelationID) Compile(ctx *common.CompileContext) error {
+func (c CorrelationID) Compile(ctx *compile.Context) error {
 	obj, err := c.build(ctx, ctx.Stack.Top().Key)
 	if err != nil {
 		return err
 	}
-	ctx.PutObject(obj)
+	ctx.PutArtifact(obj)
 	return nil
 }
 
-func (c CorrelationID) build(ctx *common.CompileContext, correlationIDKey string) (common.Renderable, error) {
+func (c CorrelationID) build(ctx *compile.Context, correlationIDKey string) (common.Artifact, error) {
 	if c.XIgnore {
 		ctx.Logger.Debug("CorrelationID denoted to be ignored")
 		return &render.CorrelationID{Dummy: true}, nil

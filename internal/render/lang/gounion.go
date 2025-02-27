@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
+
 	"github.com/samber/lo"
 )
 

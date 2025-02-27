@@ -16,11 +16,11 @@ import (
 
 type RenderQueueItem struct {
 	Selection common.ConfigSelectionItem
-	Object    common.CompileArtifact
+	Object    common.Artifact
 	Err       error
 }
 
-func RenderObjects(queue []RenderQueueItem, mng *manager.TemplateRenderManager) error {
+func RenderArtifacts(queue []RenderQueueItem, mng *manager.TemplateRenderManager) error {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 	var postponed []RenderQueueItem
 
@@ -28,7 +28,7 @@ func RenderObjects(queue []RenderQueueItem, mng *manager.TemplateRenderManager) 
 	for len(queue) > 0 {
 		for _, item := range queue {
 			logger.Debug("Render", "object", item.Object.String())
-			mng.SetCodeObject(item.Object.Renderable, item.Selection)
+			mng.SetCodeObject(item.Object, item.Selection)
 
 			logger.Trace("-> Render file name expression", "object", item.Object.String(), "template", item.Selection.Render.File)
 			fileName, err := renderObjectInlineTemplate(item, item.Selection.Render.File, mng)
@@ -89,7 +89,7 @@ func renderObject(item RenderQueueItem, templateName string, mng *manager.Templa
 		RenderOpts:       mng.RenderOpts,
 		CurrentSelection: item.Selection,
 		PackageName:      mng.PackageName,
-		Object:           item.Object.Renderable,
+		Object:           item.Object,
 		ImportsManager:   mng.ImportsManager,
 	}
 

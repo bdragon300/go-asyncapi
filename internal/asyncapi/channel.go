@@ -1,10 +1,10 @@
 package asyncapi
 
 import (
+	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
-	"github.com/samber/lo"
-
 	"github.com/bdragon300/go-asyncapi/internal/types"
+	"github.com/samber/lo"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
@@ -29,16 +29,21 @@ type Channel struct {
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
-func (c Channel) Compile(ctx *common.CompileContext) error {
+func (c Channel) Compile(ctx *compile.Context) error {
 	obj, err := c.build(ctx, ctx.Stack.Top().Key, ctx.Stack.Top().Flags)
 	if err != nil {
 		return err
 	}
-	ctx.PutObject(obj)
+	ctx.PutArtifact(obj)
 	return nil
 }
 
-func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[common.SchemaTag]string) (common.Renderable, error) {
+type protoChannelBuilder interface {
+	BuildChannel(ctx *compile.Context, channel *Channel, parent *render.Channel) (*render.ProtoChannel, error)
+	Protocol() string
+}
+
+func (c Channel) build(ctx *compile.Context, channelKey string, flags map[common.SchemaTag]string) (common.Artifact, error) {
 	ignore := c.XIgnore || (!ctx.CompileOpts.GeneratePublishers && !ctx.CompileOpts.GenerateSubscribers)
 	if ignore {
 		ctx.Logger.Debug("Channel denoted to be ignored")
@@ -71,11 +76,12 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 	} else {
 		ctx.Logger.Trace("Channel for all servers")
 	}
-	prm := lang.NewListCbPromise[common.Renderable](func(item common.CompileArtifact, path []string) bool {
+	prm := lang.NewListCbPromise[common.Artifact](func(item common.Artifact) bool {
+		path := item.Pointer().Pointer
 		if len(path) < 2 || len(path) >= 2 && path[0] != "servers" {
 			return false
 		}
-		return item.Kind() == common.ObjectKindServer && item.Visible()
+		return item.Kind() == common.ArtifactKindServer && item.Visible()
 	}, nil)
 	res.AllActiveServersPromise = prm
 	ctx.PutListPromise(prm)
@@ -93,7 +99,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 		for _, paramName := range c.Parameters.Keys() {
 			ctx.Logger.Trace("Channel parameter", "name", paramName)
 			ref := ctx.CurrentPositionRef("parameters", paramName)
-			prmType := lang.NewGolangTypePromise(ref, func(obj common.Renderable) common.GolangType {
+			prmType := lang.NewGolangTypePromise(ref, func(obj common.Artifact) common.GolangType {
 				return obj.(*render.Parameter).Type
 			})
 			ctx.PutPromise(prmType)
@@ -118,11 +124,12 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 	}
 
 	// All known Operations
-	prmOp := lang.NewListCbPromise[common.Renderable](func(item common.CompileArtifact, path []string) bool {
+	prmOp := lang.NewListCbPromise[common.Artifact](func(item common.Artifact) bool {
+		path := item.Pointer().Pointer
 		if len(path) < 2 || len(path) >= 2 && path[0] != "operations" {
 			return false
 		}
-		return item.Kind() == common.ObjectKindOperation && item.Visible()
+		return item.Kind() == common.ArtifactKindOperation && item.Visible()
 	}, nil)
 	res.AllActiveOperationsPromise = prmOp
 	ctx.PutListPromise(prmOp)
@@ -148,10 +155,11 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string, flags map[
 	// channel is bound with -- it will be known only after linking stage.
 	// So we just compile the proto channels for all supported protocols.
 	ctx.Logger.Trace("Prebuild the channels for every supported protocol")
-	for proto, b := range ProtocolBuilders {
-		ctx.Logger.Trace("Channel", "proto", proto)
+	for _, b := range ctx.ProtocolBuilders {
+		builder := b.(protoChannelBuilder)
+		ctx.Logger.Trace("Channel", "proto", builder.Protocol())
 		ctx.Logger.NextCallLevel()
-		obj, err := b.BuildChannel(ctx, &c, res)
+		obj, err := builder.BuildChannel(ctx, &c, res)
 		ctx.Logger.PrevCallLevel()
 		if err != nil {
 			return nil, err

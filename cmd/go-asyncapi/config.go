@@ -28,7 +28,7 @@ type (
 
 	toolConfigSelection struct {
 		NameRe           string                    `yaml:"nameRe"`
-		ObjectKinds      []string                  `yaml:"objectKinds"`
+		ArtifactKinds    []string                  `yaml:"artifactKinds"`
 		ModuleURLRe      string                    `yaml:"moduleURLRe"`
 		PathRe           string                    `yaml:"pathRe"`
 		Protocols        []string                  `yaml:"protocols"`

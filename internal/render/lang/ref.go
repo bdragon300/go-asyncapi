@@ -13,7 +13,7 @@ import (
 // value this flag.
 func NewRef(ref string, name string, selectable *bool) *Ref {
 	return &Ref{
-		Promise:    *newPromise[common.Renderable](ref, common.PromiseOriginRef, nil, nil),
+		Promise:    *newPromise[common.Artifact](ref, common.PromiseOriginRef, nil, nil),
 		selectable: selectable,
 		name:       name,
 	}
@@ -22,10 +22,11 @@ func NewRef(ref string, name string, selectable *bool) *Ref {
 // Ref is promise object that is used specially for $ref urls in documents. It points to a single object, addresses
 // the object only by ref.
 //
-// Ref matches to the [common.Renderable] interface and gets to the render selections, where it is commonly used in
+// Ref matches to the [common.Artifact] interface and gets to the render selections, where it is commonly used in
 // the templates to render the object that are referenced by $ref.
 type Ref struct {
-	Promise[common.Renderable]
+	BasePositioned
+	Promise[common.Artifact]
 	selectable *bool
 	name       string
 }
@@ -40,7 +41,7 @@ func (r *Ref) Name() string {
 	return n
 }
 
-func (r *Ref) Kind() common.ObjectKind {
+func (r *Ref) Kind() common.ArtifactKind {
 	return r.target.Kind()
 }
 
@@ -69,11 +70,11 @@ func (r *Ref) String() string {
 		b.WriteString("]")
 	}
 
-	b.WriteString("->")
+	b.WriteString(" -> ")
 	b.WriteString(r.ref)
 	return b.String()
 }
 
-func (r *Ref) UnwrapRenderable() common.Renderable {
-	return common.DerefRenderable(r.target)
+func (r *Ref) Unwrap() common.Artifact {
+	return common.DerefArtifact(r.target)
 }

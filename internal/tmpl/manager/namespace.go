@@ -72,7 +72,7 @@ func (s *NamespaceManager) String() string {
 }
 
 type NamespaceTypeItem struct {
-	Object common.GolangType
+	Object    common.GolangType
 	Selection common.ConfigSelectionItem
 	FileName string
 	PackageName string

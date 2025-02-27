@@ -1,5 +1,5 @@
 {{define "client/channel"}}
-{{/* dot == common.Renderable: Ref -> render.Channel or render.Channel */}}
+{{/* dot == common.Artifact: Ref -> render.Channel or render.Channel */}}
 {{- with . | deref}}
 type {{$ | goIDUpper}}Cmd struct {
     // Parameters
@@ -39,7 +39,7 @@ func channel{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}
 {{- end}}
 
 {{define "client/operation"}}
-{{/* dot == common.Renderable: Ref -> render.Operation or render.Operation */}}
+{{/* dot == common.Artifact: Ref -> render.Operation or render.Operation */}}
 {{- with . | deref}}
 type {{$ | goIDUpper}}Cmd struct {
     // Parameters
@@ -80,8 +80,8 @@ func operation{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper
 
 {{define "client/pubsub/proto/serverPubSub"}}
 {{- /*
-    .ChannelOrOperation == common.Renderable: Ref -> render.Channel or render.Channel or render.Operation or render.Operation;
-    .Server == common.Renderable: Ref -> render.Server or render.Server
+    .ChannelOrOperation == common.Artifact: Ref -> render.Channel or render.Channel or render.Operation or render.Operation;
+    .Server == common.Artifact: Ref -> render.Server or render.Server
     .Kind == "channel" or "operation"
     */}}
 {{$channel := .ChannelOrOperation}}

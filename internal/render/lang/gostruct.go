@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/bdragon300/go-asyncapi/internal/common"
+
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/samber/lo"
 
 	"github.com/bdragon300/go-asyncapi/internal/types"
-
-	"github.com/bdragon300/go-asyncapi/internal/common"
 )
 
 // GoStruct represents a Go struct.

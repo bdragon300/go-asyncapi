@@ -13,8 +13,8 @@ import (
 func RenderInfra(queue []RenderQueueItem, activeProtocols []string, outputFileName string, serverConfig []common.ConfigInfraServer, mng *manager.TemplateRenderManager) error {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
-	objects := lo.Map(queue, func(item RenderQueueItem, _ int) common.Renderable {
-		return item.Object.Renderable
+	objects := lo.Map(queue, func(item RenderQueueItem, _ int) common.Artifact {
+		return item.Object
 	})
 	logger.Debug("Objects selected", "count", len(objects))
 	ctx := tmpl.InfraTemplateContext{

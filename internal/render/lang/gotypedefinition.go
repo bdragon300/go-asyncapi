@@ -16,9 +16,9 @@ type GoTypeDefinition struct {
 
 func (p *GoTypeDefinition) String() string {
 	if p.Import != "" {
-		return fmt.Sprintf("GoTypeDefinition(%s.%s)->%s", p.Import, p.OriginalName, p.RedefinedType)
+		return fmt.Sprintf("GoTypeDefinition(%s.%s) -> %s", p.Import, p.OriginalName, p.RedefinedType)
 	}
-	return fmt.Sprintf("GoTypeDefinition(%s)->%s", p.OriginalName, p.RedefinedType)
+	return fmt.Sprintf("GoTypeDefinition(%s) -> %s", p.OriginalName, p.RedefinedType)
 }
 
 func (p *GoTypeDefinition) CanBeAddressed() bool {

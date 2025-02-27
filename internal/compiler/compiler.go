@@ -10,7 +10,7 @@
 //   - At the start, the compilation queue contains only the root document.
 //   - Take a document from the compilation queue, and run the [locator.Default] to get the document
 //     data, and unmarshal it to the [asyncapi.AsyncAPI] structure.
-//   - Create the [common.CompileContext] that holds the state of the compilation process and is passed to compilation logic.
+//   - Create the [compile.Context] that holds the state of the compilation process and is passed to compilation logic.
 //   - Recursively invoke the compilation logic on [asyncapi.AsyncAPI], that the artifacts, promises, filling up the [Document]
 //     with them. If an error occurs, the process aborts.
 //   - If we meet the $ref to the external document on the way, the compiler adds the path to this document to the compilation
@@ -38,6 +38,8 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
+
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 
@@ -49,9 +51,8 @@ import (
 // NewDocument returns a new compilation document referenced by the given URL.
 func NewDocument(u *jsonpointer.JSONPointer) *Document {
 	return &Document{
-		logger:    log.GetLogger(log.LoggerPrefixCompilation),
-		url:       u,
-		artifacts: make([]common.CompileArtifact, 0),
+		logger: log.GetLogger(log.LoggerPrefixCompilation),
+		url:    u,
 	}
 }
 
@@ -66,12 +67,12 @@ type Document struct {
 
 	// Compilation results
 	externalRefs []*jsonpointer.JSONPointer
-	artifacts    []common.CompileArtifact
+	artifacts    []common.Artifact
 	promises     []common.ObjectPromise
 	listPromises []common.ObjectListPromise
 }
 
-func (c *Document) AddArtifact(a common.CompileArtifact) {
+func (c *Document) AddArtifact(a common.Artifact) {
 	c.artifacts = append(c.artifacts, a)
 }
 
@@ -91,7 +92,7 @@ func (c *Document) DocumentURL() jsonpointer.JSONPointer {
 	return *c.url
 }
 
-func (c *Document) Artifacts() []common.CompileArtifact {
+func (c *Document) Artifacts() []common.Artifact {
 	return c.artifacts
 }
 
@@ -142,7 +143,7 @@ func (c *Document) readFile(u *jsonpointer.JSONPointer, locator documentLocator)
 }
 
 // Compile runs the document compilation.
-func (c *Document) Compile(ctx *common.CompileContext) error {
+func (c *Document) Compile(ctx *compile.Context) error {
 	ctx = ctx.WithResultsStore(c)
 	c.logger.Debug("Compiling a document", "url", c.url, "kind", c.kind)
 	c.logger.Trace("Compiling the root component", "url", c.url)

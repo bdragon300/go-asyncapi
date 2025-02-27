@@ -24,16 +24,27 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		InnerGolangType() common.GolangType
 	}
 
-	// TODO: logging inside functions
+	logger := log.GetLogger(log.LoggerPrefixRendering)
+	trace := func(funcName string, args ...any) {
+		if logger.GetLevel() > log.TraceLevel {
+			return
+		}
+		argsStr := strings.Join(lo.Map(args, func(arg any, _ int) string {
+			return fmt.Sprintf("%[1]v", arg)
+		}), "; ")
+		logger.Debugf("--> %s(%s)", funcName, argsStr)
+	}
+
 	extraFuncs := template.FuncMap{
 		// go* functions return Go code snippets
-		"goLit": func(val any) (string, error) { return templateGoLit(renderManager, val) },
-		"goIDUpper": func(val any) string { return templateGoID(renderManager, val, true) },
-		"goID": func(val any) string { return templateGoID(renderManager, val, false) },
-		"goComment": func(text string) (string, error) { return templateGoComment(text) },
-		"goQual": func(parts ...string) string { return templateGoQual(renderManager, parts...) },
-		"goQualR": func(parts ...string) string { return templateGoQualRuntime(renderManager, parts...) },
+		"goLit": func(val any) (string, error) { trace("goLit", val); return templateGoLit(renderManager, val) },
+		"goIDUpper": func(val any) string { trace("goIDUpper", val); return templateGoID(renderManager, val, true) },
+		"goID": func(val any) string { trace("goID", val); return templateGoID(renderManager, val, false) },
+		"goComment": func(text string) (string, error) { trace("goComment", text); return templateGoComment(text) },
+		"goQual": func(parts ...string) string { trace("goQual", parts); return templateGoQual(renderManager, parts...) },
+		"goQualR": func(parts ...string) string { trace("goQualR", parts); return templateGoQualRuntime(renderManager, parts...) },
 		"goDef": func(r common.GolangType) (string, error) {
+			trace("goDef", r);
 			tplName := path.Join(r.GoTemplate(), "definition")
 			renderManager.NamespaceManager.DefineType(r, renderManager, 1)
 			if v, ok := r.(golangTypeWrapper); ok {
@@ -46,6 +57,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			return res, nil
 		},
 		"goPkg": func(obj any) (pkg string, err error) {
+			trace("goPkg", obj);
 			switch v := obj.(type) {
 			case common.GolangType:
 				pkg, err = qualifiedTypeGeneratedPackage(renderManager, v)
@@ -63,31 +75,36 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			}
 			return lo.Ternary(pkg != "", pkg + ".", ""), nil
 		},
-		"goUsage": func(r common.GolangType) (string, error) { return templateGoUsage(renderManager, r) },
+		"goUsage": func(r common.GolangType) (string, error) { trace("goUsage", r); return templateGoUsage(renderManager, r) },
 
 		// Type helpers
-		"deref": func(r common.Renderable) common.Renderable {
+		"deref": func(r common.Artifact) common.Artifact {
+			trace("deref", r);
 			if r == nil {
 				return nil
 			}
-			return common.DerefRenderable(r)
+			return common.DerefArtifact(r)
 		},
 		"innerType": func(val common.GolangType) common.GolangType {
+			trace("innerType", val);
 			if v, ok := any(val).(golangTypeExtractor); ok {
 				return v.InnerGolangType()
 			}
 			return nil
 		},
-		"isVisible": func(r common.Renderable) common.Renderable {
+		"isVisible": func(r common.Artifact) common.Artifact {
+			trace("isVisible", r);
 			return lo.Ternary(!lo.IsNil(r) && r.Visible(), r, nil)
 		},
 		"ptr": func(val common.GolangType) (common.GolangType, error) {
+			trace("ptr", val);
 			if lo.IsNil(val) {
 				return nil, fmt.Errorf("cannot get a pointer to nil")
 			}
 			return &lang.GoPointer{Type: val}, nil
 		},
 		"impl": func(protocol string) *common.ImplementationObject {
+			trace("impl", protocol);
 			impl, found := lo.Find(renderManager.Implementations, func(def manager.ImplementationItem) bool {
 				return def.Object.Manifest.Protocol == protocol
 			})
@@ -97,14 +114,17 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			return &impl.Object
 		},
 		"toQuotable": func(unquotedStr string) string {
+			trace("toQuotable", unquotedStr);
 			return strings.TrimSuffix(strings.TrimPrefix(strconv.Quote(unquotedStr), "\""), "\"")
 		},
 
 		// Templates calling
 		"tmpl": func(templateName string, ctx any) (string, error) {
+			trace("tmpl", templateName, ctx);
 			return templateExecTemplate(renderManager, templateName, ctx)
 		},
 		"tryTmpl": func(templateName string, ctx any) (string, error) {
+			trace("tryTmpl", templateName, ctx);
 			res, err := templateExecTemplate(renderManager, templateName, ctx)
 			switch {
 			case errors.Is(err, ErrTemplateNotFound):
@@ -118,6 +138,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 
 		// Working with render namespace
 		"def": func(objects ...any) string {
+			trace("def", objects...);
 			for _, o := range objects {
 				switch v := o.(type) {
 				case common.GolangType:
@@ -133,18 +154,20 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			return ""
 		},
 		"defined": func(r any) bool {
+			trace("defined", r);
 			return templateGoDefined(renderManager, r)
 		},
 		"ndefined": func(r any) bool {
+			trace("ndefined", r);
 			return !templateGoDefined(renderManager, r)
 		},
 
 		// Other
 		"correlationIDExtractionCode": func(c *render.CorrelationID, varStruct *lang.GoStruct, addValidationCode bool) (items []correlationIDExtractionStep, err error) {
+			trace("correlationIDExtractionCode", c, varStruct, addValidationCode);
 			return templateCorrelationIDExtractionCode(renderManager, c, varStruct, addValidationCode)
 		},
 		"debug": func(args ...any) string {
-			logger := log.GetLogger(log.LoggerPrefixRendering)
 			for _, arg := range args {
 				logger.Debugf("debug: [%[1]p][%[1]T] %[1]v", arg)
 			}
@@ -255,7 +278,7 @@ func toGoLiteral(val any) string {
 // templateGoID returns a Go identifier for the given value. The exportedName argument controls if the returned
 // identifier should be exported (start with an uppercase letter) or not.
 //
-// If value is an object (common.GolangType or lang.Ref or any common.Renderable object like channel or parameter),
+// If value is an object (common.GolangType or lang.Ref or any common.Artifact object like channel or parameter),
 // the function returns its name as Go identifier.
 // Considers the document references names, aliases, x-go-name tags and so on.
 // For that, it calls object's Name method and make a Go identifier from it.
@@ -265,7 +288,7 @@ func templateGoID(mng *manager.TemplateRenderManager, val any, exportedName bool
 	var res string
 
 	switch v := val.(type) {
-	case common.Renderable:
+	case common.Artifact:
 		// Prefer the name of the topObject over the name of the val if the topObject is a Ref and points to val.
 		// Otherwise, use the name of the val.
 		//
@@ -273,7 +296,7 @@ func templateGoID(mng *manager.TemplateRenderManager, val any, exportedName bool
 		// defined in `components.servers.reusableServer` that this Ref is points to. Then we'll use the "myServer"
 		// as the server name in generated code: functions, structs, etc.
 		topObject := mng.CurrentObject
-		if lo.IsNil(topObject) || !common.CheckSameRenderables(topObject, v) {
+		if lo.IsNil(topObject) || !common.CheckSameArtifacts(topObject, v) {
 			res = v.Name()  // nil could appear when we render the app template
 		} else {
 			res = topObject.Name()

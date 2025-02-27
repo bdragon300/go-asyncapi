@@ -9,6 +9,8 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
+
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 
 	"github.com/bdragon300/go-asyncapi/internal/types"
@@ -76,16 +78,16 @@ type Object struct {
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
-func (o Object) Compile(ctx *common.CompileContext) error {
+func (o Object) Compile(ctx *compile.Context) error {
 	obj, err := o.build(ctx, ctx.Stack.Top().Flags, ctx.Stack.Top().Key)
 	if err != nil {
 		return err
 	}
-	ctx.PutObject(obj)
+	ctx.PutArtifact(obj)
 	return nil
 }
 
-func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]string, objectKey string) (common.Renderable, error) {
+func (o Object) build(ctx *compile.Context, flags map[common.SchemaTag]string, objectKey string) (common.Artifact, error) {
 	_, isSelectable := flags[common.SchemaTagSelectable]
 	ignore := o.XIgnore
 	if ignore {
@@ -136,7 +138,7 @@ func (o Object) build(ctx *common.CompileContext, flags map[common.SchemaTag]str
 }
 
 // getTypeName returns the jsonschema type name of the object. It also returns whether the object is nullable.
-func (o Object) getTypeName(ctx *common.CompileContext) (typeName string, nullable bool, err error) {
+func (o Object) getTypeName(ctx *compile.Context) (typeName string, nullable bool, err error) {
 	schemaType := o.Type
 	typeName = schemaType.V0
 
@@ -160,7 +162,7 @@ func (o Object) getTypeName(ctx *common.CompileContext) (typeName string, nullab
 	return
 }
 
-func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.SchemaTag]string, typeName string) (golangType common.GolangType, err error) {
+func (o Object) buildGolangType(ctx *compile.Context, flags map[common.SchemaTag]string, typeName string) (golangType common.GolangType, err error) {
 	var aliasedType *lang.GoSimple
 
 	if typeName == "object" {
@@ -224,7 +226,7 @@ func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.Sch
 				OriginalName:  ctx.GenerateObjName(o.Title, ""),
 				Description:   o.Description,
 				HasDefinition: hasDefinition,
-				ObjectKind:    lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
+				ArtifactKind:  lo.Ternary(isComponent, common.ArtifactKindSchema, common.ArtifactKindOther),
 			},
 			RedefinedType: aliasedType,
 		}
@@ -234,7 +236,7 @@ func (o Object) buildGolangType(ctx *common.CompileContext, flags map[common.Sch
 }
 
 // guessObjectType is backwards compatible, guessing the user intention when they didn't specify a type.
-func (o Object) guessObjectType(ctx *common.CompileContext) *types.Union2[string, []string] {
+func (o Object) guessObjectType(ctx *compile.Context) *types.Union2[string, []string] {
 	switch {
 	case o.Ref == "" && o.Properties.Len() > 0:
 		ctx.Logger.Trace("Determined `type: object` because of `properties` presence")
@@ -248,7 +250,7 @@ func (o Object) guessObjectType(ctx *common.CompileContext) *types.Union2[string
 	}
 }
 
-func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.SchemaTag]string) (*lang.GoStruct, error) {
+func (o Object) buildLangStruct(ctx *compile.Context, flags map[common.SchemaTag]string) (*lang.GoStruct, error) {
 	_, hasDefinition := flags[common.SchemaTagDefinition]
 	_, isComponent := flags[common.SchemaTagComponent]
 	objName, _ := lo.Coalesce(o.XGoName, o.Title)
@@ -257,7 +259,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 			OriginalName:  ctx.GenerateObjName(objName, ""),
 			Description:   o.Description,
 			HasDefinition: hasDefinition,
-			ObjectKind:    lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
+			ArtifactKind:  lo.Ternary(isComponent, common.ArtifactKindSchema, common.ArtifactKindOther),
 		},
 	}
 	// TODO: cache the object name in case any sub-schemas recursively reference it
@@ -266,8 +268,8 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 	_, isDataModel := flags[common.SchemaTagDataModel]
 	if isDataModel {
 		ctx.Logger.Trace("Object struct is data model")
-		messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.CompileArtifact, _ []string) bool {
-			_, ok := item.Renderable.(*render.Message)
+		messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.Artifact) bool {
+			_, ok := item.(*render.Message)
 			return ok
 		}, nil)
 		ctx.PutListPromise(messagesPrm)
@@ -374,7 +376,7 @@ func (o Object) buildLangStruct(ctx *common.CompileContext, flags map[common.Sch
 	return &res, nil
 }
 
-func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.SchemaTag]string) (*lang.GoArray, error) {
+func (o Object) buildLangArray(ctx *compile.Context, flags map[common.SchemaTag]string) (*lang.GoArray, error) {
 	_, hasDefinition := flags[common.SchemaTagDefinition]
 	_, isComponent := flags[common.SchemaTagComponent]
 	objName, _ := lo.Coalesce(o.XGoName, o.Title)
@@ -383,7 +385,7 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 			OriginalName:  ctx.GenerateObjName(objName, ""),
 			Description:   o.Description,
 			HasDefinition: hasDefinition,
-			ObjectKind:    lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
+			ArtifactKind:  lo.Ternary(isComponent, common.ArtifactKindSchema, common.ArtifactKindOther),
 		},
 		ItemsType: nil,
 	}
@@ -419,7 +421,7 @@ func (o Object) buildLangArray(ctx *common.CompileContext, flags map[common.Sche
 	return &res, nil
 }
 
-func (o Object) buildUnionStruct(ctx *common.CompileContext, flags map[common.SchemaTag]string) (*lang.UnionStruct, error) {
+func (o Object) buildUnionStruct(ctx *compile.Context, flags map[common.SchemaTag]string) (*lang.UnionStruct, error) {
 	_, hasDefinition := flags[common.SchemaTagDefinition]
 	_, isComponent := flags[common.SchemaTagComponent]
 	objName, _ := lo.Coalesce(o.XGoName, o.Title)
@@ -429,14 +431,14 @@ func (o Object) buildUnionStruct(ctx *common.CompileContext, flags map[common.Sc
 				OriginalName:  ctx.GenerateObjName(objName, ""),
 				Description:   o.Description,
 				HasDefinition: hasDefinition,
-				ObjectKind:    lo.Ternary(isComponent, common.ObjectKindSchema, common.ObjectKindOther),
+				ArtifactKind:  lo.Ternary(isComponent, common.ArtifactKindSchema, common.ArtifactKindOther),
 			},
 		},
 	}
 
 	// Collect all messages to retrieve struct field tags
-	messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.CompileArtifact, _ []string) bool {
-		_, ok := item.Renderable.(*render.Message)
+	messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.Artifact) bool {
+		_, ok := item.(*render.Message)
 		return ok
 	}, nil)
 	ctx.PutListPromise(messagesPrm)
@@ -464,7 +466,7 @@ func (o Object) buildUnionStruct(ctx *common.CompileContext, flags map[common.Sc
 }
 
 // xGoTagsInfo returns the x-go-tags and x-go-tags-values from the object.
-func (o Object) xGoTagsInfo(ctx *common.CompileContext) (xTags types.OrderedMap[string, string], xTagNames []string, xTagValues []string) {
+func (o Object) xGoTagsInfo(ctx *compile.Context) (xTags types.OrderedMap[string, string], xTagNames []string, xTagValues []string) {
 	if o.XGoTags != nil {
 		switch o.XGoTags.Selector {
 		case 0:

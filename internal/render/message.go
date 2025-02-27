@@ -12,6 +12,7 @@ import (
 
 // Message represents a message object.
 type Message struct {
+	lang.BasePositioned
 	// OriginalName is the name of the message as it was defined in the AsyncAPI document.
 	OriginalName string
 	// ContentType is the message's content type if set.
@@ -44,10 +45,10 @@ type Message struct {
 
 	// AllActiveChannelsPromise contains all active channels in the document. Used to find the channels that this message
 	// is bound to on the rendering stage.
-	AllActiveChannelsPromise *lang.ListPromise[common.Renderable]
+	AllActiveChannelsPromise *lang.ListPromise[common.Artifact]
 	// AllActiveOperationsPromise contains all active operations in the document. Used to find the operations that this
 	// message is bound to on the rendering stage.
-	AllActiveOperationsPromise *lang.ListPromise[common.Renderable]
+	AllActiveOperationsPromise *lang.ListPromise[common.Artifact]
 
 	// BindingsType is a Go struct for message bindings. Nil if message bindings are not set.
 	BindingsType *lang.GoStruct
@@ -115,7 +116,7 @@ func (m *Message) EffectiveContentType() string {
 
 // SelectProtoObject returns a selectable ProtoMessage object for the given protocol or nil if not found or
 // the message is not selectable.
-func (m *Message) SelectProtoObject(protocol string) common.Renderable {
+func (m *Message) SelectProtoObject(protocol string) common.Artifact {
 	objects := lo.Filter(m.ProtoMessages, func(p *ProtoMessage, _ int) bool {
 		return p.Selectable() && p.Protocol == protocol
 	})
@@ -123,28 +124,28 @@ func (m *Message) SelectProtoObject(protocol string) common.Renderable {
 }
 
 // BoundChannels returns a list of Channel or lang.Ref to Channel objects that this message is bound to.
-func (m *Message) BoundChannels() []common.Renderable {
-	r := lo.Filter(m.AllActiveChannelsPromise.T(), func(c common.Renderable, _ int) bool {
-		ch := common.DerefRenderable(c).(*Channel)
-		return lo.ContainsBy(ch.BoundMessages(), func(item common.Renderable) bool {
-			return common.CheckSameRenderables(item, m)
+func (m *Message) BoundChannels() []common.Artifact {
+	r := lo.Filter(m.AllActiveChannelsPromise.T(), func(c common.Artifact, _ int) bool {
+		ch := common.DerefArtifact(c).(*Channel)
+		return lo.ContainsBy(ch.BoundMessages(), func(item common.Artifact) bool {
+			return common.CheckSameArtifacts(item, m)
 		})
 	})
 	// ListPromise is filled up by linker, which doesn't guarantee the order. So, sort items by name
-	slices.SortFunc(r, func(a, b common.Renderable) int { return cmp.Compare(a.Name(), b.Name()) })
+	slices.SortFunc(r, func(a, b common.Artifact) int { return cmp.Compare(a.Name(), b.Name()) })
 	return r
 }
 
 // BoundOperations returns a list of Operation or lang.Ref to Operation objects that this message is bound to.
-func (m *Message) BoundOperations() []common.Renderable {
-	r := lo.Filter(m.AllActiveOperationsPromise.T(), func(o common.Renderable, _ int) bool {
-		op := common.DerefRenderable(o).(*Operation)
-		return lo.ContainsBy(op.BoundMessages(), func(item common.Renderable) bool {
-			return common.CheckSameRenderables(item, m)
+func (m *Message) BoundOperations() []common.Artifact {
+	r := lo.Filter(m.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) bool {
+		op := common.DerefArtifact(o).(*Operation)
+		return lo.ContainsBy(op.BoundMessages(), func(item common.Artifact) bool {
+			return common.CheckSameArtifacts(item, m)
 		})
 	})
 	// ListPromise is filled up by linker, which doesn't guarantee the order. So, sort items by name
-	slices.SortFunc(r, func(a, b common.Renderable) int { return cmp.Compare(a.Name(), b.Name()) })
+	slices.SortFunc(r, func(a, b common.Artifact) int { return cmp.Compare(a.Name(), b.Name()) })
 	return r
 }
 
@@ -163,7 +164,7 @@ func (m *Message) BindingsProtocols() (res []string) {
 // ProtoBindingsValue returns the struct initialization [lang.GoValue] of BindingsType for the given protocol.
 // The returned value contains all constant bindings values defined in document for the protocol.
 // If no bindings are set for the protocol, returns an empty [lang.GoValue].
-func (m *Message) ProtoBindingsValue(protoName string) common.Renderable {
+func (m *Message) ProtoBindingsValue(protoName string) common.Artifact {
 	res := &lang.GoValue{
 		Type:               &lang.GoSimple{TypeName: "ServerBindings", Import: protoName, IsRuntimeImport: true},
 		EmptyCurlyBrackets: true,
@@ -180,8 +181,8 @@ func (m *Message) Name() string {
 	return m.OriginalName
 }
 
-func (m *Message) Kind() common.ObjectKind {
-	return common.ObjectKindMessage
+func (m *Message) Kind() common.ArtifactKind {
+	return common.ArtifactKindMessage
 }
 
 func (m *Message) Selectable() bool {
@@ -211,11 +212,11 @@ func (p *ProtoMessage) String() string {
 
 // isBound returns true if the message is bound to the protocol
 func (p *ProtoMessage) isBound() bool {
-	res := lo.SomeBy(p.BoundChannels(), func(c common.Renderable) bool {
-		ch := common.DerefRenderable(c).(*Channel)
+	res := lo.SomeBy(p.BoundChannels(), func(c common.Artifact) bool {
+		ch := common.DerefArtifact(c).(*Channel)
 		return !lo.IsNil(ch.SelectProtoObject(p.Protocol))
-	}) || lo.SomeBy(p.BoundOperations(), func(o common.Renderable) bool {
-		op := common.DerefRenderable(o).(*Operation)
+	}) || lo.SomeBy(p.BoundOperations(), func(o common.Artifact) bool {
+		op := common.DerefArtifact(o).(*Operation)
 		return !lo.IsNil(op.SelectProtoObject(p.Protocol))
 	})
 

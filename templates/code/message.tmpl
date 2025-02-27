@@ -1,4 +1,4 @@
-{{- /* dot == render.Renderable: Ref -> render.Message or render.Message */}}
+{{- /* dot == common.Artifact: Ref -> render.Message or render.Message */}}
 {{- with $message := deref .}}
 
 {{- if and .BindingsType (ndefined .BindingsType)}}

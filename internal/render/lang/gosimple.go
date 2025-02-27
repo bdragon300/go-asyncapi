@@ -9,6 +9,7 @@ import (
 // GoSimple is a simple Go type that does not require any special handling. It can be a built-in type like int, or
 // a type imported from library like [time.Time] or [golang.org/x/net/ipv4.Conn].
 type GoSimple struct {
+	BasePositioned
 	// TypeName is the name of the type to be rendered
 	TypeName string
 	// IsInterface is true if the type is an interface, which means it cannot be rendered as a pointer
@@ -24,8 +25,8 @@ func (p *GoSimple) Name() string {
 	return p.TypeName
 }
 
-func (p *GoSimple) Kind() common.ObjectKind {
-	return common.ObjectKindOther
+func (p *GoSimple) Kind() common.ArtifactKind {
+	return common.ArtifactKindOther
 }
 
 func (p *GoSimple) Selectable() bool {

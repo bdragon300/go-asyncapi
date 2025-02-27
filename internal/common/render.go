@@ -2,61 +2,11 @@ package common
 
 import "github.com/bdragon300/go-asyncapi/implementations"
 
-// ObjectKind is an enumeration of object kinds that are selectable for rendering.
-type ObjectKind string
-
-const (
-	// ObjectKindOther is a utility language object, not intended for selection (type, value, interface, etc.)
-	ObjectKindOther     ObjectKind = ""
-	ObjectKindSchema    ObjectKind = "schema"
-	ObjectKindServer    ObjectKind = "server"
-	ObjectKindChannel   ObjectKind = "channel"
-	ObjectKindOperation ObjectKind = "operation"
-	ObjectKindMessage   ObjectKind = "message"
-	ObjectKindParameter ObjectKind = "parameter"
-	// ObjectKindAsyncAPI is a utility object represents the entire AsyncAPI document
-	ObjectKindAsyncAPI = "asyncapi"
-)
-
-// Renderable is an interface that any compilation artifact matches.
-type Renderable interface { // TODO: rename
-	// Name returns the name of the object as it was defined in the AsyncAPI document. This method is suitable
-	// for rendering the object through a ref. So we can render the object under ref's Name, which is necessary,
-	// for example, for rendering servers, channels, etc.
-	Name() string
-	Kind() ObjectKind
-	// Selectable returns true if object can be picked for selections to invoke the template. If false, the object
-	// does not get to selections but still can be indirectly rendered inside the templates.
-	Selectable() bool
-	// Visible returns true if object contents is visible in rendered code.
-	Visible() bool
-	// String is just a string representation of the object for logging and debugging purposes.
-	String() string
-}
-
-type renderableWrapper interface {
-	UnwrapRenderable() Renderable
-}
-
-// DerefRenderable unwraps and the underlying object if it was wrapped in a promise or another wrapper.
-func DerefRenderable(obj Renderable) Renderable {
-	// TODO: detect ref loops to avoid infinite recursion
-	if w, ok := obj.(renderableWrapper); ok {
-		return w.UnwrapRenderable()
-	}
-	return obj
-}
-
-// CheckSameRenderables checks if two Renderables are eventually the same object. It extracts the object from the
-// promises and wrappers if necessary.
-func CheckSameRenderables(a, b Renderable) bool {
-	return DerefRenderable(a) == DerefRenderable(b)
-}
-
+// Rendering options, that come from the configuration file.
 type (
 	ConfigSelectionItem struct {
 		Protocols        []string
-		ObjectKinds      []string
+		ArtifactKinds    []string
 		ModuleURLRe      string
 		PathRe           string
 		NameRe           string

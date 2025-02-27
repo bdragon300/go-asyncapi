@@ -1,8 +1,9 @@
 package asyncapi
 
 import (
-	"encoding/json"
 	"fmt"
+
+	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
 
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
@@ -10,27 +11,10 @@ import (
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
-	"github.com/bdragon300/go-asyncapi/internal/types"
-	"gopkg.in/yaml.v3"
 )
 
-// ProtocolBuilder is an interface for builder objects, that does the protocol-specific building of the channel,
-// bindings.
-type ProtocolBuilder interface {
-	BuildChannel(ctx *common.CompileContext, channel *Channel, parent *render.Channel) (*render.ProtoChannel, error)
-
-	BuildMessageBindings(ctx *common.CompileContext, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error)
-	BuildOperationBindings(ctx *common.CompileContext, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error)
-	BuildChannelBindings(ctx *common.CompileContext, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error)
-	BuildServerBindings(ctx *common.CompileContext, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error)
-
-	ProtocolName() string
-}
-
-var ProtocolBuilders map[string]ProtocolBuilder // TODO: replace the global variable to smth better
-
 // BuildProtoChannelStruct builds a Go struct for the channel. This function is called from protocol builders.
-func BuildProtoChannelStruct(ctx *common.CompileContext, source *Channel, target *render.Channel, protoName, golangName string) *lang.GoStruct {
+func BuildProtoChannelStruct(ctx *compile.Context, source *Channel, target *render.Channel, protoName, golangName string) *lang.GoStruct {
 	chanStruct := lang.GoStruct{
 		BaseType: lang.BaseType{
 			OriginalName:  golangName,
@@ -71,7 +55,7 @@ func BuildProtoChannelStruct(ctx *common.CompileContext, source *Channel, target
 	return &chanStruct
 }
 
-func BuildProtoServer(ctx *common.CompileContext, source *Server, target *render.Server, protoName string) *render.ProtoServer {
+func BuildProtoServer(ctx *compile.Context, source *Server, target *render.Server, protoName string) *render.ProtoServer {
 	srvStruct := lang.GoStruct{
 		BaseType: lang.BaseType{
 			OriginalName:  target.OriginalName,
@@ -102,8 +86,8 @@ func BuildProtoServer(ctx *common.CompileContext, source *Server, target *render
 	}
 }
 
-func BuildProtoOperation(ctx *common.CompileContext, source *Operation, target *render.Operation, proto string) *render.ProtoOperation {
-	prmChType := lang.NewGolangTypePromise(source.Channel.Ref, func(obj common.Renderable) common.GolangType {
+func BuildProtoOperation(ctx *compile.Context, source *Operation, target *render.Operation, proto string) *render.ProtoOperation {
+	prmChType := lang.NewGolangTypePromise(source.Channel.Ref, func(obj common.Artifact) common.GolangType {
 		ch := obj.(*render.Channel)
 		if ch.Dummy {
 			return &lang.GoSimple{TypeName: "any", IsInterface: true} // Dummy type
@@ -117,7 +101,7 @@ func BuildProtoOperation(ctx *common.CompileContext, source *Operation, target *
 		return protoCh.Type
 	})
 	ctx.PutPromise(prmChType)
-	prmCh := lang.NewPromise[*render.ProtoChannel](source.Channel.Ref, func(obj common.Renderable) *render.ProtoChannel {
+	prmCh := lang.NewPromise[*render.ProtoChannel](source.Channel.Ref, func(obj common.Artifact) *render.ProtoChannel {
 		ch := obj.(*render.Channel)
 		if ch.Dummy {
 			return &render.ProtoChannel{Channel: ch, Protocol: proto} // Dummy channel

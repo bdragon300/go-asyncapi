@@ -1,13 +1,7 @@
 package ws
 
-type ProtoBuilder struct {
-	ProtoName string
-}
+type ProtoBuilder struct{}
 
-var Builder = ProtoBuilder{
-	ProtoName: "ws",
-}
-
-func (pb ProtoBuilder) ProtocolName() string {
-	return pb.ProtoName
+func (pb ProtoBuilder) Protocol() string {
+	return "amqp"
 }

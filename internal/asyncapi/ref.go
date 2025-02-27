@@ -2,6 +2,7 @@ package asyncapi
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 )
 
@@ -17,7 +18,7 @@ func (c StandaloneRef) String() string {
 
 // registerRef is helper function that adds a $ref to the compile context and returns it.
 // This function is intended to be called from the compilation code.
-func registerRef(ctx *common.CompileContext, ref string, name string, selectable *bool) common.Renderable {
+func registerRef(ctx *compile.Context, ref string, name string, selectable *bool) common.Artifact {
 	ctx.Logger.Trace("Ref", "$ref", ref)
 	prm := lang.NewRef(ref, name, selectable)
 	ctx.PutPromise(prm)

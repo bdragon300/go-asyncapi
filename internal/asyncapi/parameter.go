@@ -1,6 +1,7 @@
 package asyncapi
 
 import (
+	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/samber/lo"
 
@@ -20,16 +21,16 @@ type Parameter struct {
 	Ref string `json:"$ref" yaml:"$ref"`
 }
 
-func (p Parameter) Compile(ctx *common.CompileContext) error {
+func (p Parameter) Compile(ctx *compile.Context) error {
 	obj, err := p.build(ctx, ctx.Stack.Top().Key)
 	if err != nil {
 		return err
 	}
-	ctx.PutObject(obj)
+	ctx.PutArtifact(obj)
 	return nil
 }
 
-func (p Parameter) build(ctx *common.CompileContext, parameterKey string) (common.Renderable, error) {
+func (p Parameter) build(ctx *compile.Context, parameterKey string) (common.Artifact, error) {
 	if p.Ref != "" {
 		return registerRef(ctx, p.Ref, parameterKey, nil), nil
 	}

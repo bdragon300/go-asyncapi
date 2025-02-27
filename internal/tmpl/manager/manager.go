@@ -52,7 +52,7 @@ type TemplateRenderManager struct {
 	RenderOpts common.RenderOpts
 
 	// CurrentObject is an object being currently rendered
-	CurrentObject   common.Renderable
+	CurrentObject   common.Artifact
 	// CurrentSelection is a config selection that was used to select the CurrentObject
 	CurrentSelection common.ConfigSelectionItem
 	TemplateLoader templateLoader
@@ -99,7 +99,7 @@ func (r *TemplateRenderManager) BeginFile(fileName, packageName string) {
 }
 
 // SetCodeObject is helper that just sets the CurrentObject and CurrentSelection fields.
-func (r *TemplateRenderManager) SetCodeObject(obj common.Renderable, selection common.ConfigSelectionItem) {
+func (r *TemplateRenderManager) SetCodeObject(obj common.Artifact, selection common.ConfigSelectionItem) {
 	r.CurrentObject = obj
 	r.CurrentSelection = selection
 }
