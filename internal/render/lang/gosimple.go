@@ -13,7 +13,7 @@ type GoSimple struct {
 	// TypeName is the name of the type to be rendered
 	TypeName string
 	// IsInterface is true if the type is an interface, which means it cannot be rendered as a pointer
-	IsInterface bool // TODO: use or remove
+	IsInterface bool
 	// Import is an optional package name or module to import a type from. E.g. "github.com/your/module" or "time"
 	// If set, then while rendering the usage of the type, this import will be added to the file's imports list.
 	Import string

@@ -10,8 +10,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// TODO: use `maps` package features below
-
 // OrderedMap is a map that preserves the global order of keys.
 // This is important for keeping the tool's result the same across runs.
 // This map contains the unmarshaling logic for JSON and YAML. Not thread-safe.

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"time"
@@ -25,7 +26,7 @@ type InfraCmd struct {
 
 	Format     string `arg:"-f,--format" help:"Output file format" placeholder:"NAME"`
 	ConfigFile string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"FILE"`
-	OutputFile string `arg:"-o,--output" help:"Output file path" placeholder:"FILE"`
+	OutputFile string `arg:"-o,--output" help:"Output file path or '-' to print to stdout. If omitted, the file name depends on selected format" placeholder:"FILE"`
 
 	TemplateDir      string        `arg:"-T,--template-dir" help:"User templates directory" placeholder:"DIR"`
 	AllowRemoteRefs  bool          `arg:"--allow-remote-refs" help:"Allow locator to fetch the files from remote $ref URLs"`
@@ -98,22 +99,33 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 		return fmt.Errorf("render infra: %w", err)
 	}
 
-	// TODO: -o - prints to stdout (and add this to cli help)
-	f, err := os.OpenFile(cmdConfig.Infra.OutputFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	states := renderManager.CommittedStates()
+	outBuf := states[cmdConfig.Infra.OutputFile].Buffer
+	if cmdConfig.Infra.OutputFile == "-" {
+		logger.Info("Output file to stdout")
+		lo.Must(os.Stdout.ReadFrom(outBuf))
+		return nil
+	}
+
+	return writeToFile(cmdConfig.Infra.OutputFile, outBuf)
+}
+
+func writeToFile(fileName string, buf io.Reader) error {
+	logger := log.GetLogger("")
+
+	f, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
 	if err != nil {
 		return fmt.Errorf("open output file: %w", err)
 	}
 	defer f.Close()
 
-	states := renderManager.CommittedStates()
-	if _, err = f.Write(states[cmdConfig.Infra.OutputFile].Buffer.Bytes()); err != nil {
+	if _, err = f.ReadFrom(buf); err != nil {
 		return fmt.Errorf("write output file: %w", err)
 	}
 	if err := f.Sync(); err != nil {
 		return fmt.Errorf("sync output file: %w", err)
 	}
-	logger.Infof("Output file saved to %q", cmdConfig.Infra.OutputFile)
-
+	logger.Infof("Output file saved to %q", fileName)
 	return nil
 }
 

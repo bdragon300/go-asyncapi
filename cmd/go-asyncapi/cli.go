@@ -55,12 +55,14 @@ func main() {
 	default:
 		cliParser.Fail("Invalid verbosity level, use 0, 1 or 2")
 	}
+	chlog.SetReportTimestamp(false)
+	chlog.SetOutput(os.Stderr)
 	if cliArgs.Quiet {
 		chlog.SetOutput(io.Discard)
 	}
-	chlog.SetReportTimestamp(false)
 
 	logger := log.GetLogger("")
+	logger.Info("Logging to stderr", "level", chlog.GetLevel())
 	builtinConfig, err := loadConfig(assets.AssetFS, defaultConfigFileName)
 	if err != nil {
 		logger.Error("Cannot load built-in config", "error", err)

@@ -262,7 +262,6 @@ func (o Object) buildLangStruct(ctx *compile.Context, flags map[common.SchemaTag
 			ArtifactKind:  lo.Ternary(isComponent, common.ArtifactKindSchema, common.ArtifactKindOther),
 		},
 	}
-	// TODO: cache the object name in case any sub-schemas recursively reference it
 
 	var contentTypesFunc func() []string
 	_, isDataModel := flags[common.SchemaTagDataModel]
