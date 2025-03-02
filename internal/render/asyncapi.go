@@ -11,7 +11,7 @@ const DefaultContentType = "application/json"
 
 // AsyncAPI represents the root of the AsyncAPI document.
 type AsyncAPI struct {
-	lang.BasePositioned
+	lang.BaseJSONPointed
 	DefaultContentType string
 }
 

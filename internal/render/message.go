@@ -12,7 +12,7 @@ import (
 
 // Message represents a message object.
 type Message struct {
-	lang.BasePositioned
+	lang.BaseJSONPointed
 	// OriginalName is the name of the message as it was defined in the AsyncAPI document.
 	OriginalName string
 	// ContentType is the message's content type if set.

@@ -11,7 +11,6 @@ const (
 	PayloadFormatIndicatorUTF8        PayloadFormatIndicator = 1
 )
 
-// Params below are passed to the New* implementation functions
 type (
 	ServerBindings struct {
 		ClientID              string

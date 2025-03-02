@@ -48,7 +48,7 @@ func (s *ImportsManager) Imports() []ImportItem {
 // is not a valid Go identifier.
 //
 // Function returns the imported name, used to access that package in Go code. It can be the package name
-// (for ``import "net/url"'' returns ``url''), or the alias, if any
+// (for ``import "net/url"'' returns ``url'') or the alias
 // (for ``import goAsyncapi "github.com/bdragon300/go-asyncapi"'' returns ``goAsyncapi'').
 func (s *ImportsManager) AddImport(importPath string, pkgName string) string {
 	if s.items == nil {

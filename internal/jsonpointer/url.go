@@ -9,6 +9,7 @@ import (
 	"github.com/samber/lo"
 )
 
+// Parse parses the JSON Pointer expression and returns the JSONPointer object. See JSONPointer type for more details.
 func Parse(uri string) (*JSONPointer, error) {
 	parsedURI, fsPath, pointer := parse(uri)
 	ptrParts := strings.Split(pointer, "/")

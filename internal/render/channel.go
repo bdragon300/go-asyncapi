@@ -13,7 +13,7 @@ import (
 
 // Channel represents the channel object.
 type Channel struct {
-	lang.BasePositioned
+	lang.BaseJSONPointed
 	// OriginalName is the name of the channel as it was defined in the AsyncAPI document.
 	OriginalName string
 	// Address is channel address raw value.

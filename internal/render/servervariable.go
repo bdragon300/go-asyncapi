@@ -7,7 +7,7 @@ import (
 
 // ServerVariable represents the server variable object.
 type ServerVariable struct {
-	lang.BasePositioned
+	lang.BaseJSONPointed
 	// OriginalName is the name of the server variable as it was defined in the AsyncAPI document.
 	OriginalName string
 	// Description is an optional server variable description. Renders as Go doc comment.

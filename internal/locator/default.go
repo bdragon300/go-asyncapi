@@ -70,6 +70,7 @@ func (r Default) locateHTTP(filePath string) (io.ReadCloser, error) {
 		}), "\n"),
 	)
 
+	// TODO: handle 3xx redirects
 	if resp.StatusCode >= 300 {
 		_, _ = io.Copy(io.Discard, resp.Body)
 		_ = resp.Body.Close()

@@ -10,7 +10,7 @@ import (
 
 // Operation represents an operation object.
 type Operation struct {
-	lang.BasePositioned
+	lang.BaseJSONPointed
 	// OriginalName is the name of the operation as it was defined in the AsyncAPI document.
 	OriginalName string
 	// Dummy is true when operation is ignored (x-ignore: true)

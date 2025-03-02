@@ -135,7 +135,7 @@ func NewGolangTypePromise(ref string, assignCb promiseAssignCbFunc[common.Golang
 
 // GolangTypePromise is the promise object that can be substituted where the GolangType is expected.
 type GolangTypePromise struct {
-	BasePositioned
+	BaseJSONPointed
 	Promise[common.GolangType]
 }
 

@@ -13,7 +13,7 @@ import (
 
 // Server represents the server object.
 type Server struct {
-	lang.BasePositioned
+	lang.BaseJSONPointed
 	// OriginalName is the name of the server as it was defined in the AsyncAPI document.
 	OriginalName string
 	// Host is the server host raw value.

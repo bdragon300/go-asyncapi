@@ -4,7 +4,6 @@ import (
 	"time"
 )
 
-// Params below are passed to the New* implementation functions
 type (
 	ServerBindings struct {
 		SchemaRegistryURL    string

@@ -10,11 +10,11 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
+	"go/token"
 	"path"
 	"strconv"
 	"strings"
 	"text/template"
-	"unicode"
 )
 
 // GetTemplateFunctions returns a map of functions to use in templates. These functions include all
@@ -312,7 +312,7 @@ func templateGoID(mng *manager.TemplateRenderManager, val any, exportedName bool
 	}
 	exported := true
 	if !exportedName {
-		exported = unicode.IsUpper(rune(res[0]))
+		exported = token.IsExported(res)
 	}
 	return utils.ToGolangName(res, exported)
 }

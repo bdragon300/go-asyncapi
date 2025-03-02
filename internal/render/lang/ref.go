@@ -25,7 +25,7 @@ func NewRef(ref string, name string, selectable *bool) *Ref {
 // Ref matches to the [common.Artifact] interface and gets to the render selections, where it is commonly used in
 // the templates to render the object that are referenced by $ref.
 type Ref struct {
-	BasePositioned
+	BaseJSONPointed
 	Promise[common.Artifact]
 	selectable *bool
 	name       string

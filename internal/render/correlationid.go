@@ -14,7 +14,7 @@ const (
 
 // CorrelationID represents the correlation ID object.
 type CorrelationID struct {
-	lang.BasePositioned
+	lang.BaseJSONPointed
 	// OriginalName is the name of the correlation ID as it was defined in the AsyncAPI document.
 	OriginalName string
 	// Description is an optional correlation ID description. Renders as Go doc comment.

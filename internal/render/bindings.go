@@ -8,7 +8,7 @@ import (
 
 // Bindings represents the bindings object. It's used for all binding types: channel, operation, message, and server.
 type Bindings struct {
-	lang.BasePositioned
+	lang.BaseJSONPointed
 	OriginalName string
 
 	// Values is constant bindings values by protocol

@@ -6,7 +6,7 @@ import (
 
 // GoPointer is a type representing a pointer type to another Go type. It acts as a wrapper for the inner type.
 type GoPointer struct {
-	BasePositioned
+	BaseJSONPointed
 	Type common.GolangType
 }
 

@@ -5,23 +5,23 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 )
 
-// BasePositioned holds a JSON Pointer to a current object position in the AsyncAPI document.
+// BaseJSONPointed holds a JSON Pointer to a current object position in the AsyncAPI document.
 // It is a utility type intended to be embedded in other types, don't use it directly.
-type BasePositioned struct {
+type BaseJSONPointed struct {
 	pointer jsonpointer.JSONPointer
 }
 
-func (b *BasePositioned) Pointer() jsonpointer.JSONPointer {
+func (b *BaseJSONPointed) Pointer() jsonpointer.JSONPointer {
 	return b.pointer
 }
 
-func (b *BasePositioned) SetPointer(pointer jsonpointer.JSONPointer) {
+func (b *BaseJSONPointed) SetPointer(pointer jsonpointer.JSONPointer) {
 	b.pointer = pointer
 }
 
 // BaseType is a base for the types representing the basic Go type.
 type BaseType struct {
-	BasePositioned
+	BaseJSONPointed
 	// OriginalName is the name of the type as it appears in the AsyncAPI document.
 	OriginalName string
 	// Description is optional description. Renders as Go doc comment.

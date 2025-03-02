@@ -464,7 +464,7 @@ func runCompilation(
 		}
 		logger.Debugf("Compiler stats: %s", document.Stats())
 		// Add external URLs to the compile queue
-		compileQueue = lo.Flatten([][]*jsonpointer.JSONPointer{compileQueue, document.ExternalURLs()})
+		compileQueue = append(compileQueue, document.ExternalURLs()...)
 	}
 
 	return documents, nil

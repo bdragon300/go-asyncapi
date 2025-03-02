@@ -7,7 +7,7 @@ import (
 
 // Parameter represents a channel parameter object.
 type Parameter struct {
-	lang.BasePositioned
+	lang.BaseJSONPointed
 	// OriginalName is the name of the parameter as it was defined in the AsyncAPI document.
 	OriginalName string
 	// Type is the Go type of the parameter. Usually, it's ``string''.
