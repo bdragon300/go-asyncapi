@@ -15,9 +15,9 @@ import (
 )
 
 type RenderQueueItem struct {
-	Selection common.ConfigSelectionItem
-	Object    common.Artifact
-	Err       error
+	LayoutItem common.ConfigLayoutItem
+	Object     common.Artifact
+	Err        error
 }
 
 func RenderArtifacts(queue []RenderQueueItem, mng *manager.TemplateRenderManager) error {
@@ -28,10 +28,10 @@ func RenderArtifacts(queue []RenderQueueItem, mng *manager.TemplateRenderManager
 	for len(queue) > 0 {
 		for _, item := range queue {
 			logger.Debug("Render", "object", item.Object.String())
-			mng.SetCodeObject(item.Object, item.Selection)
+			mng.SetCodeObject(item.Object, item.LayoutItem)
 
-			logger.Trace("-> Render file name expression", "object", item.Object.String(), "template", item.Selection.Render.File)
-			fileName, err := renderObjectInlineTemplate(item, item.Selection.Render.File, mng)
+			logger.Trace("-> Render file name expression", "object", item.Object.String(), "template", item.LayoutItem.Render.File)
+			fileName, err := renderObjectInlineTemplate(item, item.LayoutItem.Render.File, mng)
 			switch {
 			case errors.Is(err, tmpl.ErrNotDefined):
 				// Template can't be rendered right now due to unknown object definition, postpone it
@@ -47,9 +47,9 @@ func RenderArtifacts(queue []RenderQueueItem, mng *manager.TemplateRenderManager
 			fileName = utils.ToGoFilePath(fileName)
 			logger.Trace("-> File", "name", fileName)
 
-			logger.Debug("-> Render", "object", item.Object.String(), "file", fileName, "template", item.Selection.Render.Template)
-			mng.BeginFile(fileName, item.Selection.Render.Package)
-			err = renderObject(item, item.Selection.Render.Template, mng)
+			logger.Debug("-> Render", "object", item.Object.String(), "file", fileName, "template", item.LayoutItem.Render.Template)
+			mng.BeginFile(fileName, item.LayoutItem.Render.Package)
+			err = renderObject(item, item.LayoutItem.Render.Template, mng)
 			switch {
 			case errors.Is(err, tmpl.ErrNotDefined):
 				// Some objects needed by template code have not been defined and therefore, not in namespace yet.
@@ -86,11 +86,11 @@ func RenderArtifacts(queue []RenderQueueItem, mng *manager.TemplateRenderManager
 
 func renderObject(item RenderQueueItem, templateName string, mng *manager.TemplateRenderManager) error {
 	tplCtx := &tmpl.CodeTemplateContext{
-		RenderOpts:       mng.RenderOpts,
-		CurrentSelection: item.Selection,
-		PackageName:      mng.PackageName,
-		Object:           item.Object,
-		ImportsManager:   mng.ImportsManager,
+		RenderOpts:        mng.RenderOpts,
+		CurrentLayoutItem: item.LayoutItem,
+		PackageName:       mng.PackageName,
+		Object:            item.Object,
+		ImportsManager:    mng.ImportsManager,
 	}
 
 	var tpl *template.Template
@@ -111,7 +111,7 @@ func renderObject(item RenderQueueItem, templateName string, mng *manager.Templa
 	}
 
 	// If item is marked reused from other place, do not render the object and new imports, just update the namespace
-	if item.Selection.ReusePackagePath != "" {
+	if item.LayoutItem.ReusePackagePath != "" {
 		mng.ImportsManager = importsSnapshot
 	} else {
 		mng.Buffer.Write(res.Bytes())

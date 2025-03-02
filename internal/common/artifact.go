@@ -27,7 +27,7 @@ type Artifact interface {
 	// for example, for rendering servers, channels, etc.
 	Name() string
 	Kind() ArtifactKind
-	// Selectable returns true if object can be picked for selections to invoke the template. If false, the object
+	// Selectable returns true if object can get to rendering queue. If false, the object
 	// does not get to selections but still can be indirectly rendered inside the templates.
 	Selectable() bool
 	// Visible returns true if object contents is visible in rendered code.

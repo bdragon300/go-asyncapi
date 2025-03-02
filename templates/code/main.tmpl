@@ -3,42 +3,42 @@
     {{- template "schema.tmpl" .Object }}
 
 {{- else if and (eq .Object.Kind "server") (isVisible .Object)}}
-    {{- if not .CurrentSelection.Render.ProtoObjectsOnly}}
+    {{- if not .CurrentLayoutItem.Render.ProtoObjectsOnly}}
         {{- template "server.tmpl" .Object }}
     {{- end}}
 
-    {{- range .CurrentSelection.RenderProtocols}}
+    {{- range .CurrentLayoutItem.RenderProtocols}}
         {{- with (deref $.Object).SelectProtoObject . }}
             {{- tmpl (print .Protocol "_server.tmpl") . }}
         {{- end}}
     {{- end}}
 
 {{- else if and (eq .Object.Kind "channel") (isVisible .Object)}}
-    {{- if not .CurrentSelection.Render.ProtoObjectsOnly}}
+    {{- if not .CurrentLayoutItem.Render.ProtoObjectsOnly}}
         {{- template "channel.tmpl" .Object}}
     {{- end}}
-    {{- range .CurrentSelection.RenderProtocols}}
+    {{- range .CurrentLayoutItem.RenderProtocols}}
         {{- with (deref $.Object).SelectProtoObject . }}
             {{- tmpl (print .Protocol "_channel.tmpl") . }}
         {{- end}}
     {{- end}}
 
 {{- else if and (eq .Object.Kind "operation") (isVisible .Object)}}
-    {{- if not .CurrentSelection.Render.ProtoObjectsOnly}}
+    {{- if not .CurrentLayoutItem.Render.ProtoObjectsOnly}}
         {{- template "operation.tmpl" .Object}}
     {{- end}}
-    {{- range .CurrentSelection.RenderProtocols}}
+    {{- range .CurrentLayoutItem.RenderProtocols}}
         {{- with (deref $.Object).SelectProtoObject . }}
             {{- tmpl (print .Protocol "_operation.tmpl") . }}
         {{- end}}
     {{- end}}
 
 {{- else if and (eq .Object.Kind "message") (isVisible .Object) }}
-    {{- if not .CurrentSelection.Render.ProtoObjectsOnly}}
+    {{- if not .CurrentLayoutItem.Render.ProtoObjectsOnly}}
         {{- template "message.tmpl" .Object}}
     {{- end}}
 
-    {{- range .CurrentSelection.RenderProtocols}}
+    {{- range .CurrentLayoutItem.RenderProtocols}}
         {{- with (deref $.Object).SelectProtoObject . }}
             {{- tmpl (print .Protocol "_message.tmpl") . }}
         {{- end}}

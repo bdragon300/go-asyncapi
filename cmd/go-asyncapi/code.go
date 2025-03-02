@@ -166,7 +166,7 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 	}
 	allArtifacts := lo.FlatMap(lo.Values(documents), func(m *compiler.Document, _ int) []common.Artifact { return m.Artifacts() })
 	logger.Debug("Select artifacts")
-	renderQueue := selectArtifacts(allArtifacts, renderOpts.Selections)
+	renderQueue := selectArtifacts(allArtifacts, renderOpts.Layout)
 	if err = renderer.RenderArtifacts(renderQueue, renderManager); err != nil {
 		return fmt.Errorf("render artifacts: %w", err)
 	}
@@ -286,15 +286,15 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool, al
 		PreambleTemplate:  conf.Code.PreambleTemplate,
 	}
 
-	// Selections
-	for _, item := range conf.Selections {
-		sel := common.ConfigSelectionItem{
+	// Layout
+	for _, item := range conf.Layout {
+		l := common.ConfigLayoutItem{
 			Protocols:     item.Protocols,
 			ArtifactKinds: item.ArtifactKinds,
 			ModuleURLRe:   item.ModuleURLRe,
 			PathRe:        item.PathRe,
 			NameRe:        item.NameRe,
-			Render: common.ConfigSelectionItemRender{
+			Render: common.ConfigLayoutItemRender{
 				Template:         item.Render.Template,
 				File:             item.Render.File,
 				Package:          item.Render.Package,
@@ -304,8 +304,8 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool, al
 			ReusePackagePath:      item.ReusePackagePath,
 			AllSupportedProtocols: allProtocols,
 		}
-		logger.Debug("Use selection", "value", sel)
-		res.Selections = append(res.Selections, sel)
+		logger.Debug("Use layout item", "value", l)
+		res.Layout = append(res.Layout, l)
 	}
 
 	// ImportBase
@@ -345,15 +345,15 @@ func getImplementationOpts(conf toolConfig) common.RenderImplementationsOpts {
 	}
 }
 
-// selectArtifacts returns objects that match the selections.
-func selectArtifacts(artifacts []common.Artifact, selections []common.ConfigSelectionItem) (res []renderer.RenderQueueItem) {
+// selectArtifacts selects artifacts from the list of all artifacts based on the layout configuration.
+func selectArtifacts(artifacts []common.Artifact, layout []common.ConfigLayoutItem) (res []renderer.RenderQueueItem) {
 	logger := log.GetLogger("")
 
-	for _, selection := range selections {
-		logger.Trace("-> Process selection", "selection", selection)
-		selected := selector.Select(artifacts, selection)
+	for _, l := range layout {
+		logger.Trace("-> Process layout", "item", l)
+		selected := selector.Select(artifacts, l)
 		for _, obj := range selected {
-			res = append(res, renderer.RenderQueueItem{Selection: selection, Object: obj})
+			res = append(res, renderer.RenderQueueItem{LayoutItem: l, Object: obj})
 		}
 		logger.Debug("-> Selected", "artifacts", len(selected))
 	}

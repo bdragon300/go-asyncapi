@@ -53,9 +53,9 @@ type TemplateRenderManager struct {
 
 	// CurrentObject is an object being currently rendered
 	CurrentObject   common.Artifact
-	// CurrentSelection is a config selection that was used to select the CurrentObject
-	CurrentSelection common.ConfigSelectionItem
-	TemplateLoader templateLoader
+	// CurrentLayoutItem is a layout item that was used to select the CurrentObject
+	CurrentLayoutItem common.ConfigLayoutItem
+	TemplateLoader    templateLoader
 
 	// File state. The following fields are restored from committed
 	FileName string
@@ -98,10 +98,10 @@ func (r *TemplateRenderManager) BeginFile(fileName, packageName string) {
 	r.Buffer.Reset()
 }
 
-// SetCodeObject is helper that just sets the CurrentObject and CurrentSelection fields.
-func (r *TemplateRenderManager) SetCodeObject(obj common.Artifact, selection common.ConfigSelectionItem) {
+// SetCodeObject is helper that just sets the CurrentObject and CurrentLayoutItem fields.
+func (r *TemplateRenderManager) SetCodeObject(obj common.Artifact, layoutItem common.ConfigLayoutItem) {
 	r.CurrentObject = obj
-	r.CurrentSelection = selection
+	r.CurrentLayoutItem = layoutItem
 }
 
 // AddImplementation adds a new implementation to the list. Gets to the committed list on Commit call, otherwise

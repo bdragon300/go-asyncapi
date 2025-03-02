@@ -91,7 +91,7 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	}
 	allObjects := lo.FlatMap(lo.Values(documents), func(m *compiler.Document, _ int) []common.Artifact { return m.Artifacts() })
 	logger.Debug("Select objects")
-	renderQueue := selectArtifacts(allObjects, renderOpts.Selections)
+	renderQueue := selectArtifacts(allObjects, renderOpts.Layout)
 	// TODO: check if all server variables are set in config, error if not
 	serverVariables := getInfraServerConfig(cmdConfig.Infra.Servers)
 

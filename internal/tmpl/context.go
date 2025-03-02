@@ -23,8 +23,8 @@ type CodeTemplateContext struct {
 	RenderOpts       common.RenderOpts
 	// Object is the current object to render.
 	Object         common.Artifact
-	// CurrentSelection is the config selection that is used to select the Object.
-	CurrentSelection common.ConfigSelectionItem
+	// CurrentLayoutItem is the layout config item that is used to select the Object.
+	CurrentLayoutItem common.ConfigLayoutItem
 	// PackageName is the package name of the current file.
 	PackageName      string
 	// ImportsManager keeps the imports list for the current file.

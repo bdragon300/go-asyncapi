@@ -26,7 +26,7 @@ func (s *NamespaceManager) DefineType(obj common.GolangType, renderManager *Temp
 	if !found {
 		s.types = append(s.types, NamespaceTypeItem{
 			Object:      obj,
-			Selection:   renderManager.CurrentSelection,
+			Layout:      renderManager.CurrentLayoutItem,
 			Priority:    priority,
 			FileName:    renderManager.FileName,
 			PackageName: renderManager.PackageName,
@@ -72,8 +72,8 @@ func (s *NamespaceManager) String() string {
 }
 
 type NamespaceTypeItem struct {
-	Object    common.GolangType
-	Selection common.ConfigSelectionItem
+	Object   common.GolangType
+	Layout   common.ConfigLayoutItem
 	FileName string
 	PackageName string
 	Priority int

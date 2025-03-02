@@ -538,8 +538,8 @@ func qualifiedTypeGeneratedPackage(mng *manager.TemplateRenderManager, obj commo
 	}
 
 	// Use the package path from reuse config if it is defined
-	if nsType.Selection.ReusePackagePath != "" {
-		return mng.ImportsManager.AddImport(nsType.Selection.ReusePackagePath, ""), nil
+	if nsType.Layout.ReusePackagePath != "" {
+		return mng.ImportsManager.AddImport(nsType.Layout.ReusePackagePath, ""), nil
 	}
 
 	// Check if the object is defined in the same directory (assuming the directory is equal to package)

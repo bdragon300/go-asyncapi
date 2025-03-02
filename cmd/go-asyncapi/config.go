@@ -17,7 +17,7 @@ type (
 		ProjectModule string `yaml:"projectModule"`
 		RuntimeModule string `yaml:"runtimeModule"`
 
-		Selections      []toolConfigSelection      `yaml:"selections"`
+		Layout          []toolConfigLayout         `yaml:"layout"`
 		Locator         toolConfigLocator          `yaml:"locator"`
 		Implementations []toolConfigImplementation `yaml:"implementations"`
 
@@ -26,17 +26,17 @@ type (
 		Infra  toolConfigInfra  `yaml:"infra"`
 	}
 
-	toolConfigSelection struct {
-		NameRe           string                    `yaml:"nameRe"`
-		ArtifactKinds    []string                  `yaml:"artifactKinds"`
-		ModuleURLRe      string                    `yaml:"moduleURLRe"`
-		PathRe           string                    `yaml:"pathRe"`
-		Protocols        []string                  `yaml:"protocols"`
-		Render           toolConfigSelectionRender `yaml:"render"`
-		ReusePackagePath string                    `yaml:"reusePackagePath"`
+	toolConfigLayout struct {
+		NameRe           string                 `yaml:"nameRe"`
+		ArtifactKinds    []string               `yaml:"artifactKinds"`
+		ModuleURLRe      string                 `yaml:"moduleURLRe"` // TODO: rename to locationRe or smth like that
+		PathRe           string                 `yaml:"pathRe"`      // TODO: remove? almost duplicate of moduleURLRe
+		Protocols        []string               `yaml:"protocols"`
+		Render           toolConfigLayoutRender `yaml:"render"`
+		ReusePackagePath string                 `yaml:"reusePackagePath"`
 	}
 
-	toolConfigSelectionRender struct {
+	toolConfigLayoutRender struct {
 		Protocols        []string `yaml:"protocols"`
 		ProtoObjectsOnly bool     `yaml:"protoObjectsOnly"`
 		Template         string   `yaml:"template"`
@@ -54,10 +54,11 @@ type (
 	toolConfigCode struct {
 		OnlyPublish       bool   `yaml:"onlyPublish"`
 		OnlySubscribe     bool   `yaml:"onlySubscribe"`
-		PreambleTemplate  string `yaml:"preambleTemplate"`
 		DisableFormatting bool   `yaml:"disableFormatting"`
-		TemplatesDir      string `yaml:"templatesDir"`
 		TargetDir         string `yaml:"targetDir"`
+
+		TemplatesDir     string `yaml:"templatesDir"`
+		PreambleTemplate string `yaml:"preambleTemplate"`
 
 		DisableImplementations bool   `yaml:"disableImplementations"`
 		ImplementationsDir     string `yaml:"implementationsDir"` // Template expression, relative to the target directory
@@ -127,10 +128,10 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 	res.Code.TemplatesDir = coalesce(userConf.Code.TemplatesDir, defaultConf.Code.TemplatesDir)
 	res.Code.TargetDir = coalesce(userConf.Code.TargetDir, defaultConf.Code.TargetDir)
 
-	// *Replace* selections
-	res.Selections = defaultConf.Selections
-	if len(userConf.Selections) > 0 {
-		res.Selections = userConf.Selections
+	// *Replace* layout
+	res.Layout = defaultConf.Layout
+	if len(userConf.Layout) > 0 {
+		res.Layout = userConf.Layout
 	}
 
 	res.Locator.AllowRemoteReferences = coalesce(userConf.Locator.AllowRemoteReferences, defaultConf.Locator.AllowRemoteReferences)

@@ -9,11 +9,11 @@ import (
 	"github.com/samber/lo"
 )
 
-// Select filters the given artifacts from list based on the given selection.
-func Select(artifacts []common.Artifact, selection common.ConfigSelectionItem) []common.Artifact {
+// Select filters the given artifacts from list based on the code layout.
+func Select(artifacts []common.Artifact, layoutItem common.ConfigLayoutItem) []common.Artifact {
 	logger := log.GetLogger("")
 
-	filtersChain := buildFiltersChain(selection)
+	filtersChain := buildFiltersChain(layoutItem)
 	res := lo.Filter(artifacts, func(object common.Artifact, _ int) bool {
 		logger.Trace("--> Process filters", "object", object.String())
 		for ind, filter := range filtersChain {
@@ -34,7 +34,7 @@ type protoObjectSelector interface {
 	SelectProtoObject(protocol string) common.Artifact
 }
 
-func buildFiltersChain(selection common.ConfigSelectionItem) []filterFunc {
+func buildFiltersChain(layoutItem common.ConfigLayoutItem) []filterFunc {
 	var filterChain []filterFunc
 	logger := log.GetLogger("")
 
@@ -42,41 +42,41 @@ func buildFiltersChain(selection common.ConfigSelectionItem) []filterFunc {
 	filterChain = append(filterChain, func(object common.Artifact) bool {
 		return object.Selectable()
 	})
-	if len(selection.Protocols) > 0 {
+	if len(layoutItem.Protocols) > 0 {
 		logger.Trace("-> Use Protocol filter", "index", len(filterChain))
 		filterChain = append(filterChain, func(object common.Artifact) bool {
 			// Check if object has at least one of the proto objects of the given protocols
 			if o, ok := object.(protoObjectSelector); ok {
-				return lo.SomeBy(selection.Protocols, func(protocol string) bool {
+				return lo.SomeBy(layoutItem.Protocols, func(protocol string) bool {
 					return o.SelectProtoObject(protocol) != nil
 				})
 			}
 			return false
 		})
 	}
-	if len(selection.ArtifactKinds) > 0 {
+	if len(layoutItem.ArtifactKinds) > 0 {
 		logger.Trace("-> Use ArtifactKinds filter", "index", len(filterChain))
 		filterChain = append(filterChain, func(object common.Artifact) bool {
-			return lo.Contains(selection.ArtifactKinds, string(object.Kind()))
+			return lo.Contains(layoutItem.ArtifactKinds, string(object.Kind()))
 		})
 	}
-	if selection.ModuleURLRe != "" {
+	if layoutItem.ModuleURLRe != "" {
 		logger.Trace("-> Use ModuleURLRe filter", "index", len(filterChain))
-		re := regexp.MustCompile(selection.ModuleURLRe)
+		re := regexp.MustCompile(layoutItem.ModuleURLRe)
 		filterChain = append(filterChain, func(object common.Artifact) bool {
 			return re.MatchString(object.Pointer().Location())
 		})
 	}
-	if selection.PathRe != "" {
+	if layoutItem.PathRe != "" {
 		logger.Trace("-> Use PathRe filter", "index", len(filterChain))
-		re := regexp.MustCompile(selection.PathRe)
+		re := regexp.MustCompile(layoutItem.PathRe)
 		filterChain = append(filterChain, func(object common.Artifact) bool {
 			return re.MatchString(object.Pointer().PointerString())
 		})
 	}
-	if selection.NameRe != "" {
+	if layoutItem.NameRe != "" {
 		logger.Trace("-> Use NameRe filter", "index", len(filterChain))
-		re := regexp.MustCompile(selection.NameRe)
+		re := regexp.MustCompile(layoutItem.NameRe)
 		filterChain = append(filterChain, func(object common.Artifact) bool {
 			return re.MatchString(object.Name())
 		})

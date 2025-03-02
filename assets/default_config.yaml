@@ -1,7 +1,7 @@
 configVersion: 1
 runtimeModule: github.com/bdragon300/go-asyncapi/run
 
-selections:
+layout:
   - artifactKinds: ["schema"]
     render:
       file: schemas/{{.Object | goIDUpper }}.go

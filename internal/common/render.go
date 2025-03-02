@@ -4,19 +4,19 @@ import "github.com/bdragon300/go-asyncapi/implementations"
 
 // Rendering options, that come from the configuration file.
 type (
-	ConfigSelectionItem struct {
+	ConfigLayoutItem struct {
 		Protocols        []string
 		ArtifactKinds    []string
 		ModuleURLRe      string
 		PathRe           string
 		NameRe           string
-		Render           ConfigSelectionItemRender
+		Render           ConfigLayoutItemRender
 		ReusePackagePath string
 
 		AllSupportedProtocols []string
 	}
 
-	ConfigSelectionItemRender struct {
+	ConfigLayoutItemRender struct {
 		Template         string
 		File             string
 		Package          string
@@ -44,7 +44,7 @@ type (
 	}
 )
 
-func (r ConfigSelectionItem) RenderProtocols() []string {
+func (r ConfigLayoutItem) RenderProtocols() []string {
 	if len(r.Render.Protocols) > 0 {
 		return r.Render.Protocols
 	}
@@ -57,7 +57,7 @@ type RenderOpts struct {
 	TargetDir         string
 	DisableFormatting bool
 	PreambleTemplate  string
-	Selections        []ConfigSelectionItem
+	Layout            []ConfigLayoutItem
 }
 
 type RenderImplementationsOpts struct {

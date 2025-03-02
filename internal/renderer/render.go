@@ -82,11 +82,11 @@ func FinishFiles(mng *manager.TemplateRenderManager) (map[string]*bytes.Buffer, 
 // standard template functions. The result puts to the given template manager.
 func renderObjectInlineTemplate(item RenderQueueItem, text string, mng *manager.TemplateRenderManager) (string, error) {
 	tplCtx := &tmpl.CodeTemplateContext{
-		RenderOpts:       mng.RenderOpts,
-		CurrentSelection: item.Selection,
-		PackageName:      item.Selection.Render.Package,
-		Object:           item.Object,
-		ImportsManager:   mng.ImportsManager,
+		RenderOpts:        mng.RenderOpts,
+		CurrentLayoutItem: item.LayoutItem,
+		PackageName:       item.LayoutItem.Render.Package,
+		Object:            item.Object,
+		ImportsManager:    mng.ImportsManager,
 	}
 
 	return renderInlineTemplate(text, tplCtx, mng)
