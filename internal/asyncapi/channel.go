@@ -21,6 +21,7 @@ type Channel struct {
 
 	XGoName string `json:"x-go-name" yaml:"x-go-name"`
 	XIgnore bool   `json:"x-ignore" yaml:"x-ignore"`
+	Address string `json:"address" yaml:"address"`
 
 	Ref string `json:"$ref" yaml:"$ref"`
 }
@@ -57,6 +58,7 @@ func (c Channel) build(ctx *common.CompileContext, channelKey string) (common.Re
 	// Render only the channels defined directly in `channels` document section, not in `components`
 	res := &render.Channel{
 		Name:                chName,
+		Address:             c.Address,
 		GolangName:          ctx.GenerateObjName(chName, ""),
 		RawName:             channelKey,
 		AllProtoChannels:    make(map[string]common.Renderer),

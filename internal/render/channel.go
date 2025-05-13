@@ -11,6 +11,7 @@ import (
 
 type Channel struct {
 	Name                string // Channel name, typically equals to Channel key, can get overridden in x-go-name
+	Address             string // Channel address
 	GolangName          string // Name of channel struct
 	DirectRender        bool   // Typically, it's true if channel is defined in `channels` section, false if in `components` section
 	Dummy               bool
@@ -109,6 +110,11 @@ func (c Channel) String() string {
 func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement {
 	ctx.Logger.Trace("renderChannelNameFunc")
 
+	address := c.Address
+	if address == "" {
+		address = c.RawName
+	}
+
 	// Channel1Name(params Chan1Parameters) runtime.ParamString
 	return []*j.Statement{
 		j.Func().Id(c.GolangName+"Name").
@@ -121,7 +127,7 @@ func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement
 			BlockFunc(func(bg *j.Group) {
 				if c.ParametersStruct == nil {
 					bg.Return(j.Qual(ctx.RuntimeModule(""), "ParamString").Values(j.Dict{
-						j.Id("Expr"): j.Lit(c.RawName),
+						j.Id("Expr"): j.Lit(address),
 					}))
 				} else {
 					bg.Op("paramMap := map[string]string").Values(j.DictFunc(func(d j.Dict) {
@@ -130,7 +136,7 @@ func (c Channel) renderChannelNameFunc(ctx *common.RenderContext) []*j.Statement
 						}
 					}))
 					bg.Return(j.Qual(ctx.RuntimeModule(""), "ParamString").Values(j.Dict{
-						j.Id("Expr"):       j.Lit(c.RawName),
+						j.Id("Expr"):       j.Lit(address),
 						j.Id("Parameters"): j.Id("paramMap"),
 					}))
 				}
