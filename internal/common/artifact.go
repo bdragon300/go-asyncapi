@@ -20,7 +20,7 @@ const (
 	ArtifactKindAsyncAPI = "asyncapi"
 )
 
-// Artifact is an compiled object that can be rendered in the template.
+// Artifact is a compiled object that can be rendered in the template.
 type Artifact interface {
 	// Name returns the name of the object as it was defined in the AsyncAPI document. This method is suitable
 	// for rendering the object through a ref. So we can render the object under ref's Name, which is necessary,

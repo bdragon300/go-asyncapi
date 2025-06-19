@@ -281,7 +281,7 @@ func (o Object) buildLangStruct(ctx *compile.Context, flags map[common.SchemaTag
 		}
 	}
 
-	// Embed external type into the current one, if x-go-type->embedded == true
+	// Embed external type into the current one, if x-go-type.embedded == true
 	if o.XGoType != nil && o.XGoType.V1.Embedded {
 		f := buildXGoType(o.XGoType)
 		ctx.Logger.Trace("Object struct embedded custom type", "type", f.String())

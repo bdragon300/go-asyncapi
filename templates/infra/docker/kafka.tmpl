@@ -23,7 +23,7 @@
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@{{($server.URL .ServerVariables).Hostname | toQuotable}}:9093
 
-      # Due to the Apache Kafka connection way, we need to know the external address where clients connects to the
+      # Due to the Apache Kafka connection way, we need to know the external address where clients connect to the
       # broker -- the advertised listeners. By default, it's set to localhost to make possible to connect to the broker
       # running in docker from the host machine with default settings.
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://{{($server.URL .ServerVariables).Hostname | toQuotable}}:9092,EXTERNAL://localhost:{{$port}}

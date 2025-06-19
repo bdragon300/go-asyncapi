@@ -27,6 +27,7 @@ type (
 	}
 
 	toolConfigLayout struct {
+		//TODO: NOT operation field
 		NameRe           string                 `yaml:"nameRe"`
 		ArtifactKinds    []string               `yaml:"artifactKinds"`
 		ModuleURLRe      string                 `yaml:"moduleURLRe"` // TODO: rename to locationRe or smth like that
@@ -41,7 +42,7 @@ type (
 		ProtoObjectsOnly bool     `yaml:"protoObjectsOnly"`
 		Template         string   `yaml:"template"`
 		File             string   `yaml:"file"`
-		Package          string   `yaml:"package"`
+		Package          string   `yaml:"package"` // TODO: make it inline template
 	}
 
 	toolConfigLocator struct {
@@ -82,13 +83,13 @@ type (
 	}
 
 	toolConfigInfra struct {
-		Servers    []toolConfigInfraServer `yaml:"servers"`
-		Format     string                  `yaml:"format"`
+		Servers    []toolConfigInfraServer `yaml:"servers"` // TODO: rename to "serversInfo"?
+		Format     string                  `yaml:"format"`  // TODO: rename to "technology"?
 		OutputFile string                  `yaml:"outputFile"`
 	}
 
 	toolConfigInfraServer struct {
-		Name      string                                                                             `yaml:"name"`
+		Name      string                                                                             `yaml:"name"`  // TODO: make required
 		Variables types.Union2[types.OrderedMap[string, string], []types.OrderedMap[string, string]] `yaml:"variables"`
 	}
 )
