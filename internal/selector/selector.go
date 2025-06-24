@@ -9,7 +9,7 @@ import (
 	"github.com/samber/lo"
 )
 
-// Select filters the given artifacts from list based on the code layout.
+// Select selects the artifacts from the given list based on the code layout rule.
 func Select(artifacts []common.Artifact, layoutItem common.ConfigLayoutItem) []common.Artifact {
 	logger := log.GetLogger("")
 
@@ -39,9 +39,11 @@ func buildFiltersChain(layoutItem common.ConfigLayoutItem) []filterFunc {
 	logger := log.GetLogger("")
 
 	logger.Trace("-> Use Selectable filter", "index", len(filterChain))
+	// Consider only the selectable artifacts
 	filterChain = append(filterChain, func(object common.Artifact) bool {
 		return object.Selectable()
 	})
+
 	if len(layoutItem.Protocols) > 0 {
 		logger.Trace("-> Use Protocol filter", "index", len(filterChain))
 		filterChain = append(filterChain, func(object common.Artifact) bool {

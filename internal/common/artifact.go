@@ -20,37 +20,37 @@ const (
 	ArtifactKindAsyncAPI = "asyncapi"
 )
 
-// Artifact is a compiled object that can be rendered in the template.
+// Artifact is a compiled object that is meant to be rendered in the template.
 type Artifact interface {
-	// Name returns the name of the object as it was defined in the AsyncAPI document. This method is suitable
-	// for rendering the object through a ref. So we can render the object under ref's Name, which is necessary,
-	// for example, for rendering servers, channels, etc.
+	// Name returns the original name of the object in the document. It can be an entity name, x-go-name field, etc.
 	Name() string
 	Kind() ArtifactKind
-	// Selectable returns true if object can get to rendering queue. If false, the object
-	// does not get to selections but still can be indirectly rendered inside the templates.
+	// Selectable returns true if object is available to be selected in code layout rules and passed to the root
+	// template further.
+	// Because not all the plenty of generated tiny Go types and their usages
+	// (e.g. an `int` field in a struct in depths of the code) deserve a separate root template call.
+	// So they are rendered recursively by the "selectable" objects, containing the Promises that point to them.
 	Selectable() bool
-	// Visible returns true if object contents is visible in rendered code.
+	// Visible returns false if object is set not to be rendered because of configuration, x-ignore field, etc.
 	Visible() bool
-	// Pointer returns the JSON pointer to the object in the document.
+	// Pointer returns the JSON pointer to the document URL and the position where an object is located.
 	Pointer() jsonpointer.JSONPointer
 	// String is just a string representation of the object for logging and debugging purposes.
 	String() string
 }
 
-// GolangType is an Artifact variation, that represents a primitive Go type, such as struct, map, type alias, etc.
+// GolangType is an Artifact, that represents a primitive Go type, such as struct, map, type alias, etc.
 // All of these types are located in [render/lang] package.
 type GolangType interface {
 	Artifact
-	// CanBeAddressed returns true if value of this type could be addressed. Therefore, we're able to define a pointer
-	// to this type, and we can take value's address by applying the & operator.
+	// CanBeAddressed returns true if we're able to define a pointer to this type and take its value's address by
+	// applying the & operator.
 	//
-	// Values that always *not addressable* typically are `nil`, values of interface type, constants, etc.
+	// Values that always *not addressable* are `nil`, values of interface type, constants, etc.
 	CanBeAddressed() bool
 	// CanBeDereferenced returns true if this type is a pointer, so we can dereference it by using * operator.
-	// True basically means that the type is a pointer as well.
 	CanBeDereferenced() bool
-	// GoTemplate returns a template name that renders an object of this type.
+	// GoTemplate returns a template name that renders this particular type.
 	GoTemplate() string
 }
 

@@ -170,6 +170,4 @@ func (c Channel) build(ctx *compile.Context, channelKey string, flags map[common
 	return res, nil
 }
 
-type SecurityRequirement struct {
-	types.OrderedMap[string, types.Union2[[]string, string]] // Possible values: `"name": []` or `"$ref": "url"`
-}
+

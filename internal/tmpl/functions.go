@@ -77,7 +77,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		},
 		"goUsage": func(r common.GolangType) (string, error) { trace("goUsage", r); return templateGoUsage(renderManager, r) },
 
-		// Type helpers
+		// Artifact helpers
 		"deref": func(r common.Artifact) common.Artifact {
 			trace("deref", r);
 			if r == nil {
@@ -102,20 +102,6 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 				return nil, fmt.Errorf("cannot get a pointer to nil")
 			}
 			return &lang.GoPointer{Type: val}, nil
-		},
-		"impl": func(protocol string) *common.ImplementationObject {
-			trace("impl", protocol);
-			impl, found := lo.Find(renderManager.Implementations, func(def manager.ImplementationItem) bool {
-				return def.Object.Manifest.Protocol == protocol
-			})
-			if !found {
-				return nil
-			}
-			return &impl.Object
-		},
-		"toQuotable": func(unquotedStr string) string {
-			trace("toQuotable", unquotedStr);
-			return strings.TrimSuffix(strings.TrimPrefix(strconv.Quote(unquotedStr), "\""), "\"")
 		},
 
 		// Templates calling
@@ -149,6 +135,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 					if o != "" {
 						renderManager.NamespaceManager.DefineName(v)
 					}
+				//TODO: default
 				}
 			}
 			return ""
@@ -163,15 +150,29 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		},
 
 		// Other
-		"correlationIDExtractionCode": func(c *render.CorrelationID, varStruct *lang.GoStruct, addValidationCode bool) (items []correlationIDExtractionStep, err error) {
-			trace("correlationIDExtractionCode", c, varStruct, addValidationCode);
-			return templateCorrelationIDExtractionCode(renderManager, c, varStruct, addValidationCode)
+		"impl": func(protocol string) *common.ImplementationObject {
+			trace("impl", protocol);
+			impl, found := lo.Find(renderManager.Implementations, func(def manager.ImplementationItem) bool {
+				return def.Object.Manifest.Protocol == protocol
+			})
+			if !found {
+				return nil
+			}
+			return &impl.Object
+		},
+		"toQuotable": func(s string) string {
+			trace("toQuotable", s);
+			return strings.TrimSuffix(strings.TrimPrefix(strconv.Quote(s), "\""), "\"")
 		},
 		"debug": func(args ...any) string {
 			for _, arg := range args {
 				logger.Debugf("debug: [%[1]p][%[1]T] %[1]v", arg)
 			}
 			return ""
+		},
+		"correlationIDExtractionCode": func(c *render.CorrelationID, varStruct *lang.GoStruct, addValidationCode bool) (items []correlationIDExtractionStep, err error) {
+			trace("correlationIDExtractionCode", c, varStruct, addValidationCode);
+			return templateCorrelationIDExtractionCode(renderManager, c, varStruct, addValidationCode)
 		},
 	}
 
@@ -187,7 +188,7 @@ func templateGoDefined(mng *manager.TemplateRenderManager, r any) bool {
 	switch v := r.(type) {
 	case common.GolangType:
 		o, found := mng.NamespaceManager.FindType(v)
-		return found && o.Priority > 0
+		return found && o.Priority > 0  // Return true if the object defined using `goDef`
 	case string:
 		return mng.NamespaceManager.IsNameDefined(v)
 	}
