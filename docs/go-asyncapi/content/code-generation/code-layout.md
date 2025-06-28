@@ -13,7 +13,9 @@ keeping everything as-is.
 
 Layout is a series of rules that includes condition and rule fields. During the generation process, every entity is 
 checked against every rule, and if it matches, it's rendered according to the rule.
-Entities that do not match any rule are ignored.
+
+Entities that do not match any rule are ignored. This means, for example, if you would have empty rules list, the tool 
+would not generate any code at all.
 
 So, the layout rules may be used for the following purposes:
 

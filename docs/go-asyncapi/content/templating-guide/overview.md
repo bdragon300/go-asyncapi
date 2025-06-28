@@ -47,8 +47,8 @@ object of an AsyncAPI entity in document. All artifacts are defined in `render` 
 the `common.Artifact` interface.
 
 A part of artifacts represent the complex entities (e.g. channel) and produce the complex code. 
-Others are simpler and represent a simple Go type (e.g. jsonschema object converts to a Go struct type), 
-they additionally satisfy the `common.GolangType` interface.
+Others are simpler and represent a simple Go type (e.g. jsonschema object), they additionally satisfy the 
+`common.GolangType` interface.
 
 The templates goal is to render the artifacts into the desired output format: Go code, IaC configuration, etc.
 For this, `go-asyncapi` executes the root template separately for every artifact with `.Selected == true` and 

@@ -13,7 +13,9 @@ basic pub/sub functionality.
 Also, it works well with server variables, channel parameters, bindings, etc. 
 And yet, it contains the entities defined in the AsyncAPI document.
 
-To build the client application, you need the [Go toolchain](https://go.dev/doc/install) installed on your machine.
+To build the client application, you need the [Go toolchain](https://go.dev/doc/install) installed on your machine. `go-asyncapi` passes
+environment variables to `go build` command, so, for example, you can use the `GOOS` and `GOARCH` variables to
+[build the client for a different platform](https://tip.golang.org/wiki/WindowsCrossCompiling).
 
 The source code of the client application can also be customized in templates.
 See [templating guide]({{<relref "/templating-guide">}}) for more details.
