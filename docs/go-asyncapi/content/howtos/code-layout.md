@@ -8,10 +8,9 @@ description: "Customizing the generated code layout"
 
 Many developers may prefer to have the generated code organized in a specific way, so that it is easier to navigate and
 maintain. `go-asyncapi` supports customizing the generated code layout, i.e. how the generated code will be broken down by 
-packages and files. Others may want to customize the generation process only for a particular AsyncAPI objects, 
-keeping everything as-is.
+packages and files.
 
-Layout is a series of rules that includes condition and rule fields. During the generation process, every entity is 
+Layout is the list of rules that includes condition and rule parts. During the generation process, every entity is 
 checked against every rule, and if it matches, it's rendered according to the rule.
 
 Entities that do not match any rule are ignored. This means, for example, if you would have empty rules list, the tool 

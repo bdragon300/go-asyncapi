@@ -1,17 +1,17 @@
 ---
-title: "Conditional code generation"
+title: "Partial generation"
 weight: 320
-description: "How to conditionally generate code for AsyncAPI entities"
+description: "How to configure the go-asyncapi to generate only a part of the document entities"
 ---
 
-# Conditional code generation
+# Partial generation
 
 {{% hint info %}}
 The features described in this article are useful not only for the code generation, but also for other `go-asyncapi`
 outputs, such as generation of client application, infra files, etc.
 {{% /hint %}}
 
-## Pub/Sub-only generation
+## Pub/Sub-only
 
 The easiest way to control the code generation is to use the `--only-pub` and `--only-sub` command-line options 
 (or appropriate configuration options) to generate only the publishing or subscribing code, respectively. 
@@ -23,7 +23,14 @@ Example:
 go-asyncapi code --only-pub my_asyncapi.yaml
 ```
 
-However, such way to control the codegen process might be too broad for your needs. Let's consider the more precise ways.
+or in the configuration file:
+
+```yaml
+code:
+  onlyPublish: true
+```
+
+However, such way might be too broad for your needs. Let's consider the more precise ways.
 
 ## x-ignore field
 
@@ -44,11 +51,7 @@ channels:
 
 ## Code layout
 
-You can control what entities should produce the code by configuring the 
-[code layout]({{< relref "/code-generation/code-layout" >}}).
-
-Code layout is a list of rules, each of which describes how to render the code of entities' artifacts, matched to a rule's
-conditions.
+[Code layout]({{< relref "/code-generation/code-layout" >}}) can be used to control the code generation process in a most flexible way.
 
 So, to select the entities, you need to set the rule conditions they should match to. Entities, that didn't match any rule,
 will be discarded. If an entity matches several rules, it will be handled by all matching rules separately.
