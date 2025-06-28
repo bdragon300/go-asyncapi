@@ -1,6 +1,7 @@
 ---
-title: "Functions"
-weight: 340
+title: "Functions reference"
+weight: 920
+bookToC: true
 description: "Template functions reference"
 ---
 
@@ -17,7 +18,7 @@ of functions to work with types, numbers, environment variables, filesystem, etc
 Another part of functions is provided by the `go-asyncapi` itself and have functionality specific to the `go-asyncapi` tool.
 Sections below describe the functions provided by `go-asyncapi`.
 
-## Go code producers
+## Code generation
 
 The functions described in this section have the `go` name prefix, which means they return the Go code snippets.
 
@@ -131,7 +132,7 @@ func goQualR(parts ...string) string
 The same as `goQual`, but it additionally appends the `go-asyncapi`'s "runtime" module path before the parts.
 
 "Runtime" module path is configurable, by default it is `github.com/bdragon300/go-asyncapi/run`.
-See also [Configuration reference]({{< relref "/configuration/reference" >}}).
+See also [Configuration reference]({{< relref "/configuration" >}}).
 
 Examples:
 

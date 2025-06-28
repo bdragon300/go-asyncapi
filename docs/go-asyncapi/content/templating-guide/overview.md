@@ -1,6 +1,6 @@
 ---
 title: "Overview"
-weight: 340
+weight: 910
 description: "Overview of using the Go templates to customize the result produced by go-asyncapi"
 ---
 
@@ -52,7 +52,7 @@ Others are simpler and represent a simple Go type (e.g. jsonschema object), they
 
 The templates goal is to render the artifacts into the desired output format: Go code, IaC configuration, etc.
 For this, `go-asyncapi` executes the root template separately for every artifact with `.Selected == true` and 
-merges the results into a files and packages according the [code layout]({{< relref "/code-generation/code-layout" >}}).
+merges the results into a files and packages according the [code layout]({{< relref "/howtos/code-layout" >}}).
 
 The artifacts, compiled from several AsyncAPI documents, get to the same list. However, every artifact keeps the document URL 
 and the location where it was defined.
@@ -103,7 +103,7 @@ For example, we want to add additional prefix `My` to the name of the generated 
 
 For that, create a file with any name, say `my_server_interface.tmpl`, copy the `code/proto/channel/serverInterface`
 template from the 
-[proto_channel.tmpl](https://github.com/bdragon300/go-asyncapi/blob/dev/templates/code/proto/proto_channel.tmpl)
+[proto_channel.tmpl](https://github.com/bdragon300/go-asyncapi/blob/master/templates/code/proto/proto_channel.tmpl)
 and modify it as follows:
 
 ```gotemplate

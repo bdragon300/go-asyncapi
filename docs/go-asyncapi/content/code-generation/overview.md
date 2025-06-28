@@ -1,6 +1,6 @@
 ---
 title: "Overview"
-weight: 310
+weight: 410
 description: "Overview of the code generation capabilities of go-asyncapi" 
 ---
 
@@ -42,7 +42,7 @@ INFO Done
 {{% /details %}}
 
 By default, the code is put to the `./asyncapi` directory (target directory) according to 
-[default code layout]({{<relref "code-generation/code-layout.md#default-layout">}}).
+[default code layout]({{<relref "howtos/code-layout.md#default-layout">}}).
 
 You can use the `-t` option to specify a different target directory:
 

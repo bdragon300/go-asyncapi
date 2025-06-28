@@ -1,7 +1,8 @@
 ---
-title: "Reference"
-weight: 330
-description: "Tool configuration reference"
+title: "Configuration reference"
+weight: 800
+bookToC: true
+description: "go-asyncapi configuration reference"
 ---
 
 # Configuration reference
@@ -11,17 +12,17 @@ All attributes are optional, and if not set, the tool uses the default values.
 
 ## Config
 
-| Attribute       | Type                                | Default                                                                         | Description                                                                                              |
-|-----------------|-------------------------------------|---------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
-| configVersion   | int                                 | `1`                                                                             | Configuration version. Now only the `1` is valid value                                                   |
-| projectModule   | string                              |                                                                                 | Project module name for the generated code. If empty, takes from go.mod in the current working directory |
-| runtimeModule   | string                              | `github.com/bdragon300/go-asyncapi/run`                                         | Path to runtime module with auxiliary code                                                               |
-| layout          | [][Layout](#layout)                 | [Default layout]({{< relref "/code-generation/code-layout#default-layout" >}})  | Generated code layout rules                                                                              |
-| locator         | [Locator](#locator)                 |                                                                                 | [Reference locator]({{< relref "/asyncapi-specification/references#reference-locator" >}}) settings      |
-| implementations | [][Implementation](#implementation) |                                                                                 | Per-protocol implementations generation settings                                                         |
-| code            | [Code](#code)                       |                                                                                 | Code generation settings                                                                                 |
-| client          | [Client](#client)                   |                                                                                 | No-code client building settings                                                                         |
-| infra           | [Infra](#infra)                     |                                                                                 | Infra files generation settings                                                                          |
+| Attribute       | Type                                | Default                                                               | Description                                                                                              |
+|-----------------|-------------------------------------|-----------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| configVersion   | int                                 | `1`                                                                   | Configuration version. Now only the `1` is valid value                                                   |
+| projectModule   | string                              |                                                                       | Project module name for the generated code. If empty, takes from go.mod in the current working directory |
+| runtimeModule   | string                              | `github.com/bdragon300/go-asyncapi/run`                               | Path to runtime module with auxiliary code                                                               |
+| layout          | [][Layout](#layout)                 | [Default layout]({{< relref "/howtos/code-layout#default-layout" >}}) | Generated code layout rules                                                                              |
+| locator         | [Locator](#locator)                 |                                                                       | [Reference locator]({{< relref "/asyncapi-specification/references#reference-locator" >}}) settings      |
+| implementations | [][Implementation](#implementation) |                                                                       | Per-protocol implementations generation settings                                                         |
+| code            | [Code](#code)                       |                                                                       | Code generation settings                                                                                 |
+| client          | [Client](#client)                   |                                                                       | No-code client building settings                                                                         |
+| infra           | [Infra](#infra)                     |                                                                       | Infra files generation settings                                                                          |
 
 ## Layout
 
@@ -49,7 +50,7 @@ Several conditions in one layout rule are joined via **AND** operation.
 {{% /hint %}}
 
 {{% hint info %}}
-For more examples of the layout rules, see the [Code layout]({{< relref "/code-generation/code-layout" >}}) page.
+For more examples of the layout rules, see the [Code layout]({{< relref "/howtos/code-layout" >}}) page.
 {{% /hint %}}
 
 ## LayoutRender
@@ -94,7 +95,7 @@ For more information about the reference locator, see the [References]({{< relre
 | onlySubscribe          | bool      | `false`                         | If `true`, generates only the subscribe code                                                                                                              |
 | disableFormatting      | bool      | `false`                         | If `true`, disables applying the `go fmt` to the generated code                                                                                           |
 | targetDir              | string    | `./asyncapi`                    | Target directory name, relative to the current working directory                                                                                          |
-| templatesDir           | string    |                                 | Directory with [custom templates]({{< relref "/templating-guide" >}})                                                                                     |
+| templatesDir           | string    |                                 | Directory with [custom templates]({{< relref "/templating-guide/overview" >}})                                                                            |
 | preambleTemplate       | string    | `preamble.tmpl`                 | Preamble template name, used for rendering.                                                                                                               |
 | disableImplementations | bool      | `false`                         | If `true`, disables the implementations code generation.                                                                                                  |
 | implementationsDir     | string    | `impl/{{ .Manifest.Protocol }}` | [Template expression](#template-expressions) with the implementations directory name, relative to the target directory. Dot is `tmpl.ImplTemplateContext` |
@@ -144,7 +145,7 @@ file: {{.Object.Kind}}s/{{.Object | goIDUpper }}.go
 Given a particular object, this expression produces the value like `channels/my_channel.go`.
 
 {{% hint info %}}
-For more information about the template expressions, see the [templating guide]({{< relref "/templating-guide" >}}).
+For more information about the template expressions, see the [templating guide]({{< relref "/templating-guide/overview" >}}).
 {{% /hint %}}
 
 ## Protocols and implementations

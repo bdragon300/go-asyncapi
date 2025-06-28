@@ -1,6 +1,6 @@
 +++
 title = 'Code structure'
-weight = 400
+weight = 420
 description = 'Generated code structure overview and explanation'
 +++
 
@@ -67,3 +67,15 @@ may have their own specifics in how they open channels and connections.
 
 So, this approach helps to abstract from these details.
 {{% /hint %}}
+
+## Runtime package
+
+The only external dependency required in the generated code (except for the protocol implementations code) is 
+a small package called the **runtime package**. By default, it is `github.com/bdragon300/go-asyncapi/run`, which is 
+configurable in the `go-asyncapi` configuration file.
+
+Runtime package is a part of `go-asyncapi` project. It contains the interfaces and types that are used in the 
+generated code, and also some utility functions.
+
+The reason this package is external to the generated code is to reduce the amount of generated code and simplify 
+the code generation process.

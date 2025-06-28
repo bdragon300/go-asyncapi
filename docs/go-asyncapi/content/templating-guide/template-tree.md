@@ -1,6 +1,6 @@
 ---
 title: "Template tree"
-weight: 340
+weight: 930
 description: "Tree organization of templates used by go-asyncapi to generate the code, client application, IaC files, etc."
 ---
 

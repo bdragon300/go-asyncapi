@@ -1,6 +1,6 @@
 ---
 title: "Code reuse"
-weight: 340
+weight: 750
 description: "Reusing the existing Go code in the generated code"
 ---
 
@@ -32,7 +32,7 @@ components:
 
 ## Reuse the code blocks
 
-It's possible to mark the reuse the [code layout]({{< relref "/code-generation/code-layout" >}}) rule to reuse the code
+It's possible to mark the reuse the [code layout]({{< relref "/howtos/code-layout" >}}) rule to reuse the code
 from the existing Go package instead of generating the code. 
 
 All usages of names from the reused code don't change in other places in the generated code, except that they
@@ -47,4 +47,4 @@ layout:
 #...
 ```
 
-All available fields are described in [configuration reference]({{< relref "/configuration/reference" >}}).
+All available fields are described in [configuration reference]({{< relref "/configuration" >}}).

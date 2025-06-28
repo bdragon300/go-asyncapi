@@ -1,13 +1,13 @@
 +++
 title = 'Protocols and implementations'
-bookCollapseSection = true
-weight = 500
+weight = 200
+bookToC = true
 description = 'The list of protocols and their implementations supported by go-asyncapi'
 +++
 
 # Protocols and implementations
 
-# AMQP
+## AMQP
 
 {{< hint info >}}
 
@@ -31,7 +31,7 @@ Some of the most commonly used AMQP products include RabbitMQ, Apache Qpid, Acti
 
 Protocol bindings are described in https://github.com/asyncapi/bindings/tree/v3.0.0/amqp/README.md
 
-# Apache Kafka
+## Apache Kafka
 
 {{< hint info >}}
 
@@ -54,7 +54,7 @@ Kafka is widely used for building real-time data pipelines, streaming analytics,
 
 Protocol bindings are described in https://github.com/asyncapi/bindings/tree/v3.0.0/kafka/README.md
 
-# HTTP
+## HTTP
 
 {{< hint info >}}
 
@@ -80,7 +80,7 @@ Some of the most popular HTTP servers include Apache HTTP Server, Nginx, Microso
 
 Protocol bindings are described in https://github.com/asyncapi/bindings/tree/v3.0.0/http/README.md
 
-# IP RAW sockets
+## IP RAW sockets
 
 {{< hint info >}}
 
@@ -110,25 +110,25 @@ and raw sockets can be used in some applications, so they are supported by `go-a
 | Server        | IP peer            |
 | Envelope      | IP packet          |
 
-## Bindings
+### Bindings
 
-### Server Bindings
+#### Server Bindings
 
 Does not support any server bindings.
 
-### Channel Bindings
+#### Channel Bindings
 
 Does not support any channel bindings.
 
-### Operation Bindings
+#### Operation Bindings
 
 Does not support any operation bindings.
 
-### Message Bindings
+#### Message Bindings
 
 Does not support any message bindings.
 
-# MQTT
+## MQTT
 
 {{< hint info >}}
 
@@ -155,7 +155,7 @@ Some of the most popular MQTT brokers include Mosquitto, HiveMQ, EMQ X and other
 
 Protocol bindings are described in https://github.com/asyncapi/bindings/tree/v3.0.0/mqtt/README.md
 
-# Redis
+## Redis
 
 {{< hint info >}}
 
@@ -177,7 +177,7 @@ and versatility, making it a popular choice for real-time applications, caching,
 
 Protocol bindings are described in https://github.com/asyncapi/bindings/tree/v3.0.0/redis/README.md
 
-# TCP
+## TCP
 
 {{< hint info >}}
 
@@ -203,25 +203,25 @@ and pure TCP can be used in many applications, so it is supported by `go-asyncap
 | Server        | TCP peer           |
 | Envelope      | TCP packet         |
 
-## Bindings
+### Bindings
 
-### Server bindings
+#### Server bindings
 
 Does not support any server bindings.
 
-### Channel bindings
+#### Channel bindings
 
 Does not support any channel bindings.
 
-### Operation bindings
+#### Operation bindings
 
 Does not support any operation bindings.
 
-### Message bindings
+#### Message bindings
 
 Does not support any message bindings
 
-# UDP
+## UDP
 
 {{< hint info >}}
 
@@ -248,25 +248,25 @@ and pure UDP can be used in many applications, so it is supported by `go-asyncap
 | Server        | UDP peer            |
 | Envelope      | UDP datagram        |
 
-## Bindings
+### Bindings
 
-### Server bindings
+#### Server bindings
 
 Does not support any server bindings.
 
-### Channel bindings
+#### Channel bindings
 
 Does not support any channel bindings.
 
-### Operation bindings
+#### Operation bindings
 
 Does not support any operation bindings.
 
-### Message bindings
+#### Message bindings
 
 Does not support any message bindings.
 
-# Websocket
+## Websocket
 
 {{< hint info >}}
 

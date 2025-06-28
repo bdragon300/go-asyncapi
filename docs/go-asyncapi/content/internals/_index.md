@@ -1,6 +1,6 @@
 ---
-title: "go-asyncapi internals"
-weight: 340
+title: "Internals"
+weight: 1000
 description: "How the go-asyncapi works internally"
 ---
 
@@ -80,7 +80,7 @@ Basically, the rendering step is a loop over all artifacts, where every artifact
 passing an artifact as a context defined in `tmpl` package. The result is merged into the output file(s).
 
 In code generation mode, every artifact additionally are running through the 
-[code layout]({{< relref "/code-generation/code-layout" >}}) rules and rendered for every matching rule, 
+[code layout]({{< relref "/howtos/code-layout" >}}) rules and rendered for every matching rule, 
 merging the result in layout file structure.
 After the process is finished, every resulting file is additionally processed by the preamble template, 
 that is used to add the package declaration, import statements, "copyright" notice, etc.

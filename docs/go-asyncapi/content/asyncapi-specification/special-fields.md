@@ -1,6 +1,7 @@
 ---
 title: "Special fields"
-weight: 310
+weight: 320
+bookToC: true
 description: "Special fields in the AsyncAPI specification that are used to customize the generated code"
 ---
 
@@ -49,9 +50,9 @@ components:
 In the extended form, `x-go-type` is an object, that allows to specify more details about the type to replace.
 Possible fields are:
 
-* `name` -- the type name. Required. Same as in the simple form.
-* `import` -- the import path for the type. Optional. Can be either a package name in generated code, e.g. `"messages"`
-  or a full import path, e.g. `"github.com/myorg/mylib"`.
+* `type` -- the type name. Required. Same meaning as in the simple form.
+* `import` -- type import settings
+  * `package` -- optional package name or module to import a type from. E.g. "github.com/your/module" or "time"
 * `embedded` -- if **true**, the tool will embed a type in the generated type instead of replacing it. Optional.
   Default is **false**.
 * `hint` -- various hints how this type should be used in the generated Go code. Optional. Possible fields are:
@@ -71,8 +72,9 @@ components:
   schemas:
     MySchema:
       x-go-type:
-        name: MyOwnType
-        import: github.com/myorg/mylib
+        type: MyOwnType
+        import: 
+          package: github.com/myorg/mylib
         hint:
           pointer: true
       type: object

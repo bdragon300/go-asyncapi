@@ -1,6 +1,6 @@
 ---
 title: "Partial generation"
-weight: 320
+weight: 740
 description: "How to configure the go-asyncapi to generate only a part of the document entities"
 ---
 
@@ -51,13 +51,13 @@ channels:
 
 ## Code layout
 
-[Code layout]({{< relref "/code-generation/code-layout" >}}) can be used to control the code generation process in a most flexible way.
+[Code layout]({{< relref "/howtos/code-layout" >}}) can be used to control the code generation process in a most flexible way.
 
 So, to select the entities, you need to set the rule conditions they should match to. Entities, that didn't match any rule,
 will be discarded. If an entity matches several rules, it will be handled by all matching rules separately.
 
 In a rule condition we can check entities name, kind, document location, protocol, etc. The rules can be combined to select
-entities by multiple conditions. See [configuration reference]({{< relref "/configuration/reference" >}}) for more details.
+entities by multiple conditions. See [configuration reference]({{< relref "/configuration" >}}) for more details.
 
 Let's consider an example of the code layout configuration:
 

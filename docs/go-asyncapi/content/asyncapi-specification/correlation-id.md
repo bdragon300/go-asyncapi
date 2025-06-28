@@ -1,6 +1,6 @@
 ---
 title: "Correlation ID"
-weight: 310
+weight: 330
 description: "Correlation ID implementation notes" 
 ---
 
@@ -29,7 +29,7 @@ AsyncAPI specification states that Correlation id location contains the
 [JSON Pointer](https://datatracker.ietf.org/doc/html/rfc6901) after the `#` symbol. According to the specification,
 the JSON Pointer is a string that contains a sequence of encoded symbols separated by `/`. 
 
-Special symbols are *all symbols except the alphanumeric characters, `-`, `.` and `_`*.
+Special symbols are all symbols except the alphanumeric characters, `-`, `.` and `_`.
 So, they must be encoded according to the rules described below.
 
 * Tilda symbol `~` must be written as `~0`

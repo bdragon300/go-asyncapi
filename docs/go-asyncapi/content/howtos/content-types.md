@@ -1,6 +1,6 @@
 ---
 title: "Content types"
-weight: 320
+weight: 720
 description: "Supporting a new content type in the generated code"
 ---
 
@@ -61,3 +61,9 @@ Then run the code generation:
 ```shell
 go-asyncapi code -T my_templates my_asyncapi.yaml
 ```
+
+## Replacing the default encoder/decoder
+
+Everything the same as for adding a new content type, i.e. by defining the templates
+`code/proto/mime/messageDecoder/<mime>` and `code/proto/mime/messageEncoder/<mime>`.
+See [Adding a new content type](#adding-a-new-content-type) section above.

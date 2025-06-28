@@ -1,6 +1,6 @@
 ---
-title: "Client application generation"
-weight: 340
+title: "Client application"
+weight: 500
 description: "Building a no-code client application with go-asyncapi"
 ---
 
@@ -18,7 +18,7 @@ environment variables to `go build` command, so, for example, you can use the `G
 [build the client for a different platform](https://tip.golang.org/wiki/WindowsCrossCompiling).
 
 The source code of the client application can also be customized in templates.
-See [templating guide]({{<relref "/templating-guide">}}) for more details.
+See [templating guide]({{<relref "/templating-guide/overview">}}) for more details.
 
 ## Usage
 

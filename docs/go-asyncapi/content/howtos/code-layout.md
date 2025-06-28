@@ -1,6 +1,6 @@
 ---
 title: "Code layout"
-weight: 330
+weight: 710
 description: "Customizing the generated code layout"
 ---
 
