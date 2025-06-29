@@ -37,5 +37,5 @@ func (l *Logger) Trace(msg interface{}, args ...interface{}) {
 	if l.GetLevel() > TraceLevel {
 		return
 	}
-	l.Logger.Debug(msg, args...)
+	l.Debug(msg, args...)
 }

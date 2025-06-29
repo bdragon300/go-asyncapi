@@ -20,9 +20,8 @@ func listImplementations() {
 	for _, proto := range protos {
 		_, _ = os.Stdout.WriteString(proto + ":\n")
 		for _, info := range implGroups[proto] {
-			_, _ = os.Stdout.WriteString(
-				fmt.Sprintf("* %s (%s) %s\n", info.Name, info.URL, lo.Ternary(info.Default, "[default]", "")),
-			)
+			_, _ = fmt.Fprintf(os.Stdout,
+				"* %s (%s) %s\n", info.Name, info.URL, lo.Ternary(info.Default, "[default]", ""))
 		}
 		_, _ = os.Stdout.WriteString("\n")
 	}

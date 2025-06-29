@@ -3,12 +3,13 @@ package manager
 import (
 	"cmp"
 	"fmt"
-	"github.com/bdragon300/go-asyncapi/internal/utils"
-	"github.com/samber/lo"
 	"go/token"
 	"maps"
 	"slices"
 	"strings"
+
+	"github.com/bdragon300/go-asyncapi/internal/utils"
+	"github.com/samber/lo"
 )
 
 // ImportItem represents an import in the generated Go file.
@@ -40,16 +41,16 @@ func (s *ImportsManager) Imports() []ImportItem {
 // If import path was already added, the function does nothing.
 //
 // If the package name conflicts with the package name of the already added import, the function generates a new alias
-// for this import. For example, the import [text/template] gets the alias ``template2'' if we already added the import
+// for this import. For example, the import [text/template] gets the alias “template2” if we already added the import
 // [html/template] before.
 //
 // If the package name is not a valid Go identifier, the function generates a new alias for this import as well.
-// For example, the import [github.com/bdragon300/go-asyncapi] gets the alias ``goAsyncapi'', because ``go-asyncapi''
+// For example, the import [github.com/bdragon300/go-asyncapi] gets the alias “goAsyncapi”, because “go-asyncapi”
 // is not a valid Go identifier.
 //
 // Function returns the imported name, used to access that package in Go code. It can be the package name
-// (for ``import "net/url"'' returns ``url'') or the alias
-// (for ``import goAsyncapi "github.com/bdragon300/go-asyncapi"'' returns ``goAsyncapi'').
+// (for “import "net/url"” returns “url”) or the alias
+// (for “import goAsyncapi "github.com/bdragon300/go-asyncapi"” returns “goAsyncapi”).
 func (s *ImportsManager) AddImport(importPath string, pkgName string) string {
 	if s.items == nil {
 		s.items = make(map[string]ImportItem)

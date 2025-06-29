@@ -2,22 +2,23 @@ package manager
 
 import (
 	"bytes"
-	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/utils"
-	"github.com/samber/lo"
 	"path"
 	"slices"
 	"text/template"
+
+	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
+	"github.com/samber/lo"
 )
 
 // NewTemplateRenderManager returns a new instance of TemplateRenderManager with given rendering options.
 func NewTemplateRenderManager(opts common.RenderOpts) *TemplateRenderManager {
 	return &TemplateRenderManager{
-		RenderOpts: opts,
-		Buffer: new(bytes.Buffer),
-		ImportsManager: new(ImportsManager),
-		NamespaceManager: new(NamespaceManager),
-		stateCommitted: make(map[string]FileRenderState),
+		RenderOpts:         opts,
+		Buffer:             new(bytes.Buffer),
+		ImportsManager:     new(ImportsManager),
+		NamespaceManager:   new(NamespaceManager),
+		stateCommitted:     make(map[string]FileRenderState),
 		namespaceCommitted: new(NamespaceManager),
 	}
 }
@@ -52,22 +53,22 @@ type TemplateRenderManager struct {
 	RenderOpts common.RenderOpts
 
 	// CurrentObject is an object being currently rendered
-	CurrentObject   common.Artifact
+	CurrentObject common.Artifact
 	// CurrentLayoutItem is a layout item that was used to select the CurrentObject
 	CurrentLayoutItem common.ConfigLayoutItem
 	TemplateLoader    templateLoader
 
 	// File state. The following fields are restored from committed
-	FileName string
-	PackageName     string
+	FileName    string
+	PackageName string
 	// Buffer is write-only file contents buffer. When Commit is called, it appends to the committed file contents.
-	Buffer           *bytes.Buffer
+	Buffer *bytes.Buffer
 	// ImportsManager keeps the imports list for the current file
-	ImportsManager  *ImportsManager
+	ImportsManager *ImportsManager
 	// NamespaceManager keeps the template definitions namespace for the current file
 	NamespaceManager *NamespaceManager
 	// Implementations keeps the current list of implementations
-	Implementations  []ImplementationItem
+	Implementations []ImplementationItem
 
 	// Committed state
 	stateCommitted           map[string]FileRenderState
@@ -82,9 +83,9 @@ func (r *TemplateRenderManager) BeginFile(fileName, packageName string) {
 		pkgName, _ := lo.Coalesce(packageName, utils.GetPackageName(path.Dir(fileName)))
 		r.stateCommitted[fileName] = FileRenderState{
 			PackageName: pkgName,
-			FileName: fileName,
-			Buffer: new(bytes.Buffer),
-			Imports: new(ImportsManager),
+			FileName:    fileName,
+			Buffer:      new(bytes.Buffer),
+			Imports:     new(ImportsManager),
 		}
 	}
 	state := r.stateCommitted[fileName]
@@ -143,8 +144,8 @@ type ImplementationItem struct {
 }
 
 type FileRenderState struct {
-	FileName string
+	FileName    string
 	PackageName string
-	Buffer   *bytes.Buffer
+	Buffer      *bytes.Buffer
 	Imports     *ImportsManager
 }

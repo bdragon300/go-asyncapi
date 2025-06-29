@@ -294,6 +294,7 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool, al
 			ModuleURLRe:   item.ModuleURLRe,
 			PathRe:        item.PathRe,
 			NameRe:        item.NameRe,
+			Not:           item.Not,
 			Render: common.ConfigLayoutItemRender{
 				Template:         item.Render.Template,
 				File:             item.Render.File,

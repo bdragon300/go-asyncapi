@@ -3,13 +3,14 @@ package tmpl
 import (
 	"errors"
 	"fmt"
-	"github.com/bdragon300/go-asyncapi/internal/log"
-	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
-	"github.com/samber/lo"
 	"io/fs"
 	"path"
 	"strings"
 	"text/template"
+
+	"github.com/bdragon300/go-asyncapi/internal/log"
+	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
+	"github.com/samber/lo"
 )
 
 const templateExtension = ".tmpl"
@@ -47,7 +48,7 @@ func (l *TemplateLoader) ParseDir(dir string, renderManager *manager.TemplateRen
 
 	l.tpl = template.New(l.rootName).Funcs(GetTemplateFunctions(renderManager))
 
-	fileGlob := path.Join(dir, "*" + templateExtension)
+	fileGlob := path.Join(dir, "*"+templateExtension)
 	var files []string
 	for _, loc := range l.locations {
 		f, err := fs.Glob(loc, fileGlob)

@@ -3,18 +3,19 @@ package manager
 import (
 	"cmp"
 	"fmt"
-	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/samber/lo"
 	"slices"
 	"strings"
+
+	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/samber/lo"
 )
 
 // NamespaceManager manages the template namespace, that is used for conditional rendering functionality in the templates.
 // It keeps the rendered definitions of rendered Go types and names that was explicitly defined.
 // This functionality could remind the "preprocessor" in C/C++, but for Go templates.
 type NamespaceManager struct {
-	types               []NamespaceTypeItem
-	names               []string
+	types []NamespaceTypeItem
+	names []string
 }
 
 // DefineType adds the [common.GolangType] object's definition to the namespace, remembering the current file and package
@@ -47,7 +48,7 @@ func (s *NamespaceManager) FindType(obj common.GolangType) (NamespaceTypeItem, b
 	found := lo.Filter(s.types, func(def NamespaceTypeItem, _ int) bool {
 		return def.Object == obj
 	})
-	slices.SortFunc(found, func(a, b NamespaceTypeItem) int { return cmp.Compare(a.Priority, b.Priority)})
+	slices.SortFunc(found, func(a, b NamespaceTypeItem) int { return cmp.Compare(a.Priority, b.Priority) })
 
 	return lo.Last(found)
 }
@@ -59,8 +60,8 @@ func (s *NamespaceManager) IsNameDefined(name string) bool {
 
 func (s *NamespaceManager) Clone() *NamespaceManager {
 	return &NamespaceManager{
-		types:               slices.Clone(s.types),
-		names:               slices.Clone(s.names),
+		types: slices.Clone(s.types),
+		names: slices.Clone(s.names),
 	}
 }
 
@@ -72,9 +73,9 @@ func (s *NamespaceManager) String() string {
 }
 
 type NamespaceTypeItem struct {
-	Object   common.GolangType
-	Layout   common.ConfigLayoutItem
-	FileName string
+	Object      common.GolangType
+	Layout      common.ConfigLayoutItem
+	FileName    string
 	PackageName string
-	Priority int
+	Priority    int
 }

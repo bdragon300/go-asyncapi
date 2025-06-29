@@ -169,5 +169,3 @@ func (c Channel) build(ctx *compile.Context, channelKey string, flags map[common
 
 	return res, nil
 }
-
-

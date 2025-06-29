@@ -19,12 +19,12 @@ const (
 )
 
 type Operation struct {
-	Action       OperationAction        `json:"action" yaml:"action"`
-	Channel      *StandaloneRef         `json:"channel" yaml:"channel"`
-	Title        string                 `json:"title" yaml:"title"`
-	Summary      string                 `json:"summary" yaml:"summary"`
-	Description  string                 `json:"description" yaml:"description"`
-	//Security     SecurityScheme  `json:"security" yaml:"security"`
+	Action      OperationAction `json:"action" yaml:"action"`
+	Channel     *StandaloneRef  `json:"channel" yaml:"channel"`
+	Title       string          `json:"title" yaml:"title"`
+	Summary     string          `json:"summary" yaml:"summary"`
+	Description string          `json:"description" yaml:"description"`
+	// Security     SecurityScheme  `json:"security" yaml:"security"`
 	Tags         []Tag                  `json:"tags" yaml:"tags"`
 	ExternalDocs *ExternalDocumentation `json:"externalDocs" yaml:"externalDocs"`
 	Bindings     *OperationBinding      `json:"bindings" yaml:"bindings"`
@@ -114,10 +114,10 @@ func (o Operation) build(ctx *compile.Context, operationKey string, flags map[co
 }
 
 type OperationTrait struct {
-	Title        string                 `json:"title" yaml:"title"`
-	Summary      string                 `json:"summary" yaml:"summary"`
-	Description  string                 `json:"description" yaml:"description"`
-	//Security     SecurityScheme  `json:"security" yaml:"security"`
+	Title       string `json:"title" yaml:"title"`
+	Summary     string `json:"summary" yaml:"summary"`
+	Description string `json:"description" yaml:"description"`
+	// Security     SecurityScheme  `json:"security" yaml:"security"`
 	Tags         []Tag                  `json:"tags" yaml:"tags"`
 	ExternalDocs *ExternalDocumentation `json:"externalDocs" yaml:"externalDocs"`
 	Bindings     *OperationBinding      `json:"bindings" yaml:"bindings"`

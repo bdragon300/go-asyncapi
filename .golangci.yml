@@ -3,27 +3,42 @@
 # Config file reference: https://golangci-lint.run/usage/configuration/#config-file
 # Linters list: https://golangci-lint.run/usage/linters
 
+version: "2"
 run:
-  timeout: 5m
   modules-download-mode: readonly
-
 linters:
   enable:
-    - gofumpt
-    - revive
-    - gocritic
-    - govet
-    - staticcheck
-    - unused
     - errname
-linters-settings:
-  govet:
-    disable:
-      - composites
-
+    - gocritic
+    - revive
+  settings:
+    govet:
+      disable:
+        - composites
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - text: "avoid meaningless package names"
+        linters:
+          - revive
+    paths:
+      - run/3rdparty
+      - tmp
+      - implementations_go
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-  exclude-dirs:
-    - run/3rdparty
-    - tmp
+formatters:
+  enable:
+    - gofumpt
+  exclusions:
+    generated: lax
+    paths:
+      - run/3rdparty
+      - tmp
+      - implementations_go

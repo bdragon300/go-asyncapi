@@ -93,7 +93,7 @@ func (b *Bindings) UnmarshalJSON(value []byte) error {
 	if err := json.Unmarshal(value, &b.RawBindings); err != nil {
 		return err
 	}
-	if err := json.Unmarshal(value, &b.RawBindings.ProtocolValues); err != nil {
+	if err := json.Unmarshal(value, &b.ProtocolValues); err != nil {
 		return err
 	}
 	b.ProtocolValues.Delete("$ref")
@@ -104,7 +104,7 @@ func (b *Bindings) UnmarshalYAML(value *yaml.Node) error {
 	if err := value.Decode(&b.RawBindings); err != nil {
 		return err
 	}
-	if err := value.Decode(&b.RawBindings.ProtocolValues); err != nil {
+	if err := value.Decode(&b.ProtocolValues); err != nil {
 		return err
 	}
 	b.ProtocolValues.Delete("$ref")

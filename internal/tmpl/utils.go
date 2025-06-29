@@ -1,11 +1,12 @@
 package tmpl
 
 import (
-	"github.com/samber/lo"
 	"net/url"
 	"path"
 	"strconv"
 	"strings"
+
+	"github.com/samber/lo"
 )
 
 // unescapeJSONPointerFragmentPart unescapes a path item in JSON Pointer. Returns the unescaped string if it is a string,
@@ -18,8 +19,8 @@ import (
 // It helps to specify if this part addresses an array index or a numeric object key.
 // For examples below, this function returns "123" as a string:
 //
-//  https://example.com/resource#/foo/"123"/bar
-//  https://example.com/resource#/foo/'123'/bar
+//	https://example.com/resource#/foo/"123"/bar
+//	https://example.com/resource#/foo/'123'/bar
 //
 // Such quoting is *not recommended* as the common practice because it does not comply with the JSON Pointer specification,
 // but may be used as a workaround for some rare cases.
@@ -59,14 +60,14 @@ func unescapeJSONPointerFragmentPart(value string) (any, error) {
 //
 // Examples:
 //
-//   qualifiedToImport("a") -> "a", "a", ""
-//   qualifiedToImport("", "a") -> "", "", "a"
-//   qualifiedToImport("a.x") -> "a", "a", "x"
-//   qualifiedToImport("a/b/c") -> "a/b/c", "c", ""
-//   qualifiedToImport("a", "x") -> "a", "a", "x"
-//   qualifiedToImport("a/b.c", "x") -> "a/b.c", "b.c", "x"
-//   qualifiedToImport("n", "d", "a/b.x") -> "n/d/a/b", "b", "x"
-//   qualifiedToImport("n", "d", "a/b.c", "x") -> "n/d/a/b.c", "b.c", "x"
+//	qualifiedToImport("a") -> "a", "a", ""
+//	qualifiedToImport("", "a") -> "", "", "a"
+//	qualifiedToImport("a.x") -> "a", "a", "x"
+//	qualifiedToImport("a/b/c") -> "a/b/c", "c", ""
+//	qualifiedToImport("a", "x") -> "a", "a", "x"
+//	qualifiedToImport("a/b.c", "x") -> "a/b.c", "b.c", "x"
+//	qualifiedToImport("n", "d", "a/b.x") -> "n/d/a/b", "b", "x"
+//	qualifiedToImport("n", "d", "a/b.c", "x") -> "n/d/a/b.c", "b.c", "x"
 func qualifiedToImport(exprParts []string) (pkgPath string, pkgName string, name string) {
 	switch len(exprParts) {
 	case 0:
