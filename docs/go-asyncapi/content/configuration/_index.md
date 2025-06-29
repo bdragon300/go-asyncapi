@@ -28,11 +28,11 @@ All attributes are optional, and if not set, the tool uses the default values.
 
 | Attribute        | Type                               | Default | Description                                                                                 |
 |------------------|------------------------------------|---------|---------------------------------------------------------------------------------------------|
-| nameRe           | string                             | Ignored | Condition: regex to match the entity name                                                   |
-| artifactKinds    | []string                           | Ignored | Condition: match to one of [artifact kinds](#artifact-kind) in list                         |
-| moduleURLRe      | string                             | Ignored | Condition: regex to match the document URL or path                                          |
-| pathRe           | string                             | Ignored | Condition: regex to match the artifact path inside a document (e.g. `#/channels/myChannel`) |
-| protocols        | []string                           | Ignored | Condition: match to any [protocol](#protocols-and-implementations) in list                  |
+| nameRe           | string                             |         | Condition: regex to match the entity name                                                   |
+| artifactKinds    | []string                           |         | Condition: match to one of [artifact kinds](#artifact-kind) in list                         |
+| moduleURLRe      | string                             |         | Condition: regex to match the document URL or path                                          |
+| pathRe           | string                             |         | Condition: regex to match the artifact path inside a document (e.g. `#/channels/myChannel`) |
+| protocols        | []string                           |         | Condition: match to any [protocol](#protocols-and-implementations) in list                  |
 | render           | [LayoutRender](#layoutrender)      |         | Render settings                                                                             |
 | reusePackagePath | string                             |         | Path to the Go package to [reuse]({{< relref "/howtos/code-reuse" >}}) the code from.       |
 

@@ -11,7 +11,7 @@ description = 'asyncapi-go features overview'
   - Servers, channels, operations, messages, schemas, parameters, correlation IDs, etc. (see below)
   - JSONSchema
   - JSONSchema polymorphism (oneOf, anyOf, allOf)
-  - Specification extensions (`x-` flags), that control the code generation process
+  - Specification extensions (`x-` fields), that control the code generation process
 - Support many [protocols](#protocols)
 - Support several AsyncAPI documents at once
 - YAML [configuration file]({{< relref "/configuration" >}})

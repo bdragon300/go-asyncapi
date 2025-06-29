@@ -3,7 +3,7 @@
 ![GitHub go.mod Go version (subdirectory of monorepo)](https://img.shields.io/github/go-mod/go-version/bdragon300/go-asyncapi)
 ![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/bdragon300/go-asyncapi/go-test.yml?branch=master)
 
-`go-asyncapi` is a Go implementation and toolkit of the [AsyncAPI](https://www.asyncapi.com/) specification.
+`go-asyncapi` is a Go implementation of the [AsyncAPI](https://www.asyncapi.com/) specification.
 
 > **[AsyncAPI](https://www.asyncapi.com/)** is a specification for defining APIs for event-driven architectures. The
 > AsyncAPI document describes the messages, channels, servers, and other entities that the systems in event-driven
@@ -39,21 +39,15 @@ In other words, *batteries included, but removable*.
 
 `go-asyncapi` supports most of the AsyncAPI features, such as messages, channels, servers, bindings, correlation ids, etc.
 
-The generated Go boilerplate code has minimal dependencies on external libraries and contains the basic logic sufficient to 
+The generated **Go boilerplate code** has minimal dependencies on external libraries and contains the basic logic sufficient to 
 send and receive messages. You also can plug in the protocol implementations built-in in `go-asyncapi`, they are based on 
 popular libraries for that protocol. Also, it is possible to import the third-party code in the code being generated.
 
-It is possible to build the no-code client application solely based on the AsyncAPI document, which is useful for
+It is possible to build the **no-code client application** solely based on the AsyncAPI document, which is useful for
 testing purposes or for quick prototyping.
 
-The `go-asyncapi` is able to generate the infrastructure setup files, such as Docker Compose files, which are useful
+The `go-asyncapi` is able to generate the **infrastructure setup files**, such as Docker Compose files, which are useful
 for setting up the development environment quickly or as the starting point for the infrastructure-as-code deploy configurations.
-
-The tool also supports both the internal and external `$ref` references. The latter may point to the local files or to 
-the remote documents available via HTTP(S) or you can provide a custom resolver.
-
-The behavior can be customized using the command-line flags, a YAML config file, and `x-` fields in the AsyncAPI document.
-`go-asyncapi` also accepts the user Go templates to customize the output.
 
 ## Installation
 

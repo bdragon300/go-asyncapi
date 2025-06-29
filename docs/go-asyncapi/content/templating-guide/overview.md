@@ -64,7 +64,7 @@ function render the **usage code** of the artifact, i.e. code snippet to "consum
 The `goDef` function renders the **definition code** of the artifact, i.e. the Go code with type declaration.
 
 For example, we have the `lang.GoStruct` with a couple of fields.
-`{{ goDef . }}` function called in on "foo" package rendering produces the struct definition:
+`{{ goDef . }}` function called in on "foo" package produces the **definition code**:
 
 ```go
 type MyStruct struct {
@@ -73,14 +73,14 @@ type MyStruct struct {
 }
 ```
 
-The `var myVar {{ goUsage . }}` in "bar" package produces the following code (necessary import is added automatically):
+The `{{ goUsage . }}` in "bar" package produces the **usage code** (import from `foo` will be added automatically):
 
 ```go
-var myVar foo.MyStruct
+foo.MyStruct
 ```
 
-This also works for the artifacts defined in the current package (result is `var myVar MyStruct`), and in third-party packages
-(e.g. `var myVar mypackage.MyStruct` from "github.com/myuser/mypackage").
+This also works for the artifacts defined in the current package (e.g. `MyStruct`), and in 
+third-party packages (e.g. `mypackage.MyStruct` from "github.com/myuser/mypackage").
 
 ### Namespace
 

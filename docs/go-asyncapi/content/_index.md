@@ -10,7 +10,7 @@ description = 'Generate Go code based on your AsyncAPI documents! This tool supp
 ![GitHub go.mod Go version (subdirectory of monorepo)](https://img.shields.io/github/go-mod/go-version/bdragon300/go-asyncapi)
 ![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/bdragon300/go-asyncapi/go-test.yml?branch=master)
 
-`go-asyncapi` is a Go implementation and toolkit of the [AsyncAPI](https://www.asyncapi.com/) specification.
+`go-asyncapi` is a Go implementation of the [AsyncAPI](https://www.asyncapi.com/) specification.
 
 > **[AsyncAPI](https://www.asyncapi.com/)** is a specification for defining APIs for event-driven architectures. The
 > AsyncAPI document describes the messages, channels, servers, and other entities that the systems in event-driven

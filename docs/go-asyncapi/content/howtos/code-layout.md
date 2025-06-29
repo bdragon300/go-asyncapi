@@ -84,7 +84,7 @@ files with name `<entity_type>_<entity_name>.go`, e.g. `channel_channel1.go`, `s
 layout:
   - artifactKinds: ["schema", "server", "channel", "operation", "message", "parameter"]
     render:
-      file: "{{.Kind}}_{{.Object | goIDUpper }}.go"
+      file: "{{.Object.Kind}}_{{.Object | goIDUpper }}.go"
 ```
 
 {{< /tab >}}
@@ -175,7 +175,7 @@ layout:
     artifactKinds: ["schema", "server", "channel", "operation", "message", "parameter"]
     except: true
     render:
-      file: "{{.Kind}}s/{{.Object | goIDUpper }}.go"
+      file: "{{.Object.Kind}}s/{{.Object | goIDUpper }}.go"
 ```
 
 {{< /tab >}}
