@@ -89,6 +89,7 @@ func (m *{{ .InType | goIDUpper }}) UnmarshalEnvelope{{ .Protocol | goIDUpper }}
 {{- with tryTmpl (print "code/proto/mime/messageEncoder/" .EffectiveContentType) .}}
     {{.}}
 {{- else}}
+    {{/*TODO: print log warning about using the default encoder*/}}
     {{template "code/proto/mime/messageEncoder/default" .}}
 {{- end}}
 {{- end}}
@@ -97,6 +98,7 @@ func (m *{{ .InType | goIDUpper }}) UnmarshalEnvelope{{ .Protocol | goIDUpper }}
 {{- with tryTmpl (print "code/proto/mime/messageDecoder/" .EffectiveContentType) .}}
     {{.}}
 {{- else}}
+    {{/*TODO: print log warning about using the default decoder*/}}
     {{template "code/proto/mime/messageDecoder/default" .}}
 {{- end}}
 {{- end}}

@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/bdragon300/go-asyncapi/implementations"
 
 	"github.com/samber/lo"
-	"golang.org/x/exp/slices"
 )
 
 func listImplementations() {

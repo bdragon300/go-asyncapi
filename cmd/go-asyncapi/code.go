@@ -313,7 +313,7 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool, al
 	if res.ImportBase == "" && findProjectModule {
 		m, err := getProjectModule()
 		if err != nil {
-			return res, fmt.Errorf("read go.mod (use -M arg to override): %w", err)
+			return res, fmt.Errorf("determine the module name (use -M arg to override): %w", err)
 		}
 		logger.Debug("Determined project module", "value", m)
 		// Clean target directory path, removing empty, current and parent directories, leaving only the names.

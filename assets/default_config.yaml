@@ -2,24 +2,9 @@ configVersion: 1
 runtimeModule: github.com/bdragon300/go-asyncapi/run
 
 layout:
-  - artifactKinds: ["schema"]
+  - artifactKinds: ["schema", "server", "channel", "operation", "message", "parameter"]
     render:
-      file: schemas/{{.Object | goIDUpper }}.go
-  - artifactKinds: ["server"]
-    render:
-      file: servers/{{.Object | goIDUpper }}.go
-  - artifactKinds: ["channel"]
-    render:
-      file: channels/{{.Object | goIDUpper }}.go
-  - artifactKinds: ["operation"]
-    render:
-      file: operations/{{.Object | goIDUpper }}.go
-  - artifactKinds: ["message"]
-    render:
-      file: messages/{{.Object | goIDUpper }}.go
-  - artifactKinds: ["parameter"]
-    render:
-      file: parameters/{{.Object | goIDUpper }}.go
+      file: "{{.Object.Kind}}s/{{.Object | goIDUpper }}.go"
 
 locator:
   timeout: 30s
