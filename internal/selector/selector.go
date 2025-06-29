@@ -17,10 +17,14 @@ func Select(artifacts []common.Artifact, layoutItem common.ConfigLayoutItem) []c
 	res := lo.Filter(artifacts, func(object common.Artifact, _ int) bool {
 		logger.Trace("--> Process filters", "object", object.String())
 		for ind, filter := range filtersChain {
-			if !filter(object) {
+			if !filter(object) && !layoutItem.Not {
 				logger.Trace("---> Discarded by filter", "index", ind)
 				return false
 			}
+		}
+		if layoutItem.Not {
+			logger.Trace("---> Discarded by Not filter")
+			return false
 		}
 		logger.Trace("---> Passed")
 		return true

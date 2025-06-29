@@ -173,7 +173,7 @@ layout:
       file: "acme/{{.Object | goIDUpper }}.go"
   - nameRe: "^acme_corp_"
     artifactKinds: ["schema", "server", "channel", "operation", "message", "parameter"]
-    except: true
+    not: true
     render:
       file: "{{.Object.Kind}}s/{{.Object | goIDUpper }}.go"
 ```

@@ -27,12 +27,12 @@ type (
 	}
 
 	toolConfigLayout struct {
-		//TODO: NOT operation field
 		NameRe           string                 `yaml:"nameRe"`
 		ArtifactKinds    []string               `yaml:"artifactKinds"`
 		ModuleURLRe      string                 `yaml:"moduleURLRe"` // TODO: rename to locationRe or smth like that
 		PathRe           string                 `yaml:"pathRe"`      // TODO: remove? almost duplicate of moduleURLRe
 		Protocols        []string               `yaml:"protocols"`
+		Not              bool                   `yaml:"not"` // Inverts the match, i.e. NOT operation
 		Render           toolConfigLayoutRender `yaml:"render"`
 		ReusePackagePath string                 `yaml:"reusePackagePath"`
 	}
@@ -89,7 +89,7 @@ type (
 	}
 
 	toolConfigInfraServer struct {
-		Name      string                                                                             `yaml:"name"`  // TODO: make required
+		Name      string                                                                             `yaml:"name"` // TODO: make required
 		Variables types.Union2[types.OrderedMap[string, string], []types.OrderedMap[string, string]] `yaml:"variables"`
 	}
 )

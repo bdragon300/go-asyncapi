@@ -10,6 +10,7 @@ type (
 		ModuleURLRe      string
 		PathRe           string
 		NameRe           string
+		Not              bool
 		Render           ConfigLayoutItemRender
 		ReusePackagePath string
 

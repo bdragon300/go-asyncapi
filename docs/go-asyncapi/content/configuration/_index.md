@@ -26,15 +26,16 @@ All attributes are optional, and if not set, the tool uses the default values.
 
 ## Layout
 
-| Attribute        | Type                               | Default | Description                                                                                 |
-|------------------|------------------------------------|---------|---------------------------------------------------------------------------------------------|
-| nameRe           | string                             |         | Condition: regex to match the entity name                                                   |
-| artifactKinds    | []string                           |         | Condition: match to one of [artifact kinds](#artifact-kind) in list                         |
-| moduleURLRe      | string                             |         | Condition: regex to match the document URL or path                                          |
-| pathRe           | string                             |         | Condition: regex to match the artifact path inside a document (e.g. `#/channels/myChannel`) |
-| protocols        | []string                           |         | Condition: match to any [protocol](#protocols-and-implementations) in list                  |
-| render           | [LayoutRender](#layoutrender)      |         | Render settings                                                                             |
-| reusePackagePath | string                             |         | Path to the Go package to [reuse]({{< relref "/howtos/code-reuse" >}}) the code from.       |
+| Attribute        | Type                             | Default | Description                                                                                 |
+|------------------|----------------------------------|---------|---------------------------------------------------------------------------------------------|
+| nameRe           | string                           |         | Condition: regex to match the entity name                                                   |
+| artifactKinds    | []string                         |         | Condition: match to one of [artifact kinds](#artifact-kind) in list                         |
+| moduleURLRe      | string                           |         | Condition: regex to match the document URL or path                                          |
+| pathRe           | string                           |         | Condition: regex to match the artifact path inside a document (e.g. `#/channels/myChannel`) |
+| protocols        | []string                         |         | Condition: match to any [protocol](#protocols-and-implementations) in list                  |
+| not              | bool                             | `false` | If `true`, apply NOT operations to the match                                                |
+| render           | [LayoutRender](#layoutrender)    |         | Render settings                                                                             |
+| reusePackagePath | string                           |         | Path to the Go package to [reuse]({{< relref "/howtos/code-reuse" >}}) the code from.       |
 
 Right before the rendering stage, `go-asyncapi` compiles the "artifacts" (intermediate representation objects) 
 from the AsyncAPI document. To determine how and where their generated code should be rendered to, it checks every 

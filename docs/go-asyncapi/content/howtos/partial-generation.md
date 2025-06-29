@@ -68,7 +68,7 @@ layout:
     reusePackagePath: "github.com/myorg/myproject/pkg/acme_corp"
   - nameRe: "^acme_corp_"
     artifactKinds: ["server", "channel", "operation", "message"]
-    except: true
+    not: true
     render:
       file: "{{.Kind}}s/{{.Object | goIDUpper }}.go"
 ```
