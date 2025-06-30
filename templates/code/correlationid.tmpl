@@ -1,6 +1,6 @@
 {{/* dot == render.Message */}}
 
-{{define "code/correlationID/incoming/setter"}}
+{{define "code/correlationID/outgoing/setter"}}
 {{- with .CorrelationID}}
 v0 := m.{{.StructFieldKind | toTitleCase}}
 
@@ -10,8 +10,9 @@ v0 := m.{{.StructFieldKind | toTitleCase}}
     {{range .CodeLines}}{{.}}{{end}}
 {{- end}}
 
-{{- /* Collapse the value back */}}
+{{- /* Set value */}}
 {{- $exprVal := "value"}}
+{{- /* Collapse the value back */}}
 {{- range reverse }}
     {{.VarValue}} = {{$exprVal}}
     {{- $exprVal = .VarValueVarName}}
@@ -22,7 +23,7 @@ m.{{.StructFieldKind | toTitleCase}} = v0
 {{- end}}
 
 
-{{define "code/correlationID/incoming/varType"}}
+{{define "code/correlationID/outgoing/varType"}}
 {{- with .CorrelationID}}
 {{$steps := correlationIDExtractionCode . $.OutType false}}
 {{if $steps }}{{last $steps | .VarType | goUsage}}{{else}}any{{end}}
@@ -30,7 +31,7 @@ m.{{.StructFieldKind | toTitleCase}} = v0
 {{- end}}
 
 
-{{define "code/correlationID/outgoing/getter"}}
+{{define "code/correlationID/incoming/getter"}}
 {{- with .CorrelationID}}
 v0 := m.{{.StructFieldKind | untitle}}
 
@@ -44,7 +45,7 @@ v0 := m.{{.StructFieldKind | untitle}}
 {{- end}}
 {{- end}}
 
-{{define "code/correlationID/outgoing/varType"}}
+{{define "code/correlationID/incoming/varType"}}
 {{- with .CorrelationID}}
 {{$steps := correlationIDExtractionCode . $.InType false}}
 {{if $steps }}{{last $steps | .VarType | goUsage}}{{else}}any{{end}}
