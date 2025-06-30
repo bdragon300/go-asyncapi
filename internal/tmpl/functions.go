@@ -21,8 +21,8 @@ import (
 // GetTemplateFunctions returns a map of functions to use in templates. These functions include all
 // [github.com/go-sprout/sprout] functions and go-asyncapi specific functions.
 func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template.FuncMap {
-	type golangTypeExtractor interface {
-		InnerGolangType() common.GolangType
+	type golangWrapperType interface {
+		UnwrapGolangType() common.GolangType
 	}
 
 	logger := log.GetLogger(log.LoggerPrefixRendering)
@@ -51,8 +51,8 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			trace("goDef", r)
 			tplName := path.Join(r.GoTemplate(), "definition")
 			renderManager.NamespaceManager.DefineType(r, renderManager, 1)
-			if v, ok := r.(golangTypeWrapper); ok {
-				r = v.UnwrapGolangType()
+			if v, ok := r.(golangReferenceType); ok {
+				r = v.DerefGolangType()
 			}
 			res, err := templateExecTemplate(renderManager, tplName, r)
 			if err != nil {
@@ -94,8 +94,8 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		},
 		"innerType": func(val common.GolangType) common.GolangType {
 			trace("innerType", val)
-			if v, ok := any(val).(golangTypeExtractor); ok {
-				return v.InnerGolangType()
+			if v, ok := any(val).(golangWrapperType); ok {
+				return v.UnwrapGolangType()
 			}
 			return nil
 		},
@@ -203,8 +203,8 @@ func templateGoDefined(mng *manager.TemplateRenderManager, r any) bool {
 	panic(fmt.Sprintf("unsupported type %[1]T: %[1]v", r))
 }
 
-type golangTypeWrapper interface {
-	UnwrapGolangType() common.GolangType
+type golangReferenceType interface {
+	DerefGolangType() common.GolangType
 }
 
 // templateGoUsage returns a Go code snippet that represents the usage of the given Go type. If this type is defined
@@ -223,8 +223,8 @@ type golangTypeWrapper interface {
 // the function returns "MyStruct". Or "pkg.MyStruct" if the struct is defined in “github.com/path/to/pkg” module.
 func templateGoUsage(mng *manager.TemplateRenderManager, r common.GolangType) (string, error) {
 	tplName := path.Join(r.GoTemplate(), "usage")
-	if v, ok := r.(golangTypeWrapper); ok {
-		r = v.UnwrapGolangType()
+	if v, ok := r.(golangReferenceType); ok {
+		r = v.DerefGolangType()
 	}
 	res, err := templateExecTemplate(mng, tplName, r)
 	if err != nil {
@@ -384,7 +384,7 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c *
 
 	locationPath := c.LocationPath
 	baseType := field.Type
-	for pathIdx := 0; pathIdx < len(locationPath); pathIdx++ {
+	for pathIdx := 0; pathIdx < len(locationPath); {
 		var body []string
 		var varValueStmts string
 
@@ -472,12 +472,12 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c *
 				return
 			}
 			baseType = typ
-		case lang.GolangTypeExtractor:
+		case lang.GolangWrappedType:
 			logger.Trace(
-				"---> GolangTypeExtractor",
+				"---> GolangWrappedType",
 				"locationPath", locationPath[:pathIdx], "member", memberName, "object", baseType.String(), "type", fmt.Sprintf("%T", typ),
 			)
-			t := typ.InnerGolangType()
+			t := typ.UnwrapGolangType()
 			if lo.IsNil(t) {
 				err = fmt.Errorf(
 					"type %T does not contain a wrapped GolangType, locationPath: /%s",
@@ -488,12 +488,12 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c *
 			}
 			baseType = t
 			continue
-		case lang.GolangTypeWrapper:
+		case lang.GolangReferenceType:
 			logger.Trace(
-				"---> GolangTypeWrapper",
+				"---> GolangReferenceType",
 				"locationPath", locationPath[:pathIdx], "member", memberName, "object", baseType.String(), "type", fmt.Sprintf("%T", typ),
 			)
-			t := typ.UnwrapGolangType()
+			t := typ.DerefGolangType()
 			if lo.IsNil(t) {
 				err = fmt.Errorf(
 					"type %T does not contain a wrapped GolangType, locationPath: /%s",
@@ -514,6 +514,7 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c *
 			return
 		}
 
+		pathIdx++
 		item := correlationIDExtractionStep{
 			CodeLines:       body,
 			VarName:         nextAnchor,

@@ -33,9 +33,9 @@ func (p *GoTypeDefinition) GoTemplate() string {
 	return "code/lang/gotypedefinition"
 }
 
-func (p *GoTypeDefinition) InnerGolangType() common.GolangType {
-	if v, ok := p.RedefinedType.(GolangTypeExtractor); ok {
-		return v.InnerGolangType()
+func (p *GoTypeDefinition) UnwrapGolangType() common.GolangType {
+	if v, ok := p.RedefinedType.(GolangWrappedType); ok {
+		return v.UnwrapGolangType()
 	}
 	return p.RedefinedType
 }

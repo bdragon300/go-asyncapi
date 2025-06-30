@@ -99,9 +99,12 @@ func (r *Promise[T]) FindCallback() common.PromiseFindCbFunc {
 	return r.findCb
 }
 
-func (r *Promise[T]) UnwrapGolangType() common.GolangType {
-	if v, ok := any(r.target).(common.GolangType); ok {
-		return unwrapGolangPromise(v)
+func (r *Promise[T]) DerefGolangType() common.GolangType {
+	switch v := any(r.target).(type) {
+	case GolangReferenceType:
+		return v.DerefGolangType()
+	case common.GolangType:
+		return v
 	}
 	return nil
 }
@@ -233,11 +236,4 @@ func (r *ListPromise[T]) FindCallback() common.PromiseFindCbFunc {
 // T returns the target list.
 func (r *ListPromise[T]) T() []T {
 	return r.targets
-}
-
-func unwrapGolangPromise(val common.GolangType) common.GolangType {
-	if o, ok := val.(GolangTypeWrapper); ok {
-		val = o.UnwrapGolangType()
-	}
-	return val
 }

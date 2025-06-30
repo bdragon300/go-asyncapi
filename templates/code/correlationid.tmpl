@@ -2,52 +2,54 @@
 
 {{define "code/correlationID/outgoing/setter"}}
 {{- with .CorrelationID}}
-v0 := m.{{.StructFieldKind | toTitleCase}}
-
-{{$steps := correlationIDExtractionCode . $.OutType false}}
+v0 := m.{{.StructFieldKind | toString | toTitleCase}}
+{{- $steps := correlationIDExtractionCode . $.OutType false}}
 {{- /* Render extraction steps except the last one */}}
 {{- range initial $steps}}
-    {{range .CodeLines}}{{.}}{{end}}
+    {{- range .CodeLines}}
+        {{.}}
+    {{- end}}
 {{- end}}
 
-{{- /* Set value */}}
 {{- $exprVal := "value"}}
-{{- /* Collapse the value back */}}
-{{- range reverse }}
+{{- /* Set value and collapse the value back */}}
+{{- range reverse $steps }}
     {{.VarValue}} = {{$exprVal}}
     {{- $exprVal = .VarValueVarName}}
 {{- end}}
 
-m.{{.StructFieldKind | toTitleCase}} = v0
+m.{{.StructFieldKind | toString | toTitleCase}} = v0
 {{- end}}
 {{- end}}
 
 
 {{define "code/correlationID/outgoing/varType"}}
 {{- with .CorrelationID}}
-{{$steps := correlationIDExtractionCode . $.OutType false}}
-{{if $steps }}{{last $steps | .VarType | goUsage}}{{else}}any{{end}}
+{{- $steps := correlationIDExtractionCode . $.OutType false}}
+{{- if $steps }}{{(last $steps).VarType | goUsage}}{{else}}any{{end}}
 {{- end}}
 {{- end}}
 
 
 {{define "code/correlationID/incoming/getter"}}
 {{- with .CorrelationID}}
-v0 := m.{{.StructFieldKind | untitle}}
-
-{{$steps := correlationIDExtractionCode . $.InType true}}
+v0 := m.{{.StructFieldKind | toString | untitle}}
+{{- $steps := correlationIDExtractionCode . $.InType true}}
 {{- /* Render extraction steps except the last one */}}
 {{- range $steps}}
-    {{range .CodeLines}}{{.}}{{end}}
+    {{- range .CodeLines}}
+        {{.}}
+    {{- end}}
 {{- end}}
 
-{{if $steps}}value = {{last $steps | .VarName}}{{end}}
+{{- /* Assign value to the result var and exit */}}
+{{if $steps}}value = {{(last $steps).VarName}}{{end}}
 {{- end}}
 {{- end}}
 
 {{define "code/correlationID/incoming/varType"}}
 {{- with .CorrelationID}}
-{{$steps := correlationIDExtractionCode . $.InType false}}
-{{if $steps }}{{last $steps | .VarType | goUsage}}{{else}}any{{end}}
+{{- $steps := correlationIDExtractionCode . $.InType false}}
+{{- if $steps }}{{(last $steps).VarType | goUsage}}{{else}}any{{end}}
 {{- end}}
 {{- end}}

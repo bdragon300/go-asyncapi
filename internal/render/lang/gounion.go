@@ -55,8 +55,8 @@ func isTypeStruct(typ common.GolangType) bool {
 	switch v := typ.(type) {
 	case golangStructType:
 		return v.IsStruct()
-	case GolangTypeExtractor:
-		t := v.InnerGolangType()
+	case GolangWrappedType:
+		t := v.UnwrapGolangType()
 		return !lo.IsNil(t) && isTypeStruct(t)
 	}
 	return false

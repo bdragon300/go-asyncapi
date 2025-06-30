@@ -65,17 +65,18 @@ func (b *BaseType) ObjectHasDefinition() bool {
 	return b.HasDefinition
 }
 
-// GolangTypeExtractor is an interface for [common.GolangType] types (such as pointers, aliases) that are able to
+// GolangWrappedType is an interface for [common.GolangType] types (such as pointers, aliases) that are able to
 // wrap another [common.GolangType] type.
-type GolangTypeExtractor interface {
-	InnerGolangType() common.GolangType
+type GolangWrappedType interface {
+	// UnwrapGolangType recursively unwraps the wrapped [common.GolangType] type.
+	UnwrapGolangType() common.GolangType
 }
 
-// GolangTypeWrapper is an interface for *non* [common.GolangType] types (such as promises, refs) that contain a
-// [common.GolangType] type inside.
+// GolangReferenceType is an interface for references to golang type (such as promises, refs).
 // Used primarily in templates.
-type GolangTypeWrapper interface {
-	UnwrapGolangType() common.GolangType
+type GolangReferenceType interface {
+	// DerefGolangType recursively unwraps the referenced [common.GolangType] type.
+	DerefGolangType() common.GolangType
 }
 
 type golangStructType interface {
