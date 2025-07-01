@@ -12,8 +12,9 @@ import (
 )
 
 type Channel struct {
-	Address      string                              `json:"address" yaml:"address"`
-	Messages     types.OrderedMap[string, Message]   `json:"messages" yaml:"messages"`
+	Address string `json:"address" yaml:"address"`
+	// Being referenced from a channel makes the message selectable and sets its generated name
+	Messages     types.OrderedMap[string, Message]   `json:"messages" yaml:"messages" cgen:"selectable"`
 	Title        string                              `json:"title" yaml:"title"`
 	Summary      string                              `json:"summary" yaml:"summary"`
 	Description  string                              `json:"description" yaml:"description"`
@@ -44,15 +45,14 @@ type protoChannelBuilder interface {
 }
 
 func (c Channel) build(ctx *compile.Context, channelKey string, flags map[common.SchemaTag]string) (common.Artifact, error) {
+	_, isSelectable := flags[common.SchemaTagSelectable]
 	ignore := c.XIgnore || (!ctx.CompileOpts.GeneratePublishers && !ctx.CompileOpts.GenerateSubscribers)
 	if ignore {
 		ctx.Logger.Debug("Channel denoted to be ignored")
 		return &render.Channel{Dummy: true}, nil
 	}
 
-	_, isSelectable := flags[common.SchemaTagSelectable]
 	if c.Ref != "" {
-		// Make a promise selectable if it defined in `channels` section
 		return registerRef(ctx, c.Ref, channelKey, lo.Ternary(isSelectable, lo.ToPtr(true), nil)), nil
 	}
 
@@ -118,7 +118,8 @@ func (c Channel) build(ctx *compile.Context, channelKey string, flags map[common
 	for _, msgName := range c.Messages.Keys() {
 		ctx.Logger.Trace("Channel message", "name", msgName)
 		ref := ctx.CurrentPositionRef("messages", msgName)
-		prm2 := lang.NewRef(ref, msgName, lo.ToPtr(true))
+		// Do not consider the name which a message $ref is registered with, keeping the original message name in code.
+		prm2 := lang.NewRef(ref, "", nil)
 		ctx.PutPromise(prm2)
 		res.MessagesRefs = append(res.MessagesRefs, prm2)
 	}

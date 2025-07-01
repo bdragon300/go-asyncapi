@@ -37,7 +37,7 @@ type Message struct {
 }
 
 func (m Message) Compile(ctx *compile.Context) error {
-	obj, err := m.build(ctx, ctx.Stack.Top().Key)
+	obj, err := m.build(ctx, ctx.Stack.Top().Key, ctx.Stack.Top().Flags)
 	if err != nil {
 		return err
 	}
@@ -45,34 +45,28 @@ func (m Message) Compile(ctx *compile.Context) error {
 	return nil
 }
 
-func (m Message) build(ctx *compile.Context, messageKey string) (common.Artifact, error) {
+func (m Message) build(ctx *compile.Context, messageKey string, flags map[common.SchemaTag]string) (common.Artifact, error) {
 	if m.XIgnore {
 		ctx.Logger.Debug("Message denoted to be ignored")
 		return &render.Message{Dummy: true}, nil
 	}
 
+	_, isSelectable := flags[common.SchemaTagSelectable]
 	if m.Ref != "" {
-		ctx.Logger.Trace("Ref", "$ref", m.Ref)
-
-		// Message is the only type of objects, that has their own root key, the key in components and can be used
-		// as ref in other objects at the same time (at channel.[publish|subscribe].message).
-		// Therefore, a message object may get to selections more than once, it's needed to handle it in templates.
-		refName := messageKey
-		pathStack := ctx.Stack.Items()
-		// Ignore the messageKey in definitions other than `messages`, since messageKey always be "message" there.
-		if messageKey == "message" && len(pathStack) > 3 {
-			refName = ""
+		key := messageKey
+		path := ctx.Stack.Items()
+		// Do not consider the name which a message $ref is registered with inside the channel, keeping the original name in code.
+		if path[0].Key != "components" || path[1].Key != "messages" {
+			key = ""
 		}
-
-		// Always draw the promises that are located in the `messages` section
-		return registerRef(ctx, m.Ref, refName, nil), nil
+		return registerRef(ctx, m.Ref, key, lo.Ternary(isSelectable, lo.ToPtr(true), nil)), nil
 	}
 
 	msgName, _ := lo.Coalesce(m.XGoName, messageKey)
 	res := render.Message{
 		OriginalName: msgName,
 		ContentType:  m.ContentType,
-		IsSelectable: true,
+		IsSelectable: isSelectable,
 		IsPublisher:  ctx.CompileOpts.GeneratePublishers,
 		IsSubscriber: ctx.CompileOpts.GenerateSubscribers,
 		// map[string]any

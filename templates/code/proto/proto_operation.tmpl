@@ -134,7 +134,7 @@ type {{ . | goIDUpper }}EnvelopeUnmarshaler{{.Protocol | goIDUpper}} interface {
 
     func (o {{ $.Type | goUsage }}) Subscribe{{. | goIDUpper}}(
         ctx {{goQual "context.Context"}},
-        cb func(message {{ goPkg (deref .).InType}}{{ goIDUpper .}}IncomingMessage),
+        cb func(message {{ goPkg (deref .).InType}}{{ goIDUpper .}}Sender),
     ) (err error) {
         subCtx, cancel := {{goQual "context.WithCancelCause"}}(ctx)
         defer cancel(nil)

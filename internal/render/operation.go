@@ -31,8 +31,11 @@ type Operation struct {
 	// BindingsPromise is a promise to operation bindings contents. Nil if no bindings are set.
 	BindingsPromise *lang.Promise[*Bindings]
 
-	// MessagesPromises is a list of messages listed in the operation definition in document.
+	// MessagesPromises is a list of promises to messages that are bound to this operation.
 	MessagesPromises []*lang.Promise[*Message]
+
+	// UseAllChannelMessages is true if operation is bound to all messages in the channel (i.e. when messages field is not set).
+	UseAllChannelMessages bool
 
 	// ProtoOperations is a list of prebuilt ProtoOperation objects for each supported protocol
 	ProtoOperations []*ProtoOperation
@@ -48,7 +51,8 @@ func (o *Operation) Bindings() *Bindings {
 	return o.BindingsPromise.T()
 }
 
-// Messages returns a list of Message or lang.Ref to Message, that are listed in the operation definition in the document.
+// Messages returns a list of messages defined for this operation. Returns empty list if no messages are set in
+// the operation, to get the bound messages use [BoundMessages] method.
 func (o *Operation) Messages() []common.Artifact {
 	return lo.Map(o.MessagesPromises, func(prm *lang.Promise[*Message], _ int) common.Artifact { return prm.T() })
 }
@@ -65,8 +69,13 @@ func (o *Operation) SelectProtoObject(protocol string) common.Artifact {
 	return nil
 }
 
-// BoundMessages returns a list of Message that are bound to this operation.
+// BoundMessages returns a list of Message that are bound to this operation. Returns all messages in the channel
+// if no messages are set in the operation.
 func (o *Operation) BoundMessages() []common.Artifact {
+	if o.UseAllChannelMessages {
+		return o.Channel().Messages()
+	}
+
 	return o.Messages()
 }
 

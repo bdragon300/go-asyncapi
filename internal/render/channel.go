@@ -7,7 +7,6 @@ import (
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
-	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 )
 
@@ -39,7 +38,8 @@ type Channel struct {
 	// ParametersType is a Go struct for channel parameters. Nil if no parameters are set.
 	ParametersType *lang.GoStruct
 
-	// MessagesRefs is a list of messages listed in the channel definition in document.
+	// MessagesRefs is a list of references to messages that this channel is bound with, both for ones referenced
+	// by $ref or inlined definitions.
 	MessagesRefs []*lang.Ref
 
 	// AllActiveOperationsPromise contains all active operations in the document.
@@ -111,13 +111,8 @@ func (c *Channel) BoundServers() []common.Artifact {
 
 // BoundMessages returns a list of Message or lang.Ref to Message objects that this channel is bound with.
 func (c *Channel) BoundMessages() []common.Artifact {
-	ops := c.BoundOperations()
-	opMsgs := lo.FlatMap(ops, func(o common.Artifact, _ int) []common.Artifact {
-		op := common.DerefArtifact(o).(*Operation)
-		return op.Messages()
-	})
-	r := utils.WithoutBy(c.Messages(), opMsgs, common.CheckSameArtifacts)
-	return r
+	res := c.Messages()
+	return res
 }
 
 // BoundOperations returns a list of Operation or lang.Ref to Operation objects that this channel is bound with.

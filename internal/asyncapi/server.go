@@ -45,7 +45,7 @@ func (s Server) build(ctx *compile.Context, serverKey string) (common.Artifact, 
 		return &render.Server{Dummy: true}, nil
 	}
 	if s.Ref != "" {
-		// Make a promise selectable if it defined in `servers` section
+		// Make a server selectable if it defined in `servers` section
 		return registerRef(ctx, s.Ref, serverKey, lo.Ternary(isSelectable, lo.ToPtr(true), nil)), nil
 	}
 

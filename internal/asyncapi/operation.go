@@ -29,7 +29,7 @@ type Operation struct {
 	ExternalDocs *ExternalDocumentation `json:"externalDocs" yaml:"externalDocs"`
 	Bindings     *OperationBinding      `json:"bindings" yaml:"bindings"`
 	Traits       []OperationTrait       `json:"traits" yaml:"traits"`
-	Messages     []StandaloneRef        `json:"messages" yaml:"messages"`
+	Messages     *[]StandaloneRef       `json:"messages" yaml:"messages"`
 	Reply        *OperationReply        `json:"reply" yaml:"reply"`
 
 	XIgnore bool `json:"x-ignore" yaml:"x-ignore"`
@@ -57,7 +57,7 @@ func (o Operation) build(ctx *compile.Context, operationKey string, flags map[co
 
 	_, isSelectable := flags[common.SchemaTagSelectable]
 	if o.Ref != "" {
-		// Make a promise selectable if it defined in `operations` section
+		// Make an operation selectable if it defined in `operations` section
 		return registerRef(ctx, o.Ref, operationKey, lo.Ternary(isSelectable, lo.ToPtr(true), nil)), nil
 	}
 
@@ -92,12 +92,16 @@ func (o Operation) build(ctx *compile.Context, operationKey string, flags map[co
 		}
 	}
 
-	for _, message := range o.Messages {
-		ctx.Logger.Trace("Operation message", "ref", message.Ref)
-
-		prm := lang.NewPromise[*render.Message](message.Ref, nil)
-		ctx.PutPromise(prm)
-		res.MessagesPromises = append(res.MessagesPromises, prm)
+	if o.Messages != nil {
+		for _, message := range *o.Messages {
+			ctx.Logger.Trace("Operation message", "ref", message.Ref)
+			prm := lang.NewPromise[*render.Message](message.Ref, nil)
+			ctx.PutPromise(prm)
+			res.MessagesPromises = append(res.MessagesPromises, prm)
+		}
+	} else {
+		ctx.Logger.Trace("Using all messages in the channel for this operation")
+		res.UseAllChannelMessages = true
 	}
 
 	// Build protocol-specific operations for all supported protocols
