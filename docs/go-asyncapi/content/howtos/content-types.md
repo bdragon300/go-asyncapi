@@ -42,7 +42,7 @@ For example:
 ```gotemplate
 {{ define "code/proto/mime/messageDecoder/text/plain" }}
 var b {{ goQual "strings.Builder" }}
-if err := {{ goQual "io.Copy" }}(&b, envelope); err != nil {
+if err := {{ goQual "io.Copy" }}(&b, r); err != nil {
     return nil, fmt.Errorf("read message: %w", err)
 }
 m.Payload = b.String()
@@ -50,7 +50,7 @@ m.Payload = b.String()
 
 {{ define "code/proto/mime/messageEncoder/text/plain" }}
 r := {{ goQual "strings.NewReader" }}(m.Payload)
-if _, err := {{ goQual "io.Copy" }}(envelope, r); err != nil {
+if _, err := {{ goQual "io.Copy" }}(w, r); err != nil {
     return fmt.Errorf("write message: %w", err)
 }
 {{ end }}
