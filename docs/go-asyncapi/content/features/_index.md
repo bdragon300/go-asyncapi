@@ -129,6 +129,8 @@ The following content types (MIME types) has the default implementation in the g
 - application/json: [encoding/json](https://pkg.go.dev/encoding/json)
 - application/yaml, application/x-yaml, text/yaml, text/x-yaml, text/vnd.yaml: [gopkg.in/yaml.v3](https://gopkg.in/yaml.v3)
 
+You also can add any content type and its encoder/decoder code in templates, [see more]({{< relref "/howtos/content-types#adding-a-new-content-type" >}}).
+
 ## Infrastructure as code (IaC) generation
 
 The `go-asyncapi` tool supports the generation of the following files formats:
