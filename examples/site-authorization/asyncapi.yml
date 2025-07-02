@@ -1,0 +1,99 @@
+asyncapi: 3.0.0
+info:
+  title: Authorization service events
+  version: 1.0.0
+defaultContentType: application/json
+
+servers:
+  test-server:
+    host: 'example.com:9092'
+    protocol: kafka
+    description: Main Kafka broker
+
+channels:
+  authChannel:
+    address: 'authChannel-{environmentName}'
+    description: Channel for authentication requests and responses.
+    messages:
+      authRequest:
+        $ref: '#/components/messages/authRequestMsg'
+      authResponse:
+        $ref: '#/components/messages/authResponseMsg'
+    parameters:
+      environmentName:
+        description: The name of the environment for which the authentication is being requested.
+        enum:
+          - development
+          - staging
+          - production
+
+operations:
+  authRequestOperation:
+    description: Operation for sending authentication requests.
+    action: send
+    channel:
+      $ref: "#/channels/authChannel"
+    messages:
+      - $ref: '#/channels/authChannel/messages/authRequest'
+  authResponseOperation:
+    description: Operation for receiving authentication responses.
+    action: receive
+    channel:
+      $ref: "#/channels/authChannel"
+    messages:
+      - $ref: '#/channels/authChannel/messages/authResponse'
+
+components:
+  messages:
+    authRequestMsg:
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/authEvent'
+      correlationId:
+        $ref: '#/components/correlationIds/authRequestResponseCorrelation'
+    authResponseMsg:
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/authEvent'
+      correlationId:
+        $ref: '#/components/correlationIds/authRequestResponseCorrelation'
+
+  schemas:
+    authEvent:
+      type: object
+      properties:
+        eventType:
+          type: string
+          description: The type of the event
+          enum:
+            - AuthRequest
+            - AuthResponse
+        id:
+          type: integer
+          description: Unique identifier for the event.
+        authRequest:
+          $ref: '#/components/schemas/authRequest'
+        authResponse:
+          $ref: '#/components/schemas/authResponse'
+    authRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          description: The username of the user requesting authentication.
+        password:
+          type: string
+          description: The password of the user requesting authentication.
+    authResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates whether the authentication was successful.
+        message:
+          type: string
+          description: A message providing additional information about the authentication result.
+
+  correlationIds:
+    authRequestResponseCorrelation:
+      location: "$message.payload#/id"
