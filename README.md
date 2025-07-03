@@ -21,7 +21,7 @@
 
 Also, `go-asyncapi` contains the built-in **protocol implementations** based on popular libraries, allows the **result customization** using Go templates and more.
 
-See the [Features](https://bdragon300.github.io/go-asyncapi/docs/features) page for more details.
+See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for more details.
 
 ## Supported protocols
 
@@ -108,7 +108,7 @@ Instead, `go-asyncapi`:
 
 * produces framework-agnostic code.
 * supports more
-  [protocols](https://bdragon300.github.io/go-asyncapi/docs/features#protocols) and more specific AsyncAPI entities, such as
+  [protocols](https://bdragon300.github.io/go-asyncapi/features#protocols) and more specific AsyncAPI entities, such as
   bindings, correlation ids, server variables, etc.
 * has built-in clients for all supported protocols based on popular libraries, that may be used in the generated code.
 * is written in Go, so no need to have node.js or Docker or similar tools to run the generator.
