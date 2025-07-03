@@ -1,0 +1,4 @@
+github.com/bdragon300/go-asyncapi/run v0.0.0-20240506132131-c1a9e9fbbe09 h1:5Kyz8PdFzPZYKmdxnfePtJ2Um7VDgT4P4xiyq3CiOnU=
+github.com/bdragon300/go-asyncapi/run v0.0.0-20240506132131-c1a9e9fbbe09/go.mod h1:DSG1ADgER0phh/2cvHa9j9ps7MtH0lOAilwt1wRej80=
+github.com/bdragon300/go-asyncapi/run v0.0.0-20250702083337-379e14e4caef h1:xteUv7livjnvoxo+W5m8SV55/CcBJKPPLkh51NLB0vo=
+github.com/bdragon300/go-asyncapi/run v0.0.0-20250702083337-379e14e4caef/go.mod h1:mC7SBVvP3/ycNbGNfnar+0zBboxJzn8VdmqnfPR9x+E=

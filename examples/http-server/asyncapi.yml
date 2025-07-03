@@ -1,0 +1,40 @@
+asyncapi: 3.0.0
+info:
+  title: HTTP server
+  version: 1.0.0
+defaultContentType: application/json
+
+servers:
+  test-server:
+    host: 'example.com'
+    protocol: http
+    description: Test HTTP server
+
+channels:
+  echoChannel:
+    address: "/echo"
+    description: Channel for echoing messages.
+    messages:
+      serverRequest:
+        payload:
+          $ref: '#/components/schemas/echoRequest'
+      serverResponse:
+        payload:
+          $ref: '#/components/schemas/echoResponse'
+
+components:
+  schemas:
+    echoRequest:
+      type: object
+      properties:
+        foo:
+          type: string
+          description: A string to echo back.
+    echoResponse:
+      type: object
+      properties:
+        type:
+          type: string
+          description: The type of the message.
+        message:
+          $ref: '#/components/schemas/echoRequest'
