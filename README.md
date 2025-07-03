@@ -13,13 +13,13 @@
 
 ## Core features
 
-| Feature                                                                                                                                                              | Command              |
-|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|
-| <img src="https://bdragon300.github.io/go-asyncapi/images/go-logo.svg" style="height: 2em; vertical-align: middle"> Boilerplate code generation                      | `go-asyncapi code`   |
-| <img src="https://bdragon300.github.io/go-asyncapi/images/terminal-icon.svg" style="height: 2em; vertical-align: middle"> Building the no-code client                | `go-asyncapi client` |
-| <img src="https://bdragon300.github.io/go-asyncapi/images/docker-file.svg" style="height: 2em; vertical-align: middle"> Infrastructure-As-Code definition generation | `go-asyncapi infra`  |
+|                                                                                                                                                                                  | Feature                                           | Command                |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------|------------------------|
+| <img src="https://bdragon300.github.io/go-asyncapi/images/go-logo.svg" style="height: 3em; vertical-align: middle">       | Generating the Go boilerplate code                | `go-asyncapi code`     |
+| <img src="https://bdragon300.github.io/go-asyncapi/images/terminal-icon.svg" style="height: 3em; vertical-align: middle"> | Building the no-code CLI client                   | `go-asyncapi client`   |
+| <img src="https://bdragon300.github.io/go-asyncapi/images/docker.svg" style="height: 3em; vertical-align: middle">                                            | Generating the Infrastructure-As-Code definitions | `go-asyncapi infra`    |
 
-Also, built-in protocol implementations based on popular libraries, customization using Go templates and more.
+Also, `go-asyncapi` contains the built-in **protocol implementations** based on popular libraries, allows the **result customization** using Go templates and more.
 
 See the [Features](https://bdragon300.github.io/go-asyncapi/docs/features) page for more details.
 
