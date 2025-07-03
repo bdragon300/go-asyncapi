@@ -35,7 +35,7 @@ func RenderInfra(queue []RenderQueueItem, activeProtocols []string, outputFileNa
 	}
 	mng.Commit()
 
-	logger.Info("Infra code rendered", "file", outputFileName)
+	logger.Info("Infra file rendered", "file", outputFileName)
 
 	return nil
 }

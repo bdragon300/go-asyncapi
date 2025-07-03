@@ -117,11 +117,11 @@ If both `onlyPublish` and `onlySubscribe` are `false` or omitted, the tool gener
 
 ## Infra
 
-| Attribute        | Type                          | Default                 | Description                                                                    |
-|------------------|-------------------------------|-------------------------|--------------------------------------------------------------------------------|
-| servers          | [][InfraServer](#infraserver) |                         | Additional arguments for AsyncAPI server entities, used to generate the result |
-| format           | string                        | `docker`                | Output file format                                                             |
-| outputFile       | string                        | `./docker-compose.yaml` | Output file name                                                               |
+| Attribute  | Type                          | Default                 | Description                                                                    |
+|------------|-------------------------------|-------------------------|--------------------------------------------------------------------------------|
+| servers    | [][InfraServer](#infraserver) |                         | Additional arguments for AsyncAPI server entities, used to generate the result |
+| engine     | string                        | `docker`                | Target infra engine                                                            |
+| outputFile | string                        | `./docker-compose.yaml` | Output file name                                                               |
 
 ## InfraServer
 

@@ -84,7 +84,7 @@ type (
 
 	toolConfigInfra struct {
 		Servers    []toolConfigInfraServer `yaml:"servers"` // TODO: rename to "serversInfo"?
-		Format     string                  `yaml:"format"`  // TODO: rename to "technology"?
+		Engine     string                  `yaml:"engine"`
 		OutputFile string                  `yaml:"outputFile"`
 	}
 
@@ -156,7 +156,7 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 	res.Client.OutputSourceFile = coalesce(userConf.Client.OutputSourceFile, defaultConf.Client.OutputSourceFile)
 	res.Client.KeepSource = coalesce(userConf.Client.KeepSource, defaultConf.Client.KeepSource)
 
-	res.Infra.Format = coalesce(userConf.Infra.Format, defaultConf.Infra.Format)
+	res.Infra.Engine = coalesce(userConf.Infra.Engine, defaultConf.Infra.Engine)
 	res.Infra.OutputFile = coalesce(userConf.Infra.OutputFile, defaultConf.Infra.OutputFile)
 	res.Infra.Servers = defaultConf.Infra.Servers
 	// *Replace* infra.servers

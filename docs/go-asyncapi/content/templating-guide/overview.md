@@ -50,7 +50,7 @@ A part of artifacts represent the complex entities (e.g. channel) and produce th
 Others are simpler and represent a simple Go type (e.g. jsonschema object), they additionally satisfy the 
 `common.GolangType` interface.
 
-The templates goal is to render the artifacts into the desired output format: Go code, IaC configuration, etc.
+The templates goal is to render the artifacts into the desired output type: Go code, IaC configuration, etc.
 For this, `go-asyncapi` executes the root template separately for every artifact with `.Selected == true` and 
 merges the results into a files and packages according the [code layout]({{< relref "/howtos/code-layout" >}}).
 

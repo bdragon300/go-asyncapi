@@ -24,9 +24,9 @@ import (
 type InfraCmd struct {
 	Document string `arg:"required,positional" help:"AsyncAPI document file or url" placeholder:"FILE"`
 
-	Format     string `arg:"-f,--format" help:"Output file format" placeholder:"NAME"`
+	Engine     string `arg:"-e,--engine" help:"Target infra engine" placeholder:"NAME"`
 	ConfigFile string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"FILE"`
-	OutputFile string `arg:"-o,--output" help:"Output file path or '-' to print to stdout. If omitted, the file name depends on selected format" placeholder:"FILE"`
+	OutputFile string `arg:"-o,--output" help:"Output file path or '-' to print to stdout. If omitted, the file name depends on selected engine" placeholder:"FILE"`
 
 	TemplateDir      string        `arg:"-T,--template-dir" help:"User templates directory" placeholder:"DIR"`
 	AllowRemoteRefs  bool          `arg:"--allow-remote-refs" help:"Allow locator to fetch the files from remote $ref URLs"`
@@ -132,13 +132,13 @@ func writeToFile(fileName string, buf io.Reader) error {
 func cliInfraMergeConfig(globalConfig toolConfig, cmd *InfraCmd) (toolConfig, error) {
 	res := globalConfig
 
-	res.Infra.Format = coalesce(cmd.Format, globalConfig.Infra.Format)
+	res.Infra.Engine = coalesce(cmd.Engine, globalConfig.Infra.Engine)
 	var outputFile string
-	switch res.Infra.Format {
+	switch res.Infra.Engine {
 	case "docker":
 		outputFile = "./docker-compose.yaml"
 	default:
-		return res, fmt.Errorf("unknown file format: %s", cmd.Format)
+		return res, fmt.Errorf("unknown engine: %s", cmd.Engine)
 	}
 	res.Infra.OutputFile = coalesce(cmd.OutputFile, outputFile)
 

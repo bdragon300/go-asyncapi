@@ -21,5 +21,5 @@ client:
   goModTemplate: go.mod.tmpl
 
 infra:
-  format: docker
+  engine: docker
   outputFile: ./docker-compose.yaml

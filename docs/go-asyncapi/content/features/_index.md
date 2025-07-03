@@ -18,7 +18,7 @@ description = 'asyncapi-go features overview'
 - Generating the no-code [CLI client executable]({{< relref "/client-application-generation" >}}) with basic send-receive 
   functionality
 - Generating the [infrastructure-as-code (IaC) files]({{< relref "/infrastructure-files-generation" >}}) in 
-  [supported formats](#infrastructure-as-code-iac-generation).
+  [supported engines](#infrastructure-as-code-iac-generation).
 - Go code generation
   - [Implementation-agnostic code]({{< relref "/code-generation/code-structure" >}})
   - Built-in ready to use [implementations]({{< relref "/protocols-and-implementations" >}}) based on most 
@@ -133,6 +133,6 @@ You also can add any content type and its encoder/decoder code in templates, [se
 
 ## Infrastructure as code (IaC) generation
 
-The `go-asyncapi` tool supports the generation of the following files formats:
+The `go-asyncapi` tool supports the generation for the following engines:
 
 - [docker-compose](https://docs.docker.com/compose/)
