@@ -1,34 +1,22 @@
 import (
 	"context"
-
 	runHttp "github.com/bdragon300/go-asyncapi/run/http"
 )
-
-func NewSubscriber(chb *runHttp.ChannelBindings, opb *runHttp.OperationBindings) *Subscriber {
-	return &Subscriber{
-		channelBindings: chb,
-		operationBindings: opb,
-	}
-}
 
 type Subscriber struct {
 	channelBindings *runHttp.ChannelBindings
 	operationBindings *runHttp.OperationBindings
-	envelopes chan runHttp.EnvelopeReader
+	callbacks *roundRobin[subscriberFunc]
 }
 
 func (s *Subscriber) Receive(ctx context.Context, cb func(envelope runHttp.EnvelopeReader)) error {
-	for {
-		select {
-		case v, ok := <-s.envelopes:
-			if !ok {
-				return context.Canceled  // Subscriber has been closed
-			}
-			cb(v)
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
+	element := s.callbacks.Append(cb)
+	defer func() {
+		s.callbacks.Remove(element)
+	}()
+
+	<-ctx.Done()
+	return ctx.Err()
 }
 
 func (s *Subscriber) Close() error {

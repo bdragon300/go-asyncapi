@@ -1,4 +1,5 @@
 import (
+	"container/list"
 	"context"
 	runHttp "github.com/bdragon300/go-asyncapi/run/http"
 	"net/http"
@@ -10,16 +11,18 @@ func NewConsumer(bindings *runHttp.ServerBindings) *ConsumeClient {
 	return &ConsumeClient{
 		bindings:    bindings,
 		mu:          &sync.RWMutex{},
-		subscribers: make(map[string]chan runHttp.EnvelopeReader),
+		subscribers: make(map[string]*roundRobin[subscriberFunc]),
 	}
 }
+
+type subscriberFunc func(envelope runHttp.EnvelopeReader)
 
 type ConsumeClient struct {
 	http.ServeMux
 	bindings    *runHttp.ServerBindings
 	mu          *sync.RWMutex
-	// subscribers are envelope queues by channel name
-	subscribers map[string]chan runHttp.EnvelopeReader
+	// subscribers are callbacks list by channel name.
+	subscribers map[string]*roundRobin[subscriberFunc]
 }
 
 func (c *ConsumeClient) Subscriber(_ context.Context, address string, chb *runHttp.ChannelBindings, opb *runHttp.OperationBindings) (runHttp.Subscriber, error) {
@@ -27,14 +30,18 @@ func (c *ConsumeClient) Subscriber(_ context.Context, address string, chb *runHt
 	defer c.mu.Unlock()
 
 	c.ensureChannel(address, opb)
-	subscriber := NewSubscriber(chb, opb)
+	subscriber := &Subscriber{
+		channelBindings:   chb,
+		operationBindings: opb,
+		callbacks:         c.subscribers[address],
+	}
 
 	return subscriber, nil
 }
 
 func (c *ConsumeClient) ensureChannel(channelName string, opb *runHttp.OperationBindings) {
 	if _, ok := c.subscribers[channelName]; !ok {
-		c.subscribers[channelName] = make(chan runHttp.EnvelopeReader)
+		c.subscribers[channelName] = newRoundRobin[subscriberFunc]()
 		c.HandleFunc(channelName, func(w http.ResponseWriter, req *http.Request) {
 			if opb != nil {
 				needMethod := opb.Method
@@ -50,7 +57,79 @@ func (c *ConsumeClient) ensureChannel(channelName string, opb *runHttp.Operation
 				http.Error(w, "channel not found", http.StatusNotFound)
 				return
 			}
-			c.subscribers[channelName] <- NewEnvelopeIn(req, w)
+			cb, ok := c.subscribers[channelName].Next()
+			if !ok {
+				http.Error(w, "no subscribers", http.StatusServiceUnavailable)
+				return
+			}
+			cb(NewEnvelopeIn(req, w))
 		})
+	}
+}
+
+func newRoundRobin[T any]() *roundRobin[T] {
+	return &roundRobin[T]{
+		mu:    &sync.Mutex{},
+		next:  nil,
+		items: list.New(),
+	}
+}
+
+type roundRobin[T any] struct {
+	mu *sync.Mutex
+	next  *list.Element
+	items *list.List
+}
+
+func (r *roundRobin[T]) Next() (T, bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if r.items.Len() == 0 || r.next == nil {
+		var zero T
+		return zero, false
+	}
+
+	r.next = r.next.Next()
+	if r.next == nil {
+		r.next = r.items.Front()
+	}
+
+	return r.next.Value.(T), true
+}
+
+func (r *roundRobin[T]) Append(item T) *list.Element {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	element := r.items.PushBack(item)
+	if r.next == nil {
+		r.next = element
+	}
+
+	return element
+}
+
+func (r *roundRobin[T]) Remove(element *list.Element) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if element == nil || r.items.Len() == 0 {
+		return
+	}
+
+	if r.next == element {
+		if element.Next() != nil {
+			r.next = element.Next()
+		} else if element.Prev() != nil {
+			r.next = element.Prev()
+		} else {
+			r.next = nil
+		}
+	}
+
+	r.items.Remove(element)
+	if r.items.Len() == 0 {
+		r.next = nil
 	}
 }
