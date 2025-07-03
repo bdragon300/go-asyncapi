@@ -13,14 +13,27 @@
 
 ## Core features
 
-* Support the majority of the AsyncAPI entities and jsonschema
-* Generating the boilerplate code for your project
-* Building the no-code client application (e.g. for testing purposes)
-* Generating the server infrastructure setup files (e.g. docker-compose files)
-* Built-in plugged-in protocol implementations based on popular libraries
-* Customization using Go templates
+| Feature                                                                                                                                                              | Command              |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|
+| <img src="https://bdragon300.github.io/go-asyncapi/images/go-logo.svg" style="height: 2em; vertical-align: middle"> Boilerplate code generation                      | `go-asyncapi code`   |
+| <img src="https://bdragon300.github.io/go-asyncapi/images/terminal-icon.svg" style="height: 2em; vertical-align: middle"> Building the no-code client                | `go-asyncapi client` |
+| <img src="https://bdragon300.github.io/go-asyncapi/images/docker-file.svg" style="height: 2em; vertical-align: middle"> Infrastructure-As-Code definition generation | `go-asyncapi infra`  |
 
-For more details, see the [Features](https://bdragon300.github.io/go-asyncapi/docs/features) page.
+Also, built-in protocol implementations based on popular libraries, customization using Go templates and more.
+
+See the [Features](https://bdragon300.github.io/go-asyncapi/docs/features) page for more details.
+
+## Supported protocols
+
+* <img alt="AMQP" src="https://bdragon300.github.io/go-asyncapi/images/amqp.svg" style="height: 1.5em"> AMQP
+* <img alt="Apache Kafka" src="https://bdragon300.github.io/go-asyncapi/images/kafka.svg" style="height: 1.5em"> Apache Kafka
+* <img alt="HTTP" src="https://bdragon300.github.io/go-asyncapi/images/http-small.png" style="height: 1.5em"> HTTP
+* <img alt="IP RAW Sockets" src="https://bdragon300.github.io/go-asyncapi/images/ip.png" style="height: 1.5em"> IP RAW Sockets
+* <img alt="MQTT" src="https://bdragon300.github.io/go-asyncapi/images/mqtt.svg" style="height: 1.5em"> MQTT
+* <img alt="Redis" src="https://bdragon300.github.io/go-asyncapi/images/redis.svg" style="height: 1.5em"> Redis
+* <img alt="TCP" src="https://bdragon300.github.io/go-asyncapi/images/tcpudp.svg" style="height: 1.5em"> TCP
+* <img alt="UDP" src="https://bdragon300.github.io/go-asyncapi/images/tcpudp.svg" style="height: 1.5em"> UDP
+* <img alt="Websocket" src="https://bdragon300.github.io/go-asyncapi/images/websocket.svg" style="height: 1.5em"> Websocket
 
 ## Description
 
