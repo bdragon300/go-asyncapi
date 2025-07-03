@@ -65,8 +65,8 @@ To make it work, create a configuration file `go-asyncapi.yaml` in with the foll
 
 ```yaml
 infra:
-  servers:
-    - name: production
+  serverOpts:
+    - serverName: production
       variables:
         port: 1883
 ```

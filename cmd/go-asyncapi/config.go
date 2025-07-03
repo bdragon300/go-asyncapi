@@ -83,14 +83,14 @@ type (
 	}
 
 	toolConfigInfra struct {
-		Servers    []toolConfigInfraServer `yaml:"servers"` // TODO: rename to "serversInfo"?
-		Engine     string                  `yaml:"engine"`
-		OutputFile string                  `yaml:"outputFile"`
+		ServerOpts []toolConfigInfraServerOpt `yaml:"serverOpts"`
+		Engine     string                     `yaml:"engine"`
+		OutputFile string                     `yaml:"outputFile"`
 	}
 
-	toolConfigInfraServer struct {
-		Name      string                                                                             `yaml:"name"` // TODO: make required
-		Variables types.Union2[types.OrderedMap[string, string], []types.OrderedMap[string, string]] `yaml:"variables"`
+	toolConfigInfraServerOpt struct {
+		ServerName string                                                                             `yaml:"serverName"` // TODO: make required
+		Variables  types.Union2[types.OrderedMap[string, string], []types.OrderedMap[string, string]] `yaml:"variables"`
 	}
 )
 
@@ -158,10 +158,10 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 
 	res.Infra.Engine = coalesce(userConf.Infra.Engine, defaultConf.Infra.Engine)
 	res.Infra.OutputFile = coalesce(userConf.Infra.OutputFile, defaultConf.Infra.OutputFile)
-	res.Infra.Servers = defaultConf.Infra.Servers
+	res.Infra.ServerOpts = defaultConf.Infra.ServerOpts
 	// *Replace* infra.servers
-	if len(userConf.Infra.Servers) > 0 {
-		res.Infra.Servers = userConf.Infra.Servers
+	if len(userConf.Infra.ServerOpts) > 0 {
+		res.Infra.ServerOpts = userConf.Infra.ServerOpts
 	}
 
 	return res

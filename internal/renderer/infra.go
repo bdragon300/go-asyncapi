@@ -10,7 +10,7 @@ import (
 	"github.com/samber/lo"
 )
 
-func RenderInfra(queue []RenderQueueItem, activeProtocols []string, outputFileName string, serverConfig []common.ConfigInfraServer, mng *manager.TemplateRenderManager) error {
+func RenderInfra(queue []RenderQueueItem, activeProtocols []string, outputFileName string, serverConfig []common.ConfigInfraServerOpt, mng *manager.TemplateRenderManager) error {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
 	objects := lo.Map(queue, func(item RenderQueueItem, _ int) common.Artifact {

@@ -117,18 +117,18 @@ If both `onlyPublish` and `onlySubscribe` are `false` or omitted, the tool gener
 
 ## Infra
 
-| Attribute  | Type                          | Default                 | Description                                                                    |
-|------------|-------------------------------|-------------------------|--------------------------------------------------------------------------------|
-| servers    | [][InfraServer](#infraserver) |                         | Additional arguments for AsyncAPI server entities, used to generate the result |
-| engine     | string                        | `docker`                | Target infra engine                                                            |
-| outputFile | string                        | `./docker-compose.yaml` | Output file name                                                               |
+| Attribute  | Type                                | Default                 | Description                                                              |
+|------------|-------------------------------------|-------------------------|--------------------------------------------------------------------------|
+| serverOpts | [][InfraServerOpt](#infraserveropt) |                         | Additional options for servers generation, such as ServerVariable values |
+| engine     | string                              | `docker`                | Target infra engine                                                      |
+| outputFile | string                              | `./docker-compose.yaml` | Output file name                                                         |
 
-## InfraServer
+## InfraServerOpt
 
-| Attribute        | Type                                   | Default | Description                                                                                                                                              |
-|------------------|----------------------------------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| name             | string                                 |         | **Required**. Server name                                                                                                                                |
-| variables        | map[string]string, []map[string]string |         | [Server variables](https://www.asyncapi.com/docs/concepts/asyncapi-document/variable-url) values. May be a key-value object or list of key-value objects |
+| Attribute  | Type                                   | Default | Description                                                                                                                                              |
+|------------|----------------------------------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| serverName | string                                 |         | **Required**. Server name (key in document)                                                                                                              |
+| variables  | map[string]string, []map[string]string |         | [Server variables](https://www.asyncapi.com/docs/concepts/asyncapi-document/variable-url) values. May be a key-value object or list of key-value objects |
 
 # Notes
 

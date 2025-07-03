@@ -34,8 +34,8 @@ type (
 		ReusePackagePath string
 	}
 
-	ConfigInfraServer struct {
-		Name           string
+	ConfigInfraServerOpt struct {
+		ServerName     string
 		VariableGroups [][]ConfigServerVariable
 	}
 

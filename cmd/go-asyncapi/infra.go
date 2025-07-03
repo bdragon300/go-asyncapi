@@ -69,7 +69,7 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	logger.Debug("Renders protocols", "value", activeProtocols)
 
 	// TODO: refactor RenderOpts -- it almost not needed here, it's related to codegen.
-	//       Also consider to include add ConfigInfraServer (replace RenderOpts to interface in manager?)
+	//       Also consider to include add ConfigInfraServerOpt (replace RenderOpts to interface in manager?)
 	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Code.TargetDir, false, nil)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
@@ -93,9 +93,9 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	logger.Debug("Select objects")
 	renderQueue := selectArtifacts(allObjects, renderOpts.Layout)
 	// TODO: check if all server variables are set in config, error if not
-	serverVariables := getInfraServerConfig(cmdConfig.Infra.Servers)
+	serverConfig := getInfraServerConfig(cmdConfig.Infra.ServerOpts)
 
-	if err = renderer.RenderInfra(renderQueue, activeProtocols, cmdConfig.Infra.OutputFile, serverVariables, renderManager); err != nil {
+	if err = renderer.RenderInfra(renderQueue, activeProtocols, cmdConfig.Infra.OutputFile, serverConfig, renderManager); err != nil {
 		return fmt.Errorf("render infra: %w", err)
 	}
 
@@ -152,24 +152,24 @@ func cliInfraMergeConfig(globalConfig toolConfig, cmd *InfraCmd) (toolConfig, er
 	return res, nil
 }
 
-func getInfraServerConfig(servers []toolConfigInfraServer) []common.ConfigInfraServer {
-	res := make([]common.ConfigInfraServer, 0)
+func getInfraServerConfig(opts []toolConfigInfraServerOpt) []common.ConfigInfraServerOpt {
+	res := make([]common.ConfigInfraServerOpt, 0)
 
-	for _, server := range servers {
-		switch server.Variables.Selector {
+	for _, opt := range opts {
+		switch opt.Variables.Selector {
 		case 0:
-			res = append(res, common.ConfigInfraServer{
-				Name: server.Name,
+			res = append(res, common.ConfigInfraServerOpt{
+				ServerName: opt.ServerName,
 				VariableGroups: [][]common.ConfigServerVariable{
-					lo.Map(server.Variables.V0.Entries(), func(item lo.Entry[string, string], _ int) common.ConfigServerVariable {
+					lo.Map(opt.Variables.V0.Entries(), func(item lo.Entry[string, string], _ int) common.ConfigServerVariable {
 						return common.ConfigServerVariable{Name: item.Key, Value: item.Value}
 					}),
 				},
 			})
 		case 1:
-			res = append(res, common.ConfigInfraServer{
-				Name: server.Name,
-				VariableGroups: lo.Map(server.Variables.V1, func(item types.OrderedMap[string, string], _ int) []common.ConfigServerVariable {
+			res = append(res, common.ConfigInfraServerOpt{
+				ServerName: opt.ServerName,
+				VariableGroups: lo.Map(opt.Variables.V1, func(item types.OrderedMap[string, string], _ int) []common.ConfigServerVariable {
 					return lo.Map(item.Entries(), func(item lo.Entry[string, string], _ int) common.ConfigServerVariable {
 						return common.ConfigServerVariable{Name: item.Key, Value: item.Value}
 					})

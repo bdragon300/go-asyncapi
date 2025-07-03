@@ -55,7 +55,7 @@ type ClientAppTemplateContext struct {
 // InfraTemplateContext is a context that is passed to the infrastructure templates.
 type InfraTemplateContext struct {
 	// ServerConfig is servers tool config for infra generation process
-	ServerConfig []common.ConfigInfraServer
+	ServerConfig []common.ConfigInfraServerOpt
 	// Objects is rendering objects queue.
 	Objects []common.Artifact
 	// ActiveProtocols is a list of supported protocols, that are used in AsyncAPI document.
@@ -64,8 +64,8 @@ type InfraTemplateContext struct {
 
 // ServerVariableGroups returns the server variables that are set in tool's config filtered by the server name.
 func (i InfraTemplateContext) ServerVariableGroups(serverName string) [][]common.ConfigServerVariable {
-	res, ok := lo.Find(i.ServerConfig, func(v common.ConfigInfraServer) bool {
-		return v.Name == serverName
+	res, ok := lo.Find(i.ServerConfig, func(v common.ConfigInfraServerOpt) bool {
+		return v.ServerName == serverName
 	})
 	if !ok {
 		return nil
