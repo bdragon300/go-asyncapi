@@ -13,11 +13,11 @@
 
 ## Core features
 
-|                                                                                                                           | Feature                                           | Command                |
-|---------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------|------------------------|
-| <img src="https://bdragon300.github.io/go-asyncapi/images/go-logo.svg" style="height: 3em; vertical-align: middle">       | Generating the Go boilerplate code                | `go-asyncapi code`     |
-| <img src="https://bdragon300.github.io/go-asyncapi/images/terminal-icon.svg" style="height: 3em; vertical-align: middle"> | Building the CLI client without writing the code  | `go-asyncapi client`   |
-| <img src="https://bdragon300.github.io/go-asyncapi/images/docker.svg" style="height: 3em; vertical-align: middle">        | Generating the Infrastructure-As-Code definitions | `go-asyncapi infra`    |
+|                                                                                                                           | Feature                                                 | Command                |
+|---------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------|------------------------|
+| <img src="https://bdragon300.github.io/go-asyncapi/images/go-logo.svg" style="height: 3em; vertical-align: middle">       | Generating the Go boilerplate code                      | `go-asyncapi code`     |
+| <img src="https://bdragon300.github.io/go-asyncapi/images/terminal-icon.svg" style="height: 3em; vertical-align: middle"> | Building the CLI client without writing the code        | `go-asyncapi client`   |
+| <img src="https://bdragon300.github.io/go-asyncapi/images/docker.svg" style="height: 3em; vertical-align: middle">        | Generating the Infrastructure-As-Code (IaC) definitions | `go-asyncapi infra`    |
 
 Also, `go-asyncapi` contains the built-in **protocol implementations** based on popular libraries, allows the **result customization** using Go templates and more.
 
