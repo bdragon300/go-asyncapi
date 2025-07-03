@@ -58,7 +58,7 @@ Basically, you need the `Producer`/`Consumer`, that opens a connection to the se
 `Publisher`/`Subscriber`. Also, you need the envelope type, that represents a protocol-specific outgoing (`EnvelopeWriter`)
 and incoming (`EnvelopeReader`) message.
 
-See the [examples](https://github.com/bdragon300/go-asyncapi/tree/master/examples) directory for example Implementation.
+See the "implementations" directory in `go-asyncapi` repository for examples.
 Also, see [code structure]({{< relref "/code-generation/code-structure" >}}) for the details.
 
 ### Customizing the generated code
