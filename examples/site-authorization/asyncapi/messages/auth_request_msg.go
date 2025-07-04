@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"github.com/bdragon300/go-asyncapi/run"
 	"github.com/bdragon300/go-asyncapi/run/kafka"
+	"io"
 	"site-authorization/asyncapi/schemas"
 )
 
@@ -72,14 +73,21 @@ func (m *AuthRequestMsgOut) MarshalAuthRequestOperationKafka(envelope kafka.Enve
 }
 
 func (m *AuthRequestMsgOut) MarshalEnvelopeKafka(envelope kafka.EnvelopeWriter) error {
-
-	// Default encoder
-	enc := json.NewEncoder(envelope)
-	if err := enc.Encode(m.Payload); err != nil {
+	if err := m.MarshalKafka(envelope); err != nil {
 		return err
 	}
 	envelope.SetContentType("application/json")
 	envelope.SetHeaders(run.Headers(m.Headers))
+	return nil
+}
+
+func (m *AuthRequestMsgOut) MarshalKafka(w io.Writer) error {
+
+	// Default encoder
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(m.Payload); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -88,12 +96,19 @@ func (m *AuthRequestMsgIn) UnmarshalAuthChannelKafka(envelope kafka.EnvelopeRead
 }
 
 func (m *AuthRequestMsgIn) UnmarshalEnvelopeKafka(envelope kafka.EnvelopeReader) error {
-
-	// Default decoder
-	dec := json.NewDecoder(envelope)
-	if err := dec.Decode(&m.payload); err != nil {
+	if err := m.UnmarshalKafka(envelope); err != nil {
 		return err
 	}
 	m.headers = map[string]any(envelope.Headers())
+	return nil
+}
+
+func (m *AuthRequestMsgIn) UnmarshalKafka(r io.Reader) error {
+
+	// Default decoder
+	dec := json.NewDecoder(r)
+	if err := dec.Decode(&m.payload); err != nil {
+		return err
+	}
 	return nil
 }
