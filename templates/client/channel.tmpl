@@ -200,7 +200,7 @@ if opts.publish {
 
         {{goQual "log/slog.Debug"}}("Subscribing to {{$.Kind}}...", "separator", opts.payloadSeparator)
         subCtx, cancel := {{goQual "context.WithCancelCause"}}(ctx)
-        defer cancel(nil)
+        defer cancel(ErrExited)
         payloadSeparator := []byte(opts.payloadSeparator)
         err = object{{if eq $.ChannelOrOperation.Kind "operation"}}.Channel{{end}}.Subscribe(subCtx, func(e {{goQualR .Protocol "EnvelopeReader"}}) {
             b, err := {{goQual "io.ReadAll"}}(e)
@@ -226,14 +226,17 @@ if opts.publish {
                 return
             }
             if !opts.multipleMessages {
-                cancel(nil)
+                cancel(ErrExited)
             }
         })
-        if err != nil {
+        ctxCause := {{goQual "context.Cause"}}(subCtx)
+        switch {
+        case {{goQual "errors.Is"}}(ctxCause, ErrExited):
+            return nil
+        case ctxCause != nil:
+            return {{goQual "fmt.Errorf"}}("message processing: %w", ctxCause)
+        case err != nil:
             return {{goQual "fmt.Errorf"}}("subscribe: %w", err)
-        }
-        if err := subCtx.Err(); err != nil {
-            return {{goQual "fmt.Errorf"}}("message processing: %w", err)
         }
     {{- else}}
         return {{goQual "fmt.Errorf"}}("subscribing for {{$.Kind}} {{.Name | toQuotable}} is not supported in specification or disabled")

@@ -7,6 +7,8 @@ const (
 	DefaultProxyHost      = "127.0.0.1"
 )
 
+var ErrExited = {{goQual "errors.New"}}("exited")
+
 {{- range .ActiveProtocols}}
 {{tryTmpl (print "client/server/" . "/cliMixin") $}}
 {{- end}}
@@ -107,11 +109,11 @@ func main() {
 	switch cliArgs.File {
 	case "-":
 		if chanOptions.publish {
-			{{goQual "log/slog.Debug"}}("Writing to stdout")
-			chanOptions.stream = {{goQual "os.Stdout"}}
-		} else {
 			{{goQual "log/slog.Debug"}}("Reading from stdin")
 			chanOptions.stream = {{goQual "os.Stdin"}}
+		} else {
+			{{goQual "log/slog.Debug"}}("Writing to stdout")
+			chanOptions.stream = {{goQual "os.Stdout"}}
 		}
 	case "":
 		showCliError("No file specified. Append --help for more information", cliParser)

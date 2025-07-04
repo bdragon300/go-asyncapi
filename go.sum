@@ -10,8 +10,8 @@ github.com/alexflint/go-scalar v1.2.0 h1:WR7JPKkeNpnYIOfHRa7ivM21aWAdHD0gEWHCx+W
 github.com/alexflint/go-scalar v1.2.0/go.mod h1:LoFvNMqS1CPrMVltza4LvnGKhaSpc3oyLEBUZVhhS2o=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1/go.mod h1:uYgXzlJ7ZpABp8OJ+exZzJJhRNQ2ASbcXHWsFqH8hp8=
-github.com/bdragon300/go-asyncapi/run v0.0.0-20250629140715-878ff63f7846 h1:Fg/uu2m0Uh/WlzUhJP5lOSP1iyIzWlNr+FNLZIrXojg=
-github.com/bdragon300/go-asyncapi/run v0.0.0-20250629140715-878ff63f7846/go.mod h1:mC7SBVvP3/ycNbGNfnar+0zBboxJzn8VdmqnfPR9x+E=
+github.com/bdragon300/go-asyncapi/run v0.0.0-20250703135731-c7926078b2f8 h1:nczPS9jWPN0yLgFl1QKnBVKfkJyEe/VlH7VbfG4Fozs=
+github.com/bdragon300/go-asyncapi/run v0.0.0-20250703135731-c7926078b2f8/go.mod h1:mC7SBVvP3/ycNbGNfnar+0zBboxJzn8VdmqnfPR9x+E=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
 github.com/buger/jsonparser v1.1.1/go.mod h1:6RYKKt7H4d4+iWqouImQ9R2FZql3VbhNgx27UK13J/0=
 github.com/charmbracelet/colorprofile v0.3.1 h1:k8dTHMd7fgw4bnFd7jXTLZrSU/CQrKnL3m+AxCzDz40=
