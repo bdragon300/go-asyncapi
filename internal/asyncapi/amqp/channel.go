@@ -99,8 +99,10 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *compile.Context, rawData types.
 		}
 		vals.StructValues.Set("ExchangeConfiguration", ecVals)
 	}
-	qVals := lang.ConstructGoValue(*bindings.Queue, nil, &lang.GoSimple{TypeName: "QueueConfiguration", Import: ctx.RuntimeModule(pb.Protocol())})
-	vals.StructValues.Set("QueueConfiguration", qVals)
+	if bindings.Queue != nil {
+		qVals := lang.ConstructGoValue(*bindings.Queue, nil, &lang.GoSimple{TypeName: "QueueConfiguration", Import: ctx.RuntimeModule(pb.Protocol())})
+		vals.StructValues.Set("QueueConfiguration", qVals)
+	}
 
 	return
 }

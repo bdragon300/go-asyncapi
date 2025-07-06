@@ -1,6 +1,6 @@
 {{- /* dot == render.ProtoChannel */}}
 {{define "code/proto/amqp/channel/newFunction/block1"}}
-    {{- if and .BindingsType (.BindingsProtocols | has .Protocol)}}
+    {{- if .BindingsProtocols | has .Protocol}}
         bindings := {{ .BindingsType | goUsage }}{}.{{.Protocol | goIDUpper}}()
         switch bindings.ChannelType {
         case {{goQualR .Protocol "ChannelTypeQueue"}}:
@@ -14,6 +14,8 @@
         if bindings.QueueConfiguration.Name != "" {
             res.queue = bindings.QueueConfiguration.Name
         }
+    {{- else}}
+        res.routingKey = res.address.String()
     {{- end}}
 {{- end}}
 {{define "code/proto/amqp/channel/publishMethods/block1"}}

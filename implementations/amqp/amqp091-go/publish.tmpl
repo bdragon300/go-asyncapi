@@ -25,26 +25,30 @@ func (p PublishChannel) Send(ctx context.Context, envelopes ...runAmqp.EnvelopeW
 	for _, envelope := range envelopes {
 		rm := envelope.(ImplementationRecord)
 		record := rm.AsAMQP091Record()
-		record.DeliveryMode = uint8(p.operationBindings.DeliveryMode)
-		record.Priority = uint8(p.operationBindings.Priority)
 		record.Timestamp = time.Time{}
-		if p.operationBindings.Timestamp {
-			record.Timestamp = time.Now()
-		}
-		record.ReplyTo = p.operationBindings.ReplyTo
-		record.UserId = p.operationBindings.UserID
-		if p.operationBindings.Expiration > 0 {
-			record.Expiration = p.operationBindings.Expiration.String()
-		}
-		if len(p.operationBindings.CC) > 0 {
-			record.Headers["CC"] = p.operationBindings.CC
-		}
-		if len(p.operationBindings.BCC) > 0 {
-			record.Headers["BCC"] = p.operationBindings.BCC
+		var mandatory bool
+		if p.operationBindings != nil {
+			record.DeliveryMode = uint8(p.operationBindings.DeliveryMode)
+			record.Priority = uint8(p.operationBindings.Priority)
+			if p.operationBindings.Timestamp {
+				record.Timestamp = time.Now()
+			}
+			record.ReplyTo = p.operationBindings.ReplyTo
+			record.UserId = p.operationBindings.UserID
+			if p.operationBindings.Expiration > 0 {
+				record.Expiration = p.operationBindings.Expiration.String()
+			}
+			if len(p.operationBindings.CC) > 0 {
+				record.Headers["CC"] = p.operationBindings.CC
+			}
+			if len(p.operationBindings.BCC) > 0 {
+				record.Headers["BCC"] = p.operationBindings.BCC
+			}
+			mandatory = p.operationBindings.Mandatory
 		}
 
 		err = errors.Join(err, p.Channel.PublishWithContext(
-			ctx, p.exchangeName, rm.RoutingKey(), p.operationBindings.Mandatory, false, *record,
+			ctx, p.exchangeName, rm.RoutingKey(), mandatory, false, *record,
 		))
 	}
 	return err

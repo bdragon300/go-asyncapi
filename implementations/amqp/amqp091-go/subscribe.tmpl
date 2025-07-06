@@ -26,12 +26,20 @@ func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope runAmqp.
 	// Separate context is used to stop consumer process for a particular consumer tag on function exit.
 	consumerCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	var ack, exclusive bool
+	if s.operationBindings != nil {
+		ack = s.operationBindings.Ack
+	}
+	if s.channelBindings != nil {
+		exclusive = run.FromPtrOrZero(s.channelBindings.QueueConfiguration.Exclusive)
+	}
 	deliveries, err := s.ConsumeWithContext(
 		consumerCtx,
 		s.queueName,
 		s.ConsumerTag,
-		s.operationBindings.Ack,
-		run.FromPtrOrZero(s.channelBindings.QueueConfiguration.Exclusive),
+		ack,
+		exclusive,
 		false,
 		false,
 		s.ConsumeArgs,
@@ -43,7 +51,7 @@ func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope runAmqp.
 	for delivery := range deliveries {
 		evlp := NewEnvelopeIn(&delivery, bytes.NewReader(delivery.Body))
 		cb(evlp)
-		if s.operationBindings.Ack {
+		if ack {
 			if e := s.Ack(delivery.DeliveryTag, false); e != nil {
 				return fmt.Errorf("ack: %w", e)
 			}

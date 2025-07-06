@@ -51,7 +51,7 @@ type Channel struct {
 	// and the order of promises resolving is not guaranteed.
 	AllActiveOperationsPromise *lang.ListPromise[common.Artifact]
 
-	// BindingsType is a Go struct for channel bindings. Nil if no bindings are set.
+	// BindingsType is a Go struct for channel bindings. Nil if channel bindings are not set at all.
 	BindingsType *lang.GoStruct
 	// BindingsPromise is a promise to channel bindings contents. Nil if no bindings are set.
 	BindingsPromise *lang.Promise[*Bindings]

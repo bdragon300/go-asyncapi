@@ -1,7 +1,7 @@
 {{- /* dot == render.ProtoChannel */}}
 {{define "code/proto/kafka/channel/newFunction/block1"}}
     res.topic = res.address.String()
-    {{- if .BindingsType}}
+    {{- if .BindingsProtocols | has .Protocol}}
         bindings := {{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}()
         if bindings.Topic != "" {
             res.topic = bindings.Topic
