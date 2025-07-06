@@ -155,7 +155,7 @@ if opts.publish {
             envelope.SetHeaders(parsedHeaders)
             {{/*FIXME: Add support for messages in client CLI args and remove this usage of template*/}}
             // Protocol-specific code
-            {{ with tryTmpl (print "client/" $channel.Kind "/" .Protocol "/publish/prepareEnvelope") (deref $channel)}}{{.}}{{end}}
+            {{ with tryTmpl (print "client/" $.ChannelOrOperation.Kind "/" .Protocol "/publish/prepareEnvelope") (deref $.ChannelOrOperation)}}{{.}}{{end}}
             // End of protocol-specific code
 
             {{- with impl .Protocol}}
