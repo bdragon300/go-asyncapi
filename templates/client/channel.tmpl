@@ -80,7 +80,7 @@ func operation{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper
 
 {{define "client/pubsub/proto/serverPubSub"}}
 {{- /*
-    .ChannelOrOperation == common.Artifact: Ref -> render.Channel or render.Channel or render.Operation or render.Operation;
+    .ChannelOrOperation == common.Artifact: Ref -> render.Channel or render.Channel or Ref -> render.Operation or render.Operation;
     .Server == common.Artifact: Ref -> render.Server or render.Server
     .Kind == "channel" or "operation"
     */}}
@@ -153,6 +153,10 @@ if opts.publish {
             {{goQual "log/slog.Debug"}}("Read message payload", "bytes", n)
             parsedHeaders := parseHeaders(opts.publishHeaders)
             envelope.SetHeaders(parsedHeaders)
+            {{/*FIXME: Add support for messages in client CLI args and remove this usage of template*/}}
+            // Protocol-specific code
+            {{ with tryTmpl (print "client/" $channel.Kind "/" .Protocol "/publish/prepareEnvelope") (deref $channel)}}{{.}}{{end}}
+            // End of protocol-specific code
 
             {{- with impl .Protocol}}
                 {{- with tryTmpl (print "client/message/" $server.Protocol "/" .Manifest.Name "/publish") $}}

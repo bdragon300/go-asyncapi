@@ -135,7 +135,9 @@ client/
     ├── client/channeloperation/<protocol>/<implementation>/producer/connect *
     ├── client/channeloperation/<protocol>/<implementation>/setup *
     ├── client/message/<protocol>/<implementation>/publish *
-    └── client/server/<protocol>/cliMixin *
+    ├── client/server/<protocol>/cliMixin *
+    ├── client/operation/<protocol>/publish/prepareEnvelope *
+    └── client/channel/<protocol>/publish/prepareEnvelope *
 ```
 
 ## Infrastructure files
@@ -144,8 +146,8 @@ Legend:
 
 * `*` - template is optional. Executed if found, no error is raised if not.
 * `<protocol>` - protocol name, e.g. `amqp`, `kafka`, etc.
-* `<technology>` - technology name, e.g. `docker`, etc.
-* `<section>` - section name in resulted file. For `docker` technology it's `services`, `volumes`, etc.
+* `<engine>` - engine name, e.g. `docker`, etc.
+* `<section>` - section name in resulted file. For `docker` engine it's `services`, `volumes`, etc.
 
 Template files referenced by file name:
 
@@ -158,8 +160,8 @@ Templates referenced by name (nested templates):
 
 ```
 infra/
-└── <technology>/
-    ├── infra/<technology>/<protocol>/<section> *
-    ├── infra/<technology>/<protocol>/<section>/extra *
-    └── infra/<technology>/<protocol>/extra *
+└── <engine>/
+    ├── infra/<engine>/<protocol>/<section> *
+    ├── infra/<engine>/<protocol>/<section>/extra *
+    └── infra/<engine>/<protocol>/extra *
 ```

@@ -38,3 +38,11 @@ if args.{{.Server | goIDUpper}}Cmd.MessageKey != "" {
     envelope.Key = []byte(args.{{.Server | goIDUpper}}Cmd.MessageKey)
 }
 {{- end}}
+
+{{define "client/channel/kafka/publish/prepareEnvelope"}}
+    envelope.SetTopic(object.Topic())
+{{- end}}
+
+{{define "client/operation/kafka/publish/prepareEnvelope"}}
+    envelope.SetTopic(object.Channel.Topic())
+{{- end}}
