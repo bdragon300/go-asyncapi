@@ -23,7 +23,7 @@ func (r *PublishChannel) Send(ctx context.Context, envelopes ...runMqtt.Envelope
 		ir := envelope.(ImplementationRecord)
 		var qos byte
 		var retain bool
-		if r.channelBindings != nil {
+		if r.operationBindings != nil {
 			qos = byte(r.operationBindings.QoS)
 			retain = r.operationBindings.Retain
 		}
