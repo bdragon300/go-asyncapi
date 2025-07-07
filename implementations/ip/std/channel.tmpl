@@ -109,7 +109,9 @@ func (c *Channel) Close() error {
 
 func (c *Channel) listen() {
 	var err error
-	defer c.cancel(err)
+	defer func() {
+		c.cancel(err)
+	}()
 
 	var n, ver int
 	for {

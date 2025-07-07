@@ -95,7 +95,9 @@ func (s Channel) Close() error {
 
 func (s Channel) readConn() {
 	var err error
-	defer s.cancel(err)
+	defer func() {
+		s.cancel(err)
+	}()
 
 	for {
 		var msgs []wsutil.Message
