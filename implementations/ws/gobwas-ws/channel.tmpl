@@ -1,6 +1,7 @@
 import (
 	"context"
 	"fmt"
+	"github.com/bdragon300/go-asyncapi/run"
 	"net"
 	"sync"
 
@@ -15,12 +16,14 @@ func NewChannel(chb *runWs.ChannelBindings, opb *runWs.OperationBindings, conn n
 		clientSide:        clientSide,
 		channelBindings:   chb,
 		operationBindings: opb,
-		envelopes:         make(chan runWs.EnvelopeReader),
+		callbacks:         run.NewRing[subscriberFunc](),
 		once:              &sync.Once{},
 	}
 	res.ctx, res.cancel = context.WithCancelCause(context.Background())
 	return &res
 }
+
+type subscriberFunc func(envelope runWs.EnvelopeReader)
 
 type ImplementationRecord interface {
 	Bytes() []byte
@@ -34,32 +37,29 @@ type Channel struct {
 	// To prevent cache spoofing attack, the client-side application must additionally mask the payload in
 	// outgoing websocket frames, whereas the server-side code must unmask the payload back in incoming frames
 	// https://www.rfc-editor.org/rfc/rfc6455#section-5.3
-	clientSide      bool
-	channelBindings *runWs.ChannelBindings
+	clientSide        bool
+	channelBindings   *runWs.ChannelBindings
 	operationBindings *runWs.OperationBindings
-	envelopes         chan runWs.EnvelopeReader
+	callbacks         *run.Ring[subscriberFunc]
 	ctx               context.Context
-	cancel     context.CancelCauseFunc
+	cancel            context.CancelCauseFunc
 	once              *sync.Once
 }
 
 func (s Channel) Receive(ctx context.Context, cb func(envelope runWs.EnvelopeReader)) error {
+	element := s.callbacks.Append(cb)
+	defer func() {
+		s.callbacks.Remove(element)
+	}()
 	s.once.Do(func() {
-		go s.listen()
+		go s.readConn()
 	})
 
-	for {
-		select {
-		case v, ok := <-s.envelopes:
-			if !ok {
-				return context.Canceled // channel has been closed
-			}
-			cb(v)
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-s.ctx.Done():
-			return context.Cause(s.ctx)
-		}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-s.ctx.Done():
+		return context.Cause(s.ctx)
 	}
 }
 
@@ -93,7 +93,7 @@ func (s Channel) Close() error {
 	return s.Conn.Close()
 }
 
-func (s Channel) listen() {
+func (s Channel) readConn() {
 	var err error
 	defer s.cancel(err)
 
@@ -111,7 +111,13 @@ func (s Channel) listen() {
 			select {
 			case <-s.ctx.Done():
 				return
-			case s.envelopes <- NewEnvelopeIn(msg):
+			default:
+				cb, ok := s.callbacks.Next()
+				if !ok {
+					err = fmt.Errorf("no subscribers for connection %s->%s", s.Conn.RemoteAddr(), s.Conn.LocalAddr())
+					return
+				}
+				cb(NewEnvelopeIn(msg))
 			}
 		}
 	}

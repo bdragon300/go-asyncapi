@@ -13,10 +13,10 @@ import (
 // TODO: remove httpResponseTimeout, allow to use smth like http.requestHandler or nothing
 func NewConsumer(bindings *runWs.ServerBindings) *ConsumeClient {
 	return &ConsumeClient{
-		Upgrader:            ws.DefaultHTTPUpgrader,
-		bindings:            bindings,
-		connections:         make(map[string]chan *Channel),
-		mu:                  new(sync.RWMutex),
+		Upgrader:    ws.DefaultHTTPUpgrader,
+		bindings:    bindings,
+		connections: make(map[string]chan *Channel),
+		mu:          new(sync.RWMutex),
 	}
 }
 
@@ -26,10 +26,10 @@ type HTTPUpgraderInterface interface {
 
 type ConsumeClient struct {
 	http.ServeMux
-	Upgrader            HTTPUpgraderInterface
-	bindings            *runWs.ServerBindings
-	connections         map[string]chan *Channel
-	mu                  *sync.RWMutex
+	Upgrader    HTTPUpgraderInterface
+	bindings    *runWs.ServerBindings
+	connections map[string]chan *Channel
+	mu          *sync.RWMutex
 }
 
 func (c *ConsumeClient) Subscriber(ctx context.Context, address string, chb *runWs.ChannelBindings, opb *runWs.OperationBindings) (runWs.Subscriber, error) {
