@@ -1,8 +1,7 @@
 # HTTP Server Example
 
-This package demonstrates how to use the generated HTTP consumer in an *existing HTTP server object*. This is useful
-when you want to integrate the generated code into an existing HTTP application, or put the API described in asyncapi
-to a separate URL prefix.
+This package demonstrates how to use the HTTP consumer with the standard [net/http](https://pkg.go.dev/net/http) implementation,
+that uses the request-response model.
 
 ## Prerequisites
 

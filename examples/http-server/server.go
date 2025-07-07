@@ -5,10 +5,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"http-server/asyncapi/channels"
 	http2 "http-server/asyncapi/impl/http"
 	"http-server/asyncapi/messages"
 	"http-server/asyncapi/schemas"
+	"http-server/asyncapi/servers"
 	"net"
 	"net/http"
 	"strconv"
@@ -17,32 +17,41 @@ import (
 )
 
 func main() {
-	port := flag.Int("port", 8080, "Kafka broker port")
+	port := flag.Int("port", 8081, "Kafka broker port")
 	flag.Parse()
 
 	ctx := context.Background()
-
-	// Consumer implements the [http.Handler] interface,
-	// so you can use it as a handler like any other HTTP handler. For example:
+	// For HTTP consumer this function actually doesn't connect anywhere, it's just a protocol-agnostic general function.
+	// For HTTP the following gives the same result:
 	//
-	//   http.Handle("/prefix", implConsumer)
+	//   server := http2.NewConsumer(nil)
+	//
+	server, err := servers.ConnectTestServerConsumer(ctx, nil)
+	if err != nil {
+		panic(fmt.Errorf("open server: %w", err))
+	}
+	defer server.Close()
+
+	// Consumer in "std" implementations complies the [http.Handler] interface
+	// and can be used as a handler like any other [net/http] handler. For example:
+	//
+	//   http.Handle("/prefix", consumer)
 	//
 	// Here we use it as a root handler for the HTTP server.
-	implConsumer := http2.NewConsumer(nil)
+	consumer := server.Consumer()
 	httpServer := http.Server{
 		Addr:    ":" + strconv.Itoa(*port),
-		Handler: implConsumer,
+		Handler: consumer.(http.Handler),
 		BaseContext: func(_ net.Listener) context.Context {
 			return ctx
 		},
 	}
 
-	chAddress := channels.EchoChannelAddress().String()
-	implSubscriber, err := implConsumer.Subscriber(ctx, chAddress, nil, nil)
+	channel, err := server.OpenEchoChannelHTTP(ctx)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("open channel: %w", err))
 	}
-	defer implSubscriber.Close()
+	defer channel.Close()
 
 	go func() {
 		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -51,12 +60,10 @@ func main() {
 	}()
 	fmt.Printf("Listening on port %d\n", *port)
 
-	// We use the "std" HTTP implementation here ("net/http").
-	// So, for request-response model we work with envelopes instead of messages,
-	// because "net/http" HTTP server provides no other way to write the response other than the [http.ResponseWriter],
-	// passed to the handler as an argument.
+	// For request-response model we work with envelopes instead of messages,
+	// because [net/http] server provides no other way to write the response other than the [http.ResponseWriter],
+	// that being passed to the handler as an argument.
 	// Envelope encapsulates the [http.Request] and [http.ResponseWriter] passed to handler.
-	channel := channels.NewEchoChannelHTTP(nil, implSubscriber)
 	err = channel.Subscribe(ctx, func(envelope http3.EnvelopeReader) {
 		req := envelope.(*http2.EnvelopeIn)
 
@@ -86,6 +93,6 @@ func main() {
 		fmt.Printf("Sent response: %+v\n", respMsg.Payload)
 	})
 	if err != nil {
-		panic(fmt.Errorf("error subscribing to channel %s: %w", chAddress, err))
+		panic(fmt.Errorf("error subscribing to channel %s: %w", channel.Address(), err))
 	}
 }
