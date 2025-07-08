@@ -2,7 +2,7 @@
 
 {{define "code/proto/tcp/server/impl/net/connectFunction"}}
 func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
-    producer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewProducer(url.Host, url.Scheme)
+    producer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewProducer(url.Host, url.Scheme, "")
     if err != nil {
         return nil, err
     }
@@ -18,7 +18,7 @@ func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url 
 
 {{define "code/proto/tcp/server/impl/net/connectProducerFunction"}}
 func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
-    producer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewProducer(url.Host, url.Scheme)
+    producer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewProducer(url.Host, url.Scheme, "")
     if err != nil {
         return nil, err
     }

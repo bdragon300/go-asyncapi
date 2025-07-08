@@ -5,21 +5,29 @@ import (
 	"net"
 )
 
-func NewProducer(host, network string) (*ProduceClient, error) {
+// NewProducer creates a new TCP producer to connect to the specified address and network. If network is empty,
+// the default "tcp" will be used.
+//
+// The third parameter localAddress sets the local address to bind to.
+// If empty, the bound address will be selected automatically by the system.
+func NewProducer(address, network, localAddress string) (*ProduceClient, error) {
 	if network == "" {
 		network = "tcp"
 	}
-	la, err := net.ResolveTCPAddr(network, host)
-	if err != nil {
-		return nil, err
+	d := net.Dialer{}
+	if localAddress != "" {
+		la, err := net.ResolveTCPAddr(network, localAddress)
+		if err != nil {
+			return nil, err
+		}
+		d.LocalAddr = la
 	}
-	d := net.Dialer{LocalAddr: la}
 
 	return &ProduceClient{
 		Dialer:          d,
 		Scanner:         bufio.NewScanner(nil),
 		MaxEnvelopeSize: DefaultMaxEnvelopeSize,
-		address:         host,
+		address:         address,
 		protocolFamily:  network,
 	}, nil
 }
