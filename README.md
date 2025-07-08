@@ -25,15 +25,17 @@ See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for m
 
 ## Supported protocols
 
-* <img alt="AMQP" src="https://bdragon300.github.io/go-asyncapi/images/amqp.svg" style="height: 1.5em"> AMQP
-* <img alt="Apache Kafka" src="https://bdragon300.github.io/go-asyncapi/images/kafka.svg" style="height: 1.5em"> Apache Kafka
-* <img alt="HTTP" src="https://bdragon300.github.io/go-asyncapi/images/http-small.png" style="height: 1.5em"> HTTP
-* <img alt="IP RAW Sockets" src="https://bdragon300.github.io/go-asyncapi/images/ip.png" style="height: 1.5em"> IP RAW Sockets
-* <img alt="MQTT" src="https://bdragon300.github.io/go-asyncapi/images/mqtt.svg" style="height: 1.5em"> MQTT
-* <img alt="Redis" src="https://bdragon300.github.io/go-asyncapi/images/redis.svg" style="height: 1.5em"> Redis
-* <img alt="TCP" src="https://bdragon300.github.io/go-asyncapi/images/tcpudp.svg" style="height: 1.5em"> TCP
-* <img alt="UDP" src="https://bdragon300.github.io/go-asyncapi/images/tcpudp.svg" style="height: 1.5em"> UDP
-* <img alt="Websocket" src="https://bdragon300.github.io/go-asyncapi/images/websocket.svg" style="height: 1.5em"> Websocket
+|                                                                                                                                         | Protocol       | Library                                                                            |
+|-----------------------------------------------------------------------------------------------------------------------------------------|----------------|------------------------------------------------------------------------------------|
+| <img alt="AMQP" src="https://bdragon300.github.io/go-asyncapi/images/amqp.svg" style="height: 1.5em; vertical-align: middle">           | AMQP           | [github.com/rabbitmq/amqp091-go](https://github.com/rabbitmq/amqp091-go)           |
+| <img alt="Apache Kafka" src="https://bdragon300.github.io/go-asyncapi/images/kafka.svg" style="height: 1.5em; vertical-align: middle">  | Apache Kafka   | [github.com/twmb/franz-go](https://github.com/twmb/franz-go)                       |
+| <img alt="HTTP" src="https://bdragon300.github.io/go-asyncapi/images/http-small.png" style="height: 1.5em; vertical-align: middle">     | HTTP           | [net/http](https://pkg.go.dev/net/http)                                            |
+| <img alt="IP RAW Sockets" src="https://bdragon300.github.io/go-asyncapi/images/ip.png" style="height: 1.5em; vertical-align: middle">   | IP RAW Sockets | [net](https://pkg.go.dev/net)                                                      |
+| <img alt="MQTT" src="https://bdragon300.github.io/go-asyncapi/images/mqtt.svg" style="height: 1.5em; vertical-align: middle">           | MQTT           | [github.com/eclipse/paho.mqtt.golang](https://github.com/eclipse/paho.mqtt.golang) |
+| <img alt="Redis" src="https://bdragon300.github.io/go-asyncapi/images/redis.svg" style="height: 1.5em; vertical-align: middle">         | Redis          | [github.com/redis/go-redis](https://github.com/redis/go-redis)                     |
+| <img alt="TCP" src="https://bdragon300.github.io/go-asyncapi/images/tcpudp.svg" style="height: 1.5em; vertical-align: middle">          | TCP            | [net](https://pkg.go.dev/net)                                                      |
+| <img alt="UDP" src="https://bdragon300.github.io/go-asyncapi/images/tcpudp.svg" style="height: 1.5em; vertical-align: middle">          | UDP            | [net](https://pkg.go.dev/net)                                                      |
+| <img alt="Websocket" src="https://bdragon300.github.io/go-asyncapi/images/websocket.svg" style="height: 1.5em; vertical-align: middle"> | Websocket      | [github.com/gobwas/ws](https://github.com/gobwas/ws)                               |
 
 ## Description
 
