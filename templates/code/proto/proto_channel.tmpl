@@ -122,6 +122,7 @@ type {{ .Channel | goIDUpper }}EnvelopeMarshaler{{.Protocol | goIDUpper}} interf
         if err := c.Seal{{. | goIDUpper}}(envelope, message); err != nil {
             return err
         }
+        {{ with tryTmpl (print "code/proto/" $.Protocol "/channel/publishMethods/block2") .}}{{.}}{{end}}
         return c.Publish(ctx, envelope)
     }
 {{- end}}

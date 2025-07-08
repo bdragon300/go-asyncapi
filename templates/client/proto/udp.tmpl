@@ -8,6 +8,7 @@ server, err := {{goPkg (deref .Server).ProtoServer.Type}}Connect{{.Server | goID
 if err != nil {
     return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
 }
+defer server.Close()
 {{- end}}
 
 {{define "client/channeloperation/udp/net/consumer/connect"}}
@@ -15,4 +16,5 @@ server, err := {{goPkg (deref .Server).ProtoServer.Type}}Connect{{.Server | goID
 if err != nil {
     return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
 }
+defer server.Close()
 {{- end}}

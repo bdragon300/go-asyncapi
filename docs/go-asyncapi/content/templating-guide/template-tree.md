@@ -99,10 +99,12 @@ code/
     └── <protocol>/
         ├── code/proto/<protocol>/channel/newFunction/block1 *
         ├── code/proto/<protocol>/channel/publishMethods/block1 *
+        ├── code/proto/<protocol>/channel/publishMethods/block2 *
         ├── code/proto/<protocol>/server/impl/<implementation>/connectConsumerFunction *
         ├── code/proto/<protocol>/server/impl/<implementation>/connectFunction *
         ├── code/proto/<protocol>/server/impl/<implementation>/connectProducerFunction *
-        └── code/proto/<protocol>/operation/publishMethods/block1 *
+        ├── code/proto/<protocol>/operation/publishMethods/block1 *
+        └── code/proto/<protocol>/operation/publishMethods/block2 *
 ```
 
 ## Client application

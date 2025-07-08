@@ -131,9 +131,9 @@ if opts.publish {
                 if err != nil {
                     return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
                 }
+                defer server.Close()
             {{- end}}
         {{end}}
-        defer server.Close()
 
         {{goQual "log/slog.Debug"}}("Opening {{$.Kind}}", "name", {{.Name | goLit}}{{with (deref $channel).ParametersType}}, "parameters", channelParams{{end}})
         object, err := server.Open{{$.ChannelOrOperation | goIDUpper}}{{.Protocol | goIDUpper}}(ctx{{with (deref $channel).ParametersType}}, channelParams{{end}})
@@ -153,10 +153,11 @@ if opts.publish {
             {{goQual "log/slog.Debug"}}("Read message payload", "bytes", n)
             parsedHeaders := parseHeaders(opts.publishHeaders)
             envelope.SetHeaders(parsedHeaders)
-            {{/*FIXME: Add support for messages in client CLI args and remove this usage of template*/}}
-            // Protocol-specific code
-            {{ with tryTmpl (print "client/" $.ChannelOrOperation.Kind "/" .Protocol "/publish/prepareEnvelope") (deref $.ChannelOrOperation)}}{{.}}{{end}}
-            // End of protocol-specific code
+            {{ with tryTmpl (print "client/" $.ChannelOrOperation.Kind "/" .Protocol "/publish/prepareEnvelope") (deref $.ChannelOrOperation)}}
+                // Protocol-specific code
+                {{.}}
+                // End of protocol-specific code
+            {{end}}
 
             {{- with impl .Protocol}}
                 {{- with tryTmpl (print "client/message/" $server.Protocol "/" .Manifest.Name "/publish") $}}
@@ -191,9 +192,9 @@ if opts.publish {
                 if err != nil {
                     return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
                 }
+                defer server.Close()
             {{- end}}
         {{end}}
-        defer server.Close()
 
         {{goQual "log/slog.Debug"}}("Opening {{$.Kind}}", "name", {{.Name | goLit}}{{with (deref $channel).ParametersType}}, "parameters", channelParams{{end}})
         object, err := server.Open{{$.ChannelOrOperation | goIDUpper}}{{.Protocol | goIDUpper}}(ctx{{with (deref $channel).ParametersType}}, channelParams{{end}})

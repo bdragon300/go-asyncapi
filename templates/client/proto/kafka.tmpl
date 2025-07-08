@@ -24,6 +24,7 @@ server, err := {{goPkg (deref .Server).ProtoServer.Type}}Connect{{.Server | goID
 if err != nil {
     return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
 }
+defer server.Close()
 {{- end}}
 
 {{define "client/channeloperation/kafka/github.com/twmb/franz-go/consumer/connect"}}
@@ -31,6 +32,7 @@ server, err := {{goPkg (deref .Server).ProtoServer.Type}}Connect{{.Server | goID
 if err != nil {
     return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
 }
+defer server.Close()
 {{- end}}
 
 {{define "client/message/kafka/github.com/twmb/franz-go/publish"}}

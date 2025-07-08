@@ -1,0 +1,27 @@
+{{define "client/channeloperation/ws/github.com/gobwas/ws/consumer/connect"}}
+server, err := {{goPkg ($.Server | deref).ProtoServer.Type}}Connect{{$.Server | goIDUpper}}Consumer(ctx, serverURL)
+if err != nil {
+    return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
+}
+defer server.Close()
+hServer := {{goQual "net/http.Server"}}{
+    Addr: serverURL.Host,
+    Handler: server.Consumer().({{goQual "net/http.Handler"}}),
+    BaseContext: func(_ {{goQual "net.Listener"}}) {{goQual "context.Context"}} {
+        return ctx
+    },
+}
+go func() {
+    if err := hServer.ListenAndServe(); err != nil && err != {{goQual "net/http.ErrServerClosed"}} {
+        {{goQual "log.Fatalf"}}("listen and serve: %v", err)
+    }
+}()
+{{- end}}
+
+{{define "client/operation/ws/publish/prepareEnvelope"}}
+envelope.SetOpCode(byte({{goQual "github.com/gobwas/ws.OpText"}}))
+{{- end}}
+
+{{define "client/channel/ws/publish/prepareEnvelope"}}
+envelope.SetOpCode(byte({{goQual "github.com/gobwas/ws.OpText"}}))
+{{- end}}

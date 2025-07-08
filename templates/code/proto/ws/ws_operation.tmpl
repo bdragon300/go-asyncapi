@@ -1,4 +1,8 @@
 {{- /* dot == render.ProtoOperation */}}
+{{define "code/proto/ws/operation/publishMethods/block2"}}
+    envelope.SetOpCode(byte({{goQual "github.com/gobwas/ws.OpBinary"}}))
+{{- end}}
+
 {{- with deref .}}
     {{ .Type | def }}
     {{template "code/proto/operation/newFunction" .}}

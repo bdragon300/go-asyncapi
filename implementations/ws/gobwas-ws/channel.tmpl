@@ -1,5 +1,6 @@
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/run"
 	"net"
@@ -107,6 +108,10 @@ func (s Channel) readConn() {
 			msgs, err = wsutil.ReadClientMessage(s.Conn, nil)
 		}
 		if err != nil {
+			// If sender did not set websocket frame OpCode, its default is [ws.OpContinuation].
+			if errors.Is(err, ws.ErrProtocolContinuationUnexpected) {
+				err = fmt.Errorf("%w (sender did not set OpCode?)", err)
+			}
 			return
 		}
 		for _, msg := range msgs {
