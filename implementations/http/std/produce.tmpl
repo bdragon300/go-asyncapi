@@ -18,5 +18,15 @@ type ProduceClient struct {
 }
 
 func (p ProduceClient) Publisher(_ context.Context, address string, chb *runHttp.ChannelBindings, opb *runHttp.OperationBindings) (runHttp.Publisher, error) {
-	return NewPublisher(chb, opb, p.serverURL), nil
+	u := p.serverURL
+	// Append the address to the server URL path
+	if u.Path == "" {
+		// url.JoinPath requires a leading slash in empty path to give the correct result
+		// otherwise it will return the path as is, e.g. for "foo" it sets path to "foo" instead of "/foo"
+		u.Path = "/"
+	}
+	if address != "" {
+		u = u.JoinPath(address)
+	}
+	return NewPublisher(chb, opb, u), nil
 }
