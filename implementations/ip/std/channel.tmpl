@@ -2,6 +2,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/bdragon300/go-asyncapi/run"
 	"net"
 	"sync"
 	"syscall"
@@ -16,12 +17,14 @@ func NewChannel(conn *net.IPConn, bufferSize int, remoteAddress net.Addr) *Chann
 		IPConn:        conn,
 		remoteAddress: remoteAddress,
 		bufferSize:    bufferSize,
-		envelopes:     make(chan runIP.EnvelopeReader),
+		callbacks:     run.NewRing[subscriberFunc](),
 		once:          &sync.Once{},
 	}
 	res.ctx, res.cancel = context.WithCancelCause(context.Background())
 	return &res
 }
+
+type subscriberFunc func(envelope runIP.EnvelopeReader)
 
 type Channel struct {
 	*net.IPConn
@@ -29,9 +32,9 @@ type Channel struct {
 	remoteAddress    net.Addr // Ignored if includeIPHeaders is true, see TCP/IP stack docs
 	bufferSize       int
 	includeIPHeaders bool
-	envelopes        chan runIP.EnvelopeReader
+	callbacks        *run.Ring[subscriberFunc]
 	ctx              context.Context
-	cancel 			 context.CancelCauseFunc
+	cancel           context.CancelCauseFunc
 	once             *sync.Once
 }
 
@@ -61,22 +64,19 @@ func (c *Channel) Send(_ context.Context, envelopes ...runIP.EnvelopeWriter) err
 }
 
 func (c *Channel) Receive(ctx context.Context, cb func(envelope runIP.EnvelopeReader)) error {
+	element := c.callbacks.Append(cb)
+	defer func() {
+		c.callbacks.Remove(element)
+	}()
 	c.once.Do(func() {
-		go c.listen()
+		go c.readConn()
 	})
 
-	for {
-		select {
-		case v, ok := <-c.envelopes:
-			if !ok {
-				return context.Canceled  // Subscriber has been closed
-			}
-			cb(v)
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-c.ctx.Done():
-			return c.ctx.Err()
-		}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-c.ctx.Done():
+		return context.Cause(c.ctx)
 	}
 }
 
@@ -107,7 +107,7 @@ func (c *Channel) Close() error {
 	return c.IPConn.Close()
 }
 
-func (c *Channel) listen() {
+func (c *Channel) readConn() {
 	var err error
 	defer func() {
 		c.cancel(err)
@@ -128,11 +128,12 @@ func (c *Channel) listen() {
 			ver = 6
 		}
 
-		select {
-		case <-c.ctx.Done():
+		cb, ok := c.callbacks.Next()
+		if !ok {
+			err = fmt.Errorf("no subscribers for connection %s->%s", c.IPConn.RemoteAddr(), c.IPConn.LocalAddr())
 			return
-		case c.envelopes <- NewEnvelopeIn(buf[:po], buf[po:n], ver):
 		}
+		cb(NewEnvelopeIn(buf[:po], buf[po:n], ver))
 	}
 }
 

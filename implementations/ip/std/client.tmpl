@@ -3,11 +3,13 @@ import (
 	"fmt"
 	runIP "github.com/bdragon300/go-asyncapi/run/ip"
 	"net"
+	"strings"
 )
 
 const DefaultMaxEnvelopeSize = 1024
 
 func NewClient(localHost, remoteHost, protocolFamily string) (*Client, error) {
+	var err error
 	res := &Client{MaxEnvelopeSize: DefaultMaxEnvelopeSize}
 
 	res.localProtocolFamily = protocolFamily
@@ -16,26 +18,30 @@ func NewClient(localHost, remoteHost, protocolFamily string) (*Client, error) {
 	}
 
 	if localHost != "" {
-		h, _, err := net.SplitHostPort(localHost)
-		if err != nil {
-			return nil, fmt.Errorf("parse localHost: %w", err)
+		if strings.Contains(localHost, ":") {
+			localHost, _, err = net.SplitHostPort(localHost)
+			if err != nil {
+				return nil, fmt.Errorf("parse localHost: %w", err)
+			}
 		}
-		res.localAddress = h
+		res.localAddress = localHost
 	}
 
 	if remoteHost != "" {
-		h, _, err := net.SplitHostPort(remoteHost)
-		if err != nil {
-			return nil, fmt.Errorf("parse remoteHost: %w", err)
+		if strings.Contains(localHost, ":") {
+			remoteHost, _, err = net.SplitHostPort(remoteHost)
+			if err != nil {
+				return nil, fmt.Errorf("parse remoteHost: %w", err)
+			}
 		}
-		res.remoteAddress = h
+		res.remoteAddress = remoteHost
 	}
 
 	return res, nil
 }
 
 type Client struct {
-	Config              net.ListenConfig
+	Config net.ListenConfig
 	// MaxEnvelopeSize is the maximum size of received envelopes. It should be set to the maximum
 	// expected size of the IP datagram that can be received. If the size of the received datagram
 	// exceeds this value, the datagram will be truncated and the rest of the data will be lost. By default, it is 1024.
