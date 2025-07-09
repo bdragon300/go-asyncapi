@@ -37,33 +37,6 @@ See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for m
 | <img alt="UDP" src="https://bdragon300.github.io/go-asyncapi/images/tcpudp.svg" style="height: 1.5em; vertical-align: middle">          | UDP            | [net](https://pkg.go.dev/net)                                                      |
 | <img alt="Websocket" src="https://bdragon300.github.io/go-asyncapi/images/websocket.svg" style="height: 1.5em; vertical-align: middle"> | Websocket      | [github.com/gobwas/ws](https://github.com/gobwas/ws)                               |
 
-## Description
-
-### Goals
-
-The goal of the project is, on the one hand, to fully implement the AsyncAPI specification and, on the other hand, to help
-the developers, DevOps, QA, and other engineers with making the software in event-driven architectures based on the 
-AsyncAPI specification.
-
-Another goal is to provide a way to readily use and test the technologies described in the AsyncAPI document — 
-everything works out of the box, but each component is optional and can be replaced or omitted.
-
-In other words, *batteries included, but removable*.
-
-### Features overview
-
-`go-asyncapi` supports most of the AsyncAPI features, such as messages, channels, servers, bindings, correlation ids, etc.
-
-The generated **Go boilerplate code** has minimal dependencies on external libraries and contains the basic logic sufficient to 
-send and receive messages. You also can plug in the protocol implementations built-in in `go-asyncapi`, they are based on 
-popular libraries for that protocol. Also, it is possible to import the third-party code in the code being generated.
-
-It is possible to build the **no-code client application** solely based on the AsyncAPI document, which is useful for
-testing purposes or for quick prototyping.
-
-The `go-asyncapi` is able to generate the **infrastructure setup files**, such as Docker Compose files, which are useful
-for setting up the development environment quickly or as the starting point for the infrastructure-as-code deploy configurations.
-
 ## Installation
 
 ```bash
@@ -92,6 +65,33 @@ regenerate the code. E.g. **1.4.0 &rarr; 1.5.0**.
 projects that uses it or to change the tool command line. E.g. **1.4.0 &rarr; 2.0.0**.
 
 *Note, that the project major version 0 (0.x.x) is considered unstable*
+
+## Description
+
+### Goals
+
+The goal of the project is, on the one hand, to fully implement the AsyncAPI specification and, on the other hand, to help
+the developers, DevOps, QA, and other engineers with making the software in event-driven architectures based on the
+AsyncAPI specification.
+
+Another goal is to provide a way to readily use and test the technologies described in the AsyncAPI document —
+everything works out of the box, but each component is optional and can be replaced or omitted.
+
+In other words, *batteries included, but removable*.
+
+### Features overview
+
+`go-asyncapi` supports most of the AsyncAPI features, such as messages, channels, servers, bindings, correlation ids, etc.
+
+The generated **Go boilerplate code** has minimal dependencies on external libraries and contains the basic logic sufficient to
+send and receive messages. You also can plug in the protocol implementations built-in in `go-asyncapi`, they are based on
+popular libraries for that protocol. Also, it is possible to import the third-party code in the code being generated.
+
+It is possible to build the **no-code client application** solely based on the AsyncAPI document, which is useful for
+testing purposes or for quick prototyping.
+
+The `go-asyncapi` is able to generate the **infrastructure setup files**, such as Docker Compose files, which are useful
+for setting up the development environment quickly or as the starting point for the infrastructure-as-code deploy configurations.
 
 ## FAQ
 
