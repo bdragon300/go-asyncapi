@@ -28,10 +28,10 @@ jobs:
         run: pwd
       - name: Test2
         run: ls -la
-#      - name: Upload static files as artifact
-#        uses: actions/upload-pages-artifact@v3
-#        with:
-#          path: public
+      - name: Upload static files as artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./public
 
   deploy_docs:
     needs: build
