@@ -31,7 +31,7 @@ jobs:
       - name: Upload static files as artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: go-asyncapi/docs/public
+          path: docs/go-asyncapi/public
 
   deploy_docs:
     needs: build
