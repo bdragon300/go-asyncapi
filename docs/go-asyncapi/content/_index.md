@@ -20,41 +20,102 @@ description = 'Generate Go code based on your AsyncAPI documents! This tool supp
 
 ## Core features
 
-* Support the majority of the AsyncAPI entities and jsonschema
-* Generating the boilerplate code for your project
-* Building the no-code client application (e.g. for testing purposes)
-* Generating the server infrastructure setup files (e.g. docker-compose files)
-* Built-in plugged-in protocol implementations based on popular libraries
-* Customization using Go templates
+|                                                                                  | Feature                                                 | Command                |
+|----------------------------------------------------------------------------------|---------------------------------------------------------|------------------------|
+| {{< figure src="images/go-logo.svg" alt="Go code" class="feature-icon">}}        | Generating the Go boilerplate code                      | `go-asyncapi code`     |
+| {{< figure src="images/terminal-icon.svg" alt="CLI app" class="feature-icon">}}  | Building the CLI client without writing the code        | `go-asyncapi client`   |
+| {{< figure src="images/docker.svg" alt="IaC definitions" class="feature-icon">}} | Generating the Infrastructure-As-Code (IaC) definitions | `go-asyncapi infra`    |
 
-For more details, see the [Features](https://bdragon300.github.io/go-asyncapi/docs/features) page.
+Also, `go-asyncapi` contains the built-in **protocol implementations** based on popular libraries, allows the **result customization** using Go templates and more.
 
-## Description
+See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for more details.
 
-### Goals
+## Supported protocols
 
-The goal of the project is, on the one hand, to fully implement the AsyncAPI specification and, on the other hand, to help
-the developers, DevOps, QA, and other engineers with making the software in event-driven architectures based on the
-AsyncAPI specification.
+|                                                                             | Protocol       | Library                                                                            |
+|-----------------------------------------------------------------------------|----------------|------------------------------------------------------------------------------------|
+| {{< figure src="images/amqp.svg" alt="AMQP" class="brand-icon">}}           | AMQP           | [github.com/rabbitmq/amqp091-go](https://github.com/rabbitmq/amqp091-go)           |
+| {{< figure src="images/kafka.svg" alt="Apache Kafka" class="brand-icon">}}  | Apache Kafka   | [github.com/twmb/franz-go](https://github.com/twmb/franz-go)                       |
+| {{< figure src="images/http-small.png" alt="HTTP" class="brand-icon">}}     | HTTP           | [net/http](https://pkg.go.dev/net/http)                                            |
+| {{< figure src="images/ip.png" alt="IP RAW Sockets" class="brand-icon">}}   | IP RAW Sockets | [net](https://pkg.go.dev/net)                                                      |
+| {{< figure src="images/mqtt.svg" alt="MQTT" class="brand-icon">}}           | MQTT           | [github.com/eclipse/paho.mqtt.golang](https://github.com/eclipse/paho.mqtt.golang) |
+| {{< figure src="images/redis.svg" alt="Redis" class="brand-icon">}}         | Redis          | [github.com/redis/go-redis](https://github.com/redis/go-redis)                     |
+| {{< figure src="images/tcpudp.svg" alt="TCP" class="brand-icon">}}          | TCP            | [net](https://pkg.go.dev/net)                                                      |
+| {{< figure src="images/tcpudp.svg" alt="UDP" class="brand-icon">}}          | UDP            | [net](https://pkg.go.dev/net)                                                      |
+| {{< figure src="images/websocket.svg" alt="WebSocket" class="brand-icon">}} | WebSocket      | [github.com/gobwas/ws](https://github.com/gobwas/ws)                               |
 
-Another goal is to provide a way to readily use and test the technologies described in the AsyncAPI document —
-everything works out of the box, but each component is optional and can be replaced or omitted.
+## Usage
 
-In other words, *batteries included, but removable*.
+The following couple of high-level examples show how to use the generated code for sending and receiving messages.
 
-### Features overview
+*Publishing*:
 
-`go-asyncapi` supports most of the AsyncAPI features, such as messages, channels, servers, bindings, correlation ids, etc.
+```go
+ctx := context.Background()
+// Connect to broker for sending messages
+myServer, err := servers.ConnectMyServerProducer(ctx, servers.MyServerURL())
+if err != nil {
+	log.Fatalf("connect to the myServer: %v", err)
+}
+defer myServer.Close()
 
-The generated **Go boilerplate code** has minimal dependencies on external libraries and contains the basic logic sufficient to
-send and receive messages. You also can plug in the protocol implementations built-in in `go-asyncapi`, they are based on
-popular libraries for that protocol. Also, it is possible to import the third-party code in the code being generated.
+// Open an operation for sending messages
+myOperation, err := myServer.OpenMyPubOperationKafka(ctx)
+if err != nil {
+	log.Fatalf("open myPubOperation: %v", err)
+}
+defer myOperation.Close()
 
-It is possible to build the **no-code client application** solely based on the AsyncAPI document, which is useful for
-testing purposes or for quick prototyping.
+// Craft a message
+msg := messages.MyMessage{
+	Payload: schemas.MyMessagePayload{
+		Field1: "value1", 
+		Field2: 42,
+	},
+	Headers: schemas.MyMessageHeaders{
+		Header1: "header1",
+	},
+}
 
-The `go-asyncapi` is able to generate the **infrastructure setup files**, such as Docker Compose files, which are useful
-for setting up the development environment quickly or as the starting point for the infrastructure-as-code deploy configurations.
+// Send a message
+if err := myOperation.PublishMyMessage(ctx, msg); err != nil {
+	log.Fatalf("send message: %v", err)
+}
+```
+
+*Subscribing*:
+
+```go
+ctx := context.Background()
+// Connect to broker for receiving messages
+myServer, err := servers.ConnectMyServerConsumer(ctx, servers.MyServerURL())
+if err != nil {
+	log.Fatalf("connect to the myServer: %v", err)
+}
+defer myServer.Close()
+
+// Open an operation for receiving messages
+myOperation, err := myServer.OpenMySubOperationKafka(ctx)
+if err != nil {
+	log.Fatalf("open mySubOperation: %v", err)
+}
+defer myOperation.Close()
+
+// Subscribe to messages
+err := myOperation.SubscribeMyMessage(ctx, func(msg messages.MyMessage) {
+	log.Printf("received message: %+v", msg)
+})
+if err != nil {
+	log.Fatalf("subscribe: %v", err)
+}
+```
+
+The low-level functions are also available, which gives more control over the process.
+
+Also, here are some demo applications:
+
+* [Site authorization](https://github.com/bdragon300/go-asyncapi/blob/master/examples/site-authorization)
+* [HTTP echo server](https://github.com/bdragon300/go-asyncapi/blob/master/examples/http-server)
 
 ## Installation
 
@@ -84,6 +145,33 @@ regenerate the code. E.g. **1.4.0 &rarr; 1.5.0**.
 projects that uses it or to change the tool command line. E.g. **1.4.0 &rarr; 2.0.0**.
 
 *Note, that the project major version 0 (0.x.x) is considered unstable*
+
+## Description
+
+### Goals
+
+The goal of the project is, on the one hand, to fully implement the AsyncAPI specification and, on the other hand, to help
+the developers, DevOps, QA, and other engineers with making the software in event-driven architectures based on the
+AsyncAPI specification.
+
+Another goal is to provide a way to readily use and test the technologies described in the AsyncAPI document —
+everything works out of the box, but each component is optional and can be replaced or omitted.
+
+In other words, *batteries included, but removable*.
+
+### Features overview
+
+`go-asyncapi` supports most of the AsyncAPI features, such as messages, channels, servers, bindings, correlation ids, etc.
+
+The generated **Go boilerplate code** has minimal dependencies on external libraries and contains the basic logic sufficient to
+send and receive messages. You also can plug in the protocol implementations built-in in `go-asyncapi`, they are based on
+popular libraries for that protocol. Also, it is possible to import the third-party code in the code being generated.
+
+It is possible to build the **no-code client application** solely based on the AsyncAPI document, which is useful for
+testing purposes or for quick prototyping.
+
+The `go-asyncapi` is able to generate the **infrastructure setup files**, such as Docker Compose files, which are useful
+for setting up the development environment quickly or as the starting point for the infrastructure-as-code deploy configurations.
 
 ## FAQ
 

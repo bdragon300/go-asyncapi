@@ -1,6 +1,6 @@
 /* line-height: 1.6 */
 
-.brand-icon {
+.brand-icon, .feature-icon {
   display: inline-block;
   margin: 0 !important;
 }
@@ -8,6 +8,11 @@
 .brand-icon img {
   width: 1.3em;
   height: 1.3em;
+}
+
+.feature-icon img {
+  width: 3em;
+  height: 3em;
 }
 
 .text-initial {
