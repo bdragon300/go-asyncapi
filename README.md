@@ -48,31 +48,31 @@ ctx := context.Background()
 // Connect to broker for sending messages
 myServer, err := servers.ConnectMyServerProducer(ctx, servers.MyServerURL())
 if err != nil {
-    log.Fatalf("connect to the myServer: %v", err)
+	log.Fatalf("connect to the myServer: %v", err)
 }
 defer myServer.Close()
 
 // Open an operation for sending messages
 myOperation, err := myServer.OpenMyPubOperationKafka(ctx)
 if err != nil {
-    log.Fatalf("open myPubOperation: %v", err)
+	log.Fatalf("open myPubOperation: %v", err)
 }
 defer myOperation.Close()
 
 // Craft a message
 msg := messages.MyMessage{
 	Payload: schemas.MyMessagePayload{
-		Field1: "value1",
-        Field2: 42,
-    },
+		Field1: "value1", 
+		Field2: 42,
+	},
 	Headers: schemas.MyMessageHeaders{
-        Header1: "header1",
-    },
+		Header1: "header1",
+	},
 }
 
 // Send a message
 if err := myOperation.PublishMyMessage(ctx, msg); err != nil {
-    log.Fatalf("send message: %v", err)
+	log.Fatalf("send message: %v", err)
 }
 ```
 
@@ -83,23 +83,23 @@ ctx := context.Background()
 // Connect to broker for receiving messages
 myServer, err := servers.ConnectMyServerConsumer(ctx, servers.MyServerURL())
 if err != nil {
-    log.Fatalf("connect to the myServer: %v", err)
+	log.Fatalf("connect to the myServer: %v", err)
 }
 defer myServer.Close()
 
 // Open an operation for receiving messages
 myOperation, err := myServer.OpenMySubOperationKafka(ctx)
 if err != nil {
-    log.Fatalf("open mySubOperation: %v", err)
+	log.Fatalf("open mySubOperation: %v", err)
 }
 defer myOperation.Close()
 
 // Subscribe to messages
 err := myOperation.SubscribeMyMessage(ctx, func(msg messages.MyMessage) {
-    log.Printf("received message: %+v", msg)
+	log.Printf("received message: %+v", msg)
 })
 if err != nil {
-    log.Fatalf("subscribe: %v", err)
+	log.Fatalf("subscribe: %v", err)
 }
 ```
 
