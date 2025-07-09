@@ -64,7 +64,7 @@ Here are the protocols that are supported by `go-asyncapi` for now:
 - {{< figure src="images/websocket.svg" alt="WebSocket" link="/protocols-and-implementations#websocket" class="brand-icon" >}} [WebSocket]({{< relref "/protocols-and-implementations#websocket" >}})
 
 {{< hint info >}}
-**&ast;** - not described in the AsyncAPI specification
+&ast; - not described in the AsyncAPI specification
 {{< /hint >}}
 
 ## AsyncAPI support
