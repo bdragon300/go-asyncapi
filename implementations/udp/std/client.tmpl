@@ -7,13 +7,23 @@ import (
 
 const DefaultMaxEnvelopeSize = 1024
 
-func NewClient(localHost, remoteHost, protocolFamily string) *Client {
+// NewClient creates a new UDP client. The protocolFamily argument specifies the protocol family to use, such as "udp" or "udp4".
+// If empty, it is set to "udp".
+//
+// For sending the data, the localAddress arg sets the source address of the outgoing UDP packets. If empty, the system
+// will choose it automatically.
+// The defaultRemoteAddress arg is used for the destination address of UDP packets if the caller does not specify a
+// remote address in the envelope.
+//
+// For receiving the data, the localAddress arg sets the address to listen for incoming UDP packets.
+// The defaultRemoteAddress arg is ignored.
+func NewClient(localAddress, defaultRemoteAddress, protocolFamily string) *Client {
 	if protocolFamily == "" {
 		protocolFamily = "udp"
 	}
 	return &Client{
-		LocalAddress:         localHost,
-		DefaultRemoteAddress: remoteHost,
+		LocalAddress:         localAddress,
+		DefaultRemoteAddress: defaultRemoteAddress,
 		MaxEnvelopeSize:      DefaultMaxEnvelopeSize,
 		protocolFamily:       protocolFamily,
 	}
@@ -21,7 +31,11 @@ func NewClient(localHost, remoteHost, protocolFamily string) *Client {
 
 type Client struct {
 	Config               net.ListenConfig
+
+	// LocalAddress is the local address that will be used to listen for incoming UDP packets.
 	LocalAddress         string
+
+	// DefaultRemoteAddress is the remote address that will be used if it not set in the envelope.
 	DefaultRemoteAddress string
 
 	// MaxEnvelopeSize is the maximum size of received envelopes. It should be set to the maximum

@@ -1,8 +1,8 @@
 {{- /* dot == render.ProtoServer */}}
 
 {{define "code/proto/udp/server/impl/net/connectFunction"}}
-func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, localHost string) (*{{ .Server | goIDUpper }}Closable, error) {
-    client := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(localHost, url.Host, url.Scheme)
+func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, localAddress string) (*{{ .Server | goIDUpper }}Closable, error) {
+    client := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(localAddress, url.Host, url.Scheme)
     consumer, producer := client, client
     return &{{ .Server | goIDUpper }}Closable{
         {{ .Type | goUsage }}{producer: producer, consumer: consumer},
@@ -11,8 +11,8 @@ func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url 
 {{- end}}
 
 {{define "code/proto/udp/server/impl/net/connectProducerFunction"}}
-func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, localHost string) (*{{ .Server | goIDUpper }}Closable, error) {
-    producer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(localHost, url.Host, url.Scheme)
+func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+    producer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient("", url.Host, url.Scheme)
     return &{{ .Server | goIDUpper }}Closable{
         {{ .Type | goUsage }}{producer: producer},
     }, nil
@@ -20,8 +20,8 @@ func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, 
 {{- end}}
 
 {{define "code/proto/udp/server/impl/net/connectConsumerFunction"}}
-func Connect{{ .Server | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, localHost string) (*{{ .Server | goIDUpper }}Closable, error) {
-    consumer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(localHost, url.Host, url.Scheme)
+func Connect{{ .Server | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+    consumer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.Host, "", url.Scheme)
     return &{{ .Server | goIDUpper }}Closable{
         {{ .Type | goUsage }}{consumer: consumer},
     }, nil

@@ -1,5 +1,7 @@
 import (
 	"context"
+	"fmt"
+	"github.com/bdragon300/go-asyncapi/run"
 	"net"
 	"sync"
 
@@ -11,22 +13,24 @@ func NewChannel(conn *net.UDPConn, bufferSize int, defaultRemoteAddress net.Addr
 		UDPConn:              conn,
 		defaultRemoteAddress: defaultRemoteAddress,
 		bufferSize:           bufferSize,
-		envelopes:            make(chan runUDP.EnvelopeReader),
+		callbacks:            run.NewRing[subscriberFunc](),
 		once:                 &sync.Once{},
 	}
 	res.ctx, res.cancel = context.WithCancelCause(context.Background())
 	return &res
 }
 
+type subscriberFunc func(envelope runUDP.EnvelopeReader)
+
 type Channel struct {
 	*net.UDPConn
 
 	defaultRemoteAddress net.Addr
-	bufferSize int
-	envelopes  chan runUDP.EnvelopeReader
-	ctx        context.Context
+	bufferSize           int
+	callbacks            *run.Ring[subscriberFunc]
+	ctx                  context.Context
 	cancel               context.CancelCauseFunc
-	once 			     *sync.Once
+	once                 *sync.Once
 }
 
 type ImplementationRecord interface {
@@ -49,22 +53,19 @@ func (c *Channel) Send(_ context.Context, envelopes ...runUDP.EnvelopeWriter) er
 }
 
 func (c *Channel) Receive(ctx context.Context, cb func(envelope runUDP.EnvelopeReader)) error {
+	element := c.callbacks.Append(cb)
+	defer func() {
+		c.callbacks.Remove(element)
+	}()
 	c.once.Do(func() {
-		go c.listen()
+		go c.readConn()
 	})
 
-	for {
-		select {
-		case v, ok := <-c.envelopes:
-			if !ok {
-				return context.Canceled // channel has been closed
-			}
-			cb(v)
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-c.ctx.Done():
-			return context.Cause(c.ctx)
-		}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-c.ctx.Done():
+		return context.Cause(c.ctx)
 	}
 }
 
@@ -73,7 +74,7 @@ func (c *Channel) Close() error {
 	return c.UDPConn.Close()
 }
 
-func (c *Channel) listen() {
+func (c *Channel) readConn() {
 	var err error
 	defer func() {
 		c.cancel(err)
@@ -86,10 +87,12 @@ func (c *Channel) listen() {
 		if n, addr, err = c.UDPConn.ReadFrom(buf); err != nil {
 			return
 		}
-		select {
-		case <-c.ctx.Done():
+
+		cb, ok := c.callbacks.Next()
+		if !ok {
+			err = fmt.Errorf("no subscribers for connection %s->%s", c.UDPConn.RemoteAddr(), c.UDPConn.LocalAddr())
 			return
-		case c.envelopes <- NewEnvelopeIn(buf[:n], addr):
 		}
+		cb(NewEnvelopeIn(buf[:n], addr))
 	}
 }
