@@ -3,8 +3,8 @@
 package http
 
 import (
-	"container/list"
 	"context"
+	"github.com/bdragon300/go-asyncapi/run"
 	runHttp "github.com/bdragon300/go-asyncapi/run/http"
 	"net/http"
 	"strings"
@@ -15,7 +15,7 @@ func NewConsumer(bindings *runHttp.ServerBindings) *ConsumeClient {
 	return &ConsumeClient{
 		bindings:    bindings,
 		mu:          &sync.RWMutex{},
-		subscribers: make(map[string]*roundRobin[subscriberFunc]),
+		subscribers: make(map[string]*run.Ring[subscriberFunc]),
 	}
 }
 
@@ -26,7 +26,7 @@ type ConsumeClient struct {
 	bindings *runHttp.ServerBindings
 	mu       *sync.RWMutex
 	// subscribers are callbacks list by channel name.
-	subscribers map[string]*roundRobin[subscriberFunc]
+	subscribers map[string]*run.Ring[subscriberFunc]
 }
 
 func (c *ConsumeClient) Subscriber(_ context.Context, address string, chb *runHttp.ChannelBindings, opb *runHttp.OperationBindings) (runHttp.Subscriber, error) {
@@ -45,7 +45,7 @@ func (c *ConsumeClient) Subscriber(_ context.Context, address string, chb *runHt
 
 func (c *ConsumeClient) ensureChannel(channelName string, opb *runHttp.OperationBindings) {
 	if _, ok := c.subscribers[channelName]; !ok {
-		c.subscribers[channelName] = newRoundRobin[subscriberFunc]()
+		c.subscribers[channelName] = run.NewRing[subscriberFunc]()
 		c.HandleFunc(channelName, func(w http.ResponseWriter, req *http.Request) {
 			if opb != nil {
 				needMethod := opb.Method
@@ -68,72 +68,5 @@ func (c *ConsumeClient) ensureChannel(channelName string, opb *runHttp.Operation
 			}
 			cb(NewEnvelopeIn(req, w))
 		})
-	}
-}
-
-func newRoundRobin[T any]() *roundRobin[T] {
-	return &roundRobin[T]{
-		mu:    &sync.Mutex{},
-		next:  nil,
-		items: list.New(),
-	}
-}
-
-type roundRobin[T any] struct {
-	mu    *sync.Mutex
-	next  *list.Element
-	items *list.List
-}
-
-func (r *roundRobin[T]) Next() (T, bool) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	if r.items.Len() == 0 || r.next == nil {
-		var zero T
-		return zero, false
-	}
-
-	r.next = r.next.Next()
-	if r.next == nil {
-		r.next = r.items.Front()
-	}
-
-	return r.next.Value.(T), true
-}
-
-func (r *roundRobin[T]) Append(item T) *list.Element {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	element := r.items.PushBack(item)
-	if r.next == nil {
-		r.next = element
-	}
-
-	return element
-}
-
-func (r *roundRobin[T]) Remove(element *list.Element) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	if element == nil || r.items.Len() == 0 {
-		return
-	}
-
-	if r.next == element {
-		if element.Next() != nil {
-			r.next = element.Next()
-		} else if element.Prev() != nil {
-			r.next = element.Prev()
-		} else {
-			r.next = nil
-		}
-	}
-
-	r.items.Remove(element)
-	if r.items.Len() == 0 {
-		r.next = nil
 	}
 }

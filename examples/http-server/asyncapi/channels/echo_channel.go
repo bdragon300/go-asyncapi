@@ -108,6 +108,7 @@ func (c EchoChannelHTTP) PublishServerRequest(
 	if err := c.SealServerRequest(envelope, message); err != nil {
 		return err
 	}
+
 	return c.Publish(ctx, envelope)
 }
 func (c EchoChannelHTTP) SealServerResponse(
@@ -130,6 +131,7 @@ func (c EchoChannelHTTP) PublishServerResponse(
 	if err := c.SealServerResponse(envelope, message); err != nil {
 		return err
 	}
+
 	return c.Publish(ctx, envelope)
 }
 

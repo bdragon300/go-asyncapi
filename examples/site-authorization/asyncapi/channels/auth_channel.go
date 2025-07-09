@@ -125,6 +125,7 @@ func (c AuthChannelKafka) PublishAuthRequestMsg(
 	if err := c.SealAuthRequestMsg(envelope, message); err != nil {
 		return err
 	}
+
 	return c.Publish(ctx, envelope)
 }
 func (c AuthChannelKafka) SealAuthResponseMsg(
@@ -148,6 +149,7 @@ func (c AuthChannelKafka) PublishAuthResponseMsg(
 	if err := c.SealAuthResponseMsg(envelope, message); err != nil {
 		return err
 	}
+
 	return c.Publish(ctx, envelope)
 }
 

@@ -34,7 +34,7 @@ type ImplementationRecord interface {
 
 func (p Publisher) Send(ctx context.Context, envelopes ...runHttp.EnvelopeWriter) error {
 	method := "GET"
-	if p.channelBindings != nil && p.operationBindings.Method != "" {
+	if p.operationBindings != nil && p.operationBindings.Method != "" {
 		method = p.operationBindings.Method
 	}
 

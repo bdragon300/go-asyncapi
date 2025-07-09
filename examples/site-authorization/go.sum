@@ -1,5 +1,7 @@
 github.com/bdragon300/go-asyncapi/run v0.0.0-20250629140715-878ff63f7846 h1:Fg/uu2m0Uh/WlzUhJP5lOSP1iyIzWlNr+FNLZIrXojg=
 github.com/bdragon300/go-asyncapi/run v0.0.0-20250629140715-878ff63f7846/go.mod h1:mC7SBVvP3/ycNbGNfnar+0zBboxJzn8VdmqnfPR9x+E=
+github.com/bdragon300/go-asyncapi/run v0.0.0-20250707112618-16964b883284 h1:Y6KmitOdWJanAftqGa64SL6L2Mz9ThXWKyP1CPYljQ0=
+github.com/bdragon300/go-asyncapi/run v0.0.0-20250707112618-16964b883284/go.mod h1:mC7SBVvP3/ycNbGNfnar+0zBboxJzn8VdmqnfPR9x+E=
 github.com/klauspost/compress v1.18.0 h1:c/Cqfb0r+Yi+JtIEq73FWXVkRonBlf0CRNYc8Zttxdo=
 github.com/klauspost/compress v1.18.0/go.mod h1:2Pp+KzxcywXVXMr50+X0Q/Lsb43OQHYWRCY2AiWywWQ=
 github.com/pierrec/lz4/v4 v4.1.22 h1:cKFw6uJDK+/gfw5BcDL0JL5aBsAFdsIT18eRtLj7VIU=

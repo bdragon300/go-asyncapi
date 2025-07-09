@@ -4,13 +4,14 @@ package http
 
 import (
 	"context"
+	"github.com/bdragon300/go-asyncapi/run"
 	runHttp "github.com/bdragon300/go-asyncapi/run/http"
 )
 
 type Subscriber struct {
 	channelBindings   *runHttp.ChannelBindings
 	operationBindings *runHttp.OperationBindings
-	callbacks         *roundRobin[subscriberFunc]
+	callbacks         *run.Ring[subscriberFunc]
 }
 
 func (s *Subscriber) Receive(ctx context.Context, cb func(envelope runHttp.EnvelopeReader)) error {

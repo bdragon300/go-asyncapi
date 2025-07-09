@@ -77,6 +77,7 @@ func (o AuthRequestOperationKafka) PublishAuthRequestMsg(
 	if err := o.SealAuthRequestMsg(envelope, message); err != nil {
 		return err
 	}
+
 	return o.Channel.Publish(ctx, envelope)
 }
 
