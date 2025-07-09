@@ -37,6 +37,79 @@ See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for m
 | <img alt="UDP" src="https://bdragon300.github.io/go-asyncapi/images/tcpudp.svg" style="height: 1.5em; vertical-align: middle">          | UDP            | [net](https://pkg.go.dev/net)                                                      |
 | <img alt="Websocket" src="https://bdragon300.github.io/go-asyncapi/images/websocket.svg" style="height: 1.5em; vertical-align: middle"> | Websocket      | [github.com/gobwas/ws](https://github.com/gobwas/ws)                               |
 
+## Usage
+
+The following couple of high-level examples show how to use the generated code for sending and receiving messages.
+
+*Publishing*:
+
+```go
+ctx := context.Background()
+// Connect to broker for sending messages
+myServer, err := servers.ConnectMyServerProducer(ctx, servers.MyServerURL())
+if err != nil {
+    log.Fatalf("connect to the myServer: %v", err)
+}
+defer myServer.Close()
+
+// Open an operation for sending messages
+myOperation, err := myServer.OpenMyPubOperationKafka(ctx)
+if err != nil {
+    log.Fatalf("open myPubOperation: %v", err)
+}
+defer myOperation.Close()
+
+// Craft a message
+msg := messages.MyMessage{
+	Payload: schemas.MyMessagePayload{
+		Field1: "value1",
+        Field2: 42,
+    },
+	Headers: schemas.MyMessageHeaders{
+        Header1: "header1",
+    },
+}
+
+// Send a message
+if err := myOperation.PublishMyMessage(ctx, msg); err != nil {
+    log.Fatalf("send message: %v", err)
+}
+```
+
+*Subscribing*:
+
+```go
+ctx := context.Background()
+// Connect to broker for receiving messages
+myServer, err := servers.ConnectMyServerConsumer(ctx, servers.MyServerURL())
+if err != nil {
+    log.Fatalf("connect to the myServer: %v", err)
+}
+defer myServer.Close()
+
+// Open an operation for receiving messages
+myOperation, err := myServer.OpenMySubOperationKafka(ctx)
+if err != nil {
+    log.Fatalf("open mySubOperation: %v", err)
+}
+defer myOperation.Close()
+
+// Subscribe to messages
+err := myOperation.SubscribeMyMessage(ctx, func(msg messages.MyMessage) {
+    log.Printf("received message: %+v", msg)
+})
+if err != nil {
+    log.Fatalf("subscribe: %v", err)
+}
+```
+
+The low-level functions are also available, which gives more control over the process.
+
+Also, here are some demo applications:
+
+* [Site authorization](https://github.com/bdragon300/go-asyncapi/blob/master/examples/site-authorization)
+* [HTTP echo server](https://github.com/bdragon300/go-asyncapi/blob/master/examples/http-server)
+
 ## Installation
 
 ```bash
