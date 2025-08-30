@@ -45,27 +45,25 @@ func Parse(uri string) (*JSONPointer, error) {
 //	https://example.com/schemas/myfile.json
 //	file:///home/user/myfile.json
 //
-// One exception is that URI's starting with schema “file://” are treated as local filesystem paths.
+// URI typically is stored in the URI field as parsed url.URL object. Filesystem path is stored in the FSPath field
+// as string instead.
 //
 // Typically, JSONPointer is used for representation of $ref expressions, read from the document, but may be used as
 // usual URL.
 //
 // [JSON Pointer IETF Draft]: https://datatracker.ietf.org/doc/html/draft-pbryan-zyp-json-ref-03
 type JSONPointer struct {
-	// URI is a location as parsed url.URL object if the location is a valid URI.
+	// URI is a parsed url.URL if the location is a URI. Fragment is always empty, as it is stored in Pointer field.
 	URI *url.URL
-	// FSPath is a location as string if the location is a filesystem path.
+	// FSPath is a filesystem path if the location is a local file path. Empty otherwise.
 	FSPath string
-	// Pointer is a list of URL-unescaped JSON pointer parts. Basically, it is everything after ``#/'' split by ``/''
+	// Pointer keeps the JSON Pointer parts (i.e. URL fragment part) as a list of strings, url-unescaped.
 	Pointer []string
 }
 
-// MatchPointer returns true if pointers are equal without considering the location. Receives the URL-unescaped pointer.
+// MatchPointer returns true if pointers are equal, without considering their location. Receives the URL-unescaped pointer.
 func (r JSONPointer) MatchPointer(unescapedPointer []string) bool {
-	escapedPointer := lo.Map(unescapedPointer, func(item string, _ int) string {
-		return url.PathEscape(item)
-	})
-	return slices.Compare(r.Pointer, escapedPointer) == 0
+	return slices.Compare(r.Pointer, unescapedPointer) == 0
 }
 
 // Location returns string representation of the location. If the location is a URI, returns the URI string. Otherwise,
