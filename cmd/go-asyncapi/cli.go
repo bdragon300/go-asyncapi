@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"io"
+	"log/slog"
 	"os"
 	"path"
 	"time"
@@ -10,6 +11,8 @@ import (
 	"github.com/bdragon300/go-asyncapi/assets"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/types"
+
+	stdLog "log"
 
 	chlog "github.com/charmbracelet/log"
 
@@ -45,21 +48,31 @@ func main() {
 	}
 
 	// Setting up the logger
+	// Initialize the stdlib logging as well to properly capture logs from other libraries
+	slogOpts := &slog.HandlerOptions{AddSource: false, Level: slog.LevelInfo}
 	switch cliArgs.Verbose {
 	case 0:
 		chlog.SetLevel(chlog.InfoLevel)
+		slogOpts.Level = slog.LevelInfo
 	case 1:
 		chlog.SetLevel(chlog.DebugLevel)
+		slogOpts.Level = slog.LevelDebug
 	case 2:
 		chlog.SetLevel(log.TraceLevel)
+		slogOpts.Level = slog.LevelDebug
 	default:
 		cliParser.Fail("Invalid verbosity level, use 0, 1 or 2")
 	}
 	chlog.SetReportTimestamp(false)
 	chlog.SetOutput(os.Stderr)
+	stdLog.SetOutput(os.Stderr)
+	slogHandler := slog.NewTextHandler(os.Stderr, slogOpts)
 	if cliArgs.Quiet {
 		chlog.SetOutput(io.Discard)
+		stdLog.SetOutput(io.Discard)
+		slogHandler = slog.NewTextHandler(io.Discard, slogOpts)
 	}
+	slog.SetDefault(slog.New(slogHandler))
 
 	logger := log.GetLogger("")
 	logger.Info("Logging to stderr", "level", chlog.GetLevel())
