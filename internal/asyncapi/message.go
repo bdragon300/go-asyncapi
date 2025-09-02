@@ -20,7 +20,7 @@ type Message struct {
 	Payload       *Object                `json:"payload" yaml:"payload" cgen:"data_model"` // TODO: other formats
 	CorrelationID *CorrelationID         `json:"correlationId" yaml:"correlationId"`
 	ContentType   string                 `json:"contentType" yaml:"contentType"`
-	Name          string                 `json:"name" yaml:"name"`
+	Name          string                 `json:"name" yaml:"name"` // TODO: use it for naming
 	Title         string                 `json:"title" yaml:"title"`
 	Summary       string                 `json:"summary" yaml:"summary"`
 	Description   string                 `json:"description" yaml:"description"`

@@ -28,24 +28,20 @@ type templateLoader interface {
 	LoadRootTemplate() (*template.Template, error)
 }
 
-// TemplateRenderManager provides the transactional model for the rendering the files. It manages the states
-// of every file being rendered. It also used by template functions.
+// TemplateRenderManager provides the transactional model for the rendering the files. It provides a way to
+// make changes in the files with the ability to roll back to the last committed state.
 //
-// File state includes the file name, package name, contents buffer, imports, and template namespace. Manager starts
-// exposing the state of a particular file by BeginFile call and keeps the committed states of all files, where
-// changes in the exposed state are saved on Commit call.
+// File state includes the file name, package name, contents buffer, imports, and template namespace.
 //
-// The typical workflow is:
+// The typical workflow is load-write-commit cycle:
 //
-//  1. Initialize manager with rendering options
-//  2. Load the templates, assign the TemplateLoader
-//  3. Call BeginFile for every file being rendered. Manager set the state of that file as current (creating a new state
-//     for a new file).
-//  4. Invoke the renderer code (which invokes the template code, template functions and so on), that makes changes
-//     to the current state.
-//  5. Call Commit to save the changes to the current file state on success. Otherwise, the changes are discarded.
-//  6. Repeat steps 3-5 any number of times.
-//  7. Gather the committed results.
+//  1. Call BeginFile to load the committed state (or creates a new one) of given file. After that the file state
+//     starts to be exposed using the manager methods and fields.
+//  2. Write the content to file buffer or make other changes in the its state. These changes are considered as not
+//     committed yet and will be rolled back on next BeginFile call.
+//  3. Call Commit to commit file changes.
+//
+// After all files are rendered, the committed states can be retrieved using Committed* methods.
 //
 // TODO: Refactor, split in smaller parts. Separate the transactions as generic and separate implementations, current state expose using methods.
 type TemplateRenderManager struct {
@@ -76,8 +72,8 @@ type TemplateRenderManager struct {
 	implementationsCommitted []ImplementationItem
 }
 
-// BeginFile sets the current state to be exposed by manager for a file. If the file was not rendered before,
-// it creates a new state with given package name. All uncommitted changes are discarded.
+// BeginFile loads the committed state of given file into the manager fields, discarding any uncommitted changes.
+// If the file is not loaded yet, it creates a new state.
 func (r *TemplateRenderManager) BeginFile(fileName, packageName string) {
 	if _, ok := r.stateCommitted[fileName]; !ok {
 		pkgName, _ := lo.Coalesce(packageName, utils.GetPackageName(path.Dir(fileName)))
@@ -105,8 +101,7 @@ func (r *TemplateRenderManager) SetCodeObject(obj common.Artifact, layoutItem co
 	r.CurrentLayoutItem = layoutItem
 }
 
-// AddImplementation adds a new implementation to the list. Gets to the committed list on Commit call, otherwise
-// the changes are discarded.
+// AddImplementation adds a new implementation to the list, making uncommitted changes.
 func (r *TemplateRenderManager) AddImplementation(obj common.ImplementationObject, directory string) {
 	r.Implementations = append(r.Implementations, ImplementationItem{Object: obj, Directory: directory})
 }

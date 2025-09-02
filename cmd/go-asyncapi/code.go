@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"go/format"
 	"io"
 	"io/fs"
 	"net/http"
@@ -12,6 +14,7 @@ import (
 	"time"
 
 	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
+	"github.com/bdragon300/go-asyncapi/internal/types"
 
 	"github.com/bdragon300/go-asyncapi/internal/locator"
 	"github.com/bdragon300/go-asyncapi/internal/log"
@@ -204,12 +207,12 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 	//
 	// Formatting
 	//
-	if !renderOpts.DisableFormatting {
-		logger.Debug("Run formatting")
-		if err = writer.FormatFiles(files); err != nil {
+	if !cmdConfig.Code.DisableFormatting {
+		logger.Debug("Run postprocessing")
+		if err = postprocessGoFiles(files); err != nil {
 			return fmt.Errorf("formatting: %w", err)
 		}
-		logger.Debug("Formatting complete")
+		logger.Debug("Postprocessing complete")
 	}
 
 	//
@@ -280,10 +283,8 @@ func getCompileOpts(cfg toolConfig) compile.CompilationOpts {
 func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool, allProtocols []string) (common.RenderOpts, error) {
 	logger := log.GetLogger("")
 	res := common.RenderOpts{
-		RuntimeModule:     conf.RuntimeModule,
-		TargetDir:         targetDir,
-		DisableFormatting: conf.Code.DisableFormatting,
-		PreambleTemplate:  conf.Code.PreambleTemplate,
+		RuntimeModule:    conf.RuntimeModule,
+		PreambleTemplate: conf.Code.PreambleTemplate,
 	}
 
 	// Layout
@@ -546,6 +547,32 @@ func getImplementationConfig(conf common.RenderImplementationsOpts, protocol str
 		Package:          protoConf.Package,
 		ReusePackagePath: protoConf.ReusePackagePath,
 	}
+}
+
+// postprocessGoFiles formats the file buffers in-place applying go fmt.
+func postprocessGoFiles(files map[string]*bytes.Buffer) error {
+	logger := log.GetLogger(log.LoggerPrefixFormatting)
+
+	keys := lo.Keys(files)
+	slices.Sort(keys)
+	for _, fileName := range keys {
+		if !strings.HasSuffix(fileName, ".go") {
+			logger.Debug("Skip a file", "name", fileName)
+			continue
+		}
+		buf := files[fileName]
+		logger.Debug("File", "name", fileName, "bytes", buf.Len())
+		formatted, err := format.Source(buf.Bytes())
+		if err != nil {
+			return types.MultilineError{err, buf.Bytes()}
+		}
+		buf.Reset()
+		buf.Write(formatted)
+		logger.Debug("-> File formatted", "name", fileName, "bytes", buf.Len())
+	}
+
+	logger.Info("Formatting complete", "files", len(files))
+	return nil
 }
 
 func loadImplementationsManifest() (implementations.ImplManifest, error) {

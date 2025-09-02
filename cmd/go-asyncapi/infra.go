@@ -25,7 +25,6 @@ type InfraCmd struct {
 	Document string `arg:"required,positional" help:"AsyncAPI document file or url" placeholder:"FILE"`
 
 	Engine     string `arg:"-e,--engine" help:"Target infra engine" placeholder:"NAME"`
-	ConfigFile string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"FILE"`
 	OutputFile string `arg:"-o,--output" help:"Output file path or '-' to print to stdout. If omitted, the file name depends on selected engine" placeholder:"FILE"`
 
 	TemplateDir      string        `arg:"-T,--template-dir" help:"User templates directory" placeholder:"DIR"`

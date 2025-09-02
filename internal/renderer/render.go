@@ -23,6 +23,7 @@ package renderer
 import (
 	"bytes"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"text/template"
@@ -32,11 +33,10 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
-	"github.com/samber/lo"
 )
 
-// FinishFiles extracts file's content from TemplateRenderManager, filters out the empty files, renders the preamble
-// before each *.go file. Function returns the finished content buffers for all files.
+// FinishFiles reads file content buffers from TemplateRenderManager, filtering out the empty files, and returns them
+// as map of buffers by file name. If a file is Go code, it also renders the preamble at its beginning.
 func FinishFiles(mng *manager.TemplateRenderManager) (map[string]*bytes.Buffer, error) {
 	states := mng.CommittedStates()
 
@@ -44,13 +44,9 @@ func FinishFiles(mng *manager.TemplateRenderManager) (map[string]*bytes.Buffer, 
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 	logger.Debug("Finish files rendering", "files", len(states))
 
-	tpl, err := mng.TemplateLoader.LoadTemplate(mng.RenderOpts.PreambleTemplate)
-	if err != nil {
-		return nil, fmt.Errorf("template %q: %w", mng.RenderOpts.PreambleTemplate, err)
-	}
+	var preambleTpl *template.Template // Loaded on demand
 
-	keys := lo.Keys(states)
-	slices.Sort(keys)
+	keys := slices.Sorted(maps.Keys(states))
 	for _, fileName := range keys {
 		state := states[fileName]
 		logger.Debug("Render file", "file", fileName, "package", state.PackageName, "imports", state.Imports.String())
@@ -63,9 +59,14 @@ func FinishFiles(mng *manager.TemplateRenderManager) (map[string]*bytes.Buffer, 
 		b := new(bytes.Buffer)
 		// Prepend the content with preamble if it's a Go file.
 		if strings.HasSuffix(fileName, ".go") {
+			var err error
+			if preambleTpl == nil {
+				if preambleTpl, err = mng.TemplateLoader.LoadTemplate(mng.RenderOpts.PreambleTemplate); err != nil {
+					return nil, fmt.Errorf("template %q: %w", mng.RenderOpts.PreambleTemplate, err)
+				}
+			}
 			logger.Debug("-> Render preamble", "file", fileName)
-			b, err = renderPreambleTemplate(tpl, mng.RenderOpts, state)
-			if err != nil {
+			if b, err = renderPreambleTemplate(preambleTpl, mng.RenderOpts, state); err != nil {
 				return nil, err
 			}
 		}

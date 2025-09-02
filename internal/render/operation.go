@@ -18,9 +18,9 @@ type Operation struct {
 
 	// IsSelectable is true if operation should get to selections
 	IsSelectable bool
-	// IsPublisher is true if the generation of publisher code is enabled
+	// IsPublisher is true if this is a publishing operation and the generation of publisher code is enabled
 	IsPublisher bool
-	// IsSubscriber is true if the generation of subscriber code is enabled
+	// IsSubscriber is true if this is a subscribing operation and the generation of subscriber code is enabled
 	IsSubscriber bool
 
 	// ChannelPromise is the channel that this operation is bound with.
