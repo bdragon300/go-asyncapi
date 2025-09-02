@@ -1,0 +1,27 @@
+{{- /*
+    .Object == common.Artifact: Ref -> render.Operation or render.Operation;
+    .Config == common.ConfigDiagram
+    */}}
+{{define "diagram/operation"}}
+{{- with $operation := deref .Object}}
+{{- if $.Config.ShowDocumentBorders}}{{goID $operation.Pointer.Location}}.{{end}}{{ goID $operation }}: "{{$operation.IsPublisher | ternary "📤" "📥"}} {{$operation.Name | toQuotable | ellipsis 25}}" {
+    class: operation
+}
+
+{{- if $.Config.ShowServers }}
+    {{- range $server := $operation.Channel.BoundServers }}
+        {{- range $message := $operation.BoundMessages }}
+            {{if $.Config.ShowDocumentBorders}}{{goID $operation.Pointer.Location}}.{{end}}{{ goID $operation }} {{$operation.IsPublisher | ternary "->" "<-"}} {{if $.Config.ShowDocumentBorders}}{{goID $server.Pointer.Location}}.{{end}}{{goID $server}}{{if $.Config.ShowChannels}}.{{goID $operation.Channel}}{{end}}: {
+                {{- if isVisible $message }}{{with $message.Name}}label: "✉️ {{. | toQuotable | ellipsis 25}}"{{end}}{{end}}
+            }
+        {{- end}}
+    {{- end}}
+{{- else}}
+    {{- range $message := $operation.BoundMessages }}
+        {{if $.Config.ShowDocumentBorders}}{{goID $operation.Pointer.Location}}.{{end}}{{ goID $operation }} {{$operation.IsPublisher | ternary "->" "<-"}} {{if $.Config.ShowDocumentBorders}}{{goID $operation.Channel.Pointer.Location}}.{{end}}{{goID $operation.Channel}}: {
+            {{- if isVisible $message }}{{with $message.Name}}label: "✉️ {{. | toQuotable | ellipsis 25}}"{{end}}{{end}}
+        }
+    {{- end}}
+{{- end}}
+{{- end}}
+{{- end}}

@@ -171,6 +171,16 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			trace("toQuotable", s)
 			return strings.TrimSuffix(strings.TrimPrefix(strconv.Quote(s), "\""), "\"")
 		},
+		"ellipsisStart": func(maxlen int, s string) string {
+			trace("ellipsisStart", maxlen, s)
+			if len(s) <= maxlen {
+				return s
+			}
+			if maxlen <= 3 {
+				return strings.Repeat(".", maxlen)
+			}
+			return "..." + s[len(s)-(maxlen-3):]
+		},
 		"debug": func(args ...any) string {
 			for _, arg := range args {
 				logger.Debugf("debug: [%[1]p][%[1]T] %[1]v", arg)

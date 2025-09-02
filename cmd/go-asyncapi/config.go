@@ -1,13 +1,22 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
 	"time"
 
+	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"gopkg.in/yaml.v3"
+)
+
+type d2DiagramEngine string
+
+const (
+	D2DiagramEngineELK   d2DiagramEngine = "elk"
+	D2DiagramEngineDagre d2DiagramEngine = "dagre"
 )
 
 // Structures, that represent the tool's configuration file
@@ -21,9 +30,10 @@ type (
 		Locator         toolConfigLocator          `yaml:"locator"`
 		Implementations []toolConfigImplementation `yaml:"implementations"`
 
-		Code   toolConfigCode   `yaml:"code"`
-		Client toolConfigClient `yaml:"client"`
-		Infra  toolConfigInfra  `yaml:"infra"`
+		Code    toolConfigCode    `yaml:"code"`
+		Client  toolConfigClient  `yaml:"client"`
+		Infra   toolConfigInfra   `yaml:"infra"`
+		Diagram toolConfigDiagram `yaml:"diagram"`
 	}
 
 	toolConfigLayout struct {
@@ -92,7 +102,70 @@ type (
 		ServerName string                                                                             `yaml:"serverName"` // TODO: make required
 		Variables  types.Union2[types.OrderedMap[string, string], []types.OrderedMap[string, string]] `yaml:"variables"`
 	}
+
+	toolConfigDiagram struct {
+		Format common.DiagramOutputFormat `yaml:"format"`
+
+		OutputFile        string `yaml:"outputFile"`
+		TargetDir         string `yaml:"targetDir"`
+		MultipleFiles     bool   `yaml:"multipleFiles"`
+		DisableFormatting bool   `yaml:"disableFormatting"`
+
+		ServersCentric    bool `yaml:"serversCentric"`
+		ChannelsCentric   bool `yaml:"channelsCentric"`
+		NoDocumentBorders bool `yaml:"noDocumentBorders"`
+
+		D2 toolConfigDiagramD2Opts `yaml:"d2"`
+	}
+
+	toolConfigDiagramD2Opts struct {
+		Engine      d2DiagramEngine              `yaml:"engine"`
+		ThemeID     *int64                       `yaml:"themeId"`
+		DarkThemeID *int64                       `yaml:"darkThemeId"`
+		Pad         *int64                       `yaml:"pad"`
+		Sketch      *bool                        `yaml:"sketch"`
+		Center      *bool                        `yaml:"center"`
+		Scale       *float64                     `yaml:"scale"`
+		ELK         toolConfigDiagramD2ELKOpts   `yaml:"elk"`
+		Dagre       toolConfigDiagramD2DagreOpts `yaml:"dagre"`
+	}
+
+	toolConfigDiagramD2ELKOpts struct {
+		Algorithm       string `yaml:"algorithm"`
+		NodeSpacing     int64  `yaml:"nodeSpacing"`
+		Padding         string `yaml:"padding"`
+		EdgeSpacing     int64  `yaml:"edgeSpacing"`
+		SelfLoopSpacing int64  `yaml:"selfLoopSpacing"`
+	}
+
+	toolConfigDiagramD2DagreOpts struct {
+		NodeSep int64 `yaml:"nodeSep"`
+		EdgeSep int64 `yaml:"edgeSep"`
+	}
 )
+
+// ToD2PluginOpts converts the config options to the JSON options of the d2 plugin.
+// For json tags see d2.d2layouts.d2elklayout.DefaultOpts.
+func (t toolConfigDiagramD2ELKOpts) ToD2PluginOpts() ([]byte, error) {
+	out := map[string]any{
+		"elk.algorithm":                 t.Algorithm,
+		"spacing.nodeNodeBetweenLayers": t.NodeSpacing,
+		"elk.padding":                   t.Padding,
+		"spacing.edgeNodeBetweenLayers": t.EdgeSpacing,
+		"elk.spacing.nodeSelfLoop":      t.SelfLoopSpacing,
+	}
+	return json.Marshal(out)
+}
+
+// ToD2PluginOpts converts the config options to the JSON options of the d2 plugin.
+// For json tags see d2.d2layouts.d2dagrelayout.DefaultOpts
+func (t toolConfigDiagramD2DagreOpts) ToD2PluginOpts() ([]byte, error) {
+	out := map[string]any{
+		"nodesep": t.NodeSep,
+		"edgesep": t.EdgeSep,
+	}
+	return json.Marshal(out)
+}
 
 // loadConfig loads and parses the configuration file from the given filesystem.
 func loadConfig(filesystem fs.FS, fileName string) (toolConfig, error) {
@@ -163,6 +236,32 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 	if len(userConf.Infra.ServerOpts) > 0 {
 		res.Infra.ServerOpts = userConf.Infra.ServerOpts
 	}
+
+	res.Diagram.Format = coalesce(userConf.Diagram.Format, defaultConf.Diagram.Format)
+	res.Diagram.OutputFile = coalesce(userConf.Diagram.OutputFile, defaultConf.Diagram.OutputFile)
+	res.Diagram.TargetDir = coalesce(userConf.Diagram.TargetDir, defaultConf.Diagram.TargetDir)
+	res.Diagram.MultipleFiles = coalesce(userConf.Diagram.MultipleFiles, defaultConf.Diagram.MultipleFiles)
+	res.Diagram.DisableFormatting = coalesce(userConf.Diagram.DisableFormatting, defaultConf.Diagram.DisableFormatting)
+	res.Diagram.ServersCentric = coalesce(userConf.Diagram.ServersCentric, defaultConf.Diagram.ServersCentric)
+	res.Diagram.ChannelsCentric = coalesce(userConf.Diagram.ChannelsCentric, defaultConf.Diagram.ChannelsCentric)
+	res.Diagram.NoDocumentBorders = coalesce(userConf.Diagram.NoDocumentBorders, defaultConf.Diagram.NoDocumentBorders)
+	// Diagram engine-specific options
+	res.Diagram.D2.Engine = coalesce(userConf.Diagram.D2.Engine, defaultConf.Diagram.D2.Engine)
+	res.Diagram.D2.ThemeID = coalesce(userConf.Diagram.D2.ThemeID, defaultConf.Diagram.D2.ThemeID)
+	res.Diagram.D2.DarkThemeID = coalesce(userConf.Diagram.D2.DarkThemeID, defaultConf.Diagram.D2.DarkThemeID)
+	res.Diagram.D2.Pad = coalesce(userConf.Diagram.D2.Pad, defaultConf.Diagram.D2.Pad)
+	res.Diagram.D2.Sketch = coalesce(userConf.Diagram.D2.Sketch, defaultConf.Diagram.D2.Sketch)
+	res.Diagram.D2.Center = coalesce(userConf.Diagram.D2.Center, defaultConf.Diagram.D2.Center)
+	res.Diagram.D2.Scale = coalesce(userConf.Diagram.D2.Scale, defaultConf.Diagram.D2.Scale)
+
+	res.Diagram.D2.ELK.Algorithm = coalesce(userConf.Diagram.D2.ELK.Algorithm, defaultConf.Diagram.D2.ELK.Algorithm)
+	res.Diagram.D2.ELK.NodeSpacing = coalesce(userConf.Diagram.D2.ELK.NodeSpacing, defaultConf.Diagram.D2.ELK.NodeSpacing)
+	res.Diagram.D2.ELK.Padding = coalesce(userConf.Diagram.D2.ELK.Padding, defaultConf.Diagram.D2.ELK.Padding)
+	res.Diagram.D2.ELK.EdgeSpacing = coalesce(userConf.Diagram.D2.ELK.EdgeSpacing, defaultConf.Diagram.D2.ELK.EdgeSpacing)
+	res.Diagram.D2.ELK.SelfLoopSpacing = coalesce(userConf.Diagram.D2.ELK.SelfLoopSpacing, defaultConf.Diagram.D2.ELK.SelfLoopSpacing)
+
+	res.Diagram.D2.Dagre.NodeSep = coalesce(userConf.Diagram.D2.Dagre.NodeSep, defaultConf.Diagram.D2.Dagre.NodeSep)
+	res.Diagram.D2.Dagre.EdgeSep = coalesce(userConf.Diagram.D2.Dagre.EdgeSep, defaultConf.Diagram.D2.Dagre.EdgeSep)
 
 	return res
 }

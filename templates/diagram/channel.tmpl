@@ -1,0 +1,21 @@
+{{- /*
+    .Object == common.Artifact: Ref -> render.Channel or render.Channel;
+    .Config == common.ConfigDiagram
+    */}}
+{{define "diagram/channel"}}
+{{- with $channel := deref .Object}}
+
+{{- if $.Config.ShowServers }}
+    {{- range $server := $channel.BoundServers }}
+        {{if $.Config.ShowDocumentBorders}}{{goID $server.Pointer.Location}}.{{end}}{{goID $server}}.{{ goID $channel }}: {{with $channel.Address}}"{{$channel.Address | toQuotable | ellipsis 25}}"{{end}} {
+            class: channel
+        }
+    {{- end}}
+{{- else }}
+    {{- if $.Config.ShowDocumentBorders}}{{goID $channel.Pointer.Location}}.{{end}}{{ goID $channel }}: {{with $channel.Address}}"{{$channel.Address | toQuotable | ellipsis 25}}"{{end}} {
+        class: channel
+    }
+{{- end}}
+
+{{- end}}
+{{- end}}

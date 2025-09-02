@@ -1,0 +1,53 @@
+{{- /*
+    .Object == common.Artifact: Ref -> render.Server or render.Server;
+    .Config == common.ConfigDiagram
+    */}}
+{{define "diagram/server"}}
+{{- with $server := deref .Object}}
+{{- if $.Config.ShowDocumentBorders}}{{goID $server.Pointer.Location}}.{{end}}{{ goID $server }}: "🖥 {{$server.Host | toQuotable}}" {
+    style: {
+        fill: white
+    }
+    {{- if not $.Config.ShowChannels }}
+        shape: image
+    {{- end }}
+    {{- with tryTmpl (print "diagram/server/proto/" $server.Protocol) $ }}{{.}}{{end}}
+}
+{{- end}}
+{{- end}}
+
+{{define "diagram/server/proto/amqp"}}
+icon: https://github.com/bdragon300/go-asyncapi/blob/master/icons/amqp.svg
+{{- end}}
+
+{{define "diagram/server/proto/http"}}
+icon: https://github.com/bdragon300/go-asyncapi/blob/master/icons/http.svg
+{{- end}}
+
+{{define "diagram/server/proto/ip"}}
+icon: https://github.com/bdragon300/go-asyncapi/blob/master/icons/ip.png
+{{- end}}
+
+{{define "diagram/server/proto/kafka"}}
+icon: https://github.com/bdragon300/go-asyncapi/blob/master/icons/kafka.svg
+{{- end}}
+
+{{define "diagram/server/proto/mqtt"}}
+icon: https://github.com/bdragon300/go-asyncapi/blob/master/icons/mqtt.svg
+{{- end}}
+
+{{define "diagram/server/proto/redis"}}
+icon: https://github.com/bdragon300/go-asyncapi/blob/master/icons/redis.svg
+{{- end}}
+
+{{define "diagram/server/proto/tcp"}}
+icon: https://github.com/bdragon300/go-asyncapi/blob/master/icons/tcpudp.svg
+{{- end}}
+
+{{define "diagram/server/proto/udp"}}
+icon: https://github.com/bdragon300/go-asyncapi/blob/master/icons/tcpudp.svg
+{{- end}}
+
+{{define "diagram/server/proto/ws"}}
+icon: https://github.com/bdragon300/go-asyncapi/blob/master/icons/ws.svg
+{{- end}}

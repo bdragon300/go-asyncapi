@@ -28,12 +28,13 @@ const (
 var ErrWrongCliArgs = errors.New("cli args")
 
 type cli struct {
-	CodeCmd             *CodeCmd   `arg:"subcommand:code" help:"Generate the code"`
-	ClientCmd           *ClientCmd `arg:"subcommand:client" help:"Build the client executable (requires Go toolchain installed)"`
-	InfraCmd            *InfraCmd  `arg:"subcommand:infra" help:"Generate the infrastructure setup files"`
-	ListImplementations *struct{}  `arg:"subcommand:list-implementations" help:"Show all available protocol implementations"`
-	Verbose             int        `arg:"-v" help:"Verbose output: 1 (debug), 2 (trace)" placeholder:"LEVEL"`
-	Quiet               bool       `help:"Suppress the logging output"`
+	CodeCmd             *CodeCmd    `arg:"subcommand:code" help:"Generate the code"`
+	ClientCmd           *ClientCmd  `arg:"subcommand:client" help:"Build the client executable (requires Go toolchain installed)"`
+	InfraCmd            *InfraCmd   `arg:"subcommand:infra" help:"Generate the infrastructure setup files"`
+	DiagramCmd          *DiagramCmd `arg:"subcommand:diagram" help:"Generate the architecture diagram"`
+	ListImplementations *struct{}   `arg:"subcommand:list-implementations" help:"Show all available protocol implementations"`
+	Verbose             int         `arg:"-v" help:"Verbose output: 1 (debug), 2 (trace)" placeholder:"LEVEL"`
+	Quiet               bool        `help:"Suppress the logging output"`
 
 	ConfigFile string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"FILE"`
 }
@@ -99,6 +100,8 @@ func main() {
 		err = cliClient(cliArgs.ClientCmd, mergedConfig)
 	case cliArgs.InfraCmd != nil:
 		err = cliInfra(cliArgs.InfraCmd, mergedConfig)
+	case cliArgs.DiagramCmd != nil:
+		err = cliDiagram(cliArgs.DiagramCmd, mergedConfig)
 	default:
 		cliParser.Fail("No command specified. Try --help for more information")
 		os.Exit(1)

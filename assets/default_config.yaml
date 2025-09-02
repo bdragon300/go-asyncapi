@@ -23,3 +23,21 @@ client:
 infra:
   engine: docker
   outputFile: ./docker-compose.yaml
+
+diagram:
+  format: svg
+  targetDir: .
+  d2:
+    engine: elk
+    pad: 100
+    elk:
+      # Defaults taken from d2.d2layouts.d2elklayout.DefaultOpts
+      algorithm: layered
+      nodeSpacing: 70
+      padding: "[top=50,left=50,bottom=50,right=50]"
+      edgeSpacing: 40
+      selfLoopSpacing: 50
+    dagre:
+      # Defaults taken from d2.d2layouts.d2dagrelayout.DefaultOpts
+      nodeSep: 60
+      edgeSep: 20

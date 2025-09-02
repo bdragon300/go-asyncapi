@@ -2,10 +2,12 @@ package tmpl
 
 import (
 	"errors"
+	"iter"
 
 	"github.com/bdragon300/go-asyncapi/implementations"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 )
 
@@ -71,4 +73,19 @@ func (i InfraTemplateContext) ServerVariableGroups(serverName string) [][]common
 		return nil
 	}
 	return res.VariableGroups
+}
+
+// DiagramTemplateContext is a context that is passed to the diagram templates.
+type DiagramTemplateContext struct {
+	// Objects is rendering objects queue.
+	Objects []common.Artifact
+
+	Config common.ConfigDiagram
+}
+
+func (d DiagramTemplateContext) ObjectsGroupedByLocation() iter.Seq2[string, []common.Artifact] {
+	groups := lo.GroupBy(d.Objects, func(item common.Artifact) string {
+		return item.Pointer().Location()
+	})
+	return utils.OrderedKeysIter(groups)
 }

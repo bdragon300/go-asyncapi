@@ -2,6 +2,13 @@ package common
 
 import "github.com/bdragon300/go-asyncapi/implementations"
 
+type DiagramOutputFormat string
+
+const (
+	DiagramOutputFormatSVG DiagramOutputFormat = "svg"
+	DiagramOutputFormatD2  DiagramOutputFormat = "d2"
+)
+
 // Rendering options, that come from the configuration file.
 type (
 	ConfigLayoutItem struct {
@@ -43,6 +50,12 @@ type (
 		Name  string
 		Value string
 	}
+
+	ConfigDiagram struct {
+		ShowChannels        bool
+		ShowServers         bool
+		ShowDocumentBorders bool
+	}
 )
 
 func (r ConfigLayoutItem) RenderProtocols() []string {
@@ -53,12 +66,10 @@ func (r ConfigLayoutItem) RenderProtocols() []string {
 }
 
 type RenderOpts struct {
-	RuntimeModule     string
-	ImportBase        string
-	TargetDir         string
-	DisableFormatting bool
-	PreambleTemplate  string
-	Layout            []ConfigLayoutItem
+	RuntimeModule    string
+	ImportBase       string
+	PreambleTemplate string
+	Layout           []ConfigLayoutItem
 }
 
 type RenderImplementationsOpts struct {

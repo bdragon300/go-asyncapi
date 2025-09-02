@@ -125,28 +125,28 @@ func JoinNonemptyStrings(sep string, s ...string) string {
 func ToGoFilePath(pathString string) string {
 	if pathString == "" {
 		hsh := md5.New()
-		return fmt.Sprintf("empty%s.go", normalizePathItem(base32.StdEncoding.EncodeToString(hsh.Sum([]byte(pathString)))))
+		return fmt.Sprintf("empty%s.go", NormalizePathItem(base32.StdEncoding.EncodeToString(hsh.Sum([]byte(pathString)))))
 	}
 
 	directory, file := path.Split(path.Clean(pathString))
 	if directory != "" {
 		dirs := strings.Split(path.Clean(directory), string(os.PathSeparator))
 		normDirs := lo.Map(dirs, func(s string, _ int) string {
-			return normalizePathItem(s)
+			return NormalizePathItem(s)
 		})
 		directory = path.Join(normDirs...)
 	}
 	fileName := strings.TrimSuffix(file, path.Ext(file))
-	normFile := normalizePathItem(fileName)
+	normFile := NormalizePathItem(fileName)
 
 	return path.Join(directory, normFile+".go")
 }
 
-// normalizePathItem converts a string to a valid path item.
+// NormalizePathItem converts a string to a valid path item.
 //
 // The function removes invalid characters from the string, converts it to snake case. If string contains the
 // invalid characters only, it is replaced by hash string of the original string to make it non-empty.
-func normalizePathItem(s string) string {
+func NormalizePathItem(s string) string {
 	// Replace everything except alphanumerics to underscores
 	newString := string(fileNameReplaceRe.ReplaceAll([]byte(s), []byte("_")))
 
@@ -157,7 +157,7 @@ func normalizePathItem(s string) string {
 	// In this case, the filename will be the md5 hash from original rawPath in base32 form
 	if newString == "" {
 		hsh := md5.New()
-		newString = "empty" + normalizePathItem(base32.StdEncoding.EncodeToString(hsh.Sum([]byte(s))))
+		newString = "empty" + NormalizePathItem(base32.StdEncoding.EncodeToString(hsh.Sum([]byte(s))))
 	}
 
 	return lo.SnakeCase(newString)
