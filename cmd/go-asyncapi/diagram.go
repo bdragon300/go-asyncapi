@@ -36,10 +36,6 @@ import (
 	"oss.terrastruct.com/d2/lib/textmeasure"
 )
 
-const (
-	defaultOutputFileName = "asyncapi_diagram" // without extension
-)
-
 type DiagramCmd struct {
 	Document          string `arg:"required,positional" help:"AsyncAPI document file or url" placeholder:"FILE"`
 	Format            string `arg:"-f,--format" help:"Output diagram format. Possible values: svg, d2" placeholder:"FORMAT"`
@@ -134,6 +130,7 @@ func cliDiagram(cmd *DiagramCmd, globalConfig toolConfig) error {
 	}
 
 	diagramConfig := getDiagramConfig(cmdConfig.Diagram)
+	fileExtension := "." + strings.ToLower(string(cmdConfig.Diagram.Format))
 	if cmdConfig.Diagram.MultipleFiles {
 		artifactsByDoc := lo.MapValues(documents, func(d *compiler.Document, _ string) []common.Artifact {
 			return lo.Filter(d.Artifacts(), func(a common.Artifact, _ int) bool {
@@ -141,7 +138,7 @@ func cliDiagram(cmd *DiagramCmd, globalConfig toolConfig) error {
 			})
 		})
 		logger.Debug("Render multiple diagram files", "count", len(artifactsByDoc))
-		if err = renderer.RenderDiagramMultipleFiles(artifactsByDoc, diagramConfig, renderManager); err != nil {
+		if err = renderer.RenderDiagramMultipleFiles(artifactsByDoc, fileExtension, diagramConfig, renderManager); err != nil {
 			return fmt.Errorf("render diagrams: %w", err)
 		}
 	} else {
@@ -150,7 +147,11 @@ func cliDiagram(cmd *DiagramCmd, globalConfig toolConfig) error {
 			return a.Selectable() && a.Visible()
 		})
 		logger.Debug("Render diagram file", "name", cmdConfig.Diagram.OutputFile, "objects", len(artifacts))
-		if err = renderer.RenderDiagramOneFile(artifacts, cmdConfig.Diagram.OutputFile, diagramConfig, renderManager); err != nil {
+		fileName := cmdConfig.Diagram.OutputFile
+		if fileName == "" {
+			fileName = strings.TrimSuffix(path.Base(cmd.Document), path.Ext(cmd.Document)) + fileExtension
+		}
+		if err = renderer.RenderDiagramOneFile(artifacts, fileName, diagramConfig, renderManager); err != nil {
 			return fmt.Errorf("render diagram: %w", err)
 		}
 	}
@@ -171,7 +172,7 @@ func cliDiagram(cmd *DiagramCmd, globalConfig toolConfig) error {
 	needPostprocessing := cmdConfig.Diagram.Format != common.DiagramOutputFormatD2 || !cmdConfig.Diagram.DisableFormatting
 	if needPostprocessing {
 		logger.Debug("Run postprocessing", "files", len(buffers))
-		if buffers, err = posprocessD2Files(buffers, cmdConfig); err != nil {
+		if buffers, err = postprocessD2Files(buffers, cmdConfig); err != nil {
 			return fmt.Errorf("postprocessing: %w", err)
 		}
 		logger.Debug("Postprocessing complete", "filesCount", len(buffers))
@@ -188,8 +189,7 @@ func cliDiagram(cmd *DiagramCmd, globalConfig toolConfig) error {
 	return nil
 }
 
-func posprocessD2Files(buffers map[string]*bytes.Buffer, cmdConfig toolConfig) (map[string]*bytes.Buffer, error) {
-	newBuffers := make(map[string]*bytes.Buffer, len(buffers))
+func postprocessD2Files(buffers map[string]*bytes.Buffer, cmdConfig toolConfig) (map[string]*bytes.Buffer, error) {
 	for fileName, srcBuf := range buffers {
 		log.GetLogger("").Debug("Compiling d2 file", "file", fileName, "size", srcBuf.Len(), "opts", cmdConfig.Diagram.D2)
 		diagramObj, graphObj, err := compileD2(srcBuf.Bytes(), cmdConfig.Diagram.D2)
@@ -202,8 +202,7 @@ func posprocessD2Files(buffers map[string]*bytes.Buffer, cmdConfig toolConfig) (
 
 		switch {
 		case cmdConfig.Diagram.Format == common.DiagramOutputFormatSVG:
-			newFileName := strings.TrimSuffix(fileName, path.Ext(fileName)) + "." + strings.ToLower(string(cmdConfig.Diagram.Format))
-			log.GetLogger(log.LoggerPrefixRendering).Debug("-> Converting D2 diagram to SVG", "file", fileName, "newFile", newFileName)
+			log.GetLogger(log.LoggerPrefixRendering).Debug("-> Converting D2 diagram to SVG", "file", fileName)
 			renderOpts := getD2RenderOpts(cmdConfig.Diagram.D2)
 			newBuf, err := d2svg.Render(diagramObj, &renderOpts)
 			if err != nil {
@@ -212,15 +211,16 @@ func posprocessD2Files(buffers map[string]*bytes.Buffer, cmdConfig toolConfig) (
 					Content: srcBuf.Bytes(),
 				}
 			}
-			newBuffers[newFileName] = bytes.NewBuffer(newBuf)
+			buffers[fileName].Reset()
+			buffers[fileName].Write(newBuf)
 
 		case !cmdConfig.Diagram.DisableFormatting:
 			log.GetLogger(log.LoggerPrefixFormatting).Debug("-> Formatting D2 file", "file", fileName)
 			newBuf := []byte(d2format.Format(graphObj.BaseAST))
-			newBuffers[fileName] = bytes.NewBuffer(newBuf)
+			buffers[fileName] = bytes.NewBuffer(newBuf)
 		}
 	}
-	return newBuffers, nil
+	return buffers, nil
 }
 
 func cliDiagramMergeConfig(globalConfig toolConfig, cmd *DiagramCmd) (toolConfig, error) {
@@ -237,11 +237,7 @@ func cliDiagramMergeConfig(globalConfig toolConfig, cmd *DiagramCmd) (toolConfig
 			strings.Join(lo.Map(formats, func(f common.DiagramOutputFormat, _ int) string { return string(f) }), ", "),
 		)
 	}
-	res.Diagram.OutputFile = coalesce(
-		cmd.OutputFile,
-		globalConfig.Diagram.OutputFile,
-		defaultOutputFileName+"."+strings.ToLower(string(res.Diagram.Format)), // Autogenerated name
-	)
+	res.Diagram.OutputFile = coalesce(cmd.OutputFile, globalConfig.Diagram.OutputFile)
 	res.Diagram.TargetDir = coalesce(cmd.TargetDir, globalConfig.Diagram.TargetDir)
 	res.Diagram.MultipleFiles = coalesce(cmd.MultipleFiles, globalConfig.Diagram.MultipleFiles)
 	res.Diagram.DisableFormatting = coalesce(cmd.DisableFormatting, globalConfig.Diagram.DisableFormatting)

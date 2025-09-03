@@ -13,7 +13,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 )
 
-func RenderDiagramOneFile(objects []common.Artifact, outputFileName string, config common.ConfigDiagram, mng *manager.TemplateRenderManager) error {
+func RenderDiagramOneFile(objects []common.Artifact, fileName string, config common.ConfigDiagram, mng *manager.TemplateRenderManager) error {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
 	logger.Trace("Loading root template")
@@ -26,15 +26,15 @@ func RenderDiagramOneFile(objects []common.Artifact, outputFileName string, conf
 		Config:  config,
 	}
 
-	logger.Debug("Render diagram file", "name", outputFileName)
-	if err := renderDiagram(tpl, ctx, outputFileName, mng); err != nil {
+	logger.Debug("Render diagram file", "name", fileName)
+	if err := renderDiagram(tpl, ctx, fileName, mng); err != nil {
 		return err
 	}
-	logger.Info("Diagram file rendered", "file", outputFileName)
+	logger.Info("Diagram file rendered", "file", fileName)
 	return nil
 }
 
-func RenderDiagramMultipleFiles(documents map[string][]common.Artifact, config common.ConfigDiagram, mng *manager.TemplateRenderManager) error {
+func RenderDiagramMultipleFiles(documents map[string][]common.Artifact, fileExtension string, config common.ConfigDiagram, mng *manager.TemplateRenderManager) error {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
 	logger.Trace("Loading root template")
@@ -48,8 +48,7 @@ func RenderDiagramMultipleFiles(documents map[string][]common.Artifact, config c
 			Objects: group,
 			Config:  config,
 		}
-		fileName := utils.NormalizePathItem(path.Base(location))
-		fileName = strings.TrimSuffix(fileName, path.Ext(fileName))
+		fileName := strings.TrimSuffix(path.Base(location), path.Ext(location))
 
 		// Ensure unique file names
 		newFileName := fileName
@@ -59,7 +58,7 @@ func RenderDiagramMultipleFiles(documents map[string][]common.Artifact, config c
 			}
 			newFileName = fmt.Sprintf("%s_%d", fileName, i)
 		}
-		newFileName += ".d2"
+		newFileName += fileExtension
 
 		logger.Debug("Rendering file", "name", newFileName)
 		if err := renderDiagram(tpl, ctx, newFileName, mng); err != nil {
