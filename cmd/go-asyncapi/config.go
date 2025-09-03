@@ -111,15 +111,16 @@ type (
 		MultipleFiles     bool   `yaml:"multipleFiles"`
 		DisableFormatting bool   `yaml:"disableFormatting"`
 
-		ServersCentric    bool `yaml:"serversCentric"`
-		ChannelsCentric   bool `yaml:"channelsCentric"`
-		NoDocumentBorders bool `yaml:"noDocumentBorders"`
+		ChannelsCentric bool `yaml:"channelsCentric"`
+		ServersCentric  bool `yaml:"serversCentric"`
+		DocumentBorders bool `yaml:"documentBorders"`
 
 		D2 toolConfigDiagramD2Opts `yaml:"d2"`
 	}
 
 	toolConfigDiagramD2Opts struct {
 		Engine      d2DiagramEngine              `yaml:"engine"`
+		Direction   common.D2DiagramDirection    `yaml:"direction"`
 		ThemeID     *int64                       `yaml:"themeId"`
 		DarkThemeID *int64                       `yaml:"darkThemeId"`
 		Pad         *int64                       `yaml:"pad"`
@@ -244,9 +245,10 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 	res.Diagram.DisableFormatting = coalesce(userConf.Diagram.DisableFormatting, defaultConf.Diagram.DisableFormatting)
 	res.Diagram.ServersCentric = coalesce(userConf.Diagram.ServersCentric, defaultConf.Diagram.ServersCentric)
 	res.Diagram.ChannelsCentric = coalesce(userConf.Diagram.ChannelsCentric, defaultConf.Diagram.ChannelsCentric)
-	res.Diagram.NoDocumentBorders = coalesce(userConf.Diagram.NoDocumentBorders, defaultConf.Diagram.NoDocumentBorders)
+	res.Diagram.DocumentBorders = coalesce(userConf.Diagram.DocumentBorders, defaultConf.Diagram.DocumentBorders)
 	// Diagram engine-specific options
 	res.Diagram.D2.Engine = coalesce(userConf.Diagram.D2.Engine, defaultConf.Diagram.D2.Engine)
+	res.Diagram.D2.Direction = coalesce(userConf.Diagram.D2.Direction, defaultConf.Diagram.D2.Direction)
 	res.Diagram.D2.ThemeID = coalesce(userConf.Diagram.D2.ThemeID, defaultConf.Diagram.D2.ThemeID)
 	res.Diagram.D2.DarkThemeID = coalesce(userConf.Diagram.D2.DarkThemeID, defaultConf.Diagram.D2.DarkThemeID)
 	res.Diagram.D2.Pad = coalesce(userConf.Diagram.D2.Pad, defaultConf.Diagram.D2.Pad)

@@ -29,6 +29,7 @@ diagram:
   targetDir: .
   d2:
     engine: elk
+    direction: right
     pad: 100
     elk:
       # Defaults taken from d2.d2layouts.d2elklayout.DefaultOpts

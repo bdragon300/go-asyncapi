@@ -9,6 +9,15 @@ const (
 	DiagramOutputFormatD2  DiagramOutputFormat = "d2"
 )
 
+type D2DiagramDirection string
+
+const (
+	D2DiagramDirectionUp    D2DiagramDirection = "up"
+	D2DiagramDirectionDown  D2DiagramDirection = "down"
+	D2DiagramDirectionLeft  D2DiagramDirection = "left"
+	D2DiagramDirectionRight D2DiagramDirection = "right"
+)
+
 // Rendering options, that come from the configuration file.
 type (
 	ConfigLayoutItem struct {
@@ -55,6 +64,7 @@ type (
 		ShowChannels        bool
 		ShowServers         bool
 		ShowDocumentBorders bool
+		D2DiagramDirection  D2DiagramDirection
 	}
 )
 
