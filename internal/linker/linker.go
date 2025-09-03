@@ -139,12 +139,18 @@ func Stats(sources map[string]ObjectSource) string {
 
 // TODO: detect ref loops to avoid infinite recursion
 // TODO: external refs can not be resolved at first time -- leave them unresolved
-func resolvePromise(p common.ObjectPromise, docPath string, sources map[string]ObjectSource) (common.Artifact, bool) {
+func resolvePromise(p common.ObjectPromise, docLocation string, sources map[string]ObjectSource) (common.Artifact, bool) {
 	var ref *jsonpointer.JSONPointer
 	var cb, userCb common.PromiseFindCbFunc
 
-	target := docPath
+	target := docLocation
+	ref = lo.Must(jsonpointer.Parse(p.Ref()))
+	if ref.Location() != "" {
+		target = ref.Location()
+	}
+
 	if _, ok := sources[target]; !ok {
+		// Promise points to a document that possibly may not been compiled yet, postpone it
 		return nil, false
 	}
 
@@ -152,10 +158,6 @@ func resolvePromise(p common.ObjectPromise, docPath string, sources map[string]O
 	if userCb = p.FindCallback(); userCb != nil {
 		cb = userCb
 	} else {
-		ref = lo.Must(jsonpointer.Parse(p.Ref()))
-		if ref.Location() != "" {
-			target = ref.Location()
-		}
 		cb = func(item common.Artifact) bool { return ref.MatchPointer(item.Pointer().Pointer) }
 	}
 	found := lo.Filter(srcObjects, func(obj common.Artifact, _ int) bool { return cb(obj) })
