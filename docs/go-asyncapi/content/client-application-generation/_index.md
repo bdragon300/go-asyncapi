@@ -1,5 +1,5 @@
 ---
-title: "Client application"
+title: "Client app building"
 weight: 500
 description: "Building a no-code client application with go-asyncapi"
 ---

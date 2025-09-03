@@ -10,6 +10,11 @@ description: "go-asyncapi configuration reference"
 Configuration is set in a single YAML file, that may contain the attributes described below. 
 All attributes are optional, and if not set, the tool uses the default values.
 
+{{% hint info %}}
+Configuration file with all default values is 
+[here](https://github.com/bdragon300/go-asyncapi/blob/master/assets/default_config.yaml)
+{{% /hint %}}
+
 ## Config
 
 | Attribute       | Type                                | Default                                                               | Description                                                                                              |
@@ -23,6 +28,7 @@ All attributes are optional, and if not set, the tool uses the default values.
 | code            | [Code](#code)                       |                                                                       | Code generation settings                                                                                 |
 | client          | [Client](#client)                   |                                                                       | No-code client building settings                                                                         |
 | infra           | [Infra](#infra)                     |                                                                       | Infra files generation settings                                                                          |
+| diagram         | [Diagram](#diagram)                 |                                                                       | Diagram generation settings                                                                              |
 
 ## Layout
 
@@ -129,6 +135,52 @@ If both `onlyPublish` and `onlySubscribe` are `false` or omitted, the tool gener
 |------------|----------------------------------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
 | serverName | string                                 |         | **Required**. Server name (key in document)                                                                                                              |
 | variables  | map[string]string, []map[string]string |         | [Server variables](https://www.asyncapi.com/docs/concepts/asyncapi-document/variable-url) values. May be a key-value object or list of key-value objects |
+
+## Diagram
+
+| Attribute         | Type                    | Default | Description                                                                                                                    |
+|-------------------|-------------------------|---------|--------------------------------------------------------------------------------------------------------------------------------|
+| format            | string                  | `svg`   | Output diagram format. Possible values: `svg`, `d2`                                                                            |
+| outputFile        | string                  |         | Output file name. Discarded if `--multiple-files` is set                                                                       |
+| targetDir         | string                  | `.`     | Directory where to place the output files                                                                                      |
+| multipleFiles     | bool                    |         | Generate one diagram file per each source AsyncAPI document instead of all in one diagram. Discards the --output option effect |
+| disableFormatting | bool                    |         | Do not run the d2 file formatter. Only applies when output format is d2                                                        |
+| channelsCentric   | bool                    |         | Generate the channels-centric diagram                                                                                          |
+| serversCentric    | bool                    |         | Generate the servers-centric diagram                                                                                           |
+| documentBorders   | bool                    |         | Draw document borders in the diagram                                                                                           |
+| d2                | [DiagramD2](#diagramd2) |         | D2 engine options                                                                                                              |
+
+## DiagramD2
+
+| Attribute   | Type                              | Default | Description                                                                   |
+|-------------|-----------------------------------|---------|-------------------------------------------------------------------------------|
+| engine      | string                            | elk     | D2 layout engine to use. Possible values: `elk`, `dagre`                      |
+| direction   | string                            | right   | Diagram draw direction. Possible values: `up`, `down`, `right`, `left`        |
+| themeId     | int64                             |         | Theme id to use in diagram. [More info](https://d2lang.com/tour/themes/)      |
+| darkThemeId | int64                             |         | Dark theme id to use in diagram. [More info](https://d2lang.com/tour/themes/) |
+| pad         | int64                             | 100     | Diagram padding in pixels                                                     |
+| sketch      | bool                              |         | Draw diagram in sketchy style                                                 |
+| center      | bool                              |         | Center the diagram in the output canvas                                       |                                       |
+| scale       | float64                           |         | Scale factor                                                                  |
+| elk         | [DiagramD2ELK](#diagramd2elk)     |         | D2 ELK engine options                                                         |
+| dagre       | [DiagramD2Dagre](#diagramd2dagre) |         | D2 Dagre engine options                                                       |
+
+## DiagramD2ELK
+
+| Attribute       | Type   | Default                               | Description                                                                                              |
+|-----------------|--------|---------------------------------------|----------------------------------------------------------------------------------------------------------|
+| algorithm       | string | `layered`                             | Layout algorithm to use. Possible values: `layered`, `force`, `radial`, `mrtree`, `disco`, `rectpacking` |
+| nodeSpacing     | int64  | 70                                    | Spacing to be preserved between any pair of nodes of two adjacent layers                                 |
+| padding         | string | `[top=50,left=50,bottom=50,right=50]` | Expression of padding to be left to a parent element’s border when placing child elements                |
+| edgeSpacing     | int64  | 40                                    | Spacing to be preserved between nodes and edges that are routed next to the node’s layer                 |
+| selfLoopSpacing | int64  | 50                                    | Spacing to be preserved between a node and its self loops                                                |
+
+## DiagramD2Dagre
+
+| Attribute | Type  | Default | Description                          |
+|-----------|-------|---------|--------------------------------------|
+| nodeSep   | int64 | 60      | Number of pixels that separate nodes |
+| edgeSep   | int64 | 20      | Number of pixels that separate edges |
 
 # Notes
 

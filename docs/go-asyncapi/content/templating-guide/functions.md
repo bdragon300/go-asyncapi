@@ -414,6 +414,19 @@ Example:
 
 `{{ toQuotable "foo\n \"bar\" \xFFbaz" }}` returns `foo\n \"bar\" \xFFbaz`.
 
+### ellipsisStart
+
+```go
+func ellipsisStart(maxLen int, s string) string
+```
+
+The function truncates a string to a `maxLen` characters from the end and prepends an ellipsis ("...") if the 
+string exceeds that width.
+
+Example:
+
+`{{ "Hello, World!" | ellipsisStart 10 }}` returns `... World!`.
+
 ### debug
 
 ```go
