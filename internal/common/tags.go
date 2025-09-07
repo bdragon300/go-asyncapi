@@ -7,7 +7,7 @@ type SchemaTag string
 
 const (
 	// SchemaTagSelectable marks the objects available be selected from tool config. Typically, this tag is used for
-	// entities that are defined in the sections `channels`, `servers`, etc.
+	// entities that are defined in root sections `channels`, `servers`, etc.
 	SchemaTagSelectable SchemaTag = "selectable"
 
 	// SchemaTagDefinition forces an object to be rendered as a Go definition instead of inlined object.
