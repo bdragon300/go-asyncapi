@@ -5,13 +5,6 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 )
 
-type CorrelationIDStructFieldKind string
-
-const (
-	CorrelationIDStructFieldKindPayload CorrelationIDStructFieldKind = "payload"
-	CorrelationIDStructFieldKindHeaders CorrelationIDStructFieldKind = "headers"
-)
-
 // CorrelationID represents the correlation ID object.
 type CorrelationID struct {
 	lang.BaseJSONPointed
@@ -22,7 +15,7 @@ type CorrelationID struct {
 	// Dummy is true when correlation ID object is ignored (x-ignore: true)
 	Dummy bool
 	// StructFieldName describes which field in target message struct to use: payload or headers.
-	StructFieldKind CorrelationIDStructFieldKind
+	StructFieldKind RuntimeExpressionStructFieldKind
 	// LocationPath is JSONPointer fragment with field location in message, split in parts by "/".
 	LocationPath []string
 }

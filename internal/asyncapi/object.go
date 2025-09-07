@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
-	"strings"
-	"unicode"
 
 	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
 
@@ -480,17 +478,4 @@ func (o Object) xGoTagsInfo(ctx *compile.Context) (xTags types.OrderedMap[string
 		ctx.Logger.Trace("Extra tags values", "values", xTagValues)
 	}
 	return
-}
-
-// guessTagByContentType guesses the struct tag name by the MIME type. It returns the last
-// word extracted from the content type string, e.g. for "application/xhtml+xml" it will return "xml".
-func guessTagByContentType(contentType string) string {
-	words := strings.FieldsFunc(contentType, func(r rune) bool {
-		return !unicode.IsLetter(r) && !unicode.IsNumber(r)
-	})
-	if res, ok := lo.Last(words); ok {
-		return res
-	}
-
-	return contentType
 }

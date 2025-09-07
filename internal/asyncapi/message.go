@@ -177,8 +177,8 @@ func (m Message) buildInOutStructs(ctx *compile.Context, message render.Message,
 			HasDefinition: true,
 		},
 		Fields: []lang.GoStructField{
-			{Name: utils.ToGolangName(string(render.CorrelationIDStructFieldKindPayload), true), Type: payloadType},
-			{Name: utils.ToGolangName(string(render.CorrelationIDStructFieldKindHeaders), true), Type: headerType},
+			{Name: utils.ToGolangName(string(render.RuntimeExpressionStructFieldKindPayload), true), Type: payloadType},
+			{Name: utils.ToGolangName(string(render.RuntimeExpressionStructFieldKindHeaders), true), Type: headerType},
 		},
 	}
 	in = &lang.GoStruct{
@@ -188,8 +188,8 @@ func (m Message) buildInOutStructs(ctx *compile.Context, message render.Message,
 			HasDefinition: true,
 		},
 		Fields: []lang.GoStructField{
-			{Name: utils.ToGolangName(string(render.CorrelationIDStructFieldKindPayload), false), Type: payloadType},
-			{Name: utils.ToGolangName(string(render.CorrelationIDStructFieldKindHeaders), false), Type: headerType},
+			{Name: utils.ToGolangName(string(render.RuntimeExpressionStructFieldKindPayload), false), Type: payloadType},
+			{Name: utils.ToGolangName(string(render.RuntimeExpressionStructFieldKindHeaders), false), Type: headerType},
 		},
 	}
 
