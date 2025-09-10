@@ -9,15 +9,6 @@ import (
 // DefaultContentType is the default content type to use if none is set.
 const DefaultContentType = "application/json"
 
-// RuntimeExpressionStructFieldKind represents a source field enum in "runtime expression".
-// See: https://github.com/asyncapi/spec/blob/master/spec/asyncapi.md#runtime-expression
-type RuntimeExpressionStructFieldKind string
-
-const (
-	RuntimeExpressionStructFieldKindPayload RuntimeExpressionStructFieldKind = "payload"
-	RuntimeExpressionStructFieldKindHeaders RuntimeExpressionStructFieldKind = "headers"
-)
-
 // AsyncAPI represents the root of the AsyncAPI document.
 type AsyncAPI struct {
 	lang.BaseJSONPointed

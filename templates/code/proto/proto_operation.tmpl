@@ -78,13 +78,28 @@ func (c {{.Type | goUsage}}) Bindings() {{goQualR .Protocol "OperationBindings"}
 func (o {{ .Type | goUsage }}) Close() error {
     return o.Channel.Close()
 }
+
+{{/*{{if and .OperationReply .AllowTwoWayCode}}*/}}
+{{/*    func (c {{.Type | goUsage}}) Reply({{with .OperationReply.Channel}}channel {{goUsage .Type}}{{end}}) *{{.Type | goUsage}}Reply {*/}}
+{{/*        return &{{.Type | goUsage}}Reply{Channel: {{with .OperationReply.Channel}}channel {{goUsage .}}{{else}}c.Channel{{end}} }*/}}
+{{/*    }*/}}
+{{/*{{- end}}*/}}
 {{- end}}
 
-{{define "code/proto/operation/publishMethods"}}
+{{define "code/proto/operation/commonPublish"}}
 type {{ . | goIDUpper }}EnvelopeMarshaler{{.Protocol | goIDUpper}} interface {
     Marshal{{. | goIDUpper}}{{.Protocol | goIDUpper}}(envelope {{goQualR .Protocol "EnvelopeWriter"}}) error
 }
+{{- end}}
 
+{{define "code/proto/operation/commonSubscribe"}}
+type {{ . | goIDUpper }}EnvelopeUnmarshaler{{.Protocol | goIDUpper}} interface {
+    Unmarshal{{. | goIDUpper}}{{.Protocol | goIDUpper}}(envelope {{goQualR .Protocol "EnvelopeReader"}}) error
+}
+{{- end}}
+
+
+{{define "code/proto/operation/publishMethods"}}
 {{- range .BoundMessages}}
     {{- if not (isVisible .) }}{{continue}}{{end}}
     func (o {{ $.Type | goUsage }}) Seal{{. | goIDUpper}}(
@@ -120,10 +135,6 @@ type {{ . | goIDUpper }}EnvelopeMarshaler{{.Protocol | goIDUpper}} interface {
 
 
 {{define "code/proto/operation/subscribeMethods"}}
-type {{ . | goIDUpper }}EnvelopeUnmarshaler{{.Protocol | goIDUpper}} interface {
-    Unmarshal{{. | goIDUpper}}{{.Protocol | goIDUpper}}(envelope {{goQualR .Protocol "EnvelopeReader"}}) error
-}
-
 {{- range .BoundMessages}}
     {{- if not (isVisible .) }}{{continue}}{{end}}
     func (o {{ $.Type | goUsage }}) Unseal{{. | goIDUpper}}(
@@ -134,6 +145,79 @@ type {{ . | goIDUpper }}EnvelopeUnmarshaler{{.Protocol | goIDUpper}} interface {
     }
 
     func (o {{ $.Type | goUsage }}) Subscribe{{. | goIDUpper}}(
+        ctx {{goQual "context.Context"}},
+        cb func(message {{ goPkg (deref .).InType}}{{ goIDUpper .}}Sender),
+    ) (err error) {
+        subCtx, cancel := {{goQual "context.WithCancelCause"}}(ctx)
+        defer cancel(nil)
+
+        return o.Channel.Subscribe(subCtx, func(envelope {{goQualR $.Protocol "EnvelopeReader"}}) {
+            message := new({{ (deref .).InType | goUsage }})
+            if err2 := o.Unseal{{. | goIDUpper}}(envelope, message); err2 != nil {
+                err = {{goQual "fmt.Errorf"}}("open message envelope: %w", err2)
+                cancel(err)
+                return
+            }
+            cb(message)
+        })
+    }
+{{- end}}
+{{- end}}
+
+{{define "code/proto/operation/operationReply/publishMethods"}}
+{{- range .BoundReplyMessages }}
+    {{- if not (isVisible .) }}{{continue}}{{end}}
+    func (o {{ $.Type | goUsage }}Reply) Seal{{. | goIDUpper}}(
+        envelope {{goQualR $.Protocol "EnvelopeWriter"}},
+        message {{ $ | goIDUpper }}EnvelopeMarshaler{{$.Protocol | goIDUpper}},
+    ) error {
+        if err := message.Marshal{{$ | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope); err != nil {
+            return err
+        }
+        {{ with tryTmpl (print "code/proto/" $.Protocol "/operation/publishMethods/block1") .}}{{.}}{{end}}
+        {{- if (deref .).BindingsProtocols | has $.Protocol }}
+            envelope.SetBindings({{(deref .).BindingsType | goUsage}}{}.{{$.Protocol | goIDUpper}}())
+        {{- end}}
+        return nil
+    }
+
+    func (o {{ $.Type | goUsage }}Reply) Reply{{. | goIDUpper}}(
+        ctx {{goQual "context.Context"}},
+        {{if not (impl $.Protocol)}}envelope {{goQualR $.Protocol "EnvelopeWriter"}},{{end}}
+        {{if $.OperationReply.OperationReplyAddress}}
+            {{- $ctx := dict "SourceVarName" "o" "RuntimeExpression" $.OperationReply.OperationReplyAddress.BaseRuntimeExpression "TargetType" .OutType}}
+            message interface{ {{ $ | goIDUpper }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}, SetReplyAddress{{ $ | goIDUpper }}(a {{template "code/correlationID/outgoing/varType" $ctx}}) },
+            replyAddress {{template "code/correlationID/outgoing/varType" $ctx}},
+        {{- else }}
+            message {{ $ | goIDUpper }}EnvelopeMarshaler{{$.Protocol | goIDUpper}},
+        {{- end}}
+    ) error {
+        {{- with impl $.Protocol}}
+            envelope := {{goPkg .}}NewEnvelopeOut()
+        {{- end}}
+        {{- if $.OperationReply.OperationReplyAddress}}
+            message.SetReplyAddressDimLight(replyAddress)
+        {{- end}}
+        if err := o.Seal{{. | goIDUpper}}(envelope, message); err != nil {
+            return err
+        }
+        {{ with tryTmpl (print "code/proto/" $.Protocol "/operation/publishMethods/block2") .}}{{.}}{{end}}
+        return o.Channel.Publish(ctx, envelope)
+    }
+{{- end}}
+{{- end}}
+
+{{define "code/proto/operation/operationReply/subscribeMethods"}}
+{{- range .BoundReplyMessages }}
+    {{- if not (isVisible .) }}{{continue}}{{end}}
+    func (o {{ $.Type | goUsage }}Reply) Unseal{{. | goIDUpper}}(
+        envelope {{goQualR $.Protocol "EnvelopeReader"}},
+        message {{ $ | goIDUpper }}EnvelopeUnmarshaler{{$.Protocol | goIDUpper}},
+    ) error {
+        return message.Unmarshal{{$ | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope)
+    }
+
+    func (o {{ $.Type | goUsage }}Reply) Subscribe{{. | goIDUpper}}(
         ctx {{goQual "context.Context"}},
         cb func(message {{ goPkg (deref .).InType}}{{ goIDUpper .}}Sender),
     ) (err error) {

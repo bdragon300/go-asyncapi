@@ -12,11 +12,20 @@
     {{- end}}
 {{- end}}
 
-{{- range .BoundOperations}}
-    {{- if and (isVisible .) (deref .).IsPublisher}}
-        func (m *{{ $.OutType | goIDUpper }}) Marshal{{. | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope {{goQualR $.Protocol "EnvelopeWriter"}}) error {
+{{- range $op := .BoundAllPubOperations}}
+    {{- if isVisible .}}
+        func (m *{{ $.OutType | goIDUpper }}) Marshal{{$op | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope {{goQualR $.Protocol "EnvelopeWriter"}}) error {
             return m.MarshalEnvelope{{$.Protocol | goIDUpper}}(envelope)
         }
+        {{with $op.OperationReply}}
+            {{- $opr := deref .}}
+            {{- if and (isVisible $opr) $opr.OperationReplyAddress}}
+                {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" $opr.OperationReplyAddress.BaseRuntimeExpression "TargetType" (deref $).OutType}}
+                func (m *{{ $.OutType | goIDUpper }}) SetReplyAddress{{$opr | goIDUpper}}(value {{template "code/correlationID/outgoing/varType" $ctx}}) {
+                    {{template "code/correlationID/outgoing/setter" $ctx}}
+                }
+            {{- end}}
+        {{- end}}
     {{- end}}
 {{- end}}
 
@@ -59,11 +68,22 @@ func (m *{{ .OutType | goIDUpper }}) Marshal{{ .Protocol | goIDUpper }}(w {{goQu
     {{- end}}
 {{- end}}
 
-{{- range .BoundOperations}}
-    {{- if and (isVisible .) (deref .).IsSubscriber}}
-        func (m *{{ $.InType | goIDUpper }}) Unmarshal{{. | goIDUpper}}{{$.Protocol |  goIDUpper}}(envelope {{goQualR $.Protocol "EnvelopeReader"}}) error {
+{{- range $op := .BoundAllSubOperations}}
+    {{- if isVisible $op}}
+        func (m *{{ $.InType | goIDUpper }}) Unmarshal{{$op | goIDUpper}}{{$.Protocol |  goIDUpper}}(envelope {{goQualR $.Protocol "EnvelopeReader"}}) error {
             return m.UnmarshalEnvelope{{$.Protocol | goIDUpper}}(envelope)
         }
+
+        {{with $op.OperationReply}}
+            {{- $opr := deref .}}
+            {{- if and (isVisible $opr) $opr.OperationReplyAddress}}
+                {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" $opr.OperationReplyAddress.BaseRuntimeExpression "TargetType" (deref $).InType}}
+                func (m *{{ $.OutType | goIDUpper }}) ReplyAddress{{$opr | goIDUpper}}() (value {{template "code/correlationID/outgoing/varType" $ctx}}, error) {
+                    {{template "code/correlationID/outgoing/getter" $ctx}}
+                    return
+                }
+            {{- end}}
+        {{- end}}
     {{- end}}
 {{- end}}
 

@@ -2,6 +2,7 @@ package asyncapi
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
@@ -62,10 +63,11 @@ func (o Operation) build(ctx *compile.Context, operationKey string, flags map[co
 	}
 
 	res := &render.Operation{
-		OriginalName: operationKey,
-		IsSelectable: isSelectable,
-		IsPublisher:  o.Action == OperationActionSend && ctx.CompileOpts.GeneratePublishers,
-		IsSubscriber: o.Action == OperationActionReceive && ctx.CompileOpts.GenerateSubscribers,
+		OriginalName:    operationKey,
+		IsSelectable:    isSelectable,
+		IsPublisher:     o.Action == OperationActionSend && ctx.CompileOpts.GeneratePublishers,
+		IsSubscriber:    o.Action == OperationActionReceive && ctx.CompileOpts.GenerateSubscribers,
+		AllowTwoWayCode: ctx.CompileOpts.GeneratePublishers && ctx.CompileOpts.GenerateSubscribers,
 	}
 
 	if o.Channel == nil {
@@ -104,6 +106,14 @@ func (o Operation) build(ctx *compile.Context, operationKey string, flags map[co
 		res.UseAllChannelMessages = true
 	}
 
+	if o.Reply != nil {
+		ctx.Logger.Trace("Found operation reply")
+
+		ref := ctx.CurrentPositionRef("reply")
+		res.OperationReplyPromise = lang.NewPromise[*render.OperationReply](ref, nil)
+		ctx.PutPromise(res.OperationReplyPromise)
+	}
+
 	// Build protocol-specific operations for all supported protocols
 	// At this point we don't have the actual protocols list to compile, because we don't know yet which servers the
 	// channel is bound with -- it will be known only after linking stage.
@@ -132,14 +142,106 @@ type OperationTrait struct {
 type OperationReply struct {
 	Address  *OperationReplyAddress `json:"address" yaml:"address"`
 	Channel  *StandaloneRef         `json:"channel" yaml:"channel"`
-	Messages []StandaloneRef        `json:"messages" yaml:"messages"`
+	Messages *[]StandaloneRef       `json:"messages" yaml:"messages"`
+
+	XIgnore bool `json:"x-ignore" yaml:"x-ignore"`
 
 	Ref string `json:"$ref" yaml:"$ref"`
+}
+
+func (o OperationReply) Compile(ctx *compile.Context) error {
+	obj, err := o.build(ctx, ctx.Stack.Top().Key)
+	if err != nil {
+		return err
+	}
+	ctx.PutArtifact(obj)
+	return nil
+}
+
+func (o OperationReply) build(ctx *compile.Context, operationKey string) (common.Artifact, error) {
+	if o.XIgnore {
+		ctx.Logger.Debug("OperationReply denoted to be ignored")
+		return &render.OperationReply{Dummy: true}, nil
+	}
+	if o.Ref != "" {
+		return registerRef(ctx, o.Ref, operationKey, nil), nil
+	}
+
+	res := &render.OperationReply{
+		OriginalName: operationKey,
+	}
+
+	if o.Address != nil {
+		ctx.Logger.Trace("Found operation reply address")
+
+		ref := ctx.CurrentPositionRef("address")
+		res.OperationReplyAddressPromise = lang.NewPromise[*render.OperationReplyAddress](ref, nil)
+		ctx.PutPromise(res.OperationReplyAddressPromise)
+	}
+
+	if o.Channel != nil {
+		ctx.Logger.Trace("Bound channel", "ref", o.Channel.Ref)
+		prm := lang.NewPromise[*render.Channel](o.Channel.Ref, nil)
+		ctx.PutPromise(prm)
+		res.ChannelPromise = prm
+	}
+
+	if o.Messages != nil {
+		for _, message := range *o.Messages {
+			ctx.Logger.Trace("Operation reply message", "ref", message.Ref)
+			prm := lang.NewPromise[*render.Message](message.Ref, nil)
+			ctx.PutPromise(prm)
+			res.MessagesPromises = append(res.MessagesPromises, prm)
+		}
+	} else {
+		ctx.Logger.Trace("Using all messages in the channel for this operation reply (if any)")
+		res.UseAllChannelMessages = true
+	}
+
+	return res, nil
 }
 
 type OperationReplyAddress struct {
 	Location    string `json:"location" yaml:"location"`
 	Description string `json:"description" yaml:"description"`
 
+	XIgnore bool `json:"x-ignore" yaml:"x-ignore"`
+
 	Ref string `json:"$ref" yaml:"$ref"`
+}
+
+func (o OperationReplyAddress) Compile(ctx *compile.Context) error {
+	obj, err := o.build(ctx, ctx.Stack.Top().Key)
+	if err != nil {
+		return err
+	}
+	ctx.PutArtifact(obj)
+	return nil
+}
+
+func (o OperationReplyAddress) build(ctx *compile.Context, operationKey string) (common.Artifact, error) {
+	if o.XIgnore {
+		ctx.Logger.Debug("OperationReplyAddress denoted to be ignored")
+		return &render.OperationReplyAddress{Dummy: true}, nil
+	}
+	if o.Ref != "" {
+		return registerRef(ctx, o.Ref, operationKey, nil), nil
+	}
+
+	ctx.Logger.Trace("Parsing OperationReplyAddress location runtime expression", "location", o.Location)
+	structField, locationPath, err := parseRuntimeExpression(o.Location)
+	if err != nil {
+		return nil, types.CompileError{Err: fmt.Errorf("parse runtime expression: %w", err), Path: ctx.CurrentPositionRef()}
+	}
+
+	res := &render.OperationReplyAddress{
+		OriginalName: operationKey,
+		Description:  o.Description,
+		BaseRuntimeExpression: lang.BaseRuntimeExpression{
+			StructFieldKind: structField,
+			LocationPath:    locationPath,
+		},
+	}
+
+	return res, nil
 }

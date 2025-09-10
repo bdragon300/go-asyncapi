@@ -1,8 +1,9 @@
 {{- /* dot == tmpl.CodeTemplateContext */}}
-{{- if and (eq .Object.Kind "schema") (isVisible .Object) }}
+{{- if not (isVisible .Object) -}}
+{{- else if eq .Object.Kind "schema" }}
     {{- template "schema.tmpl" .Object }}
 
-{{- else if and (eq .Object.Kind "server") (isVisible .Object)}}
+{{- else if eq .Object.Kind "server" }}
     {{- if not .CurrentLayoutItem.Render.ProtoObjectsOnly}}
         {{- template "server.tmpl" .Object }}
     {{- end}}
@@ -13,7 +14,7 @@
         {{- end}}
     {{- end}}
 
-{{- else if and (eq .Object.Kind "channel") (isVisible .Object)}}
+{{- else if eq .Object.Kind "channel" }}
     {{- if not .CurrentLayoutItem.Render.ProtoObjectsOnly}}
         {{- template "channel.tmpl" .Object}}
     {{- end}}
@@ -23,7 +24,7 @@
         {{- end}}
     {{- end}}
 
-{{- else if and (eq .Object.Kind "operation") (isVisible .Object)}}
+{{- else if eq .Object.Kind "operation" }}
     {{- if not .CurrentLayoutItem.Render.ProtoObjectsOnly}}
         {{- template "operation.tmpl" .Object}}
     {{- end}}
@@ -33,7 +34,7 @@
         {{- end}}
     {{- end}}
 
-{{- else if and (eq .Object.Kind "message") (isVisible .Object) }}
+{{- else if eq .Object.Kind "message" }}
     {{- if not .CurrentLayoutItem.Render.ProtoObjectsOnly}}
         {{- template "message.tmpl" .Object}}
     {{- end}}
@@ -44,7 +45,7 @@
         {{- end}}
     {{- end}}
 
-{{- else if and (eq .Object.Kind "parameter") (isVisible .Object)}}
+{{- else if eq .Object.Kind "parameter" }}
     {{- template "parameter.tmpl" .Object}}
 
 {{- end}}

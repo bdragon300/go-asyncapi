@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
@@ -45,9 +46,11 @@ func (c CorrelationID) build(ctx *compile.Context, correlationIDKey string) (com
 
 	ctx.Logger.Trace("CorrelationID object", "structField", structField, "path", locationPath)
 	return &render.CorrelationID{
-		OriginalName:    correlationIDKey,
-		Description:     c.Description,
-		StructFieldKind: structField,
-		LocationPath:    locationPath,
+		OriginalName: correlationIDKey,
+		Description:  c.Description,
+		BaseRuntimeExpression: lang.BaseRuntimeExpression{
+			StructFieldKind: structField,
+			LocationPath:    locationPath,
+		},
 	}, nil
 }

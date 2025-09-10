@@ -66,8 +66,8 @@ func (r JSONPointer) MatchPointer(unescapedPointer []string) bool {
 	return slices.Compare(r.Pointer, unescapedPointer) == 0
 }
 
-// Location returns string representation of the location. If the location is a URI, returns the URI string. Otherwise,
-// returns the filesystem path (or empty string if no location is set).
+// Location returns string representation of the location -- path to document without JSON pointer.
+// If the location is a URI, returns the URI string. Otherwise, returns the FSPath.
 func (r JSONPointer) Location() string {
 	if r.URI != nil {
 		return r.URI.String()

@@ -65,6 +65,24 @@ func (b *BaseType) ObjectHasDefinition() bool {
 	return b.HasDefinition
 }
 
+// RuntimeExpressionStructFieldKind represents a source field enum in "runtime expression".
+// See: https://github.com/asyncapi/spec/blob/master/spec/asyncapi.md#runtime-expression
+type RuntimeExpressionStructFieldKind string
+
+const (
+	RuntimeExpressionStructFieldKindPayload RuntimeExpressionStructFieldKind = "payload"
+	RuntimeExpressionStructFieldKindHeaders RuntimeExpressionStructFieldKind = "headers"
+)
+
+// BaseRuntimeExpression is a base for types, that can contain the runtime expressions, such as [CorrelationID] and
+// [OperationReplyAddress].
+type BaseRuntimeExpression struct {
+	// StructFieldName describes which field in target struct to use: payload or headers.
+	StructFieldKind RuntimeExpressionStructFieldKind
+	// LocationPath is JSONPointer fragment with field location, split in parts by "/".
+	LocationPath []string
+}
+
 // GolangWrappedType is an interface for [common.GolangType] types (such as pointers, aliases) that are able to
 // wrap another [common.GolangType] type.
 type GolangWrappedType interface {

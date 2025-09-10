@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/bdragon300/go-asyncapi/internal/render"
+	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/samber/lo"
 )
 
@@ -26,18 +26,18 @@ func guessTagByContentType(contentType string) string {
 // parseRuntimeExpression parses a runtime expression in the form of "$message.source#fragment" and returns
 // the struct field kind where the value is located and the fragment part, split by slashes.
 // See: https://github.com/asyncapi/spec/blob/master/spec/asyncapi.md#runtimeExpression
-func parseRuntimeExpression(location string) (render.RuntimeExpressionStructFieldKind, []string, error) {
+func parseRuntimeExpression(location string) (lang.RuntimeExpressionStructFieldKind, []string, error) {
 	locationParts := strings.SplitN(location, "#", 2)
 	if len(locationParts) < 2 {
 		return "", nil, errors.New("no source or fragment")
 	}
 
-	var structField render.RuntimeExpressionStructFieldKind
+	var structField lang.RuntimeExpressionStructFieldKind
 	switch {
 	case strings.HasSuffix(locationParts[0], "header"):
-		structField = render.RuntimeExpressionStructFieldKindHeaders
+		structField = lang.RuntimeExpressionStructFieldKindHeaders
 	case strings.HasSuffix(locationParts[0], "payload"):
-		structField = render.RuntimeExpressionStructFieldKindPayload
+		structField = lang.RuntimeExpressionStructFieldKindPayload
 	default:
 		return "", nil, fmt.Errorf("source can be header or payload, got %q", locationParts[0])
 	}

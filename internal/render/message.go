@@ -144,8 +144,42 @@ func (m *Message) BoundOperations() []common.Artifact {
 			return common.CheckSameArtifacts(item, m)
 		})
 	})
-	// ListPromise is filled up by linker, which doesn't guarantee the order. So, sort items by name
+	// ListPromise is filled up by linker in any order. So, sort items by name to make results stable
 	slices.SortFunc(r, func(a, b common.Artifact) int { return cmp.Compare(a.Name(), b.Name()) })
+	return r
+}
+
+// boundAllOperations returns a list of Operation or lang.Ref to Operation objects that this message is bound to,
+// including those where the message is bound via OperationReply.
+func (m *Message) boundAllOperations() []common.Artifact {
+	r := lo.FilterMap(m.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (common.Artifact, bool) {
+		op := common.DerefArtifact(o).(*Operation)
+		return op, lo.ContainsBy(op.BoundAllMessages(), func(item common.Artifact) bool {
+			return common.CheckSameArtifacts(item, m)
+		})
+	})
+	// ListPromise is filled up by linker in any order. So, sort items by name to make results stable
+	slices.SortFunc(r, func(a, b common.Artifact) int { return cmp.Compare(a.Name(), b.Name()) })
+	return r
+}
+
+// BoundAllPubOperations returns a list of Operation or lang.Ref to Operation objects that this message is bound to,
+// including those where the message is bound via OperationReply, and where the Operation or OperationReply is a publisher.
+func (m *Message) BoundAllPubOperations() []common.Artifact {
+	r := lo.Filter(m.boundAllOperations(), func(o common.Artifact, _ int) bool {
+		op := common.DerefArtifact(o).(*Operation)
+		return op.IsPublisher || op.OperationReply() != nil // OperationReply presence means the opposite direction is possible
+	})
+	return r
+}
+
+// BoundAllSubOperations returns a list of Operation or lang.Ref to Operation objects that this message is bound to,
+// including those where the message is bound via OperationReply, and where the Operation or OperationReply is a subscriber.
+func (m *Message) BoundAllSubOperations() []common.Artifact {
+	r := lo.Filter(m.boundAllOperations(), func(o common.Artifact, _ int) bool {
+		op := common.DerefArtifact(o).(*Operation)
+		return op.IsSubscriber || op.OperationReply() != nil // OperationReply presence means the opposite direction is possible
+	})
 	return r
 }
 

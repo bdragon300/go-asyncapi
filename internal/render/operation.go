@@ -22,6 +22,10 @@ type Operation struct {
 	IsPublisher bool
 	// IsSubscriber is true if this is a subscribing operation and the generation of subscriber code is enabled
 	IsSubscriber bool
+	// AllowTwoWayCode is true if we can generate subscriber code for publisher operation, e.g. OperationReply code.
+	// Otherwise, this typically means that user forced to generate only one-way code using --only-pub or --only-sub
+	// CLI options.
+	AllowTwoWayCode bool
 
 	// ChannelPromise is the channel that this operation is bound with.
 	ChannelPromise *lang.Promise[*Channel]
@@ -37,6 +41,9 @@ type Operation struct {
 	// UseAllChannelMessages is true if operation is bound to all messages in the channel (i.e. when messages field is not set).
 	UseAllChannelMessages bool
 
+	// OperationReplyPromise is a promise to the operation reply object. Nil if no reply is set.
+	OperationReplyPromise *lang.Promise[*OperationReply]
+
 	// ProtoOperations is a list of prebuilt ProtoOperation objects for each supported protocol
 	ProtoOperations []*ProtoOperation
 }
@@ -48,13 +55,24 @@ func (o *Operation) Channel() *Channel {
 
 // Bindings returns the [Bindings] object or nil if no bindings are set.
 func (o *Operation) Bindings() *Bindings {
-	return o.BindingsPromise.T()
+	if o.BindingsPromise != nil {
+		return o.BindingsPromise.T()
+	}
+	return nil
 }
 
 // Messages returns a list of messages defined for this operation. Returns empty list if no messages are set in
-// the operation, to get the bound messages use [BoundMessages] method.
+// the operation, to get the bound messages use [boundMessages] method.
 func (o *Operation) Messages() []common.Artifact {
 	return lo.Map(o.MessagesPromises, func(prm *lang.Promise[*Message], _ int) common.Artifact { return prm.T() })
+}
+
+// OperationReply returns the [OperationReply] object or nil if no reply is set.
+func (o *Operation) OperationReply() *OperationReply {
+	if o.OperationReplyPromise != nil {
+		return o.OperationReplyPromise.T()
+	}
+	return nil
 }
 
 // SelectProtoObject returns the ProtoOperation object for the given protocol or nil if not found or if
@@ -69,14 +87,38 @@ func (o *Operation) SelectProtoObject(protocol string) common.Artifact {
 	return nil
 }
 
-// BoundMessages returns a list of Message that are bound to this operation. Returns all messages in the channel
-// if no messages are set in the operation.
+// BoundMessages returns a list of Message that are bound to this operation. If operation does not define messages, returns
+// all messages bound to the operation's channel.
 func (o *Operation) BoundMessages() []common.Artifact {
 	if o.UseAllChannelMessages {
-		return o.Channel().Messages()
+		return o.Channel().BoundMessages()
 	}
-
 	return o.Messages()
+}
+
+// BoundReplyMessages returns a list of Message that are bound to this Operation's OperationReply.
+// If OperationReply does not define messages, returns all messages bound to the operation's channel.
+func (o *Operation) BoundReplyMessages() []common.Artifact {
+	// According to AsyncAPI spec, get messages from OperationReply attributes "messages" and "channel"
+	// respectively. Otherwise, look to operation's channel.
+	if o.OperationReply() == nil {
+		return nil
+	}
+	if len(o.OperationReply().boundMessages()) > 0 {
+		return o.OperationReply().boundMessages()
+	}
+	return o.Channel().BoundMessages()
+}
+
+// BoundAllMessages returns a list of Message that are bound to this Operation and its OperationReply.
+func (o *Operation) BoundAllMessages() []common.Artifact {
+	messages := o.BoundMessages()
+	// OperationReply may refer to messages different from those the Operation refers.
+	// So, join them in a list and deduplicate.
+	messages = append(messages, o.BoundReplyMessages()...)
+
+	r := lo.UniqBy(messages, func(m common.Artifact) string { return m.Pointer().String() })
+	return r
 }
 
 // BindingsProtocols returns a list of protocols that have bindings defined for this operation.

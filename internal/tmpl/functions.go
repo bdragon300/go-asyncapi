@@ -11,7 +11,6 @@ import (
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/log"
-	"github.com/bdragon300/go-asyncapi/internal/render"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
@@ -187,7 +186,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			}
 			return ""
 		},
-		"correlationIDExtractionCode": func(c *render.CorrelationID, varStruct *lang.GoStruct, addValidationCode bool) (items []correlationIDExtractionStep, err error) {
+		"correlationIDExtractionCode": func(c lang.BaseRuntimeExpression, varStruct *lang.GoStruct, addValidationCode bool) (items []correlationIDExtractionStep, err error) {
 			trace("correlationIDExtractionCode", c, varStruct, addValidationCode)
 			return templateCorrelationIDExtractionCode(renderManager, c, varStruct, addValidationCode)
 		},
@@ -381,7 +380,7 @@ type correlationIDExtractionStep struct {
 // getter and setter method.
 //
 // The function returns a list of extract steps. Each step contains one or more lines of Go code and some meta information.
-func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c *render.CorrelationID, varStruct *lang.GoStruct, addValidationCode bool) (items []correlationIDExtractionStep, err error) {
+func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c lang.BaseRuntimeExpression, varStruct *lang.GoStruct, addValidationCode bool) (items []correlationIDExtractionStep, err error) {
 	// TODO: consider also AdditionalProperties in object
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
