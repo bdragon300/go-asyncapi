@@ -186,8 +186,8 @@ type {{ . | goIDUpper }}EnvelopeUnmarshaler{{.Protocol | goIDUpper}} interface {
         {{if not (impl $.Protocol)}}envelope {{goQualR $.Protocol "EnvelopeWriter"}},{{end}}
         {{if $.OperationReply.OperationReplyAddress}}
             {{- $ctx := dict "SourceVarName" "o" "RuntimeExpression" $.OperationReply.OperationReplyAddress.BaseRuntimeExpression "TargetType" .OutType}}
-            message interface{ {{ $ | goIDUpper }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}, SetReplyAddress{{ $ | goIDUpper }}(a {{template "code/correlationID/outgoing/varType" $ctx}}) },
-            replyAddress {{template "code/correlationID/outgoing/varType" $ctx}},
+            message interface{ {{ $ | goIDUpper }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}, SetReplyAddress{{ $ | goIDUpper }}(a {{template "code/runtimeExpression/varType" $ctx}}) },
+            replyAddress {{template "code/runtimeExpression/varType" $ctx}},
         {{- else }}
             message {{ $ | goIDUpper }}EnvelopeMarshaler{{$.Protocol | goIDUpper}},
         {{- end}}
@@ -196,7 +196,7 @@ type {{ . | goIDUpper }}EnvelopeUnmarshaler{{.Protocol | goIDUpper}} interface {
             envelope := {{goPkg .}}NewEnvelopeOut()
         {{- end}}
         {{- if $.OperationReply.OperationReplyAddress}}
-            message.SetReplyAddressDimLight(replyAddress)
+            message.SetReplyAddress{{$.OperationReply | goIDUpper}}(replyAddress)
         {{- end}}
         if err := o.Seal{{. | goIDUpper}}(envelope, message); err != nil {
             return err

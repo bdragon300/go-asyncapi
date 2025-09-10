@@ -186,8 +186,8 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			}
 			return ""
 		},
-		"correlationIDExtractionCode": func(c lang.BaseRuntimeExpression, varStruct *lang.GoStruct, addValidationCode bool) (items []correlationIDExtractionStep, err error) {
-			trace("correlationIDExtractionCode", c, varStruct, addValidationCode)
+		"runtimeExpressionCode": func(c lang.BaseRuntimeExpression, varStruct *lang.GoStruct, addValidationCode bool) (items []correlationIDExtractionStep, err error) {
+			trace("runtimeExpressionCode", c, varStruct, addValidationCode)
 			return templateCorrelationIDExtractionCode(renderManager, c, varStruct, addValidationCode)
 		},
 	}

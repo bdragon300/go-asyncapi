@@ -21,8 +21,8 @@
             {{- $opr := deref .}}
             {{- if and (isVisible $opr) $opr.OperationReplyAddress}}
                 {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" $opr.OperationReplyAddress.BaseRuntimeExpression "TargetType" (deref $).OutType}}
-                func (m *{{ $.OutType | goIDUpper }}) SetReplyAddress{{$opr | goIDUpper}}(value {{template "code/correlationID/outgoing/varType" $ctx}}) {
-                    {{template "code/correlationID/outgoing/setter" $ctx}}
+                func (m *{{ $.OutType | goIDUpper }}) SetReplyAddress{{$opr | goIDUpper}}(value {{template "code/runtimeExpression/varType" $ctx}}) {
+                    {{template "code/runtimeExpression/setterBody" $ctx}}
                 }
             {{- end}}
         {{- end}}
@@ -78,8 +78,8 @@ func (m *{{ .OutType | goIDUpper }}) Marshal{{ .Protocol | goIDUpper }}(w {{goQu
             {{- $opr := deref .}}
             {{- if and (isVisible $opr) $opr.OperationReplyAddress}}
                 {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" $opr.OperationReplyAddress.BaseRuntimeExpression "TargetType" (deref $).InType}}
-                func (m *{{ $.OutType | goIDUpper }}) ReplyAddress{{$opr | goIDUpper}}() (value {{template "code/correlationID/outgoing/varType" $ctx}}, error) {
-                    {{template "code/correlationID/outgoing/getter" $ctx}}
+                func (m *{{ $.OutType | goIDUpper }}) ReplyAddress{{$opr | goIDUpper}}() (value {{template "code/runtimeExpression/varType" $ctx}}, error) {
+                    {{template "code/runtimeExpression/getterBody" $ctx}}
                     return
                 }
             {{- end}}

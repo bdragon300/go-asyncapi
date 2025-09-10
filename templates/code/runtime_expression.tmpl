@@ -4,9 +4,9 @@
   .TargetType == *lang.Struct
   */}}
 
-{{define "code/correlationID/outgoing/setter"}}
+{{define "code/runtimeExpression/setterBody"}}
 v0 := {{.SourceVarName}}.{{.RuntimeExpression.StructFieldKind | toString | toTitleCase}}
-{{- $steps := correlationIDExtractionCode .RuntimeExpression .TargetType false}}
+{{- $steps := runtimeExpressionCode .RuntimeExpression .TargetType false}}
 {{- /* Render extraction steps except the last one */}}
 {{- range initial $steps}}
     {{- range .CodeLines}}
@@ -24,16 +24,9 @@ v0 := {{.SourceVarName}}.{{.RuntimeExpression.StructFieldKind | toString | toTit
 {{.SourceVarName}}.{{.RuntimeExpression.StructFieldKind | toString | toTitleCase}} = v0
 {{- end}}
 
-
-{{define "code/correlationID/outgoing/varType"}}
-{{- $steps := correlationIDExtractionCode .RuntimeExpression .TargetType false}}
-{{- if $steps }}{{(last $steps).VarType | goUsage}}{{else}}any{{end}}
-{{- end}}
-
-
-{{define "code/correlationID/incoming/getter"}}
+{{define "code/runtimeExpression/getterBody"}}
 v0 := {{.SourceVarName}}.{{.RuntimeExpression.StructFieldKind | toString | untitle}}
-{{- $steps := correlationIDExtractionCode .RuntimeExpression .TargetType true}}
+{{- $steps := runtimeExpressionCode .RuntimeExpression .TargetType true}}
 {{- /* Render extraction steps except the last one */}}
 {{- range $steps}}
     {{- range .CodeLines}}
@@ -45,7 +38,8 @@ v0 := {{.SourceVarName}}.{{.RuntimeExpression.StructFieldKind | toString | untit
 {{if $steps}}value = {{(last $steps).VarName}}{{end}}
 {{- end}}
 
-{{define "code/correlationID/incoming/varType"}}
-{{- $steps := correlationIDExtractionCode .RuntimeExpression .TargetType false}}
+
+{{define "code/runtimeExpression/varType"}}
+{{- $steps := runtimeExpressionCode .RuntimeExpression .TargetType false}}
 {{- if $steps }}{{(last $steps).VarType | goUsage}}{{else}}any{{end}}
 {{- end}}

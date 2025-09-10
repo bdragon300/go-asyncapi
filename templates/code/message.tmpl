@@ -34,8 +34,8 @@ func (m *{{ .OutType | goIDUpper }}) WithHeaders(headers {{.HeadersType | goUsag
 
 {{- with isVisible .CorrelationID}}
 {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" .CorrelationID.BaseRuntimeExpression "TargetType" $message.OutType}}
-func (m {{ $message.OutType | goIDUpper }}) SetCorrelationID(value {{template "code/correlationID/outgoing/varType" $ctx}}) {
-    {{template "code/correlationID/outgoing/setter" $ctx}}
+func (m {{ $message.OutType | goIDUpper }}) SetCorrelationID(value {{template "code/runtimeExpression/varType" $ctx}}) {
+    {{template "code/runtimeExpression/setterBody" $ctx}}
 }
 {{- end}}
 {{- end}}
@@ -47,7 +47,7 @@ func (m {{ $message.OutType | goIDUpper }}) SetCorrelationID(value {{template "c
             Headers() {{.HeadersType | goUsage}}
             {{- with isVisible .CorrelationID}}
             {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" .CorrelationID.BaseRuntimeExpression "TargetType" $message.InType}}
-            CorrelationID() (value {{template "code/correlationID/incoming/varType" $ctx}}, err error)
+            CorrelationID() (value {{template "code/runtimeExpression/varType" $ctx}}, err error)
             {{- end}}
         }
         {{- def .InType }}
@@ -59,7 +59,7 @@ func (m {{ $message.OutType | goIDUpper }}) SetCorrelationID(value {{template "c
             WithHeaders(headers {{.HeadersType | goUsage}}) *{{ .OutType | goIDUpper }}
             {{- with isVisible .CorrelationID}}
             {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" .CorrelationID.BaseRuntimeExpression "TargetType" $message.OutType}}
-            SetCorrelationID(value {{template "code/correlationID/outgoing/varType" $ctx}})
+            SetCorrelationID(value {{template "code/runtimeExpression/varType" $ctx}})
             {{- end}}
         }
         {{- def .OutType }}
@@ -79,8 +79,8 @@ func (m *{{ .InType | goIDUpper }}) Headers() {{.HeadersType | goUsage}} {
 
 {{- with isVisible .CorrelationID}}
 {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" .CorrelationID.BaseRuntimeExpression "TargetType" $message.InType}}
-func (m {{ $message.InType | goIDUpper }}) CorrelationID() (value {{template "code/correlationID/incoming/varType" $ctx}}, err error) {
-    {{template "code/correlationID/incoming/getter" $ctx}}
+func (m {{ $message.InType | goIDUpper }}) CorrelationID() (value {{template "code/runtimeExpression/varType" $ctx}}, err error) {
+    {{template "code/runtimeExpression/getterBody" $ctx}}
     return
 }
 {{- end}}
