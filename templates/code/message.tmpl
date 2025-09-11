@@ -43,7 +43,7 @@ func (m *{{ .OutType | goIDUpper }}) SetCorrelationID(value {{template "code/run
 
 {{- if print "Message" (goIDUpper $) | ndefined}}
     {{- if .IsSubscriber}}
-        type {{ $ | goIDUpper }}Sender interface {
+        type {{ $ | goIDUpper }}Receiver interface {
             Payload() {{.PayloadType | goUsage}}
             Headers() {{.HeadersType | goUsage}}
             {{- with isVisible .CorrelationID}}
@@ -55,7 +55,7 @@ func (m *{{ .OutType | goIDUpper }}) SetCorrelationID(value {{template "code/run
     {{- end}}
 
     {{- if .IsPublisher}}
-        type {{ $ | goIDUpper }}Receiver interface {
+        type {{ $ | goIDUpper }}Sender interface {
             SetPayload(payload {{.PayloadType | goUsage}}) *{{ .OutType | goIDUpper }}
             SetHeaders(headers {{.HeadersType | goUsage}}) *{{ .OutType | goIDUpper }}
             {{- if isVisible .CorrelationID}}

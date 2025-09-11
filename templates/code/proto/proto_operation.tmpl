@@ -146,7 +146,7 @@ type {{ . | goIDUpper }}EnvelopeUnmarshaler{{.Protocol | goIDUpper}} interface {
 
     func (o {{ $.Type | goUsage }}) Subscribe{{. | goIDUpper}}(
         ctx {{goQual "context.Context"}},
-        cb func(message {{ goPkg (deref .).InType}}{{ goIDUpper .}}Sender),
+        cb func(message {{ goPkg (deref .).InType}}{{ goIDUpper .}}Receiver),
     ) (err error) {
         subCtx, cancel := {{goQual "context.WithCancelCause"}}(ctx)
         defer cancel(nil)
@@ -219,7 +219,7 @@ type {{ . | goIDUpper }}EnvelopeUnmarshaler{{.Protocol | goIDUpper}} interface {
 
     func (o {{ $.Type | goUsage }}Reply) Subscribe{{. | goIDUpper}}(
         ctx {{goQual "context.Context"}},
-        cb func(message {{ goPkg (deref .).InType}}{{ goIDUpper .}}Sender),
+        cb func(message {{ goPkg (deref .).InType}}{{ goIDUpper .}}Receiver),
     ) (err error) {
         subCtx, cancel := {{goQual "context.WithCancelCause"}}(ctx)
         defer cancel(nil)
