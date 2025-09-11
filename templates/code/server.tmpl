@@ -45,18 +45,16 @@ func {{$ | goIDUpper}}URL(
     {{- end}}
 }
 
-{{- if and .BindingsType (ndefined .BindingsType)}}
-    {{- .BindingsType | goDef}}
-    {{- range $proto := .BindingsProtocols}}
+{{- with $bindingsType := once .BindingsType}}
+    {{- $bindingsType | goDef}}
+    {{- range $proto := $server.BindingsProtocols}}
         {{- $bindingsValue := $server.ProtoBindingsValue $proto}}
-        func (c {{ $server.BindingsType | goUsage }}) {{ $proto | goIDUpper }}() {{$bindingsValue.Type | goUsage}} {
+        func (c {{ $bindingsType | goUsage }}) {{ $proto | goIDUpper }}() {{$bindingsValue.Type | goUsage}} {
             b := {{$bindingsValue | goUsage}}
-            {{- with $server.Bindings}}
-                {{- $jvals := .JSONValues.GetOrEmpty $proto}}
-                {{- range $jval := $jvals.Entries}}
-                    {{$jval.Key | toCamelCase }} := {{$jval.Value | goLit}}
-                    _ = {{goQual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})
-                {{- end}}
+            {{- $jvals := $server.Bindings.JSONValues.GetOrEmpty $proto}}
+            {{- range $jval := $jvals.Entries}}
+                {{$jval.Key | toCamelCase }} := {{$jval.Value | goLit}}
+                _ = {{goQual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})
             {{- end}}
             return b
         }

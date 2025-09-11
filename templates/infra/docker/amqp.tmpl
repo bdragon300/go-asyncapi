@@ -9,7 +9,7 @@
     image: rabbitmq:management-alpine
     ports:
       - "{{$port}}:5672"
-      {{if ndefined "port_15672"}}- "15672:15672"{{def "port_15672"}}{{end}}  # Management UI, creds:user/password
+      {{with once "port_15672"}}- "15672:15672"{{end}}  # Management UI, creds:user/password
     volumes:
       - "{{.Server.Name | goID}}{{range .ServerVariables}}_{{.Value | goID}}{{end}}:/var/lib/rabbitmq"
     hostname: "{{($server.URL .ServerVariables).Hostname | toQuotable}}"

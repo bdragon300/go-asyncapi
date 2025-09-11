@@ -1,6 +1,6 @@
 {{- /* dot == render.ProtoOperation */}}
 {{- with deref .}}
-    {{ .Type | def }}
+    {{ pin .Type }}
     {{template "code/proto/operation/newFunction" .}}
     {{template "code/proto/operation/openFunction" .}}
 

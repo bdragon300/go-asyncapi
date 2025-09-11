@@ -1,6 +1,4 @@
 {{- /* dot == common.Artifact: Ref -> lang.* or lang.* */}}
-{{- with deref . }}
-    {{- if ndefined . }}
-        {{ . | goDef }}
-    {{- end}}
+{{- with once (deref .) }}
+    {{ . | goDef }}
 {{- end}}

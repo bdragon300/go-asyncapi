@@ -3,7 +3,7 @@
     envelope.SetRoutingKey(o.Channel.RoutingKey())
 {{- end}}
 {{- with deref .}}
-    {{ .Type | def }}
+    {{ pin .Type }}
     {{template "code/proto/operation/newFunction" .}}
     {{template "code/proto/operation/openFunction" .}}
 

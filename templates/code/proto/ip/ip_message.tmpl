@@ -1,9 +1,6 @@
 {{- /* dot == render.ProtoMessage */}}
-{{- with deref .}}
-    {{- if ndefined (print "MessageMethods" .Protocol (goIDUpper .))}}
-        {{template "code/proto/message/commonMethods" .}}
-        {{if .IsPublisher}}{{template "code/proto/message/marshalMethods" .}}{{end}}
-        {{if .IsSubscriber}}{{template "code/proto/message/unmarshalMethods" .}}{{end}}
-    {{- end}}
-    {{- print "MessageMethods" .Protocol (goIDUpper .) | def}}
+{{- with once .}}
+    {{template "code/proto/message/commonMethods" .}}
+    {{if .IsPublisher}}{{template "code/proto/message/marshalMethods" .}}{{end}}
+    {{if .IsSubscriber}}{{template "code/proto/message/unmarshalMethods" .}}{{end}}
 {{- end}}

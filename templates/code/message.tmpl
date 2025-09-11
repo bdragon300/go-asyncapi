@@ -1,92 +1,91 @@
 {{- /* dot == common.Artifact: Ref -> render.Message or render.Message */}}
 {{- with $message := deref .}}
 
-{{- if and .BindingsType (ndefined .BindingsType)}}
-    {{- .BindingsType| goDef }}
-    {{- range $proto := .BindingsProtocols}}
+{{- if $bindingsType := once .BindingsType }}
+    {{- $bindingsType | goDef }}
+    {{- range $proto := $message.BindingsProtocols}}
         {{- $bindingsValue := $message.ProtoBindingsValue $proto}}
-        func (c {{ $message.BindingsType | goUsage }}) {{ $proto | goIDUpper }}() {{$bindingsValue.Type | goUsage}} {
-            b := {{$bindingsValue| goUsage}}
-            {{- with $message.Bindings}}
-                {{- $jvals := .JSONValues.GetOrEmpty $proto}}
-                {{- range $jval := $jvals.Entries}}
-                    {{ $jval.Key | toCamelCase }} := {{$jval.Value | goLit}}
-                    _ = {{goQual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})
-                {{- end}}
+        func (c {{ $bindingsType | goUsage }}) {{ $proto | goIDUpper }}() {{$bindingsValue.Type | goUsage}} {
+            b := {{$bindingsValue | goUsage}}
+            {{- $jvals := $message.Bindings.JSONValues.GetOrEmpty $proto}}
+            {{- range $jval := $jvals.Entries}}
+                {{ $jval.Key | toCamelCase }} := {{$jval.Value | goLit}}
+                _ = {{goQual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})
             {{- end}}
             return b
         }
     {{- end}}
 {{- end }}
 
-{{- if and (ndefined .OutType) .IsPublisher }}
-{{.OutType| goDef}}
-
-func (m *{{ .OutType | goIDUpper }}) SetPayload(payload {{.PayloadType | goUsage}}) *{{ .OutType | goIDUpper }} {
-    m.Payload = payload
-    return m
-}
-
-func (m *{{ .OutType | goIDUpper }}) SetHeaders(headers {{.HeadersType | goUsage}}) *{{ .OutType | goIDUpper }} {
-    m.Headers = headers
-    return m
-}
-
-{{- if isVisible .CorrelationID}}
-{{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" .CorrelationID.BaseRuntimeExpression "TargetType" .OutType}}
-func (m *{{ .OutType | goIDUpper }}) SetCorrelationID(value {{template "code/runtimeExpression/varType" $ctx}}) *{{ .OutType | goIDUpper }} {
-    {{template "code/runtimeExpression/setterBody" $ctx}}
-    return m
-}
-{{- end}}
-{{- end}}
-
-{{- if print "Message" (goIDUpper $) | ndefined}}
-    {{- if .IsSubscriber}}
+{{- with once (deref .)}}
+    {{- if $message.IsSubscriber}}
         type {{ $ | goIDUpper }}Receiver interface {
-            Payload() {{.PayloadType | goUsage}}
-            Headers() {{.HeadersType | goUsage}}
-            {{- with isVisible .CorrelationID}}
-            {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" .CorrelationID.BaseRuntimeExpression "TargetType" $message.InType}}
-            CorrelationID() (value {{template "code/runtimeExpression/varType" $ctx}}, err error)
+            Payload() {{$message.PayloadType | goUsage}}
+            Headers() {{$message.HeadersType | goUsage}}
+            {{- if isVisible $message.CorrelationID}}
+                {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" $message.CorrelationID.BaseRuntimeExpression "TargetType" $message.InType}}
+                CorrelationID() (value {{template "code/runtimeExpression/varType" $ctx}}, err error)
             {{- end}}
         }
-        {{- def .InType }}
     {{- end}}
 
-    {{- if .IsPublisher}}
+    {{- if $message.IsPublisher}}
         type {{ $ | goIDUpper }}Sender interface {
-            SetPayload(payload {{.PayloadType | goUsage}}) *{{ .OutType | goIDUpper }}
-            SetHeaders(headers {{.HeadersType | goUsage}}) *{{ .OutType | goIDUpper }}
-            {{- if isVisible .CorrelationID}}
-            {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" .CorrelationID.BaseRuntimeExpression "TargetType" .OutType}}
-            SetCorrelationID(value {{template "code/runtimeExpression/varType" $ctx}}) *{{ .OutType | goIDUpper }}
+            SetPayload(payload {{$message.PayloadType | goUsage}}) *{{ $message.OutType | goIDUpper }}
+            SetHeaders(headers {{$message.HeadersType | goUsage}}) *{{ $message.OutType | goIDUpper }}
+            {{- if isVisible $message.CorrelationID}}
+                {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" $message.CorrelationID.BaseRuntimeExpression "TargetType" $message.OutType}}
+                SetCorrelationID(value {{template "code/runtimeExpression/varType" $ctx}}) *{{ $message.OutType | goIDUpper }}
             {{- end}}
         }
-        {{- def .OutType }}
     {{- end}}
 {{- end}}
 
-{{- if and (ndefined .InType) .IsSubscriber }}
-{{.InType| goDef}}
+{{- if .IsPublisher}}
+    {{- with once .OutType}}
+        {{. | goDef}}
 
-func (m *{{ .InType | goIDUpper }}) Payload() {{.PayloadType | goUsage}} {
-    return m.payload
-}
+        func (m *{{ . | goIDUpper }}) SetPayload(payload {{$message.PayloadType | goUsage}}) *{{ . | goIDUpper }} {
+            m.Payload = payload
+            return m
+        }
 
-func (m *{{ .InType | goIDUpper }}) Headers() {{.HeadersType | goUsage}} {
-    return m.headers
-}
+        func (m *{{ . | goIDUpper }}) SetHeaders(headers {{$message.HeadersType | goUsage}}) *{{ . | goIDUpper }} {
+            m.Headers = headers
+            return m
+        }
 
-{{- if isVisible .CorrelationID}}
-{{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" .CorrelationID.BaseRuntimeExpression "TargetType" .InType}}
-func (m {{ .InType | goIDUpper }}) CorrelationID() (value {{template "code/runtimeExpression/varType" $ctx}}, err error) {
-    {{template "code/runtimeExpression/getterBody" $ctx}}
-    return
-}
+        {{- if isVisible $message.CorrelationID}}
+            {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" $message.CorrelationID.BaseRuntimeExpression "TargetType" .}}
+            func (m *{{ . | goIDUpper }}) SetCorrelationID(value {{template "code/runtimeExpression/varType" $ctx}}) *{{ . | goIDUpper }} {
+                {{template "code/runtimeExpression/setterBody" $ctx}}
+                return m
+            }
+        {{- end}}
+
+    {{- end}}
 {{- end}}
-{{- end}}
 
-{{- print "Message" (goIDUpper $) | def }}
+{{- if .IsSubscriber }}
+    {{- with once .InType}}
+        {{. | goDef}}
+
+        func (m *{{ . | goIDUpper }}) Payload() {{$message.PayloadType | goUsage}} {
+            return m.payload
+        }
+
+        func (m *{{ . | goIDUpper }}) Headers() {{$message.HeadersType | goUsage}} {
+            return m.headers
+        }
+
+        {{- if isVisible $message.CorrelationID}}
+            {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" $message.CorrelationID.BaseRuntimeExpression "TargetType" .}}
+            func (m {{ . | goIDUpper }}) CorrelationID() (value {{template "code/runtimeExpression/varType" $ctx}}, err error) {
+                {{template "code/runtimeExpression/getterBody" $ctx}}
+                return
+            }
+        {{- end}}
+    {{- end}}
+{{- end}}
 
 {{- end}}

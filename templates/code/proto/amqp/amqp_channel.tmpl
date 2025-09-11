@@ -22,31 +22,27 @@
     envelope.SetRoutingKey(c.RoutingKey())
 {{- end}}
 
-{{- def .Type}}
-{{template "code/proto/channel/newFunction" .}}
+{{- with once .Type}}
+    {{template "code/proto/channel/newFunction" $}}
+    {{template "code/proto/channel/openFunction" $}}
 
-{{template "code/proto/channel/openFunction" .}}
+    {{ . | goDef }}
 
-{{- if ndefined .Type}}
-{{ .Type | goDef }}
+    {{template "code/proto/channel/commonMethods" $}}
 
-{{template "code/proto/channel/commonMethods" .}}
+    func (c {{ . | goUsage }}) Exchange() string {
+        return c.exchange
+    }
 
-func (c {{ .Type | goUsage }}) Exchange() string {
-    return c.exchange
-}
+    func (c {{ . | goUsage }}) Queue() string {
+        return c.queue
+    }
 
-func (c {{ .Type | goUsage }}) Queue() string {
-    return c.queue
-}
+    func (c {{ . | goUsage }}) RoutingKey() string {
+        return c.routingKey
+    }
 
-func (c {{ .Type | goUsage }}) RoutingKey() string {
-    return c.routingKey
-}
-
-{{if .IsPublisher}}{{template "code/proto/channel/publishMethods" .}}{{end}}
-
-{{if .IsSubscriber}}{{template "code/proto/channel/subscribeMethods" .}}{{end}}
-
-{{template "code/proto/channel/serverInterface" .}}
+    {{if $.IsPublisher}}{{template "code/proto/channel/publishMethods" $}}{{end}}
+    {{if $.IsSubscriber}}{{template "code/proto/channel/subscribeMethods" $}}{{end}}
+    {{template "code/proto/channel/serverInterface" $}}
 {{- end}}

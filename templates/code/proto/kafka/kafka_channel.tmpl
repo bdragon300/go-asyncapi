@@ -12,23 +12,19 @@
     envelope.SetTopic(c.Topic())
 {{- end}}
 
-{{- def .Type}}
-{{template "code/proto/channel/newFunction" .}}
+{{- with once .Type}}
+    {{template "code/proto/channel/newFunction" $}}
+    {{template "code/proto/channel/openFunction" $}}
 
-{{template "code/proto/channel/openFunction" .}}
+    {{. | goDef}}
 
-{{- if ndefined .Type}}
-{{.Type | goDef}}
+    {{template "code/proto/channel/commonMethods" $}}
 
-{{template "code/proto/channel/commonMethods" .}}
+    func (c {{. | goUsage}}) Topic() string {
+        return c.topic
+    }
 
-func (c {{.Type| goUsage}}) Topic() string {
-    return c.topic
-}
-
-{{if .IsPublisher}}{{template "code/proto/channel/publishMethods" .}}{{end}}
-
-{{if .IsSubscriber}}{{template "code/proto/channel/subscribeMethods" .}}{{end}}
-
-{{template "code/proto/channel/serverInterface" .}}
+    {{if $.IsPublisher}}{{template "code/proto/channel/publishMethods" $}}{{end}}
+    {{if $.IsSubscriber}}{{template "code/proto/channel/subscribeMethods" $}}{{end}}
+    {{template "code/proto/channel/serverInterface" $}}
 {{- end}}

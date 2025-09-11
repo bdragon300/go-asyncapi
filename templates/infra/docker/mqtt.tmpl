@@ -9,7 +9,7 @@
     image: emqx/emqx:latest
     ports:
       - "{{$port}}:1883"
-      {{if ndefined "port_18083"}}- "18083:18083"{{def "port_18083"}}{{end}}  # Management UI, creds:admin/public
+      {{with once "port_18083"}}- "18083:18083"{{end}}  # Management UI, creds:admin/public
     volumes:
       - "{{.Server.Name | goID}}-data{{range .ServerVariables}}_{{.Value | goID}}{{end}}:/opt/emqx/data"
       - "{{.Server.Name | goID}}-log{{range .ServerVariables}}_{{.Value | goID}}{{end}}:/opt/emqx/log"

@@ -49,7 +49,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		"goDef": func(r common.GolangType) (string, error) {
 			trace("goDef", r)
 			tplName := path.Join(r.GoTemplate(), "definition")
-			renderManager.NamespaceManager.DefineType(r, renderManager, 1)
+			renderManager.NamespaceManager.DeclareArtifact(r, renderManager, false, true)
 			if v, ok := r.(golangReferenceType); ok {
 				r = v.DerefGolangType()
 			}
@@ -62,7 +62,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		"goPkg": func(obj any) (pkg string, err error) {
 			trace("goPkg", obj)
 			switch v := obj.(type) {
-			case common.GolangType:
+			case common.Artifact:
 				pkg, err = qualifiedTypeGeneratedPackage(renderManager, v)
 			case *common.ImplementationObject:
 				if lo.IsNil(v) {
@@ -129,30 +129,17 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		},
 
 		// Working with render namespace
-		"def": func(objects ...any) string {
-			trace("def", objects...)
-			for _, o := range objects {
-				switch v := o.(type) {
-				case common.GolangType:
-					if !lo.IsNil(o) {
-						renderManager.NamespaceManager.DefineType(v, renderManager, 0)
-					}
-				case string:
-					if o != "" {
-						renderManager.NamespaceManager.DefineName(v)
-					}
-					// TODO: default
-				}
+		"pin": func(object common.Artifact) (string, error) {
+			trace("pin", object)
+			if lo.IsNil(object) {
+				return "", fmt.Errorf("cannot pin nil object")
 			}
-			return ""
+			renderManager.NamespaceManager.DeclareArtifact(object, renderManager, false, false)
+			return "", nil
 		},
-		"defined": func(r any) bool {
-			trace("defined", r)
-			return templateGoDefined(renderManager, r)
-		},
-		"ndefined": func(r any) bool {
-			trace("ndefined", r)
-			return !templateGoDefined(renderManager, r)
+		"once": func(r any) any {
+			trace("once", r)
+			return templateOnce(renderManager, r)
 		},
 
 		// Other
@@ -195,21 +182,34 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 	return lo.Assign(sproutFunctions, extraFuncs)
 }
 
-// templateGoDefined returns true if the value is in template's namespace.
-func templateGoDefined(mng *manager.TemplateRenderManager, r any) bool {
+// templateOnce declares the r and returns it back if it was not declared before, otherwise returns nil.
+// If r is nil, returns nil as well.
+func templateOnce(mng *manager.TemplateRenderManager, r any) any {
 	if lo.IsNil(r) {
-		return false
+		return nil
 	}
 
 	switch v := r.(type) {
-	case common.GolangType:
-		o, found := mng.NamespaceManager.FindType(v)
-		return found && o.Priority > 0 // Return true if the object defined using `goDef`
+	case common.Artifact:
+		d, found := mng.NamespaceManager.FindArtifactDeclaration(v)
+		pinnedOnly := !d.Passed && !d.Rendered
+		if !found || pinnedOnly {
+			mng.NamespaceManager.DeclareArtifact(v, mng, true, false)
+			return r
+		}
 	case string:
-		return mng.NamespaceManager.IsNameDefined(v)
+		if v == "" {
+			return nil
+		}
+		if !mng.NamespaceManager.IsNameDeclared(v) {
+			mng.NamespaceManager.DeclareName(v)
+			return r
+		}
+	default:
+		panic(fmt.Sprintf("unsupported once argument type %[1]T: %[1]v", r))
 	}
 
-	panic(fmt.Sprintf("unsupported type %[1]T: %[1]v", r))
+	return nil
 }
 
 type golangReferenceType interface {
@@ -546,28 +546,28 @@ type definable interface {
 // qualifiedTypeGeneratedPackage returns the package name or alias of module where the object is defined to use this name
 // further in the generated code. If object is already defined in *current module*, returns empty string with no error.
 // If we don't know where the object is defined, returns ErrNotDefined.
-func qualifiedTypeGeneratedPackage(mng *manager.TemplateRenderManager, obj common.GolangType) (string, error) {
-	nsType, defined := mng.NamespaceManager.FindType(obj)
-	if !defined {
+func qualifiedTypeGeneratedPackage(mng *manager.TemplateRenderManager, obj common.Artifact) (string, error) {
+	d, found := mng.NamespaceManager.FindArtifactDeclaration(obj)
+	if !found {
 		if v, ok := obj.(definable); ok && v.ObjectHasDefinition() { // TODO: replace to Selectable?
 			return "", ErrNotDefined
 		}
-		return "", nil // Type is not supposed to be defined in the generated code (e.g. Go built-in types)
+		return "", nil // Type is not supposed to be found in the generated code (e.g. Go built-in types)
 	}
 
-	// Use the package path from reuse config if it is defined
-	if nsType.Layout.ReusePackagePath != "" {
-		return mng.ImportsManager.AddImport(nsType.Layout.ReusePackagePath, ""), nil
+	// Use the package path from reuse config if it is found
+	if d.Layout.ReusePackagePath != "" {
+		return mng.ImportsManager.AddImport(d.Layout.ReusePackagePath, ""), nil
 	}
 
-	// Check if the object is defined in the same directory (assuming the directory is equal to package)
-	nsTypeFileDir := path.Dir(nsType.FileName)
+	// Check if the object is found in the same directory (assuming the directory is equal to package)
+	nsTypeFileDir := path.Dir(d.FileName)
 	if nsTypeFileDir == path.Dir(mng.FileName) {
-		return "", nil // Object is defined in the current package, its name doesn't require a package name
+		return "", nil // Object is found in the current package, its name doesn't require a package name
 	}
 
 	pkgPath := path.Join(mng.RenderOpts.ImportBase, nsTypeFileDir)
-	return mng.ImportsManager.AddImport(pkgPath, nsType.PackageName), nil
+	return mng.ImportsManager.AddImport(pkgPath, d.PackageName), nil
 }
 
 func qualifiedImplementationGeneratedPackage(mng *manager.TemplateRenderManager, obj common.ImplementationObject) (string, error) {

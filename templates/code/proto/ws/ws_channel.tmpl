@@ -3,19 +3,14 @@
     envelope.SetOpCode(byte({{goQual "github.com/gobwas/ws.OpBinary"}}))
 {{- end}}
 
-{{- def .Type}}
-{{template "code/proto/channel/newFunction" .}}
+{{- with once .Type}}
+    {{template "code/proto/channel/newFunction" $}}
+    {{template "code/proto/channel/openFunction" $}}
 
-{{template "code/proto/channel/openFunction" .}}
+    {{. | goDef}}
 
-{{- if ndefined .Type}}
-{{.Type| goDef}}
-
-{{template "code/proto/channel/commonMethods" .}}
-
-{{if .IsPublisher}}{{template "code/proto/channel/publishMethods" .}}{{end}}
-
-{{if .IsSubscriber}}{{template "code/proto/channel/subscribeMethods" .}}{{end}}
-
-{{template "code/proto/channel/serverInterface" .}}
+    {{template "code/proto/channel/commonMethods" $}}
+    {{if $.IsPublisher}}{{template "code/proto/channel/publishMethods" $}}{{end}}
+    {{if $.IsSubscriber}}{{template "code/proto/channel/subscribeMethods" $}}{{end}}
+    {{template "code/proto/channel/serverInterface" $}}
 {{- end}}

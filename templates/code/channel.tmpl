@@ -1,8 +1,8 @@
 {{- /* dot == common.Artifact: Ref -> render.Channel or render.Channel */}}
 {{- with $channel := deref .}}
 
-{{- if and .ParametersType (ndefined .ParametersType) }}
-    {{ .ParametersType | goDef }}
+{{- with once .ParametersType }}
+    {{ . | goDef }}
 {{- end }}
 
 func {{$ | goIDUpper}}Address({{with .ParametersType}}params {{. | goUsage}}{{end}}) {{goQualR "ParamString"}} {
@@ -23,18 +23,16 @@ func {{$ | goIDUpper}}Address({{with .ParametersType}}params {{. | goUsage}}{{en
 {{- end}}
 }
 
-{{- if and .BindingsType (ndefined .BindingsType) }}
-    {{ .BindingsType | goDef }}
-    {{- range $proto := .BindingsProtocols }}
+{{- with $bindingsType := once .BindingsType }}
+    {{ $bindingsType | goDef }}
+    {{- range $proto := $channel.BindingsProtocols }}
         {{- $bindingsValue := $channel.ProtoBindingsValue $proto }}
-        func (c {{ $channel.BindingsType | goUsage }}) {{ $proto | goIDUpper }}() {{$bindingsValue.Type | goUsage}} {
+        func (c {{ $bindingsType | goUsage }}) {{ $proto | goIDUpper }}() {{$bindingsValue.Type | goUsage}} {
             b := {{$bindingsValue | goUsage}}
-            {{- with $channel.Bindings }}
-                {{- $jvals := .JSONValues.GetOrEmpty $proto }}
-                {{- range $jvals.Entries}}
-                    {{.Key | toCamelCase }} := {{.Value | goLit}}
-                    _ = {{goQual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}), &b.{{.Key}})
-                {{- end}}
+            {{- $jvals := $channel.Bindings.JSONValues.GetOrEmpty $proto }}
+            {{- range $jvals.Entries}}
+                {{.Key | toCamelCase }} := {{.Value | goLit}}
+                _ = {{goQual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}), &b.{{.Key}})
             {{- end}}
             return b
         }

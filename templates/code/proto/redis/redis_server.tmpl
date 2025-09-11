@@ -1,15 +1,14 @@
 {{- /* dot == render.ProtoServer */}}
-{{- def .Type}}
+{{ pin .Type }}
 {{template "code/proto/server/newFunction" .}}
 {{- if impl .Protocol}}
     {{template "code/proto/server/connectFunctions" .}}
 {{- end}}
 
-{{- if ndefined .Type}}
-{{.Type| goDef}}
+{{- with once .Type}}
+    {{ . | goDef }}
 
-{{template "code/proto/server/commonMethods" .}}
-{{template "code/proto/server/channelOpenMethods" .}}
-{{template "code/proto/server/operationOpenMethods" .}}
-
+    {{template "code/proto/server/commonMethods" $}}
+    {{template "code/proto/server/channelOpenMethods" $}}
+    {{template "code/proto/server/operationOpenMethods" $}}
 {{- end}}
