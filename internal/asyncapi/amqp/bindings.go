@@ -7,14 +7,15 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
 
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
-	"github.com/bdragon300/go-asyncapi/internal/utils"
-	"github.com/samber/lo"
-
-	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
-	"github.com/bdragon300/go-asyncapi/internal/render"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"gopkg.in/yaml.v3"
 )
+
+type ProtoBuilder struct{}
+
+func (pb ProtoBuilder) Protocol() string {
+	return "amqp"
+}
 
 type channelBindings struct {
 	Is       string          `json:"is" yaml:"is"`
@@ -49,24 +50,6 @@ type operationBindings struct {
 	ReplyTo      string   `json:"replyTo" yaml:"replyTo"`
 	Timestamp    bool     `json:"timestamp" yaml:"timestamp"`
 	Ack          bool     `json:"ack" yaml:"ack"`
-}
-
-func (pb ProtoBuilder) BuildChannel(ctx *compile.Context, channel *asyncapi.Channel, parent *render.Channel) (*render.ProtoChannel, error) {
-	golangName := utils.ToGolangName(parent.OriginalName+lo.Capitalize(pb.Protocol()), true)
-	chanStruct := asyncapi.BuildProtoChannelStruct(ctx, channel, parent, pb.Protocol(), golangName)
-
-	chanStruct.Fields = append(
-		chanStruct.Fields,
-		lang.GoStructField{Name: "exchange", Type: &lang.GoSimple{TypeName: "string"}},
-		lang.GoStructField{Name: "queue", Type: &lang.GoSimple{TypeName: "string"}},
-		lang.GoStructField{Name: "routingKey", Type: &lang.GoSimple{TypeName: "string"}},
-	)
-
-	return &render.ProtoChannel{
-		Channel:  parent,
-		Type:     chanStruct,
-		Protocol: pb.Protocol(),
-	}, nil
 }
 
 func (pb ProtoBuilder) BuildChannelBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
@@ -126,5 +109,25 @@ func (pb ProtoBuilder) BuildOperationBindings(ctx *compile.Context, rawData type
 		vals.StructValues.Set("DeliveryMode", &lang.GoSimple{TypeName: "DeliveryModePersistent", Import: ctx.RuntimeModule(pb.Protocol())})
 	}
 
+	return
+}
+
+type messageBindings struct {
+	ContentEncoding string `json:"contentEncoding" yaml:"contentEncoding"`
+	MessageType     string `json:"messageType" yaml:"messageType"`
+}
+
+func (pb ProtoBuilder) BuildMessageBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
+	var bindings messageBindings
+	if err = types.UnmarshalRawMessageUnion2(rawData, &bindings); err != nil {
+		err = types.CompileError{Err: err, Path: ctx.CurrentPositionRef(), Proto: pb.Protocol()}
+		return
+	}
+
+	vals = lang.ConstructGoValue(bindings, nil, &lang.GoSimple{TypeName: "MessageBindings", Import: ctx.RuntimeModule(pb.Protocol())})
+	return
+}
+
+func (pb ProtoBuilder) BuildServerBindings(_ *compile.Context, _ types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	return
 }

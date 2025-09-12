@@ -1,38 +1,38 @@
-{{- /* dot == render.ProtoServer */}}
+{{- /* dot == render.Server */}}
 
 {{define "code/proto/redis/server/impl/github.com/redis/go-redis/connectFunction"}}
-func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+func Connect{{ . | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ . | goIDUpper }}Closable, error) {
     client, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String())
     if err != nil {
         return nil, err
     }
     producer, consumer := client, client
-    return &{{ .Server | goIDUpper }}Closable{
-        {{ .Type | goUsage }}{producer: producer, consumer: consumer},
+    return &{{ . | goIDUpper }}Closable{
+        {{. | goIDUpper}}{producer: producer, consumer: consumer},
     }, nil
 }
 {{- end}}
 
 {{define "code/proto/redis/server/impl/github.com/redis/go-redis/connectProducerFunction"}}
-func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+func Connect{{ . | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ . | goIDUpper }}Closable, error) {
     producer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String())
     if err != nil {
         return nil, err
     }
-    return &{{ .Server | goIDUpper }}Closable{
-        {{ .Type | goUsage }}{producer: producer},
+    return &{{ . | goIDUpper }}Closable{
+        {{. | goIDUpper}}{producer: producer},
     }, nil
 }
 {{- end}}
 
 {{define "code/proto/redis/server/impl/github.com/redis/go-redis/connectConsumerFunction"}}
-func Connect{{ .Server | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+func Connect{{ . | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ . | goIDUpper }}Closable, error) {
     consumer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String())
     if err != nil {
         return nil, err
     }
-    return &{{ .Server | goIDUpper }}Closable{
-        {{ .Type | goUsage }}{consumer: consumer},
+    return &{{ . | goIDUpper }}Closable{
+        {{. | goIDUpper}}{consumer: consumer},
     }, nil
 }
 {{- end}}

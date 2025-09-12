@@ -39,8 +39,7 @@ func (c Channel) Compile(ctx *compile.Context) error {
 	return nil
 }
 
-type protoChannelBuilder interface {
-	BuildChannel(ctx *compile.Context, channel *Channel, parent *render.Channel) (*render.ProtoChannel, error)
+type protocolObject interface {
 	Protocol() string
 }
 
@@ -157,15 +156,13 @@ func (c Channel) build(ctx *compile.Context, channelKey string, flags map[common
 	// So we just compile the proto channels for all supported protocols.
 	ctx.Logger.Trace("Prebuild the channels for every supported protocol")
 	for _, b := range ctx.ProtocolBuilders {
-		builder := b.(protoChannelBuilder)
+		builder := b.(protocolObject)
 		ctx.Logger.Trace("Channel", "proto", builder.Protocol())
-		ctx.Logger.NextCallLevel()
-		obj, err := builder.BuildChannel(ctx, &c, res)
-		ctx.Logger.PrevCallLevel()
-		if err != nil {
-			return nil, err
+		protoCh := &render.ProtoChannel{
+			Channel:  res,
+			Protocol: b.Protocol(),
 		}
-		res.ProtoChannels = append(res.ProtoChannels, obj)
+		res.ProtoChannels = append(res.ProtoChannels, protoCh)
 	}
 
 	return res, nil

@@ -121,7 +121,27 @@ func (o Operation) build(ctx *compile.Context, operationKey string, flags map[co
 	ctx.Logger.Trace("Prebuild the operations for every supported protocol")
 	for _, proto := range ctx.SupportedProtocols() {
 		ctx.Logger.Trace("Operation", "proto", proto)
-		res.ProtoOperations = append(res.ProtoOperations, BuildProtoOperation(ctx, &o, res, proto))
+		prmCh := lang.NewPromise[*render.ProtoChannel](o.Channel.Ref, func(obj common.Artifact) *render.ProtoChannel {
+			ch := obj.(*render.Channel)
+			if ch.Dummy {
+				return &render.ProtoChannel{Channel: ch, Protocol: proto} // Dummy channel
+			}
+			protoCh, found := lo.Find(ch.ProtoChannels, func(p *render.ProtoChannel) bool {
+				return p.Protocol == proto
+			})
+			if !found {
+				panic(fmt.Sprintf("ProtoChannel[%s] not found in %s. This is a bug", proto, ch))
+			}
+			return protoCh
+		})
+		ctx.PutPromise(prmCh)
+
+		protoOp := &render.ProtoOperation{
+			Operation:           res,
+			ProtoChannelPromise: prmCh,
+			Protocol:            proto,
+		}
+		res.ProtoOperations = append(res.ProtoOperations, protoOp)
 	}
 
 	return res, nil

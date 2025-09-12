@@ -4,14 +4,8 @@
     {{- template "schema.tmpl" .Object }}
 
 {{- else if eq .Object.Kind "server" }}
-    {{- if not .CurrentLayoutItem.Render.ProtoObjectsOnly}}
+    {{- if .CurrentLayoutItem.RenderProtocols | has (deref $.Object).Protocol }}
         {{- template "server.tmpl" .Object }}
-    {{- end}}
-
-    {{- range .CurrentLayoutItem.RenderProtocols}}
-        {{- with (deref $.Object).SelectProtoObject . }}
-            {{- tmpl (print .Protocol "_server.tmpl") . }}
-        {{- end}}
     {{- end}}
 
 {{- else if eq .Object.Kind "channel" }}

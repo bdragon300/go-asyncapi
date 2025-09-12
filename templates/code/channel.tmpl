@@ -1,5 +1,6 @@
 {{- /* dot == common.Artifact: Ref -> render.Channel or render.Channel */}}
 {{- with $channel := deref .}}
+{{- pin $channel}}
 
 {{- with once .ParametersType }}
     {{ . | goDef }}

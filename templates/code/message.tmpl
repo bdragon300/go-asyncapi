@@ -17,7 +17,7 @@
     {{- end}}
 {{- end }}
 
-{{- with once (deref .)}}
+{{- with once $message}}
     {{- if $message.IsSubscriber}}
         type {{ $ | goIDUpper }}Receiver interface {
             Payload() {{$message.PayloadType | goUsage}}

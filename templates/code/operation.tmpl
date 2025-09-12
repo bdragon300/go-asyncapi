@@ -1,5 +1,6 @@
 {{- /* dot == common.Artifact: Ref -> render.Operation or render.Operation */}}
 {{- with $operation := deref .}}
+{{- pin $operation}}
 
 {{- with $bindingsType := once .BindingsType }}
     {{ $bindingsType | goDef }}

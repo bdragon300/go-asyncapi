@@ -1,29 +1,29 @@
-{{- /* dot == render.ProtoServer */}}
+{{- /* dot == render.Server */}}
 
 {{define "code/proto/udp/server/impl/net/connectFunction"}}
-func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, localAddress string) (*{{ .Server | goIDUpper }}Closable, error) {
+func Connect{{ . | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, localAddress string) (*{{ . | goIDUpper }}Closable, error) {
     client := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(localAddress, url.Host, url.Scheme)
     consumer, producer := client, client
-    return &{{ .Server | goIDUpper }}Closable{
-        {{ .Type | goUsage }}{producer: producer, consumer: consumer},
+    return &{{ . | goIDUpper }}Closable{
+        {{. | goIDUpper}}{producer: producer, consumer: consumer},
     }, nil
 }
 {{- end}}
 
 {{define "code/proto/udp/server/impl/net/connectProducerFunction"}}
-func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+func Connect{{ . | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ . | goIDUpper }}Closable, error) {
     producer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient("", url.Host, url.Scheme)
-    return &{{ .Server | goIDUpper }}Closable{
-        {{ .Type | goUsage }}{producer: producer},
+    return &{{ . | goIDUpper }}Closable{
+        {{. | goIDUpper}}{producer: producer},
     }, nil
 }
 {{- end}}
 
 {{define "code/proto/udp/server/impl/net/connectConsumerFunction"}}
-func Connect{{ .Server | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+func Connect{{ . | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ . | goIDUpper }}Closable, error) {
     consumer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.Host, "", url.Scheme)
-    return &{{ .Server | goIDUpper }}Closable{
-        {{ .Type | goUsage }}{consumer: consumer},
+    return &{{ . | goIDUpper }}Closable{
+        {{. | goIDUpper}}{consumer: consumer},
     }, nil
 }
 {{- end}}

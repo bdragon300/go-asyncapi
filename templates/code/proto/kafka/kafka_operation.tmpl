@@ -2,12 +2,13 @@
 {{define "code/proto/kafka/operation/publishMethods/block1"}}
     envelope.SetTopic(o.Channel.Topic())
 {{- end}}
-{{- with deref .}}
-    {{ pin .Type }}
+{{- with once (deref .)}}
     {{template "code/proto/operation/newFunction" .}}
     {{template "code/proto/operation/openFunction" .}}
 
-    {{ .Type | goDef }}
+    type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
+        Channel *{{goPkg .ProtoChannel}}{{.ProtoChannel | goIDUpper}}{{.Protocol | goIDUpper}}
+    }
 
     {{template "code/proto/operation/commonMethods" .}}
     {{- if .IsPublisher}}
@@ -21,8 +22,8 @@
     {{template "code/proto/operation/serverInterface" .}}
 
     {{- if and .OperationReply .AllowTwoWayCode}}
-        type {{ $.Type | goUsage }}Reply struct {
-            Channel {{ptr .ProtoChannel.Type | goUsage}}
+        type {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply struct {
+            Channel {{goPkg .ProtoChannel}}{{.ProtoChannel | goIDUpper}}{{.Protocol | goIDUpper}}
         }
         {{- /* Generate publish reply methods for "receive" operation and vice versa */}}
         {{- if .IsPublisher}}

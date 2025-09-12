@@ -6,18 +6,23 @@
     envelope.SetTopic(c.Topic())
 {{- end}}
 
-{{- with once .Type}}
-    {{template "code/proto/channel/newFunction" $}}
-    {{template "code/proto/channel/openFunction" $}}
-    {{ . | goDef }}
+{{- with once .}}
+    {{template "code/proto/channel/newFunction" .}}
+    {{template "code/proto/channel/openFunction" .}}
 
-    {{template "code/proto/channel/commonMethods" $}}
+    type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
+        address    {{goQualR "ParamString"}}
+        {{if .IsPublisher}}publisher  {{goQualR .Protocol "Publisher"}}{{end}}
+        {{if .IsSubscriber}}subscriber {{goQualR .Protocol "Subscriber"}}{{end}}
+        topic string
+    }
 
-    func (c {{. | goUsage}}) Topic() string {
+    func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Topic() string {
         return c.topic
     }
 
-    {{if $.IsPublisher}}{{template "code/proto/channel/publishMethods" $}}{{end}}
-    {{if $.IsSubscriber}}{{template "code/proto/channel/subscribeMethods" $}}{{end}}
-    {{template "code/proto/channel/serverInterface" $}}
+    {{template "code/proto/channel/commonMethods" .}}
+    {{if .IsPublisher}}{{template "code/proto/channel/publishMethods" .}}{{end}}
+    {{if .IsSubscriber}}{{template "code/proto/channel/subscribeMethods" .}}{{end}}
+    {{template "code/proto/channel/serverInterface" .}}
 {{- end}}

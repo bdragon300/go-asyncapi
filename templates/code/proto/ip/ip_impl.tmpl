@@ -1,7 +1,7 @@
-{{- /* dot == render.ProtoServer */}}
+{{- /* dot == render.Server */}}
 
 {{define "code/proto/ip/server/impl/net/connectFunction"}}
-func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, localHost string) (*{{ .Server | goIDUpper }}Closable, error) {
+func Connect{{ . | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, localHost string) (*{{ . | goIDUpper }}Closable, error) {
     if !{{goQual "strings.Contains"}}(url.Host, ":") {
         return nil, {{goQual "errors.New"}}("missing ip protocol family in url port")
     }
@@ -14,14 +14,14 @@ func Connect{{ .Server | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url 
         return nil, err
     }
     consumer, producer := client, client
-    return &{{ .Server | goIDUpper }}Closable{
-        {{ .Type | goUsage }}{producer: producer, consumer: consumer},
+    return &{{ . | goIDUpper }}Closable{
+        {{. | goIDUpper}}{producer: producer, consumer: consumer},
     }, nil
 }
 {{- end}}
 
 {{define "code/proto/ip/server/impl/net/connectProducerFunction"}}
-func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+func Connect{{ . | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ . | goIDUpper }}Closable, error) {
     if !{{goQual "strings.Contains"}}(url.Host, ":") {
         return nil, {{goQual "errors.New"}}("missing ip protocol family in url port")
     }
@@ -33,14 +33,14 @@ func Connect{{ .Server | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, 
     if err != nil {
         return nil, err
     }
-    return &{{ .Server | goIDUpper }}Closable{
-        {{ .Type | goUsage }}{producer: producer},
+    return &{{ . | goIDUpper }}Closable{
+        {{. | goIDUpper}}{producer: producer},
     }, nil
 }
 {{- end}}
 
 {{define "code/proto/ip/server/impl/net/connectConsumerFunction"}}
-func Connect{{ .Server | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ .Server | goIDUpper }}Closable, error) {
+func Connect{{ . | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ . | goIDUpper }}Closable, error) {
     if !{{goQual "strings.Contains"}}(url.Host, ":") {
         return nil, {{goQual "errors.New"}}("missing ip protocol family in url port")
     }
@@ -52,8 +52,8 @@ func Connect{{ .Server | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, 
     if err != nil {
         return nil, err
     }
-    return &{{ .Server | goIDUpper }}Closable{
-        {{ .Type | goUsage }}{consumer: consumer},
+    return &{{ . | goIDUpper }}Closable{
+        {{. | goIDUpper}}{consumer: consumer},
     }, nil
 }
 {{- end}}

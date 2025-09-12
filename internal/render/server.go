@@ -50,9 +50,6 @@ type Server struct {
 	BindingsType *lang.GoStruct
 	// BindingsPromise is a promise to server bindings contents. Nil if no bindings are set.
 	BindingsPromise *lang.Promise[*Bindings]
-
-	// ProtoServer is a ProtoServer object built based on the server protocol.
-	ProtoServer *ProtoServer
 }
 
 // Variables returns the [types.OrderedMap] with server variables by name. Returns empty [types.OrderedMap] if variables
@@ -68,15 +65,6 @@ func (s *Server) Variables() (res types.OrderedMap[string, *ServerVariable]) {
 func (s *Server) Bindings() (res *Bindings) {
 	if s.BindingsPromise != nil {
 		return s.BindingsPromise.T()
-	}
-	return nil
-}
-
-// SelectProtoObject returns the ProtoServer object for the requested protocol. Returns nil if the server is not
-// selectable or has another protocol
-func (s *Server) SelectProtoObject(protocol string) common.Artifact {
-	if s.ProtoServer.Selectable() && s.ProtoServer.Protocol == protocol {
-		return s.ProtoServer
 	}
 	return nil
 }
@@ -171,18 +159,4 @@ func (s *Server) Visible() bool {
 
 func (s *Server) String() string {
 	return fmt.Sprintf("Server[%s](%s)", s.Protocol, s.OriginalName)
-}
-
-type ProtoServer struct {
-	*Server
-	// Type is a server's Go struct.
-	Type *lang.GoStruct
-}
-
-func (p *ProtoServer) Selectable() bool {
-	return !p.Dummy
-}
-
-func (p *ProtoServer) String() string {
-	return "ProtoServer(" + p.OriginalName + ")"
 }

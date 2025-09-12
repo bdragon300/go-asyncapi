@@ -175,9 +175,7 @@ type ProtoOperation struct {
 	*Operation
 	// ProtoChannelPromise is ProtoChannel with the same Protocol in the bound Channel.
 	ProtoChannelPromise *lang.Promise[*ProtoChannel]
-	// Type is a protocol-specific operation's Go struct
-	Type     *lang.GoStruct
-	Protocol string
+	Protocol            string
 }
 
 func (p *ProtoOperation) Selectable() bool {

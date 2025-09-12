@@ -1,16 +1,17 @@
 {{- /* dot == common.Artifact: Ref -> render.Server or render.Server */}}
 {{- with $server := deref .}}
+{{- pin $server}}
 
-{{- if .ProtocolVersion}}
-const {{$ | goIDUpper}}ProtocolVersion = {{.ProtocolVersion | goLit}}
+{{- if $server.ProtocolVersion}}
+const {{$ | goIDUpper}}ProtocolVersion = {{$server.ProtocolVersion | goLit}}
 {{- end}}
 
 func {{$ | goIDUpper}}URL(
-{{- range .Variables.Entries}}
+{{- range $server.Variables.Entries}}
     {{- .Value | goID}} string,
 {{- end }}) (*{{goQual "net/url.URL"}}, error) {
-    {{- if gt .Variables.Len 0}}
-        {{- range .Variables.Entries}}
+    {{- if gt $server.Variables.Len 0}}
+        {{- range $server.Variables.Entries}}
             {{- if .Value.Default}}
                 if {{.Value | goID}} == "" {
                     {{.Value | goID}} = {{.Value.Default | goLit}}
@@ -18,20 +19,20 @@ func {{$ | goIDUpper}}URL(
             {{- end}}
         {{- end}}
         paramMap := map[string]string{
-            {{- range .Variables.Entries}}
+            {{- range $server.Variables.Entries}}
                 {{.Key | goLit}}: {{.Value | goID}},
             {{- end}}
         }
 
         res := &{{goQual "net/url.URL"}}{Scheme: {{.Protocol | goLit}}}
-        {{- if .Host}}
+        {{- if $server.Host}}
             h, err := {{goQualR "ParamString"}}{Expr: {{.Host | goLit}}, Parameters: paramMap}.Expand()
             if err != nil {
                 return nil, {{goQual "fmt.Errorf"}}("expand host: %w", err)
             }
             res.Host = h
         {{- end}}
-        {{- if .Pathname}}
+        {{- if $server.Pathname}}
             p, err := {{goQualR "ParamString"}}{Expr: {{.Pathname | goLit}}, Parameters: paramMap}.Expand()
             if err != nil {
                 return nil, {{goQual "fmt.Errorf"}}.Errorf("expand pathname: %w", err)
@@ -45,7 +46,7 @@ func {{$ | goIDUpper}}URL(
     {{- end}}
 }
 
-{{- with $bindingsType := once .BindingsType}}
+{{- with $bindingsType := once $server.BindingsType}}
     {{- $bindingsType | goDef}}
     {{- range $proto := $server.BindingsProtocols}}
         {{- $bindingsValue := $server.ProtoBindingsValue $proto}}
@@ -59,6 +60,24 @@ func {{$ | goIDUpper}}URL(
             return b
         }
     {{- end}}
+{{- end}}
+
+{{- with once $server}}
+    {{template "code/proto/server/newFunction" .}}
+    {{- if impl $server.Protocol}}
+        {{template "code/proto/server/connectFunctions" .}}
+    {{- end}}
+
+    {{- /* TODO: handle when protoName is empty (it appears when we build ProtoServer for unsupported protocol) */}}
+	{{- /* TODO: consider IsPublisher and IsSubscriber}} */}}
+    type {{. | goIDUpper}} struct {
+        producer {{goQualR .Protocol "Producer"}}
+        consumer {{goQualR .Protocol "Consumer"}}
+    }
+
+    {{template "code/proto/server/commonMethods" .}}
+    {{template "code/proto/server/channelOpenMethods" .}}
+    {{template "code/proto/server/operationOpenMethods" .}}
 {{- end}}
 
 {{- end}}

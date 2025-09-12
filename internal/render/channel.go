@@ -179,8 +179,6 @@ func (c *Channel) String() string {
 
 type ProtoChannel struct {
 	*Channel
-	// Type is a protocol-specific channel's Go struct
-	Type     *lang.GoStruct
 	Protocol string
 }
 
