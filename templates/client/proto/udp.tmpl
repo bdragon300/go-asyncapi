@@ -1,10 +1,10 @@
 {{- /*
-    .ChannelOrOperation == common.Artifact: Ref -> render.Channel or render.Channel or render.Operation or render.Operation;
-    .Server == common.Artifact: Ref -> render.Server or render.Server
+    .ChannelOrOperation == render.Channel or render.Operation;
+    .Server == render.Server
     .Kind == "channel" or "operation"
     */}}
 {{define "client/channeloperation/udp/net/producer/connect"}}
-server, err := {{goPkg (deref .Server).ProtoServer.Type}}Connect{{.Server | goIDUpper}}Producer(ctx, serverURL)
+server, err := {{goPkg .Server.ProtoServer.Type}}Connect{{.Server | goIDUpper}}Producer(ctx, serverURL)
 if err != nil {
     return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
 }
@@ -12,7 +12,7 @@ defer server.Close()
 {{- end}}
 
 {{define "client/channeloperation/udp/net/consumer/connect"}}
-server, err := {{goPkg (deref .Server).ProtoServer.Type}}Connect{{.Server | goIDUpper}}Consumer(ctx, serverURL)
+server, err := {{goPkg .Server.ProtoServer.Type}}Connect{{.Server | goIDUpper}}Consumer(ctx, serverURL)
 if err != nil {
     return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
 }

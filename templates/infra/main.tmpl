@@ -10,7 +10,7 @@
   {{- if $.ServerVariableGroups .Name}}
     {{- range $.ServerVariableGroups .Name}}
       {{- $ctx := dict "Server" $server "ServerVariables" .}}
-      {{- with tryTmpl (print "infra/docker/" (deref $server).Protocol "/" $section) $ctx}}
+      {{- with tryTmpl (print "infra/docker/" $server.Protocol "/" $section) $ctx}}
         {{- with $drawSection}}
 {{$section}}:{{$drawSection = false}}
         {{- end}}
@@ -19,7 +19,7 @@
     {{- end}}
   {{- else if eq $server.Variables.Len 0 }}
     {{- $ctx := dict "Server" $server "ServerVariables" nil}}
-    {{- with tryTmpl (print "infra/docker/" (deref $server).Protocol "/" $section) $ctx}}
+    {{- with tryTmpl (print "infra/docker/" $server.Protocol "/" $section) $ctx}}
       {{- with $drawSection}}
 {{$section}}:{{$drawSection = false}}
       {{- end}}
@@ -30,7 +30,7 @@
     {{- continue}}
   {{- end}}
 
-  {{- with tryTmpl (print "infra/docker/" (deref $server).Protocol "/" $section "/extra") $server}}
+  {{- with tryTmpl (print "infra/docker/" $server.Protocol "/" $section "/extra") $server}}
 {{.}}
   {{- end}}
 {{- end}}

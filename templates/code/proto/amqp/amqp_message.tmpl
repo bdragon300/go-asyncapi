@@ -1,6 +1,5 @@
 {{- /* dot == render.ProtoMessage */}}
-{{- with once .}}
-    {{template "code/proto/message/commonMethods" .}}
-    {{if .IsPublisher}}{{template "code/proto/message/marshalMethods" .}}{{end}}
-    {{if .IsSubscriber}}{{template "code/proto/message/unmarshalMethods" .}}{{end}}
-{{- end}}
+{{-  pin .}}
+{{template "code/proto/message/commonMethods" .}}
+{{if .IsPublisher}}{{template "code/proto/message/marshalMethods" .}}{{end}}
+{{if .IsSubscriber}}{{template "code/proto/message/unmarshalMethods" .}}{{end}}

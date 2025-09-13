@@ -20,6 +20,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/renderer"
+	"github.com/bdragon300/go-asyncapi/internal/selector"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
 	"github.com/bdragon300/go-asyncapi/internal/types"
@@ -135,28 +136,26 @@ func cliDiagram(cmd *DiagramCmd, globalConfig toolConfig) error {
 	diagramConfig := getDiagramConfig(cmdConfig.Diagram)
 	fileExtension := "." + strings.ToLower(string(cmdConfig.Diagram.Format))
 	if cmdConfig.Diagram.MultipleFiles {
-		artifactsByDoc := lo.MapValues(documents, func(d *compiler.Document, _ string) []common.Artifact {
-			return lo.Filter(d.Artifacts(), func(a common.Artifact, _ int) bool {
-				return a.Selectable() && a.Visible()
+		visibleArtifactsByDoc := lo.MapValues(documents, func(d *compiler.Document, _ string) []common.Artifact {
+			return lo.Filter(selector.GatherArtifacts(d), func(a common.Artifact, _ int) bool {
+				return a.Visible()
 			})
 		})
-		logger.Debug("Render multiple diagram files", "count", len(artifactsByDoc))
-		if err = renderer.RenderDiagramMultipleFiles(artifactsByDoc, fileExtension, diagramConfig, renderManager); err != nil {
+		logger.Debug("Render multiple diagram files", "count", len(visibleArtifactsByDoc))
+		if err = renderer.RenderDiagramMultipleFiles(visibleArtifactsByDoc, fileExtension, diagramConfig, renderManager); err != nil {
 			return fmt.Errorf("render diagrams: %w", err)
 		}
 	} else {
-		allArtifacts := lo.Flatten(lo.Map(lo.Values(documents), func(d *compiler.Document, _ int) []common.Artifact {
-			return d.Artifacts()
-		}))
-		artifacts := lo.Filter(allArtifacts, func(a common.Artifact, _ int) bool {
-			return a.Selectable() && a.Visible()
+		allArtifacts := selector.GatherArtifacts(lo.Values(documents)...)
+		visibleArtifacts := lo.Filter(allArtifacts, func(a common.Artifact, _ int) bool {
+			return a.Visible()
 		})
-		logger.Debug("Render diagram file", "name", cmdConfig.Diagram.OutputFile, "objects", len(artifacts))
+		logger.Debug("Render diagram file", "name", cmdConfig.Diagram.OutputFile, "objects", len(visibleArtifacts))
 		fileName := cmdConfig.Diagram.OutputFile
 		if fileName == "" {
 			fileName = strings.TrimSuffix(path.Base(cmd.Document), path.Ext(cmd.Document)) + fileExtension
 		}
-		if err = renderer.RenderDiagramOneFile(artifacts, fileName, diagramConfig, renderManager); err != nil {
+		if err = renderer.RenderDiagramOneFile(visibleArtifacts, fileName, diagramConfig, renderManager); err != nil {
 			return fmt.Errorf("render diagram: %w", err)
 		}
 	}

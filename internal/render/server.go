@@ -62,7 +62,7 @@ func (s *Server) Variables() (res types.OrderedMap[string, *ServerVariable]) {
 }
 
 // Bindings returns the Bindings object or nil if bindings are not set.
-func (s *Server) Bindings() (res *Bindings) {
+func (s *Server) Bindings() *Bindings {
 	if s.BindingsPromise != nil {
 		return s.BindingsPromise.T()
 	}
@@ -70,10 +70,10 @@ func (s *Server) Bindings() (res *Bindings) {
 }
 
 // BoundChannels returns a list of channels that are bound to this server.
-func (s *Server) BoundChannels() []common.Artifact {
-	r := lo.Filter(s.AllActiveChannelsPromise.T(), func(r common.Artifact, _ int) bool {
+func (s *Server) BoundChannels() []*Channel {
+	r := lo.FilterMap(s.AllActiveChannelsPromise.T(), func(r common.Artifact, _ int) (*Channel, bool) {
 		ch := common.DerefArtifact(r).(*Channel)
-		return lo.ContainsBy(ch.BoundServers(), func(item common.Artifact) bool {
+		return ch, lo.ContainsBy(ch.BoundServers(), func(item *Server) bool {
 			return common.CheckSameArtifacts(s, item)
 		})
 	})
@@ -81,11 +81,10 @@ func (s *Server) BoundChannels() []common.Artifact {
 }
 
 // BoundOperations returns a list of operations that are bound to this server.
-func (s *Server) BoundOperations() []common.Artifact {
+func (s *Server) BoundOperations() []*Operation {
 	chans := s.BoundChannels()
-	ops := lo.FlatMap(chans, func(c common.Artifact, _ int) []common.Artifact {
-		ch := common.DerefArtifact(c).(*Channel)
-		return ch.BoundOperations()
+	ops := lo.FlatMap(chans, func(c *Channel, _ int) []*Operation {
+		return c.BoundOperations()
 	})
 	return ops
 }

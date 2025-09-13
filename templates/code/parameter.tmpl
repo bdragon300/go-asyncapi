@@ -1,4 +1,3 @@
-{{- /* dot == common.Artifact: Ref -> render.Parameter or render.Parameter */}}
-{{- with once (deref .) }}
-    {{.Type | goDef}}
-{{- end}}
+{{- /* dot == render.Parameter */}}
+{{- pin . }}
+{{.Type | goDef}}

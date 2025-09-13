@@ -4,7 +4,7 @@
     {{- template "schema.tmpl" .Object }}
 
 {{- else if eq .Object.Kind "server" }}
-    {{- if .CurrentLayoutItem.RenderProtocols | has (deref $.Object).Protocol }}
+    {{- if .CurrentLayoutItem.RenderProtocols | has $.Object.Protocol }}
         {{- template "server.tmpl" .Object }}
     {{- end}}
 
@@ -13,7 +13,7 @@
         {{- template "channel.tmpl" .Object}}
     {{- end}}
     {{- range .CurrentLayoutItem.RenderProtocols}}
-        {{- with (deref $.Object).SelectProtoObject . }}
+        {{- with $.Object.SelectProtoObject . }}
             {{- tmpl (print .Protocol "_channel.tmpl") . }}
         {{- end}}
     {{- end}}
@@ -23,7 +23,7 @@
         {{- template "operation.tmpl" .Object}}
     {{- end}}
     {{- range .CurrentLayoutItem.RenderProtocols}}
-        {{- with (deref $.Object).SelectProtoObject . }}
+        {{- with $.Object.SelectProtoObject . }}
             {{- tmpl (print .Protocol "_operation.tmpl") . }}
         {{- end}}
     {{- end}}
@@ -34,7 +34,7 @@
     {{- end}}
 
     {{- range .CurrentLayoutItem.RenderProtocols}}
-        {{- with (deref $.Object).SelectProtoObject . }}
+        {{- with $.Object.SelectProtoObject . }}
             {{- tmpl (print .Protocol "_message.tmpl") . }}
         {{- end}}
     {{- end}}

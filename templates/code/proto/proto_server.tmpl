@@ -92,7 +92,7 @@ func (c {{ $ | goIDUpper }}Closable) Close() error {
 
 {{define "code/proto/server/channelOpenMethods"}}
 {{- range $channel := .BoundChannels}}
-    {{- with (deref .).SelectProtoObject $.Protocol }}
+    {{- with .SelectProtoObject $.Protocol }}
         func (s {{$ | goIDUpper}}) Open{{ $channel | goIDUpper }}{{$.Protocol | goIDUpper}}(
             ctx {{goQual "context.Context"}},
             {{with .ParametersType}}params {{ . | goUsage }},{{end}}
@@ -107,7 +107,7 @@ func (c {{ $ | goIDUpper }}Closable) Close() error {
 
 {{define "code/proto/server/operationOpenMethods"}}
 {{- range $operation := .BoundOperations}}
-    {{- with (deref .).SelectProtoObject $.Protocol }}
+    {{- with .SelectProtoObject $.Protocol }}
         func (s {{$ | goIDUpper}}) Open{{ $operation | goIDUpper }}{{$.Protocol | goIDUpper}}(
             ctx {{goQual "context.Context"}},
             {{with $operation.Channel.ParametersType}}params {{ . | goUsage }},{{end}}

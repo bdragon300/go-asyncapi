@@ -2,37 +2,37 @@
 {{define "code/proto/mqtt/operation/publishMethods/block1"}}
     envelope.SetTopic(o.Channel.Topic())
 {{- end}}
-{{- with once (deref .)}}
-    {{template "code/proto/operation/newFunction" .}}
-    {{template "code/proto/operation/openFunction" .}}
 
-    type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
-        Channel *{{goPkg .ProtoChannel}}{{.ProtoChannel | goIDUpper}}{{.Protocol | goIDUpper}}
+{{- pin . }}
+{{template "code/proto/operation/newFunction" .}}
+{{template "code/proto/operation/openFunction" .}}
+
+type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
+    Channel *{{goPkg .ProtoChannel}}{{.ProtoChannel | goIDUpper}}{{.Protocol | goIDUpper}}
+}
+
+{{template "code/proto/operation/commonMethods" .}}
+{{- if .IsPublisher}}
+    {{template "code/proto/operation/commonPublish" . }}
+    {{template "code/proto/operation/publishMethods" .}}
+{{- end}}
+{{- if .IsSubscriber}}
+    {{template "code/proto/operation/commonSubscribe" . }}
+    {{template "code/proto/operation/subscribeMethods" .}}
+{{- end}}
+{{template "code/proto/operation/serverInterface" .}}
+
+{{- if and .OperationReply .AllowTwoWayCode}}
+    type {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply struct {
+        Channel {{goPkg .ProtoChannel}}{{.ProtoChannel | goIDUpper}}{{.Protocol | goIDUpper}}
     }
-
-    {{template "code/proto/operation/commonMethods" .}}
+    {{- /* Generate publish reply methods for "receive" operation and vice versa */}}
     {{- if .IsPublisher}}
-        {{template "code/proto/operation/commonPublish" . }}
-        {{template "code/proto/operation/publishMethods" .}}
+        {{template "code/proto/operation/commonSubscribe" . }}
+        {{template "code/proto/operation/operationReply/subscribeMethods" .}}
     {{- end}}
     {{- if .IsSubscriber}}
-        {{template "code/proto/operation/commonSubscribe" . }}
-        {{template "code/proto/operation/subscribeMethods" .}}
-    {{- end}}
-    {{template "code/proto/operation/serverInterface" .}}
-
-    {{- if and .OperationReply .AllowTwoWayCode}}
-        type {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply struct {
-            Channel {{goPkg .ProtoChannel}}{{.ProtoChannel | goIDUpper}}{{.Protocol | goIDUpper}}
-        }
-        {{- /* Generate publish reply methods for "receive" operation and vice versa */}}
-        {{- if .IsPublisher}}
-            {{template "code/proto/operation/commonSubscribe" . }}
-            {{template "code/proto/operation/operationReply/subscribeMethods" .}}
-        {{- end}}
-        {{- if .IsSubscriber}}
-            {{template "code/proto/operation/commonPublish" . }}
-            {{template "code/proto/operation/operationReply/publishMethods" .}}
-        {{- end}}
+        {{template "code/proto/operation/commonPublish" . }}
+        {{template "code/proto/operation/operationReply/publishMethods" .}}
     {{- end}}
 {{- end}}

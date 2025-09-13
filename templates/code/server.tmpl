@@ -1,17 +1,14 @@
-{{- /* dot == common.Artifact: Ref -> render.Server or render.Server */}}
-{{- with $server := deref .}}
-{{- pin $server}}
-
-{{- if $server.ProtocolVersion}}
-const {{$ | goIDUpper}}ProtocolVersion = {{$server.ProtocolVersion | goLit}}
+{{- /* dot == render.Server */}}
+{{- if .ProtocolVersion}}
+const {{. | goIDUpper}}ProtocolVersion = {{.ProtocolVersion | goLit}}
 {{- end}}
 
-func {{$ | goIDUpper}}URL(
-{{- range $server.Variables.Entries}}
+func {{. | goIDUpper}}URL(
+{{- range .Variables.Entries}}
     {{- .Value | goID}} string,
 {{- end }}) (*{{goQual "net/url.URL"}}, error) {
-    {{- if gt $server.Variables.Len 0}}
-        {{- range $server.Variables.Entries}}
+    {{- if gt .Variables.Len 0}}
+        {{- range .Variables.Entries}}
             {{- if .Value.Default}}
                 if {{.Value | goID}} == "" {
                     {{.Value | goID}} = {{.Value.Default | goLit}}
@@ -19,20 +16,20 @@ func {{$ | goIDUpper}}URL(
             {{- end}}
         {{- end}}
         paramMap := map[string]string{
-            {{- range $server.Variables.Entries}}
+            {{- range .Variables.Entries}}
                 {{.Key | goLit}}: {{.Value | goID}},
             {{- end}}
         }
 
         res := &{{goQual "net/url.URL"}}{Scheme: {{.Protocol | goLit}}}
-        {{- if $server.Host}}
+        {{- if .Host}}
             h, err := {{goQualR "ParamString"}}{Expr: {{.Host | goLit}}, Parameters: paramMap}.Expand()
             if err != nil {
                 return nil, {{goQual "fmt.Errorf"}}("expand host: %w", err)
             }
             res.Host = h
         {{- end}}
-        {{- if $server.Pathname}}
+        {{- if .Pathname}}
             p, err := {{goQualR "ParamString"}}{Expr: {{.Pathname | goLit}}, Parameters: paramMap}.Expand()
             if err != nil {
                 return nil, {{goQual "fmt.Errorf"}}.Errorf("expand pathname: %w", err)
@@ -46,13 +43,13 @@ func {{$ | goIDUpper}}URL(
     {{- end}}
 }
 
-{{- with $bindingsType := once $server.BindingsType}}
-    {{- $bindingsType | goDef}}
-    {{- range $proto := $server.BindingsProtocols}}
-        {{- $bindingsValue := $server.ProtoBindingsValue $proto}}
-        func (c {{ $bindingsType | goUsage }}) {{ $proto | goIDUpper }}() {{$bindingsValue.Type | goUsage}} {
+{{- with $bt := .BindingsType}}
+    {{- $bt | goDef}}
+    {{- range $proto := $.BindingsProtocols}}
+        {{- $bindingsValue := $.ProtoBindingsValue $proto}}
+        func (c {{ $bt | goUsage }}) {{ $proto | goIDUpper }}() {{$bindingsValue.Type | goUsage}} {
             b := {{$bindingsValue | goUsage}}
-            {{- $jvals := $server.Bindings.JSONValues.GetOrEmpty $proto}}
+            {{- $jvals := $.Bindings.JSONValues.GetOrEmpty $proto}}
             {{- range $jval := $jvals.Entries}}
                 {{$jval.Key | toCamelCase }} := {{$jval.Value | goLit}}
                 _ = {{goQual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})
@@ -62,22 +59,18 @@ func {{$ | goIDUpper}}URL(
     {{- end}}
 {{- end}}
 
-{{- with once $server}}
-    {{template "code/proto/server/newFunction" .}}
-    {{- if impl $server.Protocol}}
-        {{template "code/proto/server/connectFunctions" .}}
-    {{- end}}
-
-    {{- /* TODO: handle when protoName is empty (it appears when we build ProtoServer for unsupported protocol) */}}
-	{{- /* TODO: consider IsPublisher and IsSubscriber}} */}}
-    type {{. | goIDUpper}} struct {
-        producer {{goQualR .Protocol "Producer"}}
-        consumer {{goQualR .Protocol "Consumer"}}
-    }
-
-    {{template "code/proto/server/commonMethods" .}}
-    {{template "code/proto/server/channelOpenMethods" .}}
-    {{template "code/proto/server/operationOpenMethods" .}}
+{{template "code/proto/server/newFunction" .}}
+{{- if impl .Protocol}}
+    {{template "code/proto/server/connectFunctions" .}}
 {{- end}}
 
-{{- end}}
+{{- /* TODO: handle when protoName is empty (it appears when we build ProtoServer for unsupported protocol) */}}
+{{- /* TODO: consider IsPublisher and IsSubscriber}} */}}
+type {{. | goIDUpper}} struct {
+    producer {{goQualR .Protocol "Producer"}}
+    consumer {{goQualR .Protocol "Consumer"}}
+}
+
+{{template "code/proto/server/commonMethods" .}}
+{{template "code/proto/server/channelOpenMethods" .}}
+{{template "code/proto/server/operationOpenMethods" .}}

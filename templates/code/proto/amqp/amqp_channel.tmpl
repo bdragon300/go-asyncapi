@@ -22,33 +22,32 @@
     envelope.SetRoutingKey(c.RoutingKey())
 {{- end}}
 
-{{- with once .}}
-    {{template "code/proto/channel/newFunction" .}}
-    {{template "code/proto/channel/openFunction" .}}
+{{- pin . }}
+{{template "code/proto/channel/newFunction" .}}
+{{template "code/proto/channel/openFunction" .}}
 
-    type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
-        address    {{goQualR "ParamString"}}
-        {{if .IsPublisher}}publisher  {{goQualR .Protocol "Publisher"}}{{end}}
-        {{if .IsSubscriber}}subscriber {{goQualR .Protocol "Subscriber"}}{{end}}
-        exchange   string
-        queue      string
-        routingKey string
-    }
+type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
+    address    {{goQualR "ParamString"}}
+    {{if .IsPublisher}}publisher  {{goQualR .Protocol "Publisher"}}{{end}}
+    {{if .IsSubscriber}}subscriber {{goQualR .Protocol "Subscriber"}}{{end}}
+    exchange   string
+    queue      string
+    routingKey string
+}
 
-    func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Exchange() string {
-        return c.exchange
-    }
+func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Exchange() string {
+    return c.exchange
+}
 
-    func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Queue() string {
-        return c.queue
-    }
+func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Queue() string {
+    return c.queue
+}
 
-    func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) RoutingKey() string {
-        return c.routingKey
-    }
+func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) RoutingKey() string {
+    return c.routingKey
+}
 
-    {{template "code/proto/channel/commonMethods" .}}
-    {{if .IsPublisher}}{{template "code/proto/channel/publishMethods" .}}{{end}}
-    {{if .IsSubscriber}}{{template "code/proto/channel/subscribeMethods" .}}{{end}}
-    {{template "code/proto/channel/serverInterface" .}}
-{{- end}}
+{{template "code/proto/channel/commonMethods" .}}
+{{if .IsPublisher}}{{template "code/proto/channel/publishMethods" .}}{{end}}
+{{if .IsSubscriber}}{{template "code/proto/channel/subscribeMethods" .}}{{end}}
+{{template "code/proto/channel/serverInterface" .}}

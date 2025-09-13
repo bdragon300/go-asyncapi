@@ -1,27 +1,25 @@
 {{- /*
-    .Object == common.Artifact: Ref -> render.Operation or render.Operation;
+    .Object == render.Operation;
     .Config == common.ConfigDiagram
     */}}
 {{define "diagram/operation"}}
-{{- with $operation := deref .Object}}
-{{- if $.Config.ShowDocumentBorders}}{{goID $operation.Pointer.Location}}.{{end}}{{ goID $operation }}: "{{$operation.IsPublisher | ternary "📤" "📥"}} {{$operation.Name | toQuotable | ellipsis 25}}" {
+{{- if $.Config.ShowDocumentBorders}}{{goID $.Object.Pointer.Location}}.{{end}}{{ goID $.Object }}: "{{$.Object.IsPublisher | ternary "📤" "📥"}} {{$.Object.Name | toQuotable | ellipsis 25}}" {
     class: operation
 }
 
 {{- if $.Config.ShowServers }}
-    {{- range $server := $operation.Channel.BoundServers }}
-        {{- range $message := $operation.BoundMessages }}
-            {{if $.Config.ShowDocumentBorders}}{{goID $operation.Pointer.Location}}.{{end}}{{ goID $operation }} {{$operation.IsPublisher | ternary "->" "<-"}} {{if $.Config.ShowDocumentBorders}}{{goID $server.Pointer.Location}}.{{end}}{{goID $server}}{{if $.Config.ShowChannels}}.{{goID $operation.Channel}}{{end}}: {
+    {{- range $server := $.Object.Channel.BoundServers }}
+        {{- range $message := $.Object.BoundMessages }}
+            {{if $.Config.ShowDocumentBorders}}{{goID $.Object.Pointer.Location}}.{{end}}{{ goID $.Object }} {{$.Object.IsPublisher | ternary "->" "<-"}} {{if $.Config.ShowDocumentBorders}}{{goID $server.Pointer.Location}}.{{end}}{{goID $server}}{{if $.Config.ShowChannels}}.{{goID $.Object.Channel}}{{end}}: {
                 {{- if isVisible $message }}{{with $message.Name}}label: "✉️ {{. | toQuotable | ellipsis 25}}"{{end}}{{end}}
             }
         {{- end}}
     {{- end}}
 {{- else}}
-    {{- range $message := $operation.BoundMessages }}
-        {{if $.Config.ShowDocumentBorders}}{{goID $operation.Pointer.Location}}.{{end}}{{ goID $operation }} {{$operation.IsPublisher | ternary "->" "<-"}} {{if $.Config.ShowDocumentBorders}}{{goID $operation.Channel.Pointer.Location}}.{{end}}{{goID $operation.Channel}}: {
+    {{- range $message := $.Object.BoundMessages }}
+        {{if $.Config.ShowDocumentBorders}}{{goID $.Object.Pointer.Location}}.{{end}}{{ goID $.Object }} {{$.Object.IsPublisher | ternary "->" "<-"}} {{if $.Config.ShowDocumentBorders}}{{goID $.Object.Channel.Pointer.Location}}.{{end}}{{goID $.Object.Channel}}: {
             {{- if isVisible $message }}{{with $message.Name}}label: "✉️ {{. | toQuotable | ellipsis 25}}"{{end}}{{end}}
         }
     {{- end}}
-{{- end}}
 {{- end}}
 {{- end}}

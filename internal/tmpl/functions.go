@@ -49,7 +49,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		"goDef": func(r common.GolangType) (string, error) {
 			trace("goDef", r)
 			tplName := path.Join(r.GoTemplate(), "definition")
-			renderManager.NamespaceManager.DeclareArtifact(r, renderManager, false, true)
+			renderManager.NamespaceManager.DeclareArtifact(r, renderManager, true)
 			if v, ok := r.(golangReferenceType); ok {
 				r = v.DerefGolangType()
 			}
@@ -84,13 +84,6 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		},
 
 		// Artifact helpers
-		"deref": func(r common.Artifact) common.Artifact {
-			trace("deref", r)
-			if r == nil {
-				return nil
-			}
-			return common.DerefArtifact(r)
-		},
 		"innerType": func(val common.GolangType) common.GolangType {
 			trace("innerType", val)
 			if v, ok := any(val).(golangWrapperType); ok {
@@ -132,9 +125,9 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		"pin": func(object common.Artifact) (string, error) {
 			trace("pin", object)
 			if lo.IsNil(object) {
-				return "", fmt.Errorf("cannot pin nil object")
+				return "", fmt.Errorf("cannot pin nil")
 			}
-			renderManager.NamespaceManager.DeclareArtifact(object, renderManager, false, false)
+			renderManager.NamespaceManager.DeclareArtifact(object, renderManager, false)
 			return "", nil
 		},
 		"once": func(r any) any {
@@ -182,34 +175,20 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 	return lo.Assign(sproutFunctions, extraFuncs)
 }
 
-// templateOnce declares the r and returns it back if it was not declared before, otherwise returns nil.
-// If r is nil, returns nil as well.
-func templateOnce(mng *manager.TemplateRenderManager, r any) any {
-	if lo.IsNil(r) {
+// templateOnce adds the given o to the namespace if it is not already added. Return the object if it was not added before,
+// or nil if it was already added.
+//
+// The purpose of this function is similar to [sync.Once], but for template rendering -- to ensure that certain code snippets
+// (e.g. type definitions) are rendered only once even if the template is included multiple times.
+func templateOnce(mng *manager.TemplateRenderManager, o any) any {
+	if lo.IsNil(o) {
 		return nil
 	}
-
-	switch v := r.(type) {
-	case common.Artifact:
-		d, found := mng.NamespaceManager.FindArtifactDeclaration(v)
-		pinnedOnly := !d.Passed && !d.Rendered
-		if !found || pinnedOnly {
-			mng.NamespaceManager.DeclareArtifact(v, mng, true, false)
-			return r
-		}
-	case string:
-		if v == "" {
-			return nil
-		}
-		if !mng.NamespaceManager.IsNameDeclared(v) {
-			mng.NamespaceManager.DeclareName(v)
-			return r
-		}
-	default:
-		panic(fmt.Sprintf("unsupported once argument type %[1]T: %[1]v", r))
+	if mng.NamespaceManager.ContainsObject(o) {
+		return nil
 	}
-
-	return nil
+	mng.NamespaceManager.AddObject(o)
+	return o
 }
 
 type golangReferenceType interface {
@@ -547,7 +526,7 @@ type definable interface {
 // further in the generated code. If object is already defined in *current module*, returns empty string with no error.
 // If we don't know where the object is defined, returns ErrNotDefined.
 func qualifiedTypeGeneratedPackage(mng *manager.TemplateRenderManager, obj common.Artifact) (string, error) {
-	d, found := mng.NamespaceManager.FindArtifactDeclaration(obj)
+	d, found := mng.NamespaceManager.FindArtifact(obj)
 	if !found {
 		if v, ok := obj.(definable); ok && v.ObjectHasDefinition() { // TODO: replace to Selectable?
 			return "", ErrNotDefined

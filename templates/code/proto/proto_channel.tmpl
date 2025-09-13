@@ -105,8 +105,8 @@ type {{ .Channel | goIDUpper }}EnvelopeMarshaler{{.Protocol | goIDUpper}} interf
             return err
         }
         {{ with tryTmpl (print "code/proto/" $.Protocol "/channel/publishMethods/block1") .}}{{.}}{{end}}
-        {{- if (deref .).BindingsProtocols | has $.Protocol }}
-            envelope.SetBindings({{(deref .).BindingsType | goUsage}}{}.{{$.Protocol | goIDUpper}}())
+        {{- if .BindingsProtocols | has $.Protocol }}
+            envelope.SetBindings({{.BindingsType | goUsage}}{}.{{$.Protocol | goIDUpper}}())
         {{- end}}
         return nil
     }
@@ -152,13 +152,13 @@ type {{ .Channel | goIDUpper }}EnvelopeUnmarshaler{{.Protocol | goIDUpper}} inte
 
     func (c {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}) Subscribe{{. | goIDUpper}}(
         ctx {{goQual "context.Context"}},
-        cb func(message {{ goPkg (deref .).InType}}{{ goIDUpper .}}Receiver),
+        cb func(message {{ goPkg .InType}}{{ goIDUpper .}}Receiver),
     ) (err error) {
         subCtx, cancel := {{goQual "context.WithCancelCause"}}(ctx)
         defer cancel(nil)
 
         return c.Subscribe(subCtx, func(envelope {{goQualR $.Protocol "EnvelopeReader"}}) {
-            message := new({{ (deref .).InType | goUsage }})
+            message := new({{ .InType | goUsage }})
             if err2 := c.Unseal{{. | goIDUpper}}(envelope, message); err2 != nil {
                 err = {{goQual "fmt.Errorf"}}("open message envelope: %w", err2)
                 cancel(err)

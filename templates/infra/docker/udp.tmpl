@@ -1,17 +1,16 @@
 {{/* dot:
-  .Server == common.Artifact: Ref -> render.Server or render.Server
+  .Server == render.Server
   .ServerVariables == []common.ConfigServerVariable
   */}}
 {{define "infra/docker/udp/services"}}
   "{{.Server.Name | toQuotable}}{{range .ServerVariables}}_{{.Value | toQuotable}}{{end}}":
-    {{- $server := deref .Server}}
-    {{- $port := ($server.URL .ServerVariables).Port | default "1"}}
+    {{- $port := ($.Server.URL .ServerVariables).Port | default "1"}}
     image: alpine/socat:latest
     command: ["UDP-LISTEN:{{$port}},fork,reuseaddr", "STDIN"]
     stdin_open: true
     tty: true
     ports:
       - "{{$port}}:{{$port}}/udp"
-    hostname: "{{($server.URL .ServerVariables).Hostname | toQuotable}}"
+    hostname: "{{($.Server.URL .ServerVariables).Hostname | toQuotable}}"
     restart: on-failure
 {{- end}}

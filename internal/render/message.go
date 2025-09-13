@@ -116,7 +116,7 @@ func (m *Message) EffectiveContentType() string {
 
 // SelectProtoObject returns a selectable ProtoMessage object for the given protocol or nil if not found or
 // the message is not selectable.
-func (m *Message) SelectProtoObject(protocol string) common.Artifact {
+func (m *Message) SelectProtoObject(protocol string) *ProtoMessage {
 	objects := lo.Filter(m.ProtoMessages, func(p *ProtoMessage, _ int) bool {
 		return p.Selectable() && p.Protocol == protocol
 	})
@@ -124,61 +124,59 @@ func (m *Message) SelectProtoObject(protocol string) common.Artifact {
 }
 
 // BoundChannels returns a list of Channel or lang.Ref to Channel objects that this message is bound to.
-func (m *Message) BoundChannels() []common.Artifact {
-	r := lo.Filter(m.AllActiveChannelsPromise.T(), func(c common.Artifact, _ int) bool {
+func (m *Message) BoundChannels() []*Channel {
+	r := lo.FilterMap(m.AllActiveChannelsPromise.T(), func(c common.Artifact, _ int) (*Channel, bool) {
 		ch := common.DerefArtifact(c).(*Channel)
-		return lo.ContainsBy(ch.BoundMessages(), func(item common.Artifact) bool {
+		return ch, lo.ContainsBy(ch.BoundMessages(), func(item *Message) bool {
 			return common.CheckSameArtifacts(item, m)
 		})
 	})
 	// ListPromise is filled up by linker, which doesn't guarantee the order. So, sort items by name
-	slices.SortFunc(r, func(a, b common.Artifact) int { return cmp.Compare(a.Name(), b.Name()) })
+	slices.SortFunc(r, func(a, b *Channel) int { return cmp.Compare(a.Name(), b.Name()) })
 	return r
 }
 
 // BoundOperations returns a list of Operation or lang.Ref to Operation objects that this message is bound to.
-func (m *Message) BoundOperations() []common.Artifact {
-	r := lo.Filter(m.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) bool {
+func (m *Message) BoundOperations() []*Operation {
+	r := lo.FilterMap(m.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (*Operation, bool) {
 		op := common.DerefArtifact(o).(*Operation)
-		return lo.ContainsBy(op.BoundMessages(), func(item common.Artifact) bool {
+		return op, lo.ContainsBy(op.BoundMessages(), func(item *Message) bool {
 			return common.CheckSameArtifacts(item, m)
 		})
 	})
 	// ListPromise is filled up by linker in any order. So, sort items by name to make results stable
-	slices.SortFunc(r, func(a, b common.Artifact) int { return cmp.Compare(a.Name(), b.Name()) })
+	slices.SortFunc(r, func(a, b *Operation) int { return cmp.Compare(a.Name(), b.Name()) })
 	return r
 }
 
 // boundAllOperations returns a list of Operation or lang.Ref to Operation objects that this message is bound to,
 // including those where the message is bound via OperationReply.
-func (m *Message) boundAllOperations() []common.Artifact {
-	r := lo.FilterMap(m.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (common.Artifact, bool) {
+func (m *Message) boundAllOperations() []*Operation {
+	r := lo.FilterMap(m.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (*Operation, bool) {
 		op := common.DerefArtifact(o).(*Operation)
-		return op, lo.ContainsBy(op.BoundAllMessages(), func(item common.Artifact) bool {
+		return op, lo.ContainsBy(op.BoundAllMessages(), func(item *Message) bool {
 			return common.CheckSameArtifacts(item, m)
 		})
 	})
 	// ListPromise is filled up by linker in any order. So, sort items by name to make results stable
-	slices.SortFunc(r, func(a, b common.Artifact) int { return cmp.Compare(a.Name(), b.Name()) })
+	slices.SortFunc(r, func(a, b *Operation) int { return cmp.Compare(a.Name(), b.Name()) })
 	return r
 }
 
 // BoundAllPubOperations returns a list of Operation or lang.Ref to Operation objects that this message is bound to,
 // including those where the message is bound via OperationReply, and where the Operation or OperationReply is a publisher.
-func (m *Message) BoundAllPubOperations() []common.Artifact {
-	r := lo.Filter(m.boundAllOperations(), func(o common.Artifact, _ int) bool {
-		op := common.DerefArtifact(o).(*Operation)
-		return op.IsPublisher || op.OperationReply() != nil // OperationReply presence means the opposite direction is possible
+func (m *Message) BoundAllPubOperations() []*Operation {
+	r := lo.Filter(m.boundAllOperations(), func(o *Operation, _ int) bool {
+		return o.IsPublisher || o.OperationReply() != nil // OperationReply presence means that the opposite direction is possible
 	})
 	return r
 }
 
 // BoundAllSubOperations returns a list of Operation or lang.Ref to Operation objects that this message is bound to,
 // including those where the message is bound via OperationReply, and where the Operation or OperationReply is a subscriber.
-func (m *Message) BoundAllSubOperations() []common.Artifact {
-	r := lo.Filter(m.boundAllOperations(), func(o common.Artifact, _ int) bool {
-		op := common.DerefArtifact(o).(*Operation)
-		return op.IsSubscriber || op.OperationReply() != nil // OperationReply presence means the opposite direction is possible
+func (m *Message) BoundAllSubOperations() []*Operation {
+	r := lo.Filter(m.boundAllOperations(), func(o *Operation, _ int) bool {
+		return o.IsSubscriber || o.OperationReply() != nil // OperationReply presence means the opposite direction is possible
 	})
 	return r
 }
@@ -246,12 +244,10 @@ func (p *ProtoMessage) String() string {
 
 // isBound returns true if the message is bound to the protocol
 func (p *ProtoMessage) isBound() bool {
-	res := lo.SomeBy(p.BoundChannels(), func(c common.Artifact) bool {
-		ch := common.DerefArtifact(c).(*Channel)
-		return !lo.IsNil(ch.SelectProtoObject(p.Protocol))
-	}) || lo.SomeBy(p.BoundOperations(), func(o common.Artifact) bool {
-		op := common.DerefArtifact(o).(*Operation)
-		return !lo.IsNil(op.SelectProtoObject(p.Protocol))
+	res := lo.SomeBy(p.BoundChannels(), func(c *Channel) bool {
+		return !lo.IsNil(c.SelectProtoObject(p.Protocol))
+	}) || lo.SomeBy(p.BoundOperations(), func(o *Operation) bool {
+		return !lo.IsNil(o.SelectProtoObject(p.Protocol))
 	})
 
 	return res

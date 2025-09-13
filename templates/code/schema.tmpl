@@ -1,4 +1,2 @@
-{{- /* dot == common.Artifact: Ref -> lang.* or lang.* */}}
-{{- with once (deref .) }}
-    {{ . | goDef }}
-{{- end}}
+{{- /* dot == lang.* */}}
+{{ . | goDef }}

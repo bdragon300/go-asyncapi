@@ -1,11 +1,10 @@
 {{/* dot:
-  .Server == common.Artifact: Ref -> render.Server or render.Server
+  .Server == render.Server
   .ServerVariables == []common.ConfigServerVariable
   */}}
 {{define "infra/docker/ws/services"}}
   "{{.Server.Name | toQuotable}}{{range .ServerVariables}}_{{.Value | toQuotable}}{{end}}":
-    {{- $server := deref .Server}}
-    {{- $port := ($server.URL .ServerVariables).Port | default "80"}}
+    {{- $port := ($.Server.URL .ServerVariables).Port | default "80"}}
     build:
       context: .
       dockerfile_inline: |
@@ -19,6 +18,6 @@
     command: ["websocat", "-s", "0.0.0.0:{{$port}}"]
     ports:
       - "{{$port}}:{{$port}}"
-    hostname: "{{($server.URL .ServerVariables).Hostname | toQuotable}}"
+    hostname: "{{($.Server.URL .ServerVariables).Hostname | toQuotable}}"
     restart: on-failure
 {{- end}}

@@ -1,17 +1,16 @@
 {{/* dot:
-  .Server == common.Artifact: Ref -> render.Server or render.Server
+  .Server == render.Server
   .ServerVariables == []common.ConfigServerVariable
   */}}
 {{define "infra/docker/kafka/services"}}
   "{{.Server.Name | toQuotable}}{{range .ServerVariables}}_{{.Value | toQuotable}}{{end}}":
-    {{- $server := deref .Server}}
-    {{- $port := ($server.URL .ServerVariables).Port | default "9092"}}
+    {{- $port := ($.Server.URL .ServerVariables).Port | default "9092"}}
     image: bitnami/kafka:latest
     ports:
       - "{{$port}}:9094"
     volumes:
       - "{{.Server.Name | goID}}{{range .ServerVariables}}_{{.Value | goID}}{{end}}:/bitnami"
-    hostname: "{{($server.URL .ServerVariables).Hostname | toQuotable}}"
+    hostname: "{{($.Server.URL .ServerVariables).Hostname | toQuotable}}"
     restart: on-failure
     environment:
       - KAFKA_CFG_NODE_ID=0
@@ -21,20 +20,20 @@
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@{{($server.URL .ServerVariables).Hostname | toQuotable}}:9093
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@{{($.Server.URL .ServerVariables).Hostname | toQuotable}}:9093
 
       # Due to the Apache Kafka connection way, we need to know the external address where clients connect to the
       # broker -- the advertised listeners. By default, it's set to localhost to make possible to connect to the broker
       # running in docker from the host machine with default settings.
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://{{($server.URL .ServerVariables).Hostname | toQuotable}}:9092,EXTERNAL://localhost:{{$port}}
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://{{($.Server.URL .ServerVariables).Hostname | toQuotable}}:9092,EXTERNAL://localhost:{{$port}}
       #
       # Uncomment the following lines to set the external address to the original server's address.
       #
-      #- KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://{{($server.URL .ServerVariables).Hostname | toQuotable}}:9092,EXTERNAL://{{($server.URL .ServerVariables).Hostname | toQuotable}}:{{$port}}
+      #- KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://{{($.Server.URL .ServerVariables).Hostname | toQuotable}}:9092,EXTERNAL://{{($.Server.URL .ServerVariables).Hostname | toQuotable}}:{{$port}}
 {{- end}}
 
 {{/* dot:
-  .Server == common.Artifact: Ref -> render.Server or render.Server
+  .Server == render.Server
   .ServerVariables == []common.ConfigServerVariable
   */}}
 {{define "infra/docker/kafka/volumes"}}

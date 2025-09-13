@@ -1,12 +1,10 @@
 {{- /*
-    .Object == common.Artifact: Ref -> render.Server or render.Server;
+    .Object == render.Server;
     .Config == common.ConfigDiagram
     */}}
 {{define "diagram/server"}}
-{{- with $server := deref .Object}}
-{{- if $.Config.ShowDocumentBorders}}{{goID $server.Pointer.Location}}.{{end}}{{ goID $server }}: "🖥 [{{$server.Protocol}}] {{$server.Host | toQuotable}}" {
+{{- if $.Config.ShowDocumentBorders}}{{goID $.Object.Pointer.Location}}.{{end}}{{ goID $.Object }}: "🖥 [{{$.Object.Protocol}}] {{$.Object.Host | toQuotable}}" {
     class: server
-    {{- with tryTmpl (print "diagram/server/proto/" $server.Protocol) $ }}{{.}}{{end}}
+    {{- with tryTmpl (print "diagram/server/proto/" $.Object.Protocol) $ }}{{.}}{{end}}
 }
-{{- end}}
 {{- end}}

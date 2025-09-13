@@ -63,8 +63,8 @@ func (o *Operation) Bindings() *Bindings {
 
 // Messages returns a list of messages defined for this operation. Returns empty list if no messages are set in
 // the operation, to get the bound messages use [boundMessages] method.
-func (o *Operation) Messages() []common.Artifact {
-	return lo.Map(o.MessagesPromises, func(prm *lang.Promise[*Message], _ int) common.Artifact { return prm.T() })
+func (o *Operation) Messages() []*Message {
+	return lo.Map(o.MessagesPromises, func(prm *lang.Promise[*Message], _ int) *Message { return prm.T() })
 }
 
 // OperationReply returns the [OperationReply] object or nil if no reply is set.
@@ -77,7 +77,7 @@ func (o *Operation) OperationReply() *OperationReply {
 
 // SelectProtoObject returns the ProtoOperation object for the given protocol or nil if not found or if
 // ProtoOperation is not selectable.
-func (o *Operation) SelectProtoObject(protocol string) common.Artifact {
+func (o *Operation) SelectProtoObject(protocol string) *ProtoOperation {
 	res := lo.Filter(o.ProtoOperations, func(p *ProtoOperation, _ int) bool {
 		return p.Selectable() && p.Protocol == protocol
 	})
@@ -89,7 +89,7 @@ func (o *Operation) SelectProtoObject(protocol string) common.Artifact {
 
 // BoundMessages returns a list of Message that are bound to this operation. If operation does not define messages, returns
 // all messages bound to the operation's channel.
-func (o *Operation) BoundMessages() []common.Artifact {
+func (o *Operation) BoundMessages() []*Message {
 	if o.UseAllChannelMessages {
 		return o.Channel().BoundMessages()
 	}
@@ -98,7 +98,7 @@ func (o *Operation) BoundMessages() []common.Artifact {
 
 // BoundReplyMessages returns a list of Message that are bound to this Operation's OperationReply.
 // If OperationReply does not define messages, returns all messages bound to the operation's channel.
-func (o *Operation) BoundReplyMessages() []common.Artifact {
+func (o *Operation) BoundReplyMessages() []*Message {
 	// According to AsyncAPI spec, get messages from OperationReply attributes "messages" and "channel"
 	// respectively. Otherwise, look to operation's channel.
 	if o.OperationReply() == nil {
@@ -111,13 +111,13 @@ func (o *Operation) BoundReplyMessages() []common.Artifact {
 }
 
 // BoundAllMessages returns a list of Message that are bound to this Operation and its OperationReply.
-func (o *Operation) BoundAllMessages() []common.Artifact {
+func (o *Operation) BoundAllMessages() []*Message {
 	messages := o.BoundMessages()
 	// OperationReply may refer to messages different from those the Operation refers.
 	// So, join them in a list and deduplicate.
 	messages = append(messages, o.BoundReplyMessages()...)
 
-	r := lo.UniqBy(messages, func(m common.Artifact) string { return m.Pointer().String() })
+	r := lo.UniqBy(messages, func(m *Message) string { return m.Pointer().String() })
 	return r
 }
 
@@ -193,9 +193,8 @@ func (p *ProtoOperation) ProtoChannel() *ProtoChannel {
 
 // isBound returns true if operation is bound to at least one server with supported protocol
 func (p *ProtoOperation) isBound() bool {
-	protos := lo.Map(p.ChannelPromise.T().BoundServers(), func(s common.Artifact, _ int) string {
-		srv := common.DerefArtifact(s).(*Server)
-		return srv.Protocol
+	protos := lo.Map(p.ChannelPromise.T().BoundServers(), func(s *Server, _ int) string {
+		return s.Protocol
 	})
 	r := lo.Contains(protos, p.Protocol)
 	return r

@@ -34,8 +34,8 @@ func (o *OperationReply) Channel() *Channel {
 }
 
 // Messages returns a list of messages defined for this operation reply. Returns empty list if no messages are set.
-func (o *OperationReply) Messages() []common.Artifact {
-	return lo.Map(o.MessagesPromises, func(prm *lang.Promise[*Message], _ int) common.Artifact { return prm.T() })
+func (o *OperationReply) Messages() []*Message {
+	return lo.Map(o.MessagesPromises, func(prm *lang.Promise[*Message], _ int) *Message { return prm.T() })
 }
 
 // OperationReplyAddress returns the address object of the operation reply or nil if no address is set.
@@ -51,7 +51,7 @@ func (o *OperationReply) OperationReplyAddress() *OperationReplyAddress {
 //
 // If both fields aren't set, the bound messages are equal to the messages list of operation's channel.
 // This function doesn't return it, use [Operation] methods instead.
-func (o *OperationReply) boundMessages() []common.Artifact {
+func (o *OperationReply) boundMessages() []*Message {
 	if o.UseAllChannelMessages && o.Channel() != nil {
 		return o.Channel().BoundMessages()
 	}

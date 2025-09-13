@@ -167,7 +167,7 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 	if err = tplLoader.ParseRecursive(renderManager); err != nil {
 		return fmt.Errorf("parse templates: %w", err)
 	}
-	allArtifacts := lo.FlatMap(lo.Values(documents), func(m *compiler.Document, _ int) []common.Artifact { return m.Artifacts() })
+	allArtifacts := selector.GatherArtifacts(lo.Values(documents)...)
 	logger.Debug("Select artifacts")
 	renderQueue := selectArtifacts(allArtifacts, renderOpts.Layout)
 	if err = renderer.RenderArtifacts(renderQueue, renderManager); err != nil {
@@ -352,8 +352,8 @@ func selectArtifacts(artifacts []common.Artifact, layout []common.ConfigLayoutIt
 	logger := log.GetLogger("")
 
 	for _, l := range layout {
-		logger.Trace("-> Process layout", "item", l)
-		selected := selector.Select(artifacts, l)
+		logger.Trace("-> Process layout filters", "item", l)
+		selected := selector.ApplyFilters(artifacts, l)
 		for _, obj := range selected {
 			res = append(res, renderer.RenderQueueItem{LayoutItem: l, Object: obj})
 		}

@@ -41,7 +41,7 @@ type DirectionCliCmd struct {
 {{- range .Objects}}
 	{{- if and (eq .Kind "server") (isVisible .)}}
 		type {{. | goIDUpper}}CliCmd struct {
-			{{if tryTmpl (print "client/server/" ((deref .).Protocol) "/cliMixin") .}}{{(deref .).Protocol | goIDUpper}}CliMixin{{end}}
+			{{if tryTmpl (print "client/server/" (.Protocol) "/cliMixin") .}}{{.Protocol | goIDUpper}}CliMixin{{end}}
 
 			// Server variables
 			{{- range .Variables.Entries}}

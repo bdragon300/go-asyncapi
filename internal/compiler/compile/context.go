@@ -65,7 +65,7 @@ type Context struct {
 	ProtocolBuilders []ProtocolBuilder
 }
 
-type artifactPointerSetter interface {
+type jsonPointerSetter interface {
 	SetPointer(pointer jsonpointer.JSONPointer)
 }
 
@@ -74,7 +74,7 @@ func (c *Context) PutArtifact(obj common.Artifact) {
 	// JSON Pointer to the current position in the document
 	u := c.Storage.DocumentURL()
 	u.Pointer = c.pathStack()
-	obj.(artifactPointerSetter).SetPointer(u) // Every artifact must have a SetPointer method
+	obj.(jsonPointerSetter).SetPointer(u) // Every artifact must have a SetPointer method
 	c.Logger.Debug(
 		"Built",
 		"object", obj.String(),

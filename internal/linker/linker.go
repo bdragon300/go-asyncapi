@@ -154,13 +154,13 @@ func resolvePromise(p common.ObjectPromise, docLocation string, sources map[stri
 		return nil, false
 	}
 
-	srcObjects := sources[target].Artifacts()
+	srcArtifacts := sources[target].Artifacts()
 	if userCb = p.FindCallback(); userCb != nil {
 		cb = userCb
 	} else {
 		cb = func(item common.Artifact) bool { return ref.MatchPointer(item.Pointer().Pointer) }
 	}
-	found := lo.Filter(srcObjects, func(obj common.Artifact, _ int) bool { return cb(obj) })
+	found := lo.Filter(srcArtifacts, func(obj common.Artifact, _ int) bool { return cb(obj) })
 	if len(found) != 1 {
 		panic(fmt.Sprintf("Ref %q must point to one object, but %d objects found", p.Ref(), len(found)))
 	}
@@ -193,8 +193,8 @@ func resolveListPromise(p common.ObjectListPromise, docURL string, sources map[s
 	if cb == nil {
 		panic("List promise must have a callback, this is a bug")
 	}
-	srcObjects := sources[docURL].Artifacts()
-	found := lo.Filter(srcObjects, func(obj common.Artifact, _ int) bool {
+	srcArtifacts := sources[docURL].Artifacts()
+	found := lo.Filter(srcArtifacts, func(obj common.Artifact, _ int) bool {
 		return cb(obj)
 	})
 

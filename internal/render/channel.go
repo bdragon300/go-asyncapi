@@ -60,15 +60,18 @@ type Channel struct {
 	ProtoChannels []*ProtoChannel
 }
 
-// Parameters returns a list of [lang.Ref] to Parameter.
+// Parameters returns a list of Parameter or []lang.Ref to Parameter.
+//
+// It may return lang.Ref objects, because a key the parameter object is defined with in channel matters and
+// is used in channel address template, therefore, it should appear in the generated code as well.
 func (c *Channel) Parameters() []common.Artifact {
 	r := lo.Map(c.ParametersPromises, func(prm *lang.Ref, _ int) common.Artifact { return prm })
 	return r
 }
 
-// Messages returns a list of [lang.Ref] to Message.
-func (c *Channel) Messages() []common.Artifact {
-	return lo.Map(c.MessagesRefs, func(prm *lang.Ref, _ int) common.Artifact { return prm })
+// Messages returns a list of Message.
+func (c *Channel) Messages() []*Message {
+	return lo.Map(c.MessagesRefs, func(prm *lang.Ref, _ int) *Message { return common.DerefArtifact(prm).(*Message) })
 }
 
 // Bindings returns the [Bindings] object or nil if no bindings are set.
@@ -81,7 +84,7 @@ func (c *Channel) Bindings() *Bindings {
 
 // SelectProtoObject returns a selectable ProtoChannel object for the given protocol or nil if not found or if
 // ProtoChannel is not selectable.
-func (c *Channel) SelectProtoObject(protocol string) common.Artifact {
+func (c *Channel) SelectProtoObject(protocol string) *ProtoChannel {
 	res := lo.Filter(c.ProtoChannels, func(p *ProtoChannel, _ int) bool {
 		return p.Selectable() && p.Protocol == protocol
 	})
@@ -92,40 +95,40 @@ func (c *Channel) SelectProtoObject(protocol string) common.Artifact {
 }
 
 // BoundServers returns a list of Server or lang.Ref to Server objects that this channel is bound with.
-func (c *Channel) BoundServers() []common.Artifact {
+func (c *Channel) BoundServers() []*Server {
 	if c.Dummy {
 		return nil
 	}
 
-	var res []common.Artifact
+	var res []*Server
 	if len(c.ServersPromises) == 0 {
-		res = c.AllActiveServersPromise.T()
+		res = lo.Map(c.AllActiveServersPromise.T(), func(a common.Artifact, _ int) *Server { return common.DerefArtifact(a).(*Server) })
 		// ListPromise is filled up by linker, which doesn't guarantee the order. So, sort items by name
-		slices.SortFunc(res, func(a, b common.Artifact) int { return cmp.Compare(a.Name(), b.Name()) })
+		slices.SortFunc(res, func(a, b *Server) int { return cmp.Compare(a.Name(), b.Name()) })
 	} else {
-		res = lo.Map(c.ServersPromises, func(s *lang.Promise[*Server], _ int) common.Artifact { return s.T() })
+		res = lo.Map(c.ServersPromises, func(s *lang.Promise[*Server], _ int) *Server { return s.T() })
 	}
 
 	return res
 }
 
 // BoundMessages returns a list of Message or lang.Ref to Message objects that this channel is bound with.
-func (c *Channel) BoundMessages() []common.Artifact {
+func (c *Channel) BoundMessages() []*Message {
 	res := c.Messages()
 	return res
 }
 
 // BoundOperations returns a list of Operation or lang.Ref to Operation objects that this channel is bound with.
-func (c *Channel) BoundOperations() []common.Artifact {
+func (c *Channel) BoundOperations() []*Operation {
 	if c.Dummy {
 		return nil
 	}
-	r := lo.Filter(c.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) bool {
+	r := lo.FilterMap(c.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (*Operation, bool) {
 		op := common.DerefArtifact(o).(*Operation)
-		return common.CheckSameArtifacts(op.Channel(), c)
+		return op, common.CheckSameArtifacts(op.Channel(), c)
 	})
 	// ListPromise is filled up by linker, which doesn't guarantee the order. So, sort items by name
-	slices.SortFunc(r, func(a, b common.Artifact) int { return cmp.Compare(a.Name(), b.Name()) })
+	slices.SortFunc(r, func(a, b *Operation) int { return cmp.Compare(a.Name(), b.Name()) })
 	return r
 }
 
@@ -192,9 +195,8 @@ func (p *ProtoChannel) String() string {
 
 // isBound returns true if channel is bound to at least one server with supported protocol
 func (p *ProtoChannel) isBound() bool {
-	protos := lo.Map(p.BoundServers(), func(s common.Artifact, _ int) string {
-		srv := common.DerefArtifact(s).(*Server)
-		return srv.Protocol
+	protos := lo.Map(p.BoundServers(), func(s *Server, _ int) string {
+		return s.Protocol
 	})
 	r := lo.Contains(protos, p.Protocol)
 	return r

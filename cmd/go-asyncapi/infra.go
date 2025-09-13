@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
+	"github.com/bdragon300/go-asyncapi/internal/selector"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
-	"github.com/bdragon300/go-asyncapi/internal/compiler"
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/renderer"
@@ -88,7 +88,7 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	if err = tplLoader.ParseRecursive(renderManager); err != nil {
 		return fmt.Errorf("parse templates: %w", err)
 	}
-	allObjects := lo.FlatMap(lo.Values(documents), func(m *compiler.Document, _ int) []common.Artifact { return m.Artifacts() })
+	allObjects := selector.GatherArtifacts(lo.Values(documents)...)
 	logger.Debug("Select objects")
 	renderQueue := selectArtifacts(allObjects, renderOpts.Layout)
 	// TODO: check if all server variables are set in config, error if not

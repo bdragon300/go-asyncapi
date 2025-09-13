@@ -1,10 +1,10 @@
 {{- /*
-    .ChannelOrOperation == common.Artifact: Ref -> render.Channel or render.Channel or render.Operation or render.Operation;
-    .Server == common.Artifact: Ref -> render.Server or render.Server
+    .ChannelOrOperation == render.Channel or render.Operation;
+    .Server == render.Server
     .Kind == "channel" or "operation"
     */}}
 {{define "client/channeloperation/mqtt/github.com/eclipse/paho.mqtt.golang/producer/connect"}}
-server, err := {{goPkg (deref .Server).ProtoServer.Type}}Connect{{.Server | goIDUpper}}Producer(ctx, serverURL, nil)
+server, err := {{goPkg .Server.ProtoServer.Type}}Connect{{.Server | goIDUpper}}Producer(ctx, serverURL, nil)
 if err != nil {
     return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
 }
@@ -12,7 +12,7 @@ defer server.Close()
 {{- end}}
 
 {{define "client/channeloperation/mqtt/github.com/eclipse/paho.mqtt.golang/consumer/connect"}}
-server, err := {{goPkg (deref .Server).ProtoServer.Type}}Connect{{.Server | goIDUpper}}Consumer(ctx, serverURL, nil)
+server, err := {{goPkg .Server.ProtoServer.Type}}Connect{{.Server | goIDUpper}}Consumer(ctx, serverURL, nil)
 if err != nil {
     return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
 }

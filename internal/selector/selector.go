@@ -1,16 +1,43 @@
 package selector
 
 import (
+	"cmp"
 	"regexp"
-
-	"github.com/bdragon300/go-asyncapi/internal/log"
+	"slices"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
+	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/samber/lo"
 )
 
-// Select selects the artifacts from the given list based on the code layout rule.
-func Select(artifacts []common.Artifact, layoutItem common.ConfigLayoutItem) []common.Artifact {
+type artifactStorage interface {
+	Artifacts() []common.Artifact
+	DocumentURL() jsonpointer.JSONPointer
+}
+
+// GatherArtifacts gathers artifacts from storages and joins them into a single list of dereferenced artifacts
+// (i.e. without refs).
+func GatherArtifacts[T artifactStorage](docs ...T) []common.Artifact {
+	// Sort documents by their URL to have a deterministic order
+	docs = slices.SortedFunc(slices.Values(docs), func(a, b T) int {
+		return cmp.Compare(a.DocumentURL().String(), b.DocumentURL().String())
+	})
+	r := lo.FlatMap(docs, func(doc T, _ int) []common.Artifact {
+		return lo.FilterMap(doc.Artifacts(), func(artifact common.Artifact, _ int) (common.Artifact, bool) {
+			if !artifact.Selectable() {
+				return nil, false
+			}
+			return common.DerefArtifact(artifact), true
+		})
+	})
+	// Remove duplicates if any artifact was referenced multiple times
+	r = lo.Uniq(r)
+	return r
+}
+
+// ApplyFilters selects the artifacts from the given list based on the code layout rule.
+func ApplyFilters(artifacts []common.Artifact, layoutItem common.ConfigLayoutItem) []common.Artifact {
 	logger := log.GetLogger("")
 
 	filtersChain := buildFiltersChain(layoutItem)
@@ -42,16 +69,11 @@ func buildFiltersChain(layoutItem common.ConfigLayoutItem) []filterFunc {
 	var filterChain []filterFunc
 	logger := log.GetLogger("")
 
-	logger.Trace("-> Use Selectable filter", "index", len(filterChain))
-	// Consider only the selectable artifacts
-	filterChain = append(filterChain, func(object common.Artifact) bool {
-		return object.Selectable()
-	})
-
+	// Filter out the artifacts that don't match to protocols in selections config (e.g. Channel, Operation, Message)
 	if len(layoutItem.Protocols) > 0 {
 		logger.Trace("-> Use Protocol filter", "index", len(filterChain))
 		filterChain = append(filterChain, func(object common.Artifact) bool {
-			// Check if object has at least one of the proto objects of the given protocols
+			// Check if object has at least one of the "proto" sub-objects of the given protocols
 			if o, ok := object.(protoObjectSelector); ok {
 				return lo.SomeBy(layoutItem.Protocols, func(protocol string) bool {
 					return o.SelectProtoObject(protocol) != nil
