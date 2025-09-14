@@ -17,14 +17,6 @@
         func (m *{{ $.OutType | goIDUpper }}) Marshal{{$op | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope {{goQualR $.Protocol "EnvelopeWriter"}}) error {
             return m.MarshalEnvelope{{$.Protocol | goIDUpper}}(envelope)
         }
-        {{with $opr := $op.OperationReply}}
-            {{- if and (isVisible $opr) $opr.OperationReplyAddress}}
-                {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" $opr.OperationReplyAddress.BaseRuntimeExpression "TargetType" $.OutType}}
-                func (m *{{ $.OutType | goIDUpper }}) SetReplyAddress{{$opr | goIDUpper}}(value {{template "code/runtimeExpression/varType" $ctx}}) {
-                    {{template "code/runtimeExpression/setterBody" $ctx}}
-                }
-            {{- end}}
-        {{- end}}
     {{- end}}
 {{- end}}
 
@@ -72,16 +64,6 @@ func (m *{{ .OutType | goIDUpper }}) Marshal{{ .Protocol | goIDUpper }}(w {{goQu
         func (m *{{ $.InType | goIDUpper }}) Unmarshal{{$op | goIDUpper}}{{$.Protocol |  goIDUpper}}(envelope {{goQualR $.Protocol "EnvelopeReader"}}) error {
             return m.UnmarshalEnvelope{{$.Protocol | goIDUpper}}(envelope)
         }
-
-        {{with $opr := $op.OperationReply}}
-            {{- if and (isVisible $opr) $opr.OperationReplyAddress}}
-                {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" $opr.OperationReplyAddress.BaseRuntimeExpression "TargetType" $.InType}}
-                func (m *{{ $.InType | goIDUpper }}) ReplyAddress{{$opr | goIDUpper}}() (value {{template "code/runtimeExpression/varType" $ctx}}, error) {
-                    {{template "code/runtimeExpression/getterBody" $ctx}}
-                    return
-                }
-            {{- end}}
-        {{- end}}
     {{- end}}
 {{- end}}
 

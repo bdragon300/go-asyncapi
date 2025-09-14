@@ -33,3 +33,7 @@ func (p *Parameter) Visible() bool {
 func (p *Parameter) String() string {
 	return "Parameter(" + p.OriginalName + ")"
 }
+
+func (p *Parameter) Pinnable() bool {
+	return true
+}

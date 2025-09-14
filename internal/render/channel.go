@@ -180,6 +180,10 @@ func (c *Channel) String() string {
 	return "Channel(" + c.OriginalName + ")"
 }
 
+func (c *Channel) Pinnable() bool {
+	return true
+}
+
 type ProtoChannel struct {
 	*Channel
 	Protocol string

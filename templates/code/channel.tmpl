@@ -1,4 +1,6 @@
 {{- /* dot == render.Channel */}}
+{{- pin .}}
+
 {{- with .ParametersType }}
     {{ . | goDef }}
 {{- end }}

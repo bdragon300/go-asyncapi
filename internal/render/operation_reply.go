@@ -71,7 +71,7 @@ func (o *OperationReply) Selectable() bool {
 }
 
 func (o *OperationReply) Visible() bool {
-	return !o.Dummy && o.ChannelPromise != nil && o.ChannelPromise.T().Visible()
+	return !o.Dummy && (o.ChannelPromise == nil || o.ChannelPromise.T().Visible())
 }
 
 func (o *OperationReply) String() string {

@@ -17,6 +17,12 @@ import (
 	"github.com/samber/lo"
 )
 
+type pinnable interface {
+	// Pinnable is true if the object may be pinned to a specific file in the generated code and then be referenced
+	// from other files.
+	Pinnable() bool
+}
+
 // GetTemplateFunctions returns a map of functions to use in templates. These functions include all
 // [github.com/go-sprout/sprout] functions and go-asyncapi specific functions.
 func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template.FuncMap {
@@ -25,7 +31,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 	}
 
 	logger := log.GetLogger(log.LoggerPrefixRendering)
-	trace := func(funcName string, args ...any) {
+	traceCall := func(funcName string, args ...any) {
 		if logger.GetLevel() > log.TraceLevel {
 			return
 		}
@@ -37,19 +43,23 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 
 	extraFuncs := template.FuncMap{
 		// go* functions return Go code snippets
-		"goLit":     func(val any) (string, error) { trace("goLit", val); return templateGoLit(renderManager, val) },
-		"goIDUpper": func(val any) string { trace("goIDUpper", val); return templateGoID(renderManager, val, true) },
-		"goID":      func(val any) string { trace("goID", val); return templateGoID(renderManager, val, false) },
-		"goComment": func(text string) (string, error) { trace("goComment", text); return templateGoComment(text) },
-		"goQual":    func(parts ...string) string { trace("goQual", parts); return templateGoQual(renderManager, parts...) },
+		"goLit":     func(val any) (string, error) { traceCall("goLit", val); return templateGoLit(renderManager, val) },
+		"goIDUpper": func(val any) string { traceCall("goIDUpper", val); return templateGoID(renderManager, val, true) },
+		"goID":      func(val any) string { traceCall("goID", val); return templateGoID(renderManager, val, false) },
+		"goComment": func(text string) (string, error) { traceCall("goComment", text); return templateGoComment(text) },
+		"goQual":    func(parts ...string) string { traceCall("goQual", parts); return templateGoQual(renderManager, parts...) },
 		"goQualR": func(parts ...string) string {
-			trace("goQualR", parts)
+			traceCall("goQualR", parts)
 			return templateGoQualRuntime(renderManager, parts...)
 		},
 		"goDef": func(r common.GolangType) (string, error) {
-			trace("goDef", r)
+			traceCall("goDef", r)
 			tplName := path.Join(r.GoTemplate(), "definition")
-			renderManager.NamespaceManager.DeclareArtifact(r, renderManager, true)
+			if _, ok := r.(pinnable); ok {
+				renderManager.NamespaceManager.DeclareArtifact(r, renderManager, true)
+			} else if logger.GetLevel() <= log.TraceLevel {
+				logger.Debug("---> goDef: skip pinning due to object is not pinnable")
+			}
 			if v, ok := r.(golangReferenceType); ok {
 				r = v.DerefGolangType()
 			}
@@ -60,7 +70,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			return res, nil
 		},
 		"goPkg": func(obj any) (pkg string, err error) {
-			trace("goPkg", obj)
+			traceCall("goPkg", obj)
 			switch v := obj.(type) {
 			case common.Artifact:
 				pkg, err = qualifiedTypeGeneratedPackage(renderManager, v)
@@ -79,37 +89,30 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			return lo.Ternary(pkg != "", pkg+".", ""), nil
 		},
 		"goUsage": func(r common.GolangType) (string, error) {
-			trace("goUsage", r)
+			traceCall("goUsage", r)
 			return templateGoUsage(renderManager, r)
 		},
 
 		// Artifact helpers
 		"innerType": func(val common.GolangType) common.GolangType {
-			trace("innerType", val)
+			traceCall("innerType", val)
 			if v, ok := any(val).(golangWrapperType); ok {
 				return v.UnwrapGolangType()
 			}
 			return nil
 		},
-		"isVisible": func(r common.Artifact) common.Artifact {
-			trace("isVisible", r)
-			return lo.Ternary(!lo.IsNil(r) && r.Visible(), r, nil)
-		},
-		"ptr": func(val common.GolangType) (common.GolangType, error) {
-			trace("ptr", val)
-			if lo.IsNil(val) {
-				return nil, fmt.Errorf("cannot get a pointer to nil")
-			}
-			return &lang.GoPointer{Type: val}, nil
+		"isVisible": func(a common.Artifact) common.Artifact {
+			traceCall("isVisible", a)
+			return lo.Ternary(!lo.IsNil(a) && a.Visible(), a, nil)
 		},
 
-		// Templates calling
+		// Call templates dynamically
 		"tmpl": func(templateName string, ctx any) (string, error) {
-			trace("tmpl", templateName, ctx)
+			traceCall("tmpl", templateName, ctx)
 			return templateExecTemplate(renderManager, templateName, ctx)
 		},
 		"tryTmpl": func(templateName string, ctx any) (string, error) {
-			trace("tryTmpl", templateName, ctx)
+			traceCall("tryTmpl", templateName, ctx)
 			res, err := templateExecTemplate(renderManager, templateName, ctx)
 			switch {
 			case errors.Is(err, ErrTemplateNotFound):
@@ -121,23 +124,26 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			return res, nil
 		},
 
-		// Working with render namespace
+		// Working with template namespace
 		"pin": func(object common.Artifact) (string, error) {
-			trace("pin", object)
+			traceCall("pin", object)
 			if lo.IsNil(object) {
 				return "", fmt.Errorf("cannot pin nil")
+			}
+			if _, ok := object.(pinnable); !ok {
+				return "", fmt.Errorf("type %T cannot be pinned", object)
 			}
 			renderManager.NamespaceManager.DeclareArtifact(object, renderManager, false)
 			return "", nil
 		},
 		"once": func(r any) any {
-			trace("once", r)
+			traceCall("once", r)
 			return templateOnce(renderManager, r)
 		},
 
 		// Other
 		"impl": func(protocol string) *common.ImplementationObject {
-			trace("impl", protocol)
+			traceCall("impl", protocol)
 			impl, found := lo.Find(renderManager.Implementations, func(def manager.ImplementationItem) bool {
 				return def.Object.Manifest.Protocol == protocol
 			})
@@ -147,11 +153,11 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			return &impl.Object
 		},
 		"toQuotable": func(s string) string {
-			trace("toQuotable", s)
+			traceCall("toQuotable", s)
 			return strings.TrimSuffix(strings.TrimPrefix(strconv.Quote(s), "\""), "\"")
 		},
 		"ellipsisStart": func(maxlen int, s string) string {
-			trace("ellipsisStart", maxlen, s)
+			traceCall("ellipsisStart", maxlen, s)
 			if len(s) <= maxlen {
 				return s
 			}
@@ -167,7 +173,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			return ""
 		},
 		"runtimeExpressionCode": func(c lang.BaseRuntimeExpression, varStruct *lang.GoStruct, addValidationCode bool) (items []correlationIDExtractionStep, err error) {
-			trace("runtimeExpressionCode", c, varStruct, addValidationCode)
+			traceCall("runtimeExpressionCode", c, varStruct, addValidationCode)
 			return templateCorrelationIDExtractionCode(renderManager, c, varStruct, addValidationCode)
 		},
 	}
@@ -518,17 +524,13 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c l
 	return
 }
 
-type definable interface {
-	ObjectHasDefinition() bool
-}
-
 // qualifiedTypeGeneratedPackage returns the package name or alias of module where the object is defined to use this name
 // further in the generated code. If object is already defined in *current module*, returns empty string with no error.
 // If we don't know where the object is defined, returns ErrNotDefined.
 func qualifiedTypeGeneratedPackage(mng *manager.TemplateRenderManager, obj common.Artifact) (string, error) {
 	d, found := mng.NamespaceManager.FindArtifact(obj)
 	if !found {
-		if v, ok := obj.(definable); ok && v.ObjectHasDefinition() { // TODO: replace to Selectable?
+		if v, ok := obj.(pinnable); ok && v.Pinnable() {
 			return "", ErrNotDefined
 		}
 		return "", nil // Type is not supposed to be found in the generated code (e.g. Go built-in types)

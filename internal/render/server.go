@@ -159,3 +159,7 @@ func (s *Server) Visible() bool {
 func (s *Server) String() string {
 	return fmt.Sprintf("Server[%s](%s)", s.Protocol, s.OriginalName)
 }
+
+func (s *Server) Pinnable() bool {
+	return true
+}

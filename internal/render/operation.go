@@ -97,28 +97,18 @@ func (o *Operation) BoundMessages() []*Message {
 }
 
 // BoundReplyMessages returns a list of Message that are bound to this Operation's OperationReply.
-// If OperationReply does not define messages, returns all messages bound to the operation's channel.
+// If OperationReply does not specify any messages, returns all messages bound to its channel. If it's empty,
+// return messages bound to the operation. If OperationReply is not set, returns nil.
 func (o *Operation) BoundReplyMessages() []*Message {
-	// According to AsyncAPI spec, get messages from OperationReply attributes "messages" and "channel"
-	// respectively. Otherwise, look to operation's channel.
+	// According to AsyncAPI spec, get messages from "messages", otherwise from "channel"
+	// respectively. Otherwise, look to operation's messages or channel.
 	if o.OperationReply() == nil {
 		return nil
 	}
 	if len(o.OperationReply().boundMessages()) > 0 {
 		return o.OperationReply().boundMessages()
 	}
-	return o.Channel().BoundMessages()
-}
-
-// BoundAllMessages returns a list of Message that are bound to this Operation and its OperationReply.
-func (o *Operation) BoundAllMessages() []*Message {
-	messages := o.BoundMessages()
-	// OperationReply may refer to messages different from those the Operation refers.
-	// So, join them in a list and deduplicate.
-	messages = append(messages, o.BoundReplyMessages()...)
-
-	r := lo.UniqBy(messages, func(m *Message) string { return m.Pointer().String() })
-	return r
+	return o.BoundMessages()
 }
 
 // BindingsProtocols returns a list of protocols that have bindings defined for this operation.
@@ -169,6 +159,10 @@ func (o *Operation) Visible() bool {
 
 func (o *Operation) String() string {
 	return "Operation(" + o.OriginalName + ")"
+}
+
+func (o *Operation) Pinnable() bool {
+	return true
 }
 
 type ProtoOperation struct {

@@ -46,6 +46,16 @@
             return m
         }
     {{- end}}
+
+    {{- range $op := .BoundPubReplyOperations}}
+        {{- $opr := $op.OperationReply}}
+        {{- if and (isVisible $op) (isVisible $opr) $opr.OperationReplyAddress }}
+            {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" $opr.OperationReplyAddress.BaseRuntimeExpression "TargetType" $.OutType}}
+            func (m *{{ $.OutType | goIDUpper }}) SetReplyAddress{{$op | goIDUpper}}(value {{template "code/runtimeExpression/varType" $ctx}}) {
+                {{template "code/runtimeExpression/setterBody" $ctx}}
+            }
+        {{- end}}
+    {{- end}}
 {{- end}}
 
 {{- if .IsSubscriber }}
@@ -74,5 +84,16 @@
             {{template "code/runtimeExpression/getterBody" $ctx}}
             return
         }
+    {{- end}}
+
+    {{- range $op := .BoundSubReplyOperations}}
+        {{- $opr := $op.OperationReply}}
+        {{- if and (isVisible $op) (isVisible $opr) $opr.OperationReplyAddress}}
+            {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" $opr.OperationReplyAddress.BaseRuntimeExpression "TargetType" $.InType}}
+            func (m *{{ $.InType | goIDUpper }}) ReplyAddress{{$op | goIDUpper}}() (value {{template "code/runtimeExpression/varType" $ctx}}, err error) {
+                {{template "code/runtimeExpression/getterBody" $ctx}}
+                return
+            }
+        {{- end}}
     {{- end}}
 {{- end}}

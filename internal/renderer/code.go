@@ -71,7 +71,7 @@ func RenderArtifacts(queue []RenderQueueItem, mng *manager.TemplateRenderManager
 		}
 		if len(postponed) == len(queue) {
 			return fmt.Errorf(
-				"missed object definitions, please ensure they are defined by `goDef` or `def` functions prior using: \n%w",
+				"objects are not pinned to any file: \n%w",
 				errors.Join(lo.Map(postponed, func(item RenderQueueItem, _ int) error { return item.Err })...),
 			)
 		}

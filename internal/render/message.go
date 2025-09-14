@@ -123,7 +123,7 @@ func (m *Message) SelectProtoObject(protocol string) *ProtoMessage {
 	return lo.FirstOr(objects, nil)
 }
 
-// BoundChannels returns a list of Channel or lang.Ref to Channel objects that this message is bound to.
+// BoundChannels returns a list of Channel objects that this message is bound to.
 func (m *Message) BoundChannels() []*Channel {
 	r := lo.FilterMap(m.AllActiveChannelsPromise.T(), func(c common.Artifact, _ int) (*Channel, bool) {
 		ch := common.DerefArtifact(c).(*Channel)
@@ -136,7 +136,7 @@ func (m *Message) BoundChannels() []*Channel {
 	return r
 }
 
-// BoundOperations returns a list of Operation or lang.Ref to Operation objects that this message is bound to.
+// BoundOperations returns a list of Operation that this message is bound to.
 func (m *Message) BoundOperations() []*Operation {
 	r := lo.FilterMap(m.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (*Operation, bool) {
 		op := common.DerefArtifact(o).(*Operation)
@@ -149,34 +149,42 @@ func (m *Message) BoundOperations() []*Operation {
 	return r
 }
 
-// boundAllOperations returns a list of Operation or lang.Ref to Operation objects that this message is bound to,
-// including those where the message is bound via OperationReply.
-func (m *Message) boundAllOperations() []*Operation {
-	r := lo.FilterMap(m.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (*Operation, bool) {
-		op := common.DerefArtifact(o).(*Operation)
-		return op, lo.ContainsBy(op.BoundAllMessages(), func(item *Message) bool {
-			return common.CheckSameArtifacts(item, m)
-		})
-	})
-	// ListPromise is filled up by linker in any order. So, sort items by name to make results stable
-	slices.SortFunc(r, func(a, b *Operation) int { return cmp.Compare(a.Name(), b.Name()) })
-	return r
-}
-
-// BoundAllPubOperations returns a list of Operation or lang.Ref to Operation objects that this message is bound to,
+// BoundAllPubOperations returns a list of Operation that this message is bound to,
 // including those where the message is bound via OperationReply, and where the Operation or OperationReply is a publisher.
 func (m *Message) BoundAllPubOperations() []*Operation {
-	r := lo.Filter(m.boundAllOperations(), func(o *Operation, _ int) bool {
-		return o.IsPublisher || o.OperationReply() != nil // OperationReply presence means that the opposite direction is possible
+	r := lo.FilterMap(m.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (*Operation, bool) {
+		op := common.DerefArtifact(o).(*Operation)
+		return op, op.IsPublisher && lo.Contains(op.BoundMessages(), m) || op.IsSubscriber && lo.Contains(op.BoundReplyMessages(), m)
 	})
 	return r
 }
 
-// BoundAllSubOperations returns a list of Operation or lang.Ref to Operation objects that this message is bound to,
+// BoundAllSubOperations returns a list of Operation that this message is bound to,
 // including those where the message is bound via OperationReply, and where the Operation or OperationReply is a subscriber.
 func (m *Message) BoundAllSubOperations() []*Operation {
-	r := lo.Filter(m.boundAllOperations(), func(o *Operation, _ int) bool {
-		return o.IsSubscriber || o.OperationReply() != nil // OperationReply presence means the opposite direction is possible
+	r := lo.FilterMap(m.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (*Operation, bool) {
+		op := common.DerefArtifact(o).(*Operation)
+		return op, op.IsSubscriber && lo.Contains(op.BoundMessages(), m) || op.IsPublisher && lo.Contains(op.BoundReplyMessages(), m)
+	})
+	return r
+}
+
+// BoundPubReplyOperations returns a list of Operation that this message is bound to via OperationReply only,
+// where the OperationReply is for publishing (i.e. Operation is for subscribing).
+func (m *Message) BoundPubReplyOperations() []*Operation {
+	r := lo.FilterMap(m.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (*Operation, bool) {
+		op := common.DerefArtifact(o).(*Operation)
+		return op, op.IsSubscriber && lo.Contains(op.BoundReplyMessages(), m)
+	})
+	return r
+}
+
+// BoundSubReplyOperations returns a list of Operation that this message is bound to via OperationReply only,
+// where the OperationReply is for subscribing (i.e. Operation is for publishing).
+func (m *Message) BoundSubReplyOperations() []*Operation {
+	r := lo.FilterMap(m.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (*Operation, bool) {
+		op := common.DerefArtifact(o).(*Operation)
+		return op, op.IsPublisher && lo.Contains(op.BoundReplyMessages(), m)
 	})
 	return r
 }
@@ -227,6 +235,10 @@ func (m *Message) Visible() bool {
 
 func (m *Message) String() string {
 	return "Message(" + m.OriginalName + ")"
+}
+
+func (m *Message) Pinnable() bool {
+	return true
 }
 
 type ProtoMessage struct {

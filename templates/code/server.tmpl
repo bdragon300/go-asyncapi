@@ -1,4 +1,6 @@
 {{- /* dot == render.Server */}}
+{{- pin .}}
+
 {{- if .ProtocolVersion}}
 const {{. | goIDUpper}}ProtocolVersion = {{.ProtocolVersion | goLit}}
 {{- end}}

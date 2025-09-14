@@ -61,7 +61,7 @@ func (b *BaseType) CanBeDereferenced() bool {
 	return false
 }
 
-func (b *BaseType) ObjectHasDefinition() bool {
+func (b *BaseType) Pinnable() bool {
 	return b.HasDefinition
 }
 

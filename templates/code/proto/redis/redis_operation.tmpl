@@ -9,26 +9,24 @@ type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
 
 {{template "code/proto/operation/commonMethods" .}}
 {{- if .IsPublisher}}
-    {{template "code/proto/operation/commonPublish" . }}
     {{template "code/proto/operation/publishMethods" .}}
 {{- end}}
 {{- if .IsSubscriber}}
-    {{template "code/proto/operation/commonSubscribe" . }}
     {{template "code/proto/operation/subscribeMethods" .}}
 {{- end}}
 {{template "code/proto/operation/serverInterface" .}}
 
 {{- if and .OperationReply .AllowTwoWayCode}}
+    {{- $innerChannel := .ProtoChannel.Channel}}
+    {{- if .OperationReply.Channel}}{{$innerChannel = .OperationReply.Channel}}{{end}}
     type {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply struct {
-        Channel {{goPkg .ProtoChannel}}{{.ProtoChannel | goIDUpper}}{{.Protocol | goIDUpper}}
+        Channel *{{goPkg $innerChannel}}{{$innerChannel | goIDUpper}}{{.Protocol | goIDUpper}}
     }
     {{- /* Generate publish reply methods for "receive" operation and vice versa */}}
     {{- if .IsPublisher}}
-        {{template "code/proto/operation/commonSubscribe" . }}
         {{template "code/proto/operation/operationReply/subscribeMethods" .}}
     {{- end}}
     {{- if .IsSubscriber}}
-        {{template "code/proto/operation/commonPublish" . }}
         {{template "code/proto/operation/operationReply/publishMethods" .}}
     {{- end}}
 {{- end}}
