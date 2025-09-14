@@ -108,7 +108,7 @@ func (c Channel) build(ctx *compile.Context, channelKey string, flags map[common
 			})
 
 			prm := lang.NewRef(ref, paramName, nil)
-			res.ParametersPromises = append(res.ParametersPromises, prm)
+			res.ParametersRefs = append(res.ParametersRefs, prm)
 			ctx.PutPromise(prm)
 		}
 		ctx.Logger.PrevCallLevel()

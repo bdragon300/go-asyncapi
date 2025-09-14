@@ -8,8 +8,8 @@
 func {{. | goIDUpper}}Address({{with .ParametersType}}params {{. | goUsage}}{{end}}) {{goQualR "ParamString"}} {
 {{- if .ParametersType}}
     paramMap := map[string]string{
-    {{- range .Parameters}}
-        {{.Name | goLit}}: string(params.{{. | goIDUpper }}),
+    {{- range .Parameters.Entries}}
+        {{.Key | goLit}}: string(params.{{.Key | goIDUpper }}),
     {{- end}}
     }
     return {{goQualR "ParamString"}}{

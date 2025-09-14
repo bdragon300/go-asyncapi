@@ -7,6 +7,7 @@ import (
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
+	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/samber/lo"
 )
 
@@ -33,8 +34,8 @@ type Channel struct {
 	// for the channel, which means that the channel is bound to all active servers.
 	AllActiveServersPromise *lang.ListPromise[common.Artifact]
 
-	// ParametersPromises is a list of refs to channel parameters.
-	ParametersPromises []*lang.Ref
+	// ParametersRefs is a list of refs to channel parameters.
+	ParametersRefs []*lang.Ref
 	// ParametersType is a Go struct for channel parameters. Nil if no parameters are set.
 	ParametersType *lang.GoStruct
 
@@ -64,9 +65,11 @@ type Channel struct {
 //
 // It may return lang.Ref objects, because a key the parameter object is defined with in channel matters and
 // is used in channel address template, therefore, it should appear in the generated code as well.
-func (c *Channel) Parameters() []common.Artifact {
-	r := lo.Map(c.ParametersPromises, func(prm *lang.Ref, _ int) common.Artifact { return prm })
-	return r
+func (c *Channel) Parameters() (res types.OrderedMap[string, *Parameter]) {
+	for _, ref := range c.ParametersRefs {
+		res.Set(ref.Name(), common.DerefArtifact(ref).(*Parameter))
+	}
+	return
 }
 
 // Messages returns a list of Message.

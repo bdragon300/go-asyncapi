@@ -2,8 +2,8 @@
 {{/* dot == render.Channel */}}
 type {{$ | goIDUpper}}Cmd struct {
     // Parameters
-    {{- range .Parameters}}
-	    {{. | goIDUpper}} string `arg:"--{{.Name | toQuotable | toKebabCase}},required" help:"Channel parameter: {{.Name | toQuotable}}"`
+    {{- range .Parameters.Entries}}
+	    {{.Key | goIDUpper}} string `arg:"--{{.Key | toQuotable | toKebabCase}},required" help:"Channel parameter: {{.Key | toQuotable}}"`
     {{- end}}
 
 	// Servers
@@ -15,8 +15,8 @@ type {{$ | goIDUpper}}Cmd struct {
 func channel{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}Cmd, opts channelOptions) error {
     {{- if .ParametersType}}
         channelParams := {{goUsage .ParametersType}}{
-            {{- range .Parameters}}
-                {{. | goIDUpper}}: {{goUsage .Type}}(args.{{. | goIDUpper}}),
+            {{- range .Parameters.Entries}}
+                {{.Key | goIDUpper}}: {{goUsage .Value.Type}}(args.{{.Key | goIDUpper}}),
             {{- end}}
         }
 	    {{goQual "log/slog.Debug"}}("Channel parameters", "value", channelParams)
@@ -40,8 +40,8 @@ func channel{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}
 {{/* dot == render.Operation */}}
 type {{$ | goIDUpper}}Cmd struct {
     // Parameters
-    {{- range .Channel.Parameters}}
-	    {{. | goIDUpper}} string `arg:"--{{.Name | toQuotable | toKebabCase}},required" help:"Channel parameter: {{.Name | toQuotable}}"`
+    {{- range .Channel.Parameters.Entries}}
+	    {{.Key | goIDUpper}} string `arg:"--{{.Key | toQuotable | toKebabCase}},required" help:"Channel parameter: {{.Key | toQuotable}}"`
     {{- end}}
 
 	// Servers
@@ -53,8 +53,8 @@ type {{$ | goIDUpper}}Cmd struct {
 func operation{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}Cmd, opts channelOptions) error {
     {{- if .Channel.ParametersType}}
         channelParams := {{goUsage .Channel.ParametersType}}{
-            {{- range .Channel.Parameters}}
-                {{. | goIDUpper}}: {{goUsage .Type}}(args.{{. | goIDUpper}}),
+            {{- range .Channel.Parameters.Entries}}
+                {{.Key | goIDUpper}}: {{goUsage .Value.Type}}(args.{{.Key | goIDUpper}}),
             {{- end}}
         }
 	    {{goQual "log/slog.Debug"}}("Channel parameters", "value", channelParams)
