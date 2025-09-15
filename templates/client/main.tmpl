@@ -34,6 +34,9 @@ type DirectionCliCmd struct {
 		{{ . | goIDUpper }}Cmd *{{ . | goIDUpper }}Cmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Channel: {{.Name | toQuotable}}"`
 	{{- else if and (eq .Kind "operation") (isVisible .)}}
 		{{ . | goIDUpper }}Cmd *{{ . | goIDUpper }}Cmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Operation: {{.Name | toQuotable}}"`
+        {{- if .OperationReply}}
+            {{. | goIDUpper}}ReplyCmd *{{. | goIDUpper}}ReplyCmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}-reply" help:"OperationReply: {{.Name | toQuotable}}"`
+        {{- end}}
 	{{- end}}
 {{- end}}
 }
@@ -148,6 +151,10 @@ func main() {
 		{{- else if and (eq .Kind "operation") (isVisible .)}}
 			case dirCmd.{{. | goIDUpper}}Cmd != nil:
 				err = operation{{. | goIDUpper}}(ctx, dirCmd.{{. | goIDUpper}}Cmd, chanOptions)
+            {{- if .OperationReply}}
+            case dirCmd.{{. | goIDUpper}}ReplyCmd != nil:
+                err = operationReply{{. | goIDUpper}}(ctx, dirCmd.{{. | goIDUpper}}ReplyCmd, chanOptions)
+            {{- end}}
 		{{- end}}
 	{{- end}}
 	default:
@@ -170,6 +177,9 @@ func main() {
 		{{template "client/channel" .}}
 	{{- else if and (eq .Kind "operation") (isVisible .)}}
 		{{template "client/operation" .}}
+        {{- if .OperationReply}}
+            {{template "client/operationReply" .}}
+        {{- end}}
 	{{- end}}
 {{- end}}
 

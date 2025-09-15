@@ -74,20 +74,69 @@ func operation{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper
 }
 {{- end}}
 
+{{define "client/operationReply"}}
+{{/* dot == render.Operation */}}
+{{- $channel := .Channel }}
+{{- if .OperationReply.Channel }}
+    {{$channel = .OperationReply.Channel }}
+{{- end}}
+type {{$ | goIDUpper}}ReplyCmd struct {
+    // Parameters
+    {{- range $channel.Parameters.Entries}}
+	    {{.Key | goIDUpper}} string `arg:"--{{.Key | toQuotable | toKebabCase}},required" help:"Channel parameter: {{.Key | toQuotable}}"`
+    {{- end}}
+
+	// Servers
+    {{- range $channel.BoundServers}}
+	    {{. | goIDUpper}}Cmd *{{. | goIDUpper}}CliCmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Server: {{.Name | toQuotable}}"`
+    {{- end}}
+}
+
+func operationReply{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}ReplyCmd, opts channelOptions) error {
+    {{- if $channel.ParametersType}}
+        channelParams := {{goUsage $channel.ParametersType}}{
+            {{- range $channel.Parameters.Entries}}
+                {{.Key | goIDUpper}}: {{goUsage .Value.Type}}(args.{{.Key | goIDUpper}}),
+            {{- end}}
+        }
+	    {{goQual "log/slog.Debug"}}("Channel parameters", "value", channelParams)
+    {{- end}}
+
+	switch {
+    {{- range $channel.BoundServers}}
+        {{$implTemplateCtx := dict "ChannelOrOperation" $ "Server" . "Kind" "operation"}}
+        case args.{{. | goIDUpper}}Cmd != nil:
+            {{template "client/pubsub/proto/serverPubSub" $implTemplateCtx}}
+    {{- end}}
+	default:
+		showCliError("No server selected. Append --help for more information", opts.cliParser)
+	}
+
+	return nil
+}
+{{- end}}
+
 {{define "client/pubsub/proto/serverPubSub"}}
 {{- /*
     .ChannelOrOperation == render.Channel or render.Operation;
     .Server == render.Server
     .Kind == "channel" or "operation"
     */}}
-{{$channel := .ChannelOrOperation}}
+
+{{- $isPublisher := .ChannelOrOperation.IsPublisher}}
+{{- $isSubscriber := .ChannelOrOperation.IsSubscriber}}
+
+{{- $channel := .ChannelOrOperation}}
 {{- if eq .ChannelOrOperation.Kind "operation"}}
-    {{$channel = .ChannelOrOperation.Channel}}
+    {{- $channel = .ChannelOrOperation.Channel}}
+    {{- $isPublisher = .ChannelOrOperation.HasPublishingCode}}
+    {{- $isSubscriber = .ChannelOrOperation.HasSubscribingCode}}
 {{- end}}
 
+{{- with .Server}}
 serverURL := args.{{$.Server | goIDUpper}}Cmd.URL
 if serverURL == nil {
-    u, err := {{goPkg .ProtoServer.Type}}{{. | goIDUpper}}URL(
+    u, err := {{goPkg .}}{{. | goIDUpper}}URL(
         {{range .Variables.Entries}}args.{{$.Server | goIDUpper}}Cmd.{{.Value | goIDUpper}},{{end}}
     )
     if err != nil {
@@ -115,14 +164,14 @@ if opts.proxyHost != "" {
 
 {{goQual "log/slog.Debug"}}("Connecting to server", "name", {{$.Server.Name | goLit}}, "url", serverURL)
 if opts.publish {
-    {{- if and .IsPublisher $.ChannelOrOperation.IsPublisher}}
+    {{- if and .IsPublisher $isPublisher}}
         {{- with impl .Protocol}}
             {{- with tryTmpl (print "client/channeloperation/" $.Server.Protocol "/" .Manifest.Name "/producer/connect") $}}
                 // Implementation-specific code
                 {{.}}
                 // End of implementation-specific code
             {{- else}}
-                server, err := {{goPkg $.Server.ProtoServer.Type}}Connect{{$.Server | goIDUpper}}Producer(ctx, serverURL)
+                server, err := {{goPkg $.Server}}Connect{{$.Server | goIDUpper}}Producer(ctx, serverURL)
                 if err != nil {
                     return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
                 }
@@ -176,14 +225,14 @@ if opts.publish {
         return {{goQual "fmt.Errorf"}}("publishing for {{$.Kind}} {{.Name | toQuotable}} is not supported in specification or disabled")
     {{- end}}
 } else {
-    {{- if and .IsSubscriber $.ChannelOrOperation.IsSubscriber}}
+    {{- if and .IsSubscriber $isSubscriber}}
         {{- with impl .Protocol}}
             {{- with tryTmpl (print "client/channeloperation/" $.Server.Protocol "/" .Manifest.Name "/consumer/connect") $}}
                 // Implementation-specific code
                 {{.}}
                 // End of implementation-specific code
             {{- else}}
-                server, err := {{goPkg $.Server.ProtoServer.Type}}Connect{{$.Server | goIDUpper}}Consumer(ctx, serverURL)
+                server, err := {{goPkg $.Server}}Connect{{$.Server | goIDUpper}}Consumer(ctx, serverURL)
                 if err != nil {
                     return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
                 }
@@ -242,4 +291,6 @@ if opts.publish {
         return {{goQual "fmt.Errorf"}}("subscribing for {{$.Kind}} {{.Name | toQuotable}} is not supported in specification or disabled")
     {{- end}}
 }
+{{- end}}
+
 {{- end}}
