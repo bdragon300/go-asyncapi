@@ -63,11 +63,12 @@ func (o Operation) build(ctx *compile.Context, operationKey string, flags map[co
 	}
 
 	res := &render.Operation{
-		OriginalName:    operationKey,
-		IsSelectable:    isSelectable,
-		IsPublisher:     o.Action == OperationActionSend && ctx.CompileOpts.GeneratePublishers,
-		IsSubscriber:    o.Action == OperationActionReceive && ctx.CompileOpts.GenerateSubscribers,
-		AllowTwoWayCode: ctx.CompileOpts.GeneratePublishers && ctx.CompileOpts.GenerateSubscribers,
+		OriginalName:      operationKey,
+		IsSelectable:      isSelectable,
+		IsPublisher:       o.Action == OperationActionSend && ctx.CompileOpts.GeneratePublishers,
+		IsSubscriber:      o.Action == OperationActionReceive && ctx.CompileOpts.GenerateSubscribers,
+		IsReplyPublisher:  o.Reply != nil && o.Action == OperationActionReceive && ctx.CompileOpts.GenerateSubscribers,
+		IsReplySubscriber: o.Reply != nil && o.Action == OperationActionSend && ctx.CompileOpts.GeneratePublishers,
 	}
 
 	if o.Channel == nil {

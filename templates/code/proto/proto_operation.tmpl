@@ -3,14 +3,14 @@
 {{define "code/proto/operation/newFunction"}}
 func New{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
     {{ with .Channel.ParametersType}}params {{ . | goUsage}},{{end}}
-    {{ if .IsPublisher}}publisher {{goQualR .Protocol "Publisher"}},{{end}}
-    {{ if .IsSubscriber}}subscriber {{goQualR .Protocol "Subscriber"}},{{end}}
+    {{ if .HasPublishingCode}}publisher {{goQualR .Protocol "Publisher"}},{{end}}
+    {{ if .HasSubscribingCode}}subscriber {{goQualR .Protocol "Subscriber"}},{{end}}
 ) *{{. | goIDUpper}}{{.Protocol | goIDUpper}} {
     res := {{. | goIDUpper}}{{.Protocol | goIDUpper}}{
         Channel: {{goPkg .ProtoChannel}}New{{.ProtoChannel | goIDUpper}}{{.Protocol | goIDUpper}}(
             {{- with .Channel.ParametersType}}params,{{end}}
-            {{- if .ProtoChannel.IsPublisher}}{{- if .IsPublisher}}publisher{{else}}nil{{end}},{{end}}
-            {{- if .ProtoChannel.IsSubscriber}}{{- if .IsSubscriber}}subscriber{{else}}nil{{end}},{{end}}
+            {{- if .ProtoChannel.IsPublisher}}{{- if .HasPublishingCode}}publisher{{else}}nil{{end}},{{end}}
+            {{- if .ProtoChannel.IsSubscriber}}{{- if .HasSubscribingCode}}subscriber{{else}}nil{{end}},{{end}}
         ),
     }
     return &res
@@ -30,13 +30,13 @@ func Open{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
         opBindings := {{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}()
     {{- end }}
 
-    {{- if or .IsPublisher .IsSubscriber}}
+    {{- if or .HasPublishingCode .HasSubscribingCode}}
         address, err := {{with .Channel.SelectProtoObject .Protocol}}{{goPkg .}}{{end}}{{.Channel | goIDUpper}}Address({{if .Channel.ParametersType}}params{{end}}).Expand()
         if err != nil {
             return nil, err
         }
     {{- end}}
-    {{- if .IsPublisher}}
+    {{- if .HasPublishingCode}}
         var publisher {{goQualR .Protocol "Publisher"}}
         producer := server.Producer()
         if producer != nil {
@@ -46,7 +46,7 @@ func Open{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
             }
         }
     {{- end}}
-    {{- if .IsSubscriber}}
+    {{- if .HasSubscribingCode}}
         var subscriber {{goQualR .Protocol "Subscriber"}}
         consumer := server.Consumer()
         if consumer != nil {
@@ -60,8 +60,8 @@ func Open{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
     res := &{{. | goIDUpper}}{{.Protocol | goIDUpper}}{
         Channel: {{goPkg .ProtoChannel}}New{{.ProtoChannel | goIDUpper}}{{.Protocol | goIDUpper}}(
             {{- with .Channel.ParametersType}}params,{{end}}
-            {{- if .ProtoChannel.IsPublisher}}{{- if .IsPublisher}}publisher{{else}}nil{{end}},{{end}}
-            {{- if .ProtoChannel.IsSubscriber}}{{- if .IsSubscriber}}subscriber{{else}}nil{{end}},{{end}}
+            {{- if .ProtoChannel.IsPublisher}}{{- if .HasPublishingCode}}publisher{{else}}nil{{end}},{{end}}
+            {{- if .ProtoChannel.IsSubscriber}}{{- if .HasSubscribingCode}}subscriber{{else}}nil{{end}},{{end}}
         ),
     }
     return res, nil
@@ -79,7 +79,7 @@ func (o {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Close() error {
     return o.Channel.Close()
 }
 
-{{if and .OperationReply .AllowTwoWayCode}}
+{{if or .IsReplyPublisher .IsReplySubscriber}}
     func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Reply({{with .OperationReply.Channel}}channel *{{goPkg .}}{{. | goIDUpper}}{{$.Protocol | goIDUpper}}{{end}}) *{{goPkg .}}{{. | goIDUpper}}{{.Protocol | goIDUpper}}Reply {
         return &{{. | goIDUpper}}{{.Protocol | goIDUpper}}Reply{Channel: {{with .OperationReply.Channel}}channel{{else}}c.Channel{{end}} }
     }
@@ -243,7 +243,7 @@ type {{ . | goIDUpper }}EnvelopeUnmarshaler{{.Protocol | goIDUpper}} interface {
 {{define "code/proto/operation/serverInterface"}}
 type {{ . | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
     Open{{. | goIDUpper}}{{.Protocol | goIDUpper}}(ctx {{goQual "context.Context"}}, {{with .Channel.ParametersType}}params {{ . | goUsage }}{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
-    {{if .IsPublisher}}Producer() {{goQualR .Protocol "Producer"}}{{end}}
-    {{if .IsSubscriber}}Consumer() {{goQualR .Protocol "Consumer"}}{{end}}
+    {{if .HasPublishingCode}}Producer() {{goQualR .Protocol "Producer"}}{{end}}
+    {{if .HasSubscribingCode}}Consumer() {{goQualR .Protocol "Consumer"}}{{end}}
 }
 {{- end}}

@@ -154,7 +154,7 @@ func (m *Message) BoundOperations() []*Operation {
 func (m *Message) BoundAllPubOperations() []*Operation {
 	r := lo.FilterMap(m.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (*Operation, bool) {
 		op := common.DerefArtifact(o).(*Operation)
-		return op, op.IsPublisher && lo.Contains(op.BoundMessages(), m) || op.IsSubscriber && lo.Contains(op.BoundReplyMessages(), m)
+		return op, op.IsPublisher && lo.Contains(op.BoundMessages(), m) || op.IsReplyPublisher && lo.Contains(op.BoundReplyMessages(), m)
 	})
 	return r
 }
@@ -164,7 +164,7 @@ func (m *Message) BoundAllPubOperations() []*Operation {
 func (m *Message) BoundAllSubOperations() []*Operation {
 	r := lo.FilterMap(m.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (*Operation, bool) {
 		op := common.DerefArtifact(o).(*Operation)
-		return op, op.IsSubscriber && lo.Contains(op.BoundMessages(), m) || op.IsPublisher && lo.Contains(op.BoundReplyMessages(), m)
+		return op, op.IsSubscriber && lo.Contains(op.BoundMessages(), m) || op.IsReplySubscriber && lo.Contains(op.BoundReplyMessages(), m)
 	})
 	return r
 }

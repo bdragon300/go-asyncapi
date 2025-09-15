@@ -22,10 +22,10 @@ type Operation struct {
 	IsPublisher bool
 	// IsSubscriber is true if this is a subscribing operation and the generation of subscriber code is enabled
 	IsSubscriber bool
-	// AllowTwoWayCode is true if we can generate subscriber code for publisher operation, e.g. OperationReply code.
-	// Otherwise, this typically means that user forced to generate only one-way code using --only-pub or --only-sub
-	// CLI options.
-	AllowTwoWayCode bool
+	// IsReplyPublisher is true if this operation should generate the publishing code for its OperationReply.
+	IsReplyPublisher bool
+	// IsReplySubscriber is true if this operation should generate the subscribing code for its OperationReply.
+	IsReplySubscriber bool
 
 	// ChannelPromise is the channel that this operation is bound with.
 	ChannelPromise *lang.Promise[*Channel]
@@ -137,6 +137,14 @@ func (o *Operation) ProtoBindingsValue(protoName string) common.Artifact {
 		}
 	}
 	return res
+}
+
+func (o *Operation) HasPublishingCode() bool {
+	return o.IsPublisher || o.IsReplyPublisher
+}
+
+func (o *Operation) HasSubscribingCode() bool {
+	return o.IsSubscriber || o.IsReplySubscriber
 }
 
 func (o *Operation) Name() string {

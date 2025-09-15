@@ -20,17 +20,16 @@ type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
 {{- end}}
 {{template "code/proto/operation/serverInterface" .}}
 
-{{- if and .OperationReply .AllowTwoWayCode}}
+{{- if or .IsReplyPublisher .IsReplySubscriber}}
     {{- $innerChannel := .ProtoChannel.Channel}}
     {{- if .OperationReply.Channel}}{{$innerChannel = .OperationReply.Channel}}{{end}}
     type {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply struct {
         Channel *{{goPkg $innerChannel}}{{$innerChannel | goIDUpper}}{{.Protocol | goIDUpper}}
     }
-    {{- /* Generate publish reply methods for "receive" operation and vice versa */}}
-    {{- if .IsPublisher}}
-        {{template "code/proto/operation/operationReply/subscribeMethods" .}}
-    {{- end}}
-    {{- if .IsSubscriber}}
+    {{- if .IsReplyPublisher}}
         {{template "code/proto/operation/operationReply/publishMethods" .}}
+    {{- end}}
+    {{- if .IsReplySubscriber}}
+        {{template "code/proto/operation/operationReply/subscribeMethods" .}}
     {{- end}}
 {{- end}}
