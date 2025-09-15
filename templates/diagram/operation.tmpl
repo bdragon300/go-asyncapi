@@ -8,17 +8,37 @@
 }
 
 {{- if $.Config.ShowServers }}
-    {{- range $server := $.Object.Channel.BoundServers }}
+    {{- $channel := $.Object.Channel}}
+    {{- range $server := $channel.BoundServers }}
         {{- range $message := $.Object.BoundMessages }}
-            {{if $.Config.ShowDocumentBorders}}{{goID $.Object.Pointer.Location}}.{{end}}{{ goID $.Object }} {{$.Object.IsPublisher | ternary "->" "<-"}} {{if $.Config.ShowDocumentBorders}}{{goID $server.Pointer.Location}}.{{end}}{{goID $server}}{{if $.Config.ShowChannels}}.{{goID $.Object.Channel}}{{end}}: {
+            {{if $.Config.ShowDocumentBorders}}{{goID $.Object.Pointer.Location}}.{{end}}{{ goID $.Object }} {{$.Object.IsPublisher | ternary "->" "<-"}} {{if $.Config.ShowDocumentBorders}}{{goID $server.Pointer.Location}}.{{end}}{{goID $server}}{{if $.Config.ShowChannels}}.{{goID $channel}}{{end}}: {
                 {{- if isVisible $message }}{{with $message.Name}}label: "✉️ {{. | toQuotable | ellipsis 25}}"{{end}}{{end}}
             }
         {{- end}}
     {{- end}}
+    {{- if and $.Object.OperationReply $.Object.OperationReply.Channel}}
+        {{- $channel = $.Object.OperationReply.Channel}}
+    {{- end}}
+    {{- range $server := $channel.BoundServers }}
+        {{- range $message := $.Object.BoundReplyMessages }}
+            {{if $.Config.ShowDocumentBorders}}{{goID $.Object.Pointer.Location}}.{{end}}{{ goID $.Object }} {{$.Object.IsReplyPublisher | ternary "->" "<-"}} {{if $.Config.ShowDocumentBorders}}{{goID $server.Pointer.Location}}.{{end}}{{goID $server}}{{if $.Config.ShowChannels}}.{{goID $channel}}{{end}}: {
+                {{- if isVisible $message }}{{with $message.Name}}label: "📩 [Reply] {{. | toQuotable | ellipsis 25}}"{{end}}{{end}}
+            }
+        {{- end}}
+    {{- end}}
 {{- else}}
+    {{- $channel := $.Object.Channel}}
     {{- range $message := $.Object.BoundMessages }}
-        {{if $.Config.ShowDocumentBorders}}{{goID $.Object.Pointer.Location}}.{{end}}{{ goID $.Object }} {{$.Object.IsPublisher | ternary "->" "<-"}} {{if $.Config.ShowDocumentBorders}}{{goID $.Object.Channel.Pointer.Location}}.{{end}}{{goID $.Object.Channel}}: {
+        {{if $.Config.ShowDocumentBorders}}{{goID $.Object.Pointer.Location}}.{{end}}{{ goID $.Object }} {{$.Object.IsPublisher | ternary "->" "<-"}} {{if $.Config.ShowDocumentBorders}}{{goID $channel.Pointer.Location}}.{{end}}{{goID $channel}}: {
             {{- if isVisible $message }}{{with $message.Name}}label: "✉️ {{. | toQuotable | ellipsis 25}}"{{end}}{{end}}
+        }
+    {{- end}}
+    {{- if and $.Object.OperationReply $.Object.OperationReply.Channel}}
+        {{- $channel = $.Object.OperationReply.Channel}}
+    {{- end}}
+    {{- range $message := $.Object.BoundReplyMessages }}
+        {{if $.Config.ShowDocumentBorders}}{{goID $.Object.Pointer.Location}}.{{end}}{{ goID $.Object }} {{$.Object.IsReplyPublisher | ternary "->" "<-"}} {{if $.Config.ShowDocumentBorders}}{{goID $channel.Pointer.Location}}.{{end}}{{goID $channel}}: {
+            {{- if isVisible $message }}{{with $message.Name}}label: "📩 [Reply] {{. | toQuotable | ellipsis 25}}"{{end}}{{end}}
         }
     {{- end}}
 {{- end}}
