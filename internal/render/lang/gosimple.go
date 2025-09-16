@@ -1,7 +1,7 @@
 package lang
 
 import (
-	"fmt"
+	"strings"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 )
@@ -19,6 +19,11 @@ type GoSimple struct {
 	Import string
 	// IsRuntimeImport is true if the Import field contains a subpackage in the tool's runtime subpackage. E.g. "kafka"
 	IsRuntimeImport bool
+
+	// OriginalFormat is optional format of the type that is set for a type in document, e.g. "date-time" for string
+	OriginalFormat string
+	// OriginalType is the original type from the document, e.g. "integer" for int32
+	OriginalType string
 }
 
 func (p *GoSimple) Name() string {
@@ -38,10 +43,19 @@ func (p *GoSimple) Visible() bool {
 }
 
 func (p *GoSimple) String() string {
+	b := strings.Builder{}
+	b.WriteString("GoSimple(")
 	if p.Import != "" {
-		return fmt.Sprintf("GoSimple(%s.%s)", p.Import, p.TypeName)
+		b.WriteString(p.Import)
+		b.WriteString(".")
 	}
-	return "GoSimple(" + p.TypeName + ")"
+	b.WriteString(p.TypeName)
+	if p.OriginalFormat != "" {
+		b.WriteString(":")
+		b.WriteString(p.OriginalFormat)
+	}
+	b.WriteString(")")
+	return b.String()
 }
 
 func (p *GoSimple) CanBeAddressed() bool {

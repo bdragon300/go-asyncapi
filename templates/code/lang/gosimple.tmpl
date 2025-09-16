@@ -1,14 +1,22 @@
 {{- /* dot == lang.GoSimple */}}
 
 {{define "code/lang/gosimple/definition"}}
-    {{-  .Name }}
+    {{- with tryTmpl (print "code/lang/typeFormat/" .OriginalType "/" .OriginalFormat "/definition") .}}
+        {{- .}}
+    {{- else}}
+        {{-  .Name }}
+    {{- end}}
 {{- end}}
 {{define "code/lang/gosimple/usage"}}
-    {{- if .IsRuntimeImport}}
-        {{- goQualR .Import .Name }}
-    {{- else if .Import }}
-        {{- goQual .Import .Name }}
+    {{- with tryTmpl (print "code/lang/typeFormat/" .OriginalType "/" .OriginalFormat "/usage") .}}
+        {{- .}}
     {{- else }}
-        {{- goPkg . }}{{ .Name }}
-    {{- end }}
+        {{- if .IsRuntimeImport}}
+            {{- goQualR .Import .Name }}
+        {{- else if .Import }}
+            {{- goQual .Import .Name }}
+        {{- else }}
+            {{- goPkg . }}{{ .Name }}
+        {{- end }}
+    {{- end}}
 {{- end}}

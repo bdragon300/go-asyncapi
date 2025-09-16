@@ -22,7 +22,9 @@ import (
 	"github.com/samber/lo"
 )
 
-// JSON Schema Specification Draft 07
+// Object describes the [JSON Schema Specification Draft 07]
+//
+// [JSON Schema Specification Draft 07]: https://json-schema.org/specification-links#draft-7
 type Object struct {
 	Type                 *types.Union2[string, []string]            `json:"type" yaml:"type"`
 	AdditionalItems      *types.Union2[Object, bool]                `json:"additionalItems" yaml:"additionalItems"`
@@ -197,21 +199,19 @@ func (o Object) buildGolangType(ctx *compile.Context, flags map[common.SchemaTag
 		}
 	case "null", "":
 		ctx.Logger.Trace("Object", "type", "any")
-		golangType = &lang.GoSimple{TypeName: "any", IsInterface: true}
+		golangType = &lang.GoSimple{TypeName: "any", IsInterface: true, OriginalType: typeName, OriginalFormat: o.Format}
 	case "boolean":
 		ctx.Logger.Trace("Object", "type", "bool")
-		aliasedType = &lang.GoSimple{TypeName: "bool"}
+		aliasedType = &lang.GoSimple{TypeName: "bool", OriginalType: typeName, OriginalFormat: o.Format}
 	case "integer":
-		// TODO: "format:"
 		ctx.Logger.Trace("Object", "type", "int")
-		aliasedType = &lang.GoSimple{TypeName: "int"}
+		aliasedType = &lang.GoSimple{TypeName: "int", OriginalType: typeName, OriginalFormat: o.Format}
 	case "number":
-		// TODO: "format:"
 		ctx.Logger.Trace("Object", "type", "float64")
-		aliasedType = &lang.GoSimple{TypeName: "float64"}
+		aliasedType = &lang.GoSimple{TypeName: "float64", OriginalType: typeName, OriginalFormat: o.Format}
 	case "string":
 		ctx.Logger.Trace("Object", "type", "string")
-		aliasedType = &lang.GoSimple{TypeName: "string"}
+		aliasedType = &lang.GoSimple{TypeName: "string", OriginalType: typeName, OriginalFormat: o.Format}
 	default:
 		return nil, types.CompileError{Err: fmt.Errorf("unknown jsonschema type %q", typeName), Path: ctx.CurrentPositionRef()}
 	}
