@@ -20,9 +20,9 @@ defer server.Close()
 {{- end}}
 
 {{define "client/channel/mqtt/publish/prepareEnvelope"}}
-    envelope.SetTopic(object.Topic())
+    envelope.SetTopic(channel.Topic())
 {{- end}}
 
 {{define "client/operation/mqtt/publish/prepareEnvelope"}}
-    envelope.SetTopic(object.Channel.Topic())
+    envelope.SetTopic(channel.Topic())
 {{- end}}

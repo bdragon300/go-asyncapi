@@ -1,7 +1,7 @@
 {{define "client/channel/amqp/publish/prepareEnvelope"}}
-    envelope.SetRoutingKey(object.RoutingKey())
+    envelope.SetRoutingKey(channel.RoutingKey())
 {{- end}}
 
 {{define "client/operation/amqp/publish/prepareEnvelope"}}
-    envelope.SetRoutingKey(object.Channel.RoutingKey())
+    envelope.SetRoutingKey(channel.RoutingKey())
 {{- end}}

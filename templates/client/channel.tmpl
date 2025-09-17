@@ -24,7 +24,7 @@ func channel{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}
 
 	switch {
     {{- range .BoundServers}}
-        {{$implTemplateCtx := dict "ChannelOrOperation" $ "Server" . "Kind" "channel"}}
+        {{$implTemplateCtx := dict "Object" $ "Server" . "Kind" "channel"}}
         case args.{{. | goIDUpper}}Cmd != nil:
             {{template "client/pubsub/proto/serverPubSub" $implTemplateCtx}}
     {{- end}}
@@ -62,7 +62,7 @@ func operation{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper
 
 	switch {
     {{- range .Channel.BoundServers}}
-        {{$implTemplateCtx := dict "ChannelOrOperation" $ "Server" . "Kind" "operation"}}
+        {{$implTemplateCtx := dict "Object" $ "Server" . "Kind" "operation"}}
         case args.{{. | goIDUpper}}Cmd != nil:
             {{template "client/pubsub/proto/serverPubSub" $implTemplateCtx}}
     {{- end}}
@@ -104,7 +104,7 @@ func operationReply{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goID
 
 	switch {
     {{- range $channel.BoundServers}}
-        {{$implTemplateCtx := dict "ChannelOrOperation" $ "Server" . "Kind" "operation"}}
+        {{$implTemplateCtx := dict "Object" $ "Server" . "Kind" "operationReply"}}
         case args.{{. | goIDUpper}}Cmd != nil:
             {{template "client/pubsub/proto/serverPubSub" $implTemplateCtx}}
     {{- end}}
@@ -118,19 +118,26 @@ func operationReply{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goID
 
 {{define "client/pubsub/proto/serverPubSub"}}
 {{- /*
-    .ChannelOrOperation == render.Channel or render.Operation;
+    .Object == render.Channel or render.Operation;
     .Server == render.Server
-    .Kind == "channel" or "operation"
+    .Kind == "channel" or "operation" or "operationReply"
     */}}
 
-{{- $isPublisher := .ChannelOrOperation.IsPublisher}}
-{{- $isSubscriber := .ChannelOrOperation.IsSubscriber}}
+{{- $channel := .Object}}
+{{- $isPublisher := .Object.IsPublisher}}
+{{- $isSubscriber := .Object.IsSubscriber}}
 
-{{- $channel := .ChannelOrOperation}}
-{{- if eq .ChannelOrOperation.Kind "operation"}}
-    {{- $channel = .ChannelOrOperation.Channel}}
-    {{- $isPublisher = .ChannelOrOperation.HasPublishingCode}}
-    {{- $isSubscriber = .ChannelOrOperation.HasSubscribingCode}}
+{{- if eq .Kind "operation"}}
+    {{- $channel = .Object.Channel}}
+    {{- $isPublisher = .Object.HasPublishingCode}}
+    {{- $isSubscriber = .Object.HasSubscribingCode}}
+{{- else if eq .Kind "operationReply"}}
+    {{- $channel = .Object.Channel}}
+    {{- if .Object.OperationReply.Channel}}
+        {{- $channel = .Object.OperationReply.Channel}}
+    {{- end}}
+    {{- $isPublisher = .Object.HasPublishingCode}}
+    {{- $isSubscriber = .Object.HasSubscribingCode}}
 {{- end}}
 
 {{- with .Server}}
@@ -179,12 +186,12 @@ if opts.publish {
             {{- end}}
         {{end}}
 
-        {{goQual "log/slog.Debug"}}("Opening {{$.Kind}}", "name", {{.Name | goLit}}{{with $channel.ParametersType}}, "parameters", channelParams{{end}})
-        object, err := server.Open{{$.ChannelOrOperation | goIDUpper}}{{.Protocol | goIDUpper}}(ctx{{with $channel.ParametersType}}, channelParams{{end}})
+        {{goQual "log/slog.Debug"}}("Opening channel", "name", {{.Name | goLit}}{{with $channel.ParametersType}}, "parameters", channelParams{{end}})
+        channel, err := server.Open{{$channel | goIDUpper}}{{.Protocol | goIDUpper}}(ctx{{with $channel.ParametersType}}, channelParams{{end}})
         if err != nil {
-            return {{goQual "fmt.Errorf"}}("open {{$.Kind}}: %w", err)
+            return {{goQual "fmt.Errorf"}}("open channel: %w", err)
         }
-        defer object.Close()
+        defer channel.Close()
 
         {{goQual "log/slog.Debug"}}("Reading data to publish to {{$.Kind}}...")
         // If separator is empty, then don't use scanner and just read everything until EOF
@@ -197,7 +204,7 @@ if opts.publish {
             {{goQual "log/slog.Debug"}}("Read message payload", "bytes", n)
             parsedHeaders := parseHeaders(opts.publishHeaders)
             envelope.SetHeaders(parsedHeaders)
-            {{ with tryTmpl (print "client/" $.ChannelOrOperation.Kind "/" .Protocol "/publish/prepareEnvelope") $.ChannelOrOperation}}
+            {{ with tryTmpl (print "client/" $.Kind "/" .Protocol "/publish/prepareEnvelope") $.Object}}
                 // Protocol-specific code
                 {{.}}
                 // End of protocol-specific code
@@ -214,7 +221,7 @@ if opts.publish {
             if opts.debug {
                 {{goQual "log/slog.Debug"}}("Publishing message", "bytes", n, "payload", cutPayload(b, MaxLogPayloadSize), "headers", parsedHeaders)
             }
-            if err := object{{if eq $.ChannelOrOperation.Kind "operation"}}.Channel{{end}}.Publish(ctx, envelope); err != nil {
+            if err := channel.Publish(ctx, envelope); err != nil {
                 return {{goQual "fmt.Errorf"}}("publish: %w", err)
             }
             if !opts.multipleMessages {
@@ -240,18 +247,18 @@ if opts.publish {
             {{- end}}
         {{end}}
 
-        {{goQual "log/slog.Debug"}}("Opening {{$.Kind}}", "name", {{.Name | goLit}}{{with $channel.ParametersType}}, "parameters", channelParams{{end}})
-        object, err := server.Open{{$.ChannelOrOperation | goIDUpper}}{{.Protocol | goIDUpper}}(ctx{{with $channel.ParametersType}}, channelParams{{end}})
+        {{goQual "log/slog.Debug"}}("Opening channel", "name", {{.Name | goLit}}{{with $channel.ParametersType}}, "parameters", channelParams{{end}})
+        channel, err := server.Open{{$channel | goIDUpper}}{{.Protocol | goIDUpper}}(ctx{{with $channel.ParametersType}}, channelParams{{end}})
         if err != nil {
-            return {{goQual "fmt.Errorf"}}("open {{$.Kind}}: %w", err)
+            return {{goQual "fmt.Errorf"}}("open channel: %w", err)
         }
-        defer object.Close()
+        defer channel.Close()
 
         {{goQual "log/slog.Debug"}}("Subscribing to {{$.Kind}}...", "separator", opts.payloadSeparator)
         subCtx, cancel := {{goQual "context.WithCancelCause"}}(ctx)
         defer cancel(ErrExited)
         payloadSeparator := []byte(opts.payloadSeparator)
-        err = object{{if eq $.ChannelOrOperation.Kind "operation"}}.Channel{{end}}.Subscribe(subCtx, func(e {{goQualR .Protocol "EnvelopeReader"}}) {
+        err = channel.Subscribe(subCtx, func(e {{goQualR .Protocol "EnvelopeReader"}}) {
             b, err := {{goQual "io.ReadAll"}}(e)
             if err != nil {
                 cancel({{goQual "fmt.Errorf"}}("read: %w", err))
