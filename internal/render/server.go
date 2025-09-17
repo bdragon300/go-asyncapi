@@ -80,15 +80,6 @@ func (s *Server) BoundChannels() []*Channel {
 	return r
 }
 
-// BoundOperations returns a list of operations that are bound to this server.
-func (s *Server) BoundOperations() []*Operation {
-	chans := s.BoundChannels()
-	ops := lo.FlatMap(chans, func(c *Channel, _ int) []*Operation {
-		return c.BoundOperations()
-	})
-	return ops
-}
-
 // BindingsProtocols returns a list of protocols that have bindings defined for this server.
 func (s *Server) BindingsProtocols() (res []string) {
 	if s.BindingsType == nil {

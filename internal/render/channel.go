@@ -121,14 +121,31 @@ func (c *Channel) BoundMessages() []*Message {
 	return res
 }
 
-// BoundOperations returns a list of Operation or lang.Ref to Operation objects that this channel is bound with.
+// BoundOperations returns a list of Operation objects that this channel is bound with.
 func (c *Channel) BoundOperations() []*Operation {
 	if c.Dummy {
 		return nil
 	}
 	r := lo.FilterMap(c.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (*Operation, bool) {
 		op := common.DerefArtifact(o).(*Operation)
-		return op, common.CheckSameArtifacts(op.Channel(), c)
+		return op, op.Channel() == c
+	})
+	// ListPromise is filled up by linker, which doesn't guarantee the order. So, sort items by name
+	slices.SortFunc(r, func(a, b *Operation) int { return cmp.Compare(a.Name(), b.Name()) })
+	return r
+}
+
+// BoundReplyOperations returns a list of Operation that have replies bound to this channel.
+func (c *Channel) BoundReplyOperations() []*Operation {
+	if c.Dummy {
+		return nil
+	}
+	r := lo.FilterMap(c.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (*Operation, bool) {
+		op := common.DerefArtifact(o).(*Operation)
+		if op.OperationReply() == nil {
+			return nil, false
+		}
+		return op, op.OperationReply().Channel() == c || (op.OperationReply().Channel() == nil && op.Channel() == c)
 	})
 	// ListPromise is filled up by linker, which doesn't guarantee the order. So, sort items by name
 	slices.SortFunc(r, func(a, b *Operation) int { return cmp.Compare(a.Name(), b.Name()) })

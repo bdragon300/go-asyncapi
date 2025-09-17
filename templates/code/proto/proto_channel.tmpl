@@ -90,6 +90,26 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Close() (err error) {
 }
 {{- end}}
 
+{{define "code/proto/channel/operationMethods"}}
+    {{- range .BoundOperations}}
+        {{- if not (isVisible .) }}{{continue}}{{end}}
+        func (c {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}) Operation{{. | goIDUpper}}() *{{. | goPkg}}{{. | goIDUpper}}{{$.Protocol | goIDUpper}} {
+            return &{{. | goPkg}}{{. | goIDUpper}}{{$.Protocol | goIDUpper}}{
+                Channel: c,
+            }
+        }
+    {{- end}}
+{{- end}}
+
+{{define "code/proto/channel/replyMethods"}}
+    {{- range .BoundReplyOperations}}
+        {{- if or (not (isVisible .)) (not (isVisible .OperationReply)) }}{{continue}}{{end}}
+        func (c {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}) Reply{{. | goIDUpper}}() *{{goPkg .}}{{. | goIDUpper}}{{$.Protocol | goIDUpper}}Reply {
+            return &{{. | goPkg}}{{. | goIDUpper}}{{$.Protocol | goIDUpper}}Reply{Channel: c}
+        }
+    {{- end}}
+{{- end}}
+
 {{define "code/proto/channel/publishMethods"}}
 type {{ .Channel | goIDUpper }}EnvelopeMarshaler{{.Protocol | goIDUpper}} interface {
     Marshal{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}(envelope {{goQualR .Protocol "EnvelopeWriter"}}) error

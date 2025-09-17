@@ -1,70 +1,25 @@
 {{- /* dot == render.ProtoOperation */}}
 
-{{define "code/proto/operation/newFunction"}}
-func New{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
-    {{ with .Channel.ParametersType}}params {{ . | goUsage}},{{end}}
-    {{ if .HasPublishingCode}}publisher {{goQualR .Protocol "Publisher"}},{{end}}
-    {{ if .HasSubscribingCode}}subscriber {{goQualR .Protocol "Subscriber"}},{{end}}
-) *{{. | goIDUpper}}{{.Protocol | goIDUpper}} {
-    res := {{. | goIDUpper}}{{.Protocol | goIDUpper}}{
-        Channel: {{goPkg .ProtoChannel}}New{{.ProtoChannel | goIDUpper}}{{.Protocol | goIDUpper}}(
-            {{- with .Channel.ParametersType}}params,{{end}}
-            {{- if .ProtoChannel.IsPublisher}}{{- if .HasPublishingCode}}publisher{{else}}nil{{end}},{{end}}
-            {{- if .ProtoChannel.IsSubscriber}}{{- if .HasSubscribingCode}}subscriber{{else}}nil{{end}},{{end}}
-        ),
-    }
-    return &res
-}
-{{- end}}
-
-{{define "code/proto/operation/openFunction"}}
-func Open{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
-    ctx {{goQual "context.Context"}},
-    {{ with .Channel.ParametersType}}params {{. | goUsage}},{{end}}
-    server {{. | goIDUpper }}Server{{.Protocol | goIDUpper}},
-) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error) {
-    {{- if .Channel.BindingsProtocols | has .Protocol}}
-        chBindings := {{.Channel.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}()
-    {{- end }}
-    {{- if .BindingsProtocols | has .Protocol}}
-        opBindings := {{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}()
-    {{- end }}
-
-    {{- if or .HasPublishingCode .HasSubscribingCode}}
-        address, err := {{with .Channel.SelectProtoObject .Protocol}}{{goPkg .}}{{end}}{{.Channel | goIDUpper}}Address({{if .Channel.ParametersType}}params{{end}}).Expand()
-        if err != nil {
-            return nil, err
-        }
+{{define "code/proto/operation/channelInterface"}}
+type {{ . | goIDUpper }}Channel{{.Protocol | goIDUpper}} interface {
+    {{- if .IsPublisher}}
+        Publish(ctx {{goQual "context.Context"}}, envelopes ...{{goQualR $.Protocol "EnvelopeWriter"}}) error
     {{- end}}
-    {{- if .HasPublishingCode}}
-        var publisher {{goQualR .Protocol "Publisher"}}
-        producer := server.Producer()
-        if producer != nil {
-            publisher, err = producer.Publisher(ctx, address, {{if .Channel.BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, {{if .BindingsProtocols | has .Protocol}}&opBindings{{else}}nil{{end}})
-            if err != nil {
-                return nil, err
-            }
-        }
+    {{- if .IsSubscriber}}
+        Subscribe(ctx {{goQual "context.Context"}}, handler func(envelope {{goQualR $.Protocol "EnvelopeReader"}})) error
     {{- end}}
-    {{- if .HasSubscribingCode}}
-        var subscriber {{goQualR .Protocol "Subscriber"}}
-        consumer := server.Consumer()
-        if consumer != nil {
-            subscriber, err = consumer.Subscriber(ctx, address, {{if .Channel.BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, {{if .BindingsProtocols | has .Protocol}}&opBindings{{else}}nil{{end}})
-            if err != nil {
-                return nil, err
-            }
-        }
+    Operation{{. | goIDUpper}}() *{{. | goIDUpper}}{{.Protocol | goIDUpper}}
+    {{- if and (or .IsReplyPublisher .IsReplySubscriber) (not .OperationReply.Channel)}}
+        {{- /* Both Operation and OperationReply bounds with the same channel*/}}
+        {{- if .IsReplyPublisher}}
+            Publish(ctx {{goQual "context.Context"}}, envelopes ...{{goQualR $.Protocol "EnvelopeWriter"}}) error
+        {{- end}}
+        {{- if .IsReplySubscriber}}
+            Subscribe(ctx {{goQual "context.Context"}}, handler func(envelope {{goQualR $.Protocol "EnvelopeReader"}})) error
+        {{- end}}
+        Reply{{. | goIDUpper}}() *{{. | goIDUpper}}{{.Protocol | goIDUpper}}Reply
     {{- end}}
-
-    res := &{{. | goIDUpper}}{{.Protocol | goIDUpper}}{
-        Channel: {{goPkg .ProtoChannel}}New{{.ProtoChannel | goIDUpper}}{{.Protocol | goIDUpper}}(
-            {{- with .Channel.ParametersType}}params,{{end}}
-            {{- if .ProtoChannel.IsPublisher}}{{- if .HasPublishingCode}}publisher{{else}}nil{{end}},{{end}}
-            {{- if .ProtoChannel.IsSubscriber}}{{- if .HasSubscribingCode}}subscriber{{else}}nil{{end}},{{end}}
-        ),
-    }
-    return res, nil
+    Close() error
 }
 {{- end}}
 
@@ -80,7 +35,7 @@ func (o {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Close() error {
 }
 
 {{if or .IsReplyPublisher .IsReplySubscriber}}
-    func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Reply({{with .OperationReply.Channel}}channel *{{goPkg .}}{{. | goIDUpper}}{{$.Protocol | goIDUpper}}{{end}}) *{{goPkg .}}{{. | goIDUpper}}{{.Protocol | goIDUpper}}Reply {
+    func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Reply({{if .OperationReply.Channel}}channel {{ . | goIDUpper }}ReplyChannel{{.Protocol | goIDUpper}}{{end}}) *{{goPkg .}}{{. | goIDUpper}}{{.Protocol | goIDUpper}}Reply {
         return &{{. | goIDUpper}}{{.Protocol | goIDUpper}}Reply{Channel: {{with .OperationReply.Channel}}channel{{else}}c.Channel{{end}} }
     }
 {{- end}}
@@ -157,6 +112,19 @@ type {{ . | goIDUpper }}EnvelopeUnmarshaler{{.Protocol | goIDUpper}} interface {
         })
     }
 {{- end}}
+{{- end}}
+
+{{define "code/proto/operation/operationReply/channelInterface"}}
+type {{ . | goIDUpper }}ReplyChannel{{.Protocol | goIDUpper}} interface {
+    {{- if .IsReplyPublisher}}
+        Publish(ctx {{goQual "context.Context"}}, envelopes ...{{goQualR $.Protocol "EnvelopeWriter"}}) error
+    {{- end}}
+    {{- if .IsReplySubscriber}}
+        Subscribe(ctx {{goQual "context.Context"}}, handler func(envelope {{goQualR $.Protocol "EnvelopeReader"}})) error
+    {{- end}}
+    Reply{{. | goIDUpper}}() *{{. | goIDUpper}}{{.Protocol | goIDUpper}}Reply
+    Close() error
+}
 {{- end}}
 
 {{define "code/proto/operation/operationReply/publishMethods"}}
@@ -240,10 +208,3 @@ type {{ . | goIDUpper }}EnvelopeUnmarshaler{{.Protocol | goIDUpper}} interface {
 {{- end}}
 {{- end}}
 
-{{define "code/proto/operation/serverInterface"}}
-type {{ . | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
-    Open{{. | goIDUpper}}{{.Protocol | goIDUpper}}(ctx {{goQual "context.Context"}}, {{with .Channel.ParametersType}}params {{ . | goUsage }}{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
-    {{if .HasPublishingCode}}Producer() {{goQualR .Protocol "Producer"}}{{end}}
-    {{if .HasSubscribingCode}}Consumer() {{goQualR .Protocol "Consumer"}}{{end}}
-}
-{{- end}}

@@ -1,10 +1,8 @@
 {{- /* dot == render.ProtoOperation */}}
 {{- pin . }}
-{{template "code/proto/operation/newFunction" .}}
-{{template "code/proto/operation/openFunction" .}}
 
 type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
-    Channel *{{goPkg .ProtoChannel}}{{.ProtoChannel | goIDUpper}}{{.Protocol | goIDUpper}}
+    Channel {{ . | goIDUpper }}Channel{{.Protocol | goIDUpper}}
 }
 
 {{template "code/proto/operation/commonMethods" .}}
@@ -14,13 +12,13 @@ type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
 {{- if .IsSubscriber}}
     {{template "code/proto/operation/subscribeMethods" .}}
 {{- end}}
-{{template "code/proto/operation/serverInterface" .}}
+{{template "code/proto/operation/channelInterface" .}}
 
 {{- if or .IsReplyPublisher .IsReplySubscriber}}
     {{- $innerChannel := .ProtoChannel.Channel}}
     {{- if .OperationReply.Channel}}{{$innerChannel = .OperationReply.Channel}}{{end}}
     type {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply struct {
-        Channel *{{goPkg $innerChannel}}{{$innerChannel | goIDUpper}}{{.Protocol | goIDUpper}}
+        Channel {{ . | goIDUpper }}ReplyChannel{{.Protocol | goIDUpper}}
     }
     {{- if .IsReplyPublisher}}
         {{template "code/proto/operation/operationReply/publishMethods" .}}
@@ -28,4 +26,5 @@ type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
     {{- if .IsReplySubscriber}}
         {{template "code/proto/operation/operationReply/subscribeMethods" .}}
     {{- end}}
+    {{template "code/proto/operation/operationReply/channelInterface" .}}
 {{- end}}

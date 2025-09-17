@@ -195,9 +195,14 @@ func (p *ProtoOperation) ProtoChannel() *ProtoChannel {
 
 // isBound returns true if operation is bound to at least one server with supported protocol
 func (p *ProtoOperation) isBound() bool {
-	protos := lo.Map(p.ChannelPromise.T().BoundServers(), func(s *Server, _ int) string {
+	protos := lo.Map(p.Channel().BoundServers(), func(s *Server, _ int) string {
 		return s.Protocol
 	})
+	if p.OperationReply() != nil && p.OperationReply().Channel() != nil {
+		protos = append(protos, lo.Map(p.OperationReply().Channel().BoundServers(), func(s *Server, _ int) string {
+			return s.Protocol
+		})...)
+	}
 	r := lo.Contains(protos, p.Protocol)
 	return r
 }
