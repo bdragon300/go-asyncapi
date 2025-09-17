@@ -19,7 +19,6 @@ type {{ . | goIDUpper }}Channel{{.Protocol | goIDUpper}} interface {
         {{- end}}
         Reply{{. | goIDUpper}}() *{{. | goIDUpper}}{{.Protocol | goIDUpper}}Reply
     {{- end}}
-    Close() error
 }
 {{- end}}
 
@@ -29,10 +28,6 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Bindings() {{goQualR .Protoc
     return {{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}()
 }
 {{- end}}
-
-func (o {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Close() error {
-    return o.Channel.Close()
-}
 
 {{if or .IsReplyPublisher .IsReplySubscriber}}
     func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Reply({{if .OperationReply.Channel}}channel {{ . | goIDUpper }}ReplyChannel{{.Protocol | goIDUpper}}{{end}}) *{{goPkg .}}{{. | goIDUpper}}{{.Protocol | goIDUpper}}Reply {
@@ -123,8 +118,10 @@ type {{ . | goIDUpper }}ReplyChannel{{.Protocol | goIDUpper}} interface {
         Subscribe(ctx {{goQual "context.Context"}}, handler func(envelope {{goQualR $.Protocol "EnvelopeReader"}})) error
     {{- end}}
     Reply{{. | goIDUpper}}() *{{. | goIDUpper}}{{.Protocol | goIDUpper}}Reply
-    Close() error
 }
+{{- end}}
+
+{{define "code/proto/operation/operationReply/commonMethods"}}
 {{- end}}
 
 {{define "code/proto/operation/operationReply/publishMethods"}}

@@ -26,5 +26,6 @@ type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
     {{- if .IsReplySubscriber}}
         {{template "code/proto/operation/operationReply/subscribeMethods" .}}
     {{- end}}
+    {{template "code/proto/operation/operationReply/commonMethods" .}}
     {{template "code/proto/operation/operationReply/channelInterface" .}}
 {{- end}}
