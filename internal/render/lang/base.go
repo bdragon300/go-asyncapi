@@ -100,3 +100,7 @@ type GolangReferenceType interface {
 type golangStructType interface {
 	IsStruct() bool
 }
+
+type structFieldRenderer interface {
+	StructRenderInfo() StructFieldRenderInfo
+}

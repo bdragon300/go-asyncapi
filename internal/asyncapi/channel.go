@@ -103,8 +103,8 @@ func (c Channel) build(ctx *compile.Context, channelKey string, flags map[common
 			})
 			ctx.PutPromise(prmType)
 			res.ParametersType.Fields = append(res.ParametersType.Fields, lang.GoStructField{
-				Name: utils.ToGolangName(paramName, true),
-				Type: prmType,
+				OriginalName: utils.ToGolangName(paramName, true),
+				Type:         prmType,
 			})
 
 			prm := lang.NewRef(ref, paramName, nil)

@@ -13,6 +13,8 @@ type GoMap struct {
 	KeyType common.GolangType
 	// ValueType is the type of the map value.
 	ValueType common.GolangType
+
+	StructFieldRenderInfo StructFieldRenderInfo
 }
 
 func (m *GoMap) String() string {
@@ -24,4 +26,8 @@ func (m *GoMap) String() string {
 
 func (m *GoMap) GoTemplate() string {
 	return "code/lang/gomap"
+}
+
+func (m *GoMap) StructRenderInfo() StructFieldRenderInfo {
+	return m.StructFieldRenderInfo
 }

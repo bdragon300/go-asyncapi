@@ -177,8 +177,8 @@ func (m Message) buildInOutStructs(ctx *compile.Context, message render.Message,
 			HasDefinition: true,
 		},
 		Fields: []lang.GoStructField{
-			{Name: utils.ToGolangName(string(lang.RuntimeExpressionStructFieldKindPayload), true), Type: payloadType},
-			{Name: utils.ToGolangName(string(lang.RuntimeExpressionStructFieldKindHeaders), true), Type: headerType},
+			{OriginalName: utils.ToGolangName(string(lang.RuntimeExpressionStructFieldKindPayload), true), Type: payloadType},
+			{OriginalName: utils.ToGolangName(string(lang.RuntimeExpressionStructFieldKindHeaders), true), Type: headerType},
 		},
 	}
 	in = &lang.GoStruct{
@@ -188,8 +188,8 @@ func (m Message) buildInOutStructs(ctx *compile.Context, message render.Message,
 			HasDefinition: true,
 		},
 		Fields: []lang.GoStructField{
-			{Name: utils.ToGolangName(string(lang.RuntimeExpressionStructFieldKindPayload), false), Type: payloadType},
-			{Name: utils.ToGolangName(string(lang.RuntimeExpressionStructFieldKindHeaders), false), Type: headerType},
+			{OriginalName: utils.ToGolangName(string(lang.RuntimeExpressionStructFieldKindPayload), false), Type: payloadType},
+			{OriginalName: utils.ToGolangName(string(lang.RuntimeExpressionStructFieldKindHeaders), false), Type: headerType},
 		},
 	}
 

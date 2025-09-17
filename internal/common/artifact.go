@@ -52,6 +52,9 @@ type GolangType interface {
 	CanBeDereferenced() bool
 	// GoTemplate returns a template name that renders this particular type.
 	GoTemplate() string
+
+	// Extra returns extra schema fields
+	// Extra() lang.ExtraFields
 }
 
 type artifactWrapper interface {

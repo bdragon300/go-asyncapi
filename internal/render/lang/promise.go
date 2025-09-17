@@ -129,6 +129,16 @@ func (r *Promise[T]) IsStruct() bool {
 	return false
 }
 
+func (r *Promise[T]) StructRenderInfo() StructFieldRenderInfo {
+	if !r.assigned {
+		return StructFieldRenderInfo{}
+	}
+	if v, ok := any(r.target).(structFieldRenderer); ok {
+		return v.StructRenderInfo()
+	}
+	return StructFieldRenderInfo{}
+}
+
 // NewGolangTypePromise returns a new promise, that addresses the GolangType object by ref URL. See [NewPromise] for details.
 func NewGolangTypePromise(ref string, assignCb promiseAssignCbFunc[common.GolangType]) *GolangTypePromise {
 	return &GolangTypePromise{

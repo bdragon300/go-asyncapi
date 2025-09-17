@@ -46,3 +46,10 @@ func (p *GoTypeDefinition) IsStruct() bool {
 	}
 	return false
 }
+
+func (p *GoTypeDefinition) StructRenderInfo() StructFieldRenderInfo {
+	if v, ok := any(p.RedefinedType).(structFieldRenderer); ok {
+		return v.StructRenderInfo()
+	}
+	return StructFieldRenderInfo{}
+}

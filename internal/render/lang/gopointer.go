@@ -50,3 +50,10 @@ func (p *GoPointer) UnwrapGolangType() common.GolangType {
 	}
 	return p.Type
 }
+
+func (p *GoPointer) StructRenderInfo() StructFieldRenderInfo {
+	if v, ok := any(p.Type).(structFieldRenderer); ok {
+		return v.StructRenderInfo()
+	}
+	return StructFieldRenderInfo{}
+}

@@ -18,12 +18,14 @@ type GoSimple struct {
 	// If set, then while rendering the usage of the type, this import will be added to the file's imports list.
 	Import string
 	// IsRuntimeImport is true if the Import field contains a subpackage in the tool's runtime subpackage. E.g. "kafka"
-	IsRuntimeImport bool
+	IsRuntimeImport bool // TODO: remove, Import is enough
 
 	// OriginalFormat is optional format of the type that is set for a type in document, e.g. "date-time" for string
 	OriginalFormat string
 	// OriginalType is the original type from the document, e.g. "integer" for int32
 	OriginalType string
+
+	StructFieldRenderInfo StructFieldRenderInfo
 }
 
 func (p *GoSimple) Name() string {
@@ -68,4 +70,8 @@ func (p *GoSimple) CanBeDereferenced() bool {
 
 func (p *GoSimple) GoTemplate() string {
 	return "code/lang/gosimple"
+}
+
+func (p *GoSimple) StructRenderInfo() StructFieldRenderInfo {
+	return p.StructFieldRenderInfo
 }

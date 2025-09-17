@@ -13,6 +13,8 @@ type GoArray struct {
 	ItemsType common.GolangType
 	// If Size is set, then GoArray is a Go array with fixed-size. Otherwise, it is a slice.
 	Size int
+
+	StructFieldRenderInfo StructFieldRenderInfo
 }
 
 func (a *GoArray) String() string {
@@ -24,4 +26,8 @@ func (a *GoArray) String() string {
 
 func (a *GoArray) GoTemplate() string {
 	return "code/lang/goarray"
+}
+
+func (a *GoArray) StructRenderInfo() StructFieldRenderInfo {
+	return a.StructFieldRenderInfo
 }

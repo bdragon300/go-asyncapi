@@ -370,7 +370,7 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c l
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
 	field, ok := lo.Find(varStruct.Fields, func(item lang.GoStructField) bool {
-		return strings.EqualFold(item.Name, string(c.StructFieldKind))
+		return strings.EqualFold(item.OriginalName, string(c.StructFieldKind))
 	})
 	if !ok {
 		return nil, fmt.Errorf("field %s not found in %s", c.StructFieldKind, varStruct)
@@ -403,7 +403,7 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c l
 				)
 				return
 			}
-			varValueStmts = fmt.Sprintf("%s.%s", anchor, fld.Name)
+			varValueStmts = fmt.Sprintf("%s.%s", anchor, fld.OriginalName)
 			baseType = fld.Type
 			body = []string{fmt.Sprintf("%s := %s", nextAnchor, varValueStmts)}
 		case *lang.GoMap:
