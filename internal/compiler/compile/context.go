@@ -5,10 +5,9 @@ import (
 	"path"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 
 	"github.com/bdragon300/go-asyncapi/internal/log"
-
-	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 
 	"github.com/bdragon300/go-asyncapi/internal/types"
 
@@ -19,7 +18,7 @@ import (
 // CompilationStorage keeps the artifacts of the compilation process, such as compiled objects, promises, etc.
 type CompilationStorage interface {
 	AddArtifact(obj common.Artifact)
-	AddExternalRef(ref *jsonpointer.JSONPointer)
+	AddExternalRef(r *jsonpointer.JSONPointer)
 	AddPromise(p common.ObjectPromise)
 	AddListPromise(p common.ObjectListPromise)
 	DocumentURL() jsonpointer.JSONPointer
@@ -65,15 +64,13 @@ type Context struct {
 	ProtocolBuilders []ProtocolBuilder
 }
 
-type jsonPointerSetter interface {
-	SetPointer(pointer jsonpointer.JSONPointer)
-}
-
 // PutArtifact adds an artifact to the storage.
 func (c *Context) PutArtifact(obj common.Artifact) {
-	// JSON Pointer to the current position in the document
-	u := c.Storage.DocumentURL()
-	u.Pointer = c.pathStack()
+	type jsonPointerSetter interface {
+		SetPointer(pointer jsonpointer.JSONPointer)
+	}
+
+	u := c.CurrentRef()
 	obj.(jsonPointerSetter).SetPointer(u) // Every artifact must have a SetPointer method
 	c.Logger.Debug(
 		"Built",
@@ -89,9 +86,9 @@ func (c *Context) PutArtifact(obj common.Artifact) {
 // PutPromise adds a promise to the storage. If the promise points to an external document instead of the current
 // document, this ref is also gets to the external refs list.
 func (c *Context) PutPromise(p common.ObjectPromise) {
-	ref := lo.Must(jsonpointer.Parse(p.Ref()))
-	if ref.Location() != "" {
-		c.Storage.AddExternalRef(ref)
+	r := lo.Must(jsonpointer.Parse(p.Ref()))
+	if r.Location() != "" {
+		c.Storage.AddExternalRef(r)
 	}
 	c.Storage.AddPromise(p)
 }
@@ -101,11 +98,19 @@ func (c *Context) PutListPromise(p common.ObjectListPromise) {
 	c.Storage.AddListPromise(p)
 }
 
-// CurrentPositionRef returns a $ref string to the current position in document, e.g. "#/path/to/object",
+// CurrentRefPointer returns a $ref string to the current position in document, e.g. "#/path/to/object",
 // appending the optional parts at the end.
-func (c *Context) CurrentPositionRef(extraParts ...string) string {
+func (c *Context) CurrentRefPointer(extraParts ...string) string {
 	parts := append(c.pathStack(), extraParts...)
 	return jsonpointer.PointerString(parts...)
+}
+
+// CurrentRef returns a full JSONPointer to the current position in document, e.g.
+// "document.yaml#/path/to/object", appending the optional parts at the end.
+func (c *Context) CurrentRef() jsonpointer.JSONPointer {
+	u := c.Storage.DocumentURL()
+	u.Pointer = c.pathStack()
+	return u
 }
 
 func (c *Context) pathStack() []string {

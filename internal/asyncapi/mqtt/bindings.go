@@ -33,7 +33,7 @@ func (pb ProtoBuilder) BuildOperationBindings(
 ) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	var bindings operationBindings
 	if err = types.UnmarshalRawMessageUnion2(rawData, &bindings); err != nil {
-		err = types.CompileError{Err: err, Path: ctx.CurrentPositionRef(), Proto: pb.Protocol()}
+		err = types.CompileError{Err: err, Path: ctx.CurrentRefPointer(), Proto: pb.Protocol()}
 		return
 	}
 	vals = lang.ConstructGoValue(bindings, []string{"MessageExpiryInterval"}, &lang.GoSimple{TypeName: "OperationBindings", Import: ctx.RuntimeModule(pb.Protocol())})
@@ -54,7 +54,7 @@ type messageBindings struct {
 func (pb ProtoBuilder) BuildMessageBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	var bindings messageBindings
 	if err = types.UnmarshalRawMessageUnion2(rawData, &bindings); err != nil {
-		err = types.CompileError{Err: err, Path: ctx.CurrentPositionRef(), Proto: pb.Protocol()}
+		err = types.CompileError{Err: err, Path: ctx.CurrentRefPointer(), Proto: pb.Protocol()}
 		return
 	}
 
@@ -70,7 +70,7 @@ func (pb ProtoBuilder) BuildMessageBindings(ctx *compile.Context, rawData types.
 	if bindings.CorrelationData != nil {
 		v, err2 := json.Marshal(bindings.CorrelationData)
 		if err2 != nil {
-			err = types.CompileError{Err: err2, Path: ctx.CurrentPositionRef(), Proto: pb.Protocol()}
+			err = types.CompileError{Err: err2, Path: ctx.CurrentRefPointer(), Proto: pb.Protocol()}
 			return
 		}
 		jsonVals.Set("CorrelationData", string(v))
@@ -98,7 +98,7 @@ type lastWill struct {
 func (pb ProtoBuilder) BuildServerBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	var bindings serverBindings
 	if err = types.UnmarshalRawMessageUnion2(rawData, &bindings); err != nil {
-		return vals, jsonVals, types.CompileError{Err: err, Path: ctx.CurrentPositionRef(), Proto: pb.Protocol()}
+		return vals, jsonVals, types.CompileError{Err: err, Path: ctx.CurrentRefPointer(), Proto: pb.Protocol()}
 	}
 	vals = lang.ConstructGoValue(bindings, []string{"LastWill"}, &lang.GoSimple{TypeName: "ServerBindings", Import: ctx.RuntimeModule(pb.Protocol())})
 	if bindings.LastWill != nil {

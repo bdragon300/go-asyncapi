@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
+	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 
 	"github.com/bdragon300/go-asyncapi/internal/locator"
@@ -26,8 +27,6 @@ import (
 	"github.com/bdragon300/go-asyncapi/templates/client"
 	templates "github.com/bdragon300/go-asyncapi/templates/code"
 	"gopkg.in/yaml.v3"
-
-	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/tcp"
 	"github.com/bdragon300/go-asyncapi/internal/asyncapi/udp"
@@ -70,10 +69,10 @@ type CodeCmd struct {
 	ImplementationsDir     string `arg:"--implementations-dir" help:"Directory to save the implementations code, counts from target dir" placeholder:"DIR"`
 	DisableImplementations bool   `arg:"--disable-implementations" help:"Do not generate implementations code"`
 
-	AllowRemoteRefs  bool          `arg:"--allow-remote-refs" help:"Allow locator to fetch the documents from remote hosts"`
-	LocatorSearchDir string        `arg:"--locator-search-dir" help:"Directory to search the documents for [default: current working directory]" placeholder:"PATH"`
-	LocatorTimeout   time.Duration `arg:"--locator-timeout" help:"Timeout for locator to read a document. Format: 30s, 2m, etc." placeholder:"DURATION"`
-	LocatorCommand   string        `arg:"--locator-command" help:"Custom locator command to use instead of built-in locator" placeholder:"COMMAND"`
+	AllowRemoteRefs bool          `arg:"--allow-remote-refs" help:"Allow locator to fetch the documents from remote hosts"`
+	LocatorRootDir  string        `arg:"--locator-root-dir" help:"Root directory to search the documents" placeholder:"PATH"`
+	LocatorTimeout  time.Duration `arg:"--locator-timeout" help:"Timeout for locator to read a document. Format: 30s, 2m, etc." placeholder:"DURATION"`
+	LocatorCommand  string        `arg:"--locator-command" help:"Custom locator command to use instead of built-in locator" placeholder:"COMMAND"`
 
 	ClientApp     bool   `arg:"--client-app" help:"Generate the sample client application code as well"`
 	goModTemplate string `arg:"-"`
@@ -251,7 +250,7 @@ func cliCodeMergeConfig(globalConfig toolConfig, cmd *CodeCmd) toolConfig {
 	res.RuntimeModule = coalesce(cmd.RuntimeModule, res.RuntimeModule)
 
 	res.Locator.AllowRemoteReferences = coalesce(cmd.AllowRemoteRefs, res.Locator.AllowRemoteReferences)
-	res.Locator.SearchDirectory = coalesce(cmd.LocatorSearchDir, res.Locator.SearchDirectory)
+	res.Locator.RootDirectory = coalesce(cmd.LocatorRootDir, res.Locator.RootDirectory)
 	res.Locator.Timeout = coalesce(cmd.LocatorTimeout, res.Locator.Timeout)
 	res.Locator.Command = coalesce(cmd.LocatorCommand, res.Locator.Command)
 
@@ -387,6 +386,7 @@ func getProjectModule() (string, error) {
 
 type documentLocator interface {
 	Locate(docURL *jsonpointer.JSONPointer) (io.ReadCloser, error)
+	ResolveURL(base, target *jsonpointer.JSONPointer) (*jsonpointer.JSONPointer, error)
 }
 
 func getLocator(conf toolConfig) documentLocator {
@@ -396,13 +396,14 @@ func getLocator(conf toolConfig) documentLocator {
 			CommandLine:     conf.Locator.Command,
 			RunTimeout:      conf.Locator.Timeout,
 			ShutdownTimeout: defaultSubprocessLocatorShutdownTimeout,
+			RootDirectory:   conf.Locator.RootDirectory,
 			Logger:          logger,
 		}
 	}
 	res := locator.Default{
-		Client:    &http.Client{Timeout: conf.Locator.Timeout},
-		Directory: conf.Locator.SearchDirectory,
-		Logger:    logger,
+		Client:        &http.Client{Timeout: conf.Locator.Timeout},
+		RootDirectory: conf.Locator.RootDirectory,
+		Logger:        logger,
 	}
 	return res
 }
@@ -465,8 +466,18 @@ func runCompilation(
 			return nil, fmt.Errorf("compilation a document: %w", err)
 		}
 		logger.Debugf("Compiler stats: %s", document.Stats())
-		// Add external URLs to the compile queue
-		compileQueue = append(compileQueue, document.ExternalURLs()...)
+
+		// Resolve and add external URLs to the compile queue
+		var externalURLs []*jsonpointer.JSONPointer
+		for _, u := range document.ExternalURLs() {
+			joined, err := locator.ResolveURL(docURL, u)
+			if err != nil {
+				return nil, fmt.Errorf("join base %q and target %q: %w", docURL, u, err)
+			}
+			externalURLs = append(externalURLs, joined)
+			logger.Trace("Resolved external document location for $ref", "ref", u.String(), "url", joined.Location())
+		}
+		compileQueue = append(compileQueue, externalURLs...)
 	}
 
 	return documents, nil

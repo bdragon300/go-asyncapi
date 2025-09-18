@@ -41,7 +41,7 @@ func (c CorrelationID) build(ctx *compile.Context, correlationIDKey string) (com
 	ctx.Logger.Trace("Parsing CorrelationID location runtime expression", "location", c.Location)
 	structField, locationPath, err := parseRuntimeExpression(c.Location)
 	if err != nil {
-		return nil, types.CompileError{Err: fmt.Errorf("parse runtime expression: %w", err), Path: ctx.CurrentPositionRef()}
+		return nil, types.CompileError{Err: fmt.Errorf("parse runtime expression: %w", err), Path: ctx.CurrentRefPointer()}
 	}
 
 	ctx.Logger.Trace("CorrelationID object", "structField", structField, "path", locationPath)

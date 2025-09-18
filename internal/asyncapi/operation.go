@@ -72,7 +72,7 @@ func (o Operation) build(ctx *compile.Context, operationKey string, flags map[co
 	}
 
 	if o.Channel == nil {
-		return nil, types.CompileError{Err: errors.New("channel field is empty"), Path: ctx.CurrentPositionRef()}
+		return nil, types.CompileError{Err: errors.New("channel field is empty"), Path: ctx.CurrentRefPointer()}
 	}
 
 	ctx.Logger.Trace("Bound channel", "ref", o.Channel.Ref)
@@ -83,7 +83,7 @@ func (o Operation) build(ctx *compile.Context, operationKey string, flags map[co
 	if o.Bindings != nil {
 		ctx.Logger.Trace("Found operation bindings")
 
-		ref := ctx.CurrentPositionRef("bindings")
+		ref := ctx.CurrentRefPointer("bindings")
 		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, nil)
 		ctx.PutPromise(res.BindingsPromise)
 
@@ -110,7 +110,7 @@ func (o Operation) build(ctx *compile.Context, operationKey string, flags map[co
 	if o.Reply != nil {
 		ctx.Logger.Trace("Found operation reply")
 
-		ref := ctx.CurrentPositionRef("reply")
+		ref := ctx.CurrentRefPointer("reply")
 		res.OperationReplyPromise = lang.NewPromise[*render.OperationReply](ref, nil)
 		ctx.PutPromise(res.OperationReplyPromise)
 	}
@@ -195,7 +195,7 @@ func (o OperationReply) build(ctx *compile.Context, operationKey string) (common
 	if o.Address != nil {
 		ctx.Logger.Trace("Found operation reply address")
 
-		ref := ctx.CurrentPositionRef("address")
+		ref := ctx.CurrentRefPointer("address")
 		res.OperationReplyAddressPromise = lang.NewPromise[*render.OperationReplyAddress](ref, nil)
 		ctx.PutPromise(res.OperationReplyAddressPromise)
 	}
@@ -252,7 +252,7 @@ func (o OperationReplyAddress) build(ctx *compile.Context, operationKey string) 
 	ctx.Logger.Trace("Parsing OperationReplyAddress location runtime expression", "location", o.Location)
 	structField, locationPath, err := parseRuntimeExpression(o.Location)
 	if err != nil {
-		return nil, types.CompileError{Err: fmt.Errorf("parse runtime expression: %w", err), Path: ctx.CurrentPositionRef()}
+		return nil, types.CompileError{Err: fmt.Errorf("parse runtime expression: %w", err), Path: ctx.CurrentRefPointer()}
 	}
 
 	res := &render.OperationReplyAddress{

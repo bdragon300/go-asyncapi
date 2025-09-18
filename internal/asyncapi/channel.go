@@ -97,7 +97,7 @@ func (c Channel) build(ctx *compile.Context, channelKey string, flags map[common
 		}
 		for _, paramName := range c.Parameters.Keys() {
 			ctx.Logger.Trace("Channel parameter", "name", paramName)
-			ref := ctx.CurrentPositionRef("parameters", paramName)
+			ref := ctx.CurrentRefPointer("parameters", paramName)
 			prmType := lang.NewGolangTypePromise(ref, func(obj common.Artifact) common.GolangType {
 				return obj.(*render.Parameter).Type
 			})
@@ -116,7 +116,7 @@ func (c Channel) build(ctx *compile.Context, channelKey string, flags map[common
 
 	for _, msgName := range c.Messages.Keys() {
 		ctx.Logger.Trace("Channel message", "name", msgName)
-		ref := ctx.CurrentPositionRef("messages", msgName)
+		ref := ctx.CurrentRefPointer("messages", msgName)
 		// Do not consider the name which a message $ref is registered with, keeping the original message name in code.
 		prm2 := lang.NewRef(ref, "", nil)
 		ctx.PutPromise(prm2)
@@ -138,7 +138,7 @@ func (c Channel) build(ctx *compile.Context, channelKey string, flags map[common
 	if c.Bindings != nil {
 		ctx.Logger.Trace("Found channel bindings")
 
-		ref := ctx.CurrentPositionRef("bindings")
+		ref := ctx.CurrentRefPointer("bindings")
 		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, nil)
 		ctx.PutPromise(res.BindingsPromise)
 

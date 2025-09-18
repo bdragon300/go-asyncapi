@@ -154,7 +154,7 @@ func (o Object) getTypeName(ctx *compile.Context) (typeName string, nullable boo
 		case nullable: // Null only -> 'any', that can be only nil
 			typeName = "null"
 		default:
-			err = types.CompileError{Err: errors.New("empty object type"), Path: ctx.CurrentPositionRef()}
+			err = types.CompileError{Err: errors.New("empty object type"), Path: ctx.CurrentRefPointer()}
 			return
 		}
 		ctx.Logger.Trace(fmt.Sprintf("Multitype object type inferred as %q", typeName))
@@ -211,7 +211,7 @@ func (o Object) buildGolangType(ctx *compile.Context, flags map[common.SchemaTag
 		ctx.Logger.Trace("Object", "type", "string")
 		aliasedType = &lang.GoSimple{TypeName: "string", OriginalType: typeName, OriginalFormat: o.Format, StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx)}
 	default:
-		return nil, types.CompileError{Err: fmt.Errorf("unknown jsonschema type %q", typeName), Path: ctx.CurrentPositionRef()}
+		return nil, types.CompileError{Err: fmt.Errorf("unknown jsonschema type %q", typeName), Path: ctx.CurrentRefPointer()}
 	}
 
 	if aliasedType != nil {
@@ -281,7 +281,7 @@ func (o Object) buildLangStruct(ctx *compile.Context, flags map[common.SchemaTag
 	// regular properties
 	for _, entry := range o.Properties.Entries() {
 		ctx.Logger.Trace("Object property", "name", entry.Key)
-		ref := ctx.CurrentPositionRef("properties", entry.Key)
+		ref := ctx.CurrentRefPointer("properties", entry.Key)
 		prm := lang.NewGolangTypePromise(ref, nil)
 		ctx.PutPromise(prm)
 
@@ -309,7 +309,7 @@ func (o Object) buildLangStruct(ctx *compile.Context, flags map[common.SchemaTag
 		case 0: // "additionalProperties:" is an object
 			// TODO: handle $ref in AdditionalProperties items
 			ctx.Logger.Trace("Object additional properties", "type", "object")
-			ref := ctx.CurrentPositionRef("additionalProperties")
+			ref := ctx.CurrentRefPointer("additionalProperties")
 			prm := lang.NewGolangTypePromise(ref, nil)
 			ctx.PutPromise(prm)
 			f := lang.GoStructField{
@@ -377,7 +377,7 @@ func (o Object) buildLangArray(ctx *compile.Context, flags map[common.SchemaTag]
 	switch {
 	case o.Items != nil && o.Items.Selector == 0: // Only one "type:" of items
 		ctx.Logger.Trace("Object items", "typesCount", "single")
-		ref := ctx.CurrentPositionRef("items")
+		ref := ctx.CurrentRefPointer("items")
 		prm := lang.NewGolangTypePromise(ref, nil)
 		ctx.PutPromise(prm)
 		res.ItemsType = prm
@@ -429,19 +429,19 @@ func (o Object) buildUnionStruct(ctx *compile.Context, flags map[common.SchemaTa
 	ctx.PutListPromise(messagesPrm)
 
 	res.Fields = lo.Times(len(o.OneOf), func(index int) lang.GoStructField {
-		ref := ctx.CurrentPositionRef("oneOf", strconv.Itoa(index))
+		ref := ctx.CurrentRefPointer("oneOf", strconv.Itoa(index))
 		prm := lang.NewGolangTypePromise(ref, nil)
 		ctx.PutPromise(prm)
 		return lang.GoStructField{Type: &lang.GoPointer{Type: prm}}
 	})
 	res.Fields = append(res.Fields, lo.Times(len(o.AnyOf), func(index int) lang.GoStructField {
-		ref := ctx.CurrentPositionRef("anyOf", strconv.Itoa(index))
+		ref := ctx.CurrentRefPointer("anyOf", strconv.Itoa(index))
 		prm := lang.NewGolangTypePromise(ref, nil)
 		ctx.PutPromise(prm)
 		return lang.GoStructField{Type: &lang.GoPointer{Type: prm}}
 	})...)
 	res.Fields = append(res.Fields, lo.Times(len(o.AllOf), func(index int) lang.GoStructField {
-		ref := ctx.CurrentPositionRef("allOf", strconv.Itoa(index))
+		ref := ctx.CurrentRefPointer("allOf", strconv.Itoa(index))
 		prm := lang.NewGolangTypePromise(ref, nil)
 		ctx.PutPromise(prm)
 		return lang.GoStructField{Type: prm}

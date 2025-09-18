@@ -55,7 +55,7 @@ type operationBindings struct {
 func (pb ProtoBuilder) BuildChannelBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	var bindings channelBindings
 	if err = types.UnmarshalRawMessageUnion2(rawData, &bindings); err != nil {
-		err = types.CompileError{Err: err, Path: ctx.CurrentPositionRef(), Proto: pb.Protocol()}
+		err = types.CompileError{Err: err, Path: ctx.CurrentRefPointer(), Proto: pb.Protocol()}
 		return
 	}
 
@@ -93,7 +93,7 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *compile.Context, rawData types.
 func (pb ProtoBuilder) BuildOperationBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	var bindings operationBindings
 	if err = types.UnmarshalRawMessageUnion2(rawData, &bindings); err != nil {
-		err = types.CompileError{Err: err, Path: ctx.CurrentPositionRef(), Proto: pb.Protocol()}
+		err = types.CompileError{Err: err, Path: ctx.CurrentRefPointer(), Proto: pb.Protocol()}
 		return
 	}
 
@@ -120,7 +120,7 @@ type messageBindings struct {
 func (pb ProtoBuilder) BuildMessageBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	var bindings messageBindings
 	if err = types.UnmarshalRawMessageUnion2(rawData, &bindings); err != nil {
-		err = types.CompileError{Err: err, Path: ctx.CurrentPositionRef(), Proto: pb.Protocol()}
+		err = types.CompileError{Err: err, Path: ctx.CurrentRefPointer(), Proto: pb.Protocol()}
 		return
 	}
 

@@ -25,9 +25,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bdragon300/go-asyncapi/internal/log"
-
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
+	"github.com/bdragon300/go-asyncapi/internal/log"
 
 	"github.com/samber/lo"
 

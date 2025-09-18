@@ -11,10 +11,9 @@ import (
 	"github.com/samber/lo"
 )
 
-// ErrNotDefined is returned when the template try to use a type, that is not defined yet,
-// so the file with its definition is unknown. See [manager.NamespaceManager] and “goDef”, “def” template functions
-// documentation for more information.
-var ErrNotDefined = errors.New("not defined")
+// ErrNotPinned is occurred when the object has not been pinned to any output file prior to importing it in template code.
+// Without pinning we don't know the package where to import this object from.
+var ErrNotPinned = errors.New("not pinned or declared before usage")
 
 type importsManager interface {
 	Imports() []manager.ImportItem

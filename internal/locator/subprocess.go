@@ -27,7 +27,9 @@ type Subprocess struct {
 	// If set, ShutdownTimeout is the time to wait for the command to finish after the SIGTERM signal is sent before
 	// killing it with a SIGKILL signal.
 	ShutdownTimeout time.Duration
-	Logger          *log.Logger
+	// RootDirectory is the base directory to locate the file paths. Not used if empty.
+	RootDirectory string
+	Logger        *log.Logger
 }
 
 type subprocessCommand struct {
@@ -35,6 +37,33 @@ type subprocessCommand struct {
 	stdin   io.ReadWriter
 	stdout  io.ReadWriter
 	stderr  io.ReadWriter
+}
+
+// ResolveURL joins the [jsonpointer.JSONPointer] to the base document and ref inside it and returns the pointer to the
+// referenced document.
+//
+// If target is absolute (absolute filesystem path or URL), it is returned as is. If target is relative, it is joined to the base
+// document location (filesystem path or URL).
+//
+// Examples:
+//
+//	Base: http://example.com/schemas/root.json#/components/schemas/A
+//	Target: ../common.json#/components/schemas/B
+//	Result: http://example.com/schemas/common.json#/components/schemas/B
+//
+//	Base: /home/user/schemas/root.json#/components/schemas/A
+//	Target: ../common.json#/components/schemas/B
+//	Result: /home/user/schemas/common.json#/components/schemas/B
+//
+//	Base: http://example.com/schemas/root.json#/components/schemas/A
+//	Target: /home/user/schemas/common.json#/components/schemas/B
+//	Result: /home/user/schemas/common.json#/components/schemas/B
+//
+//	Base: /home/user/schemas/root.json#/components/schemas/A
+//	Target: http://example.com/schemas/common.json#/components/schemas/B
+//	Result: http://example.com/schemas/common.json#/components/schemas/B
+func (r Subprocess) ResolveURL(base, target *jsonpointer.JSONPointer) (*jsonpointer.JSONPointer, error) {
+	return joinBase(r.RootDirectory, base, target)
 }
 
 // Locate reads the given document URI by running the command specified in the CommandLine field. Function blocks

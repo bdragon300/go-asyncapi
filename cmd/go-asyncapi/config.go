@@ -57,7 +57,7 @@ type (
 
 	toolConfigLocator struct {
 		AllowRemoteReferences bool          `yaml:"allowRemoteReferences"`
-		SearchDirectory       string        `yaml:"searchDirectory"`
+		RootDirectory         string        `yaml:"rootDirectory"`
 		Timeout               time.Duration `yaml:"timeout"`
 		Command               string        `yaml:"command"`
 	}
@@ -210,7 +210,7 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 	}
 
 	res.Locator.AllowRemoteReferences = coalesce(userConf.Locator.AllowRemoteReferences, defaultConf.Locator.AllowRemoteReferences)
-	res.Locator.SearchDirectory = coalesce(userConf.Locator.SearchDirectory, defaultConf.Locator.SearchDirectory)
+	res.Locator.RootDirectory = coalesce(userConf.Locator.RootDirectory, defaultConf.Locator.RootDirectory)
 	res.Locator.Timeout = coalesce(userConf.Locator.Timeout, defaultConf.Locator.Timeout)
 	res.Locator.Command = coalesce(userConf.Locator.Command, defaultConf.Locator.Command)
 

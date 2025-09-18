@@ -8,7 +8,6 @@ layout:
 
 locator:
   timeout: 30s
-  searchDirectory: .
 
 code:
   preambleTemplate: preamble.tmpl

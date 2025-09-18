@@ -131,7 +131,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 				return "", fmt.Errorf("cannot pin nil")
 			}
 			if _, ok := object.(pinnable); !ok {
-				return "", fmt.Errorf("type %T cannot be pinned", object)
+				return "", fmt.Errorf("type %T is not pinnable", object)
 			}
 			renderManager.NamespaceManager.DeclareArtifact(object, renderManager, false)
 			return "", nil
@@ -203,7 +203,7 @@ type golangReferenceType interface {
 
 // templateGoUsage returns a Go code snippet that represents the usage of the given Go type. If this type is defined
 // in other module, the necessary import is also added to the current file and the returned value contains the package
-// name as well. If the type is not defined yet, it returns ErrNotDefined.
+// name as well. If the type is not defined yet, it returns ErrNotPinned.
 //
 // Type usage snippet uses for example in function parameters of this type, variable definitions of this type, etc.
 //
@@ -526,12 +526,12 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c l
 
 // qualifiedTypeGeneratedPackage returns the package name or alias of module where the object is defined to use this name
 // further in the generated code. If object is already defined in *current module*, returns empty string with no error.
-// If we don't know where the object is defined, returns ErrNotDefined.
+// If we don't know where the object is defined, returns ErrNotPinned.
 func qualifiedTypeGeneratedPackage(mng *manager.TemplateRenderManager, obj common.Artifact) (string, error) {
 	d, found := mng.NamespaceManager.FindArtifact(obj)
 	if !found {
 		if v, ok := obj.(pinnable); ok && v.Pinnable() {
-			return "", ErrNotDefined
+			return "", ErrNotPinned
 		}
 		return "", nil // Type is not supposed to be found in the generated code (e.g. Go built-in types)
 	}
@@ -556,7 +556,7 @@ func qualifiedImplementationGeneratedPackage(mng *manager.TemplateRenderManager,
 		return def.Object == obj
 	})
 	if !found {
-		return "", ErrNotDefined
+		return "", ErrNotPinned
 	}
 
 	// Use the package path from reuse config if it is defined

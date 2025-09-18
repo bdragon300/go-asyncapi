@@ -27,11 +27,11 @@ type InfraCmd struct {
 	Engine     string `arg:"-e,--engine" help:"Target infra engine" placeholder:"NAME"`
 	OutputFile string `arg:"-o,--output" help:"Output file path or '-' to print to stdout. If omitted, the file name depends on selected engine" placeholder:"FILE"`
 
-	TemplateDir      string        `arg:"-T,--template-dir" help:"User templates directory" placeholder:"DIR"`
-	AllowRemoteRefs  bool          `arg:"--allow-remote-refs" help:"Allow locator to fetch the files from remote $ref URLs"`
-	LocatorSearchDir string        `arg:"--locator-search-dir" help:"Directory to search the documents for [default: current working directory]" placeholder:"PATH"`
-	LocatorTimeout   time.Duration `arg:"--locator-timeout" help:"Timeout for locator to read a document. Format: 30s, 2m, etc." placeholder:"DURATION"`
-	LocatorCommand   string        `arg:"--locator-command" help:"Custom locator command to use instead of built-in locator" placeholder:"COMMAND"`
+	TemplateDir     string        `arg:"-T,--template-dir" help:"User templates directory" placeholder:"DIR"`
+	AllowRemoteRefs bool          `arg:"--allow-remote-refs" help:"Allow locator to fetch the files from remote $ref URLs"`
+	LocatorRootDir  string        `arg:"--locator-root-dir" help:"Root directory to search the documents" placeholder:"PATH"`
+	LocatorTimeout  time.Duration `arg:"--locator-timeout" help:"Timeout for locator to read a document. Format: 30s, 2m, etc." placeholder:"DURATION"`
+	LocatorCommand  string        `arg:"--locator-command" help:"Custom locator command to use instead of built-in locator" placeholder:"COMMAND"`
 }
 
 func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
@@ -144,7 +144,7 @@ func cliInfraMergeConfig(globalConfig toolConfig, cmd *InfraCmd) (toolConfig, er
 	res.Code.TemplatesDir = coalesce(cmd.TemplateDir, globalConfig.Code.TemplatesDir)
 
 	res.Locator.AllowRemoteReferences = coalesce(cmd.AllowRemoteRefs, globalConfig.Locator.AllowRemoteReferences)
-	res.Locator.SearchDirectory = coalesce(cmd.LocatorSearchDir, globalConfig.Locator.SearchDirectory)
+	res.Locator.RootDirectory = coalesce(cmd.LocatorRootDir, globalConfig.Locator.RootDirectory)
 	res.Locator.Timeout = coalesce(cmd.LocatorTimeout, globalConfig.Locator.Timeout)
 	res.Locator.Command = coalesce(cmd.LocatorCommand, globalConfig.Locator.Command)
 

@@ -82,7 +82,7 @@ func (s Server) build(ctx *compile.Context, serverKey string) (common.Artifact, 
 			},
 		}
 
-		ref := ctx.CurrentPositionRef("bindings")
+		ref := ctx.CurrentRefPointer("bindings")
 		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, nil)
 		ctx.PutPromise(res.BindingsPromise)
 	}
@@ -90,7 +90,7 @@ func (s Server) build(ctx *compile.Context, serverKey string) (common.Artifact, 
 	// Server variables
 	for _, v := range s.Variables.Entries() {
 		ctx.Logger.Trace("Server variable", "name", v.Key)
-		ref := ctx.CurrentPositionRef("variables", v.Key)
+		ref := ctx.CurrentRefPointer("variables", v.Key)
 		prm := lang.NewPromise[*render.ServerVariable](ref, nil)
 		ctx.PutPromise(prm)
 		res.VariablesPromises.Set(v.Key, prm)

@@ -39,8 +39,8 @@ import (
 	"time"
 
 	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
-
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
+
 	"github.com/bdragon300/go-asyncapi/internal/log"
 
 	"gopkg.in/yaml.v3"
@@ -76,8 +76,8 @@ func (c *Document) AddArtifact(a common.Artifact) {
 	c.artifacts = append(c.artifacts, a)
 }
 
-func (c *Document) AddExternalRef(ref *jsonpointer.JSONPointer) {
-	c.externalRefs = append(c.externalRefs, ref)
+func (c *Document) AddExternalRef(r *jsonpointer.JSONPointer) {
+	c.externalRefs = append(c.externalRefs, r)
 }
 
 func (c *Document) AddPromise(p common.ObjectPromise) {

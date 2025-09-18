@@ -75,7 +75,7 @@ func (a AsyncAPI) build(ctx *compile.Context) (*render.AsyncAPI, error) {
 	}
 
 	if a.Asyncapi == "" || !semver.IsValid("v"+a.Asyncapi) {
-		return nil, types.CompileError{Err: fmt.Errorf("bad asyncapi version: %q", a.Asyncapi), Path: ctx.CurrentPositionRef()}
+		return nil, types.CompileError{Err: fmt.Errorf("bad asyncapi version: %q", a.Asyncapi), Path: ctx.CurrentRefPointer()}
 	}
 	if semver.Compare("v"+a.Asyncapi, "v"+minAsyncAPIVersion) < 0 {
 		ctx.Logger.Warn("AsyncAPI version is not supported by the go-asyncapi, the result may contain errors", "version", a.Asyncapi, "minVersion", minAsyncAPIVersion)

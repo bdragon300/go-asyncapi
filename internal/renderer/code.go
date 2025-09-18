@@ -34,7 +34,7 @@ func RenderArtifacts(queue []RenderQueueItem, mng *manager.TemplateRenderManager
 			logger.Trace("-> Render file name expression", "object", item.Object.String(), "template", item.LayoutItem.Render.File)
 			fileName, err := renderObjectInlineTemplate(item, item.LayoutItem.Render.File, mng)
 			switch {
-			case errors.Is(err, tmpl.ErrNotDefined):
+			case errors.Is(err, tmpl.ErrNotPinned):
 				// Template can't be rendered right now due to unknown object definition, postpone it
 				postponed = append(postponed, item)
 				logger.Trace(
@@ -52,7 +52,7 @@ func RenderArtifacts(queue []RenderQueueItem, mng *manager.TemplateRenderManager
 			mng.BeginFile(fileName, item.LayoutItem.Render.Package)
 			err = renderObject(item, item.LayoutItem.Render.Template, mng)
 			switch {
-			case errors.Is(err, tmpl.ErrNotDefined):
+			case errors.Is(err, tmpl.ErrNotPinned):
 				// Some objects needed by template code have not been defined and therefore, not in namespace yet.
 				// Postpone this run to the end in hope that next runs will define these objects.
 				item.Err = fmt.Errorf("%s: %w", item.Object.String(), err)
