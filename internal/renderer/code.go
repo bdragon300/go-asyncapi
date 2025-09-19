@@ -25,7 +25,6 @@ func RenderArtifacts(queue []RenderQueueItem, mng *manager.TemplateRenderManager
 	var postponed []RenderQueueItem
 
 	objectsCount := len(queue)
-	logger.Debug("Objects selected", "count", objectsCount)
 	for len(queue) > 0 {
 		for _, item := range queue {
 			logger.Debug("Render", "object", item.Object.String())

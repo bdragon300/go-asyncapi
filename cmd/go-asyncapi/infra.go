@@ -88,13 +88,16 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	if err = tplLoader.ParseRecursive(renderManager); err != nil {
 		return fmt.Errorf("parse templates: %w", err)
 	}
-	allObjects := selector.GatherArtifacts(lo.Values(documents)...)
-	logger.Debug("Select objects")
-	renderQueue := selectArtifacts(allObjects, renderOpts.Layout)
+	allArtifacts := selector.GatherArtifacts(lo.Values(documents)...)
+	visibleArtifacts := lo.Filter(allArtifacts, func(a common.Artifact, _ int) bool {
+		return a.Visible()
+	})
+	logger.Debug("Rendering the artifacts", "allArtifacts", len(allArtifacts), "visibleArtifacts", len(visibleArtifacts))
+
 	// TODO: check if all server variables are set in config, error if not
 	serverConfig := getInfraServerConfig(cmdConfig.Infra.ServerOpts)
 
-	if err = renderer.RenderInfra(renderQueue, activeProtocols, cmdConfig.Infra.OutputFile, serverConfig, renderManager); err != nil {
+	if err = renderer.RenderInfra(visibleArtifacts, activeProtocols, cmdConfig.Infra.OutputFile, serverConfig, renderManager); err != nil {
 		return fmt.Errorf("render infra: %w", err)
 	}
 

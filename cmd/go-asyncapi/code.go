@@ -169,6 +169,7 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 	allArtifacts := selector.GatherArtifacts(lo.Values(documents)...)
 	logger.Debug("Select artifacts")
 	renderQueue := selectArtifacts(allArtifacts, renderOpts.Layout)
+	logger.Debug("Rendering the artifacts", "allArtifacts", len(allArtifacts), "selectedArtifacts", len(renderQueue))
 	if err = renderer.RenderArtifacts(renderQueue, renderManager); err != nil {
 		return fmt.Errorf("render artifacts: %w", err)
 	}

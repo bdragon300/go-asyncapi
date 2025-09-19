@@ -150,7 +150,7 @@ func cliDiagram(cmd *DiagramCmd, globalConfig toolConfig) error {
 		visibleArtifacts := lo.Filter(allArtifacts, func(a common.Artifact, _ int) bool {
 			return a.Visible()
 		})
-		logger.Debug("Render diagram file", "name", cmdConfig.Diagram.OutputFile, "objects", len(visibleArtifacts))
+		logger.Debug("Rendering artifacts", "file", cmdConfig.Diagram.OutputFile, "allArtifacts", len(allArtifacts), "visibleArtifacts", len(visibleArtifacts))
 		fileName := cmdConfig.Diagram.OutputFile
 		if fileName == "" {
 			fileName = strings.TrimSuffix(path.Base(cmd.Document), path.Ext(cmd.Document)) + fileExtension

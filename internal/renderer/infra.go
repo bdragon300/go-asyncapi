@@ -7,15 +7,11 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
-	"github.com/samber/lo"
 )
 
-func RenderInfra(queue []RenderQueueItem, activeProtocols []string, outputFileName string, serverConfig []common.ConfigInfraServerOpt, mng *manager.TemplateRenderManager) error {
+func RenderInfra(objects []common.Artifact, activeProtocols []string, outputFileName string, serverConfig []common.ConfigInfraServerOpt, mng *manager.TemplateRenderManager) error {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
-	objects := lo.Map(queue, func(item RenderQueueItem, _ int) common.Artifact {
-		return item.Object
-	})
 	logger.Debug("Objects selected", "count", len(objects))
 	ctx := tmpl.InfraTemplateContext{
 		ServerConfig:    serverConfig,
