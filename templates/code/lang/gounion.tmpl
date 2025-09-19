@@ -5,7 +5,7 @@
 
 func (u *{{ . | goIDUpper }}) UnmarshalJSON(data []byte) (err error) {
 {{- range .Fields}}
-    if err = {{goQual "encoding/json.Unmarshal"}}(bytes, {{if .Type.CanBeAddressed}}&{{end}}u.{{.Type.TypeName}}); err == nil {
+    if err = {{goQual "encoding/json.Unmarshal"}}(data, {{if .Type.CanBeAddressed}}&{{end}}u.{{.Type.Name}}); err == nil {
         return
     }
 {{- end}}
