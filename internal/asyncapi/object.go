@@ -29,8 +29,8 @@ type Object struct {
 	Type                 *types.Union2[string, []string]            `json:"type" yaml:"type"`
 	AdditionalItems      *types.Union2[Object, bool]                `json:"additionalItems" yaml:"additionalItems"`
 	AdditionalProperties *types.Union2[Object, bool]                `json:"additionalProperties" yaml:"additionalProperties"`
-	AllOf                []Object                                   `json:"allOf" yaml:"allOf" cgen:"definition"`
-	AnyOf                []Object                                   `json:"anyOf" yaml:"anyOf" cgen:"definition"`
+	AllOf                []Object                                   `json:"allOf" yaml:"allOf" cgen:"selectable"`
+	AnyOf                []Object                                   `json:"anyOf" yaml:"anyOf" cgen:"selectable"`
 	Const                *types.Union2[json.RawMessage, yaml.Node]  `json:"const" yaml:"const"`
 	Contains             *Object                                    `json:"contains" yaml:"contains"`
 	Default              *types.Union2[json.RawMessage, yaml.Node]  `json:"default" yaml:"default"`
@@ -57,7 +57,7 @@ type Object struct {
 	Minimum              *json.Number                               `json:"minimum" yaml:"minimum"`
 	MultipleOf           *json.Number                               `json:"multipleOf" yaml:"multipleOf"`
 	Not                  *Object                                    `json:"not" yaml:"not"`
-	OneOf                []Object                                   `json:"oneOf" yaml:"oneOf" cgen:"definition"`
+	OneOf                []Object                                   `json:"oneOf" yaml:"oneOf" cgen:"selectable"`
 	Pattern              string                                     `json:"pattern" yaml:"pattern"`
 	PatternProperties    types.OrderedMap[string, Object]           `json:"patternProperties" yaml:"patternProperties"` // Mapping regex->schema
 	Properties           types.OrderedMap[string, Object]           `json:"properties" yaml:"properties"`
@@ -215,14 +215,13 @@ func (o Object) buildGolangType(ctx *compile.Context, flags map[common.SchemaTag
 	}
 
 	if aliasedType != nil {
-		_, isComponent := flags[common.SchemaTagComponent]
-		_, hasDefinition := flags[common.SchemaTagDefinition]
+		_, isSelectable := flags[common.SchemaTagSelectable]
 		golangType = &lang.GoTypeDefinition{
 			BaseType: lang.BaseType{
 				OriginalName:  ctx.GenerateObjName(o.Title, ""),
 				Description:   o.Description,
-				HasDefinition: hasDefinition,
-				ArtifactKind:  lo.Ternary(isComponent, common.ArtifactKindSchema, common.ArtifactKindOther),
+				HasDefinition: isSelectable,
+				ArtifactKind:  lo.Ternary(isSelectable, common.ArtifactKindSchema, common.ArtifactKindOther),
 			},
 			RedefinedType: aliasedType,
 		}
@@ -247,15 +246,14 @@ func (o Object) guessObjectType(ctx *compile.Context) *types.Union2[string, []st
 }
 
 func (o Object) buildLangStruct(ctx *compile.Context, flags map[common.SchemaTag]string) (*lang.GoStruct, error) {
-	_, hasDefinition := flags[common.SchemaTagDefinition]
-	_, isComponent := flags[common.SchemaTagComponent]
+	_, isSelectable := flags[common.SchemaTagSelectable]
 	objName, _ := lo.Coalesce(o.XGoName, o.Title)
 	res := lang.GoStruct{
 		BaseType: lang.BaseType{
 			OriginalName:  ctx.GenerateObjName(objName, ""),
 			Description:   o.Description,
-			HasDefinition: hasDefinition,
-			ArtifactKind:  lo.Ternary(isComponent, common.ArtifactKindSchema, common.ArtifactKindOther),
+			HasDefinition: isSelectable,
+			ArtifactKind:  lo.Ternary(isSelectable, common.ArtifactKindSchema, common.ArtifactKindOther),
 		},
 		StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx),
 	}
@@ -360,15 +358,14 @@ func (o Object) buildLangStruct(ctx *compile.Context, flags map[common.SchemaTag
 }
 
 func (o Object) buildLangArray(ctx *compile.Context, flags map[common.SchemaTag]string) (*lang.GoArray, error) {
-	_, hasDefinition := flags[common.SchemaTagDefinition]
-	_, isComponent := flags[common.SchemaTagComponent]
+	_, isSelectable := flags[common.SchemaTagSelectable]
 	objName, _ := lo.Coalesce(o.XGoName, o.Title)
 	res := lang.GoArray{
 		BaseType: lang.BaseType{
 			OriginalName:  ctx.GenerateObjName(objName, ""),
 			Description:   o.Description,
-			HasDefinition: hasDefinition,
-			ArtifactKind:  lo.Ternary(isComponent, common.ArtifactKindSchema, common.ArtifactKindOther),
+			HasDefinition: isSelectable,
+			ArtifactKind:  lo.Ternary(isSelectable, common.ArtifactKindSchema, common.ArtifactKindOther),
 		},
 		ItemsType:             nil,
 		StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx),
@@ -406,16 +403,15 @@ func (o Object) buildLangArray(ctx *compile.Context, flags map[common.SchemaTag]
 }
 
 func (o Object) buildUnionStruct(ctx *compile.Context, flags map[common.SchemaTag]string) (*lang.UnionStruct, error) {
-	_, hasDefinition := flags[common.SchemaTagDefinition]
-	_, isComponent := flags[common.SchemaTagComponent]
+	_, isSelectable := flags[common.SchemaTagSelectable]
 	objName, _ := lo.Coalesce(o.XGoName, o.Title)
 	res := lang.UnionStruct{
 		GoStruct: lang.GoStruct{
 			BaseType: lang.BaseType{
 				OriginalName:  ctx.GenerateObjName(objName, ""),
 				Description:   o.Description,
-				HasDefinition: hasDefinition,
-				ArtifactKind:  lo.Ternary(isComponent, common.ArtifactKindSchema, common.ArtifactKindOther),
+				HasDefinition: isSelectable,
+				ArtifactKind:  lo.Ternary(isSelectable, common.ArtifactKindSchema, common.ArtifactKindOther),
 			},
 			StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx),
 		},

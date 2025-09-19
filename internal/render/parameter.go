@@ -23,7 +23,7 @@ func (p *Parameter) Kind() common.ArtifactKind {
 }
 
 func (p *Parameter) Selectable() bool {
-	return p.Type.Selectable()
+	return true
 }
 
 func (p *Parameter) Visible() bool {

@@ -33,7 +33,7 @@ type BaseType struct {
 	HasDefinition bool
 	// Import is an optional external (or runtime) module to import a type from. E.g. "github.com/your/module"
 	Import string
-	// ArtifactKind for types in [lang] package has values ArtifactKindOther or ArtifactKindSchema
+	// ArtifactKind describes what kind of artifact this type represents.
 	ArtifactKind common.ArtifactKind
 }
 
@@ -46,7 +46,7 @@ func (b *BaseType) Kind() common.ArtifactKind {
 }
 
 func (b *BaseType) Selectable() bool {
-	return b.HasDefinition
+	return b.HasDefinition && b.ArtifactKind != common.ArtifactKindOther
 }
 
 func (b *BaseType) Visible() bool {

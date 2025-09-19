@@ -3,6 +3,7 @@ package compile
 import (
 	"fmt"
 	"path"
+	"strings"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
@@ -129,7 +130,12 @@ func (c *Context) GenerateObjName(name, suffix string) string {
 	if name == "" {
 		name = c.Stack.Top().Key
 	}
-	return utils.ToGolangName(name, true) + suffix
+	if res := utils.ToGolangName(name, true); res != "" {
+		return res + suffix
+	}
+	// Fallback option when name is empty which means the string contains only invalid characters (e.g. "!!!" or array index).
+	// Use the full json path instead.
+	return utils.ToGolangName(strings.Join(c.pathStack(), "_"), true) + suffix
 }
 
 func (c *Context) GetProtocolBuilder(protocol string) (ProtocolBuilder, bool) {

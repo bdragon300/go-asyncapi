@@ -57,7 +57,7 @@ func RenderArtifacts(queue []RenderQueueItem, mng *manager.TemplateRenderManager
 				// Postpone this run to the end in hope that next runs will define these objects.
 				item.Err = fmt.Errorf("%s: %w", item.Object.String(), err)
 				logger.Trace(
-					"--> Postpone the object because some the definitions of the object it uses are not known yet",
+					"--> Postpone the object because some its dependencies are not pinned or declared yet",
 					"object", item.Object.String(),
 				)
 				postponed = append(postponed, item)
