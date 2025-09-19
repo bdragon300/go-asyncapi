@@ -2,17 +2,18 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
 	"path"
 	"time"
 
+	stdLog "log"
+
 	"github.com/bdragon300/go-asyncapi/assets"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/types"
-
-	stdLog "log"
 
 	chlog "github.com/charmbracelet/log"
 
@@ -77,21 +78,11 @@ func main() {
 
 	logger := log.GetLogger("")
 	logger.Info("Logging to stderr", "level", chlog.GetLevel())
-	builtinConfig, err := loadConfig(assets.AssetFS, defaultConfigFileName)
+	mergedConfig, err := loadFullConfig(cliArgs)
 	if err != nil {
-		logger.Error("Cannot load built-in config", "error", err)
+		logger.Error("Cannot load configuration", "error", err)
 		os.Exit(1)
 	}
-	var userConfig toolConfig
-	if cliArgs.ConfigFile != "" {
-		log.GetLogger("").Debug("Load config", "file", cliArgs.ConfigFile)
-		userConfig, err = loadConfig(os.DirFS(path.Dir(cliArgs.ConfigFile)), path.Base(cliArgs.ConfigFile))
-		if err != nil {
-			logger.Error("Cannot load user config", "error", err)
-			os.Exit(1)
-		}
-	}
-	mergedConfig := mergeConfig(builtinConfig, userConfig)
 
 	switch {
 	case cliArgs.CodeCmd != nil:
@@ -121,4 +112,33 @@ func main() {
 	}
 
 	chlog.Info("Done")
+}
+
+func loadFullConfig(cliArgs cli) (toolConfig, error) {
+	logger := log.GetLogger("")
+	builtinConfig, err := loadConfig(assets.AssetFS, defaultConfigFileName)
+	if err != nil {
+		return toolConfig{}, fmt.Errorf("load built-in config, this is a bug: %w", err)
+	}
+
+	fileName := cliArgs.ConfigFile
+	if fileName == "" {
+		if s, err := os.Stat("go-asyncapi.yaml"); err == nil && !s.IsDir() {
+			fileName = "go-asyncapi.yaml"
+		} else if s, err := os.Stat("go-asyncapi.yml"); err == nil && !s.IsDir() {
+			fileName = "go-asyncapi.yml"
+		}
+	}
+
+	var userConfig toolConfig
+	if fileName != "" {
+		logger.Debug("Loading user config", "file", fileName)
+		if userConfig, err = loadConfig(os.DirFS(path.Dir(fileName)), path.Base(fileName)); err != nil {
+			return toolConfig{}, fmt.Errorf("load config file %q: %w", fileName, err)
+		}
+	} else {
+		logger.Debug("No user config, using only built-in defaults")
+	}
+
+	return mergeConfig(builtinConfig, userConfig), err
 }

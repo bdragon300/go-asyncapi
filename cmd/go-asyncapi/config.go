@@ -168,29 +168,23 @@ func (t toolConfigDiagramD2DagreOpts) ToD2PluginOpts() ([]byte, error) {
 	return json.Marshal(out)
 }
 
-// loadConfig loads and parses the configuration file from the given filesystem.
-func loadConfig(filesystem fs.FS, fileName string) (toolConfig, error) {
-	f, err := filesystem.Open(fileName)
+// loadConfig loads and parses the configuration file with the given baseName from the given file system.
+func loadConfig(fileFS fs.FS, baseName string) (res toolConfig, err error) {
+	f, err := fileFS.Open(baseName)
 	if err != nil {
-		return toolConfig{}, fmt.Errorf("open config file: %w", err)
+		return toolConfig{}, fmt.Errorf("open: %w", err)
 	}
 	defer f.Close()
 
-	return parseConfigFile(f)
-}
-
-func parseConfigFile(f io.Reader) (toolConfig, error) {
-	var conf toolConfig
-
 	buf, err := io.ReadAll(f)
 	if err != nil {
-		return conf, fmt.Errorf("cannot read config file: %w", err)
+		return toolConfig{}, fmt.Errorf("read: %w", err)
 	}
 
-	if err = yaml.Unmarshal(buf, &conf); err != nil {
-		return conf, fmt.Errorf("cannot parse YAML config file: %w", err)
+	if err = yaml.Unmarshal(buf, &res); err != nil {
+		return toolConfig{}, fmt.Errorf("parse YAML: %w", err)
 	}
-	return conf, nil
+	return
 }
 
 // mergeConfig merges the default configuration with the user-provided one.
