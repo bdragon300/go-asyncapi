@@ -25,4 +25,7 @@ go.work.sum
 /docs/go-asyncapi/public
 /docs/go-asyncapi/resources
 .hugo_build.lock
+
+# Other files
 /tmp
+/implementations_go
