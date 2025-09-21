@@ -65,20 +65,20 @@ type Message struct {
 	ProtoMessages []*ProtoMessage
 }
 
-// HeadersType returns a Go type or lang.Ref of headers defined for message in the document.
+// HeadersType returns a Go type of headers defined for message in the document.
 // If headers is not set, returns the HeadersTypeDefault.
 func (m *Message) HeadersType() common.GolangType {
 	if m.HeadersTypePromise != nil {
-		return m.HeadersTypePromise.T()
+		return common.DerefArtifact(m.HeadersTypePromise.T()).(common.GolangType)
 	}
 	return m.HeadersTypeDefault
 }
 
-// PayloadType returns a Go type or lang.Ref of payload defined for message in the document.
+// PayloadType returns a Go type of payload defined for message in the document.
 // If payload is not set, returns the PayloadTypeDefault.
 func (m *Message) PayloadType() common.GolangType {
 	if m.PayloadTypePromise != nil {
-		return m.PayloadTypePromise.T()
+		return common.DerefArtifact(m.PayloadTypePromise.T()).(common.GolangType)
 	}
 	return m.PayloadTypeDefault
 }

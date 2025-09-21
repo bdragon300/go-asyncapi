@@ -61,7 +61,7 @@ type Channel struct {
 	ProtoChannels []*ProtoChannel
 }
 
-// Parameters returns a list of Parameter or []lang.Ref to Parameter.
+// Parameters returns a map of channel's Parameter objects by names which they defined in channel.
 //
 // It may return lang.Ref objects, because a key the parameter object is defined with in channel matters and
 // is used in channel address template, therefore, it should appear in the generated code as well.
@@ -97,7 +97,7 @@ func (c *Channel) SelectProtoObject(protocol string) *ProtoChannel {
 	return nil
 }
 
-// BoundServers returns a list of Server or lang.Ref to Server objects that this channel is bound with.
+// BoundServers returns a list of Server objects that this channel is bound with.
 func (c *Channel) BoundServers() []*Server {
 	if c.Dummy {
 		return nil
@@ -115,7 +115,7 @@ func (c *Channel) BoundServers() []*Server {
 	return res
 }
 
-// BoundMessages returns a list of Message or lang.Ref to Message objects that this channel is bound with.
+// BoundMessages returns a list of Message objects that this channel is bound with.
 func (c *Channel) BoundMessages() []*Message {
 	res := c.Messages()
 	return res
