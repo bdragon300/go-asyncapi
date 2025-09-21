@@ -20,8 +20,6 @@ type renderImplTemplateLoader interface {
 
 func RenderImplementations(objects []common.ImplementationObject, mng *manager.TemplateRenderManager) error {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
-	// TODO: logging
-
 	tplLoader := mng.TemplateLoader.(renderImplTemplateLoader)
 
 	for _, obj := range objects {
@@ -36,9 +34,11 @@ func RenderImplementations(objects []common.ImplementationObject, mng *manager.T
 		if err != nil {
 			return fmt.Errorf("render directory expression: %w", err)
 		}
+		logger.Trace("-> Rendered directory expression", "result", directory)
 
 		pkgName, _ := lo.Coalesce(obj.Config.Package, utils.GetPackageName(directory))
 		ctx = tmpl.ImplTemplateContext{Directory: directory, Package: pkgName, Manifest: obj.Manifest}
+		logger.Trace("-> Resolved package name", "name", pkgName)
 
 		fileNames, err := tplLoader.ParseDir(obj.Manifest.Dir, mng)
 		if err != nil {

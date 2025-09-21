@@ -22,7 +22,7 @@ func (b *Bindings) Name() string {
 }
 
 func (b *Bindings) Kind() common.ArtifactKind {
-	return common.ArtifactKindOther // TODO: separate Bindings from Channel, leaving only the Promise, and make its own 4 ArtifactKinds
+	return common.ArtifactKindOther
 }
 
 func (b *Bindings) Selectable() bool {

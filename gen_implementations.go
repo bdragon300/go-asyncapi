@@ -93,7 +93,7 @@ func render(manifest implementations.ImplManifest, tplLoader *tmpl.TemplateLoade
 				renderManager.BeginFile(normFileName, ctx.Package)
 
 				// Render package header
-				renderManager.Buffer.WriteString(fmt.Sprintf("package %s\n\n", ctx.Package))
+				fmt.Fprintf(renderManager.Buffer, "package %s\n\n", ctx.Package)
 
 				// Render the rest
 				fmt.Printf("-> Render file %s\n", normFileName)

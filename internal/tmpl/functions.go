@@ -459,8 +459,8 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c l
 			logger.Trace("---> GoSimple", "locationPath", locationPath[:pathIdx], "member", memberName, "object", typ.String())
 			if pathIdx >= len(locationPath)-1 { // Primitive types should get addressed by the last locationPath item
 				err = fmt.Errorf(
-					"type %q cannot be resolved further, locationPath: /%s",
-					typ.Name(), // TODO: check if this is correct
+					"primitive type %q does not contain any fields, locationPath: /%s",
+					typ.Name(),
 					strings.Join(locationPath[:pathIdx], "/"),
 				)
 				return
@@ -474,7 +474,7 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c l
 			t := typ.UnwrapGolangType()
 			if lo.IsNil(t) {
 				err = fmt.Errorf(
-					"type %T does not contain a wrapped GolangType, locationPath: /%s",
+					"wrapper type %T contains nil, locationPath: /%s",
 					typ,
 					strings.Join(locationPath[:pathIdx], "/"),
 				)
@@ -490,7 +490,7 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c l
 			t := typ.DerefGolangType()
 			if lo.IsNil(t) {
 				err = fmt.Errorf(
-					"type %T does not contain a wrapped GolangType, locationPath: /%s",
+					"reference type %T contains nil, locationPath: /%s",
 					typ,
 					strings.Join(locationPath[:pathIdx], "/"),
 				)
@@ -502,7 +502,7 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c l
 			logger.Trace("---> Unknown type", "locationPath", locationPath[:pathIdx], "object", typ.String(), "type", fmt.Sprintf("%T", typ))
 			err = fmt.Errorf(
 				"type %s is not addressable, locationPath: /%s",
-				typ.Name(), // TODO: check if this is correct
+				typ.Name(),
 				strings.Join(locationPath[:pathIdx], "/"),
 			)
 			return

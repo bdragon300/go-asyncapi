@@ -152,7 +152,7 @@ func (o *Operation) Name() string {
 }
 
 func (o *Operation) Kind() common.ArtifactKind {
-	return common.ArtifactKindOperation // TODO: separate Bindings from Channel, leaving only the Promise, and make its own 4 ArtifactKinds
+	return common.ArtifactKindOperation
 }
 
 func (o *Operation) Selectable() bool {
