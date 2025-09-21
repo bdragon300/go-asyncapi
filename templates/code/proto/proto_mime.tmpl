@@ -1,39 +1,89 @@
 {{- /* dot == render.ProtoMessage */}}
 
 {{define "code/proto/mime/messageEncoder/default"}}
-    {{- if .EffectiveContentType | hasSuffix "yaml"}}
-        {{template "code/proto/mime/messageEncoder/application/yaml" .}}
-    {{- else}}
-        // Default encoder
-        enc := {{goQual "encoding/json.NewEncoder"}}(w)
-        if err := enc.Encode(m.Payload); err != nil {
-            return err
-        }
-    {{- end}}
+    // Default encoder
+    enc := {{goQual "encoding/json.NewEncoder"}}(w)
+    if err := enc.Encode(m.Payload); err != nil {
+        return err
+    }
 {{- end}}
 
 {{define "code/proto/mime/messageDecoder/default"}}
-    {{- if .EffectiveContentType | hasSuffix "yaml"}}
-        {{template "code/proto/mime/messageDecoder/application/yaml" .}}
-    {{- else}}
-        // Default decoder
-        dec := {{goQual "encoding/json.NewDecoder"}}(r)
-        if err := dec.Decode(&m.payload); err != nil {
-            return err
-        }
-    {{- end}}
+    // Default decoder
+    dec := {{goQual "encoding/json.NewDecoder"}}(r)
+    if err := dec.Decode(&m.payload); err != nil {
+        return err
+    }
 {{- end}}
-{{/*TODO: add xml, avro, etc.*/}}
-{{define "code/proto/mime/messageEncoder/application/yaml"}}
+
+{{define "code/proto/mime/messageEncoder/application/binary"}}
+    enc := {{goQual "encoding/gob.NewEncoder"}}(w)
+    if err := enc.Encode(m.Payload); err != nil {
+        return err
+    }
+{{- end}}
+
+{{define "code/proto/mime/messageDecoder/application/binary"}}
+    dec := {{goQual "encoding/gob.NewDecoder"}}(r)
+    if err := dec.Decode(&m.payload); err != nil {
+        return err
+    }
+{{- end}}
+
+{{define "code/proto/mime/messageEncoder/text/plain"}}
+    r := {{ goQual "strings.NewReader" }}(string(m.Payload))
+    if _, err := {{ goQual "io.Copy" }}(w, r); err != nil {
+        return {{ goQual "fmt.Errorf" }}("write message: %w", err)
+    }
+{{- end}}
+
+{{define "code/proto/mime/messageDecoder/text/plain"}}
+    var b {{ goQual "strings.Builder" }}
+    if _, err := {{ goQual "io.Copy" }}(&b, r); err != nil {
+        return {{ goQual "fmt.Errorf" }}("read message: %w", err)
+    }
+    m.payload = {{goPkg .PayloadType}}{{.PayloadType | goIDUpper}}(b.String())
+{{- end}}
+
+{{define "code/proto/mime/messageEncoder/application/x-yaml"}}
     enc := {{goQual "gopkg.in/yaml.v3.NewEncoder"}}(w)
     if err := enc.Encode(m.Payload); err != nil {
         return err
     }
 {{- end}}
 
-{{define "code/proto/mime/messageDecoder/application/yaml"}}
+{{define "code/proto/mime/messageDecoder/application/x-yaml"}}
     dec := {{goQual "gopkg.in/yaml.v3.NewDecoder"}}(r)
     if err := dec.Decode(&m.payload); err != nil {
         return err
     }
 {{- end}}
+
+{{define "code/proto/mime/messageEncoder/text/yaml"}}
+    enc := {{goQual "gopkg.in/yaml.v3.NewEncoder"}}(w)
+    if err := enc.Encode(m.Payload); err != nil {
+        return err
+    }
+{{- end}}
+
+{{define "code/proto/mime/messageDecoder/text/yaml"}}
+    dec := {{goQual "gopkg.in/yaml.v3.NewDecoder"}}(r)
+    if err := dec.Decode(&m.payload); err != nil {
+        return err
+    }
+{{- end}}
+
+{{define "code/proto/mime/messageEncoder/application/xml"}}
+    enc := {{goQual "encoding/xml.NewEncoder"}}(w)
+    if err := enc.Encode(m.Payload); err != nil {
+        return err
+    }
+{{- end}}
+
+{{define "code/proto/mime/messageDecoder/application/xml"}}
+    dec := {{goQual "encoding/xml.NewDecoder"}}(r)
+    if err := dec.Decode(&m.payload); err != nil {
+        return err
+    }
+{{- end}}
+

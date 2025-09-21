@@ -100,6 +100,7 @@ func (m *{{ .InType | goIDUpper }}) Unmarshal{{ .Protocol | goIDUpper }}(r {{goQ
 {{- end}}
 
 {{define "code/proto/message/encoder"}}
+    // MIME type: {{.EffectiveContentType}}
 {{- with tryTmpl (print "code/proto/mime/messageEncoder/" .EffectiveContentType) .}}
     {{.}}
 {{- else}}
@@ -109,6 +110,7 @@ func (m *{{ .InType | goIDUpper }}) Unmarshal{{ .Protocol | goIDUpper }}(r {{goQ
 {{- end}}
 
 {{define "code/proto/message/decoder"}}
+    // MIME type: {{.EffectiveContentType}}
 {{- with tryTmpl (print "code/proto/mime/messageDecoder/" .EffectiveContentType) .}}
     {{.}}
 {{- else}}
