@@ -1,0 +1,38 @@
+{{- /* dot == render.ProtoOperation */}}
+{{define "code/proto/nats/operation/publishMethods/block1"}}
+    envelopeTopic := o.Channel.(interface {
+        Topic() string
+    }).Topic()
+    envelope.SetTopic(envelopeTopic)
+{{- end}}
+
+{{- pin . }}
+
+type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
+    Channel {{ . | goIDUpper }}Channel{{.Protocol | goIDUpper}}
+}
+
+{{template "code/proto/operation/commonMethods" .}}
+{{- if .IsPublisher}}
+    {{template "code/proto/operation/publishMethods" .}}
+{{- end}}
+{{- if .IsSubscriber}}
+    {{template "code/proto/operation/subscribeMethods" .}}
+{{- end}}
+{{template "code/proto/operation/channelInterface" .}}
+
+{{- if or .IsReplyPublisher .IsReplySubscriber}}
+    {{- $innerChannel := .ProtoChannel.Channel}}
+    {{- if .OperationReply.Channel}}{{$innerChannel = .OperationReply.Channel}}{{end}}
+    type {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply struct {
+        Channel {{ . | goIDUpper }}ReplyChannel{{.Protocol | goIDUpper}}
+    }
+    {{- if .IsReplyPublisher}}
+        {{template "code/proto/operation/operationReply/publishMethods" .}}
+    {{- end}}
+    {{- if .IsReplySubscriber}}
+        {{template "code/proto/operation/operationReply/subscribeMethods" .}}
+    {{- end}}
+    {{template "code/proto/operation/operationReply/commonMethods" .}}
+    {{template "code/proto/operation/operationReply/channelInterface" .}}
+{{- end}}

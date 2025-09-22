@@ -1,0 +1,50 @@
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	runNats "github.com/bdragon300/go-asyncapi/run/nats"
+)
+
+type Subscription struct {
+	Client *Client
+	Topic  string
+
+	channelBindings   *runNats.ChannelBindings
+	operationBindings *runNats.OperationBindings
+	ctx               context.Context
+	cancel            context.CancelFunc
+}
+
+func (r *Subscription) Receive(ctx context.Context, cb func(envelope runNats.EnvelopeReader)) (err error) {
+	sub, err := r.Client.SubscribeSync(r.Topic)
+	if err != nil {
+		return fmt.Errorf("subscribe: %w", err)
+	}
+
+	errCh := make(chan error)
+	go func() {
+		defer func() { close(errCh) }()
+		for {
+			msg, err2 := sub.NextMsgWithContext(ctx)
+			if err2 != nil {
+				errCh <- errors.Join(fmt.Errorf("next msg: %w", err))
+				return
+			}
+			cb(NewEnvelopeIn(msg))
+		}
+	}()
+
+	select {
+	case <-r.ctx.Done():
+		err = errors.Join(r.ctx.Err(), sub.Drain()) // Unsubscribe
+		return errors.Join(err, <-errCh)            // Wait for goroutine to finish
+	case err = <-errCh:
+		return err
+	}
+}
+
+func (r *Subscription) Close() error {
+	r.cancel()
+	return nil
+}

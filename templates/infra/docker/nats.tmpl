@@ -1,0 +1,21 @@
+{{/* dot:
+  .Server == render.Server
+  .ServerVariables == []common.ConfigServerVariable
+  */}}
+{{define "infra/docker/nats/services"}}
+  "{{.Server.Name | toQuotable}}{{range .ServerVariables}}_{{.Value | toQuotable}}{{end}}":
+    {{- $port := ($.Server.URL .ServerVariables).Port | default "4222"}}
+    image: nats:latest
+    ports:
+    - "{{$port}}:4222"
+    volumes:
+      - "{{.Server.Name | goID}}{{range .ServerVariables}}_{{.Value | goID}}{{end}}:/data"
+{{- end}}
+
+{{/* dot:
+  .Server == render.Server
+  .ServerVariables == []common.ConfigServerVariable
+  */}}
+{{define "infra/docker/nats/volumes"}}
+  "{{.Server.Name | goID}}{{range .ServerVariables}}_{{.Value | goID}}{{end}}":
+{{- end}}

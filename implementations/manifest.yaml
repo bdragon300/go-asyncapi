@@ -51,3 +51,9 @@
   url: https://pkg.go.dev/net
   dir: ip/std
   default: true
+
+- protocol: nats
+  name: github.com/nats-io/nats.go
+  url: https://github.com/nats-io/nats.go
+  dir: nats/nats-go
+  default: true

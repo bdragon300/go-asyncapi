@@ -1,0 +1,46 @@
+import (
+	"context"
+
+	runNats "github.com/bdragon300/go-asyncapi/run/nats"
+	"github.com/nats-io/nats.go"
+)
+
+func NewClient(serverURL string, extraOpts ...nats.Option)(*Client, error) {
+	// Unfortunately, the official nats client doesn't accept the context object.
+	client, err := nats.Connect(serverURL, extraOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Client{
+		Conn:        client,
+	}, nil
+}
+
+type Client struct {
+	*nats.Conn
+}
+
+func (c *Client) Subscriber(_ context.Context, address string, chb *runNats.ChannelBindings, opb *runNats.OperationBindings) (runNats.Subscriber, error) {
+	ctx2, cancel := context.WithCancel(context.Background())
+	return &Subscription{
+		Client:           c,
+		Topic:            address,
+		channelBindings:  chb,
+		operationBindings: opb,
+		ctx:              ctx2,
+		cancel:           cancel,
+	}, nil
+}
+
+func (c *Client) Publisher(_ context.Context, address string, chb *runNats.ChannelBindings, opb *runNats.OperationBindings) (runNats.Publisher, error) {
+	ctx2, cancel := context.WithCancel(context.Background())
+	return &Publisher{
+		Client:           c,
+		Topic:            address,
+		channelBindings:  chb,
+		operationBindings: opb,
+		ctx:              ctx2,
+		cancel:           cancel,
+	}, nil
+}

@@ -1,0 +1,36 @@
+import (
+	"context"
+
+	runNats "github.com/bdragon300/go-asyncapi/run/nats"
+)
+
+type Publisher struct {
+	Client *Client
+	Topic  string
+
+	channelBindings   *runNats.ChannelBindings
+	operationBindings *runNats.OperationBindings
+	ctx               context.Context
+	cancel            context.CancelFunc
+}
+
+func (p Publisher) Send(ctx context.Context, envelopes ...runNats.EnvelopeWriter) error {
+	for _, env := range envelopes {
+		if err := p.Client.PublishMsg(env.(*EnvelopeOut).Msg); err != nil {
+			return err
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-p.ctx.Done():
+			return p.ctx.Err()
+		default:
+		}
+	}
+	return nil
+}
+
+func (p Publisher) Close() error {
+	p.cancel()
+	return nil
+}

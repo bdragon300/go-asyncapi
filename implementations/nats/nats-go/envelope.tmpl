@@ -1,0 +1,76 @@
+import (
+	"bytes"
+	"io"
+
+	"github.com/bdragon300/go-asyncapi/run"
+	runNats "github.com/bdragon300/go-asyncapi/run/nats"
+)
+
+func NewEnvelopeOut() *EnvelopeOut {
+	return &EnvelopeOut{
+		Msg: &nats.Msg{},
+	}
+}
+
+type EnvelopeOut struct {
+	*nats.Msg
+	messageBindings runNats.MessageBindings
+}
+
+func (e *EnvelopeOut) Write(p []byte) (n int, err error) {
+	e.Data = append(e.Data, p...)
+	return len(p), nil
+}
+
+func (e *EnvelopeOut) ResetPayload() {
+	e.Data = e.Data[:0]
+}
+
+func (e *EnvelopeOut) SetHeaders(headers run.Headers) {
+	if e.Header == nil {
+		e.Header = nats.Header{}
+	}
+	for k, v := range headers.ToByteValues() {
+		e.Header.Set(k, string(v))
+	}
+}
+
+func (e *EnvelopeOut) SetContentType(contentType string) {
+	if e.Header == nil {
+		e.Header = nats.Header{}
+	}
+	e.Header.Set("Content-Type", contentType)
+}
+
+func (e *EnvelopeOut) SetBindings(bindings runNats.MessageBindings) {
+	e.messageBindings = bindings
+}
+
+func NewEnvelopeIn(msg *nats.Msg) *EnvelopeIn {
+	return &EnvelopeIn{
+		Msg: msg,
+		rd:  bytes.NewReader(msg.Data),
+	}
+}
+
+type EnvelopeIn struct {
+	*nats.Msg
+	rd io.Reader
+}
+
+func (e *EnvelopeIn) Read(p []byte) (n int, err error) {
+	return e.rd.Read(p)
+}
+
+func (e *EnvelopeIn) Headers() run.Headers {
+	if e.Header == nil {
+		return run.Headers{}
+	}
+	hdrs := make(run.Headers, len(e.Header))
+	for k, v := range e.Header {
+		if len(v) > 0 {
+			hdrs[k] = []byte(v[0])
+		}
+	}
+	return hdrs
+}

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/nats"
 	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/bdragon300/go-asyncapi/internal/types"
@@ -90,6 +91,7 @@ var protocolBuilders = []compile.ProtocolBuilder{
 	ip.ProtoBuilder{},
 	tcp.ProtoBuilder{},
 	udp.ProtoBuilder{},
+	nats.ProtoBuilder{},
 }
 
 func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
