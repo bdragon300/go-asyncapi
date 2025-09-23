@@ -4,11 +4,12 @@ import (
 	"fmt"
 
 	runNats "github.com/bdragon300/go-asyncapi/run/nats"
+	"github.com/nats-io/nats.go"
 )
 
 type Subscription struct {
-	Client *Client
-	Topic  string
+	Client  *Client
+	Subject string
 
 	channelBindings   *runNats.ChannelBindings
 	operationBindings *runNats.OperationBindings
@@ -17,9 +18,17 @@ type Subscription struct {
 }
 
 func (r *Subscription) Receive(ctx context.Context, cb func(envelope runNats.EnvelopeReader)) (err error) {
-	sub, err := r.Client.SubscribeSync(r.Topic)
-	if err != nil {
-		return fmt.Errorf("subscribe: %w", err)
+	var sub *nats.Subscription
+	if r.operationBindings != nil && r.operationBindings.Queue != "" {
+		sub, err = r.Client.QueueSubscribeSync(r.Subject, r.operationBindings.Queue)
+		if err != nil {
+			return fmt.Errorf("queue subscribe: %w", err)
+		}
+	} else {
+		sub, err = r.Client.SubscribeSync(r.Subject)
+		if err != nil {
+			return fmt.Errorf("subscribe: %w", err)
+		}
 	}
 
 	errCh := make(chan error)

@@ -5,8 +5,7 @@ import (
 )
 
 type Publisher struct {
-	Client *Client
-	Topic  string
+	Client  *Client
 
 	channelBindings   *runNats.ChannelBindings
 	operationBindings *runNats.OperationBindings

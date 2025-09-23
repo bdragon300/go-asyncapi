@@ -1,9 +1,9 @@
 {{- /* dot == render.ProtoOperation */}}
 {{define "code/proto/nats/operation/publishMethods/block1"}}
-    envelopeTopic := o.Channel.(interface {
-        Topic() string
-    }).Topic()
-    envelope.SetTopic(envelopeTopic)
+    subj := o.Channel.(interface {
+        Subject() string
+    }).Subject()
+    envelope.SetSubject(subj)
 {{- end}}
 
 {{- pin . }}

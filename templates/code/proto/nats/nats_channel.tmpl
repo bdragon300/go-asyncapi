@@ -1,9 +1,9 @@
 {{- /* dot == render.ProtoChannel */}}
 {{define "code/proto/nats/channel/newFunction/block1"}}
-    res.topic = res.address.String()
+    res.subject = res.address.String()
 {{- end}}
 {{define "code/proto/nats/channel/publishMethods/block1"}}
-    envelope.SetTopic(c.Topic())
+    envelope.SetSubject(c.Subject())
 {{- end}}
 
 {{- pin . }}
@@ -14,11 +14,11 @@ type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
     address    {{goQualR "ParamString"}}
     {{if .IsPublisher}}publisher  {{goQualR .Protocol "Publisher"}}{{end}}
     {{if .IsSubscriber}}subscriber {{goQualR .Protocol "Subscriber"}}{{end}}
-    topic string
+    subject string
 }
 
-func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Topic() string {
-    return c.topic
+func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Subject() string {
+    return c.subject
 }
 
 {{template "code/proto/channel/commonMethods" .}}

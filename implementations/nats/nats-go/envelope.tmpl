@@ -4,6 +4,7 @@ import (
 
 	"github.com/bdragon300/go-asyncapi/run"
 	runNats "github.com/bdragon300/go-asyncapi/run/nats"
+	"github.com/nats-io/nats.go"
 )
 
 func NewEnvelopeOut() *EnvelopeOut {
@@ -44,6 +45,10 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 
 func (e *EnvelopeOut) SetBindings(bindings runNats.MessageBindings) {
 	e.messageBindings = bindings
+}
+
+func (e *EnvelopeOut) SetSubject(subject string) {
+	e.Subject = subject
 }
 
 func NewEnvelopeIn(msg *nats.Msg) *EnvelopeIn {

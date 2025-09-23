@@ -22,6 +22,8 @@ type (
 		SetHeaders(headers run.Headers)
 		SetContentType(contentType string)
 		SetBindings(bindings MessageBindings)
+
+		SetSubject(subject string)
 	}
 )
 
