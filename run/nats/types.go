@@ -1,4 +1,4 @@
-package tcp
+package nats
 
 type (
 	ServerBindings    struct{}
