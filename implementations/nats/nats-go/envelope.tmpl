@@ -9,7 +9,7 @@ import (
 
 func NewEnvelopeOut() *EnvelopeOut {
 	return &EnvelopeOut{
-		Msg: &nats.Msg{},
+		Msg: nats.NewMsg(""),
 	}
 }
 

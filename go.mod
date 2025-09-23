@@ -5,7 +5,7 @@ go 1.24.4
 require (
 	github.com/BobuSumisu/aho-corasick v1.0.3
 	github.com/alexflint/go-arg v1.5.1
-	github.com/bdragon300/go-asyncapi/run v0.0.0-20250703135731-c7926078b2f8
+	github.com/bdragon300/go-asyncapi/run v0.0.0-20250923075829-07ce3007ca82
 	github.com/buger/jsonparser v1.1.1
 	github.com/charmbracelet/log v0.4.2
 	github.com/go-sprout/sprout v1.0.1

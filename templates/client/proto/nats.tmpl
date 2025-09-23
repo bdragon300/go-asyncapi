@@ -1,0 +1,7 @@
+{{define "client/channel/nats/publish/prepareEnvelope"}}
+    envelope.SetSubject(channel.Subject())
+{{- end}}
+
+{{define "client/operation/nats/publish/prepareEnvelope"}}
+    envelope.SetSubject(channel.Subject())
+{{- end}}

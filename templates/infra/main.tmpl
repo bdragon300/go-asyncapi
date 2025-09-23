@@ -5,10 +5,10 @@
 {{$drawSection := true}}
 
 {{- range $server := $.Objects}}
-  {{- if ne .Kind "server"}}{{continue}}{{end}}
+  {{- if ne $server.Kind "server"}}{{continue}}{{end}}
 
-  {{- if $.ServerVariableGroups .Name}}
-    {{- range $.ServerVariableGroups .Name}}
+  {{- if $.ServerVariableGroups $server.Name}}
+    {{- range $.ServerVariableGroups $server.Name}}
       {{- $ctx := dict "Server" $server "ServerVariables" .}}
       {{- with tryTmpl (print "infra/docker/" $server.Protocol "/" $section) $ctx}}
         {{- with $drawSection}}
@@ -26,7 +26,7 @@
 {{.}}
     {{- end}}
   {{- else}}
-# NOTE: Server {{.Name}} is not rendered due to missing server variables in the go-asyncapi configuration
+# NOTE: Server {{$server.Name}} contains server variables, please set them in go-asyncapi config infra.serverOpts (https://bdragon300.github.io/go-asyncapi/infrastructure-files-generation/)
     {{- continue}}
   {{- end}}
 

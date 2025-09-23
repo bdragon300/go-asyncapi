@@ -1,5 +1,6 @@
 import (
 	"context"
+	"fmt"
 
 	runNats "github.com/bdragon300/go-asyncapi/run/nats"
 	"github.com/nats-io/nats.go"
@@ -42,4 +43,12 @@ func (c *Client) Publisher(_ context.Context, _ string, chb *runNats.ChannelBind
 		ctx:               ctx2,
 		cancel:            cancel,
 	}, nil
+}
+
+func (c *Client) Close() error {
+	if err := c.Conn.Drain(); err != nil {
+		return fmt.Errorf("drain: %w", err)
+	}
+	c.Conn.Close()
+	return nil
 }

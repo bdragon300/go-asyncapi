@@ -35,7 +35,7 @@ func RenderClientApp(queue []RenderQueueItem, activeProtocols []string, goModTem
 	}
 	mng.Commit()
 
-	logger.Trace("Loading template", goModTemplate)
+	logger.Trace("Loading template", "name", goModTemplate)
 	tpl, err = mng.TemplateLoader.LoadTemplate(goModTemplate)
 	if err != nil {
 		return fmt.Errorf("load template %s: %w", goModTemplate, err)
