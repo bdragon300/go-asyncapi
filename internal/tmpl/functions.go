@@ -46,8 +46,11 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		"goLit":     func(val any) (string, error) { traceCall("goLit", val); return templateGoLit(renderManager, val) },
 		"goIDUpper": func(val any) string { traceCall("goIDUpper", val); return templateGoID(renderManager, val, true) },
 		"goID":      func(val any) string { traceCall("goID", val); return templateGoID(renderManager, val, false) },
-		"goComment": func(text string) (string, error) { traceCall("goComment", text); return templateGoComment(text) },
-		"goQual":    func(parts ...string) string { traceCall("goQual", parts); return templateGoQual(renderManager, parts...) },
+		"goComment": func(text string) string { traceCall("goComment", text); return templateGoComment(text) },
+		"goQual": func(parts ...string) string {
+			traceCall("goQual", parts)
+			return templateGoQual(renderManager, parts...)
+		},
 		"goQualR": func(parts ...string) string {
 			traceCall("goQualR", parts)
 			return templateGoQualRuntime(renderManager, parts...)
@@ -125,15 +128,15 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		},
 
 		// Working with template namespace
-		"pin": func(object common.Artifact) (string, error) {
-			traceCall("pin", object)
-			if lo.IsNil(object) {
-				return "", fmt.Errorf("cannot pin nil")
+		"pin": func(a common.Artifact) (string, error) {
+			traceCall("pin", a)
+			if lo.IsNil(a) {
+				return "", fmt.Errorf("cannot pin nil value")
 			}
-			if _, ok := object.(pinnable); !ok {
-				return "", fmt.Errorf("type %T is not pinnable", object)
+			if _, ok := a.(pinnable); !ok {
+				return "", fmt.Errorf("type %T is not pinnable", a)
 			}
-			renderManager.NamespaceManager.DeclareArtifact(object, renderManager, false)
+			renderManager.NamespaceManager.DeclareArtifact(a, renderManager, false)
 			return "", nil
 		},
 		"once": func(r any) any {
@@ -172,9 +175,9 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			}
 			return ""
 		},
-		"runtimeExpressionCode": func(c lang.BaseRuntimeExpression, varStruct *lang.GoStruct, addValidationCode bool) (items []correlationIDExtractionStep, err error) {
-			traceCall("runtimeExpressionCode", c, varStruct, addValidationCode)
-			return templateCorrelationIDExtractionCode(renderManager, c, varStruct, addValidationCode)
+		"runtimeExpressionCode": func(c lang.BaseRuntimeExpression, target *lang.GoStruct, addValidationCode bool) (items []runtimeExpressionCodeStep, err error) {
+			traceCall("runtimeExpressionCode", c, target, addValidationCode)
+			return templateRuntimeExpressionCode(renderManager, c, target, addValidationCode)
 		},
 	}
 
@@ -321,39 +324,29 @@ func templateGoID(mng *manager.TemplateRenderManager, val any, exportedName bool
 
 // templateGoComment returns a Go comment for the given text. If the text contains newlines, it is formatted as a block
 // comment. Otherwise, it is formatted as a line comment.
-func templateGoComment(text string) (string, error) {
+func templateGoComment(text string) string {
 	if strings.HasPrefix(text, "//") || strings.HasPrefix(text, "/*") {
 		// automatic formatting disabled.
-		return text, nil
+		return text
 	}
 
 	var b strings.Builder
 	if strings.Contains(text, "\n") {
-		if _, err := b.WriteString("/*\n"); err != nil {
-			return "", err
-		}
+		lo.Must(b.WriteString("/*\n"))
 	} else {
-		if _, err := b.WriteString("// "); err != nil {
-			return "", err
-		}
+		lo.Must(b.WriteString("// "))
 	}
-	if _, err := b.WriteString(text); err != nil {
-		return "", err
-	}
+	lo.Must(b.WriteString(text))
 	if strings.Contains(text, "\n") {
 		if !strings.HasSuffix(text, "\n") {
-			if _, err := b.WriteString("\n"); err != nil {
-				return "", err
-			}
+			lo.Must(b.WriteString("\n"))
 		}
-		if _, err := b.WriteString("*/"); err != nil {
-			return "", err
-		}
+		lo.Must(b.WriteString("*/"))
 	}
-	return b.String(), nil
+	return b.String()
 }
 
-type correlationIDExtractionStep struct {
+type runtimeExpressionCodeStep struct {
 	CodeLines       []string
 	VarName         string
 	VarValue        string
@@ -361,19 +354,20 @@ type correlationIDExtractionStep struct {
 	VarType         common.GolangType
 }
 
-// templateCorrelationIDExtractionCode generates Go code to extract a variable from a struct for the correlation id
-// getter and setter method.
+// templateRuntimeExpressionCode returns the Go code that extracts the value from the targetStruct according to the
+// runtime expression c. If addValidationCode is true, the result also contains the additional error handing code,
+// that is typically used for property getter functions.
 //
 // The function returns a list of extract steps. Each step contains one or more lines of Go code and some meta information.
-func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c lang.BaseRuntimeExpression, varStruct *lang.GoStruct, addValidationCode bool) (items []correlationIDExtractionStep, err error) {
+func templateRuntimeExpressionCode(mng *manager.TemplateRenderManager, c lang.BaseRuntimeExpression, targetStruct *lang.GoStruct, addValidationCode bool) (items []runtimeExpressionCodeStep, err error) {
 	// TODO: consider also AdditionalProperties in object
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
-	field, ok := lo.Find(varStruct.Fields, func(item lang.GoStructField) bool {
+	field, ok := lo.Find(targetStruct.Fields, func(item lang.GoStructField) bool {
 		return strings.EqualFold(item.OriginalName, string(c.StructFieldKind))
 	})
 	if !ok {
-		return nil, fmt.Errorf("field %s not found in %s", c.StructFieldKind, varStruct)
+		return nil, fmt.Errorf("field %s not found in %s", c.StructFieldKind, targetStruct)
 	}
 
 	locationPath := c.LocationPath
@@ -388,7 +382,7 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c l
 
 		memberName, err2 := unescapeJSONPointerFragmentPart(locationPath[pathIdx])
 		if err2 != nil {
-			err = fmt.Errorf("cannot unescape CorrelationID locationPath %q, item %q: %w", locationPath, locationPath[pathIdx], err)
+			err = fmt.Errorf("cannot unescape runtime expression, locationPath %q, item %q: %w", locationPath, locationPath[pathIdx], err)
 			return
 		}
 
@@ -509,7 +503,7 @@ func templateCorrelationIDExtractionCode(mng *manager.TemplateRenderManager, c l
 		}
 
 		pathIdx++
-		item := correlationIDExtractionStep{
+		item := runtimeExpressionCodeStep{
 			CodeLines:       body,
 			VarName:         nextAnchor,
 			VarValue:        varValueStmts,
