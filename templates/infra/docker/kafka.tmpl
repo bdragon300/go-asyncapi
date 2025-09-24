@@ -5,7 +5,7 @@
 {{define "infra/docker/kafka/services"}}
   "{{.Server.Name | toQuotable}}{{range .ServerVariables}}_{{.Value | toQuotable}}{{end}}":
     {{- $port := ($.Server.URL .ServerVariables).Port | default "9092"}}
-    image: bitnami/kafka:latest
+    image: bitnamilegacy/kafka:latest
     ports:
       - "{{$port}}:9094"
     volumes:
