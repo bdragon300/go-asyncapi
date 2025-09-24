@@ -174,18 +174,22 @@ type {{ .Channel | goIDUpper }}EnvelopeUnmarshaler{{.Protocol | goIDUpper}} inte
         ctx {{goQual "context.Context"}},
         cb func(message {{ goPkg .InType}}{{ goIDUpper .}}Receiver),
     ) (err error) {
-        subCtx, cancel := {{goQual "context.WithCancelCause"}}(ctx)
-        defer cancel(nil)
+        subCtx, cancel := {{goQual "context.WithCancel"}}(ctx)
+        defer cancel()
 
-        return c.Subscribe(subCtx, func(envelope {{goQualR $.Protocol "EnvelopeReader"}}) {
+        subErr := c.Subscribe(subCtx, func(envelope {{goQualR $.Protocol "EnvelopeReader"}}) {
             message := new({{ .InType | goUsage }})
             if err2 := c.Unseal{{. | goIDUpper}}(envelope, message); err2 != nil {
-                err = {{goQual "fmt.Errorf"}}("open message envelope: %w", err2)
-                cancel(err)
+                err = {{goQual "fmt.Errorf"}}("%w: %w", {{goQualR "ErrUnsealEnvelope"}}, err2)
+                cancel()
                 return
             }
             cb(message)
         })
+        if err != nil {
+            return err
+        }
+        return subErr
     }
 {{- end}}
 
