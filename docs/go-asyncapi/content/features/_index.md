@@ -62,7 +62,7 @@ Here are the protocols that are supported by `go-asyncapi` for now:
 
 - {{< figure src="images/amqp.svg" alt="AMQP" link="/protocols-and-implementations#amqp" class="brand-icon" >}} [AMQP]({{< relref "/protocols-and-implementations#amqp" >}})
 - {{< figure src="images/kafka.svg" alt="Apache Kafka" link="/protocols-and-implementations#apache-kafka" class="brand-icon" >}} [Apache Kafka]({{< relref "/protocols-and-implementations#apache-kafka" >}})
-- {{< figure src="images/http-small.png" alt="HTTP" link="/protocols-and-implementations#http" class="brand-icon" >}} [HTTP]({{< relref "/protocols-and-implementations#http" >}})
+- {{< figure src="images/http.svg" alt="HTTP" link="/protocols-and-implementations#http" class="brand-icon" >}} [HTTP]({{< relref "/protocols-and-implementations#http" >}})
 - {{< figure src="images/mqtt.svg" alt="MQTT" link="/protocols-and-implementations#mqtt" class="brand-icon" >}} [MQTT]({{< relref "/protocols-and-implementations#mqtt" >}})
 - {{< figure src="images/ip.png" alt="IP" link="/protocols-and-implementations#ip-raw-sockets" class="brand-icon" >}} [IP RAW sockets]({{< relref "/protocols-and-implementations#ip-raw-sockets" >}})**&ast;**
 - {{< figure src="images/redis.svg" alt="Redis" link="/protocols-and-implementations#redis" class="brand-icon" >}} [Redis]({{< relref "/protocols-and-implementations#redis" >}})
