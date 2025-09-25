@@ -30,30 +30,34 @@ This default behavior can be customized in templates `code/proto/message/encoder
 
 ## Adding a new content type
 
+{{% hint tip %}}
+You can override any existing content type the same way.
+{{% /hint %}}
+
 It is very easy, just define templates `code/proto/mime/messageDecoder/<mime>` and `code/proto/mime/messageEncoder/<mime>`.
 The result will be substituted to `Marshal` and `Unmarshal` message methods instead of default encoder/decoder.
 
 For example, to add support for `text/plain` content type, define the templates `code/proto/mime/messageDecoder/text/plain`
 and `code/proto/mime/messageEncoder/text/plain` with encoding/decoding code and put them to a file with any name, 
-say `content_types.tmpl`.
+say `my_templates/content_types.tmpl`.
 
 For example:
 
 ```gotemplate
 {{ define "code/proto/mime/messageDecoder/text/plain" }}
-var b {{ goQual "strings.Builder" }}
-if err := {{ goQual "io.Copy" }}(&b, r); err != nil {
-    return nil, fmt.Errorf("read message: %w", err)
-}
-m.Payload = b.String()
-{{ end }}
+    var b {{ goQual "strings.Builder" }}
+    if _, err := {{ goQual "io.Copy" }}(&b, r); err != nil {
+        return {{ goQual "fmt.Errorf" }}("read message: %w", err)
+    }
+    m.payload = {{goPkg .PayloadType}}{{.PayloadType | goIDUpper}}(b.String())
+{{- end }}
 
 {{ define "code/proto/mime/messageEncoder/text/plain" }}
-r := {{ goQual "strings.NewReader" }}(m.Payload)
-if _, err := {{ goQual "io.Copy" }}(w, r); err != nil {
-    return fmt.Errorf("write message: %w", err)
-}
-{{ end }}
+    r := {{ goQual "strings.NewReader" }}(string(m.Payload))
+    if _, err := {{ goQual "io.Copy" }}(w, r); err != nil {
+        return {{ goQual "fmt.Errorf" }}("write message: %w", err)
+    }
+{{- end }}
 ```
 
 Then run the code generation:
@@ -61,9 +65,3 @@ Then run the code generation:
 ```shell
 go-asyncapi code -T my_templates my_asyncapi.yaml
 ```
-
-## Replacing the default encoder/decoder
-
-Everything the same as for adding a new content type, i.e. by defining the templates
-`code/proto/mime/messageDecoder/<mime>` and `code/proto/mime/messageEncoder/<mime>`.
-See [Adding a new content type](#adding-a-new-content-type) section above.

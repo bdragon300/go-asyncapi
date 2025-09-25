@@ -37,49 +37,46 @@ For more information about references, see the
 The `go-asyncapi` tool supports references in the AsyncAPI documents and resolves them automatically.
 
 The first step of reference handling is to locate and load the referenced document, which is done by the 
-component called **reference locator**.
+component called **reference locator**. `go-asyncapi` has a built-in reference locator. 
+Locator is intended to find other files, so it skips the reference points to the same document, e.g. 
+`$ref: "#/components/schemas/MySchema"`.
 
-`go-asyncapi` has a built-in reference locator. If a reference points to the local document (internal reference), e.g. 
-`$ref: "#/components/schemas/MySchema"` (which is true in most cases), it does nothing. 
+### Built-in locator
 
-Otherwise, there are two options described below.
+*Absolute path* to file in filesystem, e.g. `$ref: "/path/to/foo/bar.yaml#/components/schemas/MySchema"` is handled as-is.
 
-### Reference to the file in the filesystem
+*Relative path*, e.g. `$ref: "foo/bar.yaml#/components/schemas/MySchema"` is resolved relative to the current document location. 
+If the root directory is set by the `--locator-root-dir` flag or in config file, the path is resolved relative to this directory.
 
-In this case, the locator just reads the file from the local filesystem. The file path can be relative or absolute:
+Path can also be a *file URL*, e.g. `$ref: "file:///path/to/foo/bar.yaml#/components/schemas/MySchema"`, which is 
+handled the same way as described above.
 
-* Relative path, e.g. `$ref: "foo/bar.yaml#/components/schemas/MySchema"`
-* Absolute path, e.g. `$ref: "/path/to/foo/bar.yaml#/components/schemas/MySchema"`
-* File URL, e.g. `$ref: "file:///path/to/foo/bar.yaml#/components/schemas/MySchema"`
+*HTTP(S) URL* is fetched by built-in Go HTTP client with default config. No authentication or request customization is supported.
 
-{{< hint info >}}
-The files, which are referenced by the `$ref` field, are resolved relatively to the search directory (current working
-directory by default), not to the file where the reference is placed.
-Use `--locator-search-dir` cli flag to change this directory.
+{{% hint warning %}}
+By default, URL references are forbidden for security reasons, use `--allow-remote-refs` CLI flag or set 
+`allowRemoteReferences` option in config file to allow it.
+{{% /hint %}}
 
-For example, the reference `foo.yaml#/bar/baz` inside the `/path/to/spam.yaml` will be resolved as
-`/search_dir/foo.yaml#/bar/baz`, not as `/path/to/foo.yaml#/bar/baz`. **The second option is not supported yet.**
-{{< /hint >}}
+{{% hint note %}}
+Only HTTP(S) remote references are supported by the built-in locator. To support other schemes, you can provide the custom
+locator (see below).
+{{% /hint %}}
 
-### Reference to the remote document by URL
+### Custom reference locator
 
-Only HTTP(S) URLs are supported by the built-in reference locator. For example, 
-`$ref: "https://example.com/path/to/file#/components/schemas/MySchema"`. 
-No authentication or request customization is supported yet.
+You can provide your own locator by passing a shell command that will be used instead of the built-in one.
+`go-asyncapi` runs this command for each handling reference, feed this reference to its STDIN stream and awaits the result from STDOUT.
+The command must read reference from STDIN, do its job, return the file contents to STDOUT and exit with 0 return code 
+on success. On non-zero exit code, the `go-asyncapi` treats it as locator error and exits immediately with an error.
 
-## Custom reference locator
+Once the command launched, `go-asyncapi` waits for it to be finished in default timeout of 30 seconds (configurable by the
+`--locator-timeout` flag or in config file). If it is still running after this timeout has passed, 
+`go-asyncapi` performs the *graceful shutdown* on command process:
 
-You can provide your own custom reference locator by passing it in that will be used instead of the built-in one.
-Custom locator is an executable that reads a file path from STDIN, does its job, returns the contents of one file on 
-STDOUT and exits with 0 return code on success.
-If the command returns a non-zero exit code, `go-asyncapi` will exit immediately.
-
-`go-asyncapi` waits for the command to be finished in default timeout of 30 seconds (which can be configured by the
-`--locator-timeout` flag or in config file). If a resolver process is still running after this timeout has passed, 
-`go-asyncapi` performs the *graceful shutdown*:
-
-1. `go-asyncapi` sends **SIGTERM** signal to a locator process, awaiting it to be finished
-2. After another 3 seconds `go-asyncapi` kills a process if it still doesn't respond
+1. `go-asyncapi` sends **SIGTERM** signal to a process, awaiting it to be finished
+2. After another 3 seconds `go-asyncapi` kills a process if it still doesn't respond. This outcome is treated as 
+   locator error and makes `go-asyncapi` to exit with an error.
 
 Custom locator is passed by the `--locator-command` CLI flag or can be set in configuration:
 
@@ -88,18 +85,16 @@ locator:
   command: my-locator.sh
 ```
 
-{{% hint info %}}
 Command flags may be passed in the same way as in the shell, for example:
 
 ```yaml
 locator:
   command: "my-locator.sh --foo \"Hello world\" -x"
 ```
-{{% /hint %}}
 
-### Example
+#### Example
 
-Let's write a custom resolver in shell language that:
+Let's write a custom locator as a shell script that:
 
 * read a file by absolute path from the local file system
 * read a file by relative path from [apicurio schema registry](https://www.apicur.io/registry/)

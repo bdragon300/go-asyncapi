@@ -25,7 +25,7 @@ The functions described in this section have the `go` name prefix, which means t
 ### goLit
 
 ```go
-func goLit(value any) string
+func goLit(value any) (string, error)
 ```
 
 Converts the given value to a Go literal.
@@ -103,8 +103,7 @@ func goQual(parts ...string) string
 
 Joins the parts into a qualified Go name and returns it, also adding it to the current file imports if necessary.
 
-The qualified name is the form of writing the Go identifier,
-that we want to import and use in-place in the generated code.
+The qualified name is the form of writing the Go identifier, that we want to import and use in-place in the generated code.
 
 Syntax of the qualified name is as follows:
 
@@ -144,10 +143,13 @@ They produce the `var foo kafka.ServerBindings` and adds the `github.com/bdragon
 ### goDef
 
 ```go
-func goDef(r common.GolangType) string
+func goDef(r common.GolangType) (string, error)
 ```
 
-Returns the Go *definition code* for the given type, also adding it to the current file's definitions list.
+Returns the Go *definition code* for the given type, and additionally pins it to the current package (if it's pinnable).
+[More about pinning]({{<relref "/templating-guide/overview#pinning">}}).
+
+See also `pin` function, which pins any pinnable artifact without producing any code.
 
 Examples:
 
@@ -164,16 +166,24 @@ type MySchema struct {
 ### goUsage
 
 ```go
-func goUsage(r common.GolangType) string
+func goUsage(r common.GolangType) (string, error)
 ```
 
-Returns the Go *usage code* for the given Go type artifact.
+Returns the Go *usage code* for the given Go type artifact, automatically adding the necessary package imports if needed.
+
+The function *may* return error `context.ErrNotPinned` in case when `r` or its dependencies 
+(e.g. a field of inline struct `r`) are not pinned yet, so it can't make a proper import. 
+In this case, you must ensure that both `r` and the types it consists (if any) of are all has been pinned before. 
+[More about pinning]({{<relref "/templating-guide/overview#pinning">}}).
 
 Examples:
 
-`{{ goUsage .Type }}` if `.Type` is `MySchema` struct, the function returns `MySchema`.
+`{{ goUsage .Type }}` if `.Type` is `MySchema` struct pinned to the current package, the function returns `MySchema`.
 
-`{{ goUsage .Type }}` if `.Type` is pointer to the inline anonymous struct, the function may return
+`{{ goUsage .Type }}` if `.Type` is `MySchema` struct in package "foo", the function returns `foo.MySchema`, adding an
+import for "foo" package if necessary.
+
+`{{ goUsage .Type }}` if `.Type` is pointer to the inline anonymous struct, the result is:
 
 ```go
 *struct {
@@ -184,42 +194,30 @@ Examples:
 ### goPkg
 
 ```go
-func goPkg(obj any) string
+func goPkg(obj any) (string, error)
 ```
 
-Returns the package path prefix where a type is declared in the generated code, also adding it to the current file 
-imports if necessary. If type is defined in current package, returns empty string.
+Returns the package path prefix (name + `.`) where an artifact was pinned in the generated code (by `pin` or `goDef` functions), 
+also adding it to the current file imports if necessary. If type is pinned to current package, returns empty string.
 
-If the type is not defined anywhere before (`goDef`, `def` functions), raises error `context.ErrNotDefined`.
+If `obj` was not pinned before, the function returns error `context.ErrNotPinned`, 
+which means you must ensure that `obj` is pinned to one of generated packages before calling this function.
+[More about pinning]({{<relref "/templating-guide/overview#pinning">}}).
 
-For `common.GolangType` value the result is the package path where type is declared.
-For the `*common.ImplementationObject` the returned value is the package path of the given Implementation code. 
-Otherwise, the function raises error.
+If `obj` is `*common.ImplementationObject` the returned value is the package path to implementation code. In this case,
+pinning is not needed.
 
 Examples:
 
-`{{ goPkg .Type }}{{ goUsage .Type }}` if `.Type` is `MySchema` is declared in `schemas/my_schema.go`, 
-the current file is `channels/my_channel.go`, then the produced code is `schemas.MySchema`.
+`{{ goPkg .Type }}{{ goUsage .Type }}` if `.Type` is `MySchema` is pinned to `schemas/my_schema.go`, 
+and the current file is `channels/my_channel.go`, then the produced code is `schemas.MySchema`.
 
-`{{ goPkg .Type }}{{ goUsage .Type }}` if `.Type` is `MySchema` is declared in the same package, 
-then the produced code is `MySchema`.
+`{{ goPkg .Type }}{{ goUsage .Type }}` if `.Type` is `MySchema` is pinned to a file in the current package, 
+then the produced code is just `MySchema` (`goPkg` returned an empty string).
 
 ## Artifact helpers
 
 These functions are helper functions to work with artifacts. They don't produce any Go code.
-
-### deref
-
-```go
-func deref(r common.Artifact) common.Artifact
-```
-
-Dereferences the `lang.Ref` or `lang.Promise` object and returns the artifact they refer to. 
-If the argument is not `lang.Ref` or `lang.Promise`, just returns it back.
-
-Example:
-
-`{{ deref . | goUsage }}` if `.Type` is ref to `MySchema`, the template result is `MySchema`.
 
 ### innerType
 
@@ -240,7 +238,7 @@ The template `{{ with innerType .Type }}{{ goUsage . }}{{ end }}` produces:
 ### isVisible
 
 ```go
-func isVisible(r common.Artifact) common.Artifact
+func isVisible(a common.Artifact) common.Artifact
 ```
 
 Returns `nil` if the given artifact should NOT be rendered in the generated code due to `go-asyncapi` configuration, 
@@ -250,20 +248,6 @@ Example:
 
 `{{ with isVisible .Type }}{{ goDef . }}{{ end }}` produces the type definition only if `.Type` is visible,
 otherwise skips the body of the "with" statement due to `nil` function result.
-
-### ptr
-
-```go
-func ptr(r common.GolangType) common.GolangType
-```
-
-Wraps the r with `lang.GoPointer` and returns it. If r is `nil`, raises error.
-
-Examples:
-
-`{{ goUsage (ptr .Type) }}` if `.Type` is `MySchema`, the template result is `*MySchema`.
-
-`{{ goUsage (ptr (ptr .Type)) }}` if `.Type` is `MySchema`, the template result is `**MySchema`.
 
 ## Template execution
 
@@ -275,7 +259,7 @@ The functions described in this section are used to execute the templates dynami
 ### tmpl
 
 ```go
-func (templateName string, ctx any) (string, error)
+func tmpl(templateName string, ctx any) (string, error)
 ```
 
 Looks up the template with the given name and executes it passing the `ctx` as a context object.
@@ -290,7 +274,7 @@ passing the current template context (i.e. `$`) to it.
 ### tryTmpl
 
 ```go
-func tryTmpl(templateName string, ctx any) string
+func tryTmpl(templateName string, ctx any) (string, error)
 ```
 
 The same as `tmpl`, but if the template is not found, returns an empty string instead of raising an error.
@@ -299,89 +283,54 @@ Useful when you want to execute a template only if it exists.
 Example:
 
 ```gotemplate
-{{ with (tryTmpl (print "code/proto/" $protocol "channel/newFunction/block1") $) }}
+{{ with tryTmpl (print "code/proto/" $protocol "channel/newFunction/block1") $ }}
     Done
 {{ end }}
 ```
 
 The snippet above produces the "Done" text after the code produced by `code/proto/kafka/channel/newFunction/block1`
-template for `$protocol == "kafka"` only if this template exists. Otherwise, it skips the "with" body due to empty string
-result of `tryTmpl`.
+template for `$protocol == "kafka"` only if this template exists. Otherwise, it skips the "with" body.
 
 ## Template namespace
 
 The functions described in this section work with the template namespace.
 
-### def
+### pin
 
 ```go
-func def(objects ...any) string
+func pin(a common.Artifact) (string, error)
 ```
 
-Explicitly define the given value(s) in template namespace.
+Pins (i.e. associates) the given artifact in the current rendered go package. If the artifact is already pinned, does nothing.
+If the artifact cannot be pinned because it can't be declared (e.g. built-in Go type), returns an error. 
+After the pinning, the given artifact become available to be imported using `goPkg` or `goUsage` functions.
+[More about pinning]({{<relref "/templating-guide/overview#pinning">}}).
 
-If an object is string, it will be just added to the namespace.
+See also `goDef` function, which pins an artifact as well.
 
-If an object is `common.GolangType`, then it will be marked as declared in the current file.
-Actually, the only use case of this option is to be able to render the *usage code* for the type before its *definition code*
-has been rendered (i.e. before `goDef` function is called for this type).
-
-[defined](#defined) function returns `false` for the type that is defined with `def` function, but not rendered yet. 
-
-### defined
-
-```go
-func defined(r any) bool
-```
-
-Returns `true` if the given value is defined in the current template namespace.
-
-If the value is string, it checks if the string is defined in the namespace.
-
-If the value is `common.GolangType`, it checks if the type's declaration has been rendered by `goDef` function.
+Returns empty string.
 
 Example:
 
-The template
+`{{ pin . }}` pins the `.` artifact to the current rendered Go package.
 
-```gotemplate
-{{ if defined "foobar" }}foobar is defined{{ else }}foobar is NOT defined{{ end }}
-{{def "foobar"}}
-{{ if defined "foobar" }}foobar is defined{{ else }}foobar is NOT defined{{ end }}
-```
-
-produces the following output:
-
-```
-foobar is NOT defined
-foobar is defined
-```
-
-### ndefined
+### once
 
 ```go
-func ndefined(r any) bool
+func once(r any) any
 ```
 
-Opposite of the `defined` function. Returns `true` if the given value is NOT defined in the current template namespace.
+Accepts any comparable object and returns it back only once per all template executions, 
+all next calls with the same argument return `nil`.
 
-Examples:
+Useful to avoid duplicate code generation. The functionality is similar to `sync.Once` in Go.
 
-`{{ if ndefined .Type }}{{ goDef . }}{{ end }}` produces only one type definition not matter how many times the template is executed.
-
-The template
+Example:
 
 ```gotemplate
-{{ if ndefined "foobar" }}foobar is NOT defined{{ else }}foobar is defined{{ end }}
-{{def "foobar"}}
-{{ if ndefined "foobar" }}foobar is NOT defined{{ else }}foobar is defined{{ end }}
-```
-
-produces the following output:
-
-```
-foobar is NOT defined
-foobar is defined
+{{ with once .FooBar }}
+    {{ goDef . }}
+{{ end }}
 ```
 
 ## Other helpers
@@ -435,31 +384,32 @@ func debug(args ...any) string
 
 Prints the given arguments to the logging output with the `debug` level and returns an empty string.
 
-### correlationIDExtractionCode
+### runtimeExpressionCode
 
 ```go
-func correlationIDExtractionCode(c *render.CorrelationID, varStruct *lang.GoStruct, addValidationCode bool) (items []correlationIDExtractionStep, err error)
+func runtimeExpressionCode(c lang.BaseRuntimeExpression, target *lang.GoStruct, addValidationCode bool) ([]runtimeExpressionCodeStep, error)
 ```
 
-Special purpose function that generates and returns the list of steps in the generated code to extract the 
-correlation ID from the message struct.
+Special purpose function that accepts the struct and runtime expression and returns the Go code that extracts the 
+value from the struct according to the runtime expression.
 
 Parameters:
-1. `render.CorrelationID` -- correlation ID artifact
-2. `lang.GoStruct` Go struct artifact, that contains the field, or where a nested struct contains the field, 
-   which the correlation ID is pointed to.
-3. if `addValidationCode` is `true`, the function additionally inserts the code to check if the variable passed to the
-   correlation ID getter function has the value the correlation ID points to. 
-   If not, this code sets the `err` variable to an error.
+1. `lang.BaseRuntimeExpression` -- object with runtime expression info. Every artifact that has
+   a runtime expression (e.g. `lang.CorrelationID`) contains a field of this type.
+2. `lang.GoStruct` -- target struct where the value should be extracted from.
+3. `addValidationCode` -- if `true`, the result also contains the additional error handing code,
+   that is typically used for property getter functions.
    
 Example:
 
 ```gotemplate
-v0 := m.{{.CorrelationID.StructFieldKind | untitle}}
-{{ $steps := correlationIDExtractionCode .CorrelationID .VarStruct true }}
-{{ range $steps }}
-    {{range .CodeLines}}{{.}}{{end}}
-{{ end }}
+v0 := m.{{.CorrelationID.StructFieldKind | toString | untitle}}
+{{- $steps := runtimeExpressionCode .RuntimeExpression .TargetType true }}
+{{- range $steps }}
+    {{- range .CodeLines}}
+        {{.}}
+    {{- end}}
+{{- end }}
 
 {{if $steps}}value = {{last $steps | .VarName}}{{end}}
 ```

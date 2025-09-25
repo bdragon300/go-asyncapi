@@ -7,8 +7,8 @@ description: "How to configure the go-asyncapi to generate only a part of the do
 # Partial generation
 
 {{% hint info %}}
-The features described in this article are useful not only for the code generation, but also for other `go-asyncapi`
-outputs, such as generation of client application, infra files, etc.
+The features described in this article are useful not only for the code generation, but also for  generation of client 
+application, infra files, etc.
 {{% /hint %}}
 
 ## Pub/Sub-only

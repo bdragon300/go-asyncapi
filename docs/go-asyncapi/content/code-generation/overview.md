@@ -58,8 +58,6 @@ You can use the `-t` option to specify a different target directory:
 go-asyncapi code ./my-asyncapi-code streetlights-mqtt-asyncapi.yml -t /tmp/my-asyncapi-code
 ```
 
-
-
 ### Debugging
 
 Debug logging output is enabled by the `-v=1`. The `-v=2` enables the trace logging:

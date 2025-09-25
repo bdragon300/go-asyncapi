@@ -37,6 +37,7 @@ One type per protocol of every server the Channel bounds to, keeping the informa
 a part of its functionality, but with Operation-specific logic in opening and message handling. 
 One type per protocol of every server the Operation bounds to, keeping the information defined in document 
 (bindings, bound messages, etc.).
+* **OperationReply**. Similar to Operation, but used for request-reply patterns.
 * **Message**. Protocol-agnostic message with payload data, metadata, etc.
 Implements the marshalling/unmarshalling logic to\from Envelopes of every protocol it is bound to. Also, Message keeps
 the information defined in document (bindings, etc.).

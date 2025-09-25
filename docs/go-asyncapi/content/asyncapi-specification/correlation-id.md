@@ -14,7 +14,9 @@ in the generated message structs.
 
 ## Overview
 
-The Correlation ID contains the path where this id is stored in the message. For example:
+The Correlation ID contains the 
+[runtime expression](https://www.asyncapi.com/docs/reference/specification/v3.0.0#runtimeExpression), the path where 
+this id is stored in the message. For example:
 
 ```yaml
 correlationId:

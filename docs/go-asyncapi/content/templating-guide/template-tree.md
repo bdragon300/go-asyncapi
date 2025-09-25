@@ -15,96 +15,102 @@ Legend:
 * `*` - template is optional. Executed if found, no error is raised if not.
 * `<protocol>` - protocol name, e.g. `amqp`, `kafka`, etc.
 * `<implementation>` - implementation name, e.g. `github.com/twmb/franz-go`
+* `<jsonschema_type>` - JSON Schema type, e.g. `string`, `integer`, etc.
+* `<jsonschema_format>` - JSON Schema format, e.g. `date-time`, `uuid`, etc.
+* `<mime>` - MIME type, e.g. `application/json`, `application/xml`, etc.
 
-Template files referenced by file name:
+The following templates generate the code:
 
 ```
+main.tmpl
+operation.tmpl
+channel.tmpl
+parameter.tmpl
+preamble.tmpl
+server.tmpl
+message.tmpl
+schema.tmpl
 code/
-├── main.tmpl
-├── operation.tmpl
-├── channel.tmpl
-├── parameter.tmpl
-├── preamble.tmpl
-├── server.tmpl
-├── message.tmpl
-└── schema.tmpl
-```
-
-Templates referenced by name (nested templates):
-
-```
-code/
-├── correlationid.tmpl
-│   ├── code/correlationID/incoming/setter
-│   ├── code/correlationID/incoming/varType
-│   ├── code/correlationID/outgoing/getter
-│   └── code/correlationID/outgoing/varType
+├── runtimeExpression/
+│   ├── code/runtimeExpression/setterBody
+│   ├── code/runtimeExpression/getterBody
+│   └── code/runtimeExpression/varType
 ├── lang/
-│   ├── goarray.tmpl
+│   ├── goarray/
 │   │   ├── code/lang/goarray/definition
 │   │   └── code/lang/goarray/usage
-│   ├── gomap.tmpl
+│   ├── gomap/
 │   │   ├── code/lang/gomap/definition
 │   │   └── code/lang/gomap/usage
-│   ├── gopointer.tmpl
+│   ├── gopointer/
 │   │   ├── code/lang/gopointer/definition
 │   │   └── code/lang/gopointer/usage
-│   ├── gosimple.tmpl
+│   ├── gosimple/
 │   │   ├── code/lang/gosimple/definition
 │   │   └── code/lang/gosimple/usage
-│   ├── gostruct.tmpl
+│   ├── gostruct/
 │   │   ├── code/lang/gostruct/definition
 │   │   └── code/lang/gostruct/usage
-│   ├── gotypedefinition.tmpl
+│   ├── gotypedefinition/
 │   │   ├── code/lang/gotypedefinition/definition
-│   │   └── code/lang/gotypedefinition/usage
-│   ├── gounion.tmpl
+│   │   ├── code/lang/gotypedefinition/usage
+│   │   └── code/lang/gotypedefinition/value_expr
+│   ├── gounion/
 │   │   ├── code/lang/gounion/definition
 │   │   └── code/lang/gounion/usage
-│   └── govalue.tmpl
-│       ├── code/lang/gotypedefinition/value_expr
-│       └── code/lang/govalue/usage
+│   ├── govalue/
+│   │   └── code/lang/govalue/usage
+│   └── typeFormat/<jsonschema_type>/<jsonschema_format>/
+│       ├── code/lang/typeFormat/<jsonschema_type>/<jsonschema_format>/definition *
+│       └── code/lang/typeFormat/<jsonschema_type>/<jsonschema_format>/usage *
 └── proto/
-    ├── proto_channel.tmpl
+    ├── channel/
     │   ├── code/proto/channel/commonMethods
     │   ├── code/proto/channel/newFunction
     │   ├── code/proto/channel/openFunction
     │   ├── code/proto/channel/publishMethods
     │   ├── code/proto/channel/serverInterface
-    │   └── code/proto/channel/subscribeMethods
-    ├── proto_message.tmpl
+    │   ├── code/proto/channel/subscribeMethods
+    │   ├── code/proto/channel/replyMethods
+    │   └── code/proto/channel/operationMethods
+    ├── message/
     │   ├── code/proto/message/commonMethods
     │   ├── code/proto/message/decoder
     │   ├── code/proto/message/encoder
     │   ├── code/proto/message/marshalMethods
     │   └── code/proto/message/unmarshalMethods
-    ├── proto_mime.tmpl
+    ├── mime/
     │   ├── code/proto/mime/messageDecoder/<mime> *
     │   ├── code/proto/mime/messageDecoder/default
     │   ├── code/proto/mime/messageEncoder/<mime> *
     │   └── code/proto/mime/messageEncoder/default
-    ├── proto_operation.tmpl
+    ├── operation/
     │   ├── code/proto/operation/commonMethods
-    │   ├── code/proto/operation/newFunction
-    │   ├── code/proto/operation/openFunction
+    │   ├── code/proto/operation/channelInterface
     │   ├── code/proto/operation/publishMethods
-    │   ├── code/proto/operation/serverInterface
-    │   └── code/proto/operation/subscribeMethods
-    ├── proto_server.tmpl
+    │   ├── code/proto/operation/subscribeMethods
+    │   └── operationReply/
+    │       ├── code/proto/operation/operationReply/commonMethods
+    │       ├── code/proto/operation/operationReply/publishMethods
+    │       ├── code/proto/operation/operationReply/subscribeMethods
+    │       └── code/proto/operation/operationReply/channelInterface
+    ├── server/
     │   ├── code/proto/server/channelOpenMethods
     │   ├── code/proto/server/commonMethods
     │   ├── code/proto/server/connectFunctions
-    │   ├── code/proto/server/newFunction
-    │   └── code/proto/server/operationOpenMethods
+    │   └── code/proto/server/newFunction
     └── <protocol>/
-        ├── code/proto/<protocol>/channel/newFunction/block1 *
-        ├── code/proto/<protocol>/channel/publishMethods/block1 *
-        ├── code/proto/<protocol>/channel/publishMethods/block2 *
-        ├── code/proto/<protocol>/server/impl/<implementation>/connectConsumerFunction *
-        ├── code/proto/<protocol>/server/impl/<implementation>/connectFunction *
-        ├── code/proto/<protocol>/server/impl/<implementation>/connectProducerFunction *
-        ├── code/proto/<protocol>/operation/publishMethods/block1 *
-        └── code/proto/<protocol>/operation/publishMethods/block2 *
+        ├── channel/
+        │   ├── code/proto/<protocol>/channel/newFunction/block1 *
+        │   ├── code/proto/<protocol>/channel/publishMethods/block1 *
+        │   └── code/proto/<protocol>/channel/publishMethods/block2 *
+        ├── server/impl/<implementation>/
+        │   ├── code/proto/<protocol>/server/impl/<implementation>/connectConsumerFunction *
+        │   ├── code/proto/<protocol>/server/impl/<implementation>/connectFunction *
+        │   └── code/proto/<protocol>/server/impl/<implementation>/connectProducerFunction *
+        └── operation/
+            ├── code/proto/<protocol>/operation/publishMethods/block1 *
+            └── code/proto/<protocol>/operation/publishMethods/block2 *
 ```
 
 ## Client application
@@ -115,31 +121,27 @@ Legend:
 * `<protocol>` - protocol name, e.g. `amqp`, `kafka`, etc.
 * `<implementation>` - implementation name, e.g. `github.com/twmb/franz-go`
 
-Template files referenced by file name:
+The following templates generate the client application using the code generated by code templates:
 
 ```
+main.tmpl
+utils.tmpl
+go.mod.tmpl
 client/
-├── main.tmpl
-├── utils.tmpl
-└── go.mod.tmpl
-```
-
-Templates referenced by name (nested templates):
-
-```
-client/
-├── channel.tmpl
+├── channel/
 │   ├── client/channel
+│   └── client/channel/<protocol>/publish/prepareEnvelope *
+├── operation/
 │   ├── client/operation
-│   └── client/pubsub/proto/serverPubSub
-└── proto/
-    ├── client/channeloperation/<protocol>/<implementation>/consumer/connect *
-    ├── client/channeloperation/<protocol>/<implementation>/producer/connect *
-    ├── client/channeloperation/<protocol>/<implementation>/setup *
-    ├── client/message/<protocol>/<implementation>/publish *
-    ├── client/server/<protocol>/cliMixin *
-    ├── client/operation/<protocol>/publish/prepareEnvelope *
-    └── client/channel/<protocol>/publish/prepareEnvelope *
+│   └── client/operation/<protocol>/publish/prepareEnvelope *
+├── channeloperation/
+│   ├── client/channeloperation/<protocol>/<implementation>/consumer/connect *
+│   ├── client/channeloperation/<protocol>/<implementation>/producer/connect *
+│   └── client/channeloperation/<protocol>/<implementation>/setup *
+├── client/operationReply
+├── client/pubsub/proto/serverPubSub
+├── client/message/<protocol>/<implementation>/publish *
+└── client/server/<protocol>/cliMixin *
 ```
 
 ## Infrastructure files
@@ -151,19 +153,26 @@ Legend:
 * `<engine>` - engine name, e.g. `docker`, etc.
 * `<section>` - section name in resulted file. For `docker` engine it's `services`, `volumes`, etc.
 
-Template files referenced by file name:
+The following templates generate the infrastructure files:
 
 ```
+main.tmpl
 infra/
-└── main.tmpl
-```
-
-Templates referenced by name (nested templates):
-
-```
-infra/
-└── <engine>/
+└── <engine>/<protocol>/
     ├── infra/<engine>/<protocol>/<section> *
     ├── infra/<engine>/<protocol>/<section>/extra *
     └── infra/<engine>/<protocol>/extra *
+```
+
+## Diagrams
+
+The following templates generate the D2 diagram code:
+
+```
+main.tmpl
+diagram/
+├── diagram/document
+├── diagram/channel
+├── diagram/operation
+└── diagram/server
 ```

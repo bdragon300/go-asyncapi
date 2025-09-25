@@ -61,7 +61,7 @@ Open the generated `docker-compose.yaml` file and it turns out that it is empty:
 The reason is that the single server `production` requires a server variable **port** to get the correct hostname.
 `go-asyncapi` can't generate a server without the server variables set.
 
-To make it work, create a configuration file `go-asyncapi.yaml` in with the following content:
+To make it work, create a configuration file `go-asyncapi.yaml` in the current directory with the following content:
 
 ```yaml
 infra:
@@ -71,10 +71,8 @@ infra:
         port: 1883
 ```
 
-Now run the command again with the `-c` option to specify the configuration file:
-
 ```bash
-go-asyncapi infra streetlights-mqtt-asyncapi.yml -c go-asyncapi.yaml
+go-asyncapi infra streetlights-mqtt-asyncapi.yml
 ```
 
 {{% details title="docker-compose.yaml" %}}

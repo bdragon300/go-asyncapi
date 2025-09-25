@@ -53,8 +53,8 @@ Possible fields are:
 * `type` -- the type name. Required. Same meaning as in the simple form.
 * `import` -- type import settings
   * `package` -- optional package name or module to import a type from. E.g. "github.com/your/module" or "time"
-* `embedded` -- if **true**, the tool will embed a type in the generated type instead of replacing it. Optional.
-  Default is **false**.
+* `embedded` -- if **true**, this type is embedded in any generated struct
+  (i.e., used without a field name). Optional. Default is **false**.
 * `hint` -- various hints how this type should be used in the generated Go code. Optional. Possible fields are:
     * `pointer` -- **true** forces the objects of this type to be used as pointers in the generated code.
       By default, this depends on the context.

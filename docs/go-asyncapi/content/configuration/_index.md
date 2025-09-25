@@ -10,6 +10,11 @@ description: "go-asyncapi configuration reference"
 Configuration is set in a single YAML file, that may contain the attributes described below. 
 All attributes are optional, and if not set, the tool uses the default values.
 
+{{% hint tip %}}
+By default, `go-asyncapi` reads the configuration file named `go-asyncapi.yaml` or `go-asyncapi.yml` in the 
+current working directory if it exists. You may set you own location by passing the `-c` CLI option.
+{{% /hint %}}
+
 {{% hint info %}}
 Configuration file with all default values is 
 [here](https://github.com/bdragon300/go-asyncapi/blob/master/assets/default_config.yaml)
@@ -72,12 +77,12 @@ For more examples of the layout rules, see the [Code layout]({{< relref "/howtos
 
 ## Locator
 
-| Attribute               | Type          | Default | Description                                                                                                                                            |
-|-------------------------|---------------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| allowRemoteReferences   | bool          | `false` | `true` allows reading remote `$ref`s (denied by default by security reasons)                                                                           |
-| searchDirectory         | string        | `.`     | Directory to search for local files referenced by `$ref`s.                                                                                             |
-| timeout                 | time.Duration | `30s`   | Reference resolving timeout (sets both the HTTP request timeout and command execution timeout)                                                         |
-| command                 | string        |         | Shell command of [custom locator]({{< relref "/asyncapi-specification/references#custom-reference-locator" >}}). If empty, uses the built-in locator.  |
+| Attribute             | Type          | Default | Description                                                                                                                                           |
+|-----------------------|---------------|---------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| allowRemoteReferences | bool          | `false` | `true` allows reading remote `$ref`s (denied by default by security reasons)                                                                          |
+| rootDirectory         | string        |         | The base directory to locate the files. Not used if empty.                                                                                            |
+| timeout               | time.Duration | `30s`   | Reference resolving timeout (sets both the HTTP request timeout and command execution timeout)                                                        |
+| command               | string        |         | Shell command of [custom locator]({{< relref "/asyncapi-specification/references#custom-reference-locator" >}}). If empty, uses the built-in locator. |
 
 {{% hint info %}}
 For more information about the reference locator, see the [References]({{< relref "/asyncapi-specification/references" >}}) page.
@@ -189,7 +194,7 @@ If both `onlyPublish` and `onlySubscribe` are `false` or omitted, the tool gener
 Some configuration attributes supports the template expressions, which are evaluated to the string value on tool running.
 This allows automatically set a value dynamically, depending on the current object or other context.
 
-The template expression is just a Go [text/template](https://pkg.go.dev/text/template) expression. Couple of examples:
+The template expression is just a Go [text/template](https://pkg.go.dev/text/template) expression. For example:
 
 ```yaml
 file: {{.Object.Kind}}s/{{.Object | goIDUpper }}.go

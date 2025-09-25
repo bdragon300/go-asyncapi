@@ -8,27 +8,62 @@ description: "Overview of using the Go templates to customize the result produce
 
 `go-asyncapi` uses the [Go templates](https://pkg.go.dev/text/template) to generate the code, client application, IaC files, etc.
 
-To customize the result, put all template you want to use to the directory and specify this directory
-with the `--template-dir` flag or set an appropriate option in config.
+## Naming
 
-## Structure
+Templates files have the `.tmpl` extension.
+
+Go Templates engine maintain its own template namespace, that is build during the parsing of template files tree. The
+name in this namespace is used to identify and invoke the template inside other templates.
+
+The namespace is built as follows:
+
+* If the template file has any content, it is available by its file name.
+* Each [nested template](https://pkg.go.dev/text/template#hdr-Nested_template_definitions)
+  (i.e. `define` directive) becomes a separate template in the namespace, available by its name, regardless of the file 
+  where it was defined.
+* If file contains only nested templates, without any content outside of `define` directives, the file name is ignored.
+
+### Structure
 
 The templates are organized in a [tree structure]({{< relref "/templating-guide/template-tree" >}}),
-that allows to customize the result on any granularity level. 
+that allows to customize the result on any granularity level.
 
 The whole tree is rendered starting from the **root template**, called `main.tmpl` by default.
 
-The **preamble template** is executed at the end, after all root template invocations. 
+The **preamble template** (only for code and client generation) is executed at the end, after all root template invocations.
 Preamble template is called once per file, producing the output that is substituted at the beginning a file. Typically,
 it contains the package declaration, import statements, "copyright" notice, etc. By default, its name `preamble.tmpl`.
 
-## Naming
+### Overriding templates
 
-Templates files must have the `.tmpl` extension.
+You can override any template in the tree by providing your own template file with the same name.
 
-The file name is used as a template name if it doesn't contain any
-[nested templates](https://pkg.go.dev/text/template#hdr-Nested_template_definitions) (`define` directives).
-Otherwise, every nested templates are available by their names and the file name is ignored.
+For example, we want to add a method `Name()` to the server interface in channel code. 
+To do that, we need to override the `code/proto/channel/serverInterface` template. 
+Let's create a file with any name, say `my_server_interface.tmpl` with the following content:
+
+```gotemplate
+{{define "code/proto/channel/serverInterface"}}
+type {{ .Channel | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
+    Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}(ctx {{goQual "context.Context"}}, {{if .ParametersType}}params {{ .ParametersType | goUsage }}{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
+    {{if .IsPublisher}}Producer() {{goQualR .Protocol "Producer"}}{{end}}
+    {{if .IsSubscriber}}Consumer() {{goQualR .Protocol "Consumer"}}{{end}}
+    Name() string
+}
+{{- end}}
+```
+
+Put this file in a directory, say `my_templates`, and run the `go-asyncapi` tool with the `--template-dir` flag pointing to this directory:
+```bash
+go-asyncapi code --template-dir ./my_templates my_asyncapi.yml
+```
+
+`go-asyncapi` will scan the `my_templates` directory and override the `code/proto/channel/serverInterface` template with our version.
+
+{{% hint info %}}
+Overriding the whole template files works the same way, just name your template file as the original template name.
+E.g. `channel.tmpl`.
+{{% /hint %}}
 
 ## Concepts
 
@@ -51,8 +86,8 @@ Others are simpler and represent a simple Go type (e.g. jsonschema object), they
 `common.GolangType` interface.
 
 The templates goal is to render the artifacts into the desired output type: Go code, IaC configuration, etc.
-For this, `go-asyncapi` executes the root template separately for every artifact with `.Selected == true` and 
-merges the results into a files and packages according the [code layout]({{< relref "/howtos/code-layout" >}}).
+For this, `go-asyncapi` executes the root template separately for every artifact that is `.Selected == true` and 
+merges the results into a files after executions and packages according the [code layout]({{< relref "/howtos/code-layout" >}}).
 
 The artifacts, compiled from several AsyncAPI documents, get to the same list. However, every artifact keeps the document URL 
 and the location where it was defined.
@@ -82,48 +117,24 @@ foo.MyStruct
 This also works for the artifacts defined in the current package (e.g. `MyStruct`), and in 
 third-party packages (e.g. `mypackage.MyStruct` from "github.com/myuser/mypackage").
 
-### Namespace
+### Pinning
 
-Namespace stores all the names and artifacts defined in templates between root templates executions.
+`go-asyncapi` can generate the code in any [layout]({{< relref "/howtos/code-layout" >}}) you want. 
+This feature gives much flexibility, but the problem is that we can't hardcode imports in templates between the generated packages, 
+because we don't know the code layout prior the generation time.
 
-The main its purpose is conditional rendering to avoid the name collisions in corner cases. 
-For example, when an entity may be referenced from several places in document, its definition will be rendered several 
-times, which is semantic error in Go code.
+For example, we have a struct `MySchema` defined in the "schemas" package. The simplest way is just use `MySchema` in 
+every template it uses, but this works only if `MySchema` is defined in the same package. 
+For importing the "schemas" package from, say "servers" package, this won't work when the code layout is not default -- 
+`MySchema` may be even put to the package other than "schemas".
 
-We have `goDef`, `def` functions to define the artifact/name and `defined`, `ndefined` functions
-to check if the artifact/name is already defined in the current namespace. If you familiar with C/C++ languages, 
-the namespace behavior may remind how `#define`, `#ifdef`, `#ifndef` preprocessor directives work.
+To manage this, we use *pinning*. Pinning is the mechanism to "associate" the artifact with the current package name 
+in runtime. Once pinned, the artifact's location becomes known, and now it can be imported anywhere from the generated code. 
+In other words, somewhere in templates we pin the artifact by `pin` or `goDef` functions, and then somewhere else in templates
+we can use `goPkg`, `goUsage` functions to import its package and use the artifact in the generated code.
 
-For more information, see the [functions reference]({{< relref "/templating-guide/functions#defined" >}}).
+In example above, we write `{{goDef .Type}}` to pin and draw the `MySchema` declaration, and in any place we use it 
+we write `{{goPkg}}MySchema` which will render either `MySchema` or `schemas.MySchema` with a proper import regardless
+the current code layout.
 
-## Usage
-
-For example, we want to add additional prefix `My` to the name of the generated server interface generated near with every 
-`channel`.
-
-For that, create a file with any name, say `my_server_interface.tmpl`, copy the `code/proto/channel/serverInterface`
-template from the 
-[proto_channel.tmpl](https://github.com/bdragon300/go-asyncapi/blob/master/templates/code/proto/proto_channel.tmpl)
-and modify it as follows:
-
-```gotemplate
-{{define "code/proto/channel/serverInterface"}}
-type My{{ .Channel | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
-    Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}(ctx {{goQual "context.Context"}}, {{if .ParametersType}}params {{ .ParametersType | goUsage }}{{end}}) (*{{ .Type | goUsage }}, error)
-    {{if .IsPublisher}}Producer() {{goQualR .Protocol "Producer"}}{{end}}
-    {{if .IsSubscriber}}Consumer() {{goQualR .Protocol "Consumer"}}{{end}}
-}
-{{- end}}
-```
-
-Now, run the `go-asyncapi` tool with the `--template-dir` flag pointing to the directory with the `my_server_interface.tmpl` file
-and your version of `code/proto/channel/serverInterface` template will replace the default one:
-
-```bash
-go-asyncapi code --template-dir ./my_templates my_asyncapi.yml
-```
-
-{{% hint info %}}
-Overriding the template files without ff works the same way, but you need to name your template file as the original template name.
-E.g. `channel.tmpl`.
-{{% /hint %}}
+Some artifacts can not be pinned, because they can't belong to any package, e.g. primitive Go types like `string`, `int`, etc.

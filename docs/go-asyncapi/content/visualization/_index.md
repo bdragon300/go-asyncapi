@@ -7,7 +7,7 @@ description: "Visualizing AsyncAPI documents in diagrams"
 
 # Visualizing AsyncAPI documents
 
-`go-asyncapi` can generate diagrams from AsyncAPI documents using [D2](https://d2lang.com/), a modern diagram scripting 
+`go-asyncapi` can generate diagrams from AsyncAPI documents using [D2](https://d2lang.com/) -- a modern diagram scripting 
 language. The resulting diagrams visualize the structure of the AsyncAPI document, including servers, channels,
 operations, messages and their relationships. 
 
@@ -19,7 +19,7 @@ The result can also be customized in d2 script templates. See
 
 ## Usage
 
-To generate a diagram, use the `diagram` command:
+To generate a diagram, use the `diagram` subcommand:
 
 ```bash
 $ go-asyncapi diagram my-app.yaml
@@ -71,6 +71,8 @@ By default, the diagram does not show which entities belong to which files. To e
 If both options are set, the resulting SVG will be dual-theme where the theme switches automatically based on user's 
 system preferences ([more info](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-color-scheme)).
 
+List of available themes can be found in the [D2 documentation](https://d2lang.com/tour/themes/).
+
 {{< figure src="images/my-app-theme1.svg" alt="my-app.svg" >}}
 
 {{< figure src="images/my-app-theme2.svg" alt="my-app.svg" >}}
@@ -84,11 +86,10 @@ For example, the `--d2-sketch` option makes the diagram look hand-drawn:
 
 {{< figure src="images/my-app-sketch.svg" alt="my-app5.svg" >}}
 
-
-
 {{% hint tip %}}
 D2 engine sometimes may produce diagrams that looks ugly or that are hard to read due to overlapping nodes or edges.
-To get better results, you may try to play with various `--d2-*` options, starting with `--d2-engine` and `--d2-direction`.
+To get better results, you may try to play with various `--d2-*` CLI args (or appropriate config options), 
+starting with `--d2-engine` and `--d2-direction`.
 {{% /hint %}}
 
 ### More customization

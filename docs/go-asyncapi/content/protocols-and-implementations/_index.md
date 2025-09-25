@@ -155,6 +155,28 @@ Some of the most popular MQTT brokers include Mosquitto, HiveMQ, EMQ X and other
 
 Protocol bindings are described in https://github.com/asyncapi/bindings/tree/v3.0.0/mqtt/README.md
 
+## NATS
+
+{{< hint info >}}
+
+{{< figure src="/images/nats.svg" alt="NATS" class="text-initial" >}}
+
+**[NATS](https://nats.io/)** is a high-performance messaging system designed for cloud-native applications,
+microservices, and distributed systems. NATS supports various messaging patterns, including
+publish-subscribe, request-reply, and queue groups, making it a versatile choice for building modern applications.
+It also supports NATS Streaming (now known as JetStream), which provides durable message storage and advanced streaming capabilities.
+
+{{< /hint >}}
+
+| Feature       | Protocol specifics |
+|---------------|--------------------|
+| Protocol name | `nats`             |
+| Channel       | Subject            |
+| Server        | NATS server        |
+| Envelope      | NATS Message       |
+
+Protocol bindings are described in https://github.com/asyncapi/bindings/blob/master/nats/README.md
+
 ## Redis
 
 {{< hint info >}}

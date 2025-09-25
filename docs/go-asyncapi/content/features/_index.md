@@ -19,6 +19,13 @@ description = 'asyncapi-go features overview'
   functionality
 - Generating the [infrastructure-as-code (IaC) files]({{< relref "/infrastructure-files-generation" >}}) in 
   [supported engines](#infrastructure-as-code-iac-generation).
+- Visualizing the AsyncAPI document as a [diagram]({{< relref "/visualization" >}})
+  - SVG (default) and D2 formats supported
+  - Channel-centric, server-centric and combined (default) views
+  - Supports multiple documents at once, showing relationships between them
+  - Plenty of [customization options]({{< relref "/visualization#customization" >}})
+  - [Themes]({{< relref "/visualization#themes" >}}) support
+  - D2 output is also customizable via [templates]({{< relref "/templating-guide/overview" >}})
 - Go code generation
   - [Implementation-agnostic code]({{< relref "/code-generation/code-structure" >}})
   - Built-in ready to use [implementations]({{< relref "/protocols-and-implementations" >}}) based on most 
@@ -62,6 +69,7 @@ Here are the protocols that are supported by `go-asyncapi` for now:
 - {{< figure src="images/tcpudp.svg" alt="TCP" link="/protocols-and-implementations#tcp" class="brand-icon" >}} [TCP]({{< relref "/protocols-and-implementations#tcp" >}})**&ast;**
 - {{< figure src="images/tcpudp.svg" alt="UDP" link="/protocols-and-implementations#udp" class="brand-icon" >}} [UDP]({{< relref "/protocols-and-implementations#udp" >}})**&ast;**
 - {{< figure src="images/websocket.svg" alt="WebSocket" link="/protocols-and-implementations#websocket" class="brand-icon" >}} [WebSocket]({{< relref "/protocols-and-implementations#websocket" >}})
+- {{< figure src="images/nats.svg" alt="NATS" link="/protocols-and-implementations#nats" class="brand-icon" >}} [NATS]({{< relref "/protocols-and-implementations#nats" >}})
 
 {{< hint info >}}
 &ast; - not described in the AsyncAPI specification
@@ -95,8 +103,8 @@ AsyncAPI Entities:
 - [x] Operations object
   - [x] Operation object
     - [ ] Operation Trait object
-    - [ ] Operation Reply object
-      - [ ] Operation Reply Address object
+    - [x] Operation Reply object
+      - [x] Operation Reply Address object
     - [x] Operation Bindings object
 - [x] Parameters object
   - [x] Parameter object
@@ -114,6 +122,7 @@ Other features:
 - [x] Reference object (`$ref`)
 - [x] Schema object
     - [x] Primitive types (number, string, boolean, etc.)
+    - [x] Formats
     - [x] Object types
     - [x] Array types
     - [x] Polymorphism: OneOf, AnyOf, AllOf
@@ -127,9 +136,42 @@ Other features:
 The following content types (MIME types) has the default implementation in the generated code:
 
 - application/json: [encoding/json](https://pkg.go.dev/encoding/json)
-- application/yaml, application/x-yaml, text/yaml, text/x-yaml, text/vnd.yaml: [gopkg.in/yaml.v3](https://gopkg.in/yaml.v3)
+- application/yaml, application/x-yaml, text/yaml: [gopkg.in/yaml.v3](https://gopkg.in/yaml.v3)
+- application/binary: [encoding/gob](https://pkg.go.dev/encoding/gob)
+- text/plain: built-in conversion to/from string
+- application/xml: [encoding/xml](https://pkg.go.dev/encoding/xml)
 
-You also can add any content type and its encoder/decoder code in templates, [see more]({{< relref "/howtos/content-types#adding-a-new-content-type" >}}).
+{{% hint tip %}}
+You also can add any content type or override the existing one, [see more]({{< relref "/howtos/content-types#adding-a-new-content-type" >}}).
+{{% /hint %}}
+
+## JSONSchema formats
+
+The formats and the produced Go types, supported by `go-asyncapi` out of the box:
+
+- `string` type
+  - `date-time`, `datetime`: [time.Time](https://pkg.go.dev/time#Time)
+  - `ipv4`, `ipv6`: [net.IP](https://pkg.go.dev/net#IP)
+  - `uuid`: [github.com/google/uuid](https://pkg.go.dev/github.com/google/uuid)
+  - `binary`, `bytes`: `[]byte`
+- `integer` type
+  - `int8`: `int8`
+  - `int16`: `int16`
+  - `int32`: `int32`
+  - `int64`: `int64`
+  - `uint`: `uint`
+  - `uint8`: `uint8`
+  - `uint16`: `uint16`
+  - `uint32`: `uint32`
+  - `uint64`: `uint64`
+- `number` type
+  - `float`: `float32`
+  - `double`: `float64`
+  - `decimal`: [github.com/shopspring/decimal](https://pkg.go.dev/github.com/shopspring/decimal)
+
+{{% hint tip %}}
+You also can add any format or override the existing one, [see more]({{< relref "/howtos/jsonschema#adding-a-new-format" >}}).
+{{% /hint %}}
 
 ## Infrastructure as code (IaC) generation
 
