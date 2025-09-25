@@ -36,7 +36,7 @@ See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for m
 |                                                                             | Protocol       | Library                                                                            |
 |-----------------------------------------------------------------------------|----------------|------------------------------------------------------------------------------------|
 | {{< figure src="images/amqp.svg" alt="AMQP" class="brand-icon">}}           | AMQP           | [github.com/rabbitmq/amqp091-go](https://github.com/rabbitmq/amqp091-go)           |
-| {{< figure src="images/http-small.png" alt="HTTP" class="brand-icon">}}     | HTTP           | [net/http](https://pkg.go.dev/net/http)                                            |
+| {{< figure src="images/http.svg" alt="HTTP" class="brand-icon">}}           | HTTP           | [net/http](https://pkg.go.dev/net/http)                                            |
 | {{< figure src="images/ip.png" alt="IP RAW Sockets" class="brand-icon">}}   | IP RAW Sockets | [net](https://pkg.go.dev/net)                                                      |
 | {{< figure src="images/kafka.svg" alt="Apache Kafka" class="brand-icon">}}  | Apache Kafka   | [github.com/twmb/franz-go](https://github.com/twmb/franz-go)                       |
 | {{< figure src="images/nats.svg" alt="NATS" class="brand-icon">}}           | NATS           | [github.com/nats-io/nats.go](https://github.com/nats-io/nats.go)                   |
