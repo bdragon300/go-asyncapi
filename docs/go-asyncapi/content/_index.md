@@ -20,13 +20,14 @@ description = 'Generate Go code based on your AsyncAPI documents! This tool supp
 
 ## Core features
 
-|                                                                                  | Feature                                                 | Command                |
-|----------------------------------------------------------------------------------|---------------------------------------------------------|------------------------|
-| {{< figure src="images/go-logo.svg" alt="Go code" class="feature-icon">}}        | Generating the Go boilerplate code                      | `go-asyncapi code`     |
-| {{< figure src="images/terminal-icon.svg" alt="CLI app" class="feature-icon">}}  | Building the CLI client without writing the code        | `go-asyncapi client`   |
-| {{< figure src="images/docker.svg" alt="IaC definitions" class="feature-icon">}} | Generating the Infrastructure-As-Code (IaC) definitions | `go-asyncapi infra`    |
+|                                                                                 | Feature                                                                                                      | Command               |
+|---------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|-----------------------|
+| {{< figure src="images/go-logo.svg" alt="Go code" class="feature-icon">}}       | [Generating the Go boilerplate code]({{< relref "/code-generation/overview" >}})                             | `go-asyncapi code`    |
+| {{< figure src="images/terminal-icon.svg" alt="CLI app" class="feature-icon">}} | [Building the zero-code CLI client executable]({{< relref "/client-application-generation" >}})              | `go-asyncapi client`  |
+| {{< figure src="images/infra.svg" alt="IaC definitions" class="feature-icon">}} | [Generating the Infrastructure-As-Code (IaC) definitions]({{< relref "/infrastructure-files-generation" >}}) | `go-asyncapi infra`   |
+| {{< figure src="images/diagram.svg" alt="Diagram" class="feature-icon">}}       | [Generating the diagrams]({{< relref "/visualization" >}})                                                   | `go-asyncapi diagram` |
 
-Also, `go-asyncapi` contains the built-in **protocol implementations** based on popular libraries, allows the **result customization** using Go templates and more.
+Also, `go-asyncapi` contains the built-in **protocol implementations** based on popular libraries, supports the **result customization** using Go templates and more.
 
 See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for more details.
 
@@ -35,9 +36,10 @@ See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for m
 |                                                                             | Protocol       | Library                                                                            |
 |-----------------------------------------------------------------------------|----------------|------------------------------------------------------------------------------------|
 | {{< figure src="images/amqp.svg" alt="AMQP" class="brand-icon">}}           | AMQP           | [github.com/rabbitmq/amqp091-go](https://github.com/rabbitmq/amqp091-go)           |
-| {{< figure src="images/kafka.svg" alt="Apache Kafka" class="brand-icon">}}  | Apache Kafka   | [github.com/twmb/franz-go](https://github.com/twmb/franz-go)                       |
 | {{< figure src="images/http-small.png" alt="HTTP" class="brand-icon">}}     | HTTP           | [net/http](https://pkg.go.dev/net/http)                                            |
 | {{< figure src="images/ip.png" alt="IP RAW Sockets" class="brand-icon">}}   | IP RAW Sockets | [net](https://pkg.go.dev/net)                                                      |
+| {{< figure src="images/kafka.svg" alt="Apache Kafka" class="brand-icon">}}  | Apache Kafka   | [github.com/twmb/franz-go](https://github.com/twmb/franz-go)                       |
+| {{< figure src="images/nats.svg" alt="NATS" class="brand-icon">}}           | NATS           | [github.com/nats-io/nats.go](https://github.com/nats-io/nats.go)                   |
 | {{< figure src="images/mqtt.svg" alt="MQTT" class="brand-icon">}}           | MQTT           | [github.com/eclipse/paho.mqtt.golang](https://github.com/eclipse/paho.mqtt.golang) |
 | {{< figure src="images/redis.svg" alt="Redis" class="brand-icon">}}         | Redis          | [github.com/redis/go-redis](https://github.com/redis/go-redis)                     |
 | {{< figure src="images/tcpudp.svg" alt="TCP" class="brand-icon">}}          | TCP            | [net](https://pkg.go.dev/net)                                                      |
@@ -59,12 +61,12 @@ if err != nil {
 }
 defer myServer.Close()
 
-// Open an operation for sending messages
-myOperation, err := myServer.OpenMyPubOperationKafka(ctx)
+// Open an channel for sending messages
+myChannel, err := myServer.OpenMyChannelKafka(ctx)
 if err != nil {
-	log.Fatalf("open myPubOperation: %v", err)
+	log.Fatalf("open myChannel: %v", err)
 }
-defer myOperation.Close()
+defer myChannel.Close()
 
 // Craft a message
 msg := messages.MyMessage{
@@ -78,7 +80,7 @@ msg := messages.MyMessage{
 }
 
 // Send a message
-if err := myOperation.PublishMyMessage(ctx, msg); err != nil {
+if err := myChannel.OperationFooBar().PublishMyMessage(ctx, msg); err != nil {
 	log.Fatalf("send message: %v", err)
 }
 ```
@@ -94,15 +96,15 @@ if err != nil {
 }
 defer myServer.Close()
 
-// Open an operation for receiving messages
-myOperation, err := myServer.OpenMySubOperationKafka(ctx)
+// Open an channel for sending messages
+myChannel, err := myServer.OpenMyChannelKafka(ctx)
 if err != nil {
-	log.Fatalf("open mySubOperation: %v", err)
+    log.Fatalf("open myChannel: %v", err)
 }
-defer myOperation.Close()
+defer myChannel.Close()
 
 // Subscribe to messages
-err := myOperation.SubscribeMyMessage(ctx, func(msg messages.MyMessage) {
+err := myChannel.OperationFooBar().SubscribeMyMessage(ctx, func(msg messages.MyMessage) {
 	log.Printf("received message: %+v", msg)
 })
 if err != nil {
@@ -125,8 +127,7 @@ go install github.com/bdragon300/go-asyncapi/cmd/go-asyncapi@latest
 
 ## Project status
 
-The project is in active development. The main features are implemented, but there are still some missing features and
-bugs.
+The project is in active development and is considered unstable.
 
 This version supports the latest AsyncAPI v3. It doesn't support the previous v2, because v3 introduced some breaking
 changes, so making the tool that supports both v2 and v3 requires a lot of effort and time with no significant benefits.

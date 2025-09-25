@@ -13,29 +13,31 @@
 
 ## Core features
 
-|                                                                                                                           | Feature                                                 | Command                |
-|---------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------|------------------------|
-| <img src="https://bdragon300.github.io/go-asyncapi/images/go-logo.svg" style="height: 3em; vertical-align: middle">       | Generating the Go boilerplate code                      | `go-asyncapi code`     |
-| <img src="https://bdragon300.github.io/go-asyncapi/images/terminal-icon.svg" style="height: 3em; vertical-align: middle"> | Building the CLI client without writing the code        | `go-asyncapi client`   |
-| <img src="https://bdragon300.github.io/go-asyncapi/images/docker.svg" style="height: 3em; vertical-align: middle">        | Generating the Infrastructure-As-Code (IaC) definitions | `go-asyncapi infra`    |
+|                                                                                                                           | Feature                                                                                                                             | Command               |
+|---------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|-----------------------|
+| <img src="https://bdragon300.github.io/go-asyncapi/images/go-logo.svg" style="height: 3em; vertical-align: middle">       | [Generating the Go boilerplate code](https://bdragon300.github.io/go-asyncapi/code-generation/overview)                             | `go-asyncapi code`    |
+| <img src="https://bdragon300.github.io/go-asyncapi/images/terminal-icon.svg" style="height: 3em; vertical-align: middle"> | [Building the zero-code CLI client executable](https://bdragon300.github.io/go-asyncapi/client-application-generation)              | `go-asyncapi client`  |
+| <img src="https://bdragon300.github.io/go-asyncapi/images/infra.svg" style="height: 3em; vertical-align: middle">         | [Generating the Infrastructure-As-Code (IaC) definitions](https://bdragon300.github.io/go-asyncapi/infrastructure-files-generation) | `go-asyncapi infra`   |
+| <img src="https://bdragon300.github.io/go-asyncapi/images/diagram.svg" style="height: 3em; vertical-align: middle">       | [Generating the diagrams](https://bdragon300.github.io/go-asyncapi/visualization/)                                                  | `go-asyncapi diagram` |
 
-Also, `go-asyncapi` contains the built-in **protocol implementations** based on popular libraries, allows the **result customization** using Go templates and more.
+Also, `go-asyncapi` contains the built-in **protocol implementations** based on popular libraries, supports the **result customization** using Go templates and more.
 
 See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for more details.
 
 ## Supported protocols
 
-|                                                                                                                                         | Protocol       | Library                                                                            |
-|-----------------------------------------------------------------------------------------------------------------------------------------|----------------|------------------------------------------------------------------------------------|
-| <img alt="AMQP" src="https://bdragon300.github.io/go-asyncapi/images/amqp.svg" style="height: 1.5em; vertical-align: middle">           | AMQP           | [github.com/rabbitmq/amqp091-go](https://github.com/rabbitmq/amqp091-go)           |
-| <img alt="Apache Kafka" src="https://bdragon300.github.io/go-asyncapi/images/kafka.svg" style="height: 1.5em; vertical-align: middle">  | Apache Kafka   | [github.com/twmb/franz-go](https://github.com/twmb/franz-go)                       |
-| <img alt="HTTP" src="https://bdragon300.github.io/go-asyncapi/images/http-small.png" style="height: 1.5em; vertical-align: middle">     | HTTP           | [net/http](https://pkg.go.dev/net/http)                                            |
-| <img alt="IP RAW Sockets" src="https://bdragon300.github.io/go-asyncapi/images/ip.png" style="height: 1.5em; vertical-align: middle">   | IP RAW Sockets | [net](https://pkg.go.dev/net)                                                      |
-| <img alt="MQTT" src="https://bdragon300.github.io/go-asyncapi/images/mqtt.svg" style="height: 1.5em; vertical-align: middle">           | MQTT           | [github.com/eclipse/paho.mqtt.golang](https://github.com/eclipse/paho.mqtt.golang) |
-| <img alt="Redis" src="https://bdragon300.github.io/go-asyncapi/images/redis.svg" style="height: 1.5em; vertical-align: middle">         | Redis          | [github.com/redis/go-redis](https://github.com/redis/go-redis)                     |
-| <img alt="TCP" src="https://bdragon300.github.io/go-asyncapi/images/tcpudp.svg" style="height: 1.5em; vertical-align: middle">          | TCP            | [net](https://pkg.go.dev/net)                                                      |
-| <img alt="UDP" src="https://bdragon300.github.io/go-asyncapi/images/tcpudp.svg" style="height: 1.5em; vertical-align: middle">          | UDP            | [net](https://pkg.go.dev/net)                                                      |
-| <img alt="Websocket" src="https://bdragon300.github.io/go-asyncapi/images/websocket.svg" style="height: 1.5em; vertical-align: middle"> | Websocket      | [github.com/gobwas/ws](https://github.com/gobwas/ws)                               |
+|                                                                                                                                                     | Protocol       | Library                                                                            |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------|----------------|------------------------------------------------------------------------------------|
+| <img alt="AMQP" src="https://github.com/bdragon300/go-asyncapi/blob/master/icons/amqp.svg" style="height: 1.5em; vertical-align: middle">           | AMQP           | [github.com/rabbitmq/amqp091-go](https://github.com/rabbitmq/amqp091-go)           |
+| <img alt="HTTP" src="https://github.com/bdragon300/go-asyncapi/blob/master/icons/http.png" style="height: 1.5em; vertical-align: middle">           | HTTP           | [net/http](https://pkg.go.dev/net/http)                                            |
+| <img alt="IP RAW Sockets" src="https://github.com/bdragon300/go-asyncapi/blob/master/icons/ip.png" style="height: 1.5em; vertical-align: middle">   | IP RAW Sockets | [net](https://pkg.go.dev/net)                                                      |
+| <img alt="Apache Kafka" src="https://github.com/bdragon300/go-asyncapi/blob/master/icons/kafka.svg" style="height: 1.5em; vertical-align: middle">  | Apache Kafka   | [github.com/twmb/franz-go](https://github.com/twmb/franz-go)                       |
+| <img alt="NATS" src="https://github.com/bdragon300/go-asyncapi/blob/master/icons/nats.svg" style="height: 1.5em; vertical-align: middle">           | NATS           | [github.com/nats-io/nats.go](https://github.com/nats-io/nats.go)                   |
+| <img alt="MQTT" src="https://github.com/bdragon300/go-asyncapi/blob/master/icons/mqtt.svg" style="height: 1.5em; vertical-align: middle">           | MQTT           | [github.com/eclipse/paho.mqtt.golang](https://github.com/eclipse/paho.mqtt.golang) |
+| <img alt="Redis" src="https://github.com/bdragon300/go-asyncapi/blob/master/icons/redis.svg" style="height: 1.5em; vertical-align: middle">         | Redis          | [github.com/redis/go-redis](https://github.com/redis/go-redis)                     |
+| <img alt="TCP" src="https://github.com/bdragon300/go-asyncapi/blob/master/icons/tcpudp.svg" style="height: 1.5em; vertical-align: middle">          | TCP            | [net](https://pkg.go.dev/net)                                                      |
+| <img alt="UDP" src="https://github.com/bdragon300/go-asyncapi/blob/master/icons/tcpudp.svg" style="height: 1.5em; vertical-align: middle">          | UDP            | [net](https://pkg.go.dev/net)                                                      |
+| <img alt="Websocket" src="https://github.com/bdragon300/go-asyncapi/blob/master/icons/websocket.svg" style="height: 1.5em; vertical-align: middle"> | Websocket      | [github.com/gobwas/ws](https://github.com/gobwas/ws)                               |
 
 ## Usage
 
@@ -52,12 +54,12 @@ if err != nil {
 }
 defer myServer.Close()
 
-// Open an operation for sending messages
-myOperation, err := myServer.OpenMyPubOperationKafka(ctx)
+// Open an channel for sending messages
+myChannel, err := myServer.OpenMyChannelKafka(ctx)
 if err != nil {
-	log.Fatalf("open myPubOperation: %v", err)
+	log.Fatalf("open myChannel: %v", err)
 }
-defer myOperation.Close()
+defer myChannel.Close()
 
 // Craft a message
 msg := messages.MyMessage{
@@ -71,7 +73,7 @@ msg := messages.MyMessage{
 }
 
 // Send a message
-if err := myOperation.PublishMyMessage(ctx, msg); err != nil {
+if err := myChannel.OperationFooBar().PublishMyMessage(ctx, msg); err != nil {
 	log.Fatalf("send message: %v", err)
 }
 ```
@@ -87,15 +89,15 @@ if err != nil {
 }
 defer myServer.Close()
 
-// Open an operation for receiving messages
-myOperation, err := myServer.OpenMySubOperationKafka(ctx)
+// Open an channel for sending messages
+myChannel, err := myServer.OpenMyChannelKafka(ctx)
 if err != nil {
-	log.Fatalf("open mySubOperation: %v", err)
+    log.Fatalf("open myChannel: %v", err)
 }
-defer myOperation.Close()
+defer myChannel.Close()
 
 // Subscribe to messages
-err := myOperation.SubscribeMyMessage(ctx, func(msg messages.MyMessage) {
+err := myChannel.OperationFooBar().SubscribeMyMessage(ctx, func(msg messages.MyMessage) {
 	log.Printf("received message: %+v", msg)
 })
 if err != nil {
