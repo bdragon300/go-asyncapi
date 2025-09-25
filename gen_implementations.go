@@ -29,7 +29,7 @@ const (
 func main() {
 	outDir := flag.String("out", "implementations_go", "output implementations directory")
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "Dev tool that generates the implementations code from templates and save it to the output directory.\n\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "Dev tool that generates the code files from the implementations templates and save them to the output directory.\n\n")
 		fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", os.Args[0])
 		flag.PrintDefaults()
 	}
@@ -158,11 +158,14 @@ func prepareGoModule(outDir string) error {
 	fmt.Println("Repo dir:", repoDir, "Working dir:", workingDir)
 
 	// Go subcommands to run
+	devRunPath := path.Clean(path.Join(repoDir, runModuleDir))
 	subcommands := [][]string{
 		{"mod", "init", goModuleName},
+		// Add replace directive to use local run module
+		{"mod", "edit", "-replace", fmt.Sprintf("github.com/bdragon300/go-asyncapi/run=%s", devRunPath)},
 		{"work", "init"},
 		{"work", "use", "."},
-		{"work", "use", path.Clean(path.Join(repoDir, runModuleDir))},
+		{"work", "use", devRunPath},
 		{"get", "-v", "./..."},
 	}
 
