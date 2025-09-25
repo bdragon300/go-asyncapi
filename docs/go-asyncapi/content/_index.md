@@ -39,8 +39,8 @@ See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for m
 | {{< figure src="images/http.svg" alt="HTTP" class="brand-icon">}}           | HTTP           | [net/http](https://pkg.go.dev/net/http)                                            |
 | {{< figure src="images/ip.png" alt="IP RAW Sockets" class="brand-icon">}}   | IP RAW Sockets | [net](https://pkg.go.dev/net)                                                      |
 | {{< figure src="images/kafka.svg" alt="Apache Kafka" class="brand-icon">}}  | Apache Kafka   | [github.com/twmb/franz-go](https://github.com/twmb/franz-go)                       |
-| {{< figure src="images/nats.svg" alt="NATS" class="brand-icon">}}           | NATS           | [github.com/nats-io/nats.go](https://github.com/nats-io/nats.go)                   |
 | {{< figure src="images/mqtt.svg" alt="MQTT" class="brand-icon">}}           | MQTT           | [github.com/eclipse/paho.mqtt.golang](https://github.com/eclipse/paho.mqtt.golang) |
+| {{< figure src="images/nats.svg" alt="NATS" class="brand-icon">}}           | NATS           | [github.com/nats-io/nats.go](https://github.com/nats-io/nats.go)                   |
 | {{< figure src="images/redis.svg" alt="Redis" class="brand-icon">}}         | Redis          | [github.com/redis/go-redis](https://github.com/redis/go-redis)                     |
 | {{< figure src="images/tcpudp.svg" alt="TCP" class="brand-icon">}}          | TCP            | [net](https://pkg.go.dev/net)                                                      |
 | {{< figure src="images/tcpudp.svg" alt="UDP" class="brand-icon">}}          | UDP            | [net](https://pkg.go.dev/net)                                                      |

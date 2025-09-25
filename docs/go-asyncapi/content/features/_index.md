@@ -61,15 +61,15 @@ description = 'asyncapi-go features overview'
 Here are the protocols that are supported by `go-asyncapi` for now:
 
 - {{< figure src="images/amqp.svg" alt="AMQP" link="/protocols-and-implementations#amqp" class="brand-icon" >}} [AMQP]({{< relref "/protocols-and-implementations#amqp" >}})
-- {{< figure src="images/kafka.svg" alt="Apache Kafka" link="/protocols-and-implementations#apache-kafka" class="brand-icon" >}} [Apache Kafka]({{< relref "/protocols-and-implementations#apache-kafka" >}})
 - {{< figure src="images/http.svg" alt="HTTP" link="/protocols-and-implementations#http" class="brand-icon" >}} [HTTP]({{< relref "/protocols-and-implementations#http" >}})
-- {{< figure src="images/mqtt.svg" alt="MQTT" link="/protocols-and-implementations#mqtt" class="brand-icon" >}} [MQTT]({{< relref "/protocols-and-implementations#mqtt" >}})
 - {{< figure src="images/ip.png" alt="IP" link="/protocols-and-implementations#ip-raw-sockets" class="brand-icon" >}} [IP RAW sockets]({{< relref "/protocols-and-implementations#ip-raw-sockets" >}})**&ast;**
+- {{< figure src="images/kafka.svg" alt="Apache Kafka" link="/protocols-and-implementations#apache-kafka" class="brand-icon" >}} [Apache Kafka]({{< relref "/protocols-and-implementations#apache-kafka" >}})
+- {{< figure src="images/mqtt.svg" alt="MQTT" link="/protocols-and-implementations#mqtt" class="brand-icon" >}} [MQTT]({{< relref "/protocols-and-implementations#mqtt" >}})
+- {{< figure src="images/nats.svg" alt="NATS" link="/protocols-and-implementations#nats" class="brand-icon" >}} [NATS]({{< relref "/protocols-and-implementations#nats" >}})
 - {{< figure src="images/redis.svg" alt="Redis" link="/protocols-and-implementations#redis" class="brand-icon" >}} [Redis]({{< relref "/protocols-and-implementations#redis" >}})
 - {{< figure src="images/tcpudp.svg" alt="TCP" link="/protocols-and-implementations#tcp" class="brand-icon" >}} [TCP]({{< relref "/protocols-and-implementations#tcp" >}})**&ast;**
 - {{< figure src="images/tcpudp.svg" alt="UDP" link="/protocols-and-implementations#udp" class="brand-icon" >}} [UDP]({{< relref "/protocols-and-implementations#udp" >}})**&ast;**
 - {{< figure src="images/websocket.svg" alt="WebSocket" link="/protocols-and-implementations#websocket" class="brand-icon" >}} [WebSocket]({{< relref "/protocols-and-implementations#websocket" >}})
-- {{< figure src="images/nats.svg" alt="NATS" link="/protocols-and-implementations#nats" class="brand-icon" >}} [NATS]({{< relref "/protocols-and-implementations#nats" >}})
 
 {{< hint info >}}
 &ast; - not described in the AsyncAPI specification
