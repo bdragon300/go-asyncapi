@@ -1,0 +1,27 @@
+version: '3'
+
+method: checksum
+
+env:
+  TOOLS_DIR: "{{.ROOT_DIR}}/.tools"
+  GOBIN: "{{.TOOLS_DIR}}"
+  PATH: "{{.TOOLS_DIR}}:{{.PATH}}"
+
+tasks:
+  tools:
+    desc: "Installing development tools"
+    cmds:
+      - go install -v github.com/gohugoio/hugo@latest
+
+  docs-server:
+    desc: "Runs docs server"
+    dir: "docs/go-asyncapi"
+    deps:
+      - tools
+    cmds:
+      - "{{.TOOLS_DIR}}/hugo server"
+
+  generate-implementations:
+    desc: "Generate the code files from implementations templates"
+    cmds:
+      - go run ./gen_implementations.go
