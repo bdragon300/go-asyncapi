@@ -12,6 +12,7 @@ tasks:
     desc: "Installing development tools"
     cmds:
       - go install -v github.com/gohugoio/hugo@latest
+      - go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 
   docs-server:
     desc: "Runs docs server"
@@ -25,3 +26,10 @@ tasks:
     desc: "Generate the code files from implementations templates"
     cmds:
       - go run ./gen_implementations.go
+
+  lint:
+    desc: "Run linters"
+    deps:
+      - tools
+    cmds:
+      - golangci-lint run --fix

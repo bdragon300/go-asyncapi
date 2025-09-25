@@ -30,3 +30,4 @@ go.work.sum
 /tmp
 /implementations_go
 /asyncapi
+/.tools
