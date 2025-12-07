@@ -6,6 +6,7 @@ import (
 
 	"github.com/bdragon300/go-asyncapi/implementations"
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
@@ -87,4 +88,12 @@ func (d DiagramTemplateContext) ObjectsGroupedByLocation() iter.Seq2[string, []c
 		return item.Pointer().Location()
 	})
 	return utils.OrderedKeysIter(groups)
+}
+
+// UITemplateContext is a context that is passed to the UI template.
+type UITemplateContext struct {
+	DocumentContents map[string]any
+	DocumentURL      jsonpointer.JSONPointer
+	Resources      []common.UIHTMLResource
+	Config           common.ConfigUI
 }

@@ -33,6 +33,7 @@ type cli struct {
 	ClientCmd           *ClientCmd  `arg:"subcommand:client" help:"Build the client executable (requires Go toolchain installed)"`
 	InfraCmd            *InfraCmd   `arg:"subcommand:infra" help:"Generate the infrastructure setup files"`
 	DiagramCmd          *DiagramCmd `arg:"subcommand:diagram" help:"Generate the architecture diagram"`
+	UICmd               *UICmd      `arg:"subcommand:ui" help:"Generate and optionally serve the documentation"`
 	ListImplementations *struct{}   `arg:"subcommand:list-implementations" help:"Show all available protocol implementations"`
 	Verbose             int         `arg:"-v" help:"Verbose output: 1 (debug), 2 (trace)" placeholder:"LEVEL"`
 	Quiet               bool        `help:"Suppress the logging output"`
@@ -93,8 +94,10 @@ func main() {
 		err = cliInfra(cliArgs.InfraCmd, mergedConfig)
 	case cliArgs.DiagramCmd != nil:
 		err = cliDiagram(cliArgs.DiagramCmd, mergedConfig)
+	case cliArgs.UICmd != nil:
+		err = cliUI(cliArgs.UICmd, mergedConfig)
 	default:
-		cliParser.Fail("No command specified. Try --help for more information")
+		cliParser.Fail("No subcommand specified. Try --help for more information")
 		os.Exit(1)
 	}
 

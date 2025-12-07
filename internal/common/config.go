@@ -64,6 +64,10 @@ type (
 		ShowDocumentBorders bool
 		D2DiagramDirection  D2DiagramDirection
 	}
+
+	ConfigUI struct {
+		ReferenceOnly bool
+	}
 )
 
 func (r ConfigLayoutItem) RenderProtocols() []string {

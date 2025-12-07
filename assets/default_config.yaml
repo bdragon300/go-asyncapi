@@ -41,3 +41,7 @@ diagram:
       # Defaults taken from d2.d2layouts.d2dagrelayout.DefaultOpts
       nodeSep: 60
       edgeSep: 20
+
+ui:
+  listenAddress: ":8090"
+  listenPath: "/"

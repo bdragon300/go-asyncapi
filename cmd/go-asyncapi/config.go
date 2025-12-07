@@ -34,6 +34,7 @@ type (
 		Client  toolConfigClient  `yaml:"client"`
 		Infra   toolConfigInfra   `yaml:"infra"`
 		Diagram toolConfigDiagram `yaml:"diagram"`
+		UI      toolConfigUI      `yaml:"ui"`
 	}
 
 	toolConfigLayout struct {
@@ -68,7 +69,7 @@ type (
 		DisableFormatting bool   `yaml:"disableFormatting"`
 		TargetDir         string `yaml:"targetDir"`
 
-		TemplatesDir     string `yaml:"templatesDir"`
+		TemplatesDir     string `yaml:"templatesDir"` // TODO: move to global config
 		PreambleTemplate string `yaml:"preambleTemplate"`
 
 		DisableImplementations bool   `yaml:"disableImplementations"`
@@ -142,6 +143,17 @@ type (
 	toolConfigDiagramD2DagreOpts struct {
 		NodeSep int64 `yaml:"nodeSep"`
 		EdgeSep int64 `yaml:"edgeSep"`
+	}
+
+	toolConfigUI struct {
+		OutputFile string `yaml:"outputFile"`
+
+		Listen        *bool  `yaml:"listen"`
+		ListenAddress string `yaml:"listenAddress"`
+		ListenPath    string `yaml:"listenPath"`
+		ReferenceOnly *bool  `yaml:"referenceOnly"`
+		Bundle        *bool  `yaml:"bundle"`
+		BundleDir     string `yaml:"bundleDir"`
 	}
 )
 
@@ -258,6 +270,14 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 
 	res.Diagram.D2.Dagre.NodeSep = coalesce(userConf.Diagram.D2.Dagre.NodeSep, defaultConf.Diagram.D2.Dagre.NodeSep)
 	res.Diagram.D2.Dagre.EdgeSep = coalesce(userConf.Diagram.D2.Dagre.EdgeSep, defaultConf.Diagram.D2.Dagre.EdgeSep)
+
+	res.UI.OutputFile = coalesce(userConf.UI.OutputFile, defaultConf.UI.OutputFile)
+	res.UI.Listen = coalesce(userConf.UI.Listen, defaultConf.UI.Listen)
+	res.UI.ListenAddress = coalesce(userConf.UI.ListenAddress, defaultConf.UI.ListenAddress)
+	res.UI.ListenPath = coalesce(userConf.UI.ListenPath, defaultConf.UI.ListenPath)
+	res.UI.ReferenceOnly = coalesce(userConf.UI.ReferenceOnly, defaultConf.UI.ReferenceOnly)
+	res.UI.Bundle = coalesce(userConf.UI.Bundle, defaultConf.UI.Bundle)
+	res.UI.BundleDir = coalesce(userConf.UI.BundleDir, defaultConf.UI.BundleDir)
 
 	return res
 }
