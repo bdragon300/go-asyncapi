@@ -53,7 +53,8 @@ func Parse(uri string) (*JSONPointer, error) {
 //
 // [JSON Pointer IETF Draft]: https://datatracker.ietf.org/doc/html/draft-pbryan-zyp-json-ref-03
 type JSONPointer struct {
-	// URI is a parsed url.URL if the location is a URI. Fragment is always empty, as it is stored in Pointer field.
+	// URI is a parsed url.URL if the location is a URI. If location is filesystem path, this field is nil.
+	// Fragment is always empty, as it is stored in Pointer field.
 	URI *url.URL
 	// FSPath is a filesystem path if the location is a local file path. Empty otherwise.
 	FSPath string
@@ -67,7 +68,7 @@ func (r JSONPointer) MatchPointer(unescapedPointer []string) bool {
 }
 
 // Location returns string representation of the location -- path to document without JSON pointer.
-// If the location is a URI, returns the URI string. Otherwise, returns the FSPath.
+// If the location is a URI, returns the full URI string without fragment. Otherwise, returns the FSPath.
 func (r JSONPointer) Location() string {
 	if r.URI != nil {
 		return r.URI.String()

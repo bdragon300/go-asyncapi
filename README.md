@@ -120,8 +120,7 @@ go install github.com/bdragon300/go-asyncapi/cmd/go-asyncapi@latest
 
 ## Project status
 
-The project is in active development. The main features are implemented, but there are still some missing features and
-bugs.
+The project is in active development and is considered unstable.
 
 This version supports the latest AsyncAPI v3. It doesn't support the previous v2, because v3 introduced some breaking 
 changes, so making the tool that supports both v2 and v3 requires a lot of effort and time with no significant benefits.
