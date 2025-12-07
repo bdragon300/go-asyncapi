@@ -49,14 +49,14 @@ const minAsyncAPIVersion = "3.0.0"
 //
 // [AsyncAPI specification]: https://github.com/asyncapi/spec/blob/master/spec/asyncapi.md
 type AsyncAPI struct {
-	Asyncapi           string                              `json:"asyncapi" yaml:"asyncapi"`
-	ID                 string                              `json:"id" yaml:"id"`
-	Info               InfoItem                            `json:"info" yaml:"info"`
-	Servers            types.OrderedMap[string, Server]    `json:"servers" yaml:"servers" cgen:"selectable"`
-	DefaultContentType string                              `json:"defaultContentType" yaml:"defaultContentType"`
-	Channels           types.OrderedMap[string, Channel]   `json:"channels" yaml:"channels" cgen:"selectable"`
-	Operations         types.OrderedMap[string, Operation] `json:"operations" yaml:"operations" cgen:"selectable"`
-	Components         ComponentsItem                      `json:"components" yaml:"components"`
+	Asyncapi           string                              `json:"asyncapi,omitzero" yaml:"asyncapi"`
+	ID                 string                              `json:"id,omitzero" yaml:"id"`
+	Info               InfoItem                            `json:"info,omitzero" yaml:"info"`
+	Servers            types.OrderedMap[string, Server]    `json:"servers,omitzero" yaml:"servers" cgen:"selectable"`
+	DefaultContentType string                              `json:"defaultContentType,omitzero" yaml:"defaultContentType"`
+	Channels           types.OrderedMap[string, Channel]   `json:"channels,omitzero" yaml:"channels" cgen:"selectable"`
+	Operations         types.OrderedMap[string, Operation] `json:"operations,omitzero" yaml:"operations" cgen:"selectable"`
+	Components         ComponentsItem                      `json:"components,omitzero" yaml:"components"`
 }
 
 func (a AsyncAPI) Compile(ctx *compile.Context) error {
@@ -85,28 +85,28 @@ func (a AsyncAPI) build(ctx *compile.Context) (*render.AsyncAPI, error) {
 }
 
 type InfoItem struct {
-	Title          string                `json:"title" yaml:"title"`
-	Version        string                `json:"version" yaml:"version"`
-	Description    string                `json:"description" yaml:"description"`
-	TermsOfService string                `json:"termsOfService" yaml:"termsOfService"`
-	Contact        ContactItem           `json:"contact" yaml:"contact"`
-	License        LicenseItem           `json:"license" yaml:"license"`
-	Tags           []Tag                 `json:"tags" yaml:"tags"`
-	ExternalDocs   ExternalDocumentation `json:"externalDocs" yaml:"externalDocs"`
+	Title          string                `json:"title,omitzero" yaml:"title"`
+	Version        string                `json:"version,omitzero" yaml:"version"`
+	Description    string                `json:"description,omitzero" yaml:"description"`
+	TermsOfService string                `json:"termsOfService,omitzero" yaml:"termsOfService"`
+	Contact        ContactItem           `json:"contact,omitzero" yaml:"contact"`
+	License        LicenseItem           `json:"license,omitzero" yaml:"license"`
+	Tags           []Tag                 `json:"tags,omitzero" yaml:"tags"`
+	ExternalDocs   ExternalDocumentation `json:"externalDocs,omitzero" yaml:"externalDocs"`
 }
 
 type ContactItem struct {
-	Name  string `json:"name" yaml:"name"`
-	URL   string `json:"url" yaml:"url"`
-	Email string `json:"email" yaml:"email"`
+	Name  string `json:"name,omitzero" yaml:"name"`
+	URL   string `json:"url,omitzero" yaml:"url"`
+	Email string `json:"email,omitzero" yaml:"email"`
 }
 
 type LicenseItem struct {
-	Name string `json:"name" yaml:"name"`
-	URL  string `json:"url" yaml:"url"`
+	Name string `json:"name,omitzero" yaml:"name"`
+	URL  string `json:"url,omitzero" yaml:"url"`
 }
 
 type ExternalDocumentation struct {
-	Description string `json:"description" yaml:"description"`
-	URL         string `json:"url" yaml:"url"`
+	Description string `json:"description,omitzero" yaml:"description"`
+	URL         string `json:"url,omitzero" yaml:"url"`
 }

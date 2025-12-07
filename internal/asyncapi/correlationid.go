@@ -12,12 +12,12 @@ import (
 )
 
 type CorrelationID struct {
-	Description string `json:"description" yaml:"description"`
-	Location    string `json:"location" yaml:"location"`
+	Description string `json:"description,omitzero" yaml:"description"`
+	Location    string `json:"location,omitzero" yaml:"location"`
 
-	XIgnore bool `json:"x-ignore" yaml:"x-ignore"`
+	XIgnore bool `json:"x-ignore,omitzero" yaml:"x-ignore"`
 
-	Ref string `json:"$ref" yaml:"$ref"`
+	Ref string `json:"$ref,omitzero" yaml:"$ref"`
 }
 
 func (c CorrelationID) Compile(ctx *compile.Context) error {

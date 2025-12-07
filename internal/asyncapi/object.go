@@ -26,56 +26,56 @@ import (
 //
 // [JSON Schema Specification Draft 07]: https://json-schema.org/specification-links#draft-7
 type Object struct {
-	Type                 *types.Union2[string, []string]            `json:"type" yaml:"type"`
-	AdditionalItems      *types.Union2[Object, bool]                `json:"additionalItems" yaml:"additionalItems"`
-	AdditionalProperties *types.Union2[Object, bool]                `json:"additionalProperties" yaml:"additionalProperties"`
-	AllOf                []Object                                   `json:"allOf" yaml:"allOf" cgen:"selectable"`
-	AnyOf                []Object                                   `json:"anyOf" yaml:"anyOf" cgen:"selectable"`
-	Const                *types.Union2[json.RawMessage, yaml.Node]  `json:"const" yaml:"const"`
-	Contains             *Object                                    `json:"contains" yaml:"contains"`
-	Default              *types.Union2[json.RawMessage, yaml.Node]  `json:"default" yaml:"default"`
-	Definitions          types.OrderedMap[string, Object]           `json:"definitions" yaml:"definitions"`
-	Deprecated           *bool                                      `json:"deprecated" yaml:"deprecated"`
-	Description          string                                     `json:"description" yaml:"description"`
-	Discriminator        string                                     `json:"discriminator" yaml:"discriminator"`
-	Else                 *Object                                    `json:"else" yaml:"else"`
-	Enum                 []types.Union2[json.RawMessage, yaml.Node] `json:"enum" yaml:"enum"`
-	Examples             []types.Union2[json.RawMessage, yaml.Node] `json:"examples" yaml:"examples"`
-	ExclusiveMaximum     *types.Union2[bool, json.Number]           `json:"exclusiveMaximum" yaml:"exclusiveMaximum"`
-	ExclusiveMinimum     *types.Union2[bool, json.Number]           `json:"exclusiveMinimum" yaml:"exclusiveMinimum"`
-	ExternalDocs         *ExternalDocumentation                     `json:"externalDocs" yaml:"externalDocs"`
-	Format               string                                     `json:"format" yaml:"format"`
-	If                   *Object                                    `json:"if" yaml:"if"`
-	Items                *types.Union2[Object, []Object]            `json:"items" yaml:"items"`
-	MaxItems             *int                                       `json:"maxItems" yaml:"maxItems"`
-	MaxLength            *int                                       `json:"maxLength" yaml:"maxLength"`
-	MaxProperties        *int                                       `json:"maxProperties" yaml:"maxProperties"`
-	Maximum              *json.Number                               `json:"maximum" yaml:"maximum"`
-	MinItems             *int                                       `json:"minItems" yaml:"minItems"`
-	MinLength            *int                                       `json:"minLength" yaml:"minLength"`
-	MinProperties        *int                                       `json:"minProperties" yaml:"minProperties"`
-	Minimum              *json.Number                               `json:"minimum" yaml:"minimum"`
-	MultipleOf           *json.Number                               `json:"multipleOf" yaml:"multipleOf"`
-	Not                  *Object                                    `json:"not" yaml:"not"`
-	OneOf                []Object                                   `json:"oneOf" yaml:"oneOf" cgen:"selectable"`
-	Pattern              string                                     `json:"pattern" yaml:"pattern"`
-	PatternProperties    types.OrderedMap[string, Object]           `json:"patternProperties" yaml:"patternProperties"` // Mapping regex->schema
-	Properties           types.OrderedMap[string, Object]           `json:"properties" yaml:"properties"`
-	PropertyNames        *Object                                    `json:"propertyNames" yaml:"propertyNames"`
-	ReadOnly             *bool                                      `json:"readOnly" yaml:"readOnly"`
-	Required             []string                                   `json:"required" yaml:"required"`
-	Then                 *Object                                    `json:"then" yaml:"then"`
-	Title                string                                     `json:"title" yaml:"title"`
-	UniqueItems          *bool                                      `json:"uniqueItems" yaml:"uniqueItems"`
+	Type                 *types.Union2[string, []string]            `json:"type,omitzero" yaml:"type"`
+	AdditionalItems      *types.Union2[Object, bool]                `json:"additionalItems,omitzero" yaml:"additionalItems"`
+	AdditionalProperties *types.Union2[Object, bool]                `json:"additionalProperties,omitzero" yaml:"additionalProperties"`
+	AllOf                []Object                                   `json:"allOf,omitzero" yaml:"allOf" cgen:"selectable"`
+	AnyOf                []Object                                   `json:"anyOf,omitzero" yaml:"anyOf" cgen:"selectable"`
+	Const                *types.Union2[json.RawMessage, yaml.Node]  `json:"const,omitzero" yaml:"const"`
+	Contains             *Object                                    `json:"contains,omitzero" yaml:"contains"`
+	Default              *types.Union2[json.RawMessage, yaml.Node]  `json:"default,omitzero" yaml:"default"`
+	Definitions          types.OrderedMap[string, Object]           `json:"definitions,omitzero" yaml:"definitions"`
+	Deprecated           *bool                                      `json:"deprecated,omitzero" yaml:"deprecated"`
+	Description          string                                     `json:"description,omitzero" yaml:"description"`
+	Discriminator        string                                     `json:"discriminator,omitzero" yaml:"discriminator"`
+	Else                 *Object                                    `json:"else,omitzero" yaml:"else"`
+	Enum                 []types.Union2[json.RawMessage, yaml.Node] `json:"enum,omitzero" yaml:"enum"`
+	Examples             []types.Union2[json.RawMessage, yaml.Node] `json:"examples,omitzero" yaml:"examples"`
+	ExclusiveMaximum     *types.Union2[bool, json.Number]           `json:"exclusiveMaximum,omitzero" yaml:"exclusiveMaximum"`
+	ExclusiveMinimum     *types.Union2[bool, json.Number]           `json:"exclusiveMinimum,omitzero" yaml:"exclusiveMinimum"`
+	ExternalDocs         *ExternalDocumentation                     `json:"externalDocs,omitzero" yaml:"externalDocs"`
+	Format               string                                     `json:"format,omitzero" yaml:"format"`
+	If                   *Object                                    `json:"if,omitzero" yaml:"if"`
+	Items                *types.Union2[Object, []Object]            `json:"items,omitzero" yaml:"items"`
+	MaxItems             *int                                       `json:"maxItems,omitzero" yaml:"maxItems"`
+	MaxLength            *int                                       `json:"maxLength,omitzero" yaml:"maxLength"`
+	MaxProperties        *int                                       `json:"maxProperties,omitzero" yaml:"maxProperties"`
+	Maximum              *json.Number                               `json:"maximum,omitzero" yaml:"maximum"`
+	MinItems             *int                                       `json:"minItems,omitzero" yaml:"minItems"`
+	MinLength            *int                                       `json:"minLength,omitzero" yaml:"minLength"`
+	MinProperties        *int                                       `json:"minProperties,omitzero" yaml:"minProperties"`
+	Minimum              *json.Number                               `json:"minimum,omitzero" yaml:"minimum"`
+	MultipleOf           *json.Number                               `json:"multipleOf,omitzero" yaml:"multipleOf"`
+	Not                  *Object                                    `json:"not,omitzero" yaml:"not"`
+	OneOf                []Object                                   `json:"oneOf,omitzero" yaml:"oneOf" cgen:"selectable"`
+	Pattern              string                                     `json:"pattern,omitzero" yaml:"pattern"`
+	PatternProperties    types.OrderedMap[string, Object]           `json:"patternProperties,omitzero" yaml:"patternProperties"` // Mapping regex->schema
+	Properties           types.OrderedMap[string, Object]           `json:"properties,omitzero" yaml:"properties"`
+	PropertyNames        *Object                                    `json:"propertyNames,omitzero" yaml:"propertyNames"`
+	ReadOnly             *bool                                      `json:"readOnly,omitzero" yaml:"readOnly"`
+	Required             []string                                   `json:"required,omitzero" yaml:"required"`
+	Then                 *Object                                    `json:"then,omitzero" yaml:"then"`
+	Title                string                                     `json:"title,omitzero" yaml:"title"`
+	UniqueItems          *bool                                      `json:"uniqueItems,omitzero" yaml:"uniqueItems"`
 
-	XNullable     *bool                                                     `json:"x-nullable" yaml:"x-nullable"`
-	XGoType       *types.Union2[string, xGoType]                            `json:"x-go-type" yaml:"x-go-type"`
-	XGoName       string                                                    `json:"x-go-name" yaml:"x-go-name"`
-	XGoTags       *types.Union2[[]string, types.OrderedMap[string, string]] `json:"x-go-tags" yaml:"x-go-tags"`
-	XGoTagsValues []string                                                  `json:"x-go-tags-values" yaml:"x-go-tags-values"`
-	XIgnore       bool                                                      `json:"x-ignore" yaml:"x-ignore"`
+	XNullable     *bool                                                     `json:"x-nullable,omitzero" yaml:"x-nullable"`
+	XGoType       *types.Union2[string, xGoType]                            `json:"x-go-type,omitzero" yaml:"x-go-type"`
+	XGoName       string                                                    `json:"x-go-name,omitzero" yaml:"x-go-name"`
+	XGoTags       *types.Union2[[]string, types.OrderedMap[string, string]] `json:"x-go-tags,omitzero" yaml:"x-go-tags"`
+	XGoTagsValues []string                                                  `json:"x-go-tags-values,omitzero" yaml:"x-go-tags-values"`
+	XIgnore       bool                                                      `json:"x-ignore,omitzero" yaml:"x-ignore"`
 
-	Ref string `json:"$ref" yaml:"$ref"`
+	Ref string `json:"$ref,omitzero" yaml:"$ref"`
 }
 
 func (o Object) Compile(ctx *compile.Context) error {

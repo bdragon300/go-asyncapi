@@ -56,6 +56,10 @@ func (ju *Union2[T0, T1]) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
+func (ju *Union2[T0, T1]) IsZero() bool {
+	return ju.Selector == 0 && reflect.ValueOf(ju.V0).IsZero() || ju.Selector == 1 && reflect.ValueOf(ju.V1).IsZero()
+}
+
 // CurrentValue returns the currently active value in the union.
 func (ju *Union2[T0, T1]) CurrentValue() any {
 	switch ju.Selector {

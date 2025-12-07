@@ -38,6 +38,36 @@ func (o *OrderedMap[K, V]) UnmarshalJSON(bytes []byte) error {
 	)
 }
 
+func (o OrderedMap[K, V]) MarshalJSON() ([]byte, error) {
+	buf := make([]byte, 0)
+	buf = append(buf, '{')
+
+	for i, key := range o.keys {
+		keyBytes, err := json.Marshal(key)
+		if err != nil {
+			return nil, err
+		}
+		valBytes, err := json.Marshal(o.data[key])
+		if err != nil {
+			return nil, err
+		}
+
+		if i > 0 {
+			buf = append(buf, ',')
+		}
+		buf = append(buf, keyBytes...)
+		buf = append(buf, ':')
+		buf = append(buf, valBytes...)
+	}
+
+	buf = append(buf, '}')
+	return buf, nil
+}
+
+func (o OrderedMap[K, V]) IsZero() bool {
+	return len(o.data) == 0
+}
+
 func (o *OrderedMap[K, V]) UnmarshalYAML(value *yaml.Node) error {
 	if value.Kind != yaml.MappingNode {
 		return fmt.Errorf("pipeline must contain YAML mapping, got %v", value.Kind)

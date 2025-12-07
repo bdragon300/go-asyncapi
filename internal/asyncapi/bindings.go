@@ -14,7 +14,7 @@ import (
 )
 
 type RawBindings struct {
-	Ref            string                                                             `json:"$ref" yaml:"$ref"`
+	Ref            string                                                             `json:"$ref,omitzero" yaml:"$ref"`
 	ProtocolValues types.OrderedMap[string, types.Union2[json.RawMessage, yaml.Node]] `json:"-" yaml:"-"`
 }
 

@@ -7,12 +7,12 @@ import (
 )
 
 type ServerVariable struct {
-	Enum        []string `json:"enum" yaml:"enum"`
-	Default     string   `json:"default" yaml:"default"`
-	Description string   `json:"description" yaml:"description"`
-	Examples    []string `json:"examples" yaml:"examples"`
+	Enum        []string `json:"enum,omitzero" yaml:"enum"`
+	Default     string   `json:"default,omitzero" yaml:"default"`
+	Description string   `json:"description,omitzero" yaml:"description"`
+	Examples    []string `json:"examples,omitzero" yaml:"examples"`
 
-	Ref string `json:"$ref" yaml:"$ref"`
+	Ref string `json:"$ref,omitzero" yaml:"$ref"`
 }
 
 func (sv ServerVariable) Compile(ctx *compile.Context) error {

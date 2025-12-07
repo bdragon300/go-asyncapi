@@ -16,7 +16,7 @@ func (pb ProtoBuilder) Protocol() string {
 }
 
 type operationBindings struct {
-	Queue string `json:"queue" yaml:"queue"`
+	Queue string `json:"queue,omitzero" yaml:"queue"`
 }
 
 func (pb ProtoBuilder) BuildChannelBindings(_ *compile.Context, _ types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {

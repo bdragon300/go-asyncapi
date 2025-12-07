@@ -9,7 +9,7 @@ import (
 // StandaloneRef represents an object in AsyncAPI document, that could only be a $ref and nothing else.
 // E.g. operation.channel, channel.servers, etc.
 type StandaloneRef struct {
-	Ref string `json:"$ref" yaml:"$ref"`
+	Ref string `json:"$ref,omitzero" yaml:"$ref"`
 }
 
 func (c StandaloneRef) String() string {

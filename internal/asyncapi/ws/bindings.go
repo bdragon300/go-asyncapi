@@ -17,9 +17,9 @@ func (pb ProtoBuilder) Protocol() string {
 }
 
 type channelBindings struct {
-	Method  string `json:"method" yaml:"method"`
-	Query   any    `json:"query" yaml:"query"`     // jsonschema object
-	Headers any    `json:"headers" yaml:"headers"` // jsonschema object
+	Method  string `json:"method,omitzero" yaml:"method"`
+	Query   any    `json:"query,omitzero" yaml:"query"`     // jsonschema object
+	Headers any    `json:"headers,omitzero" yaml:"headers"` // jsonschema object
 }
 
 func (pb ProtoBuilder) BuildChannelBindings(

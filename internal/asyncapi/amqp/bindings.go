@@ -18,38 +18,38 @@ func (pb ProtoBuilder) Protocol() string {
 }
 
 type channelBindings struct {
-	Is       string          `json:"is" yaml:"is"`
-	Exchange *exchangeParams `json:"exchange" yaml:"exchange"`
-	Queue    *queueParams    `json:"queue" yaml:"queue"`
+	Is       string          `json:"is,omitzero" yaml:"is"`
+	Exchange *exchangeParams `json:"exchange,omitzero" yaml:"exchange"`
+	Queue    *queueParams    `json:"queue,omitzero" yaml:"queue"`
 }
 
 type exchangeParams struct {
-	Name       *string `json:"name" yaml:"name"` // Empty string means "default amqp exchange"
-	Type       string  `json:"type" yaml:"type"`
-	Durable    *bool   `json:"durable" yaml:"durable"`
-	AutoDelete *bool   `json:"autoDelete" yaml:"autoDelete"`
-	VHost      string  `json:"vhost" yaml:"vhost"`
+	Name       *string `json:"name,omitzero" yaml:"name"` // Empty string means "default amqp exchange"
+	Type       string  `json:"type,omitzero" yaml:"type"`
+	Durable    *bool   `json:"durable,omitzero" yaml:"durable"`
+	AutoDelete *bool   `json:"autoDelete,omitzero" yaml:"autoDelete"`
+	VHost      string  `json:"vhost,omitzero" yaml:"vhost"`
 }
 
 type queueParams struct {
-	Name       string `json:"name" yaml:"name"`
-	Durable    *bool  `json:"durable" yaml:"durable"`
-	Exclusive  *bool  `json:"exclusive" yaml:"exclusive"`
-	AutoDelete *bool  `json:"autoDelete" yaml:"autoDelete"`
-	VHost      string `json:"vhost" yaml:"vhost"`
+	Name       string `json:"name,omitzero" yaml:"name"`
+	Durable    *bool  `json:"durable,omitzero" yaml:"durable"`
+	Exclusive  *bool  `json:"exclusive,omitzero" yaml:"exclusive"`
+	AutoDelete *bool  `json:"autoDelete,omitzero" yaml:"autoDelete"`
+	VHost      string `json:"vhost,omitzero" yaml:"vhost"`
 }
 
 type operationBindings struct {
-	Expiration   int      `json:"expiration" yaml:"expiration"`
-	UserID       string   `json:"userId" yaml:"userId"`
-	CC           []string `json:"cc" yaml:"cc"`
-	Priority     int      `json:"priority" yaml:"priority"`
-	DeliveryMode int      `json:"deliveryMode" yaml:"deliveryMode"`
-	Mandatory    bool     `json:"mandatory" yaml:"mandatory"`
-	BCC          []string `json:"bcc" yaml:"bcc"`
-	ReplyTo      string   `json:"replyTo" yaml:"replyTo"`
-	Timestamp    bool     `json:"timestamp" yaml:"timestamp"`
-	Ack          bool     `json:"ack" yaml:"ack"`
+	Expiration   int      `json:"expiration,omitzero" yaml:"expiration"`
+	UserID       string   `json:"userId,omitzero" yaml:"userId"`
+	CC           []string `json:"cc,omitzero" yaml:"cc"`
+	Priority     int      `json:"priority,omitzero" yaml:"priority"`
+	DeliveryMode int      `json:"deliveryMode,omitzero" yaml:"deliveryMode"`
+	Mandatory    bool     `json:"mandatory,omitzero" yaml:"mandatory"`
+	BCC          []string `json:"bcc,omitzero" yaml:"bcc"`
+	ReplyTo      string   `json:"replyTo,omitzero" yaml:"replyTo"`
+	Timestamp    bool     `json:"timestamp,omitzero" yaml:"timestamp"`
+	Ack          bool     `json:"ack,omitzero" yaml:"ack"`
 }
 
 func (pb ProtoBuilder) BuildChannelBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
@@ -113,8 +113,8 @@ func (pb ProtoBuilder) BuildOperationBindings(ctx *compile.Context, rawData type
 }
 
 type messageBindings struct {
-	ContentEncoding string `json:"contentEncoding" yaml:"contentEncoding"`
-	MessageType     string `json:"messageType" yaml:"messageType"`
+	ContentEncoding string `json:"contentEncoding,omitzero" yaml:"contentEncoding"`
+	MessageType     string `json:"messageType,omitzero" yaml:"messageType"`
 }
 
 func (pb ProtoBuilder) BuildMessageBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {

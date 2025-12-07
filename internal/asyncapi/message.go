@@ -16,24 +16,24 @@ import (
 )
 
 type Message struct {
-	Headers       *Object                `json:"headers" yaml:"headers" cgen:"data_model"`
-	Payload       *Object                `json:"payload" yaml:"payload" cgen:"data_model"` // TODO: other formats
-	CorrelationID *CorrelationID         `json:"correlationId" yaml:"correlationId"`
-	ContentType   string                 `json:"contentType" yaml:"contentType"`
-	Name          string                 `json:"name" yaml:"name"` // TODO: use it for naming
-	Title         string                 `json:"title" yaml:"title"`
-	Summary       string                 `json:"summary" yaml:"summary"`
-	Description   string                 `json:"description" yaml:"description"`
-	Tags          []Tag                  `json:"tags" yaml:"tags"`
-	ExternalDocs  *ExternalDocumentation `json:"externalDocs" yaml:"externalDocs"`
-	Bindings      *MessageBindings       `json:"bindings" yaml:"bindings"`
-	Examples      []MessageExample       `json:"examples" yaml:"examples"`
-	Traits        []MessageTrait         `json:"traits" yaml:"traits"`
+	Headers       *Object                `json:"headers,omitzero" yaml:"headers" cgen:"data_model"`
+	Payload       *Object                `json:"payload,omitzero" yaml:"payload" cgen:"data_model"` // TODO: other formats
+	CorrelationID *CorrelationID         `json:"correlationId,omitzero" yaml:"correlationId"`
+	ContentType   string                 `json:"contentType,omitzero" yaml:"contentType"`
+	Name          string                 `json:"name,omitzero" yaml:"name"` // TODO: use it for naming
+	Title         string                 `json:"title,omitzero" yaml:"title"`
+	Summary       string                 `json:"summary,omitzero" yaml:"summary"`
+	Description   string                 `json:"description,omitzero" yaml:"description"`
+	Tags          []Tag                  `json:"tags,omitzero" yaml:"tags"`
+	ExternalDocs  *ExternalDocumentation `json:"externalDocs,omitzero" yaml:"externalDocs"`
+	Bindings      *MessageBindings       `json:"bindings,omitzero" yaml:"bindings"`
+	Examples      []MessageExample       `json:"examples,omitzero" yaml:"examples"`
+	Traits        []MessageTrait         `json:"traits,omitzero" yaml:"traits"`
 
-	XGoName string `json:"x-go-name" yaml:"x-go-name"`
-	XIgnore bool   `json:"x-ignore" yaml:"x-ignore"`
+	XGoName string `json:"x-go-name,omitzero" yaml:"x-go-name"`
+	XIgnore bool   `json:"x-ignore,omitzero" yaml:"x-ignore"`
 
-	Ref string `json:"$ref" yaml:"$ref"`
+	Ref string `json:"$ref,omitzero" yaml:"$ref"`
 }
 
 func (m Message) Compile(ctx *compile.Context) error {
@@ -197,32 +197,32 @@ func (m Message) buildInOutStructs(ctx *compile.Context, message render.Message,
 }
 
 type Tag struct {
-	Name         string                 `json:"name" yaml:"name"`
-	Description  string                 `json:"description" yaml:"description"`
-	ExternalDocs *ExternalDocumentation `json:"externalDocs" yaml:"externalDocs"`
+	Name         string                 `json:"name,omitzero" yaml:"name"`
+	Description  string                 `json:"description,omitzero" yaml:"description"`
+	ExternalDocs *ExternalDocumentation `json:"externalDocs,omitzero" yaml:"externalDocs"`
 
-	Ref string `json:"$ref" yaml:"$ref"`
+	Ref string `json:"$ref,omitzero" yaml:"$ref"`
 }
 
 type MessageExample struct {
-	Headers types.OrderedMap[string, types.Union2[json.RawMessage, yaml.Node]] `json:"headers" yaml:"headers"`
-	Payload *types.Union2[json.RawMessage, yaml.Node]                          `json:"payload" yaml:"payload"`
-	Name    string                                                             `json:"name" yaml:"name"`
-	Summary string                                                             `json:"summary" yaml:"summary"`
+	Headers types.OrderedMap[string, types.Union2[json.RawMessage, yaml.Node]] `json:"headers,omitzero" yaml:"headers"`
+	Payload *types.Union2[json.RawMessage, yaml.Node]                          `json:"payload,omitzero" yaml:"payload"`
+	Name    string                                                             `json:"name,omitzero" yaml:"name"`
+	Summary string                                                             `json:"summary,omitzero" yaml:"summary"`
 }
 
 type MessageTrait struct {
-	Headers       *Object                `json:"headers" yaml:"headers"`
-	CorrelationID *CorrelationID         `json:"correlationId" yaml:"correlationId"`
-	ContentType   string                 `json:"contentType" yaml:"contentType"`
-	Name          string                 `json:"name" yaml:"name"`
-	Title         string                 `json:"title" yaml:"title"`
-	Summary       string                 `json:"summary" yaml:"summary"`
-	Description   string                 `json:"description" yaml:"description"`
-	Tags          []Tag                  `json:"tags" yaml:"tags"`
-	ExternalDocs  *ExternalDocumentation `json:"externalDocs" yaml:"externalDocs"`
-	Bindings      *MessageBindings       `json:"bindings" yaml:"bindings"`
-	Examples      []MessageExample       `json:"examples" yaml:"examples"`
+	Headers       *Object                `json:"headers,omitzero" yaml:"headers"`
+	CorrelationID *CorrelationID         `json:"correlationId,omitzero" yaml:"correlationId"`
+	ContentType   string                 `json:"contentType,omitzero" yaml:"contentType"`
+	Name          string                 `json:"name,omitzero" yaml:"name"`
+	Title         string                 `json:"title,omitzero" yaml:"title"`
+	Summary       string                 `json:"summary,omitzero" yaml:"summary"`
+	Description   string                 `json:"description,omitzero" yaml:"description"`
+	Tags          []Tag                  `json:"tags,omitzero" yaml:"tags"`
+	ExternalDocs  *ExternalDocumentation `json:"externalDocs,omitzero" yaml:"externalDocs"`
+	Bindings      *MessageBindings       `json:"bindings,omitzero" yaml:"bindings"`
+	Examples      []MessageExample       `json:"examples,omitzero" yaml:"examples"`
 
-	Ref string `json:"$ref" yaml:"$ref"`
+	Ref string `json:"$ref,omitzero" yaml:"$ref"`
 }

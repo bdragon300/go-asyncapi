@@ -18,9 +18,9 @@ func (pb ProtoBuilder) Protocol() string {
 }
 
 type operationBindings struct {
-	QoS                   int  `json:"qos" yaml:"qos"`
-	Retain                bool `json:"retain" yaml:"retain"`
-	MessageExpiryInterval int  `json:"messageExpiryInterval" yaml:"messageExpiryInterval"` // Seconds
+	QoS                   int  `json:"qos,omitzero" yaml:"qos"`
+	Retain                bool `json:"retain,omitzero" yaml:"retain"`
+	MessageExpiryInterval int  `json:"messageExpiryInterval,omitzero" yaml:"messageExpiryInterval"` // Seconds
 }
 
 func (pb ProtoBuilder) BuildChannelBindings(_ *compile.Context, _ types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
@@ -45,10 +45,10 @@ func (pb ProtoBuilder) BuildOperationBindings(
 }
 
 type messageBindings struct {
-	PayloadFormatIndicator *int   `json:"payloadFormatIndicator" yaml:"payloadFormatIndicator"`
-	CorrelationData        any    `json:"correlationData" yaml:"correlationData"` // jsonschema object
-	ContentType            string `json:"contentType" yaml:"contentType"`
-	ResponseTopic          string `json:"responseTopic" yaml:"responseTopic"`
+	PayloadFormatIndicator *int   `json:"payloadFormatIndicator,omitzero" yaml:"payloadFormatIndicator"`
+	CorrelationData        any    `json:"correlationData,omitzero" yaml:"correlationData"` // jsonschema object
+	ContentType            string `json:"contentType,omitzero" yaml:"contentType"`
+	ResponseTopic          string `json:"responseTopic,omitzero" yaml:"responseTopic"`
 }
 
 func (pb ProtoBuilder) BuildMessageBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
@@ -80,19 +80,19 @@ func (pb ProtoBuilder) BuildMessageBindings(ctx *compile.Context, rawData types.
 }
 
 type serverBindings struct {
-	ClientID              string    `json:"clientId" yaml:"clientId"`
-	CleanSession          bool      `json:"cleanSession" yaml:"cleanSession"`
-	LastWill              *lastWill `json:"lastWill" yaml:"lastWill"`
-	KeepAlive             int       `json:"keepAlive" yaml:"keepAlive"`
-	SessionExpiryInterval int       `json:"sessionExpiryInterval" yaml:"sessionExpiryInterval"`
-	MaximumPacketSize     int       `json:"maximumPacketSize" yaml:"maximumPacketSize"`
+	ClientID              string    `json:"clientId,omitzero" yaml:"clientId"`
+	CleanSession          bool      `json:"cleanSession,omitzero" yaml:"cleanSession"`
+	LastWill              *lastWill `json:"lastWill,omitzero" yaml:"lastWill"`
+	KeepAlive             int       `json:"keepAlive,omitzero" yaml:"keepAlive"`
+	SessionExpiryInterval int       `json:"sessionExpiryInterval,omitzero" yaml:"sessionExpiryInterval"`
+	MaximumPacketSize     int       `json:"maximumPacketSize,omitzero" yaml:"maximumPacketSize"`
 }
 
 type lastWill struct {
-	Topic   string `json:"topic" yaml:"topic"`
-	QoS     int    `json:"qos" yaml:"qos"`
-	Message string `json:"message" yaml:"message"`
-	Retain  bool   `json:"retain" yaml:"retain"`
+	Topic   string `json:"topic,omitzero" yaml:"topic"`
+	QoS     int    `json:"qos,omitzero" yaml:"qos"`
+	Message string `json:"message,omitzero" yaml:"message"`
+	Retain  bool   `json:"retain,omitzero" yaml:"retain"`
 }
 
 func (pb ProtoBuilder) BuildServerBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {

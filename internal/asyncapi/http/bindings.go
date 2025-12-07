@@ -17,8 +17,8 @@ func (pb ProtoBuilder) Protocol() string {
 }
 
 type operationBindings struct {
-	Method string `json:"method" yaml:"method"`
-	Query  any    `json:"query" yaml:"query"` // jsonschema object
+	Method string `json:"method,omitzero" yaml:"method"`
+	Query  any    `json:"query,omitzero" yaml:"query"` // jsonschema object
 }
 
 func (pb ProtoBuilder) BuildChannelBindings(_ *compile.Context, _ types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
@@ -45,8 +45,8 @@ func (pb ProtoBuilder) BuildOperationBindings(ctx *compile.Context, rawData type
 }
 
 type messageBindings struct {
-	Headers    any `json:"headers" yaml:"headers"` // jsonschema object
-	StatusCode int `json:"statusCode" yaml:"statusCode"`
+	Headers    any `json:"headers,omitzero" yaml:"headers"` // jsonschema object
+	StatusCode int `json:"statusCode,omitzero" yaml:"statusCode"`
 }
 
 func (pb ProtoBuilder) BuildMessageBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {

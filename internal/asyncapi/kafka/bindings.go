@@ -19,23 +19,23 @@ func (pb ProtoBuilder) Protocol() string {
 }
 
 type channelBindings struct {
-	Topic              string              `json:"topic" yaml:"topic"`
-	Partitions         *int                `json:"partitions" yaml:"partitions"`
-	Replicas           *int                `json:"replicas" yaml:"replicas"`
-	TopicConfiguration *topicConfiguration `json:"topicConfiguration" yaml:"topicConfiguration"`
+	Topic              string              `json:"topic,omitzero" yaml:"topic"`
+	Partitions         *int                `json:"partitions,omitzero" yaml:"partitions"`
+	Replicas           *int                `json:"replicas,omitzero" yaml:"replicas"`
+	TopicConfiguration *topicConfiguration `json:"topicConfiguration,omitzero" yaml:"topicConfiguration"`
 }
 
 type topicConfiguration struct {
-	CleanupPolicy     []string `json:"cleanup.policy" yaml:"cleanup.policy"`
-	RetentionMs       int      `json:"retention.ms" yaml:"retention.ms"`
-	RetentionBytes    int      `json:"retention.bytes" yaml:"retention.bytes"`
-	DeleteRetentionMs int      `json:"delete.retention.ms" yaml:"delete.retention.ms"`
-	MaxMessageBytes   int      `json:"max.message.bytes" yaml:"max.message.bytes"`
+	CleanupPolicy     []string `json:"cleanup.policy,omitzero" yaml:"cleanup.policy"`
+	RetentionMs       int      `json:"retention.ms,omitzero" yaml:"retention.ms"`
+	RetentionBytes    int      `json:"retention.bytes,omitzero" yaml:"retention.bytes"`
+	DeleteRetentionMs int      `json:"delete.retention.ms,omitzero" yaml:"delete.retention.ms"`
+	MaxMessageBytes   int      `json:"max.message.bytes,omitzero" yaml:"max.message.bytes"`
 }
 
 type operationBindings struct {
-	GroupID  any `json:"groupId" yaml:"groupId"`   // jsonschema object
-	ClientID any `json:"clientId" yaml:"clientId"` // jsonschema object
+	GroupID  any `json:"groupId,omitzero" yaml:"groupId"`   // jsonschema object
+	ClientID any `json:"clientId,omitzero" yaml:"clientId"` // jsonschema object
 }
 
 func (pb ProtoBuilder) BuildChannelBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
@@ -111,10 +111,10 @@ func (pb ProtoBuilder) BuildOperationBindings(ctx *compile.Context, rawData type
 }
 
 type messageBindings struct {
-	Key                     any    `json:"key" yaml:"key"` // jsonschema object
-	SchemaIDLocation        string `json:"schemaIdLocation" yaml:"schemaIdLocation"`
-	SchemaIDPayloadEncoding string `json:"schemaIdPayloadEncoding" yaml:"schemaIdPayloadEncoding"`
-	SchemaLookupStrategy    string `json:"schemaLookupStrategy" yaml:"schemaLookupStrategy"`
+	Key                     any    `json:"key,omitzero" yaml:"key"` // jsonschema object
+	SchemaIDLocation        string `json:"schemaIdLocation,omitzero" yaml:"schemaIdLocation"`
+	SchemaIDPayloadEncoding string `json:"schemaIdPayloadEncoding,omitzero" yaml:"schemaIdPayloadEncoding"`
+	SchemaLookupStrategy    string `json:"schemaLookupStrategy,omitzero" yaml:"schemaLookupStrategy"`
 }
 
 func (pb ProtoBuilder) BuildMessageBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
@@ -138,8 +138,8 @@ func (pb ProtoBuilder) BuildMessageBindings(ctx *compile.Context, rawData types.
 }
 
 type serverBindings struct {
-	SchemaRegistryURL    string `json:"schemaRegistryUrl" yaml:"schemaRegistryUrl"`
-	SchemaRegistryVendor string `json:"schemaRegistryVendor" yaml:"schemaRegistryVendor"`
+	SchemaRegistryURL    string `json:"schemaRegistryUrl,omitzero" yaml:"schemaRegistryUrl"`
+	SchemaRegistryVendor string `json:"schemaRegistryVendor,omitzero" yaml:"schemaRegistryVendor"`
 }
 
 func (pb ProtoBuilder) BuildServerBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {

@@ -12,21 +12,21 @@ import (
 )
 
 type Server struct {
-	Host            string                                   `json:"host" yaml:"host"`
-	Protocol        string                                   `json:"protocol" yaml:"protocol"`
-	ProtocolVersion string                                   `json:"protocolVersion" yaml:"protocolVersion"`
-	Pathname        string                                   `json:"pathname" yaml:"pathname"`
-	Description     string                                   `json:"description" yaml:"description"`
-	Variables       types.OrderedMap[string, ServerVariable] `json:"variables" yaml:"variables"`
-	// Security        SecurityScheme                    `json:"security" yaml:"security"`
-	Tags         []Tag                  `json:"tags" yaml:"tags"`
-	ExternalDocs *ExternalDocumentation `json:"externalDocs" yaml:"externalDocs"`
-	Bindings     *ServerBindings        `json:"bindings" yaml:"bindings"`
+	Host            string                                   `json:"host,omitzero" yaml:"host"`
+	Protocol        string                                   `json:"protocol,omitzero" yaml:"protocol"`
+	ProtocolVersion string                                   `json:"protocolVersion,omitzero" yaml:"protocolVersion"`
+	Pathname        string                                   `json:"pathname,omitzero" yaml:"pathname"`
+	Description     string                                   `json:"description,omitzero" yaml:"description"`
+	Variables       types.OrderedMap[string, ServerVariable] `json:"variables,omitzero" yaml:"variables"`
+	// Security        SecurityScheme                    `json:"security,omitzero" yaml:"security"`
+	Tags         []Tag                  `json:"tags,omitzero" yaml:"tags"`
+	ExternalDocs *ExternalDocumentation `json:"externalDocs,omitzero" yaml:"externalDocs"`
+	Bindings     *ServerBindings        `json:"bindings,omitzero" yaml:"bindings"`
 
-	XGoName string `json:"x-go-name" yaml:"x-go-name"`
-	XIgnore bool   `json:"x-ignore" yaml:"x-ignore"`
+	XGoName string `json:"x-go-name,omitzero" yaml:"x-go-name"`
+	XIgnore bool   `json:"x-ignore,omitzero" yaml:"x-ignore"`
 
-	Ref string `json:"$ref" yaml:"$ref"`
+	Ref string `json:"$ref,omitzero" yaml:"$ref"`
 }
 
 func (s Server) Compile(ctx *compile.Context) error {

@@ -10,15 +10,15 @@ import (
 )
 
 type Parameter struct {
-	Enum        []string `json:"enum" yaml:"enum"`
-	Default     string   `json:"default" yaml:"default"`
-	Description string   `json:"description" yaml:"description"`
-	Examples    []string `json:"examples" yaml:"examples"`
-	Location    string   `json:"location" yaml:"location"` // TODO: implement
+	Enum        []string `json:"enum,omitzero" yaml:"enum"`
+	Default     string   `json:"default,omitzero" yaml:"default"`
+	Description string   `json:"description,omitzero" yaml:"description"`
+	Examples    []string `json:"examples,omitzero" yaml:"examples"`
+	Location    string   `json:"location,omitzero" yaml:"location"` // TODO: implement
 
-	XGoName string `json:"x-go-name" yaml:"x-go-name"`
+	XGoName string `json:"x-go-name,omitzero" yaml:"x-go-name"`
 
-	Ref string `json:"$ref" yaml:"$ref"`
+	Ref string `json:"$ref,omitzero" yaml:"$ref"`
 }
 
 func (p Parameter) Compile(ctx *compile.Context) error {

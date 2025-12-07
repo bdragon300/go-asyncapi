@@ -12,22 +12,22 @@ import (
 )
 
 type Channel struct {
-	Address string `json:"address" yaml:"address"`
+	Address string `json:"address,omitzero" yaml:"address"`
 	// Being referenced from a channel makes the message selectable and sets its generated name
-	Messages     types.OrderedMap[string, Message]   `json:"messages" yaml:"messages" cgen:"selectable"`
-	Title        string                              `json:"title" yaml:"title"`
-	Summary      string                              `json:"summary" yaml:"summary"`
-	Description  string                              `json:"description" yaml:"description"`
-	Servers      []StandaloneRef                     `json:"servers" yaml:"servers"`
-	Parameters   types.OrderedMap[string, Parameter] `json:"parameters" yaml:"parameters"`
-	Tags         []Tag                               `json:"tags" yaml:"tags"`
-	ExternalDocs *ExternalDocumentation              `json:"externalDocs" yaml:"externalDocs"`
-	Bindings     *ChannelBindings                    `json:"bindings" yaml:"bindings"`
+	Messages     types.OrderedMap[string, Message]   `json:"messages,omitzero" yaml:"messages" cgen:"selectable"`
+	Title        string                              `json:"title,omitzero" yaml:"title"`
+	Summary      string                              `json:"summary,omitzero" yaml:"summary"`
+	Description  string                              `json:"description,omitzero" yaml:"description"`
+	Servers      []StandaloneRef                     `json:"servers,omitzero" yaml:"servers"`
+	Parameters   types.OrderedMap[string, Parameter] `json:"parameters,omitzero" yaml:"parameters"`
+	Tags         []Tag                               `json:"tags,omitzero" yaml:"tags"`
+	ExternalDocs *ExternalDocumentation              `json:"externalDocs,omitzero" yaml:"externalDocs"`
+	Bindings     *ChannelBindings                    `json:"bindings,omitzero" yaml:"bindings"`
 
-	XGoName string `json:"x-go-name" yaml:"x-go-name"`
-	XIgnore bool   `json:"x-ignore" yaml:"x-ignore"`
+	XGoName string `json:"x-go-name,omitzero" yaml:"x-go-name"`
+	XIgnore bool   `json:"x-ignore,omitzero" yaml:"x-ignore"`
 
-	Ref string `json:"$ref" yaml:"$ref"`
+	Ref string `json:"$ref,omitzero" yaml:"$ref"`
 }
 
 func (c Channel) Compile(ctx *compile.Context) error {
