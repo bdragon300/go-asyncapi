@@ -1,9 +1,5 @@
 package compiler
 
-import (
-	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
-)
-
 type DocumentKind string
 
 const (
@@ -17,20 +13,20 @@ type documentFormatTester struct {
 	Openapi  string `json:"openapi" yaml:"openapi"`
 }
 
-type anyDecoder interface {
+type AnyDecoder interface {
 	Decode(v any) error
 }
 
 // guessDocumentKind tries to guess the document kind by its contents.
-func guessDocumentKind(decoder anyDecoder) (DocumentKind, compiledObject, error) {
+func guessDocumentKind(decoder AnyDecoder) (DocumentKind, error) {
 	test := documentFormatTester{}
 
 	if err := decoder.Decode(&test); err != nil {
-		return "", nil, err
+		return "", err
 	}
 	switch {
 	case test.Asyncapi != "":
-		return DocumentKindAsyncapi, &asyncapi.AsyncAPI{}, nil
+		return DocumentKindAsyncapi, nil
 	case test.Openapi != "":
 		panic("openapi not implemented") // TODO
 	}

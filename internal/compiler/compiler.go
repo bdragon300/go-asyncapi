@@ -36,8 +36,8 @@ import (
 	"io"
 	"path"
 	"reflect"
-	"time"
 
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi"
 	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 
@@ -110,36 +110,30 @@ type documentLocator interface {
 
 // Load loads the document using the given locator, reading the unmarshalled contents and metadata
 func (c *Document) Load(locator documentLocator) error {
+	var err error
 	c.logger.Debug("Locate and load a document", "url", c.url)
-	buf, err := c.readFile(c.url, locator)
+	buf, newDecoder, err := ReadDocument(c.url, locator, c.logger)
 	if err != nil {
 		return fmt.Errorf("read file: %w", err)
 	}
 
 	c.logger.Trace("Received data", "bytes", len(buf), "data", string(buf))
-	kind, contents, err := c.decodeDocument(c.url.Location(), bytes.NewReader(buf))
-	if err != nil {
+	if c.kind, err = guessDocumentKind(newDecoder(bytes.NewReader(buf))); err != nil {
+		return fmt.Errorf("guess document kind: %w", err)
+	}
+
+	switch c.kind {
+	case DocumentKindAsyncapi:
+		c.objectsTree = new(asyncapi.AsyncAPI)
+	default:
+		return fmt.Errorf("unsupported document kind: %s", c.kind)
+	}
+
+	if err = newDecoder(bytes.NewReader(buf)).Decode(c.objectsTree); err != nil {
 		return fmt.Errorf("decode document: %w", err)
 	}
-	c.logger.Debug("Document decoded", "url", c.url, "kind", kind)
-	c.kind = kind
-	c.objectsTree = contents
+	c.logger.Debug("Document decoded", "url", c.url, "kind", c.kind)
 	return nil
-}
-
-func (c *Document) readFile(u *jsonpointer.JSONPointer, locator documentLocator) ([]byte, error) {
-	t := time.Now()
-	defer func() {
-		c.logger.Debug("File locator finished", "url", u, "duration", time.Since(t))
-	}()
-
-	data, err := locator.Locate(u)
-	if err != nil {
-		return nil, fmt.Errorf("locate document url %q: %w", u, err)
-	}
-	defer data.Close()
-
-	return io.ReadAll(data)
 }
 
 // Compile runs the document compilation.
@@ -158,6 +152,14 @@ func (c *Document) ExternalURLs() []*jsonpointer.JSONPointer {
 	return c.externalRefs
 }
 
+func (c *Document) MarshalJSON() ([]byte, error) {
+	return json.Marshal(c.objectsTree)
+}
+
+func (c *Document) Kind() DocumentKind {
+	return c.kind
+}
+
 func (c *Document) Stats() string {
 	return fmt.Sprintf(
 		"%s(%s): %d artifacts; %d external refs; %d promises; %d list promises",
@@ -165,31 +167,29 @@ func (c *Document) Stats() string {
 	)
 }
 
-func (c *Document) decodeDocument(filePath string, data io.ReadSeeker) (DocumentKind, compiledObject, error) {
-	switch path.Ext(filePath) {
-	case ".yaml", ".yml":
-		c.logger.Debug("Found YAML file", "path", filePath)
-		kind, contents, err := guessDocumentKind(yaml.NewDecoder(data))
-		if err != nil {
-			return "", nil, fmt.Errorf("guess document kind: %w", err)
-		}
-		if _, err = data.Seek(0, io.SeekStart); err != nil {
-			return "", nil, fmt.Errorf("file seek: %w", err)
-		}
-		err = yaml.NewDecoder(data).Decode(contents)
-		return kind, contents, err
-	case ".json":
-		c.logger.Debug("Found JSON file", "path", filePath)
-		kind, contents, err := guessDocumentKind(json.NewDecoder(data))
-		if err != nil {
-			return "", nil, fmt.Errorf("guess document kind: %w", err)
-		}
-		if _, err = data.Seek(0, io.SeekStart); err != nil {
-			return "", nil, fmt.Errorf("file seek: %w", err)
-		}
-		err = json.NewDecoder(data).Decode(contents)
-		return kind, contents, err
+type DecoderFactory func(io.Reader) AnyDecoder
+
+// ReadDocument reads a document pointed by u using a given locator. Returns the file contents and the factory
+// function that creates a format-specific decoder.
+func ReadDocument(u *jsonpointer.JSONPointer, locator documentLocator, logger *log.Logger) ([]byte, DecoderFactory, error) {
+	rd, err := locator.Locate(u)
+	if err != nil {
+		return nil, nil, fmt.Errorf("locate document: %w", err)
+	}
+	defer rd.Close()
+
+	data, err := io.ReadAll(rd)
+	if err != nil {
+		return nil, nil, fmt.Errorf("read: %w", err)
 	}
 
-	return "", nil, fmt.Errorf("unknown kind with file extension: %s", filePath)
+	switch path.Ext(u.Location()) {
+	case ".yaml", ".yml":
+		logger.Debug("File is in YAML format", "name", u.Location())
+		return data, func(rd io.Reader) AnyDecoder { return yaml.NewDecoder(rd) }, nil
+	case ".json":
+		logger.Debug("File is in JSON format", "name", u.Location())
+		return data, func(rd io.Reader) AnyDecoder { return json.NewDecoder(rd) }, nil
+	}
+	return data, nil, fmt.Errorf("cannot determine format by extension %s: %s", path.Ext(u.Location()), u.Location())
 }
