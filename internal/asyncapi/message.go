@@ -64,7 +64,7 @@ func (m Message) build(ctx *compile.Context, messageKey string, flags map[common
 
 	msgName, _ := lo.Coalesce(m.XGoName, messageKey)
 	res := render.Message{
-		OriginalName: msgName,
+		OriginalName: msgName, // TODO: use ctx.GenerateObjName everywhere or rename OriginalName to smth like GeneratedName where we use ctx.GenerateObjName?
 		ContentType:  m.ContentType,
 		IsSelectable: isSelectable,
 		IsPublisher:  ctx.CompileOpts.GeneratePublishers,

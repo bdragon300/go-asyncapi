@@ -21,8 +21,10 @@ func New{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
 {{define "code/proto/channel/openFunction"}}
 func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
     ctx {{goQual "context.Context"}},
-    {{ with .ParametersType}}params {{. | goUsage}},{{end}}
     server {{.Channel | goIDUpper }}Server{{.Protocol | goIDUpper}},
+    {{with .ParametersType}}params {{. | goUsage}},{{end}}
+    {{if .BoundOperations}}opBindings *{{goQualR .Protocol "OperationBindings"}},{{end}}
+    {{if .BoundOperations}}security {{goQualR "AnySecurityScheme"}},{{end}}
 ) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error) {
     var err error
     {{- if .BindingsProtocols | has .Protocol}}
@@ -39,7 +41,13 @@ func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
         var publisher {{goQualR .Protocol "Publisher"}}
         producer := server.Producer()
         if producer != nil {
-            publisher, err = producer.Publisher(ctx, address, {{if .BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, nil)
+            publisher, err = producer.Publisher(
+                ctx,
+                address,
+                {{if .BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}},
+                {{if .BoundOperations}}opBindings{{else}}nil{{end}},
+                {{if .BoundOperations}}security{{else}}nil{{end}},
+            )
             if err != nil {
                 return nil, err
             }
@@ -49,7 +57,13 @@ func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
         var subscriber {{goQualR .Protocol "Subscriber"}}
         consumer := server.Consumer()
         if consumer != nil {
-            subscriber, err = consumer.Subscriber(ctx, address, {{if .BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}}, nil)
+            subscriber, err = consumer.Subscriber(
+                ctx,
+                address,
+                {{if .BindingsProtocols | has .Protocol}}&chBindings{{else}}nil{{end}},
+                {{if .BoundOperations}}opBindings{{else}}nil{{end}},
+                {{if .BoundOperations}}security{{else}}nil{{end}},
+            )
             if err != nil {
                 return nil, err
             }
@@ -88,26 +102,6 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Close() (err error) {
     {{- end}}
     return
 }
-{{- end}}
-
-{{define "code/proto/channel/operationMethods"}}
-    {{- range .BoundOperations}}
-        {{- if not (isVisible .) }}{{continue}}{{end}}
-        func (c {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}) Operation{{. | goIDUpper}}() *{{. | goPkg}}{{. | goIDUpper}}{{$.Protocol | goIDUpper}} {
-            return &{{. | goPkg}}{{. | goIDUpper}}{{$.Protocol | goIDUpper}}{
-                Channel: c,
-            }
-        }
-    {{- end}}
-{{- end}}
-
-{{define "code/proto/channel/replyMethods"}}
-    {{- range .BoundReplyOperations}}
-        {{- if or (not (isVisible .)) (not (isVisible .OperationReply)) }}{{continue}}{{end}}
-        func (c {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}) Reply{{. | goIDUpper}}() *{{goPkg .}}{{. | goIDUpper}}{{$.Protocol | goIDUpper}}Reply {
-            return &{{. | goPkg}}{{. | goIDUpper}}{{$.Protocol | goIDUpper}}Reply{Channel: c}
-        }
-    {{- end}}
 {{- end}}
 
 {{define "code/proto/channel/publishMethods"}}
@@ -204,7 +198,7 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Subscribe(ctx {{goQual "cont
 
 {{define "code/proto/channel/serverInterface"}}
 type {{ .Channel | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
-    Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}(ctx {{goQual "context.Context"}}, {{if .ParametersType}}params {{ .ParametersType | goUsage }}{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
+    Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goQual "context.Context"}}{{with .ParametersType}},{{ goUsage . }}{{end}}{{if .BoundOperations}},*{{goQualR .Protocol "OperationBindings"}},{{goQualR "AnySecurityScheme"}}{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
     {{if .IsPublisher}}Producer() {{goQualR .Protocol "Producer"}}{{end}}
     {{if .IsSubscriber}}Consumer() {{goQualR .Protocol "Consumer"}}{{end}}
 }

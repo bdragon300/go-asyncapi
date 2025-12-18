@@ -8,16 +8,17 @@ import (
 type ArtifactKind string
 
 const (
-	// ArtifactKindOther is a utility language object, not intended for selection (type, value, interface, etc.)
-	ArtifactKindOther     ArtifactKind = ""
 	ArtifactKindSchema    ArtifactKind = "schema"
 	ArtifactKindServer    ArtifactKind = "server"
 	ArtifactKindChannel   ArtifactKind = "channel"
 	ArtifactKindOperation ArtifactKind = "operation"
 	ArtifactKindMessage   ArtifactKind = "message"
 	ArtifactKindParameter ArtifactKind = "parameter"
+	ArtifactKindSecurity  ArtifactKind = "security"
 	// ArtifactKindAsyncAPI represents the root AsyncAPI object.
-	ArtifactKindAsyncAPI = "asyncapi"
+	ArtifactKindAsyncAPI ArtifactKind = "asyncapi"
+	// ArtifactKindOther is a utility language object, not intended for selection (type, value, interface, etc.)
+	ArtifactKindOther ArtifactKind = ""
 )
 
 // Artifact is a compiled object that is meant to be rendered in the template.

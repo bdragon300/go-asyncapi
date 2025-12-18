@@ -1,8 +1,13 @@
 {{- /* dot == render.Server */}}
 
 {{define "code/proto/nats/server/impl/github.com/nats-io/nats.go/connectFunction"}}
-func Connect{{ . | goIDUpper }}Bidi(_ {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, opts ...{{goQual "github.com/nats-io/nats.go.Option"}}) (*{{ . | goIDUpper }}Closable, error) {
-    client, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), opts...)
+func Connect{{ . | goIDUpper }}Bidi(
+    _ {{goQual "context.Context"}},
+    url *{{goQual "net/url.URL"}},
+    {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
+    opts ...{{goQual "github.com/nats-io/nats.go.Option"}},
+) (*{{ . | goIDUpper }}Closable, error) {
+    client, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
     if err != nil {
         return nil, err
     }
@@ -14,8 +19,13 @@ func Connect{{ . | goIDUpper }}Bidi(_ {{goQual "context.Context"}}, url *{{goQua
 {{- end}}
 
 {{define "code/proto/nats/server/impl/github.com/nats-io/nats.go/connectProducerFunction"}}
-func Connect{{ . | goIDUpper }}Producer(_ {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, opts ...{{goQual "github.com/nats-io/nats.go.Option"}}) (*{{ . | goIDUpper }}Closable, error) {
-    producer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), opts...)
+func Connect{{ . | goIDUpper }}Producer(
+    _ {{goQual "context.Context"}},
+    url *{{goQual "net/url.URL"}},
+    {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
+    opts ...{{goQual "github.com/nats-io/nats.go.Option"}},
+) (*{{ . | goIDUpper }}Closable, error) {
+    producer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
     if err != nil {
         return nil, err
     }
@@ -26,8 +36,13 @@ func Connect{{ . | goIDUpper }}Producer(_ {{goQual "context.Context"}}, url *{{g
 {{- end}}
 
 {{define "code/proto/nats/server/impl/github.com/nats-io/nats.go/connectConsumerFunction"}}
-func Connect{{ . | goIDUpper }}Consumer(_ {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}, opts ...{{goQual "github.com/nats-io/nats.go.Option"}}) (*{{ . | goIDUpper }}Closable, error) {
-    consumer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), opts...)
+func Connect{{ . | goIDUpper }}Consumer(
+    _ {{goQual "context.Context"}},
+    url *{{goQual "net/url.URL"}},
+    {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
+    opts ...{{goQual "github.com/nats-io/nats.go.Option"}},
+) (*{{ . | goIDUpper }}Closable, error) {
+    consumer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
     if err != nil {
         return nil, err
     }

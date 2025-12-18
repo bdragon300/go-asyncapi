@@ -5,6 +5,9 @@ layout:
   - artifactKinds: ["schema", "server", "channel", "operation", "message", "parameter"]
     render:
       file: "{{.Object.Kind}}s/{{.Object | goIDUpper }}.go"
+  - artifactKinds: ["security"]
+    render:
+      file: "{{.Object.Kind}}/{{.Object | goIDUpper }}.go"
 
 locator:
   timeout: 30s

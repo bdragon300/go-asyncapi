@@ -1,8 +1,12 @@
 {{- /* dot == render.Server */}}
 
 {{define "code/proto/redis/server/impl/github.com/redis/go-redis/connectFunction"}}
-func Connect{{ . | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ . | goIDUpper }}Closable, error) {
-    client, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String())
+func Connect{{ . | goIDUpper }}Bidi(
+    ctx {{goQual "context.Context"}},
+    url *{{goQual "net/url.URL"}},
+    {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
+) (*{{ . | goIDUpper }}Closable, error) {
+    client, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }
@@ -14,8 +18,12 @@ func Connect{{ . | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQ
 {{- end}}
 
 {{define "code/proto/redis/server/impl/github.com/redis/go-redis/connectProducerFunction"}}
-func Connect{{ . | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ . | goIDUpper }}Closable, error) {
-    producer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String())
+func Connect{{ . | goIDUpper }}Producer(
+    ctx {{goQual "context.Context"}},
+    url *{{goQual "net/url.URL"}},
+    {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
+) (*{{ . | goIDUpper }}Closable, error) {
+    producer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }
@@ -26,8 +34,12 @@ func Connect{{ . | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{
 {{- end}}
 
 {{define "code/proto/redis/server/impl/github.com/redis/go-redis/connectConsumerFunction"}}
-func Connect{{ . | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ . | goIDUpper }}Closable, error) {
-    consumer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String())
+func Connect{{ . | goIDUpper }}Consumer(
+    ctx {{goQual "context.Context"}},
+    url *{{goQual "net/url.URL"}},
+    {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
+) (*{{ . | goIDUpper }}Closable, error) {
+    consumer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }

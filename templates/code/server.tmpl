@@ -62,6 +62,9 @@ func {{. | goIDUpper}}URL(
 {{- end}}
 
 {{template "code/proto/server/newFunction" .}}
+{{- if .SecuritySchemes}}
+    {{ template "code/proto/server/securityInterface" . }}
+{{- end}}
 {{- if impl .Protocol}}
     {{template "code/proto/server/connectFunctions" .}}
 {{- end}}
@@ -75,3 +78,4 @@ type {{. | goIDUpper}} struct {
 
 {{template "code/proto/server/commonMethods" .}}
 {{template "code/proto/server/channelOpenMethods" .}}
+{{template "code/proto/server/operationOpenMethods" .}}

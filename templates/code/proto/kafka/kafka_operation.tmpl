@@ -1,12 +1,22 @@
 {{- /* dot == render.ProtoOperation */}}
-{{define "code/proto/kafka/operation/publishMethods/block1"}}
-    envelopeTopic := o.Channel.(interface {
-        Topic() string
-    }).Topic()
-    envelope.SetTopic(envelopeTopic)
-{{- end}}
-
 {{- pin . }}
+
+{{template "code/proto/operation/serverInterface" .}}
+{{template "code/proto/operation/openFunction" .}}
+
+type {{ . | goIDUpper }}Channel{{.Protocol | goIDUpper}} interface {
+{{range .BoundMessages}}
+    {{- if not (isVisible .) }}{{continue}}{{end}}
+    {{if .IsPublisher}}
+        Seal{{goIDUpper .}}({{goQualR $.Protocol "EnvelopeWriter"}}, {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
+        Publish{{goIDUpper .}}({{goQual "context.Context"}}, {{if not (impl $.Protocol)}}{{goQualR $.Protocol "EnvelopeWriter"}},{{end}} {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
+    {{- end}}
+    {{if .IsSubscriber}}
+        Unseal{{goIDUpper .}}({{goQualR $.Protocol "EnvelopeReader"}}, {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeUnmarshaler{{$.Protocol | goIDUpper}}) error
+        Subscribe{{goIDUpper .}}({{goQual "context.Context"}}, func({{ goPkg .InType}}{{ goIDUpper .}}Receiver)) error
+    {{- end}}
+{{- end}}
+}
 
 type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
     Channel {{ . | goIDUpper }}Channel{{.Protocol | goIDUpper}}
@@ -19,11 +29,26 @@ type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
 {{- if .IsSubscriber}}
     {{template "code/proto/operation/subscribeMethods" .}}
 {{- end}}
-{{template "code/proto/operation/channelInterface" .}}
 
 {{- if or .IsReplyPublisher .IsReplySubscriber}}
+    {{- $replyCh := $.OperationReply.Channel }}
     {{- $innerChannel := .ProtoChannel.Channel}}
-    {{- if .OperationReply.Channel}}{{$innerChannel = .OperationReply.Channel}}{{end}}
+    {{- with .OperationReply.Channel}}{{$innerChannel = .}}{{end}}
+
+    type {{ . | goIDUpper }}ReplyChannel{{.Protocol | goIDUpper}} interface {
+    {{range .BoundReplyMessages}}
+        {{- if not (isVisible .) }}{{continue}}{{end}}
+        {{if $.IsReplyPublisher}}
+            Seal{{goIDUpper .}}({{goQualR $.Protocol "EnvelopeWriter"}}, {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
+            Publish{{goIDUpper .}}({{goQual "context.Context"}}, {{if not (impl $.Protocol)}}{{goQualR $.Protocol "EnvelopeWriter"}},{{end}} {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
+        {{- end}}
+        {{if $.IsReplySubscriber}}
+            Unseal{{goIDUpper .}}({{goQualR $.Protocol "EnvelopeReader"}}, {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeUnmarshaler{{$.Protocol | goIDUpper}}) error
+            Subscribe{{goIDUpper .}}({{goQual "context.Context"}}, func({{ goPkg .InType}}{{ goIDUpper .}}Receiver)) error
+        {{- end}}
+    {{- end}}
+    }
+
     type {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply struct {
         Channel {{ . | goIDUpper }}ReplyChannel{{.Protocol | goIDUpper}}
     }
@@ -34,5 +59,4 @@ type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
         {{template "code/proto/operation/operationReply/subscribeMethods" .}}
     {{- end}}
     {{template "code/proto/operation/operationReply/commonMethods" .}}
-    {{template "code/proto/operation/operationReply/channelInterface" .}}
 {{- end}}

@@ -1,0 +1,80 @@
+{{/* dot == render.SecurityScheme */}}
+
+{{define "code/security/userPassword"}}
+func New{{goIDUpper .}}Security(credentials func() (username, password string)) {{goIDUpper .}}Security {
+    res := {{goIDUpper .}}Security{{goUsage .InitValues}}
+    res.credentials = credentials
+    return res
+}
+
+type {{goIDUpper .}}Security struct {
+    credentials func() (string, string)
+}
+
+func (s {{goIDUpper .}}Security) UserPassword() (string, string) {
+    return s.credentials()
+}
+
+{{- range .BoundServers}}
+    func (s {{goIDUpper $}}Security) {{. | goIDUpper}}Security() {}
+{{- end}}
+{{- range .BoundOperations}}
+    func (s {{goIDUpper $}}Security) {{. | goIDUpper}}Security() {}
+{{- end}}
+
+{{- end}}
+
+{{define "code/security/apiKey"}}
+{{/* Different services may accept the API key as a standalone value or as a username/password value.
+     So, we generate here two variants for both cases, since the AsyncAPI doesn't allow to distinguish this for 'apiKey' type.
+  */}}
+func New{{goIDUpper .}}SecurityStandalone(credentials func() string) {{goIDUpper .}}SecurityStandalone {
+    res := {{goIDUpper .}}SecurityStandalone{{goUsage .InitValues}}
+    res.credentials = credentials
+    return res
+}
+
+type {{goIDUpper .}}SecurityStandalone struct {
+    In          string
+    credentials func() string
+}
+
+func (s {{goIDUpper .}}SecurityStandalone) APIKey() string {
+    return s.credentials()
+}
+
+{{- range .BoundServers}}
+    func (s {{goIDUpper $}}SecurityStandalone) {{. | goIDUpper}}Security() {}
+{{- end}}
+{{- range .BoundOperations}}
+    func (s {{goIDUpper $}}SecurityStandalone) {{. | goIDUpper}}Security() {}
+{{- end}}
+
+func New{{goIDUpper .}}SecurityPair(credentials func() (username, password string)) {{goIDUpper .}}SecurityPair {
+    res := {{goIDUpper .}}SecurityStandalone{{goUsage .InitValues}}
+    res.credentials = credentials
+    return res
+}
+
+type {{goIDUpper .}}SecurityPair struct {
+    In          string
+    credentials func() (string, string)
+}
+
+func (s {{goIDUpper .}}SecurityPair) UserPassword() (string, string) {
+    return s.credentials()
+}
+
+{{- range .BoundServers}}
+    func (s {{goIDUpper $}}SecurityPair) {{. | goIDUpper}}Security() {}
+{{- end}}
+{{- range .BoundOperations}}
+    func (s {{goIDUpper $}}SecurityPair) {{. | goIDUpper}}Security() {}
+{{- end}}
+
+{{- end}}
+
+{{/* dot == render.SecurityScheme */}}
+{{with tryTmpl (print "code/security/" .SchemeType) .}}
+    {{.}}
+{{end}}

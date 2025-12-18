@@ -297,9 +297,8 @@ func templateGoID(mng *manager.TemplateRenderManager, val any, exportedName bool
 		// Prefer the name of the topObject over the name of the val if the topObject is a Ref and points to val.
 		// Otherwise, use the name of the val.
 		//
-		// For example, the topObject is a lang.Ref defined in `servers.myServer`. val contains the render.Server
-		// defined in `components.servers.reusableServer` that this Ref is points to. Then we'll use the "myServer"
-		// as the server name in generated code: functions, structs, etc.
+		// For example, suppose that the topObject is a lang.Ref located in `servers.myServer` that points to a
+		// val which is a server object in `components.servers.reusableServer`. In this case result will be "myServer".
 		topObject := mng.CurrentObject
 		if lo.IsNil(topObject) || !common.CheckSameArtifacts(topObject, v) {
 			res = v.Name() // nil could appear when we render the app template

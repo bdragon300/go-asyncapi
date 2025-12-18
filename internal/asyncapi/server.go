@@ -1,6 +1,8 @@
 package asyncapi
 
 import (
+	"strconv"
+
 	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/samber/lo"
@@ -18,10 +20,10 @@ type Server struct {
 	Pathname        string                                   `json:"pathname,omitzero" yaml:"pathname"`
 	Description     string                                   `json:"description,omitzero" yaml:"description"`
 	Variables       types.OrderedMap[string, ServerVariable] `json:"variables,omitzero" yaml:"variables"`
-	// Security        SecurityScheme                    `json:"security,omitzero" yaml:"security"`
-	Tags         []Tag                  `json:"tags,omitzero" yaml:"tags"`
-	ExternalDocs *ExternalDocumentation `json:"externalDocs,omitzero" yaml:"externalDocs"`
-	Bindings     *ServerBindings        `json:"bindings,omitzero" yaml:"bindings"`
+	Security        []SecurityScheme                         `json:"security,omitzero" yaml:"security"`
+	Tags            []Tag                                    `json:"tags,omitzero" yaml:"tags"`
+	ExternalDocs    *ExternalDocumentation                   `json:"externalDocs,omitzero" yaml:"externalDocs"`
+	Bindings        *ServerBindings                          `json:"bindings,omitzero" yaml:"bindings"`
 
 	XGoName string `json:"x-go-name,omitzero" yaml:"x-go-name"`
 	XIgnore bool   `json:"x-ignore,omitzero" yaml:"x-ignore"`
@@ -61,7 +63,7 @@ func (s Server) build(ctx *compile.Context, serverKey string) (common.Artifact, 
 		IsSubscriber:    ctx.CompileOpts.GenerateSubscribers,
 	}
 
-	// Channels which are bound to this server
+	// All active channels
 	prm := lang.NewListCbPromise[common.Artifact](func(item common.Artifact) bool {
 		path := item.Pointer().Pointer
 		if len(path) < 2 || len(path) >= 2 && path[0] != "channels" {
@@ -85,6 +87,17 @@ func (s Server) build(ctx *compile.Context, serverKey string) (common.Artifact, 
 		ref := ctx.CurrentRefPointer("bindings")
 		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, nil)
 		ctx.PutPromise(res.BindingsPromise)
+	}
+
+	// Security
+	if len(s.Security) > 0 {
+		ctx.Logger.Trace("Server security schemes", "count", len(s.Security))
+		for ind := range s.Security {
+			ref := ctx.CurrentRefPointer("security", strconv.Itoa(ind))
+			secPrm := lang.NewPromise[*render.SecurityScheme](ref, nil)
+			ctx.PutPromise(secPrm)
+			res.SecuritySchemePromises = append(res.SecuritySchemePromises, secPrm)
+		}
 	}
 
 	// Server variables

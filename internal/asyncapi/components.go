@@ -12,7 +12,7 @@ type ComponentsItem struct {
 	Operations types.OrderedMap[string, Operation] `json:"operations,omitzero" yaml:"operations"`
 	Messages   types.OrderedMap[string, Message]   `json:"messages,omitzero" yaml:"messages"`
 
-	// SecuritySchemes types.OrderedMap[string, SecurityScheme] `json:"securitySchemes,omitzero" yaml:"securitySchemes"`
+	SecuritySchemes types.OrderedMap[string, SecurityScheme]        `json:"securitySchemes,omitzero" yaml:"securitySchemes"`
 	ServerVariables types.OrderedMap[string, ServerVariable]        `json:"serverVariables,omitzero" yaml:"serverVariables"`
 	Parameters      types.OrderedMap[string, Parameter]             `json:"parameters,omitzero" yaml:"parameters"`
 	CorrelationIDs  types.OrderedMap[string, CorrelationID]         `json:"correlationIds,omitzero" yaml:"correlationIds"`

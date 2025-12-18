@@ -78,25 +78,23 @@ func (gv *GoValue) GoTemplate() string {
 	return "code/lang/govalue"
 }
 
-// ConstructGoValue constructs a GoValue representation of given Golang type to render it in the generated Go code.
+// ConstructGoValue converts the input object into its GoValue representation, that can be rendered in templates as
+// type initialization expression. The result contains the same values and fields as input, recursively, except the
+// resulted type, which is set to outputType. Fields in input (and its nested structs) with empty value or that are in
+// excludeStructFields are skipped.
 //
-// The function receives the value to be represented, optional list of fields to exclude from the struct definitions
-// (applies to the nested structs as well). The function also receives the outputType that will be substituted to
-// the GoValue.Type field -- this parameter exists mainly for the convenience of the caller.
-//
-// This function is helpful, for example, if we have a struct and want to see the same struct (maybe with minor changes)
-// in the generated Go code. In the project this function is used to bring the AsyncAPI bindings structs to the generated Go code.
-func ConstructGoValue(value any, excludeStructFields []string, outputType common.GolangType) *GoValue {
+// In other words, this function "marshals" the value into a GoValue object with the outputType type info attached.
+func ConstructGoValue(input any, excludeStructFields []string, outputType common.GolangType) *GoValue {
 	type stringAnyMap interface {
 		Entries() []lo.Entry[string, any]
 	}
 
 	res := GoValue{Type: outputType}
-	if value == nil {
+	if input == nil {
 		return &res
 	}
 
-	switch v := value.(type) {
+	switch v := input.(type) {
 	case stringAnyMap:
 		for _, e := range v.Entries() {
 			res.StructValues.Set(e.Key, ConstructGoValue(e.Value, excludeStructFields, nil))
@@ -108,8 +106,8 @@ func ConstructGoValue(value any, excludeStructFields []string, outputType common
 		return &v
 	}
 
-	rtyp := reflect.TypeOf(value)
-	rval := reflect.ValueOf(value)
+	rtyp := reflect.TypeOf(input)
+	rval := reflect.ValueOf(input)
 
 	switch rtyp.Kind() {
 	case reflect.Slice, reflect.Array:
@@ -178,12 +176,12 @@ func ConstructGoValue(value any, excludeStructFields []string, outputType common
 		return &res
 	case reflect.Pointer, reflect.Interface:
 		pval := reflect.Indirect(rval)
-		val := ConstructGoValue(pval.Interface(), excludeStructFields, nil)
-		return &GoValue{LiteralValue: val, Type: &GoPointer{Type: outputType}}
+		goval := ConstructGoValue(pval.Interface(), excludeStructFields, nil)
+		return &GoValue{LiteralValue: goval, Type: &GoPointer{Type: outputType}}
 	case reflect.String, reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Float32, reflect.Float64:
 		return &GoValue{LiteralValue: rval.Interface(), Type: outputType}
 	}
 
-	panic(fmt.Errorf("cannot construct Value from a value of type %T", value))
+	panic(fmt.Errorf("cannot construct Value from a input of type %T", input))
 }

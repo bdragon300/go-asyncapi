@@ -92,8 +92,14 @@ func (d DiagramTemplateContext) ObjectsGroupedByLocation() iter.Seq2[string, []c
 
 // UITemplateContext is a context that is passed to the UI template.
 type UITemplateContext struct {
+	// DocumentContents is the passed AsyncAPI document parsed to map.
 	DocumentContents map[string]any
-	DocumentURL      jsonpointer.JSONPointer
-	Resources      []common.UIHTMLResource
-	Config           common.ConfigUI
+
+	// DocumentURL is the JSON Pointer to the passed AsyncAPI document.
+	DocumentURL jsonpointer.JSONPointer
+
+	// Resources is a list of resources to include in the generated html. Typically, CSS and JS files.
+	Resources []common.UIHTMLResource
+
+	Config common.ConfigUI
 }

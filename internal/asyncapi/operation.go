@@ -3,6 +3,7 @@ package asyncapi
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
@@ -20,12 +21,12 @@ const (
 )
 
 type Operation struct {
-	Action      OperationAction `json:"action,omitzero" yaml:"action"`
-	Channel     *StandaloneRef  `json:"channel,omitzero" yaml:"channel"`
-	Title       string          `json:"title,omitzero" yaml:"title"`
-	Summary     string          `json:"summary,omitzero" yaml:"summary"`
-	Description string          `json:"description,omitzero" yaml:"description"`
-	// Security     SecurityScheme  `json:"security,omitzero" yaml:"security"`
+	Action       OperationAction        `json:"action,omitzero" yaml:"action"`
+	Channel      *StandaloneRef         `json:"channel,omitzero" yaml:"channel"`
+	Title        string                 `json:"title,omitzero" yaml:"title"`
+	Summary      string                 `json:"summary,omitzero" yaml:"summary"`
+	Description  string                 `json:"description,omitzero" yaml:"description"`
+	Security     []SecurityScheme       `json:"security,omitzero" yaml:"security"`
 	Tags         []Tag                  `json:"tags,omitzero" yaml:"tags"`
 	ExternalDocs *ExternalDocumentation `json:"externalDocs,omitzero" yaml:"externalDocs"`
 	Bindings     *OperationBinding      `json:"bindings,omitzero" yaml:"bindings"`
@@ -92,6 +93,17 @@ func (o Operation) build(ctx *compile.Context, operationKey string, flags map[co
 				OriginalName:  ctx.GenerateObjName(operationKey, "Bindings"),
 				HasDefinition: true,
 			},
+		}
+	}
+
+	// Security
+	if len(o.Security) > 0 {
+		ctx.Logger.Trace("Server security schemes", "count", len(o.Security))
+		for ind := range o.Security {
+			ref := ctx.CurrentRefPointer("security", strconv.Itoa(ind))
+			secPrm := lang.NewPromise[*render.SecurityScheme](ref, nil)
+			ctx.PutPromise(secPrm)
+			res.SecuritySchemePromises = append(res.SecuritySchemePromises, secPrm)
 		}
 	}
 

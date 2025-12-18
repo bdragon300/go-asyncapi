@@ -12,14 +12,6 @@
     {{- end}}
 {{- end}}
 
-{{- range $op := .BoundAllPubOperations}}
-    {{- if isVisible .}}
-        func (m *{{ $.OutType | goIDUpper }}) Marshal{{$op | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope {{goQualR $.Protocol "EnvelopeWriter"}}) error {
-            return m.MarshalEnvelope{{$.Protocol | goIDUpper}}(envelope)
-        }
-    {{- end}}
-{{- end}}
-
 func (m *{{ .OutType | goIDUpper }}) MarshalEnvelope{{ .Protocol | goIDUpper }}(envelope {{goQualR .Protocol "EnvelopeWriter"}}) error {
     if err := m.Marshal{{ .Protocol | goIDUpper }}(envelope); err != nil {
         return err
@@ -54,14 +46,6 @@ func (m *{{ .OutType | goIDUpper }}) Marshal{{ .Protocol | goIDUpper }}(w {{goQu
 {{- range .BoundChannels}}
     {{- if and (isVisible .) .IsSubscriber}}
         func (m *{{ $.InType | goIDUpper }}) Unmarshal{{. | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope {{goQualR $.Protocol "EnvelopeReader"}}) error {
-            return m.UnmarshalEnvelope{{$.Protocol | goIDUpper}}(envelope)
-        }
-    {{- end}}
-{{- end}}
-
-{{- range $op := .BoundAllSubOperations}}
-    {{- if isVisible $op}}
-        func (m *{{ $.InType | goIDUpper }}) Unmarshal{{$op | goIDUpper}}{{$.Protocol |  goIDUpper}}(envelope {{goQualR $.Protocol "EnvelopeReader"}}) error {
             return m.UnmarshalEnvelope{{$.Protocol | goIDUpper}}(envelope)
         }
     {{- end}}

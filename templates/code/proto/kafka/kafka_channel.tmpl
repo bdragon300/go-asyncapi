@@ -14,6 +14,7 @@
 
 {{- pin . }}
 {{template "code/proto/channel/newFunction" .}}
+{{template "code/proto/channel/serverInterface" .}}
 {{template "code/proto/channel/openFunction" .}}
 
 type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
@@ -28,8 +29,5 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Topic() string {
 }
 
 {{template "code/proto/channel/commonMethods" .}}
-{{template "code/proto/channel/operationMethods" .}}
-{{template "code/proto/channel/replyMethods" .}}
 {{if .IsPublisher}}{{template "code/proto/channel/publishMethods" .}}{{end}}
 {{if .IsSubscriber}}{{template "code/proto/channel/subscribeMethods" .}}{{end}}
-{{template "code/proto/channel/serverInterface" .}}

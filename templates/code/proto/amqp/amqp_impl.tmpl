@@ -1,12 +1,16 @@
 {{- /* dot == render.Server */}}
 
 {{define "code/proto/amqp/server/impl/github.com/rabbitmq/amqp091-go/connectFunction"}}
-func Connect{{ . | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ . | goIDUpper }}Closable, error) {
+func Connect{{ . | goIDUpper }}Bidi(
+    ctx {{goQual "context.Context"}},
+    url *{{goQual "net/url.URL"}},
+    {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
+) (*{{ . | goIDUpper }}Closable, error) {
     var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    client, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), bindings)
+    client, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }
@@ -18,12 +22,16 @@ func Connect{{ . | goIDUpper }}Bidi(ctx {{goQual "context.Context"}}, url *{{goQ
 {{- end}}
 
 {{define "code/proto/amqp/server/impl/github.com/rabbitmq/amqp091-go/connectProducerFunction"}}
-func Connect{{ . | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ . | goIDUpper }}Closable, error) {
+func Connect{{ . | goIDUpper }}Producer(
+    ctx {{goQual "context.Context"}},
+    url *{{goQual "net/url.URL"}},
+    {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
+) (*{{ . | goIDUpper }}Closable, error) {
     var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    producer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), bindings)
+    producer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }
@@ -34,12 +42,16 @@ func Connect{{ . | goIDUpper }}Producer(ctx {{goQual "context.Context"}}, url *{
 {{- end}}
 
 {{define "code/proto/amqp/server/impl/github.com/rabbitmq/amqp091-go/connectConsumerFunction"}}
-func Connect{{ . | goIDUpper }}Consumer(ctx {{goQual "context.Context"}}, url *{{goQual "net/url.URL"}}) (*{{ . | goIDUpper }}Closable, error) {
+func Connect{{ . | goIDUpper }}Consumer(
+    ctx {{goQual "context.Context"}},
+    url *{{goQual "net/url.URL"}},
+    {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
+) (*{{ . | goIDUpper }}Closable, error) {
     var bindings *{{goQualR .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    consumer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), bindings)
+    consumer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }

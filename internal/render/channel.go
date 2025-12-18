@@ -135,23 +135,6 @@ func (c *Channel) BoundOperations() []*Operation {
 	return r
 }
 
-// BoundReplyOperations returns a list of Operation that have replies bound to this channel.
-func (c *Channel) BoundReplyOperations() []*Operation {
-	if c.Dummy {
-		return nil
-	}
-	r := lo.FilterMap(c.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (*Operation, bool) {
-		op := common.DerefArtifact(o).(*Operation)
-		if op.OperationReply() == nil {
-			return nil, false
-		}
-		return op, op.OperationReply().Channel() == c || (op.OperationReply().Channel() == nil && op.Channel() == c)
-	})
-	// ListPromise is filled up by linker, which doesn't guarantee the order. So, sort items by name
-	slices.SortFunc(r, func(a, b *Operation) int { return cmp.Compare(a.Name(), b.Name()) })
-	return r
-}
-
 // BindingsProtocols returns a list of protocols that have bindings defined for this channel.
 func (c *Channel) BindingsProtocols() (res []string) {
 	if c.BindingsType == nil {

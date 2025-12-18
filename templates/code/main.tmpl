@@ -39,6 +39,9 @@
         {{- end}}
     {{- end}}
 
+{{- else if eq .Object.Kind "security"}}
+    {{- template "security.tmpl" .Object}}
+
 {{- else if eq .Object.Kind "parameter" }}
     {{- template "parameter.tmpl" .Object}}
 

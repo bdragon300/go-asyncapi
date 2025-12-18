@@ -50,6 +50,9 @@ type Server struct {
 	BindingsType *lang.GoStruct
 	// BindingsPromise is a promise to server bindings contents. Nil if no bindings are set.
 	BindingsPromise *lang.Promise[*Bindings]
+
+	// SecuritySchemePromises is a promises to the security scheme objects defined for this server.
+	SecuritySchemePromises []*lang.Promise[*SecurityScheme]
 }
 
 // Variables returns the [types.OrderedMap] with server variables by name. Returns empty [types.OrderedMap] if variables
@@ -69,6 +72,13 @@ func (s *Server) Bindings() *Bindings {
 	return nil
 }
 
+// SecuritySchemes returns the list of security schemes defined for this server.
+func (s *Server) SecuritySchemes() []*SecurityScheme {
+	return lo.Map(s.SecuritySchemePromises, func(item *lang.Promise[*SecurityScheme], _ int) *SecurityScheme {
+		return item.T()
+	})
+}
+
 // BoundChannels returns a list of channels that are bound to this server.
 func (s *Server) BoundChannels() []*Channel {
 	r := lo.FilterMap(s.AllActiveChannelsPromise.T(), func(r common.Artifact, _ int) (*Channel, bool) {
@@ -76,6 +86,14 @@ func (s *Server) BoundChannels() []*Channel {
 		return ch, lo.ContainsBy(ch.BoundServers(), func(item *Server) bool {
 			return common.CheckSameArtifacts(s, item)
 		})
+	})
+	return r
+}
+
+// BoundOperations returns a list of operations that are bound to this server through its channels.
+func (s *Server) BoundOperations() []*Operation {
+	r := lo.FlatMap(s.BoundChannels(), func(ch *Channel, _ int) []*Operation {
+		return ch.BoundOperations()
 	})
 	return r
 }

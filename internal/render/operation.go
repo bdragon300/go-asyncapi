@@ -46,6 +46,9 @@ type Operation struct {
 
 	// ProtoOperations is a list of prebuilt ProtoOperation objects for each supported protocol
 	ProtoOperations []*ProtoOperation
+
+	// SecuritySchemePromises is a promises to the security scheme objects defined for this operation.
+	SecuritySchemePromises []*lang.Promise[*SecurityScheme]
 }
 
 // Channel returns the Channel that this operation is bound with.
@@ -139,6 +142,13 @@ func (o *Operation) ProtoBindingsValue(protoName string) common.Artifact {
 	return res
 }
 
+// SecuritySchemes returns the list of security schemes defined for this operation.
+func (o *Operation) SecuritySchemes() []*SecurityScheme {
+	return lo.Map(o.SecuritySchemePromises, func(item *lang.Promise[*SecurityScheme], _ int) *SecurityScheme {
+		return item.T()
+	})
+}
+
 func (o *Operation) HasPublishingCode() bool {
 	return o.IsPublisher || o.IsReplyPublisher
 }
@@ -193,7 +203,8 @@ func (p *ProtoOperation) ProtoChannel() *ProtoChannel {
 	return p.ProtoChannelPromise.T()
 }
 
-// isBound returns true if operation is bound to at least one server with supported protocol
+// isBound returns true if ProtoOperation is bound to at least one server of the same protocol through its Channel
+// or through OperationReply's Channel in any other Channel.
 func (p *ProtoOperation) isBound() bool {
 	protos := lo.Map(p.Channel().BoundServers(), func(s *Server, _ int) string {
 		return s.Protocol
