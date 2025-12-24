@@ -11,6 +11,10 @@ type {{goIDUpper .}}Security struct {
     credentials func() (string, string)
 }
 
+func (s {{goIDUpper .}}Security) AuthType() string {
+    return "userPassword"
+}
+
 func (s {{goIDUpper .}}Security) UserPassword() (string, string) {
     return s.credentials()
 }
@@ -39,8 +43,16 @@ type {{goIDUpper .}}SecurityStandalone struct {
     credentials func() string
 }
 
+func (s {{goIDUpper .}}SecurityStandalone) AuthType() string {
+    return "apiKey"
+}
+
 func (s {{goIDUpper .}}SecurityStandalone) APIKey() string {
     return s.credentials()
+}
+
+func (s {{goIDUpper .}}SecurityStandalone) In() string {
+    return s.In
 }
 
 {{- range .BoundServers}}
@@ -61,8 +73,27 @@ type {{goIDUpper .}}SecurityPair struct {
     credentials func() (string, string)
 }
 
+func (s {{goIDUpper .}}SecurityPair) AuthType() string {
+    return "apiKey"
+}
+
 func (s {{goIDUpper .}}SecurityPair) UserPassword() (string, string) {
     return s.credentials()
+}
+
+func (s {{goIDUpper .}}SecurityPair) APIKey() string {
+    user, pass := s.credentials()
+    switch s.In {
+    case "user":
+        return user
+    case "password":
+        return pass
+    }
+    return ""
+}
+
+func (s {{goIDUpper .}}SecurityPair) In() string {
+    return s.In
 }
 
 {{- range .BoundServers}}

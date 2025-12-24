@@ -2,11 +2,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bdragon300/go-asyncapi/run"
 	runNats "github.com/bdragon300/go-asyncapi/run/nats"
 	"github.com/nats-io/nats.go"
 )
 
-func NewClient(serverURL string, extraOpts ...nats.Option)(*Client, error) {
+func NewClient(serverURL string, security run.AnySecurityScheme, extraOpts ...nats.Option)(*Client, error) {
 	// Unfortunately, the official nats client doesn't accept the context object.
 	client, err := nats.Connect(serverURL, extraOpts...)
 	if err != nil {
@@ -22,7 +23,7 @@ type Client struct {
 	*nats.Conn
 }
 
-func (c *Client) Subscriber(_ context.Context, address string, chb *runNats.ChannelBindings, opb *runNats.OperationBindings) (runNats.Subscriber, error) {
+func (c *Client) Subscriber(_ context.Context, address string, chb *runNats.ChannelBindings, opb *runNats.OperationBindings, security run.AnySecurityScheme) (runNats.Subscriber, error) {
 	ctx2, cancel := context.WithCancel(context.Background())
 	return &Subscription{
 		Client:            c,
@@ -34,7 +35,7 @@ func (c *Client) Subscriber(_ context.Context, address string, chb *runNats.Chan
 	}, nil
 }
 
-func (c *Client) Publisher(_ context.Context, _ string, chb *runNats.ChannelBindings, opb *runNats.OperationBindings) (runNats.Publisher, error) {
+func (c *Client) Publisher(_ context.Context, _ string, chb *runNats.ChannelBindings, opb *runNats.OperationBindings, security run.AnySecurityScheme) (runNats.Publisher, error) {
 	ctx2, cancel := context.WithCancel(context.Background())
 	return &Publisher{
 		Client:            c,

@@ -2,12 +2,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/bdragon300/go-asyncapi/run"
 	runKafka "github.com/bdragon300/go-asyncapi/run/kafka"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
-func NewConsumer(hosts []string, bindings *runKafka.ServerBindings, extraOpts ...kgo.Opt) *ConsumeClient {
+func NewConsumer(hosts []string, bindings *runKafka.ServerBindings, security run.AnySecurityScheme, extraOpts ...kgo.Opt) *ConsumeClient {
 	return &ConsumeClient{
 		hosts:     hosts,
 		bindings:  bindings,
@@ -21,7 +23,7 @@ type ConsumeClient struct {
 	extraOpts []kgo.Opt
 }
 
-func (c ConsumeClient) Subscriber(_ context.Context, address string, chb *runKafka.ChannelBindings, opb *runKafka.OperationBindings) (runKafka.Subscriber, error) {
+func (c ConsumeClient) Subscriber(_ context.Context, address string, chb *runKafka.ChannelBindings, opb *runKafka.OperationBindings, security run.AnySecurityScheme) (runKafka.Subscriber, error) {
 	// TODO: schema registry https://github.com/twmb/franz-go/blob/master/examples/schema_registry/schema_registry.go
 	// TODO: chb.ClientID, chb.GroupID
 	var opts []kgo.Opt

@@ -1,10 +1,12 @@
 import (
 	"context"
+
+	"github.com/bdragon300/go-asyncapi/run"
 	runMqtt "github.com/bdragon300/go-asyncapi/run/mqtt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-func NewClient(ctx context.Context, serverURL string, bindings *runMqtt.ServerBindings, initClientOptions *mqtt.ClientOptions) (*Client, error) {
+func NewClient(ctx context.Context, serverURL string, bindings *runMqtt.ServerBindings, initClientOptions *mqtt.ClientOptions, security run.AnySecurityScheme) (*Client, error) {
 	co := initClientOptions
 	if co == nil {
 		co = mqtt.NewClientOptions()
@@ -46,7 +48,7 @@ type Client struct {
 	bindings    *runMqtt.ServerBindings
 }
 
-func (c *Client) Subscriber(ctx context.Context, address string, chb *runMqtt.ChannelBindings, opb *runMqtt.OperationBindings) (runMqtt.Subscriber, error) {
+func (c *Client) Subscriber(ctx context.Context, address string, chb *runMqtt.ChannelBindings, opb *runMqtt.OperationBindings, security run.AnySecurityScheme) (runMqtt.Subscriber, error) {
 	var qos byte
 	if opb != nil {
 		qos = byte(opb.QoS)
@@ -78,7 +80,7 @@ func (c *Client) Subscriber(ctx context.Context, address string, chb *runMqtt.Ch
 	return &r, nil
 }
 
-func (c *Client) Publisher(_ context.Context, address string, chb *runMqtt.ChannelBindings, opb *runMqtt.OperationBindings) (runMqtt.Publisher, error) {
+func (c *Client) Publisher(_ context.Context, address string, chb *runMqtt.ChannelBindings, opb *runMqtt.OperationBindings, security run.AnySecurityScheme) (runMqtt.Publisher, error) {
 	ctx2, cancel := context.WithCancel(context.Background())
 	r := PublishChannel{
 		Client:          c.Client,

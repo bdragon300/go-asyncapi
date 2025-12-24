@@ -1,14 +1,39 @@
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
+
 	"github.com/bdragon300/go-asyncapi/run"
 	runAmqp "github.com/bdragon300/go-asyncapi/run/amqp"
 	"github.com/rabbitmq/amqp091-go"
 )
 
-func NewClient(serverURL string, bindings *runAmqp.ServerBindings) (*Client, error) {
-	conn, err := amqp091.Dial(serverURL)
+func NewClient(serverURL string, bindings *runAmqp.ServerBindings, security run.AnySecurityScheme) (*Client, error) {
+	var conn *amqp091.Connection
+	var err error
+
+	switch s:=security.(type) {
+	case run.UserPasswordSecurity:
+		user, pass := s.UserPassword()
+		amqpAuth := &amqp091.PlainAuth{
+			Username: user,
+			Password: pass,
+		}
+		conn, err = amqp091.DialConfig(serverURL, amqp091.Config{
+			SASL: []amqp091.Authentication{amqpAuth},
+		})
+	case run.X509Security:
+		tlsConfig := &tls.Config{
+			Certificates: []tls.Certificate{s.TLSCert()},
+			ClientAuth: tls.RequireAndVerifyClientCert,
+		}
+		conn, err = amqp091.DialTLS_ExternalAuth(serverURL, tlsConfig)
+	case nil:
+		conn, err = amqp091.Dial(serverURL)
+	default:
+		return nil, fmt.Errorf("unsupported security scheme %T", security.AuthType())
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +48,10 @@ type Client struct {
 	bindings *runAmqp.ServerBindings
 }
 
-func (c Client) Publisher(_ context.Context, _ string, chb *runAmqp.ChannelBindings, opb *runAmqp.OperationBindings) (runAmqp.Publisher, error) {
+func (c Client) Publisher(_ context.Context, _ string, chb *runAmqp.ChannelBindings, opb *runAmqp.OperationBindings, security run.AnySecurityScheme) (runAmqp.Publisher, error) {
+	if security != nil {
+		return nil, fmt.Errorf("security schemes for publishers are not supported")
+	}
 	ch, err := c.Channel()
 	if err != nil {
 		return nil, err
@@ -60,7 +88,10 @@ func (c Client) Publisher(_ context.Context, _ string, chb *runAmqp.ChannelBindi
 	}, nil
 }
 
-func (c Client) Subscriber(_ context.Context, address string, chb *runAmqp.ChannelBindings, opb *runAmqp.OperationBindings) (runAmqp.Subscriber, error) {
+func (c Client) Subscriber(_ context.Context, address string, chb *runAmqp.ChannelBindings, opb *runAmqp.OperationBindings, security run.AnySecurityScheme) (runAmqp.Subscriber, error) {
+	if security != nil {
+		return nil, fmt.Errorf("security schemes for subscribers are not supported")
+	}
 	ch, err := c.Channel()
 	if err != nil {
 		return nil, err

@@ -1,17 +1,19 @@
 import (
 	"bufio"
 	"context"
-	runWs "github.com/bdragon300/go-asyncapi/run/ws"
-	"github.com/gobwas/ws"
-	"github.com/gobwas/ws/wsutil"
 	"net"
 	"net/http"
 	"strings"
 	"sync"
+
+	"github.com/bdragon300/go-asyncapi/run"
+	runWs "github.com/bdragon300/go-asyncapi/run/ws"
+	"github.com/gobwas/ws"
+	"github.com/gobwas/ws/wsutil"
 )
 
 // TODO: remove httpResponseTimeout, allow to use smth like http.requestHandler or nothing
-func NewConsumer(bindings *runWs.ServerBindings) *ConsumeClient {
+func NewConsumer(bindings *runWs.ServerBindings, security run.AnySecurityScheme) *ConsumeClient {
 	return &ConsumeClient{
 		Upgrader:    ws.DefaultHTTPUpgrader,
 		bindings:    bindings,
@@ -32,7 +34,7 @@ type ConsumeClient struct {
 	mu          *sync.RWMutex
 }
 
-func (c *ConsumeClient) Subscriber(ctx context.Context, address string, chb *runWs.ChannelBindings, opb *runWs.OperationBindings) (runWs.Subscriber, error) {
+func (c *ConsumeClient) Subscriber(ctx context.Context, address string, chb *runWs.ChannelBindings, opb *runWs.OperationBindings, security run.AnySecurityScheme) (runWs.Subscriber, error) {
 	c.ensureChannel(address, chb, opb) // FIXME: maybe it's better to take the path from bindings?
 	// Wait for a new connection
 	select {
