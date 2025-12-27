@@ -109,11 +109,6 @@ func (s Server) build(ctx *compile.Context, serverKey string) (common.Artifact, 
 		res.VariablesPromises.Set(v.Key, prm)
 	}
 
-	if _, ok := ctx.GetProtocolBuilder(s.Protocol); !ok {
-		ctx.Logger.Warn("Skip server with unsupported protocol", "proto", s.Protocol)
-		return &res, nil
-	}
-
 	ctx.Logger.Trace("Server", "proto", s.Protocol)
 	return &res, nil
 }

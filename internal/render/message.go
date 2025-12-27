@@ -60,9 +60,6 @@ type Message struct {
 
 	// AsyncAPIPromise is an AsyncAPI root object.
 	AsyncAPIPromise *lang.Promise[*AsyncAPI]
-
-	// ProtoMessages is a list of prebuilt ProtoMessage objects for each supported protocol
-	ProtoMessages []*ProtoMessage
 }
 
 // HeadersType returns a Go type of headers defined for message in the document.
@@ -114,13 +111,9 @@ func (m *Message) EffectiveContentType() string {
 	return res
 }
 
-// SelectProtoObject returns a selectable ProtoMessage object for the given protocol or nil if not found or
-// the message is not selectable.
-func (m *Message) SelectProtoObject(protocol string) *ProtoMessage {
-	objects := lo.Filter(m.ProtoMessages, func(p *ProtoMessage, _ int) bool {
-		return p.Selectable() && p.Protocol == protocol
-	})
-	return lo.FirstOr(objects, nil)
+// ProtoMessage returns a selectable ProtoMessage object for the given protocol.
+func (m *Message) ProtoMessage(protocol string) *ProtoMessage {
+	return &ProtoMessage{Message: m, Protocol: protocol}
 }
 
 // BoundChannels returns a list of Channel objects that this message is bound to.
@@ -189,6 +182,17 @@ func (m *Message) BoundSubReplyOperations() []*Operation {
 	return r
 }
 
+// ActiveProtocols returns a unique list of protocols that this message is bound to through channels and operations.
+func (m *Message) ActiveProtocols() []string {
+	protocols := lo.FilterMap(m.BoundChannels(), func(c *Channel, _ int) ([]string, bool) {
+		return c.ActiveProtocols(), c.Selectable() && c.Visible()
+	})
+	protocols = append(protocols, lo.FilterMap(m.BoundOperations(), func(o *Operation, _ int) ([]string, bool) {
+		return o.Channel().ActiveProtocols(), o.Selectable() && o.Visible()
+	})...)
+	return lo.Uniq(lo.Flatten(protocols))
+}
+
 // BindingsProtocols returns a list of protocols that have bindings defined for this message.
 func (m *Message) BindingsProtocols() (res []string) {
 	if m.BindingsType == nil {
@@ -246,21 +250,10 @@ type ProtoMessage struct {
 	Protocol string
 }
 
-func (p *ProtoMessage) Selectable() bool {
-	return !p.Dummy && p.isBound()
+func (p *ProtoMessage) Pinnable() bool {
+	return false
 }
 
 func (p *ProtoMessage) String() string {
 	return fmt.Sprintf("ProtoMessage[%s](%s)", p.Protocol, p.OriginalName)
-}
-
-// isBound returns true if the message is bound to the protocol
-func (p *ProtoMessage) isBound() bool {
-	res := lo.SomeBy(p.BoundChannels(), func(c *Channel) bool {
-		return !lo.IsNil(c.SelectProtoObject(p.Protocol))
-	}) || lo.SomeBy(p.BoundOperations(), func(o *Operation) bool {
-		return !lo.IsNil(o.SelectProtoObject(p.Protocol))
-	})
-
-	return res
 }

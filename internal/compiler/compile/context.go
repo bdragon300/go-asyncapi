@@ -39,13 +39,9 @@ type DocumentTreeItem struct {
 	Flags map[common.SchemaTag]string
 }
 
-type ProtocolBuilder interface {
-	Protocol() string
-}
-
 // NewCompileContext returns a new compilation context with the given document URL and compiler options.
-func NewCompileContext(compileOpts CompilationOpts, protoBuilders []ProtocolBuilder) *Context {
-	res := Context{CompileOpts: compileOpts, ProtocolBuilders: protoBuilders}
+func NewCompileContext(compileOpts CompilationOpts) *Context {
+	res := Context{CompileOpts: compileOpts}
 	res.Logger = &Logger{
 		ctx:    &res,
 		logger: log.GetLogger(log.LoggerPrefixCompilation),
@@ -59,10 +55,9 @@ func NewCompileContext(compileOpts CompilationOpts, protoBuilders []ProtocolBuil
 type Context struct {
 	Storage CompilationStorage
 	// Stack keeps the current position in the document tree
-	Stack            types.SimpleStack[DocumentTreeItem]
-	Logger           *Logger
-	CompileOpts      CompilationOpts
-	ProtocolBuilders []ProtocolBuilder
+	Stack       types.SimpleStack[DocumentTreeItem]
+	Logger      *Logger
+	CompileOpts CompilationOpts
 }
 
 // PutArtifact adds an artifact to the storage.
@@ -138,21 +133,12 @@ func (c *Context) GenerateObjName(name, suffix string) string {
 	return utils.ToGolangName(strings.Join(c.pathStack(), "_"), true) + suffix
 }
 
-func (c *Context) GetProtocolBuilder(protocol string) (ProtocolBuilder, bool) {
-	return lo.Find(c.ProtocolBuilders, func(p ProtocolBuilder) bool { return p.Protocol() == protocol })
-}
-
-func (c *Context) SupportedProtocols() []string {
-	return lo.Map(c.ProtocolBuilders, func(p ProtocolBuilder, _ int) string { return p.Protocol() })
-}
-
 func (c *Context) WithResultsStore(store CompilationStorage) *Context {
 	res := Context{
-		Storage:          store,
-		Stack:            types.SimpleStack[DocumentTreeItem]{},
-		Logger:           c.Logger,
-		CompileOpts:      c.CompileOpts,
-		ProtocolBuilders: c.ProtocolBuilders,
+		Storage:     store,
+		Stack:       types.SimpleStack[DocumentTreeItem]{},
+		Logger:      c.Logger,
+		CompileOpts: c.CompileOpts,
 	}
 	res.Logger = &Logger{
 		ctx:    &res,

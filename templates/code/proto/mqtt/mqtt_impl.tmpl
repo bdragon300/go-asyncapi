@@ -7,7 +7,7 @@ func Connect{{ . | goIDUpper }}Bidi(
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
     opts *{{goQual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}},
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualR .Protocol "ServerBindings"}}
+    var bindings *{{goQualE .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
@@ -29,7 +29,7 @@ func Connect{{ . | goIDUpper }}Producer(
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
     opts *{{goQual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}},
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualR .Protocol "ServerBindings"}}
+    var bindings *{{goQualE .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
@@ -50,7 +50,7 @@ func Connect{{ . | goIDUpper }}Consumer(
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
     opts *{{goQual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}},
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualR .Protocol "ServerBindings"}}
+    var bindings *{{goQualE .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}

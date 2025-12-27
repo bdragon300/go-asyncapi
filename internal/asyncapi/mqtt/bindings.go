@@ -11,9 +11,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type ProtoBuilder struct{}
+type BindingsBuilder struct{}
 
-func (pb ProtoBuilder) Protocol() string {
+func (pb BindingsBuilder) Protocol() string {
 	return "mqtt"
 }
 
@@ -23,11 +23,11 @@ type operationBindings struct {
 	MessageExpiryInterval int  `json:"messageExpiryInterval,omitzero" yaml:"messageExpiryInterval"` // Seconds
 }
 
-func (pb ProtoBuilder) BuildChannelBindings(_ *compile.Context, _ types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
+func (pb BindingsBuilder) BuildChannelBindings(_ *compile.Context, _ types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	return
 }
 
-func (pb ProtoBuilder) BuildOperationBindings(
+func (pb BindingsBuilder) BuildOperationBindings(
 	ctx *compile.Context,
 	rawData types.Union2[json.RawMessage, yaml.Node],
 ) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
@@ -51,7 +51,7 @@ type messageBindings struct {
 	ResponseTopic          string `json:"responseTopic,omitzero" yaml:"responseTopic"`
 }
 
-func (pb ProtoBuilder) BuildMessageBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
+func (pb BindingsBuilder) BuildMessageBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	var bindings messageBindings
 	if err = types.UnmarshalRawMessageUnion2(rawData, &bindings); err != nil {
 		err = types.CompileError{Err: err, Path: ctx.CurrentRefPointer(), Proto: pb.Protocol()}
@@ -95,7 +95,7 @@ type lastWill struct {
 	Retain  bool   `json:"retain,omitzero" yaml:"retain"`
 }
 
-func (pb ProtoBuilder) BuildServerBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
+func (pb BindingsBuilder) BuildServerBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	var bindings serverBindings
 	if err = types.UnmarshalRawMessageUnion2(rawData, &bindings); err != nil {
 		return vals, jsonVals, types.CompileError{Err: err, Path: ctx.CurrentRefPointer(), Proto: pb.Protocol()}

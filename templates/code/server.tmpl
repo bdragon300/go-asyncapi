@@ -60,22 +60,3 @@ func {{. | goIDUpper}}URL(
         }
     {{- end}}
 {{- end}}
-
-{{template "code/proto/server/newFunction" .}}
-{{- if .SecuritySchemes}}
-    {{ template "code/proto/server/securityInterface" . }}
-{{- end}}
-{{- if impl .Protocol}}
-    {{template "code/proto/server/connectFunctions" .}}
-{{- end}}
-
-{{- /* TODO: handle when protoName is empty (it appears when we build ProtoServer for unsupported protocol) */}}
-{{- /* TODO: consider IsPublisher and IsSubscriber}} */}}
-type {{. | goIDUpper}} struct {
-    producer {{goQualR .Protocol "Producer"}}
-    consumer {{goQualR .Protocol "Consumer"}}
-}
-
-{{template "code/proto/server/commonMethods" .}}
-{{template "code/proto/server/channelOpenMethods" .}}
-{{template "code/proto/server/operationOpenMethods" .}}

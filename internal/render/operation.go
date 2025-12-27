@@ -44,9 +44,6 @@ type Operation struct {
 	// OperationReplyPromise is a promise to the operation reply object. Nil if no reply is set.
 	OperationReplyPromise *lang.Promise[*OperationReply]
 
-	// ProtoOperations is a list of prebuilt ProtoOperation objects for each supported protocol
-	ProtoOperations []*ProtoOperation
-
 	// SecuritySchemePromises is a promises to the security scheme objects defined for this operation.
 	SecuritySchemePromises []*lang.Promise[*SecurityScheme]
 }
@@ -78,16 +75,9 @@ func (o *Operation) OperationReply() *OperationReply {
 	return nil
 }
 
-// SelectProtoObject returns the ProtoOperation object for the given protocol or nil if not found or if
-// ProtoOperation is not selectable.
-func (o *Operation) SelectProtoObject(protocol string) *ProtoOperation {
-	res := lo.Filter(o.ProtoOperations, func(p *ProtoOperation, _ int) bool {
-		return p.Selectable() && p.Protocol == protocol
-	})
-	if len(res) > 0 {
-		return res[0]
-	}
-	return nil
+// ProtoOperation returns the ProtoOperation object for the given protocol.
+func (o *Operation) ProtoOperation(protocol string) *ProtoOperation {
+	return &ProtoOperation{Operation: o, Protocol: protocol}
 }
 
 // BoundMessages returns a list of Message that are bound to this operation. If operation does not define messages, returns
@@ -112,6 +102,19 @@ func (o *Operation) BoundReplyMessages() []*Message {
 		return o.OperationReply().boundMessages()
 	}
 	return o.BoundMessages()
+}
+
+// ActiveProtocols returns a unique list of protocols that are bound to this operation via its channel and
+// via its OperationReply's channel (if any).
+func (o *Operation) ActiveProtocols() []string {
+	res := o.Channel().ActiveProtocols()
+	if o.OperationReply() != nil {
+		c := o.OperationReply().Channel()
+		if c != nil && c.Selectable() && c.Visible() {
+			res = append(res, c.ActiveProtocols()...)
+		}
+	}
+	return lo.Uniq(res)
 }
 
 // BindingsProtocols returns a list of protocols that have bindings defined for this operation.
@@ -185,13 +188,11 @@ func (o *Operation) Pinnable() bool {
 
 type ProtoOperation struct {
 	*Operation
-	// ProtoChannelPromise is ProtoChannel with the same Protocol in the bound Channel.
-	ProtoChannelPromise *lang.Promise[*ProtoChannel]
-	Protocol            string
+	Protocol string
 }
 
-func (p *ProtoOperation) Selectable() bool {
-	return !p.Dummy && p.isBound()
+func (p *ProtoOperation) Pinnable() bool {
+	return false
 }
 
 func (p *ProtoOperation) String() string {
@@ -200,20 +201,5 @@ func (p *ProtoOperation) String() string {
 
 // ProtoChannel returns the ProtoChannel with the same Protocol in the bound Channel.
 func (p *ProtoOperation) ProtoChannel() *ProtoChannel {
-	return p.ProtoChannelPromise.T()
-}
-
-// isBound returns true if ProtoOperation is bound to at least one server of the same protocol through its Channel
-// or through OperationReply's Channel in any other Channel.
-func (p *ProtoOperation) isBound() bool {
-	protos := lo.Map(p.Channel().BoundServers(), func(s *Server, _ int) string {
-		return s.Protocol
-	})
-	if p.OperationReply() != nil && p.OperationReply().Channel() != nil {
-		protos = append(protos, lo.Map(p.OperationReply().Channel().BoundServers(), func(s *Server, _ int) string {
-			return s.Protocol
-		})...)
-	}
-	r := lo.Contains(protos, p.Protocol)
-	return r
+	return p.Channel().ProtoChannel(p.Protocol)
 }

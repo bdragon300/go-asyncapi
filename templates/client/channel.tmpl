@@ -161,8 +161,8 @@ if opts.proxyHost != "" {
 {{goQual "log/slog.Debug"}}("Server URL", "value", serverURL)
 
 {{- with impl .Protocol}}
-    {{goQual "log/slog.Debug"}}("Using implementation {{.Manifest.Name | toQuotable}}")
-    {{- with tryTmpl (print "client/channeloperation/" $.Server.Protocol "/" .Manifest.Name "/setup") $}}
+    {{goQual "log/slog.Debug"}}("Using implementation {{.Name | toQuotable}}")
+    {{- with tryTmpl (print "client/channeloperation/" $.Server.Protocol "/" .Name "/setup") $}}
         // Implementation-specific code
         {{.}}
         // End of implementation-specific code
@@ -173,7 +173,7 @@ if opts.proxyHost != "" {
 if opts.publish {
     {{- if and .IsPublisher $isPublisher}}
         {{- with impl .Protocol}}
-            {{- with tryTmpl (print "client/channeloperation/" $.Server.Protocol "/" .Manifest.Name "/producer/connect") $}}
+            {{- with tryTmpl (print "client/channeloperation/" $.Server.Protocol "/" .Name "/producer/connect") $}}
                 // Implementation-specific code
                 {{.}}
                 // End of implementation-specific code
@@ -211,7 +211,7 @@ if opts.publish {
             {{end}}
 
             {{- with impl .Protocol}}
-                {{- with tryTmpl (print "client/message/" $.Server.Protocol "/" .Manifest.Name "/publish") $}}
+                {{- with tryTmpl (print "client/message/" $.Server.Protocol "/" .Name "/publish") $}}
                     // Implementation-specific code
                     {{.}}
                     // End of implementation-specific code
@@ -234,7 +234,7 @@ if opts.publish {
 } else {
     {{- if and .IsSubscriber $isSubscriber}}
         {{- with impl .Protocol}}
-            {{- with tryTmpl (print "client/channeloperation/" $.Server.Protocol "/" .Manifest.Name "/consumer/connect") $}}
+            {{- with tryTmpl (print "client/channeloperation/" $.Server.Protocol "/" .Name "/consumer/connect") $}}
                 // Implementation-specific code
                 {{.}}
                 // End of implementation-specific code
@@ -258,7 +258,7 @@ if opts.publish {
         subCtx, cancel := {{goQual "context.WithCancelCause"}}(ctx)
         defer cancel(ErrExited)
         payloadSeparator := []byte(opts.payloadSeparator)
-        err = channel.Subscribe(subCtx, func(e {{goQualR .Protocol "EnvelopeReader"}}) {
+        err = channel.Subscribe(subCtx, func(e {{goQualE .Protocol "EnvelopeReader"}}) {
             b, err := {{goQual "io.ReadAll"}}(e)
             if err != nil {
                 cancel({{goQual "fmt.Errorf"}}("read: %w", err))

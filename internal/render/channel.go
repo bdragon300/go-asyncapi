@@ -56,9 +56,6 @@ type Channel struct {
 	BindingsType *lang.GoStruct
 	// BindingsPromise is a promise to channel bindings contents. Nil if no bindings are set.
 	BindingsPromise *lang.Promise[*Bindings]
-
-	// ProtoChannels is a list of prebuilt ProtoChannel objects for each supported protocol
-	ProtoChannels []*ProtoChannel
 }
 
 // Parameters returns a map of channel's Parameter objects by names which they defined in channel.
@@ -85,16 +82,9 @@ func (c *Channel) Bindings() *Bindings {
 	return nil
 }
 
-// SelectProtoObject returns a selectable ProtoChannel object for the given protocol or nil if not found or if
-// ProtoChannel is not selectable.
-func (c *Channel) SelectProtoObject(protocol string) *ProtoChannel {
-	res := lo.Filter(c.ProtoChannels, func(p *ProtoChannel, _ int) bool {
-		return p.Selectable() && p.Protocol == protocol
-	})
-	if len(res) > 0 {
-		return res[0]
-	}
-	return nil
+// ProtoChannel returns a selectable ProtoChannel object for the given protocol.
+func (c *Channel) ProtoChannel(protocol string) *ProtoChannel {
+	return &ProtoChannel{Channel: c, Protocol: protocol}
 }
 
 // BoundServers returns a list of Server objects that this channel is bound with.
@@ -133,6 +123,15 @@ func (c *Channel) BoundOperations() []*Operation {
 	// ListPromise is filled up by linker, which doesn't guarantee the order. So, sort items by name
 	slices.SortFunc(r, func(a, b *Operation) int { return cmp.Compare(a.Name(), b.Name()) })
 	return r
+}
+
+// ActiveProtocols returns a unique list of protocols that this channel is bound. This function considers only
+// selectable and visible servers.
+func (c *Channel) ActiveProtocols() (res []string) {
+	protocols := lo.FilterMap(c.BoundServers(), func(s *Server, _ int) (string, bool) {
+		return s.Protocol, s.Selectable() && s.Visible()
+	})
+	return lo.Uniq(protocols)
 }
 
 // BindingsProtocols returns a list of protocols that have bindings defined for this channel.
@@ -192,19 +191,10 @@ type ProtoChannel struct {
 	Protocol string
 }
 
-func (p *ProtoChannel) Selectable() bool {
-	return !p.Dummy && p.isBound()
+func (p *ProtoChannel) Pinnable() bool {
+	return false
 }
 
 func (p *ProtoChannel) String() string {
 	return fmt.Sprintf("ProtoChannel[%s](%s)", p.Protocol, p.OriginalName)
-}
-
-// isBound returns true if channel is bound to at least one server with supported protocol
-func (p *ProtoChannel) isBound() bool {
-	protos := lo.Map(p.BoundServers(), func(s *Server, _ int) string {
-		return s.Protocol
-	})
-	r := lo.Contains(protos, p.Protocol)
-	return r
 }

@@ -11,9 +11,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type ProtoBuilder struct{}
+type BindingsBuilder struct{}
 
-func (pb ProtoBuilder) Protocol() string {
+func (pb BindingsBuilder) Protocol() string {
 	return "amqp"
 }
 
@@ -52,7 +52,7 @@ type operationBindings struct {
 	Ack          bool     `json:"ack,omitzero" yaml:"ack"`
 }
 
-func (pb ProtoBuilder) BuildChannelBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
+func (pb BindingsBuilder) BuildChannelBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	var bindings channelBindings
 	if err = types.UnmarshalRawMessageUnion2(rawData, &bindings); err != nil {
 		err = types.CompileError{Err: err, Path: ctx.CurrentRefPointer(), Proto: pb.Protocol()}
@@ -90,7 +90,7 @@ func (pb ProtoBuilder) BuildChannelBindings(ctx *compile.Context, rawData types.
 	return
 }
 
-func (pb ProtoBuilder) BuildOperationBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
+func (pb BindingsBuilder) BuildOperationBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	var bindings operationBindings
 	if err = types.UnmarshalRawMessageUnion2(rawData, &bindings); err != nil {
 		err = types.CompileError{Err: err, Path: ctx.CurrentRefPointer(), Proto: pb.Protocol()}
@@ -117,7 +117,7 @@ type messageBindings struct {
 	MessageType     string `json:"messageType,omitzero" yaml:"messageType"`
 }
 
-func (pb ProtoBuilder) BuildMessageBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
+func (pb BindingsBuilder) BuildMessageBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	var bindings messageBindings
 	if err = types.UnmarshalRawMessageUnion2(rawData, &bindings); err != nil {
 		err = types.CompileError{Err: err, Path: ctx.CurrentRefPointer(), Proto: pb.Protocol()}
@@ -128,6 +128,6 @@ func (pb ProtoBuilder) BuildMessageBindings(ctx *compile.Context, rawData types.
 	return
 }
 
-func (pb ProtoBuilder) BuildServerBindings(_ *compile.Context, _ types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
+func (pb BindingsBuilder) BuildServerBindings(_ *compile.Context, _ types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	return
 }

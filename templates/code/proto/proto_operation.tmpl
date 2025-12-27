@@ -2,10 +2,10 @@
 
 {{define "code/proto/operation/serverInterface"}}
     type {{ . | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
-        Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goQual "context.Context"}}{{with .Channel.ParametersType}},{{goUsage .}}{{end}}{{if .Channel.BoundOperations}},*{{goQualR .Protocol "OperationBindings"}},{{goQualR "AnySecurityScheme"}}{{end}}) (*{{goPkg .Channel}}{{goIDUpper .Channel}}{{goIDUpper .Protocol}}, error)
+        Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goQual "context.Context"}}{{with .Channel.ParametersType}},{{goUsage .}}{{end}}{{if .Channel.BoundOperations}},*{{goQualE .Protocol "OperationBindings"}},{{goQualR "AnySecurityScheme"}}{{end}}) (*{{goPkg .Channel}}{{goIDUpper .Channel}}{{goIDUpper .Protocol}}, error)
         Open{{. | goIDUpper}}{{.Protocol | goIDUpper}}(ctx {{goQual "context.Context"}}{{with .Channel.ParametersType}}, params {{ goUsage . }}{{end}}{{if .SecuritySchemes}}, security {{. | goIDUpper}}Security,{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
-        {{if .Channel.IsPublisher}}Producer() {{goQualR .Protocol "Producer"}}{{end}}
-        {{if .Channel.IsSubscriber}}Consumer() {{goQualR .Protocol "Consumer"}}{{end}}
+        {{if .Channel.IsPublisher}}Producer() {{goQualE .Protocol "Producer"}}{{end}}
+        {{if .Channel.IsSubscriber}}Consumer() {{goQualE .Protocol "Consumer"}}{{end}}
     }
 {{- end}}
 
@@ -44,7 +44,7 @@ func Open{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
 
 {{define "code/proto/operation/commonMethods"}}
 {{- if .BindingsProtocols | has .Protocol}}
-func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Bindings() {{goQualR .Protocol "OperationBindings"}} {
+func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Bindings() {{goQualE .Protocol "OperationBindings"}} {
     return {{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}()
 }
 {{- end}}
@@ -60,7 +60,7 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Bindings() {{goQualR .Protoc
 {{- range .BoundMessages}}
     {{- if not (isVisible .) }}{{continue}}{{end}}
     func (o {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}) Seal{{. | goIDUpper}}(
-        envelope {{goQualR $.Protocol "EnvelopeWriter"}},
+        envelope {{goQualE $.Protocol "EnvelopeWriter"}},
         message {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeMarshaler{{$.Protocol | goIDUpper}},
     ) error {
         return o.Channel.Seal{{. | goIDUpper}}(envelope, message)
@@ -68,7 +68,7 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Bindings() {{goQualR .Protoc
 
     func (o {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}) Publish{{. | goIDUpper}}(
         ctx {{goQual "context.Context"}},
-        {{if not (impl $.Protocol)}}envelope {{goQualR $.Protocol "EnvelopeWriter"}},{{end}}
+        {{if not (impl $.Protocol)}}envelope {{goQualE $.Protocol "EnvelopeWriter"}},{{end}}
         message {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeMarshaler{{$.Protocol | goIDUpper}},
     ) error {
         return o.Channel.Publish{{. | goIDUpper}}(ctx, {{if not (impl $.Protocol)}}envelope,{{end}} message)
@@ -81,7 +81,7 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Bindings() {{goQualR .Protoc
 {{- range .BoundMessages}}
     {{- if not (isVisible .) }}{{continue}}{{end}}
     func (o {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}) Unseal{{. | goIDUpper}}(
-        envelope {{goQualR $.Protocol "EnvelopeReader"}},
+        envelope {{goQualE $.Protocol "EnvelopeReader"}},
         message {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeUnmarshaler{{$.Protocol | goIDUpper}},
     ) error {
         return o.Channel.Unseal{{. | goIDUpper}}(envelope, message)
@@ -104,7 +104,7 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Bindings() {{goQualR .Protoc
     {{- $replyCh := $.OperationReply.Channel }}
     {{- if not (isVisible .) }}{{continue}}{{end}}
     func (o {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply) Seal{{. | goIDUpper}}(
-        envelope {{goQualR $.Protocol "EnvelopeWriter"}},
+        envelope {{goQualE $.Protocol "EnvelopeWriter"}},
         message {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}},
     ) error {
         return o.Channel.Seal{{. | goIDUpper}}(envelope, message)
@@ -112,7 +112,7 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Bindings() {{goQualR .Protoc
 
     func (o {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply) Reply{{. | goIDUpper}}(
         ctx {{goQual "context.Context"}},
-        {{if not (impl $.Protocol)}}envelope {{goQualR $.Protocol "EnvelopeWriter"}},{{end}}
+        {{if not (impl $.Protocol)}}envelope {{goQualE $.Protocol "EnvelopeWriter"}},{{end}}
         {{if $.OperationReply.OperationReplyAddress}}
             {{- $ctx := dict "SourceVarName" "o" "RuntimeExpression" $.OperationReply.OperationReplyAddress.BaseRuntimeExpression "TargetType" .OutType}}
             message interface{ {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}; SetReplyAddress{{ $ | goIDUpper }}(a {{template "code/runtimeExpression/varType" $ctx}}) },
@@ -133,7 +133,7 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Bindings() {{goQualR .Protoc
 {{- range .BoundReplyMessages }}
     {{- if not (isVisible .) }}{{continue}}{{end}}
     func (o {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply) Unseal{{. | goIDUpper}}(
-        envelope {{goQualR $.Protocol "EnvelopeReader"}},
+        envelope {{goQualE $.Protocol "EnvelopeReader"}},
         message {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeUnmarshaler{{$.Protocol | goIDUpper}},
     ) error {
         return o.Channel.Unseal{{. | goIDUpper}}(envelope, message)

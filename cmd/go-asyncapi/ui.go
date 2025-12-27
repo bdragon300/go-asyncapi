@@ -52,6 +52,10 @@ func cliUI(cmd *UICmd, globalConfig toolConfig) error {
 		return fmt.Errorf("config: %w", err)
 	}
 
+	if cmdConfig.UI.BundleDir != "" && !lo.FromPtr(cmdConfig.UI.Bundle) {
+		return fmt.Errorf("ui bundle directory is set but bundling is disabled. Use --bundle flag to enable bundling")
+	}
+
 	locator := getLocator(cmdConfig)
 	docURL, err := jsonpointer.Parse(cmd.Document)
 	if err != nil {

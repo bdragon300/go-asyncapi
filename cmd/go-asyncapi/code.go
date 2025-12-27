@@ -13,37 +13,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bdragon300/go-asyncapi/internal/asyncapi/nats"
 	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
-	"github.com/bdragon300/go-asyncapi/internal/types"
-
 	"github.com/bdragon300/go-asyncapi/internal/locator"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/render"
 	"github.com/bdragon300/go-asyncapi/internal/selector"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
+	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/bdragon300/go-asyncapi/internal/writer"
 	"github.com/bdragon300/go-asyncapi/templates/client"
 	templates "github.com/bdragon300/go-asyncapi/templates/code"
+	"github.com/bdragon300/go-asyncapi/templates/codeextra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/bdragon300/go-asyncapi/internal/asyncapi/tcp"
-	"github.com/bdragon300/go-asyncapi/internal/asyncapi/udp"
-
-	"github.com/bdragon300/go-asyncapi/internal/asyncapi/ip"
-
-	"github.com/bdragon300/go-asyncapi/internal/asyncapi/redis"
-
-	"github.com/bdragon300/go-asyncapi/internal/asyncapi/ws"
-
-	"github.com/bdragon300/go-asyncapi/internal/asyncapi/mqtt"
-
-	"github.com/bdragon300/go-asyncapi/implementations"
-	"github.com/bdragon300/go-asyncapi/internal/asyncapi/amqp"
-	asyncapiHTTP "github.com/bdragon300/go-asyncapi/internal/asyncapi/http"
-	"github.com/bdragon300/go-asyncapi/internal/asyncapi/kafka"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/compiler"
 	"github.com/bdragon300/go-asyncapi/internal/linker"
@@ -70,6 +54,8 @@ type CodeCmd struct {
 	ImplementationsDir     string `arg:"--implementations-dir" help:"Directory to save the implementations code, counts from target dir" placeholder:"DIR"`
 	DisableImplementations bool   `arg:"--disable-implementations" help:"Do not generate implementations code"`
 
+	ExtraCodeDir string `arg:"--extra-code-dir" help:"Directory to save the extra code, counts from target dir" placeholder:"DIR"`
+
 	AllowRemoteRefs bool          `arg:"--allow-remote-refs" help:"Allow locator to fetch the documents from remote hosts"`
 	LocatorRootDir  string        `arg:"--locator-root-dir" help:"Root directory to search the documents" placeholder:"PATH"`
 	LocatorTimeout  time.Duration `arg:"--locator-timeout" help:"Timeout for locator to read a document. Format: 30s, 2m, etc." placeholder:"DURATION"`
@@ -77,21 +63,6 @@ type CodeCmd struct {
 
 	ClientApp     bool   `arg:"--client-app" help:"Generate the sample client application code as well"`
 	goModTemplate string `arg:"-"`
-}
-
-// protocolBuilders is a list of protocol-specific artifact builders. This list determines the global list of
-// protocols supported by go-asyncapi.
-var protocolBuilders = []compile.ProtocolBuilder{
-	amqp.ProtoBuilder{},
-	asyncapiHTTP.ProtoBuilder{},
-	kafka.ProtoBuilder{},
-	mqtt.ProtoBuilder{},
-	ws.ProtoBuilder{},
-	redis.ProtoBuilder{},
-	ip.ProtoBuilder{},
-	tcp.ProtoBuilder{},
-	udp.ProtoBuilder{},
-	nats.ProtoBuilder{},
 }
 
 func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
@@ -103,9 +74,8 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 		logger.Trace("Use the resulting config", "value", string(buf))
 	}
 
-	supportedProtocols := lo.Map(protocolBuilders, func(item compile.ProtocolBuilder, _ int) string { return item.Protocol() })
 	compileOpts := getCompileOpts(cmdConfig)
-	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Code.TargetDir, true, supportedProtocols)
+	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Code.TargetDir, true)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
 	}
@@ -119,7 +89,7 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 	if err != nil {
 		return fmt.Errorf("parse URL: %w", err)
 	}
-	documents, err := runCompilationAndLinking(fileLocator, rootDocumentURL, compileOpts, protocolBuilders)
+	documents, err := runCompilationAndLinking(fileLocator, rootDocumentURL, compileOpts)
 	if err != nil {
 		return fmt.Errorf("compilation: %w", err)
 	}
@@ -128,28 +98,21 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 	// Rendering
 	//
 	rootDocument := documents[rootDocumentURL.Location()]
-	activeProtocols := collectActiveProtocols(rootDocument.Artifacts())
-	logger.Debug("Renders protocols", "value", activeProtocols)
+	activeProtocols := collectActiveServersProtocols(rootDocument.Artifacts())
+	logger.Debug("Collected protocols from servers", "value", activeProtocols)
 
-	// Implementations
-	implementationOpts := getImplementationOpts(cmdConfig)
-	if !implementationOpts.Disable {
-		tplLoader := tmpl.NewTemplateLoader(defaultMainTemplateName, implementations.ImplementationFS)
-		renderManager.TemplateLoader = tplLoader
+	// Extra code
+	logger.Debug("Run extra code rendering", "protocols", activeProtocols)
+	renderManager.TemplateLoader = tmpl.NewTemplateLoader("", codeextra.TemplateFS) // No main template there
+	if err := renderer.RenderExtraCode(activeProtocols, renderOpts.CodeExtraOpts, renderManager, codeextra.TemplateFS); err != nil {
+		return fmt.Errorf("render extra code: %w", err)
+	}
+	logger.Debug("Extra code rendering complete")
 
-		protocols := lo.Intersect(supportedProtocols, activeProtocols)
-		if len(protocols) < len(activeProtocols) {
-			logger.Warn("Some protocols have no implementations", "protocols", lo.Without(activeProtocols, protocols...))
-		}
-
-		// Render only implementations for protocols that are actually used in document
-		slices.Sort(protocols)
-		logger.Debug("Run implementations rendering", "protocols", protocols)
-		implObjects, err := getImplementations(implementationOpts, protocols)
-		if err != nil {
-			return fmt.Errorf("getting implementations: %w", err)
-		}
-		if err = renderer.RenderImplementations(implObjects, renderManager); err != nil {
+	// Extra code: implementations code
+	if !renderOpts.CodeExtraOpts.DisableImplementations {
+		logger.Debug("Run implementations code rendering", "protocols", activeProtocols)
+		if err = renderer.RenderImplementationsCode(activeProtocols, renderOpts.CodeExtraOpts, renderManager, codeextra.TemplateFS); err != nil {
 			return fmt.Errorf("render implementations: %w", err)
 		}
 		logger.Debug("Implementations rendering complete")
@@ -230,20 +193,20 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 	return nil
 }
 
-// collectActiveProtocols returns a list of protocols that are used in servers that are active and selectable, i.e.
+// collectActiveServersProtocols returns a list of protocols that are used in servers that are active and selectable, i.e.
 // those, which will appear in the generated code.
-func collectActiveProtocols(allObjects []common.Artifact) []string {
-	return lo.Uniq(lo.FilterMap(allObjects, func(obj common.Artifact, _ int) (string, bool) {
+func collectActiveServersProtocols(artifacts []common.Artifact) []string {
+	r := lo.Uniq(lo.FilterMap(artifacts, func(obj common.Artifact, _ int) (string, bool) {
 		if obj.Kind() != common.ArtifactKindServer && !obj.Selectable() || !obj.Visible() {
 			return "", false
 		}
-		obj2 := common.DerefArtifact(obj)
-		v, ok := obj2.(*render.Server)
-		if !ok {
-			return "", false
+		if v, ok := common.DerefArtifact(obj).(*render.Server); ok {
+			return v.Protocol, true
 		}
-		return v.Protocol, true
+		return "", false
 	}))
+	slices.Sort(r) // Sort to keep idempotency
+	return r
 }
 
 func cliCodeMergeConfig(globalConfig toolConfig, cmd *CodeCmd) toolConfig {
@@ -266,6 +229,9 @@ func cliCodeMergeConfig(globalConfig toolConfig, cmd *CodeCmd) toolConfig {
 	res.Code.ImplementationsDir = coalesce(cmd.ImplementationsDir, res.Code.ImplementationsDir)
 	res.Code.DisableImplementations = coalesce(cmd.DisableImplementations, res.Code.DisableImplementations)
 
+	res.Code.Extra.Directory = coalesce(cmd.ExtraCodeDir, res.Code.Extra.Directory)
+	res.Code.Extra.DisableImplementations = coalesce(cmd.DisableImplementations, res.Code.Extra.DisableImplementations)
+
 	res.Client.GoModTemplate = coalesce(cmd.goModTemplate, res.Client.GoModTemplate)
 
 	return res
@@ -282,11 +248,26 @@ func getCompileOpts(cfg toolConfig) compile.CompilationOpts {
 	}
 }
 
-func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool, allProtocols []string) (common.RenderOpts, error) {
+func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (common.RenderOpts, error) {
 	logger := log.GetLogger("")
 	res := common.RenderOpts{
 		RuntimeModule:    conf.RuntimeModule,
 		PreambleTemplate: conf.Code.PreambleTemplate,
+		CodeExtraOpts: common.ConfigCodeExtraOpts{
+			Directory:              conf.Code.Extra.Directory,
+			DisableImplementations: conf.Code.Extra.DisableImplementations,
+			Implementations: lo.Map(conf.Implementations, func(item toolConfigImplementation, _ int) common.ConfigImplementationProtocol {
+				return common.ConfigImplementationProtocol{
+					Protocol:          item.Protocol,
+					Name:              item.Name,
+					Disable:           item.Disable,
+					Directory:         item.Directory,
+					TemplateDirectory: item.TemplateDirectory,
+					Package:           item.Package,
+					ReusePackagePath:  item.ReusePackagePath,
+				}
+			}),
+		},
 	}
 
 	// Layout
@@ -305,8 +286,7 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool, al
 				Protocols:        item.Render.Protocols,
 				ProtoObjectsOnly: item.Render.ProtoObjectsOnly,
 			},
-			ReusePackagePath:      item.ReusePackagePath,
-			AllSupportedProtocols: allProtocols,
+			ReusePackagePath: item.ReusePackagePath,
 		}
 		logger.Debug("Use layout item", "value", l)
 		res.Layout = append(res.Layout, l)
@@ -332,22 +312,23 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool, al
 	return res, nil
 }
 
-func getImplementationOpts(conf toolConfig) common.RenderImplementationsOpts {
-	return common.RenderImplementationsOpts{
-		Disable:   conf.Code.DisableImplementations,
-		Directory: conf.Code.ImplementationsDir,
-		Protocols: lo.Map(conf.Implementations, func(item toolConfigImplementation, _ int) common.ConfigImplementationProtocol {
-			return common.ConfigImplementationProtocol{
-				Protocol:         item.Protocol,
-				Name:             item.Name,
-				Disable:          item.Disable,
-				Directory:        item.Directory,
-				Package:          item.Package,
-				ReusePackagePath: item.ReusePackagePath,
-			}
-		}),
-	}
-}
+// func getExtraCodeOpts(conf toolConfig) common.ConfigCodeExtraOpts {
+//	return common.ConfigCodeExtraOpts{
+//		Directory:              conf.Code.Extra.Directory,
+//		DisableImplementations: conf.Code.Extra.DisableImplementations,
+//		Implementations: lo.Map(conf.Implementations, func(item toolConfigImplementation, _ int) common.ConfigImplementationProtocol {
+//			return common.ConfigImplementationProtocol{
+//				Protocol:          item.Protocol,
+//				Name:              item.Name,
+//				Disable:           item.Disable,
+//				Directory:         item.Directory,
+//				TemplateDirectory: item.TemplateDirectory,
+//				Package:           item.Package,
+//				ReusePackagePath:  item.ReusePackagePath,
+//			}
+//		}),
+//	}
+//}
 
 // selectArtifacts selects artifacts from the list of all artifacts based on the layout configuration.
 func selectArtifacts(artifacts []common.Artifact, layout []common.ConfigLayoutItem) (res []renderer.RenderQueueItem) {
@@ -415,12 +396,11 @@ func runCompilationAndLinking(
 	locator documentLocator,
 	docURL *jsonpointer.JSONPointer,
 	compileOpts compile.CompilationOpts,
-	protoBuilders []compile.ProtocolBuilder,
 ) (map[string]*compiler.Document, error) {
 	logger := log.GetLogger("")
 
 	logger.Debug("Run compilation")
-	compileContext := compile.NewCompileContext(compileOpts, protoBuilders)
+	compileContext := compile.NewCompileContext(compileOpts)
 	documents, err := runCompilation(docURL, compileContext, locator)
 	if err != nil {
 		return nil, err
@@ -486,32 +466,6 @@ func runCompilation(
 	return documents, nil
 }
 
-func getImplementations(conf common.RenderImplementationsOpts, protocols []string) ([]common.ImplementationObject, error) {
-	var res []common.ImplementationObject
-	logger := log.GetLogger(log.LoggerPrefixCompilation)
-
-	manifest := lo.Must(loadImplementationsManifest())
-
-	for _, protocol := range protocols {
-		protoConf := getImplementationConfig(conf, protocol, manifest)
-		if protoConf.Disable {
-			logger.Debug("Skip disabled implementation", "protocol", protocol, "name", protoConf.Name)
-			continue
-		}
-		logger.Trace("Compile implementation", "protocol", protocol, "name", protoConf.Name)
-		protoManifest, found := lo.Find(manifest, func(item implementations.ImplManifestItem) bool {
-			return item.Name == protoConf.Name && item.Protocol == protocol
-		})
-		if !found {
-			return res, fmt.Errorf("cannot find implementation %q for protocol %s", protoConf.Name, protocol)
-		}
-
-		res = append(res, common.ImplementationObject{Manifest: protoManifest, Config: protoConf})
-	}
-
-	return res, nil
-}
-
 func runLinking(objSources map[string]linker.ObjectSource) error {
 	logger := log.GetLogger(log.LoggerPrefixLinking)
 
@@ -543,26 +497,6 @@ func runLinking(objSources map[string]linker.ObjectSource) error {
 	return nil
 }
 
-func getImplementationConfig(conf common.RenderImplementationsOpts, protocol string, manifest implementations.ImplManifest) common.ConfigImplementationProtocol {
-	// Get default implementation
-	protoManifest, found := lo.Find(manifest, func(item implementations.ImplManifestItem) bool {
-		return item.Default && item.Protocol == protocol
-	})
-	if !found {
-		panic(fmt.Sprintf("cannot find default implementation for protocol %s. This is a bug: %v", protocol, manifest))
-	}
-
-	protoConf, _ := lo.Find(conf.Protocols, func(item common.ConfigImplementationProtocol) bool { return item.Protocol == protocol })
-	return common.ConfigImplementationProtocol{
-		Protocol:         protocol,
-		Name:             coalesce(protoConf.Name, protoManifest.Name),
-		Disable:          coalesce(protoConf.Disable, conf.Disable),
-		Directory:        coalesce(protoConf.Directory, conf.Directory),
-		Package:          protoConf.Package,
-		ReusePackagePath: protoConf.ReusePackagePath,
-	}
-}
-
 // postprocessGoFiles formats the file buffers in-place applying go fmt.
 func postprocessGoFiles(files map[string]*bytes.Buffer) error {
 	logger := log.GetLogger(log.LoggerPrefixFormatting)
@@ -587,20 +521,6 @@ func postprocessGoFiles(files map[string]*bytes.Buffer) error {
 
 	logger.Info("Formatting complete", "files", len(files))
 	return nil
-}
-
-func loadImplementationsManifest() (implementations.ImplManifest, error) {
-	f, err := implementations.ImplementationFS.Open("manifest.yaml")
-	if err != nil {
-		return nil, fmt.Errorf("cannot open manifest.yaml: %w", err)
-	}
-	dec := yaml.NewDecoder(f)
-	var meta implementations.ImplManifest
-	if err = dec.Decode(&meta); err != nil {
-		return nil, fmt.Errorf("cannot parse manifest.yaml: %w", err)
-	}
-
-	return meta, nil
 }
 
 // coalesce return the first non-zero value from the list of arguments.

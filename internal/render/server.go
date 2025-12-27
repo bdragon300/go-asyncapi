@@ -98,6 +98,11 @@ func (s *Server) BoundOperations() []*Operation {
 	return r
 }
 
+// ActiveProtocols returns a protocol of this server. This method exists mainly for internal use in selectors.
+func (s *Server) ActiveProtocols() []string {
+	return []string{s.Protocol}
+}
+
 // BindingsProtocols returns a list of protocols that have bindings defined for this server.
 func (s *Server) BindingsProtocols() (res []string) {
 	if s.BindingsType == nil {

@@ -61,8 +61,8 @@ func ApplyFilters(artifacts []common.Artifact, layoutItem common.ConfigLayoutIte
 
 type filterFunc func(common.Artifact) bool
 
-type protoObjectSelector interface {
-	SelectProtoObject(protocol string) common.Artifact
+type protocolArtifact interface {
+	ActiveProtocols() []string
 }
 
 func buildFiltersChain(layoutItem common.ConfigLayoutItem) []filterFunc {
@@ -73,11 +73,8 @@ func buildFiltersChain(layoutItem common.ConfigLayoutItem) []filterFunc {
 	if len(layoutItem.Protocols) > 0 {
 		logger.Trace("-> Use Protocol filter", "index", len(filterChain))
 		filterChain = append(filterChain, func(object common.Artifact) bool {
-			// Check if object has at least one of the "proto" sub-objects of the given protocols
-			if o, ok := object.(protoObjectSelector); ok {
-				return lo.SomeBy(layoutItem.Protocols, func(protocol string) bool {
-					return o.SelectProtoObject(protocol) != nil
-				})
+			if o, ok := object.(protocolArtifact); ok {
+				return lo.Some(layoutItem.Protocols, o.ActiveProtocols())
 			}
 			return false
 		})

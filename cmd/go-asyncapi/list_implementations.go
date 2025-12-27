@@ -5,14 +5,15 @@ import (
 	"os"
 	"slices"
 
-	"github.com/bdragon300/go-asyncapi/implementations"
+	"github.com/bdragon300/go-asyncapi/internal/renderer"
+	"github.com/bdragon300/go-asyncapi/templates/codeextra"
 
 	"github.com/samber/lo"
 )
 
 func listImplementations() {
-	manifest := lo.Must(loadImplementationsManifest())
-	implGroups := lo.GroupBy(manifest, func(item implementations.ImplManifestItem) string {
+	manifest := lo.Must(renderer.LoadImplementationsManifests(codeextra.TemplateFS))
+	implGroups := lo.GroupBy(manifest, func(item codeextra.ImplementationManifest) string {
 		return item.Protocol
 	})
 	protos := lo.Keys(implGroups)

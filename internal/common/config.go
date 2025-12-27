@@ -1,5 +1,9 @@
 package common
 
+import (
+	"github.com/samber/lo"
+)
+
 type DiagramOutputFormat string
 
 const (
@@ -16,8 +20,15 @@ const (
 	D2DiagramDirectionRight D2DiagramDirection = "right"
 )
 
-// Rendering options, that come from the configuration file.
 type (
+	RenderOpts struct {
+		RuntimeModule    string
+		ImportBase       string
+		PreambleTemplate string
+		Layout           []ConfigLayoutItem
+		CodeExtraOpts    ConfigCodeExtraOpts
+	}
+
 	ConfigLayoutItem struct {
 		Protocols        []string
 		ArtifactKinds    []string
@@ -27,8 +38,6 @@ type (
 		Not              bool
 		Render           ConfigLayoutItemRender
 		ReusePackagePath string
-
-		AllSupportedProtocols []string
 	}
 
 	ConfigLayoutItemRender struct {
@@ -39,13 +48,20 @@ type (
 		ProtoObjectsOnly bool
 	}
 
+	ConfigCodeExtraOpts struct {
+		Directory              string
+		DisableImplementations bool
+		Implementations        []ConfigImplementationProtocol
+	}
+
 	ConfigImplementationProtocol struct {
-		Protocol         string
-		Name             string
-		Disable          bool
-		Directory        string
-		Package          string
-		ReusePackagePath string
+		Protocol          string
+		Name              string
+		Disable           bool
+		Directory         string // Template expression, relative to the target directory
+		TemplateDirectory string
+		Package           string
+		ReusePackagePath  string
 	}
 
 	ConfigInfraServerOpt struct {
@@ -70,9 +86,9 @@ type (
 	}
 )
 
-func (r ConfigLayoutItem) RenderProtocols() []string {
+func (r ConfigLayoutItem) AppliedToProtocol(proto string) bool {
 	if len(r.Render.Protocols) > 0 {
-		return r.Render.Protocols
+		return lo.Contains(r.Render.Protocols, proto)
 	}
-	return r.AllSupportedProtocols
+	return true
 }

@@ -4,6 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/amqp"
+	asyncapiHTTP "github.com/bdragon300/go-asyncapi/internal/asyncapi/http"
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/ip"
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/kafka"
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/mqtt"
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/nats"
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/redis"
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/tcp"
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/udp"
+	"github.com/bdragon300/go-asyncapi/internal/asyncapi/ws"
 	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 
@@ -12,6 +22,26 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"gopkg.in/yaml.v3"
 )
+
+type bindingsBuilder interface {
+	BuildMessageBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error)
+	BuildOperationBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error)
+	BuildChannelBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error)
+	BuildServerBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error)
+}
+
+var bindingsBuilders = map[string]bindingsBuilder{
+	"amqp":  amqp.BindingsBuilder{},
+	"http":  asyncapiHTTP.BindingsBuilder{},
+	"kafka": kafka.BindingsBuilder{},
+	"mqtt":  mqtt.BindingsBuilder{},
+	"ws":    ws.BindingsBuilder{},
+	"redis": redis.BindingsBuilder{},
+	"ip":    ip.BindingsBuilder{},
+	"tcp":   tcp.BindingsBuilder{},
+	"udp":   udp.BindingsBuilder{},
+	"nats":  nats.BindingsBuilder{},
+}
 
 type RawBindings struct {
 	Ref            string                                                             `json:"$ref,omitzero" yaml:"$ref"`
@@ -29,13 +59,6 @@ const (
 	bindingsKindServer
 )
 
-type bindingsProtoBuilder interface {
-	BuildMessageBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error)
-	BuildOperationBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error)
-	BuildChannelBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error)
-	BuildServerBindings(ctx *compile.Context, rawData types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error)
-}
-
 func (b *Bindings) build(
 	ctx *compile.Context,
 	bindingsKind int,
@@ -48,12 +71,11 @@ func (b *Bindings) build(
 	res := render.Bindings{OriginalName: bindingsKey}
 	for _, e := range b.ProtocolValues.Entries() {
 		ctx.Logger.Trace("Bindings", "proto", e.Key)
-		bld, ok := ctx.GetProtocolBuilder(e.Key)
+		builder, ok := bindingsBuilders[e.Key]
 		if !ok {
-			ctx.Logger.Warn("Skip bindings protocol %q since it is not supported", "proto", e.Key)
+			ctx.Logger.Warn("No bindings supported for protocol", "protocol", e.Key)
 			continue
 		}
-		builder := bld.(bindingsProtoBuilder)
 
 		var vals *lang.GoValue
 		var jsonVals types.OrderedMap[string, string]

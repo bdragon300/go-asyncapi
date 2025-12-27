@@ -4,38 +4,41 @@
     {{- template "schema.tmpl" .Object }}
 
 {{- else if eq .Object.Kind "server" }}
-    {{- if .CurrentLayoutItem.RenderProtocols | has $.Object.Protocol }}
-        {{- template "server.tmpl" .Object }}
+    {{- template "server.tmpl" .Object }}
+    {{- if .CurrentLayoutItem.AppliedToProtocol .Object.Protocol }}
+        {{with tryTmpl (print $.Object.Protocol "_server.tmpl") $.Object }}{{.}}{{else}}{{ tmpl "unknown_server.tmpl" $.Object }}{{end}}
     {{- end}}
 
 {{- else if eq .Object.Kind "channel" }}
     {{- if not .CurrentLayoutItem.Render.ProtoObjectsOnly}}
         {{- template "channel.tmpl" .Object}}
     {{- end}}
-    {{- range .CurrentLayoutItem.RenderProtocols}}
-        {{- with $.Object.SelectProtoObject . }}
-            {{- tmpl (print .Protocol "_channel.tmpl") . }}
-        {{- end}}
+    {{- range $proto := .Object.ActiveProtocols}}
+        {{- if $.CurrentLayoutItem.AppliedToProtocol $proto }}
+            {{- $p := $.Object.ProtoChannel $proto }}
+            {{with tryTmpl (print $proto "_channel.tmpl") $p }}{{.}}{{else}}{{ tmpl "unknown_channel.tmpl" $p }}{{end}}
+        {{end}}
     {{- end}}
 
 {{- else if eq .Object.Kind "operation" }}
     {{- if not .CurrentLayoutItem.Render.ProtoObjectsOnly}}
         {{- template "operation.tmpl" .Object}}
     {{- end}}
-    {{- range .CurrentLayoutItem.RenderProtocols}}
-        {{- with $.Object.SelectProtoObject . }}
-            {{- tmpl (print .Protocol "_operation.tmpl") . }}
-        {{- end}}
+    {{- range $proto := .Object.ActiveProtocols}}
+        {{- if $.CurrentLayoutItem.AppliedToProtocol $proto }}
+            {{- $p := $.Object.ProtoOperation $proto }}
+            {{with tryTmpl (print $proto "_operation.tmpl") $p }}{{.}}{{else}}{{ tmpl "unknown_operation.tmpl" $p }}{{end}}
+        {{end}}
     {{- end}}
 
 {{- else if eq .Object.Kind "message" }}
     {{- if not .CurrentLayoutItem.Render.ProtoObjectsOnly}}
         {{- template "message.tmpl" .Object}}
     {{- end}}
-
-    {{- range .CurrentLayoutItem.RenderProtocols}}
-        {{- with $.Object.SelectProtoObject . }}
-            {{- tmpl (print .Protocol "_message.tmpl") . }}
+    {{- range $proto := .Object.ActiveProtocols}}
+        {{- if $.CurrentLayoutItem.AppliedToProtocol $proto }}
+            {{- $p := $.Object.ProtoMessage $proto }}
+            {{with tryTmpl (print $proto "_message.tmpl") $p }}{{.}}{{else}}{{ tmpl "unknown_message.tmpl" $p }}{{end}}
         {{- end}}
     {{- end}}
 

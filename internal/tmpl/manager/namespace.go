@@ -17,12 +17,12 @@ type NamespaceManager struct {
 	objects   []any
 }
 
-// DeclareArtifact adds an artifact declaration to the namespace.
+// DeclareArtifact adds an artifact declaration to the namespace. If rendered is true, it indicates that the artifact
+// (e.g. if it is [common.GolangType]) has been rendered in the template.
 //
 // Rendered object declaration flag is cumulative, meaning that once it becomes true, it will remain true in
-// next calls, ignoring the passed value.
-//
-// If rendered is true, it indicates that the artifact (e.g. if it is [common.GolangType]) has been rendered in the template.
+// next calls for this artifact. Repeated function calls for the same artifact are ok -- this affects only
+// the Rendered flag and doesn't produce duplicated declarations.
 func (s *NamespaceManager) DeclareArtifact(a common.Artifact, renderManager *TemplateRenderManager, rendered bool) {
 	for i := range s.artifacts {
 		if s.artifacts[i].Object == a {
@@ -82,5 +82,5 @@ type NamespaceArtifactItem struct {
 	Layout      common.ConfigLayoutItem
 	FileName    string
 	PackageName string
-	Rendered    bool
+	Rendered    bool  // TODO: remove
 }

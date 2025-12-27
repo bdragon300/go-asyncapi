@@ -39,10 +39,6 @@ func (c Channel) Compile(ctx *compile.Context) error {
 	return nil
 }
 
-type protocolObject interface {
-	Protocol() string
-}
-
 func (c Channel) build(ctx *compile.Context, channelKey string, flags map[common.SchemaTag]string) (common.Artifact, error) {
 	_, isSelectable := flags[common.SchemaTagSelectable]
 	ignore := c.XIgnore || (!ctx.CompileOpts.GeneratePublishers && !ctx.CompileOpts.GenerateSubscribers)
@@ -148,21 +144,6 @@ func (c Channel) build(ctx *compile.Context, channelKey string, flags map[common
 				HasDefinition: true,
 			},
 		}
-	}
-
-	// Build protocol-specific channels for all supported protocols
-	// At this point we don't have the actual protocols list to compile, because we don't know yet which servers this
-	// channel is bound with -- it will be known only after linking stage.
-	// So we just compile the proto channels for all supported protocols.
-	ctx.Logger.Trace("Prebuild the channels for every supported protocol")
-	for _, b := range ctx.ProtocolBuilders {
-		builder := b.(protocolObject)
-		ctx.Logger.Trace("Channel", "proto", builder.Protocol())
-		protoCh := &render.ProtoChannel{
-			Channel:  res,
-			Protocol: b.Protocol(),
-		}
-		res.ProtoChannels = append(res.ProtoChannels, protoCh)
 	}
 
 	return res, nil

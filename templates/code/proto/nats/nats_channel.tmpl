@@ -6,15 +6,14 @@
     envelope.SetSubject(c.Subject())
 {{- end}}
 
-{{- pin . }}
 {{template "code/proto/channel/newFunction" .}}
 {{template "code/proto/channel/serverInterface" .}}
 {{template "code/proto/channel/openFunction" .}}
 
 type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
     address    {{goQualR "ParamString"}}
-    {{if .IsPublisher}}publisher  {{goQualR .Protocol "Publisher"}}{{end}}
-    {{if .IsSubscriber}}subscriber {{goQualR .Protocol "Subscriber"}}{{end}}
+    {{if .IsPublisher}}publisher  {{goQualE .Protocol "Publisher"}}{{end}}
+    {{if .IsSubscriber}}subscriber {{goQualE .Protocol "Subscriber"}}{{end}}
     subject string
 }
 

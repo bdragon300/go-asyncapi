@@ -4,11 +4,11 @@ import (
 	"errors"
 	"iter"
 
-	"github.com/bdragon300/go-asyncapi/implementations"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
+	"github.com/bdragon300/go-asyncapi/templates/codeextra"
 	"github.com/samber/lo"
 )
 
@@ -34,14 +34,17 @@ type CodeTemplateContext struct {
 	ImportsManager importsManager
 }
 
-// ImplTemplateContext is a context that is passed to the implementation templates.
-type ImplTemplateContext struct {
-	// Manifest implementations.ImplManifestItem object describes the rendering implementation.
-	Manifest implementations.ImplManifestItem
-	// Directory is the directory (related to target directory) where the implementation for a particular protocol should be placed.
+// CodeExtraTemplateContext is a context that is passed to the codeExtra templates.
+type CodeExtraTemplateContext struct {
+	LayoutOpts common.ConfigCodeExtraOpts
+	Protocol string
+	// Directory is the directory (related to target directory) where the code is placed.
 	Directory string
-	// Package is the package name for the implementation.
-	Package string
+	// PackageName is the package name of the current file.
+	PackageName string
+	// Manifest is the built-in implementation manifest if we rendering it as implementation code. This field
+	// is nil when rendering the user-defined implementation templates or other extra code.
+	Manifest *codeextra.ImplementationManifest
 }
 
 // ClientAppTemplateContext is a context that is passed to the client application templates.

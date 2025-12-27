@@ -127,36 +127,6 @@ func (o Operation) build(ctx *compile.Context, operationKey string, flags map[co
 		ctx.PutPromise(res.OperationReplyPromise)
 	}
 
-	// Build protocol-specific operations for all supported protocols
-	// At this point we don't have the actual protocols list to compile, because we don't know yet which servers the
-	// channel is bound with -- it will be known only after linking stage.
-	// So we just compile the proto operations for all supported protocols.
-	ctx.Logger.Trace("Prebuild the operations for every supported protocol")
-	for _, proto := range ctx.SupportedProtocols() {
-		ctx.Logger.Trace("Operation", "proto", proto)
-		prmCh := lang.NewPromise[*render.ProtoChannel](o.Channel.Ref, func(obj common.Artifact) *render.ProtoChannel {
-			ch := obj.(*render.Channel)
-			if ch.Dummy {
-				return &render.ProtoChannel{Channel: ch, Protocol: proto} // Dummy channel
-			}
-			protoCh, found := lo.Find(ch.ProtoChannels, func(p *render.ProtoChannel) bool {
-				return p.Protocol == proto
-			})
-			if !found {
-				panic(fmt.Sprintf("ProtoChannel[%s] not found in %s. This is a bug", proto, ch))
-			}
-			return protoCh
-		})
-		ctx.PutPromise(prmCh)
-
-		protoOp := &render.ProtoOperation{
-			Operation:           res,
-			ProtoChannelPromise: prmCh,
-			Protocol:            proto,
-		}
-		res.ProtoOperations = append(res.ProtoOperations, protoOp)
-	}
-
 	return res, nil
 }
 

@@ -55,7 +55,7 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 		GeneratePublishers:  true,
 		GenerateSubscribers: true,
 	}
-	documents, err := runCompilationAndLinking(fileLocator, docURL, compileOpts, protocolBuilders)
+	documents, err := runCompilationAndLinking(fileLocator, docURL, compileOpts)
 	if err != nil {
 		return fmt.Errorf("compilation: %w", err)
 	}
@@ -64,12 +64,12 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	// Rendering
 	//
 	rootDocument := documents[docURL.Location()]
-	activeProtocols := collectActiveProtocols(rootDocument.Artifacts())
+	activeProtocols := collectActiveServersProtocols(rootDocument.Artifacts())
 	logger.Debug("Renders protocols", "value", activeProtocols)
 
 	// TODO: refactor RenderOpts -- it almost not needed here, it's related to codegen.
 	//       Also consider to include add ConfigInfraServerOpt (replace RenderOpts to interface in manager?)
-	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Code.TargetDir, false, nil)
+	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Code.TargetDir, false)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
 	}

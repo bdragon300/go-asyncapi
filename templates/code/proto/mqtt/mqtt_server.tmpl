@@ -1,0 +1,18 @@
+{{- /* dot == render.Server */}}
+{{template "code/proto/server/newFunction" .}}
+{{- if .SecuritySchemes}}
+    {{ template "code/proto/server/securityInterface" . }}
+{{- end}}
+{{- if impl .Protocol}}
+    {{template "code/proto/server/connectFunctions" .}}
+{{- end}}
+
+{{- /* TODO: consider IsPublisher and IsSubscriber}} */}}
+type {{. | goIDUpper}} struct {
+    producer {{goQualE .Protocol "Producer"}}
+    consumer {{goQualE .Protocol "Consumer"}}
+}
+
+{{template "code/proto/server/commonMethods" .}}
+{{template "code/proto/server/channelOpenMethods" .}}
+{{template "code/proto/server/operationOpenMethods" .}}

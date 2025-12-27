@@ -1,13 +1,13 @@
-package implementations
+package codeextra
 
 import (
 	"embed"
 )
 
 //go:embed *
-var ImplementationFS embed.FS
+var TemplateFS embed.FS
 
-type ImplManifestItem struct {
+type ImplementationManifest struct {
 	Protocol string `yaml:"protocol"`
 	Name     string `yaml:"name"`
 	URL      string `yaml:"url"`
@@ -15,4 +15,4 @@ type ImplManifestItem struct {
 	Default  bool   `yaml:"default"`
 }
 
-type ImplManifest []ImplManifestItem
+type ImplementationManifests []ImplementationManifest

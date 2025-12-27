@@ -1,5 +1,4 @@
 {{- /* dot == render.ProtoMessage */}}
-{{- pin . }}
 {{template "code/proto/message/commonMethods" .}}
 {{if .IsPublisher}}{{template "code/proto/message/marshalMethods" .}}{{end}}
 {{if .IsSubscriber}}{{template "code/proto/message/unmarshalMethods" .}}{{end}}

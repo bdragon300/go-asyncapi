@@ -56,13 +56,17 @@ func (s *ImportsManager) AddImport(importPath string, pkgName string) string {
 		s.items = make(map[string]ImportItem)
 	}
 
-	// Suppose that the package name by default is the last part of the import path. But if it's specified, the import
-	// path remains the same, but the package name is going to be used in the code.
-	// This is because Go treats the import as directory path, but uses the package in namespace.
+	// Usually, in Go code, the last part of the import path is equal to the imported package name.
+	// The import path is the path to the directory where the package is located.
+	// However, in fact, Go uses only the package name in code namespace ignoring what is in import path.
+	//
 	// https://stackoverflow.com/questions/43579838/relationship-between-a-package-statement-and-the-directory-of-a-go-file
+	//
+	// So, here we extract the package name from the import only as a default option, when package were not explicitly set by caller.
 	if pkgName == "" {
 		pkgName = utils.GetPackageName(importPath)
 	}
+	pkgName = utils.ToGolangName(pkgName, false)  // Ensure the package name is a valid Go identifier
 
 	if _, ok := s.items[importPath]; !ok {
 		res := ImportItem{PackageName: pkgName, PackagePath: importPath}

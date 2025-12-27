@@ -111,7 +111,7 @@ func cliDiagram(cmd *DiagramCmd, globalConfig toolConfig) error {
 		GeneratePublishers:  true,
 		GenerateSubscribers: true,
 	}
-	documents, err := runCompilationAndLinking(fileLocator, docURL, compileOpts, protocolBuilders)
+	documents, err := runCompilationAndLinking(fileLocator, docURL, compileOpts)
 	if err != nil {
 		return fmt.Errorf("compilation: %w", err)
 	}

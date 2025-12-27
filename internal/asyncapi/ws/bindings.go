@@ -10,9 +10,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type ProtoBuilder struct{}
+type BindingsBuilder struct{}
 
-func (pb ProtoBuilder) Protocol() string {
+func (pb BindingsBuilder) Protocol() string {
 	return "ws"
 }
 
@@ -22,7 +22,7 @@ type channelBindings struct {
 	Headers any    `json:"headers,omitzero" yaml:"headers"` // jsonschema object
 }
 
-func (pb ProtoBuilder) BuildChannelBindings(
+func (pb BindingsBuilder) BuildChannelBindings(
 	ctx *compile.Context,
 	rawData types.Union2[json.RawMessage, yaml.Node],
 ) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
@@ -53,14 +53,14 @@ func (pb ProtoBuilder) BuildChannelBindings(
 	return
 }
 
-func (pb ProtoBuilder) BuildOperationBindings(_ *compile.Context, _ types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
+func (pb BindingsBuilder) BuildOperationBindings(_ *compile.Context, _ types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	return
 }
 
-func (pb ProtoBuilder) BuildMessageBindings(_ *compile.Context, _ types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
+func (pb BindingsBuilder) BuildMessageBindings(_ *compile.Context, _ types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	return
 }
 
-func (pb ProtoBuilder) BuildServerBindings(_ *compile.Context, _ types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
+func (pb BindingsBuilder) BuildServerBindings(_ *compile.Context, _ types.Union2[json.RawMessage, yaml.Node]) (vals *lang.GoValue, jsonVals types.OrderedMap[string, string], err error) {
 	return
 }

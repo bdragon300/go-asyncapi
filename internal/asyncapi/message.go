@@ -145,19 +145,6 @@ func (m Message) build(ctx *compile.Context, messageKey string, flags map[common
 		ctx.PutPromise(res.CorrelationIDPromise)
 	}
 
-	// Build protocol-specific messages for all supported protocols
-	// Here we don't know yet which channels this message is bound with, so we don't have the protocols list to compile.
-	ctx.Logger.Trace("Prebuild the messages for every supported protocol")
-	var protoMessages []*render.ProtoMessage
-	for _, proto := range ctx.SupportedProtocols() {
-		ctx.Logger.Trace("Message", "proto", proto)
-		protoMessages = append(protoMessages, &render.ProtoMessage{
-			Message:  &res,
-			Protocol: proto,
-		})
-	}
-	res.ProtoMessages = protoMessages
-
 	return &res, nil
 }
 

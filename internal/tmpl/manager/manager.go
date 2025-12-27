@@ -3,11 +3,11 @@ package manager
 import (
 	"bytes"
 	"path"
-	"slices"
 	"text/template"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
+	"github.com/bdragon300/go-asyncapi/templates/codeextra"
 	"github.com/samber/lo"
 )
 
@@ -54,22 +54,34 @@ type TemplateRenderManager struct {
 	CurrentLayoutItem common.ConfigLayoutItem
 	TemplateLoader    templateLoader
 
-	// File state. The following fields are restored from committed
+	//
+	// Uncommitted state for a file. Restored on BeginFile call and saved on Commit call.
+	//
+
 	FileName    string
 	PackageName string
+	// ExtraCodeProtocol marks the current file contains the protocol-specific extra code, e.g. bindings definitions, interfaces, etc.
+	// Empty for the ordinary files.
+	ExtraCodeProtocol string
+	// ImplementationManifest denotes which built-in implementation manifest was used to generate implementation code.
+	// Nil for ordinary files or if implementation is user-defined.
+	ImplementationManifest *codeextra.ImplementationManifest
+	// ImplementationConfig contains the configuration for the implementation code, both for built-in and user-defined implementations.
+	// Nil for ordinary files.
+	ImplementationConfig *common.ConfigImplementationProtocol
 	// Buffer is write-only file contents buffer. When Commit is called, it appends to the committed file contents.
 	Buffer *bytes.Buffer
 	// ImportsManager keeps the imports list for the current file
 	ImportsManager *ImportsManager
-	// NamespaceManager keeps the template definitions namespace for the current file
+	// NamespaceManager keeps the global template namespace
 	NamespaceManager *NamespaceManager
-	// Implementations keeps the current list of implementations
-	Implementations []ImplementationItem
 
+	//
 	// Committed state
-	stateCommitted           map[string]FileRenderState
-	namespaceCommitted       *NamespaceManager
-	implementationsCommitted []ImplementationItem
+	//
+
+	stateCommitted     map[string]FileRenderState
+	namespaceCommitted *NamespaceManager
 }
 
 // BeginFile loads the committed state of given file into the manager fields, discarding any uncommitted changes.
@@ -89,8 +101,10 @@ func (r *TemplateRenderManager) BeginFile(fileName, packageName string) {
 	r.FileName = state.FileName
 	r.ImportsManager = state.Imports.Clone()
 	r.PackageName = state.PackageName
+	r.ExtraCodeProtocol = state.ExtraCodeProtocol
+	r.ImplementationConfig = state.ImplementationConfig
+	r.ImplementationManifest = state.ImplementationManifest
 	r.NamespaceManager = r.namespaceCommitted.Clone()
-	r.Implementations = slices.Clone(r.implementationsCommitted)
 
 	r.Buffer.Reset()
 }
@@ -101,21 +115,18 @@ func (r *TemplateRenderManager) SetCodeObject(obj common.Artifact, layoutItem co
 	r.CurrentLayoutItem = layoutItem
 }
 
-// AddImplementation adds a new implementation to the list, making uncommitted changes.
-func (r *TemplateRenderManager) AddImplementation(obj common.ImplementationObject, directory string) {
-	r.Implementations = append(r.Implementations, ImplementationItem{Object: obj, Directory: directory})
-}
-
 // Commit saves the current state to the committed state.
 func (r *TemplateRenderManager) Commit() {
 	r.namespaceCommitted = r.NamespaceManager
-	r.implementationsCommitted = r.Implementations
 
 	if r.FileName != "" {
 		state := r.stateCommitted[r.FileName]
 		state.Imports = r.ImportsManager
 		lo.Must(state.Buffer.ReadFrom(r.Buffer))
 		state.Buffer.WriteRune('\n') // Separate writes following each other with newline
+		state.ExtraCodeProtocol = r.ExtraCodeProtocol
+		state.ImplementationConfig = r.ImplementationConfig
+		state.ImplementationManifest = r.ImplementationManifest
 		r.stateCommitted[r.FileName] = state
 	}
 
@@ -128,19 +139,12 @@ func (r *TemplateRenderManager) CommittedStates() map[string]FileRenderState {
 	return r.stateCommitted
 }
 
-// CommittedImplementations returns the committed implementations list.
-func (r *TemplateRenderManager) CommittedImplementations() []ImplementationItem {
-	return r.implementationsCommitted
-}
-
-type ImplementationItem struct {
-	Object    common.ImplementationObject
-	Directory string // Evaluated template expression
-}
-
 type FileRenderState struct {
-	FileName    string
-	PackageName string
-	Buffer      *bytes.Buffer
-	Imports     *ImportsManager
+	FileName          string
+	PackageName       string
+	Buffer            *bytes.Buffer
+	Imports           *ImportsManager
+	ExtraCodeProtocol      string
+	ImplementationManifest *codeextra.ImplementationManifest
+	ImplementationConfig   *common.ConfigImplementationProtocol
 }

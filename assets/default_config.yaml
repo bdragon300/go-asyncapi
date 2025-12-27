@@ -15,7 +15,9 @@ locator:
 code:
   preambleTemplate: preamble.tmpl
   targetDir: ./asyncapi
-  implementationsDir: impl/{{ .Manifest.Protocol }}
+  implementationsDir: "{{ .Manifest.Protocol }}"
+  extra:
+    directory: "{{ .Protocol }}"
 
 client:
   outputFile: ./client

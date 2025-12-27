@@ -72,17 +72,24 @@ type (
 		TemplatesDir     string `yaml:"templatesDir"` // TODO: move to global config
 		PreambleTemplate string `yaml:"preambleTemplate"`
 
+		DisableImplementations bool                `yaml:"disableImplementations"` // TODO: move to extra
+		ImplementationsDir     string              `yaml:"implementationsDir"`     // TODO: remove // Template expression, relative to the target directory
+		Extra                  toolConfigCodeExtra `yaml:"extra"`
+	}
+
+	toolConfigCodeExtra struct {
+		Directory              string `yaml:"directory"` // Template expression, relative to the target directory
 		DisableImplementations bool   `yaml:"disableImplementations"`
-		ImplementationsDir     string `yaml:"implementationsDir"` // Template expression, relative to the target directory
 	}
 
 	toolConfigImplementation struct {
-		Protocol         string `yaml:"protocol"`
-		Name             string `yaml:"name"`
-		Disable          bool   `yaml:"disable"`
-		Directory        string `yaml:"directory"` // Template expression, relative to the target directory
-		Package          string `yaml:"package"`
-		ReusePackagePath string `yaml:"reusePackagePath"`
+		Protocol          string `yaml:"protocol"`
+		Name              string `yaml:"name"`
+		Disable           bool   `yaml:"disable"`
+		Directory         string `yaml:"directory"` // Template expression, relative to the target directory
+		TemplateDirectory string `yaml:"templateDirectory"`
+		Package           string `yaml:"package"`
+		ReusePackagePath  string `yaml:"reusePackagePath"`
 	}
 
 	toolConfigClient struct {
@@ -230,6 +237,8 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 	if len(userConf.Implementations) > 0 {
 		res.Implementations = userConf.Implementations
 	}
+	res.Code.Extra.Directory = coalesce(userConf.Code.Extra.Directory, defaultConf.Code.Extra.Directory)
+	res.Code.Extra.DisableImplementations = coalesce(userConf.Code.Extra.DisableImplementations, defaultConf.Code.Extra.DisableImplementations)
 
 	res.Client.GoModTemplate = coalesce(userConf.Client.GoModTemplate, defaultConf.Client.GoModTemplate)
 	res.Client.OutputFile = coalesce(userConf.Client.OutputFile, defaultConf.Client.OutputFile)

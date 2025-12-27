@@ -163,8 +163,8 @@ func NormalizePathItem(s string) string {
 	return lo.SnakeCase(newString)
 }
 
-// GetPackageName returns the last part of the directory path as a package name. If the directory is empty, the function
-// returns "main".
+// GetPackageName returns the package name as a valid Go identifier extracted from the directory path.
+// If the directory is empty, the function returns "main".
 func GetPackageName(directory string) string {
 	directory = path.Clean(directory)
 	_, pkgName := path.Split(directory)
@@ -172,5 +172,5 @@ func GetPackageName(directory string) string {
 	if pkgName == "" || pkgName == "." {
 		return defaultPackage
 	}
-	return pkgName
+	return ToGolangName(pkgName, false)
 }

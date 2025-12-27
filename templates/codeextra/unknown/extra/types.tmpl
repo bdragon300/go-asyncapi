@@ -1,0 +1,34 @@
+func NewEnvelopeOut() *EnvelopeOut {
+    return &EnvelopeOut{Buffer: {{goQual "bytes.NewBuffer"}}(nil)}
+}
+
+type EnvelopeOut struct {
+    *{{goQual "bytes.Buffer"}}
+    headers     {{goQualR "Headers"}}
+    contentType string
+}
+
+func (e *EnvelopeOut) ResetPayload() {
+    e.Buffer.Reset()
+}
+
+func (e *EnvelopeOut) SetHeaders(headers {{goQualR "Headers"}}) {
+    e.headers = headers
+}
+
+func (e *EnvelopeOut) SetContentType(contentType string) {
+    e.contentType = contentType
+}
+
+func NewEnvelopeIn() *EnvelopeIn {
+    return &EnvelopeIn{Buffer: {{goQual "bytes.NewBuffer"}}(nil)}
+}
+
+type EnvelopeIn struct {
+    *{{goQual "bytes.Buffer"}}
+    headers   {{goQualR "Headers"}}
+}
+
+func (e *EnvelopeIn) Headers() {{goQualR "Headers"}} {
+    return e.headers
+}
