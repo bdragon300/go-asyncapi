@@ -6,14 +6,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/bdragon300/go-asyncapi/run"
-	runWs "github.com/bdragon300/go-asyncapi/run/ws"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 )
 
 // TODO: remove httpResponseTimeout, allow to use smth like http.requestHandler or nothing
-func NewConsumer(bindings *runWs.ServerBindings, security run.AnySecurityScheme) *ConsumeClient {
+func NewConsumer(bindings *{{goQualE "ws" "ServerBindings"}}, security {{goQualR "AnySecurityScheme"}}) *ConsumeClient {
 	return &ConsumeClient{
 		Upgrader:    ws.DefaultHTTPUpgrader,
 		bindings:    bindings,
@@ -29,12 +27,12 @@ type HTTPUpgraderInterface interface {
 type ConsumeClient struct {
 	http.ServeMux
 	Upgrader    HTTPUpgraderInterface
-	bindings    *runWs.ServerBindings
+	bindings    *{{goQualE "ws" "ServerBindings"}}
 	connections map[string]chan *Channel
 	mu          *sync.RWMutex
 }
 
-func (c *ConsumeClient) Subscriber(ctx context.Context, address string, chb *runWs.ChannelBindings, opb *runWs.OperationBindings, security run.AnySecurityScheme) (runWs.Subscriber, error) {
+func (c *ConsumeClient) Subscriber(ctx context.Context, address string, chb *{{goQualE "ws" "ChannelBindings"}}, opb *{{goQualE "ws" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "ws" "Subscriber"}}, error) {
 	c.ensureChannel(address, chb, opb) // FIXME: maybe it's better to take the path from bindings?
 	// Wait for a new connection
 	select {
@@ -45,7 +43,7 @@ func (c *ConsumeClient) Subscriber(ctx context.Context, address string, chb *run
 	}
 }
 
-func (c *ConsumeClient) ensureChannel(channelName string, chb *runWs.ChannelBindings, opb *runWs.OperationBindings) {
+func (c *ConsumeClient) ensureChannel(channelName string, chb *{{goQualE "ws" "ChannelBindings"}}, opb *{{goQualE "ws" "OperationBindings"}}) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

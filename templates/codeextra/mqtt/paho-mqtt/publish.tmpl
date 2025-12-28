@@ -1,7 +1,6 @@
 import (
 	"context"
 
-	runMqtt "github.com/bdragon300/go-asyncapi/run/mqtt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
@@ -9,8 +8,8 @@ type PublishChannel struct {
 	Client mqtt.Client
 	Topic  string
 
-	channelBindings *runMqtt.ChannelBindings
-	operationBindings *runMqtt.OperationBindings
+	channelBindings *{{goQualE "mqtt" "ChannelBindings"}}
+	operationBindings *{{goQualE "mqtt" "OperationBindings"}}
 	ctx       context.Context
 	cancel    context.CancelFunc
 }
@@ -19,7 +18,7 @@ type ImplementationRecord interface {
 	Bytes() []byte
 }
 
-func (r *PublishChannel) Send(ctx context.Context, envelopes ...runMqtt.EnvelopeWriter) error {
+func (r *PublishChannel) Send(ctx context.Context, envelopes ...{{goQualE "mqtt" "EnvelopeWriter"}}) error {
 	for _, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
 		var qos byte

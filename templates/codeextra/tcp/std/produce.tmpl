@@ -2,9 +2,6 @@ import (
 	"bufio"
 	"context"
 	"net"
-
-	"github.com/bdragon300/go-asyncapi/run"
-	runTCP "github.com/bdragon300/go-asyncapi/run/tcp"
 )
 
 // NewProducer creates a new TCP producer to connect to the specified address and network. If network is empty,
@@ -12,7 +9,7 @@ import (
 //
 // The third parameter localAddress sets the local address to bind to.
 // If empty, the bound address will be selected automatically by the system.
-func NewProducer(address, network, localAddress string, security run.AnySecurityScheme) (*ProduceClient, error) {
+func NewProducer(address, network, localAddress string, security {{goQualR "AnySecurityScheme"}}) (*ProduceClient, error) {
 	if network == "" {
 		network = "tcp"
 	}
@@ -45,7 +42,7 @@ type ProduceClient struct {
 	protocolFamily string
 }
 
-func (p ProduceClient) Publisher(ctx context.Context, _ string, _ *runTCP.ChannelBindings, _*runTCP.OperationBindings, security run.AnySecurityScheme) (runTCP.Publisher, error) {
+func (p ProduceClient) Publisher(ctx context.Context, _ string, _ *{{goQualE "tcp" "ChannelBindings"}}, _ *{{goQualE "tcp" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "tcp" "Publisher"}}, error) {
 	conn, err := p.DialContext(ctx, p.protocolFamily, p.address)
 	if err != nil {
 		return nil, err

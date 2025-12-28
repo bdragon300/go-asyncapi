@@ -1,12 +1,9 @@
 import (
 	"context"
 	"net/url"
-
-	"github.com/bdragon300/go-asyncapi/run"
-	runHttp "github.com/bdragon300/go-asyncapi/run/http"
 )
 
-func NewProducer(serverURL *url.URL, bindings *runHttp.ServerBindings, security run.AnySecurityScheme) *ProduceClient {
+func NewProducer(serverURL *url.URL, bindings *{{goQualE "http" "ServerBindings"}}, security {{goQualR "AnySecurityScheme"}}) *ProduceClient {
 	return &ProduceClient{
 		bindings:  bindings,
 		serverURL: serverURL,
@@ -14,11 +11,11 @@ func NewProducer(serverURL *url.URL, bindings *runHttp.ServerBindings, security 
 }
 
 type ProduceClient struct {
-	bindings  *runHttp.ServerBindings
+	bindings  *{{goQualE "http" "ServerBindings"}}
 	serverURL *url.URL
 }
 
-func (p ProduceClient) Publisher(_ context.Context, address string, chb *runHttp.ChannelBindings, opb *runHttp.OperationBindings, security run.AnySecurityScheme) (runHttp.Publisher, error) {
+func (p ProduceClient) Publisher(_ context.Context, address string, chb *{{goQualE "http" "ChannelBindings"}}, opb *{{goQualE "http" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "http" "Publisher"}}, error) {
 	u := p.serverURL
 	// Append the address to the server URL path
 	if u.Path == "" {

@@ -1,8 +1,6 @@
 import (
 	"bytes"
 
-	"github.com/bdragon300/go-asyncapi/run"
-	runMqtt "github.com/bdragon300/go-asyncapi/run/mqtt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
@@ -17,20 +15,20 @@ type OutboundMessage struct {
 	topic       string
 	qos         byte
 	retained    bool
-	headers     run.Headers
+	headers     {{goQualR "Headers"}}
 	contentType string
 }
 
 type EnvelopeOut struct {
 	OutboundMessage
-	messageBindings runMqtt.MessageBindings
+	messageBindings {{goQualE "mqtt" "MessageBindings"}}
 }
 
 func (e *EnvelopeOut) ResetPayload() {
 	e.Buffer.Reset()
 }
 
-func (e *EnvelopeOut) SetHeaders(headers run.Headers) {
+func (e *EnvelopeOut) SetHeaders(headers {{goQualR "Headers"}}) {
 	e.headers = headers
 }
 
@@ -38,7 +36,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.contentType = contentType
 }
 
-func (e *EnvelopeOut) SetBindings(bindings runMqtt.MessageBindings) {
+func (e *EnvelopeOut) SetBindings(bindings {{goQualE "mqtt" "MessageBindings"}}) {
 	e.messageBindings = bindings
 }
 
@@ -61,13 +59,13 @@ func NewEnvelopeIn(msg mqtt.Message) *EnvelopeIn {
 type EnvelopeIn struct {
 	mqtt.Message
 	reader  *bytes.Reader
-	headers run.Headers
+	headers {{goQualR "Headers"}}
 }
 
 func (e *EnvelopeIn) Read(p []byte) (n int, err error) {
 	return e.reader.Read(p)
 }
 
-func (e *EnvelopeIn) Headers() run.Headers {
+func (e *EnvelopeIn) Headers() {{goQualR "Headers"}} {
 	return e.headers
 }

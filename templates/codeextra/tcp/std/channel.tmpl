@@ -4,20 +4,16 @@ import (
 	"fmt"
 	"net"
 	"sync"
-
-	"github.com/bdragon300/go-asyncapi/run"
-
-	runTCP "github.com/bdragon300/go-asyncapi/run/tcp"
 )
 
-type subscriberFunc func(envelope runTCP.EnvelopeReader)
+type subscriberFunc func(envelope {{goQualE "tcp" "EnvelopeReader"}})
 
 func NewChannel(conn *net.TCPConn, scanner *bufio.Scanner, maxEnvelopeSize int) *Channel {
 	res := Channel{
 		TCPConn:         conn,
 		scanner:         scanner,
 		maxEnvelopeSize: maxEnvelopeSize,
-		callbacks:       run.NewRing[subscriberFunc](),
+		callbacks:       {{goQualR "NewRing"}}[subscriberFunc](),
 		once:            &sync.Once{},
 	}
 	res.ctx, res.cancel = context.WithCancelCause(context.Background())
@@ -28,7 +24,7 @@ type Channel struct {
 	*net.TCPConn
 	scanner         *bufio.Scanner
 	maxEnvelopeSize int
-	callbacks       *run.Ring[subscriberFunc]
+	callbacks       *{{goQualR "Ring"}}[subscriberFunc]
 	ctx             context.Context
 	cancel          context.CancelCauseFunc
 	once            *sync.Once
@@ -38,7 +34,7 @@ type ImplementationRecord interface {
 	Bytes() []byte
 }
 
-func (c *Channel) Send(_ context.Context, envelopes ...runTCP.EnvelopeWriter) error {
+func (c *Channel) Send(_ context.Context, envelopes ...{{goQualE "tcp" "EnvelopeWriter"}}) error {
 	for _, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
 		if _, err := c.TCPConn.Write(ir.Bytes()); err != nil {
@@ -48,7 +44,7 @@ func (c *Channel) Send(_ context.Context, envelopes ...runTCP.EnvelopeWriter) er
 	return nil
 }
 
-func (c *Channel) Receive(ctx context.Context, cb func(envelope runTCP.EnvelopeReader)) error {
+func (c *Channel) Receive(ctx context.Context, cb func(envelope {{goQualE "tcp" "EnvelopeReader"}})) error {
 	element := c.callbacks.Append(cb)
 	defer func() {
 		c.callbacks.Remove(element)

@@ -641,7 +641,7 @@ func templateGoQualExtra(mng *manager.TemplateRenderManager, protocol string, pa
 
 	// Check if the qualified name requires to be imported or is located in current package (assuming the directory is equal to package)
 	if fileDir == path.Dir(mng.FileName) {
-		pkgPath, _, n := qualifiedToImport(parts)
+		pkgPath, _, n := qualifiedToImport(append([]string{""}, parts...))
 		if pkgPath == "" {
 			return n, nil // Name is in current package and doesn't require import
 		}

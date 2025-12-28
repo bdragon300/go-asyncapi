@@ -1,7 +1,6 @@
 import (
 	"context"
 
-	runRedis "github.com/bdragon300/go-asyncapi/run/redis"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -10,7 +9,7 @@ type SubscriberChannel struct {
 	Name string
 }
 
-func (s SubscriberChannel) Receive(ctx context.Context, cb func(envelope runRedis.EnvelopeReader)) error {
+func (s SubscriberChannel) Receive(ctx context.Context, cb func(envelope {{goQualE "redis" "EnvelopeReader"}})) error {
 	for {
 		select {
 		case msg, ok := <-s.PubSub.Channel():

@@ -197,7 +197,7 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 // those, which will appear in the generated code.
 func collectActiveServersProtocols(artifacts []common.Artifact) []string {
 	r := lo.Uniq(lo.FilterMap(artifacts, func(obj common.Artifact, _ int) (string, bool) {
-		if obj.Kind() != common.ArtifactKindServer && !obj.Selectable() || !obj.Visible() {
+		if obj.Kind() != common.ArtifactKindServer || !obj.Selectable() || !obj.Visible() {
 			return "", false
 		}
 		if v, ok := common.DerefArtifact(obj).(*render.Server); ok {

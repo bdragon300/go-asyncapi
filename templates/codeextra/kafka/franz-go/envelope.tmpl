@@ -1,9 +1,6 @@
 import (
 	"bytes"
 
-	"github.com/bdragon300/go-asyncapi/run"
-	runKafka "github.com/bdragon300/go-asyncapi/run/kafka"
-
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
@@ -15,7 +12,7 @@ func NewEnvelopeOut() *EnvelopeOut {
 
 type EnvelopeOut struct {
 	*kgo.Record
-	messageBindings runKafka.MessageBindings
+	messageBindings {{goQualE "kafka" "MessageBindings"}}
 }
 
 func (e *EnvelopeOut) Write(p []byte) (n int, err error) {
@@ -27,7 +24,7 @@ func (e *EnvelopeOut) ResetPayload() {
 	e.Value = e.Value[:0]
 }
 
-func (e *EnvelopeOut) SetHeaders(headers run.Headers) {
+func (e *EnvelopeOut) SetHeaders(headers {{goQualR "Headers"}}) {
 	for k, v := range headers.ToByteValues() {
 		e.Record.Headers = append(e.Record.Headers, kgo.RecordHeader{Key: k, Value: v})
 	}
@@ -37,7 +34,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.Record.Headers = append(e.Record.Headers, kgo.RecordHeader{Key: "Content-Type", Value: []byte(contentType)})
 }
 
-func (e *EnvelopeOut) SetBindings(bindings runKafka.MessageBindings) {
+func (e *EnvelopeOut) SetBindings(bindings {{goQualE "kafka" "MessageBindings"}}) {
 	e.messageBindings = bindings
 }
 
@@ -65,8 +62,8 @@ func (e EnvelopeIn) Read(p []byte) (n int, err error) {
 	return e.rd.Read(p)
 }
 
-func (e EnvelopeIn) Headers() run.Headers {
-	res := make(run.Headers, len(e.Record.Headers))
+func (e EnvelopeIn) Headers() {{goQualR "Headers"}} {
+	res := make({{goQualR "Headers"}}, len(e.Record.Headers))
 	for _, h := range e.Record.Headers {
 		res[h.Key] = h.Value
 	}

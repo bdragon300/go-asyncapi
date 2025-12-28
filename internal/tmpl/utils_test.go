@@ -35,6 +35,13 @@ func TestQualifiedToImport(t *testing.T) {
 				name:      "a",
 			},
 			{
+				title:     "Empty package and name",
+				exprParts: []string{"", "a", "b"},
+				pkgPath:   "a",
+				pkgName:   "a",
+				name:      "b",
+			},
+			{
 				title:     "Single level package and name",
 				exprParts: []string{"a", "x"},
 				pkgPath:   "a",

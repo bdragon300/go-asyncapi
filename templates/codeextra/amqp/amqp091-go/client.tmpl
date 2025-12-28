@@ -4,17 +4,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/bdragon300/go-asyncapi/run"
-	runAmqp "github.com/bdragon300/go-asyncapi/run/amqp"
 	"github.com/rabbitmq/amqp091-go"
 )
 
-func NewClient(serverURL string, bindings *runAmqp.ServerBindings, security run.AnySecurityScheme) (*Client, error) {
+func NewClient(serverURL string, bindings *{{goQualE "amqp" "ServerBindings"}}, security {{goQualR "AnySecurityScheme"}}) (*Client, error) {
 	var conn *amqp091.Connection
 	var err error
 
 	switch s:=security.(type) {
-	case run.UserPasswordSecurity:
+	case {{goQualR "UserPasswordSecurity"}}:
 		user, pass := s.UserPassword()
 		amqpAuth := &amqp091.PlainAuth{
 			Username: user,
@@ -23,7 +21,7 @@ func NewClient(serverURL string, bindings *runAmqp.ServerBindings, security run.
 		conn, err = amqp091.DialConfig(serverURL, amqp091.Config{
 			SASL: []amqp091.Authentication{amqpAuth},
 		})
-	case run.X509Security:
+	case {{goQualR "X509Security"}}:
 		tlsConfig := &tls.Config{
 			Certificates: []tls.Certificate{s.TLSCert()},
 			ClientAuth: tls.RequireAndVerifyClientCert,
@@ -45,10 +43,10 @@ func NewClient(serverURL string, bindings *runAmqp.ServerBindings, security run.
 
 type Client struct {
 	*amqp091.Connection
-	bindings *runAmqp.ServerBindings
+	bindings *{{goQualE "amqp" "ServerBindings"}}
 }
 
-func (c Client) Publisher(_ context.Context, _ string, chb *runAmqp.ChannelBindings, opb *runAmqp.OperationBindings, security run.AnySecurityScheme) (runAmqp.Publisher, error) {
+func (c Client) Publisher(_ context.Context, _ string, chb *{{goQualE "amqp" "ChannelBindings"}}, opb *{{goQualE "amqp" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "amqp" "Publisher"}}, error) {
 	if security != nil {
 		return nil, fmt.Errorf("security schemes for publishers are not supported")
 	}
@@ -68,8 +66,8 @@ func (c Client) Publisher(_ context.Context, _ string, chb *runAmqp.ChannelBindi
 			err = ch.ExchangeDeclare(
 				exchangeName,
 				string(ec.Type),
-				run.FromPtrOrZero(ec.Durable),
-				run.FromPtrOrZero(ec.AutoDelete),
+                {{goQualR "FromPtrOrZero"}}(ec.Durable),
+                {{goQualR "FromPtrOrZero"}}(ec.AutoDelete),
 				false,
 				false,
 				nil,
@@ -88,7 +86,7 @@ func (c Client) Publisher(_ context.Context, _ string, chb *runAmqp.ChannelBindi
 	}, nil
 }
 
-func (c Client) Subscriber(_ context.Context, address string, chb *runAmqp.ChannelBindings, opb *runAmqp.OperationBindings, security run.AnySecurityScheme) (runAmqp.Subscriber, error) {
+func (c Client) Subscriber(_ context.Context, address string, chb *{{goQualE "amqp" "ChannelBindings"}}, opb *{{goQualE "amqp" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "amqp" "Subscriber"}}, error) {
 	if security != nil {
 		return nil, fmt.Errorf("security schemes for subscribers are not supported")
 	}
@@ -106,15 +104,15 @@ func (c Client) Subscriber(_ context.Context, address string, chb *runAmqp.Chann
 	queueName := address
 	var durable, autoDelete, exclusive bool
 	if chb != nil {
-		if chb.ChannelType == runAmqp.ChannelTypeQueue {
+		if chb.ChannelType == {{goQualE "amqp" "ChannelTypeQueue"}} {
 			routingKey = "#" // Receive all messages
 		}
 		qc := chb.QueueConfiguration
 		if qc.Name != "" {
 			queueName = qc.Name
 		}
-		durable, autoDelete, exclusive = run.FromPtrOrZero(qc.Durable), run.FromPtrOrZero(qc.AutoDelete), run.FromPtrOrZero(qc.Exclusive)
-		exchangeName = run.FromPtrOrZero(chb.ExchangeConfiguration.Name)
+		durable, autoDelete, exclusive = {{goQualR "FromPtrOrZero"}}(qc.Durable), {{goQualR "FromPtrOrZero"}}(qc.AutoDelete), {{goQualR "FromPtrOrZero"}}(qc.Exclusive)
+		exchangeName = {{goQualR "FromPtrOrZero"}}(chb.ExchangeConfiguration.Name)
 	}
 	if exchangeName == amqp091.DefaultExchange {
 		_, err = ch.QueueDeclare(queueName, durable, autoDelete, exclusive, false, nil)

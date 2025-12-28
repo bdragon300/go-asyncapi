@@ -6,9 +6,6 @@ import (
 
 	"golang.org/x/net/ipv4"
 	"golang.org/x/net/ipv6"
-
-	"github.com/bdragon300/go-asyncapi/run"
-	runIP "github.com/bdragon300/go-asyncapi/run/ip"
 )
 
 var ErrUnexpectedIPVersion = errors.New("unexpected IP version")
@@ -24,20 +21,20 @@ func NewEnvelopeOut() *EnvelopeOut {
 
 type EnvelopeOut struct {
 	*bytes.Buffer
-	headers run.Headers
+	headers {{goQualR "Headers"}}
 }
 
 func (e *EnvelopeOut) ResetPayload() {
 	e.Buffer.Reset()
 }
 
-func (e *EnvelopeOut) SetHeaders(headers run.Headers) {
+func (e *EnvelopeOut) SetHeaders(headers {{goQualR "Headers"}}) {
 	e.headers = headers
 }
 
 func (e *EnvelopeOut) SetContentType(_ string) {}
 
-func (e *EnvelopeOut) SetBindings(_ runIP.MessageBindings) {}
+func (e *EnvelopeOut) SetBindings(_ {{goQualE "ip" "MessageBindings"}}) {}
 
 func (e *EnvelopeOut) HeaderBytes() ([]byte, error) {
 	h, ok := e.headers[HeaderIPHeaders]
@@ -69,8 +66,8 @@ type EnvelopeIn struct {
 	IPVersion int
 }
 
-func (e *EnvelopeIn) Headers() run.Headers {
-	return run.Headers{
+func (e *EnvelopeIn) Headers() {{goQualR "Headers"}} {
+	return {{goQualR "Headers"}}{
 		HeaderIPVersion: e.IPVersion,
 		HeaderIPHeaders: e.IPHeaders,
 	}

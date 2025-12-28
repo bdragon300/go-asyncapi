@@ -66,14 +66,13 @@ func (s *ImportsManager) AddImport(importPath string, pkgName string) string {
 	if pkgName == "" {
 		pkgName = utils.GetPackageName(importPath)
 	}
-	pkgName = utils.ToGolangName(pkgName, false)  // Ensure the package name is a valid Go identifier
 
 	if _, ok := s.items[importPath]; !ok {
 		res := ImportItem{PackageName: pkgName, PackagePath: importPath}
-		// Generate a new alias if the package with the same name already imported, or it's not a valid Go identifier (e.g. "go-asyncapi")
 		conflicts := lo.Filter(lo.Entries(s.items), func(item lo.Entry[string, ImportItem], _ int) bool {
 			return item.Key != importPath && item.Value.PackageName == pkgName
 		})
+		// Generate an alias if package with the same name already imported, or it's not a valid Go identifier (e.g. "go-asyncapi")
 		if len(conflicts) > 0 || !token.IsIdentifier(pkgName) {
 			res.Alias = fmt.Sprintf("%s%d", utils.ToGolangName(pkgName, false), len(conflicts)+1)
 		}

@@ -1,12 +1,10 @@
 import (
 	"context"
 
-	"github.com/bdragon300/go-asyncapi/run"
-	runMqtt "github.com/bdragon300/go-asyncapi/run/mqtt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-func NewClient(ctx context.Context, serverURL string, bindings *runMqtt.ServerBindings, initClientOptions *mqtt.ClientOptions, security run.AnySecurityScheme) (*Client, error) {
+func NewClient(ctx context.Context, serverURL string, bindings *{{goQualE "mqtt" "ServerBindings"}}, initClientOptions *mqtt.ClientOptions, security {{goQualR "AnySecurityScheme"}}) (*Client, error) {
 	co := initClientOptions
 	if co == nil {
 		co = mqtt.NewClientOptions()
@@ -45,16 +43,16 @@ func NewClient(ctx context.Context, serverURL string, bindings *runMqtt.ServerBi
 
 type Client struct {
 	mqtt.Client
-	bindings    *runMqtt.ServerBindings
+	bindings    *{{goQualE "mqtt" "ServerBindings"}}
 }
 
-func (c *Client) Subscriber(ctx context.Context, address string, chb *runMqtt.ChannelBindings, opb *runMqtt.OperationBindings, security run.AnySecurityScheme) (runMqtt.Subscriber, error) {
+func (c *Client) Subscriber(ctx context.Context, address string, chb *{{goQualE "mqtt" "ChannelBindings"}}, opb *{{goQualE "mqtt" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "mqtt" "Subscriber"}}, error) {
 	var qos byte
 	if opb != nil {
 		qos = byte(opb.QoS)
 	}
 
-	ch := make(chan runMqtt.EnvelopeReader)
+	ch := make(chan {{goQualE "mqtt" "EnvelopeReader"}})
 	tok := c.Client.Subscribe(address, qos, func(_ mqtt.Client, message mqtt.Message) {
 		ch <- NewEnvelopeIn(message)
 	})
@@ -80,7 +78,7 @@ func (c *Client) Subscriber(ctx context.Context, address string, chb *runMqtt.Ch
 	return &r, nil
 }
 
-func (c *Client) Publisher(_ context.Context, address string, chb *runMqtt.ChannelBindings, opb *runMqtt.OperationBindings, security run.AnySecurityScheme) (runMqtt.Publisher, error) {
+func (c *Client) Publisher(_ context.Context, address string, chb *{{goQualE "mqtt" "ChannelBindings"}}, opb *{{goQualE "mqtt" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "mqtt" "Publisher"}}, error) {
 	ctx2, cancel := context.WithCancel(context.Background())
 	r := PublishChannel{
 		Client:          c.Client,

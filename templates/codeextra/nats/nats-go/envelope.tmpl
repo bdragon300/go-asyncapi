@@ -2,8 +2,6 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/bdragon300/go-asyncapi/run"
-	runNats "github.com/bdragon300/go-asyncapi/run/nats"
 	"github.com/nats-io/nats.go"
 )
 
@@ -15,7 +13,7 @@ func NewEnvelopeOut() *EnvelopeOut {
 
 type EnvelopeOut struct {
 	*nats.Msg
-	messageBindings runNats.MessageBindings
+	messageBindings {{goQualE "nats" "MessageBindings"}}
 }
 
 func (e *EnvelopeOut) Write(p []byte) (n int, err error) {
@@ -27,7 +25,7 @@ func (e *EnvelopeOut) ResetPayload() {
 	e.Data = e.Data[:0]
 }
 
-func (e *EnvelopeOut) SetHeaders(headers run.Headers) {
+func (e *EnvelopeOut) SetHeaders(headers {{goQualR "Headers"}}) {
 	if e.Header == nil {
 		e.Header = nats.Header{}
 	}
@@ -43,7 +41,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.Header.Set("Content-Type", contentType)
 }
 
-func (e *EnvelopeOut) SetBindings(bindings runNats.MessageBindings) {
+func (e *EnvelopeOut) SetBindings(bindings {{goQualE "nats" "MessageBindings"}}) {
 	e.messageBindings = bindings
 }
 
@@ -67,11 +65,11 @@ func (e *EnvelopeIn) Read(p []byte) (n int, err error) {
 	return e.rd.Read(p)
 }
 
-func (e *EnvelopeIn) Headers() run.Headers {
+func (e *EnvelopeIn) Headers() {{goQualR "Headers"}} {
 	if e.Header == nil {
-		return run.Headers{}
+		return {{goQualR "Headers"}}{}
 	}
-	hdrs := make(run.Headers, len(e.Header))
+	hdrs := make({{goQualR "Headers"}}, len(e.Header))
 	for k, v := range e.Header {
 		if len(v) > 0 {
 			hdrs[k] = []byte(v[0])

@@ -3,16 +3,14 @@ import (
 	"errors"
 	"time"
 
-	runAmqp "github.com/bdragon300/go-asyncapi/run/amqp"
-
 	"github.com/rabbitmq/amqp091-go"
 )
 
 type PublishChannel struct {
 	*amqp091.Channel
 	exchangeName    string
-	channelBindings *runAmqp.ChannelBindings
-	operationBindings *runAmqp.OperationBindings
+	channelBindings *{{goQualE "amqp" "ChannelBindings"}}
+	operationBindings *{{goQualE "amqp" "OperationBindings"}}
 }
 
 type ImplementationRecord interface {
@@ -20,7 +18,7 @@ type ImplementationRecord interface {
 	RoutingKey() string
 }
 
-func (p PublishChannel) Send(ctx context.Context, envelopes ...runAmqp.EnvelopeWriter) error {
+func (p PublishChannel) Send(ctx context.Context, envelopes ...{{goQualE "amqp" "EnvelopeWriter"}}) error {
 	var err error
 	for _, envelope := range envelopes {
 		rm := envelope.(ImplementationRecord)

@@ -3,14 +3,11 @@ import (
 	"fmt"
 	"net"
 	"strings"
-
-	"github.com/bdragon300/go-asyncapi/run"
-	runIP "github.com/bdragon300/go-asyncapi/run/ip"
 )
 
 const DefaultMaxEnvelopeSize = 1024
 
-func NewClient(localHost, remoteHost, protocolFamily string, security run.AnySecurityScheme) (*Client, error) {
+func NewClient(localHost, remoteHost, protocolFamily string, security {{goQualR "AnySecurityScheme"}}) (*Client, error) {
 	var err error
 	res := &Client{MaxEnvelopeSize: DefaultMaxEnvelopeSize}
 
@@ -54,11 +51,11 @@ type Client struct {
 	remoteAddress       string
 }
 
-func (c *Client) Subscriber(ctx context.Context, _ string, _ *runIP.ChannelBindings, _ *runIP.OperationBindings, security run.AnySecurityScheme) (runIP.Subscriber, error) {
+func (c *Client) Subscriber(ctx context.Context, _ string, _ *{{goQualE "ip" "ChannelBindings"}}, _ *{{goQualE "ip" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "ip" "Subscriber"}}, error) {
 	return c.channel(ctx)
 }
 
-func (c *Client) Publisher(ctx context.Context, _ string, _ *runIP.ChannelBindings, _ *runIP.OperationBindings, security run.AnySecurityScheme) (runIP.Publisher, error) {
+func (c *Client) Publisher(ctx context.Context, _ string, _ *{{goQualE "ip" "ChannelBindings"}}, _ *{{goQualE "ip" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "ip" "Publisher"}}, error) {
 	return c.channel(ctx)
 }
 

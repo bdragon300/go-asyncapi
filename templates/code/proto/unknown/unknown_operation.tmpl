@@ -1,7 +1,32 @@
 {{- /* dot == render.ProtoOperation */}}
 
-{{template "code/proto/operation/serverInterface" .}}
-{{template "code/proto/operation/openFunction" .}}
+type {{ . | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
+    Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goQual "context.Context"}}{{with .Channel.ParametersType}},{{goUsage .}}{{end}}{{if .Channel.BoundOperations}},{{goQualR "AnySecurityScheme"}}{{end}}) (*{{goPkg .Channel}}{{goIDUpper .Channel}}{{goIDUpper .Protocol}}, error)
+    Open{{. | goIDUpper}}{{.Protocol | goIDUpper}}(ctx {{goQual "context.Context"}}{{with .Channel.ParametersType}}, params {{ goUsage . }}{{end}}{{if .SecuritySchemes}}, security {{. | goIDUpper}}Security,{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
+    {{if .Channel.IsPublisher}}Producer() {{goQualE .Protocol "Producer"}}{{end}}
+    {{if .Channel.IsSubscriber}}Consumer() {{goQualE .Protocol "Consumer"}}{{end}}
+}
+
+func Open{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
+    ctx {{goQual "context.Context"}},
+    server {{. | goIDUpper }}Server{{.Protocol | goIDUpper}},
+    {{ with .Channel.ParametersType}}params {{. | goUsage}},{{end}}
+    {{if .SecuritySchemes}}security {{. | goIDUpper}}Security,{{end}}
+) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error) {
+    ch, err := {{goPkg .Channel}}Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}(
+        ctx,
+        server,
+        {{if .Channel.ParametersType}}params,{{end}}
+        {{if .SecuritySchemes}}security{{else}}nil{{end}},
+    )
+    if err != nil {
+        return nil, err
+    }
+
+    return &{{. | goIDUpper}}{{.Protocol | goIDUpper}}{
+        Channel: ch,
+    }, nil
+}
 
 type {{ . | goIDUpper }}Channel{{.Protocol | goIDUpper}} interface {
 {{range .BoundMessages}}

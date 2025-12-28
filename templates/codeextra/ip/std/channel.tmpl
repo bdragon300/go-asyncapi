@@ -6,11 +6,7 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/bdragon300/go-asyncapi/run"
-
 	"golang.org/x/sys/unix"
-
-	runIP "github.com/bdragon300/go-asyncapi/run/ip"
 )
 
 func NewChannel(conn *net.IPConn, bufferSize int, remoteAddress net.Addr) *Channel {
@@ -18,14 +14,14 @@ func NewChannel(conn *net.IPConn, bufferSize int, remoteAddress net.Addr) *Chann
 		IPConn:        conn,
 		remoteAddress: remoteAddress,
 		bufferSize:    bufferSize,
-		callbacks:     run.NewRing[subscriberFunc](),
+		callbacks:     {{goQualR "NewRing"}}[subscriberFunc](),
 		once:          &sync.Once{},
 	}
 	res.ctx, res.cancel = context.WithCancelCause(context.Background())
 	return &res
 }
 
-type subscriberFunc func(envelope runIP.EnvelopeReader)
+type subscriberFunc func(envelope {{goQualE "ip" "EnvelopeReader"}})
 
 type Channel struct {
 	*net.IPConn
@@ -33,7 +29,7 @@ type Channel struct {
 	remoteAddress    net.Addr // Ignored if includeIPHeaders is true, see TCP/IP stack docs
 	bufferSize       int
 	includeIPHeaders bool
-	callbacks        *run.Ring[subscriberFunc]
+	callbacks        *{{goQualR "Ring"}}[subscriberFunc]
 	ctx              context.Context
 	cancel           context.CancelCauseFunc
 	once             *sync.Once
@@ -44,7 +40,7 @@ type ImplementationRecord interface {
 	HeaderBytes() ([]byte, error)
 }
 
-func (c *Channel) Send(_ context.Context, envelopes ...runIP.EnvelopeWriter) error {
+func (c *Channel) Send(_ context.Context, envelopes ...{{goQualE "ip" "EnvelopeWriter"}}) error {
 	for i, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
 		msg := ir.Bytes()
@@ -64,7 +60,7 @@ func (c *Channel) Send(_ context.Context, envelopes ...runIP.EnvelopeWriter) err
 	return nil
 }
 
-func (c *Channel) Receive(ctx context.Context, cb func(envelope runIP.EnvelopeReader)) error {
+func (c *Channel) Receive(ctx context.Context, cb func(envelope {{goQualE "ip" "EnvelopeReader"}})) error {
 	element := c.callbacks.Append(cb)
 	defer func() {
 		c.callbacks.Remove(element)

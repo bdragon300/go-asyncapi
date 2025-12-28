@@ -1,9 +1,6 @@
 import (
 	"io"
 
-	"github.com/bdragon300/go-asyncapi/run"
-	runAmqp "github.com/bdragon300/go-asyncapi/run/amqp"
-
 	"github.com/rabbitmq/amqp091-go"
 )
 
@@ -27,7 +24,7 @@ func (e *EnvelopeOut) ResetPayload() {
 	e.Body = e.Body[:0]
 }
 
-func (e *EnvelopeOut) SetHeaders(headers run.Headers) {
+func (e *EnvelopeOut) SetHeaders(headers {{goQualR "Headers"}}) {
 	e.Publishing.Headers = map[string]any(headers)
 }
 
@@ -35,7 +32,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.ContentType = contentType
 }
 
-func (e *EnvelopeOut) SetBindings(bindings runAmqp.MessageBindings) {
+func (e *EnvelopeOut) SetBindings(bindings {{goQualE "amqp" "MessageBindings"}}) {
 	e.Publishing.ContentEncoding = bindings.ContentEncoding
 	e.Type = bindings.MessageType
 }
@@ -68,7 +65,7 @@ func (e EnvelopeIn) Read(p []byte) (n int, err error) {
 	return e.reader.Read(p)
 }
 
-func (e EnvelopeIn) Headers() run.Headers {
+func (e EnvelopeIn) Headers() {{goQualR "Headers"}} {
 	return map[string]any(e.Delivery.Headers)
 }
 

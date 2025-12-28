@@ -3,12 +3,10 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/bdragon300/go-asyncapi/run"
-	runWs "github.com/bdragon300/go-asyncapi/run/ws"
 	"github.com/gobwas/ws"
 )
 
-func NewProducer(serverURL *url.URL, bindings *runWs.ServerBindings, security run.AnySecurityScheme) *ProduceClient {
+func NewProducer(serverURL *url.URL, bindings *{{goQualE "ws" "ServerBindings"}}, security {{goQualR "AnySecurityScheme"}}) *ProduceClient {
 	return &ProduceClient{
 		bindings:  bindings,
 		serverURL: serverURL,
@@ -16,11 +14,11 @@ func NewProducer(serverURL *url.URL, bindings *runWs.ServerBindings, security ru
 }
 
 type ProduceClient struct {
-	bindings  *runWs.ServerBindings
+	bindings  *{{goQualE "ws" "ServerBindings"}}
 	serverURL *url.URL
 }
 
-func (p ProduceClient) Publisher(ctx context.Context, address string, chb *runWs.ChannelBindings, opb *runWs.OperationBindings, security run.AnySecurityScheme) (runWs.Publisher, error) {
+func (p ProduceClient) Publisher(ctx context.Context, address string, chb *{{goQualE "ws" "ChannelBindings"}}, opb *{{goQualE "ws" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "ws" "Publisher"}}, error) {
 	if chb != nil && chb.Method != "" && chb.Method != "GET" {
 		return nil, fmt.Errorf("unsupported method %s", chb.Method)
 	}

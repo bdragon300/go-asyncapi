@@ -2,9 +2,6 @@ import (
 	"bufio"
 	"context"
 	"net"
-
-	"github.com/bdragon300/go-asyncapi/run"
-	runTCP "github.com/bdragon300/go-asyncapi/run/tcp"
 )
 
 const DefaultMaxEnvelopeSize = 1024
@@ -13,7 +10,7 @@ type Decoder interface {
 	Decode(v any) error
 }
 
-func NewConsumer(host, network string, security run.AnySecurityScheme) (*ConsumeClient, error) {
+func NewConsumer(host, network string, security {{goQualR "AnySecurityScheme"}}) (*ConsumeClient, error) {
 	if network == "" {
 		network = "tcp"
 	}
@@ -33,7 +30,7 @@ type ConsumeClient struct {
 	MaxEnvelopeSize int
 }
 
-func (c *ConsumeClient) Subscriber(_ context.Context, _ string, _ *runTCP.ChannelBindings, _*runTCP.OperationBindings, security run.AnySecurityScheme) (runTCP.Subscriber, error) {
+func (c *ConsumeClient) Subscriber(_ context.Context, _ string, _ *{{goQualE "tcp" "ChannelBindings"}}, _*{{goQualE "tcp" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "tcp" "Subscriber"}}, error) {
 	// Wait for a new connection
 	conn, err := c.AcceptTCP()
 	if err != nil {

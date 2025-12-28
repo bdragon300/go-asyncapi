@@ -1,19 +1,17 @@
 import (
 	"context"
-
-	runNats "github.com/bdragon300/go-asyncapi/run/nats"
 )
 
-type Publisher struct {
+type PublishChannel struct {
 	Client  *Client
 
-	channelBindings   *runNats.ChannelBindings
-	operationBindings *runNats.OperationBindings
+	channelBindings   *{{goQualE "nats" "ChannelBindings"}}
+	operationBindings *{{goQualE "nats" "OperationBindings"}}
 	ctx               context.Context
 	cancel            context.CancelFunc
 }
 
-func (p Publisher) Send(ctx context.Context, envelopes ...runNats.EnvelopeWriter) error {
+func (p PublishChannel) Send(ctx context.Context, envelopes ...{{goQualE "nats" "EnvelopeWriter"}}) error {
 	for _, env := range envelopes {
 		if err := p.Client.PublishMsg(env.(*EnvelopeOut).Msg); err != nil {
 			return err
@@ -29,7 +27,7 @@ func (p Publisher) Send(ctx context.Context, envelopes ...runNats.EnvelopeWriter
 	return nil
 }
 
-func (p Publisher) Close() error {
+func (p PublishChannel) Close() error {
 	p.cancel()
 	return nil
 }

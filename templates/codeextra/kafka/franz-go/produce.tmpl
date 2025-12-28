@@ -2,14 +2,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bdragon300/go-asyncapi/run"
-	runKafka "github.com/bdragon300/go-asyncapi/run/kafka"
-
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kversion"
 )
 
-func NewProducer(hosts []string, bindings *runKafka.ServerBindings, security run.AnySecurityScheme, extraOpts ...kgo.Opt) *ProduceClient {
+func NewProducer(hosts []string, bindings *{{goQualE "kafka" "ServerBindings"}}, security {{goQualR "AnySecurityScheme"}}, extraOpts ...kgo.Opt) *ProduceClient {
 	return &ProduceClient{
 		hosts:     hosts,
 		bindings:  bindings,
@@ -19,11 +16,11 @@ func NewProducer(hosts []string, bindings *runKafka.ServerBindings, security run
 
 type ProduceClient struct {
 	hosts    []string
-	bindings *runKafka.ServerBindings
+	bindings *{{goQualE "kafka" "ServerBindings"}}
 	extraOpts []kgo.Opt
 }
 
-func (p ProduceClient) Publisher(_ context.Context, address string, chb *runKafka.ChannelBindings, opb *runKafka.OperationBindings, security run.AnySecurityScheme) (runKafka.Publisher, error) {
+func (p ProduceClient) Publisher(_ context.Context, address string, chb *{{goQualE "kafka" "ChannelBindings"}}, opb *{{goQualE "kafka" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "kafka" "Publisher"}}, error) {
 	// TODO: schema registry https://github.com/twmb/franz-go/blob/master/examples/schema_registry/schema_registry.go
 	var opts []kgo.Opt
 
@@ -59,11 +56,11 @@ type ImplementationRecord interface {
 type PublishChannel struct {
 	*kgo.Client
 	Topic           string
-	channelBindings *runKafka.ChannelBindings
-	operationBindings *runKafka.OperationBindings
+	channelBindings *{{goQualE "kafka" "ChannelBindings"}}
+	operationBindings *{{goQualE "kafka" "OperationBindings"}}
 }
 
-func (p PublishChannel) Send(ctx context.Context, envelopes ...runKafka.EnvelopeWriter) error {
+func (p PublishChannel) Send(ctx context.Context, envelopes ...{{goQualE "kafka" "EnvelopeWriter"}}) error {
 	records := make([]*kgo.Record, 0, len(envelopes))
 	for _, e := range envelopes {
 		rm := e.(ImplementationRecord)

@@ -1,8 +1,6 @@
 import (
 	"strings"
 
-	"github.com/bdragon300/go-asyncapi/run"
-	runRedis "github.com/bdragon300/go-asyncapi/run/redis"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -12,7 +10,7 @@ func NewEnvelopeOut() *EnvelopeOut {
 
 type EnvelopeOut struct {
 	*strings.Builder
-	headers     run.Headers
+	headers     {{goQualR "Headers"}}
 	contentType string
 }
 
@@ -20,7 +18,7 @@ func (e *EnvelopeOut) ResetPayload() {
 	e.Builder.Reset()
 }
 
-func (e *EnvelopeOut) SetHeaders(headers run.Headers) {
+func (e *EnvelopeOut) SetHeaders(headers {{goQualR "Headers"}}) {
 	e.headers = headers
 }
 
@@ -28,7 +26,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.contentType = contentType
 }
 
-func (e *EnvelopeOut) SetBindings(_ runRedis.MessageBindings) {}
+func (e *EnvelopeOut) SetBindings(_ {{goQualE "redis" "MessageBindings"}}) {}
 
 func (e *EnvelopeOut) AsAny() any {
 	return e.Builder.String()
@@ -47,6 +45,6 @@ func (e *EnvelopeIn) Read(p []byte) (n int, err error) {
 	return e.reader.Read(p)
 }
 
-func (e *EnvelopeIn) Headers() run.Headers {
+func (e *EnvelopeIn) Headers() {{goQualR "Headers"}} {
 	return nil
 }

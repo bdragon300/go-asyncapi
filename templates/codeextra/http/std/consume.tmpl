@@ -3,35 +3,32 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-
-	"github.com/bdragon300/go-asyncapi/run"
-	runHttp "github.com/bdragon300/go-asyncapi/run/http"
 )
 
-func NewConsumer(bindings *runHttp.ServerBindings, security run.AnySecurityScheme) *ConsumeClient {
+func NewConsumer(bindings *{{goQualE "http" "ServerBindings"}}, security {{goQualR "AnySecurityScheme"}}) *ConsumeClient {
 	return &ConsumeClient{
 		bindings:    bindings,
 		mu:          &sync.RWMutex{},
-		subscribers: make(map[string]*run.Ring[subscriberFunc]),
+		subscribers: make(map[string]*{{goQualR "Ring"}}[subscriberFunc]),
 	}
 }
 
-type subscriberFunc func(envelope runHttp.EnvelopeReader)
+type subscriberFunc func(envelope {{goQualE "http" "EnvelopeReader"}})
 
 type ConsumeClient struct {
 	http.ServeMux
-	bindings    *runHttp.ServerBindings
+	bindings    *{{goQualE "http" "ServerBindings"}}
 	mu          *sync.RWMutex
 	// subscribers are callbacks list by channel name.
-	subscribers map[string]*run.Ring[subscriberFunc]
+	subscribers map[string]*{{goQualR "Ring"}}[subscriberFunc]
 }
 
-func (c *ConsumeClient) Subscriber(_ context.Context, address string, chb *runHttp.ChannelBindings, opb *runHttp.OperationBindings, security run.AnySecurityScheme) (runHttp.Subscriber, error) {
+func (c *ConsumeClient) Subscriber(_ context.Context, address string, chb *{{goQualE "http" "ChannelBindings"}}, opb *{{goQualE "http" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "http" "Subscriber"}}, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	c.ensureChannel(address, opb)
-	subscriber := &Subscriber{
+	subscriber := &SubscribeChannel{
 		channelBindings:   chb,
 		operationBindings: opb,
 		callbacks:         c.subscribers[address],
@@ -40,9 +37,9 @@ func (c *ConsumeClient) Subscriber(_ context.Context, address string, chb *runHt
 	return subscriber, nil
 }
 
-func (c *ConsumeClient) ensureChannel(channelName string, opb *runHttp.OperationBindings) {
+func (c *ConsumeClient) ensureChannel(channelName string, opb *{{goQualE "http" "OperationBindings"}}) {
 	if _, ok := c.subscribers[channelName]; !ok {
-		c.subscribers[channelName] = run.NewRing[subscriberFunc]()
+		c.subscribers[channelName] = {{goQualR "NewRing"}}[subscriberFunc]()
 		c.HandleFunc(channelName, func(w http.ResponseWriter, req *http.Request) {
 			if opb != nil {
 				needMethod := opb.Method

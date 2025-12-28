@@ -1,8 +1,6 @@
 import (
 	"bytes"
 
-	"github.com/bdragon300/go-asyncapi/run"
-	runWs "github.com/bdragon300/go-asyncapi/run/ws"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 )
@@ -14,7 +12,7 @@ func NewEnvelopeOut() *EnvelopeOut {
 type EnvelopeOut struct {
 	*bytes.Buffer
 	opCode      ws.OpCode
-	headers     run.Headers
+	headers     {{goQualR "Headers"}}
 	contentType string
 }
 
@@ -22,7 +20,7 @@ func (e *EnvelopeOut) ResetPayload() {
 	e.Buffer.Reset()
 }
 
-func (e *EnvelopeOut) SetHeaders(headers run.Headers) {
+func (e *EnvelopeOut) SetHeaders(headers {{goQualR "Headers"}}) {
 	e.headers = headers
 }
 
@@ -30,7 +28,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.contentType = contentType
 }
 
-func (e *EnvelopeOut) SetBindings(_ runWs.MessageBindings) {}
+func (e *EnvelopeOut) SetBindings(_ {{goQualE "ws" "MessageBindings"}}) {}
 
 func (e *EnvelopeOut) SetOpCode(opCode byte) {
 	e.opCode = ws.OpCode(opCode)
@@ -53,6 +51,6 @@ func (e *EnvelopeIn) Read(p []byte) (n int, err error) {
 	return e.reader.Read(p)
 }
 
-func (e *EnvelopeIn) Headers() run.Headers {
+func (e *EnvelopeIn) Headers() {{goQualR "Headers"}} {
 	return nil
 }

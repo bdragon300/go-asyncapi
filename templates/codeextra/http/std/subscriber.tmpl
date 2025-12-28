@@ -1,17 +1,14 @@
 import (
 	"context"
-
-	"github.com/bdragon300/go-asyncapi/run"
-	runHttp "github.com/bdragon300/go-asyncapi/run/http"
 )
 
-type Subscriber struct {
-	channelBindings *runHttp.ChannelBindings
-	operationBindings *runHttp.OperationBindings
-	callbacks *run.Ring[subscriberFunc]
+type SubscribeChannel struct {
+	channelBindings *{{goQualE "http" "ChannelBindings"}}
+	operationBindings *{{goQualE "http" "OperationBindings"}}
+	callbacks *{{goQualR "Ring"}}[subscriberFunc]
 }
 
-func (s *Subscriber) Receive(ctx context.Context, cb func(envelope runHttp.EnvelopeReader)) error {
+func (s *SubscribeChannel) Receive(ctx context.Context, cb func(envelope {{goQualE "http" "EnvelopeReader"}})) error {
 	element := s.callbacks.Append(cb)
 	defer func() {
 		s.callbacks.Remove(element)
@@ -21,6 +18,6 @@ func (s *Subscriber) Receive(ctx context.Context, cb func(envelope runHttp.Envel
 	return ctx.Err()
 }
 
-func (s *Subscriber) Close() error {
+func (s *SubscribeChannel) Close() error {
 	return nil
 }

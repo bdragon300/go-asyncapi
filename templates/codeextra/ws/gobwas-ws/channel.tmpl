@@ -5,27 +5,24 @@ import (
 	"net"
 	"sync"
 
-	"github.com/bdragon300/go-asyncapi/run"
-
-	runWs "github.com/bdragon300/go-asyncapi/run/ws"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 )
 
-func NewChannel(chb *runWs.ChannelBindings, opb *runWs.OperationBindings, conn net.Conn, clientSide bool) *Channel {
+func NewChannel(chb *{{goQualE "ws" "ChannelBindings"}}, opb *{{goQualE "ws" "OperationBindings"}}, conn net.Conn, clientSide bool) *Channel {
 	res := Channel{
 		Conn:              conn,
 		clientSide:        clientSide,
 		channelBindings:   chb,
 		operationBindings: opb,
-		callbacks:         run.NewRing[subscriberFunc](),
+		callbacks:         {{goQualR "NewRing"}}[subscriberFunc](),
 		once:              &sync.Once{},
 	}
 	res.ctx, res.cancel = context.WithCancelCause(context.Background())
 	return &res
 }
 
-type subscriberFunc func(envelope runWs.EnvelopeReader)
+type subscriberFunc func(envelope {{goQualE "ws" "EnvelopeReader"}})
 
 type ImplementationRecord interface {
 	Bytes() []byte
@@ -40,15 +37,15 @@ type Channel struct {
 	// outgoing websocket frames, whereas the server-side code must unmask the payload back in incoming frames
 	// https://www.rfc-editor.org/rfc/rfc6455#section-5.3
 	clientSide        bool
-	channelBindings   *runWs.ChannelBindings
-	operationBindings *runWs.OperationBindings
-	callbacks         *run.Ring[subscriberFunc]
+	channelBindings   *{{goQualE "ws" "ChannelBindings"}}
+	operationBindings *{{goQualE "ws" "OperationBindings"}}
+	callbacks         *{{goQualR "Ring"}}[subscriberFunc]
 	ctx               context.Context
 	cancel            context.CancelCauseFunc
 	once              *sync.Once
 }
 
-func (s Channel) Receive(ctx context.Context, cb func(envelope runWs.EnvelopeReader)) error {
+func (s Channel) Receive(ctx context.Context, cb func(envelope {{goQualE "ws" "EnvelopeReader"}})) error {
 	element := s.callbacks.Append(cb)
 	defer func() {
 		s.callbacks.Remove(element)
@@ -65,7 +62,7 @@ func (s Channel) Receive(ctx context.Context, cb func(envelope runWs.EnvelopeRea
 	}
 }
 
-func (s Channel) Send(ctx context.Context, envelopes ...runWs.EnvelopeWriter) error {
+func (s Channel) Send(ctx context.Context, envelopes ...{{goQualE "ws" "EnvelopeWriter"}}) error {
 	for i, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
 		msg := ir.Bytes()

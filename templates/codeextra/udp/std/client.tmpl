@@ -2,9 +2,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-
-	"github.com/bdragon300/go-asyncapi/run"
-	runUDP "github.com/bdragon300/go-asyncapi/run/udp"
 )
 
 const DefaultMaxEnvelopeSize = 1024
@@ -19,7 +16,7 @@ const DefaultMaxEnvelopeSize = 1024
 //
 // For receiving the data, the localAddress arg sets the address to listen for incoming UDP packets.
 // The defaultRemoteAddress arg is ignored.
-func NewClient(localAddress, defaultRemoteAddress, protocolFamily string, security run.AnySecurityScheme) *Client {
+func NewClient(localAddress, defaultRemoteAddress, protocolFamily string, security {{goQualR "AnySecurityScheme"}}) *Client {
 	if protocolFamily == "" {
 		protocolFamily = "udp"
 	}
@@ -48,11 +45,11 @@ type Client struct {
 	protocolFamily string
 }
 
-func (c Client) Publisher(ctx context.Context, _ string, _ *runUDP.ChannelBindings, _ *runUDP.OperationBindings, security run.AnySecurityScheme) (runUDP.Publisher, error) {
+func (c Client) Publisher(ctx context.Context, _ string, _ *{{goQualE "udp" "ChannelBindings"}}, _ *{{goQualE "udp" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "udp" "Publisher"}}, error) {
 	return c.channel(ctx)
 }
 
-func (c Client) Subscriber(ctx context.Context, _ string, _ *runUDP.ChannelBindings, _ *runUDP.OperationBindings, security run.AnySecurityScheme) (runUDP.Subscriber, error) {
+func (c Client) Subscriber(ctx context.Context, _ string, _ *{{goQualE "udp" "ChannelBindings"}}, _ *{{goQualE "udp" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "udp" "Subscriber"}}, error) {
 	return c.channel(ctx)
 }
 

@@ -1,7 +1,61 @@
 {{- /* dot == render.ProtoChannel */}}
 {{template "code/proto/channel/newFunction" .}}
-{{template "code/proto/channel/serverInterface" .}}
-{{template "code/proto/channel/openFunction" .}}
+
+type {{ .Channel | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
+    Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goQual "context.Context"}}{{with .ParametersType}},{{ goUsage . }}{{end}}{{if .BoundOperations}},{{goQualR "AnySecurityScheme"}}{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
+    {{if .IsPublisher}}Producer() {{goQualE .Protocol "Producer"}}{{end}}
+    {{if .IsSubscriber}}Consumer() {{goQualE .Protocol "Consumer"}}{{end}}
+}
+
+func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
+    ctx {{goQual "context.Context"}},
+    server {{.Channel | goIDUpper }}Server{{.Protocol | goIDUpper}},
+    {{with .ParametersType}}params {{. | goUsage}},{{end}}
+    {{if .BoundOperations}}security {{goQualR "AnySecurityScheme"}},{{end}}
+) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error) {
+    var err error
+
+    {{- if or .IsPublisher .IsSubscriber}}
+        address, err := {{.Channel | goIDUpper}}Address({{if .ParametersType}}params{{end}}).Expand()
+        if err != nil {
+            return nil, err
+        }
+    {{- end}}
+    {{- if .IsPublisher}}
+        var publisher {{goQualE .Protocol "Publisher"}}
+        producer := server.Producer()
+        if producer != nil {
+            publisher, err = producer.Publisher(
+                ctx,
+                address,
+                {{if .BoundOperations}}security{{else}}nil{{end}},
+            )
+            if err != nil {
+                return nil, err
+            }
+        }
+    {{- end}}
+    {{- if .IsSubscriber}}
+        var subscriber {{goQualE .Protocol "Subscriber"}}
+        consumer := server.Consumer()
+        if consumer != nil {
+            subscriber, err = consumer.Subscriber(
+                ctx,
+                address,
+                {{if .BoundOperations}}security{{else}}nil{{end}},
+            )
+            if err != nil {
+                return nil, err
+            }
+        }
+    {{- end}}
+
+    return New{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
+        {{ if .ParametersType}}params,{{end}}
+        {{ if .IsPublisher}}publisher,{{end}}
+        {{ if .IsSubscriber}}subscriber,{{end}}
+    ), nil
+}
 
 type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
     address    {{goQualR "ParamString"}}

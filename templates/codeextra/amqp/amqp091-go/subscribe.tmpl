@@ -3,9 +3,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bdragon300/go-asyncapi/run"
-	runAmqp "github.com/bdragon300/go-asyncapi/run/amqp"
-
 	"github.com/rabbitmq/amqp091-go"
 )
 
@@ -17,11 +14,11 @@ type SubscribeChannel struct {
 	ConsumeArgs amqp091.Table
 
 	queueName       string
-	channelBindings *runAmqp.ChannelBindings
-	operationBindings *runAmqp.OperationBindings
+	channelBindings *{{goQualE "amqp" "ChannelBindings"}}
+	operationBindings *{{goQualE "amqp" "OperationBindings"}}
 }
 
-func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope runAmqp.EnvelopeReader)) (err error) {
+func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope {{goQualE "amqp" "EnvelopeReader"}})) (err error) {
 	// TODO: consumer tag in x- schema argument
 	// Separate context is used to stop consumer process for a particular consumer tag on function exit.
 	consumerCtx, cancel := context.WithCancel(ctx)
@@ -32,7 +29,7 @@ func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope runAmqp.
 		ack = s.operationBindings.Ack
 	}
 	if s.channelBindings != nil {
-		exclusive = run.FromPtrOrZero(s.channelBindings.QueueConfiguration.Exclusive)
+		exclusive = {{goQualR "FromPtrOrZero"}}(s.channelBindings.QueueConfiguration.Exclusive)
 	}
 	deliveries, err := s.ConsumeWithContext(
 		consumerCtx,

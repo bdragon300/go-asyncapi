@@ -3,10 +3,6 @@ import (
 	"fmt"
 	"net"
 	"sync"
-
-	"github.com/bdragon300/go-asyncapi/run"
-
-	runUDP "github.com/bdragon300/go-asyncapi/run/udp"
 )
 
 func NewChannel(conn *net.UDPConn, bufferSize int, defaultRemoteAddress net.Addr) *Channel {
@@ -14,21 +10,21 @@ func NewChannel(conn *net.UDPConn, bufferSize int, defaultRemoteAddress net.Addr
 		UDPConn:              conn,
 		defaultRemoteAddress: defaultRemoteAddress,
 		bufferSize:           bufferSize,
-		callbacks:            run.NewRing[subscriberFunc](),
+		callbacks:            {{goQualR "NewRing"}}[subscriberFunc](),
 		once:                 &sync.Once{},
 	}
 	res.ctx, res.cancel = context.WithCancelCause(context.Background())
 	return &res
 }
 
-type subscriberFunc func(envelope runUDP.EnvelopeReader)
+type subscriberFunc func(envelope {{goQualE "udp" "EnvelopeReader"}})
 
 type Channel struct {
 	*net.UDPConn
 
 	defaultRemoteAddress net.Addr
 	bufferSize           int
-	callbacks            *run.Ring[subscriberFunc]
+	callbacks            *{{goQualR "Ring"}}[subscriberFunc]
 	ctx                  context.Context
 	cancel               context.CancelCauseFunc
 	once                 *sync.Once
@@ -39,7 +35,7 @@ type ImplementationRecord interface {
 	RemoteAddr() net.Addr
 }
 
-func (c *Channel) Send(_ context.Context, envelopes ...runUDP.EnvelopeWriter) error {
+func (c *Channel) Send(_ context.Context, envelopes ...{{goQualE "udp" "EnvelopeWriter"}}) error {
 	for _, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
 		addr := ir.RemoteAddr()
@@ -53,7 +49,7 @@ func (c *Channel) Send(_ context.Context, envelopes ...runUDP.EnvelopeWriter) er
 	return nil
 }
 
-func (c *Channel) Receive(ctx context.Context, cb func(envelope runUDP.EnvelopeReader)) error {
+func (c *Channel) Receive(ctx context.Context, cb func(envelope {{goQualE "udp" "EnvelopeReader"}})) error {
 	element := c.callbacks.Append(cb)
 	defer func() {
 		c.callbacks.Remove(element)
