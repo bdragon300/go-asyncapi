@@ -21,7 +21,7 @@ func NewChannel(conn *net.IPConn, bufferSize int, remoteAddress net.Addr) *Chann
 	return &res
 }
 
-type subscriberFunc func(envelope {{goQualE "ip" "EnvelopeReader"}})
+type subscriberFunc func(envelope {{goQualU "ip" "EnvelopeReader"}})
 
 type Channel struct {
 	*net.IPConn
@@ -40,7 +40,7 @@ type ImplementationRecord interface {
 	HeaderBytes() ([]byte, error)
 }
 
-func (c *Channel) Send(_ context.Context, envelopes ...{{goQualE "ip" "EnvelopeWriter"}}) error {
+func (c *Channel) Send(_ context.Context, envelopes ...{{goQualU "ip" "EnvelopeWriter"}}) error {
 	for i, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
 		msg := ir.Bytes()
@@ -60,7 +60,7 @@ func (c *Channel) Send(_ context.Context, envelopes ...{{goQualE "ip" "EnvelopeW
 	return nil
 }
 
-func (c *Channel) Receive(ctx context.Context, cb func(envelope {{goQualE "ip" "EnvelopeReader"}})) error {
+func (c *Channel) Receive(ctx context.Context, cb func(envelope {{goQualU "ip" "EnvelopeReader"}})) error {
 	element := c.callbacks.Append(cb)
 	defer func() {
 		c.callbacks.Remove(element)

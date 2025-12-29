@@ -3,8 +3,8 @@
 type {{ . | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
     Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goQual "context.Context"}}{{with .Channel.ParametersType}},{{goUsage .}}{{end}}{{if .Channel.BoundOperations}},{{goQualR "AnySecurityScheme"}}{{end}}) (*{{goPkg .Channel}}{{goIDUpper .Channel}}{{goIDUpper .Protocol}}, error)
     Open{{. | goIDUpper}}{{.Protocol | goIDUpper}}(ctx {{goQual "context.Context"}}{{with .Channel.ParametersType}}, params {{ goUsage . }}{{end}}{{if .SecuritySchemes}}, security {{. | goIDUpper}}Security,{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
-    {{if .Channel.IsPublisher}}Producer() {{goQualE .Protocol "Producer"}}{{end}}
-    {{if .Channel.IsSubscriber}}Consumer() {{goQualE .Protocol "Consumer"}}{{end}}
+    {{if .Channel.IsPublisher}}Producer() {{goQualU .Protocol "Producer"}}{{end}}
+    {{if .Channel.IsSubscriber}}Consumer() {{goQualU .Protocol "Consumer"}}{{end}}
 }
 
 func Open{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
@@ -32,11 +32,11 @@ type {{ . | goIDUpper }}Channel{{.Protocol | goIDUpper}} interface {
 {{range .BoundMessages}}
     {{- if not (isVisible .) }}{{continue}}{{end}}
     {{if .IsPublisher}}
-        Seal{{goIDUpper .}}({{goQualE $.Protocol "EnvelopeWriter"}}, {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
-        Publish{{goIDUpper .}}({{goQual "context.Context"}}, {{if not (impl $.Protocol)}}{{goQualE $.Protocol "EnvelopeWriter"}},{{end}} {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
+        Seal{{goIDUpper .}}({{goQualU $.Protocol "EnvelopeWriter"}}, {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
+        Publish{{goIDUpper .}}({{goQual "context.Context"}}, {{if not (impl $.Protocol)}}{{goQualU $.Protocol "EnvelopeWriter"}},{{end}} {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
     {{- end}}
     {{if .IsSubscriber}}
-        Unseal{{goIDUpper .}}({{goQualE $.Protocol "EnvelopeReader"}}, {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeUnmarshaler{{$.Protocol | goIDUpper}}) error
+        Unseal{{goIDUpper .}}({{goQualU $.Protocol "EnvelopeReader"}}, {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeUnmarshaler{{$.Protocol | goIDUpper}}) error
         Subscribe{{goIDUpper .}}({{goQual "context.Context"}}, func({{ goPkg .InType}}{{ goIDUpper .}}Receiver)) error
     {{- end}}
 {{- end}}
@@ -63,11 +63,11 @@ type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
     {{range .BoundReplyMessages}}
         {{- if not (isVisible .) }}{{continue}}{{end}}
         {{if $.IsReplyPublisher}}
-            Seal{{goIDUpper .}}({{goQualE $.Protocol "EnvelopeWriter"}}, {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
-            Publish{{goIDUpper .}}({{goQual "context.Context"}}, {{if not (impl $.Protocol)}}{{goQualE $.Protocol "EnvelopeWriter"}},{{end}} {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
+            Seal{{goIDUpper .}}({{goQualU $.Protocol "EnvelopeWriter"}}, {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
+            Publish{{goIDUpper .}}({{goQual "context.Context"}}, {{if not (impl $.Protocol)}}{{goQualU $.Protocol "EnvelopeWriter"}},{{end}} {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
         {{- end}}
         {{if $.IsReplySubscriber}}
-            Unseal{{goIDUpper .}}({{goQualE $.Protocol "EnvelopeReader"}}, {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeUnmarshaler{{$.Protocol | goIDUpper}}) error
+            Unseal{{goIDUpper .}}({{goQualU $.Protocol "EnvelopeReader"}}, {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeUnmarshaler{{$.Protocol | goIDUpper}}) error
             Subscribe{{goIDUpper .}}({{goQual "context.Context"}}, func({{ goPkg .InType}}{{ goIDUpper .}}Receiver)) error
         {{- end}}
     {{- end}}

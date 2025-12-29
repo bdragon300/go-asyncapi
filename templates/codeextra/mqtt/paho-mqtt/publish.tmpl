@@ -8,8 +8,8 @@ type PublishChannel struct {
 	Client mqtt.Client
 	Topic  string
 
-	channelBindings *{{goQualE "mqtt" "ChannelBindings"}}
-	operationBindings *{{goQualE "mqtt" "OperationBindings"}}
+	channelBindings *{{goQualU "mqtt" "ChannelBindings"}}
+	operationBindings *{{goQualU "mqtt" "OperationBindings"}}
 	ctx       context.Context
 	cancel    context.CancelFunc
 }
@@ -18,7 +18,7 @@ type ImplementationRecord interface {
 	Bytes() []byte
 }
 
-func (r *PublishChannel) Send(ctx context.Context, envelopes ...{{goQualE "mqtt" "EnvelopeWriter"}}) error {
+func (r *PublishChannel) Send(ctx context.Context, envelopes ...{{goQualU "mqtt" "EnvelopeWriter"}}) error {
 	for _, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
 		var qos byte

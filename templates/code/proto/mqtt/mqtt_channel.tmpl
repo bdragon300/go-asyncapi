@@ -12,8 +12,8 @@
 
 type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
     address    {{goQualR "ParamString"}}
-    {{if .IsPublisher}}publisher  {{goQualE .Protocol "Publisher"}}{{end}}
-    {{if .IsSubscriber}}subscriber {{goQualE .Protocol "Subscriber"}}{{end}}
+    {{if .IsPublisher}}publisher  {{goQualU .Protocol "Publisher"}}{{end}}
+    {{if .IsSubscriber}}subscriber {{goQualU .Protocol "Subscriber"}}{{end}}
     topic string
 }
 

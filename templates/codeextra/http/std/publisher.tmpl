@@ -5,7 +5,7 @@ import (
 	"net/url"
 )
 
-func NewPublisher(chb *{{goQualE "http" "ChannelBindings"}}, opb *{{goQualE "http" "OperationBindings"}}, channelURL *url.URL) *PublishChannel {
+func NewPublisher(chb *{{goQualU "http" "ChannelBindings"}}, opb *{{goQualU "http" "OperationBindings"}}, channelURL *url.URL) *PublishChannel {
 	return &PublishChannel{
 		Client:          http.DefaultClient,
 		channelURL:      channelURL,
@@ -17,8 +17,8 @@ func NewPublisher(chb *{{goQualE "http" "ChannelBindings"}}, opb *{{goQualE "htt
 type PublishChannel struct {
 	Client     *http.Client
 	channelURL      *url.URL
-	channelBindings *{{goQualE "http" "ChannelBindings"}}
-	operationBindings *{{goQualE "http" "OperationBindings"}}
+	channelBindings *{{goQualU "http" "ChannelBindings"}}
+	operationBindings *{{goQualU "http" "OperationBindings"}}
 }
 
 type ImplementationRecord interface {
@@ -26,7 +26,7 @@ type ImplementationRecord interface {
 	// TODO: Bindings?
 }
 
-func (p PublishChannel) Send(ctx context.Context, envelopes ...{{goQualE "http" "EnvelopeWriter"}}) error {
+func (p PublishChannel) Send(ctx context.Context, envelopes ...{{goQualU "http" "EnvelopeWriter"}}) error {
 	method := "GET"
 	if p.operationBindings != nil && p.operationBindings.Method != "" {
 		method = p.operationBindings.Method

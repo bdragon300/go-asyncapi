@@ -7,12 +7,12 @@ func Connect{{ . | goIDUpper }}Bidi(
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
     opts ...{{goQual "github.com/twmb/franz-go/pkg/kgo.Opt"}},
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualE .Protocol "ServerBindings"}}
+    var bindings *{{goQualU .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    producer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewProducer([]string{url.Host}, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
-    consumer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewConsumer([]string{url.Host}, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
+    producer := {{goQualI .Protocol "NewProducer"}}([]string{url.Host}, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
+    consumer := {{goQualI .Protocol "NewConsumer"}}([]string{url.Host}, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
     return &{{ . | goIDUpper }}Closable{
         {{. | goIDUpper}}{producer: producer, consumer: consumer},
     }, nil
@@ -26,11 +26,11 @@ func Connect{{ . | goIDUpper }}Producer(
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
     opts ...{{goQual "github.com/twmb/franz-go/pkg/kgo.Opt"}},
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualE .Protocol "ServerBindings"}}
+    var bindings *{{goQualU .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    producer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewProducer([]string{url.Host}, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
+    producer := {{goQualI .Protocol "NewProducer"}}([]string{url.Host}, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
     return &{{ . | goIDUpper }}Closable{
         {{. | goIDUpper}}{producer: producer},
     }, nil
@@ -44,11 +44,11 @@ func Connect{{ . | goIDUpper }}Consumer(
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
     opts ...{{goQual "github.com/twmb/franz-go/pkg/kgo.Opt"}},
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualE .Protocol "ServerBindings"}}
+    var bindings *{{goQualU .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    consumer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewConsumer([]string{url.Host}, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
+    consumer := {{goQualI .Protocol "NewConsumer"}}([]string{url.Host}, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
     return &{{ . | goIDUpper }}Closable{
         {{. | goIDUpper}}{consumer: consumer},
     }, nil

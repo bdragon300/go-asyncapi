@@ -45,11 +45,11 @@ type Client struct {
 	protocolFamily string
 }
 
-func (c Client) Publisher(ctx context.Context, _ string, _ *{{goQualE "udp" "ChannelBindings"}}, _ *{{goQualE "udp" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "udp" "Publisher"}}, error) {
+func (c Client) Publisher(ctx context.Context, _ string, _ *{{goQualU "udp" "ChannelBindings"}}, _ *{{goQualU "udp" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualU "udp" "Publisher"}}, error) {
 	return c.channel(ctx)
 }
 
-func (c Client) Subscriber(ctx context.Context, _ string, _ *{{goQualE "udp" "ChannelBindings"}}, _ *{{goQualE "udp" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "udp" "Subscriber"}}, error) {
+func (c Client) Subscriber(ctx context.Context, _ string, _ *{{goQualU "udp" "ChannelBindings"}}, _ *{{goQualU "udp" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualU "udp" "Subscriber"}}, error) {
 	return c.channel(ctx)
 }
 

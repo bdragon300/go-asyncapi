@@ -17,7 +17,7 @@ func NewChannel(conn *net.UDPConn, bufferSize int, defaultRemoteAddress net.Addr
 	return &res
 }
 
-type subscriberFunc func(envelope {{goQualE "udp" "EnvelopeReader"}})
+type subscriberFunc func(envelope {{goQualU "udp" "EnvelopeReader"}})
 
 type Channel struct {
 	*net.UDPConn
@@ -35,7 +35,7 @@ type ImplementationRecord interface {
 	RemoteAddr() net.Addr
 }
 
-func (c *Channel) Send(_ context.Context, envelopes ...{{goQualE "udp" "EnvelopeWriter"}}) error {
+func (c *Channel) Send(_ context.Context, envelopes ...{{goQualU "udp" "EnvelopeWriter"}}) error {
 	for _, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
 		addr := ir.RemoteAddr()
@@ -49,7 +49,7 @@ func (c *Channel) Send(_ context.Context, envelopes ...{{goQualE "udp" "Envelope
 	return nil
 }
 
-func (c *Channel) Receive(ctx context.Context, cb func(envelope {{goQualE "udp" "EnvelopeReader"}})) error {
+func (c *Channel) Receive(ctx context.Context, cb func(envelope {{goQualU "udp" "EnvelopeReader"}})) error {
 	element := c.callbacks.Append(cb)
 	defer func() {
 		c.callbacks.Remove(element)

@@ -8,14 +8,14 @@ type SubscribeChannel struct {
 	Client mqtt.Client
 	Topic  string
 
-	channelBindings *{{goQualE "mqtt" "ChannelBindings"}}
-	operationBindings *{{goQualE "mqtt" "OperationBindings"}}
-	envelopes         chan {{goQualE "mqtt" "EnvelopeReader"}}
+	channelBindings *{{goQualU "mqtt" "ChannelBindings"}}
+	operationBindings *{{goQualU "mqtt" "OperationBindings"}}
+	envelopes         chan {{goQualU "mqtt" "EnvelopeReader"}}
 	ctx           context.Context
 	cancel        context.CancelFunc
 }
 
-func (r *SubscribeChannel) Receive(ctx context.Context, cb func(envelope {{goQualE "mqtt" "EnvelopeReader"}})) error {
+func (r *SubscribeChannel) Receive(ctx context.Context, cb func(envelope {{goQualU "mqtt" "EnvelopeReader"}})) error {
 	for {
 		select {
 		case v, ok := <-r.envelopes:

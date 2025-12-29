@@ -6,11 +6,11 @@ func Connect{{ . | goIDUpper }}Bidi(
     url *{{goQual "net/url.URL"}},
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualE .Protocol "ServerBindings"}}
+    var bindings *{{goQualU .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    client, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    client, err := {{goQualI .Protocol "NewClient"}}(url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }
@@ -27,11 +27,11 @@ func Connect{{ . | goIDUpper }}Producer(
     url *{{goQual "net/url.URL"}},
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualE .Protocol "ServerBindings"}}
+    var bindings *{{goQualU .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    producer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    producer, err := {{goQualI .Protocol "NewClient"}}(url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }
@@ -47,11 +47,11 @@ func Connect{{ . | goIDUpper }}Consumer(
     url *{{goQual "net/url.URL"}},
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualE .Protocol "ServerBindings"}}
+    var bindings *{{goQualU .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    consumer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    consumer, err := {{goQualI .Protocol "NewClient"}}NewClient(url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }

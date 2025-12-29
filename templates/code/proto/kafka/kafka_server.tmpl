@@ -9,8 +9,8 @@
 
 {{- /* TODO: consider IsPublisher and IsSubscriber}} */}}
 type {{. | goIDUpper}} struct {
-    producer {{goQualE .Protocol "Producer"}}
-    consumer {{goQualE .Protocol "Consumer"}}
+    producer {{goQualU .Protocol "Producer"}}
+    consumer {{goQualU .Protocol "Consumer"}}
 }
 
 {{template "code/proto/server/commonMethods" .}}

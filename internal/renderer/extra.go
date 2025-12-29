@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	extraCodeSrcDir       = "extra"
+	utilCodeSrcDir        = "util"
 	unknownProtocolSrcDir = "unknown"
 )
 
@@ -27,28 +27,28 @@ type dirTemplateLoader interface {
 	LoadTemplate(name string) (*template.Template, error)
 }
 
-func RenderExtraCode(protocols []string, opts common.ConfigCodeExtraOpts, mng *manager.TemplateRenderManager, tplBase fs.FS) error {
+func RenderUtilCode(protocols []string, opts common.RenderOpts, mng *manager.TemplateRenderManager, tplBase fs.FS) error {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 	tplLoader := mng.TemplateLoader.(dirTemplateLoader)
 
 	for _, protocol := range protocols {
-		logger.Debug("Render extra code", "protocol", protocol)
-		ctx := tmpl.CodeExtraTemplateContext{LayoutOpts: opts, Protocol: protocol}
-		directory, err := renderInlineTemplate(opts.Directory, ctx, mng)
+		logger.Debug("Render util code", "protocol", protocol)
+		ctx := tmpl.CodeExtraTemplateContext{RenderOpts: opts, Protocol: protocol}
+		directory, err := renderInlineTemplate(opts.UtilCodeOpts.Directory, ctx, mng)
 		if err != nil {
 			return fmt.Errorf("render directory expression: %w", err)
 		}
 		logger.Trace("-> Directory", "result", directory)
 
 		pkgName := utils.GetPackageName(directory)
-		ctx = tmpl.CodeExtraTemplateContext{LayoutOpts: opts, Protocol: protocol, Directory: directory, PackageName: pkgName}
+		ctx = tmpl.CodeExtraTemplateContext{RenderOpts: opts, Protocol: protocol, Directory: directory, PackageName: pkgName}
 		logger.Trace("-> Package name", "name", pkgName)
 
-		srcDir, found := getExtraSourceDir(tplBase, protocol)
+		srcDir, found := getUtilSourceDir(tplBase, protocol)
 		if !found {
 			logger.Warn("-> Unknown protocol found, generate the fallback code", "protocol", protocol)
 		}
-		logger.Trace("-> Extra code source directory", "srcDir", srcDir)
+		logger.Trace("-> Util code source directory", "srcDir", srcDir)
 
 		templates, err := tplLoader.ParseDir(srcDir, mng)
 		if err != nil {
@@ -62,7 +62,7 @@ func RenderExtraCode(protocols []string, opts common.ConfigCodeExtraOpts, mng *m
 	return nil
 }
 
-func RenderImplementationsCode(protocols []string, opts common.ConfigCodeExtraOpts, mng *manager.TemplateRenderManager, tplBase fs.FS) error {
+func RenderImplementationCode(protocols []string, opts common.RenderOpts, mng *manager.TemplateRenderManager, tplBase fs.FS) error {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 	prevTplLoader := mng.TemplateLoader
 	defer func() {
@@ -73,43 +73,42 @@ func RenderImplementationsCode(protocols []string, opts common.ConfigCodeExtraOp
 	for _, protocol := range protocols {
 		logger.Debug("Render implementation code", "protocol", protocol)
 
-		conf, _ := lo.Find(opts.Implementations, func(item common.ConfigImplementationProtocol) bool {
+		override, _ := lo.Find(opts.ImplementationCodeOpts.Overrides, func(item common.ConfigImplementationProtocol) bool {
 			return item.Protocol == protocol
 		})
-		if conf.Disable {
+		if override.Disable {
 			logger.Debug("-> Implementation is disabled for protocol, skipping")
 			continue
 		}
 
-		ctx := tmpl.CodeExtraTemplateContext{LayoutOpts: opts, Protocol: protocol}
-		dirExpr, _ := lo.Coalesce(conf.Directory, opts.Directory)
-		directory, err := renderInlineTemplate(dirExpr, ctx, mng)
+		ctx := tmpl.CodeExtraTemplateContext{RenderOpts: opts, Protocol: protocol}
+		directory, err := renderInlineTemplate(opts.ImplementationCodeOpts.Directory, ctx, mng)
 		if err != nil {
 			return fmt.Errorf("render directory expression: %w", err)
 		}
 		logger.Trace("-> Directory", "result", directory)
 
-		pkgName, _ := lo.Coalesce(conf.Package, utils.GetPackageName(directory))
-		ctx = tmpl.CodeExtraTemplateContext{LayoutOpts: opts, Protocol: protocol, Directory: directory, PackageName: pkgName}
+		pkgName, _ := lo.Coalesce(override.Package, utils.GetPackageName(directory))
+		ctx = tmpl.CodeExtraTemplateContext{RenderOpts: opts, Protocol: protocol, Directory: directory, PackageName: pkgName}
 		logger.Trace("-> Package name", "name", pkgName)
 
 		var templates []string
-		if conf.TemplateDirectory != "" {
-			logger.Trace("-> Using the custom template directory", "directory", conf.TemplateDirectory)
-			ld := tmpl.NewTemplateLoader("", os.DirFS(conf.TemplateDirectory))
+		if override.TemplateDirectory != "" {
+			logger.Trace("-> Using the custom template directory", "directory", override.TemplateDirectory)
+			ld := tmpl.NewTemplateLoader("", os.DirFS(override.TemplateDirectory))
 			mng.TemplateLoader = ld
 
 			templates, err = ld.ParseDir(".", mng)
 			if err != nil {
-				return fmt.Errorf("parse templates from directory %q: %w", conf.TemplateDirectory, err)
+				return fmt.Errorf("parse templates from directory %q: %w", override.TemplateDirectory, err)
 			}
 		} else {
-			logger.Trace("-> Using the built-in implementations", "name", lo.CoalesceOrEmpty(conf.Name, "<default>"))
+			logger.Trace("-> Using the built-in implementations", "name", lo.CoalesceOrEmpty(override.Name, "<default>"))
 			ld := tmpl.NewTemplateLoader("", tplBase)
 			mng.TemplateLoader = ld
 
 			man, found := lo.Find(manifests, func(item codeextra.ImplementationManifest) bool {
-				return item.Protocol == protocol && (conf.Name == "" || item.Name == conf.Name)
+				return item.Protocol == protocol && (override.Name == "" || item.Name == override.Name)
 			})
 			if !found {
 				logger.Warn("-> No implementation found for protocol, skipping", "protocol", protocol)
@@ -125,7 +124,7 @@ func RenderImplementationsCode(protocols []string, opts common.ConfigCodeExtraOp
 		}
 
 		logger.Trace("-> Templates found", "files", templates)
-		if err = renderCodeExtraTemplates(templates, ctx, mng, &conf); err != nil {
+		if err = renderCodeExtraTemplates(templates, ctx, mng, &override); err != nil {
 			return fmt.Errorf("render templates for protocol %q: %w", protocol, err)
 		}
 	}
@@ -158,16 +157,16 @@ func renderCodeExtraTemplates(templates []string, ctx tmpl.CodeExtraTemplateCont
 	return nil
 }
 
-// getExtraSourceDir tries to find extra code source directory for the given protocol. If found, returns its path and true.
-// otherwise, it returns the path for unknown protocol and false.
-func getExtraSourceDir(filesystem fs.FS, protocol string) (string, bool) {
-	d := path.Join(protocol, extraCodeSrcDir)
+// getUtilSourceDir returns the directory with util code sources for the given protocol. If found, returns its path and true,
+// otherwise, it returns the default unknown protocol directory and false.
+func getUtilSourceDir(filesystem fs.FS, protocol string) (string, bool) {
+	d := path.Join(protocol, utilCodeSrcDir)
 	if f, err := filesystem.Open(d); err == nil {
 		defer f.Close()
 		return d, true
 	}
 
-	return path.Join(unknownProtocolSrcDir, extraCodeSrcDir), false
+	return path.Join(unknownProtocolSrcDir, utilCodeSrcDir), false
 }
 
 // LoadImplementationsManifests loads the built-in implementations manifests file.

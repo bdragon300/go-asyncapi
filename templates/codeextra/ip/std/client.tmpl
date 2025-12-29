@@ -51,11 +51,11 @@ type Client struct {
 	remoteAddress       string
 }
 
-func (c *Client) Subscriber(ctx context.Context, _ string, _ *{{goQualE "ip" "ChannelBindings"}}, _ *{{goQualE "ip" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "ip" "Subscriber"}}, error) {
+func (c *Client) Subscriber(ctx context.Context, _ string, _ *{{goQualU "ip" "ChannelBindings"}}, _ *{{goQualU "ip" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualU "ip" "Subscriber"}}, error) {
 	return c.channel(ctx)
 }
 
-func (c *Client) Publisher(ctx context.Context, _ string, _ *{{goQualE "ip" "ChannelBindings"}}, _ *{{goQualE "ip" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "ip" "Publisher"}}, error) {
+func (c *Client) Publisher(ctx context.Context, _ string, _ *{{goQualU "ip" "ChannelBindings"}}, _ *{{goQualU "ip" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualU "ip" "Publisher"}}, error) {
 	return c.channel(ctx)
 }
 

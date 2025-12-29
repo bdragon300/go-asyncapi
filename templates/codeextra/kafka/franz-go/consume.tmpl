@@ -6,7 +6,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
-func NewConsumer(hosts []string, bindings *{{goQualE "kafka" "ServerBindings"}}, security {{goQualR "AnySecurityScheme"}}, extraOpts ...kgo.Opt) *ConsumeClient {
+func NewConsumer(hosts []string, bindings *{{goQualU "kafka" "ServerBindings"}}, security {{goQualR "AnySecurityScheme"}}, extraOpts ...kgo.Opt) *ConsumeClient {
 	return &ConsumeClient{
 		hosts:     hosts,
 		bindings:  bindings,
@@ -16,11 +16,11 @@ func NewConsumer(hosts []string, bindings *{{goQualE "kafka" "ServerBindings"}},
 
 type ConsumeClient struct {
 	hosts    []string
-	bindings *{{goQualE "kafka" "ServerBindings"}}
+	bindings *{{goQualU "kafka" "ServerBindings"}}
 	extraOpts []kgo.Opt
 }
 
-func (c ConsumeClient) Subscriber(_ context.Context, address string, chb *{{goQualE "kafka" "ChannelBindings"}}, opb *{{goQualE "kafka" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "kafka" "Subscriber"}}, error) {
+func (c ConsumeClient) Subscriber(_ context.Context, address string, chb *{{goQualU "kafka" "ChannelBindings"}}, opb *{{goQualU "kafka" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualU "kafka" "Subscriber"}}, error) {
 	// TODO: schema registry https://github.com/twmb/franz-go/blob/master/examples/schema_registry/schema_registry.go
 	// TODO: chb.ClientID, chb.GroupID
 	var opts []kgo.Opt
@@ -53,11 +53,11 @@ type SubscribeChannel struct {
 	*kgo.Client
 	Topic             string
 	IgnoreFetchErrors bool // TODO: add opts for Subscriber/Publisher interfaces
-	channelBindings *{{goQualE "kafka" "ChannelBindings"}}
-	operationBindings *{{goQualE "kafka" "OperationBindings"}}
+	channelBindings *{{goQualU "kafka" "ChannelBindings"}}
+	operationBindings *{{goQualU "kafka" "OperationBindings"}}
 }
 
-func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope {{goQualE "kafka" "EnvelopeReader"}})) error {
+func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope {{goQualU "kafka" "EnvelopeReader"}})) error {
 	for {
 		fetches := s.Client.PollFetches(ctx)
 		if fetches.Err0() != nil {

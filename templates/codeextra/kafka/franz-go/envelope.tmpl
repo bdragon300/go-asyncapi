@@ -12,7 +12,7 @@ func NewEnvelopeOut() *EnvelopeOut {
 
 type EnvelopeOut struct {
 	*kgo.Record
-	messageBindings {{goQualE "kafka" "MessageBindings"}}
+	messageBindings {{goQualU "kafka" "MessageBindings"}}
 }
 
 func (e *EnvelopeOut) Write(p []byte) (n int, err error) {
@@ -34,7 +34,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.Record.Headers = append(e.Record.Headers, kgo.RecordHeader{Key: "Content-Type", Value: []byte(contentType)})
 }
 
-func (e *EnvelopeOut) SetBindings(bindings {{goQualE "kafka" "MessageBindings"}}) {
+func (e *EnvelopeOut) SetBindings(bindings {{goQualU "kafka" "MessageBindings"}}) {
 	e.messageBindings = bindings
 }
 

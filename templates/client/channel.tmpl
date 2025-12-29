@@ -258,7 +258,7 @@ if opts.publish {
         subCtx, cancel := {{goQual "context.WithCancelCause"}}(ctx)
         defer cancel(ErrExited)
         payloadSeparator := []byte(opts.payloadSeparator)
-        err = channel.Subscribe(subCtx, func(e {{goQualE .Protocol "EnvelopeReader"}}) {
+        err = channel.Subscribe(subCtx, func(e {{goQualU .Protocol "EnvelopeReader"}}) {
             b, err := {{goQual "io.ReadAll"}}(e)
             if err != nil {
                 cancel({{goQual "fmt.Errorf"}}("read: %w", err))

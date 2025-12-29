@@ -10,13 +10,13 @@ type Subscription struct {
 	Client  *Client
 	Subject string
 
-	channelBindings   *{{goQualE "nats" "ChannelBindings"}}
-	operationBindings *{{goQualE "nats" "OperationBindings"}}
+	channelBindings   *{{goQualU "nats" "ChannelBindings"}}
+	operationBindings *{{goQualU "nats" "OperationBindings"}}
 	ctx               context.Context
 	cancel            context.CancelFunc
 }
 
-func (r *Subscription) Receive(ctx context.Context, cb func(envelope {{goQualE "nats" "EnvelopeReader"}})) (err error) {
+func (r *Subscription) Receive(ctx context.Context, cb func(envelope {{goQualU "nats" "EnvelopeReader"}})) (err error) {
 	var sub *nats.Subscription
 	if r.operationBindings != nil && r.operationBindings.Queue != "" {
 		sub, err = r.Client.QueueSubscribeSync(r.Subject, r.operationBindings.Queue)

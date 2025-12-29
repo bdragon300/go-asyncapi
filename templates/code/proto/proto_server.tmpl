@@ -1,7 +1,7 @@
 {{- /* dot == render.Server */}}
 
 {{define "code/proto/server/newFunction"}}
-func New{{ . | goIDUpper }}(producer {{goQualE .Protocol "Producer"}}, consumer {{goQualE .Protocol "Consumer"}}) *{{. | goIDUpper}} {
+func New{{ . | goIDUpper }}(producer {{goQualU .Protocol "Producer"}}, consumer {{goQualU .Protocol "Consumer"}}) *{{. | goIDUpper}} {
     return &{{. | goIDUpper}}{
         producer: producer,
         consumer: consumer,
@@ -42,7 +42,7 @@ func (c {{ $ | goIDUpper }}Closable) Close() error {
         url *{{goQual "net/url.URL"}},
         {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
     ) (*{{ $ | goIDUpper }}Closable, error) {
-        var bindings *{{goQualE .Protocol "ServerBindings"}}
+        var bindings *{{goQualU .Protocol "ServerBindings"}}
         {{- if $.BindingsProtocols | has $.Protocol}}
             bindings = {{goQualR "ToPtr"}}({{$.BindingsType | goUsage}}{}.{{$.Protocol | goIDUpper}}())
         {{- end}}
@@ -66,7 +66,7 @@ func (c {{ $ | goIDUpper }}Closable) Close() error {
             url *{{goQual "net/url.URL"}},
             {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
         ) (*{{ $ | goIDUpper }}Closable, error) {
-            var bindings *{{goQualE $.Protocol "ServerBindings"}}
+            var bindings *{{goQualU $.Protocol "ServerBindings"}}
             {{- if $.BindingsProtocols | has $.Protocol}}
                 bindings = {{goQualR "ToPtr"}}({{$.BindingsType | goUsage}}{}.{{$.Protocol | goIDUpper}}())
             {{- end}}
@@ -90,7 +90,7 @@ func (c {{ $ | goIDUpper }}Closable) Close() error {
             url *{{goQual "net/url.URL"}},
             {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
         ) (*{{ $ | goIDUpper }}Closable, error) {
-            var bindings *{{goQualE $.Protocol "ServerBindings"}}
+            var bindings *{{goQualU $.Protocol "ServerBindings"}}
             {{- if $.BindingsProtocols | has $.Protocol}}
                 bindings = {{goQualR "ToPtr"}}({{$.BindingsType | goUsage}}{}.{{$.Protocol | goIDUpper}}())
             {{- end}}
@@ -114,7 +114,7 @@ func (c {{ $ | goIDUpper }}Closable) Close() error {
         func (s {{$ | goIDUpper}}) Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
             ctx {{goQual "context.Context"}},
             {{with .ParametersType}}params {{ . | goUsage }},{{end}}
-            {{if .BoundOperations}}opBindings *{{goQualE $.Protocol "OperationBindings"}},{{end}}
+            {{if .BoundOperations}}opBindings *{{goQualU $.Protocol "OperationBindings"}},{{end}}
             {{if .BoundOperations}}security {{goQualR "AnySecurityScheme"}},{{end}}
         ) (*{{goPkg .}}{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}, error) {
             return {{goPkg .}}Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
@@ -146,16 +146,16 @@ func (s {{. | goIDUpper}}) Name() string {
     return "{{ . | goIDUpper }}"
 }
 
-func (s {{. | goIDUpper}}) Producer() {{goQualE .Protocol "Producer"}} {
+func (s {{. | goIDUpper}}) Producer() {{goQualU .Protocol "Producer"}} {
     return s.producer
 }
 
-func (s {{. | goIDUpper}}) Consumer() {{goQualE .Protocol "Consumer"}} {
+func (s {{. | goIDUpper}}) Consumer() {{goQualU .Protocol "Consumer"}} {
     return s.consumer
 }
 
 {{- if .BindingsProtocols | has .Protocol}}
-func (s {{. | goIDUpper}}) Bindings() {{goQualE .Protocol "ServerBindings"}} {
+func (s {{. | goIDUpper}}) Bindings() {{goQualU .Protocol "ServerBindings"}} {
     return {{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}()
 }
 {{- end}}

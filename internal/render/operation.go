@@ -123,8 +123,7 @@ func (o *Operation) BindingsProtocols() (res []string) {
 		return nil
 	}
 	if o.BindingsPromise != nil {
-		res = append(res, o.BindingsPromise.T().Values.Keys()...)
-		res = append(res, o.BindingsPromise.T().JSONValues.Keys()...)
+		res = append(res, o.BindingsPromise.T().Protocols()...)
 	}
 	return lo.Uniq(res)
 }

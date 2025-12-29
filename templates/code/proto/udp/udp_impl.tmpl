@@ -7,7 +7,7 @@ func Connect{{ . | goIDUpper }}Bidi(
     localAddress string,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    client := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(localAddress, url.Host, url.Scheme, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    client := {{goQualI .Protocol "NewClient"}}(localAddress, url.Host, url.Scheme, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     consumer, producer := client, client
     return &{{ . | goIDUpper }}Closable{
         {{. | goIDUpper}}{producer: producer, consumer: consumer},
@@ -21,7 +21,7 @@ func Connect{{ . | goIDUpper }}Producer(
     url *{{goQual "net/url.URL"}},
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    producer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient("", url.Host, url.Scheme, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    producer := {{goQualI .Protocol "NewClient"}}("", url.Host, url.Scheme, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     return &{{ . | goIDUpper }}Closable{
         {{. | goIDUpper}}{producer: producer},
     }, nil
@@ -34,7 +34,7 @@ func Connect{{ . | goIDUpper }}Consumer(
     url *{{goQual "net/url.URL"}},
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    consumer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.Host, "", url.Scheme, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    consumer := {{goQualI .Protocol "NewClient"}}(url.Host, "", url.Scheme, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     return &{{ . | goIDUpper }}Closable{
         {{. | goIDUpper}}{consumer: consumer},
     }, nil

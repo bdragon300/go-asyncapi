@@ -3,8 +3,8 @@
 
 type {{ .Channel | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
     Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goQual "context.Context"}}{{with .ParametersType}},{{ goUsage . }}{{end}}{{if .BoundOperations}},{{goQualR "AnySecurityScheme"}}{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
-    {{if .IsPublisher}}Producer() {{goQualE .Protocol "Producer"}}{{end}}
-    {{if .IsSubscriber}}Consumer() {{goQualE .Protocol "Consumer"}}{{end}}
+    {{if .IsPublisher}}Producer() {{goQualU .Protocol "Producer"}}{{end}}
+    {{if .IsSubscriber}}Consumer() {{goQualU .Protocol "Consumer"}}{{end}}
 }
 
 func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
@@ -22,7 +22,7 @@ func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
         }
     {{- end}}
     {{- if .IsPublisher}}
-        var publisher {{goQualE .Protocol "Publisher"}}
+        var publisher {{goQualU .Protocol "Publisher"}}
         producer := server.Producer()
         if producer != nil {
             publisher, err = producer.Publisher(
@@ -36,7 +36,7 @@ func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
         }
     {{- end}}
     {{- if .IsSubscriber}}
-        var subscriber {{goQualE .Protocol "Subscriber"}}
+        var subscriber {{goQualU .Protocol "Subscriber"}}
         consumer := server.Consumer()
         if consumer != nil {
             subscriber, err = consumer.Subscriber(
@@ -59,8 +59,8 @@ func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
 
 type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
     address    {{goQualR "ParamString"}}
-    {{if .IsPublisher}}publisher  {{goQualE .Protocol "Publisher"}}{{end}}
-    {{if .IsSubscriber}}subscriber {{goQualE .Protocol "Subscriber"}}{{end}}
+    {{if .IsPublisher}}publisher  {{goQualU .Protocol "Publisher"}}{{end}}
+    {{if .IsSubscriber}}subscriber {{goQualU .Protocol "Subscriber"}}{{end}}
 }
 
 {{template "code/proto/channel/commonMethods" .}}

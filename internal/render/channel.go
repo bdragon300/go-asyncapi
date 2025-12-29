@@ -140,8 +140,7 @@ func (c *Channel) BindingsProtocols() (res []string) {
 		return nil
 	}
 	if c.BindingsPromise != nil {
-		res = append(res, c.BindingsPromise.T().Values.Keys()...)
-		res = append(res, c.BindingsPromise.T().JSONValues.Keys()...)
+		res = append(res, c.BindingsPromise.T().Protocols()...)
 	}
 	return lo.Uniq(res)
 }

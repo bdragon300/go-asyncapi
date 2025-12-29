@@ -30,7 +30,7 @@ type ConsumeClient struct {
 	MaxEnvelopeSize int
 }
 
-func (c *ConsumeClient) Subscriber(_ context.Context, _ string, _ *{{goQualE "tcp" "ChannelBindings"}}, _*{{goQualE "tcp" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "tcp" "Subscriber"}}, error) {
+func (c *ConsumeClient) Subscriber(_ context.Context, _ string, _ *{{goQualU "tcp" "ChannelBindings"}}, _*{{goQualU "tcp" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualU "tcp" "Subscriber"}}, error) {
 	// Wait for a new connection
 	conn, err := c.AcceptTCP()
 	if err != nil {

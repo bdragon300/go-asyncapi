@@ -63,8 +63,7 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	//
 	// Rendering
 	//
-	rootDocument := documents[docURL.Location()]
-	activeProtocols := collectActiveServersProtocols(rootDocument.Artifacts())
+	activeProtocols := collectActiveServersProtocols(documents)
 	logger.Debug("Renders protocols", "value", activeProtocols)
 
 	// TODO: refactor RenderOpts -- it almost not needed here, it's related to codegen.

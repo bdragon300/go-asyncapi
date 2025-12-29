@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-func NewConsumer(bindings *{{goQualE "http" "ServerBindings"}}, security {{goQualR "AnySecurityScheme"}}) *ConsumeClient {
+func NewConsumer(bindings *{{goQualU "http" "ServerBindings"}}, security {{goQualR "AnySecurityScheme"}}) *ConsumeClient {
 	return &ConsumeClient{
 		bindings:    bindings,
 		mu:          &sync.RWMutex{},
@@ -13,17 +13,17 @@ func NewConsumer(bindings *{{goQualE "http" "ServerBindings"}}, security {{goQua
 	}
 }
 
-type subscriberFunc func(envelope {{goQualE "http" "EnvelopeReader"}})
+type subscriberFunc func(envelope {{goQualU "http" "EnvelopeReader"}})
 
 type ConsumeClient struct {
 	http.ServeMux
-	bindings    *{{goQualE "http" "ServerBindings"}}
+	bindings    *{{goQualU "http" "ServerBindings"}}
 	mu          *sync.RWMutex
 	// subscribers are callbacks list by channel name.
 	subscribers map[string]*{{goQualR "Ring"}}[subscriberFunc]
 }
 
-func (c *ConsumeClient) Subscriber(_ context.Context, address string, chb *{{goQualE "http" "ChannelBindings"}}, opb *{{goQualE "http" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "http" "Subscriber"}}, error) {
+func (c *ConsumeClient) Subscriber(_ context.Context, address string, chb *{{goQualU "http" "ChannelBindings"}}, opb *{{goQualU "http" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualU "http" "Subscriber"}}, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -37,7 +37,7 @@ func (c *ConsumeClient) Subscriber(_ context.Context, address string, chb *{{goQ
 	return subscriber, nil
 }
 
-func (c *ConsumeClient) ensureChannel(channelName string, opb *{{goQualE "http" "OperationBindings"}}) {
+func (c *ConsumeClient) ensureChannel(channelName string, opb *{{goQualU "http" "OperationBindings"}}) {
 	if _, ok := c.subscribers[channelName]; !ok {
 		c.subscribers[channelName] = {{goQualR "NewRing"}}[subscriberFunc]()
 		c.HandleFunc(channelName, func(w http.ResponseWriter, req *http.Request) {

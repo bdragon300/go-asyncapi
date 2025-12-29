@@ -109,8 +109,7 @@ func (s *Server) BindingsProtocols() (res []string) {
 		return nil
 	}
 	if s.BindingsPromise != nil {
-		res = append(res, s.BindingsPromise.T().Values.Keys()...)
-		res = append(res, s.BindingsPromise.T().JSONValues.Keys()...)
+		res = append(res, s.BindingsPromise.T().Protocols()...)
 	}
 	return lo.Uniq(res)
 }

@@ -6,13 +6,13 @@
 {{define "code/proto/message/marshalMethods"}}
 {{- range .BoundChannels}}
     {{- if and (isVisible .) .IsPublisher}}
-        func (m *{{ $.OutType | goIDUpper }}) Marshal{{. | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope {{goQualE $.Protocol "EnvelopeWriter"}}) error {
+        func (m *{{ $.OutType | goIDUpper }}) Marshal{{. | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope {{goQualU $.Protocol "EnvelopeWriter"}}) error {
             return m.MarshalEnvelope{{$.Protocol | goIDUpper}}(envelope)
         }
     {{- end}}
 {{- end}}
 
-func (m *{{ .OutType | goIDUpper }}) MarshalEnvelope{{ .Protocol | goIDUpper }}(envelope {{goQualE .Protocol "EnvelopeWriter"}}) error {
+func (m *{{ .OutType | goIDUpper }}) MarshalEnvelope{{ .Protocol | goIDUpper }}(envelope {{goQualU .Protocol "EnvelopeWriter"}}) error {
     if err := m.Marshal{{ .Protocol | goIDUpper }}(envelope); err != nil {
         return err
     }
@@ -36,7 +36,7 @@ func (m *{{ .OutType | goIDUpper }}) Marshal{{ .Protocol | goIDUpper }}(w {{goQu
 }
 
 {{- if .BindingsProtocols | has .Protocol}}
-    func (c {{.OutType | goUsage}}) Bindings{{.Protocol | goIDUpper}}() {{goQualE .Protocol "MessageBindings"}} {
+    func (c {{.OutType | goUsage}}) Bindings{{.Protocol | goIDUpper}}() {{goQualU .Protocol "MessageBindings"}} {
         return {{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}()
     }
 {{- end}}
@@ -45,13 +45,13 @@ func (m *{{ .OutType | goIDUpper }}) Marshal{{ .Protocol | goIDUpper }}(w {{goQu
 {{define "code/proto/message/unmarshalMethods"}}
 {{- range .BoundChannels}}
     {{- if and (isVisible .) .IsSubscriber}}
-        func (m *{{ $.InType | goIDUpper }}) Unmarshal{{. | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope {{goQualE $.Protocol "EnvelopeReader"}}) error {
+        func (m *{{ $.InType | goIDUpper }}) Unmarshal{{. | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope {{goQualU $.Protocol "EnvelopeReader"}}) error {
             return m.UnmarshalEnvelope{{$.Protocol | goIDUpper}}(envelope)
         }
     {{- end}}
 {{- end}}
 
-func (m *{{ .InType | goIDUpper }}) UnmarshalEnvelope{{ .Protocol | goIDUpper }}(envelope {{goQualE .Protocol "EnvelopeReader"}}) error {
+func (m *{{ .InType | goIDUpper }}) UnmarshalEnvelope{{ .Protocol | goIDUpper }}(envelope {{goQualU .Protocol "EnvelopeReader"}}) error {
     if err := m.Unmarshal{{ .Protocol | goIDUpper }}(envelope); err != nil {
         return err
     }
@@ -77,7 +77,7 @@ func (m *{{ .InType | goIDUpper }}) Unmarshal{{ .Protocol | goIDUpper }}(r {{goQ
 }
 
 {{- if .BindingsProtocols | has .Protocol}}
-    func (c {{.InType | goUsage}}) Bindings{{.Protocol | goIDUpper}}() {{goQualE .Protocol "MessageBindings"}} {
+    func (c {{.InType | goUsage}}) Bindings{{.Protocol | goIDUpper}}() {{goQualU .Protocol "MessageBindings"}} {
         return {{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}()
     }
 {{- end}}

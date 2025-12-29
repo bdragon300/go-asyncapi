@@ -6,12 +6,12 @@ func Connect{{ . | goIDUpper }}Bidi(
     url *{{goQual "net/url.URL"}},
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualE .Protocol "ServerBindings"}}
+    var bindings *{{goQualU .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    producer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewProducer(url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
-    consumer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewConsumer(bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    producer := {{goQualI .Protocol "NewProducer"}}(url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    consumer := {{goQualI .Protocol "NewConsumer"}}(bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     return &{{ . | goIDUpper }}Closable{
         {{. | goIDUpper}}{producer: producer, consumer: consumer},
     }, nil
@@ -24,11 +24,11 @@ func Connect{{ . | goIDUpper }}Producer(
     url *{{goQual "net/url.URL"}},
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualE .Protocol "ServerBindings"}}
+    var bindings *{{goQualU .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    producer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewProducer(url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    producer := {{goQualI .Protocol "NewProducer"}}(url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     return &{{ . | goIDUpper }}Closable{
         {{. | goIDUpper}}{producer: producer},
     }, nil
@@ -41,11 +41,11 @@ func Connect{{ . | goIDUpper }}Consumer(
     url *{{goQual "net/url.URL"}},
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualE .Protocol "ServerBindings"}}
+    var bindings *{{goQualU .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    consumer := {{with impl .Protocol}}{{goPkg .}}{{end}}NewConsumer(bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    consumer := {{goQualI .Protocol "NewConsumer"}}(bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     return &{{ . | goIDUpper }}Closable{
         {{. | goIDUpper}}{consumer: consumer},
     }, nil

@@ -199,8 +199,7 @@ func (m *Message) BindingsProtocols() (res []string) {
 		return nil
 	}
 	if m.BindingsPromise != nil {
-		res = append(res, m.BindingsPromise.T().Values.Keys()...)
-		res = append(res, m.BindingsPromise.T().JSONValues.Keys()...)
+		res = append(res, m.BindingsPromise.T().Protocols()...)
 	}
 	return lo.Uniq(res)
 }

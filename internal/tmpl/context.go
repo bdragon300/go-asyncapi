@@ -36,7 +36,7 @@ type CodeTemplateContext struct {
 
 // CodeExtraTemplateContext is a context that is passed to the codeExtra templates.
 type CodeExtraTemplateContext struct {
-	LayoutOpts common.ConfigCodeExtraOpts
+	RenderOpts common.RenderOpts
 	Protocol string
 	// Directory is the directory (related to target directory) where the code is placed.
 	Directory string

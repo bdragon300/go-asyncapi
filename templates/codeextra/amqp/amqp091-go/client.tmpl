@@ -7,7 +7,7 @@ import (
 	"github.com/rabbitmq/amqp091-go"
 )
 
-func NewClient(serverURL string, bindings *{{goQualE "amqp" "ServerBindings"}}, security {{goQualR "AnySecurityScheme"}}) (*Client, error) {
+func NewClient(serverURL string, bindings *{{goQualU "amqp" "ServerBindings"}}, security {{goQualR "AnySecurityScheme"}}) (*Client, error) {
 	var conn *amqp091.Connection
 	var err error
 
@@ -43,10 +43,10 @@ func NewClient(serverURL string, bindings *{{goQualE "amqp" "ServerBindings"}}, 
 
 type Client struct {
 	*amqp091.Connection
-	bindings *{{goQualE "amqp" "ServerBindings"}}
+	bindings *{{goQualU "amqp" "ServerBindings"}}
 }
 
-func (c Client) Publisher(_ context.Context, _ string, chb *{{goQualE "amqp" "ChannelBindings"}}, opb *{{goQualE "amqp" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "amqp" "Publisher"}}, error) {
+func (c Client) Publisher(_ context.Context, _ string, chb *{{goQualU "amqp" "ChannelBindings"}}, opb *{{goQualU "amqp" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualU "amqp" "Publisher"}}, error) {
 	if security != nil {
 		return nil, fmt.Errorf("security schemes for publishers are not supported")
 	}
@@ -86,7 +86,7 @@ func (c Client) Publisher(_ context.Context, _ string, chb *{{goQualE "amqp" "Ch
 	}, nil
 }
 
-func (c Client) Subscriber(_ context.Context, address string, chb *{{goQualE "amqp" "ChannelBindings"}}, opb *{{goQualE "amqp" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "amqp" "Subscriber"}}, error) {
+func (c Client) Subscriber(_ context.Context, address string, chb *{{goQualU "amqp" "ChannelBindings"}}, opb *{{goQualU "amqp" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualU "amqp" "Subscriber"}}, error) {
 	if security != nil {
 		return nil, fmt.Errorf("security schemes for subscribers are not supported")
 	}
@@ -104,7 +104,7 @@ func (c Client) Subscriber(_ context.Context, address string, chb *{{goQualE "am
 	queueName := address
 	var durable, autoDelete, exclusive bool
 	if chb != nil {
-		if chb.ChannelType == {{goQualE "amqp" "ChannelTypeQueue"}} {
+		if chb.ChannelType == {{goQualU "amqp" "ChannelTypeQueue"}} {
 			routingKey = "#" // Receive all messages
 		}
 		qc := chb.QueueConfiguration

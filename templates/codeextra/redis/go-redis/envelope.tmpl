@@ -26,7 +26,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.contentType = contentType
 }
 
-func (e *EnvelopeOut) SetBindings(_ {{goQualE "redis" "MessageBindings"}}) {}
+func (e *EnvelopeOut) SetBindings(_ {{goQualU "redis" "MessageBindings"}}) {}
 
 func (e *EnvelopeOut) AsAny() any {
 	return e.Builder.String()

@@ -28,7 +28,7 @@ type (
 
 		Layout          []toolConfigLayout         `yaml:"layout"`
 		Locator         toolConfigLocator          `yaml:"locator"`
-		Implementations []toolConfigImplementation `yaml:"implementations"`
+		Implementations []toolConfigImplementation `yaml:"implementations"` // TODO: move to code.implementations
 
 		Code    toolConfigCode    `yaml:"code"`
 		Client  toolConfigClient  `yaml:"client"`
@@ -72,21 +72,25 @@ type (
 		TemplatesDir     string `yaml:"templatesDir"` // TODO: move to global config
 		PreambleTemplate string `yaml:"preambleTemplate"`
 
-		DisableImplementations bool                `yaml:"disableImplementations"` // TODO: move to extra
-		ImplementationsDir     string              `yaml:"implementationsDir"`     // TODO: remove // Template expression, relative to the target directory
-		Extra                  toolConfigCodeExtra `yaml:"extra"`
+		DisableImplementations bool                         `yaml:"disableImplementations"` // TODO: move to extra
+		ImplementationsDir     string                       `yaml:"implementationsDir"`     // TODO: remove // Template expression, relative to the target directory
+		Util                   toolConfigCodeUtil           `yaml:"util"`
+		Implementation         toolConfigCodeImplementation `yaml:"implementation"`
 	}
 
-	toolConfigCodeExtra struct {
-		Directory              string `yaml:"directory"` // Template expression, relative to the target directory
-		DisableImplementations bool   `yaml:"disableImplementations"`
+	toolConfigCodeUtil struct {
+		Directory string `yaml:"directory"` // Template expression, relative to the target directory
+	}
+
+	toolConfigCodeImplementation struct {
+		Directory string `yaml:"directory"` // Template expression, relative to the target directory
+		Disable   bool   `yaml:"disable"`
 	}
 
 	toolConfigImplementation struct {
 		Protocol          string `yaml:"protocol"`
 		Name              string `yaml:"name"`
 		Disable           bool   `yaml:"disable"`
-		Directory         string `yaml:"directory"` // Template expression, relative to the target directory
 		TemplateDirectory string `yaml:"templateDirectory"`
 		Package           string `yaml:"package"`
 		ReusePackagePath  string `yaml:"reusePackagePath"`
@@ -237,8 +241,9 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 	if len(userConf.Implementations) > 0 {
 		res.Implementations = userConf.Implementations
 	}
-	res.Code.Extra.Directory = coalesce(userConf.Code.Extra.Directory, defaultConf.Code.Extra.Directory)
-	res.Code.Extra.DisableImplementations = coalesce(userConf.Code.Extra.DisableImplementations, defaultConf.Code.Extra.DisableImplementations)
+	res.Code.Util.Directory = coalesce(userConf.Code.Util.Directory, defaultConf.Code.Util.Directory)
+	res.Code.Implementation.Directory = coalesce(userConf.Code.Implementation.Directory, defaultConf.Code.Implementation.Directory)
+	res.Code.Implementation.Disable = coalesce(userConf.Code.Implementation.Disable, defaultConf.Code.Implementation.Disable)
 
 	res.Client.GoModTemplate = coalesce(userConf.Client.GoModTemplate, defaultConf.Client.GoModTemplate)
 	res.Client.OutputFile = coalesce(userConf.Client.OutputFile, defaultConf.Client.OutputFile)

@@ -21,7 +21,7 @@ type OutboundMessage struct {
 
 type EnvelopeOut struct {
 	OutboundMessage
-	messageBindings {{goQualE "mqtt" "MessageBindings"}}
+	messageBindings {{goQualU "mqtt" "MessageBindings"}}
 }
 
 func (e *EnvelopeOut) ResetPayload() {
@@ -36,7 +36,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.contentType = contentType
 }
 
-func (e *EnvelopeOut) SetBindings(bindings {{goQualE "mqtt" "MessageBindings"}}) {
+func (e *EnvelopeOut) SetBindings(bindings {{goQualU "mqtt" "MessageBindings"}}) {
 	e.messageBindings = bindings
 }
 

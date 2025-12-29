@@ -3,7 +3,7 @@
     {{- if .BindingsProtocols | has .Protocol}}
         bindings := {{ .BindingsType | goUsage }}{}.{{.Protocol | goIDUpper}}()
         switch bindings.ChannelType {
-        case {{goQualE .Protocol "ChannelTypeQueue"}}:
+        case {{goQualU .Protocol "ChannelTypeQueue"}}:
             res.queue = res.address.String()
         default:
             res.routingKey = res.address.String()
@@ -28,8 +28,8 @@
 
 type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
     address    {{goQualR "ParamString"}}
-    {{if .IsPublisher}}publisher  {{goQualE .Protocol "Publisher"}}{{end}}
-    {{if .IsSubscriber}}subscriber {{goQualE .Protocol "Subscriber"}}{{end}}
+    {{if .IsPublisher}}publisher  {{goQualU .Protocol "Publisher"}}{{end}}
+    {{if .IsSubscriber}}subscriber {{goQualU .Protocol "Subscriber"}}{{end}}
     exchange   string
     queue      string
     routingKey string

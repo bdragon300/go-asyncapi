@@ -22,11 +22,12 @@ const (
 
 type (
 	RenderOpts struct {
-		RuntimeModule    string
-		ImportBase       string
-		PreambleTemplate string
-		Layout           []ConfigLayoutItem
-		CodeExtraOpts    ConfigCodeExtraOpts
+		RuntimeModule          string
+		ImportBase             string
+		PreambleTemplate       string
+		Layout                 []ConfigLayoutItem
+		UtilCodeOpts           ConfigUtilCodeOpts
+		ImplementationCodeOpts ConfigImplementationCodeOpts
 	}
 
 	ConfigLayoutItem struct {
@@ -48,17 +49,20 @@ type (
 		ProtoObjectsOnly bool
 	}
 
-	ConfigCodeExtraOpts struct {
-		Directory              string
-		DisableImplementations bool
-		Implementations        []ConfigImplementationProtocol
+	ConfigUtilCodeOpts struct {
+		Directory string
+	}
+
+	ConfigImplementationCodeOpts struct {
+		Directory string // Template expression, relative to the target directory
+		Disable   bool
+		Overrides []ConfigImplementationProtocol
 	}
 
 	ConfigImplementationProtocol struct {
 		Protocol          string
 		Name              string
 		Disable           bool
-		Directory         string // Template expression, relative to the target directory
 		TemplateDirectory string
 		Package           string
 		ReusePackagePath  string

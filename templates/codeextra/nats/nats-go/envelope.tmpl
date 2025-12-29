@@ -13,7 +13,7 @@ func NewEnvelopeOut() *EnvelopeOut {
 
 type EnvelopeOut struct {
 	*nats.Msg
-	messageBindings {{goQualE "nats" "MessageBindings"}}
+	messageBindings {{goQualU "nats" "MessageBindings"}}
 }
 
 func (e *EnvelopeOut) Write(p []byte) (n int, err error) {
@@ -41,7 +41,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.Header.Set("Content-Type", contentType)
 }
 
-func (e *EnvelopeOut) SetBindings(bindings {{goQualE "nats" "MessageBindings"}}) {
+func (e *EnvelopeOut) SetBindings(bindings {{goQualU "nats" "MessageBindings"}}) {
 	e.messageBindings = bindings
 }
 

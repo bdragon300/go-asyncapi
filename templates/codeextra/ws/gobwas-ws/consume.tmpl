@@ -11,7 +11,7 @@ import (
 )
 
 // TODO: remove httpResponseTimeout, allow to use smth like http.requestHandler or nothing
-func NewConsumer(bindings *{{goQualE "ws" "ServerBindings"}}, security {{goQualR "AnySecurityScheme"}}) *ConsumeClient {
+func NewConsumer(bindings *{{goQualU "ws" "ServerBindings"}}, security {{goQualR "AnySecurityScheme"}}) *ConsumeClient {
 	return &ConsumeClient{
 		Upgrader:    ws.DefaultHTTPUpgrader,
 		bindings:    bindings,
@@ -27,12 +27,12 @@ type HTTPUpgraderInterface interface {
 type ConsumeClient struct {
 	http.ServeMux
 	Upgrader    HTTPUpgraderInterface
-	bindings    *{{goQualE "ws" "ServerBindings"}}
+	bindings    *{{goQualU "ws" "ServerBindings"}}
 	connections map[string]chan *Channel
 	mu          *sync.RWMutex
 }
 
-func (c *ConsumeClient) Subscriber(ctx context.Context, address string, chb *{{goQualE "ws" "ChannelBindings"}}, opb *{{goQualE "ws" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "ws" "Subscriber"}}, error) {
+func (c *ConsumeClient) Subscriber(ctx context.Context, address string, chb *{{goQualU "ws" "ChannelBindings"}}, opb *{{goQualU "ws" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualU "ws" "Subscriber"}}, error) {
 	c.ensureChannel(address, chb, opb) // FIXME: maybe it's better to take the path from bindings?
 	// Wait for a new connection
 	select {
@@ -43,7 +43,7 @@ func (c *ConsumeClient) Subscriber(ctx context.Context, address string, chb *{{g
 	}
 }
 
-func (c *ConsumeClient) ensureChannel(channelName string, chb *{{goQualE "ws" "ChannelBindings"}}, opb *{{goQualE "ws" "OperationBindings"}}) {
+func (c *ConsumeClient) ensureChannel(channelName string, chb *{{goQualU "ws" "ChannelBindings"}}, opb *{{goQualU "ws" "OperationBindings"}}) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

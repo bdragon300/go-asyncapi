@@ -7,11 +7,11 @@ func Connect{{ . | goIDUpper }}Bidi(
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
     opts *{{goQual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}},
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualE .Protocol "ServerBindings"}}
+    var bindings *{{goQualU .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    client, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(ctx, url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts)
+    client, err := {{goQualI .Protocol "NewClient"}}(ctx, url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts)
     if err != nil {
         return nil, err
     }
@@ -29,11 +29,11 @@ func Connect{{ . | goIDUpper }}Producer(
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
     opts *{{goQual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}},
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualE .Protocol "ServerBindings"}}
+    var bindings *{{goQualU .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    producer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(ctx, url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts)
+    producer, err := {{goQualI .Protocol "NewClient"}}(ctx, url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts)
     if err != nil {
         return nil, err
     }
@@ -50,11 +50,11 @@ func Connect{{ . | goIDUpper }}Consumer(
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
     opts *{{goQual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}},
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualE .Protocol "ServerBindings"}}
+    var bindings *{{goQualU .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    consumer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(ctx, url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts)
+    consumer, err := {{goQualI .Protocol "NewClient"}}(ctx, url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts)
     if err != nil {
         return nil, err
     }

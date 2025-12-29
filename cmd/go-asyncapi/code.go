@@ -26,6 +26,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/templates/client"
 	templates "github.com/bdragon300/go-asyncapi/templates/code"
 	"github.com/bdragon300/go-asyncapi/templates/codeextra"
+	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -97,23 +98,23 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 	//
 	// Rendering
 	//
-	rootDocument := documents[rootDocumentURL.Location()]
-	activeProtocols := collectActiveServersProtocols(rootDocument.Artifacts())
-	logger.Debug("Collected protocols from servers", "value", activeProtocols)
+	activeProtocols := collectAllProtocols(documents)
+	logger.Debug("Collected active protocols", "value", activeProtocols)
 
-	// Extra code
-	logger.Debug("Run extra code rendering", "protocols", activeProtocols)
+	// Extra code: utils code
+	logger.Debug("Run util code rendering", "protocols", activeProtocols)
 	renderManager.TemplateLoader = tmpl.NewTemplateLoader("", codeextra.TemplateFS) // No main template there
-	if err := renderer.RenderExtraCode(activeProtocols, renderOpts.CodeExtraOpts, renderManager, codeextra.TemplateFS); err != nil {
-		return fmt.Errorf("render extra code: %w", err)
+	if err := renderer.RenderUtilCode(activeProtocols, renderOpts, renderManager, codeextra.TemplateFS); err != nil {
+		return fmt.Errorf("render util code: %w", err)
 	}
 	logger.Debug("Extra code rendering complete")
 
 	// Extra code: implementations code
-	if !renderOpts.CodeExtraOpts.DisableImplementations {
+	if !renderOpts.ImplementationCodeOpts.Disable {
+		activeProtocols = collectActiveServersProtocols(documents)
 		logger.Debug("Run implementations code rendering", "protocols", activeProtocols)
-		if err = renderer.RenderImplementationsCode(activeProtocols, renderOpts.CodeExtraOpts, renderManager, codeextra.TemplateFS); err != nil {
-			return fmt.Errorf("render implementations: %w", err)
+		if err = renderer.RenderImplementationCode(activeProtocols, renderOpts, renderManager, codeextra.TemplateFS); err != nil {
+			return fmt.Errorf("render implementation code: %w", err)
 		}
 		logger.Debug("Implementations rendering complete")
 	}
@@ -194,17 +195,34 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 }
 
 // collectActiveServersProtocols returns a list of protocols that are used in servers that are active and selectable, i.e.
-// those, which will appear in the generated code.
-func collectActiveServersProtocols(artifacts []common.Artifact) []string {
+// those, which will appear in the generated code. Used to determine which implementations to generate.
+func collectActiveServersProtocols(documents map[string]*compiler.Document) []string {
+	artifacts := lo.FlatMap(maps.Values(documents), func(doc *compiler.Document, _ int) []common.Artifact {
+		return doc.Artifacts()
+	})
 	r := lo.Uniq(lo.FilterMap(artifacts, func(obj common.Artifact, _ int) (string, bool) {
-		if obj.Kind() != common.ArtifactKindServer || !obj.Selectable() || !obj.Visible() {
-			return "", false
-		}
-		if v, ok := common.DerefArtifact(obj).(*render.Server); ok {
+		if v, ok := obj.(*render.Server); ok && v.Selectable() && v.Visible() {
 			return v.Protocol, true
 		}
 		return "", false
 	}))
+	slices.Sort(r) // Sort to keep idempotency
+	return r
+}
+
+// collectAllProtocols returns a list of all protocols that are used both in bindings and active servers. Used to
+// determine which util code to generate.
+func collectAllProtocols(documents map[string]*compiler.Document) []string {
+	artifacts := lo.FlatMap(maps.Values(documents), func(doc *compiler.Document, _ int) []common.Artifact {
+		return doc.Artifacts()
+	})
+	bindingProtocols := lo.FlatMap(artifacts, func(obj common.Artifact, _ int) []string {
+		if v, ok := obj.(*render.Bindings); ok && v.Visible() { // Bindings are always non-selectable, so don't check Selectable()
+			return v.Protocols()
+		}
+		return nil
+	})
+	r := lo.Uniq(append(bindingProtocols, collectActiveServersProtocols(documents)...))
 	slices.Sort(r) // Sort to keep idempotency
 	return r
 }
@@ -229,8 +247,9 @@ func cliCodeMergeConfig(globalConfig toolConfig, cmd *CodeCmd) toolConfig {
 	res.Code.ImplementationsDir = coalesce(cmd.ImplementationsDir, res.Code.ImplementationsDir)
 	res.Code.DisableImplementations = coalesce(cmd.DisableImplementations, res.Code.DisableImplementations)
 
-	res.Code.Extra.Directory = coalesce(cmd.ExtraCodeDir, res.Code.Extra.Directory)
-	res.Code.Extra.DisableImplementations = coalesce(cmd.DisableImplementations, res.Code.Extra.DisableImplementations)
+	res.Code.Util.Directory = coalesce(cmd.ExtraCodeDir, res.Code.Util.Directory)
+	res.Code.Implementation.Directory = coalesce(cmd.ImplementationsDir, res.Code.Implementation.Directory)
+	res.Code.Implementation.Disable = coalesce(cmd.DisableImplementations, res.Code.Implementation.Disable)
 
 	res.Client.GoModTemplate = coalesce(cmd.goModTemplate, res.Client.GoModTemplate)
 
@@ -253,15 +272,17 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (c
 	res := common.RenderOpts{
 		RuntimeModule:    conf.RuntimeModule,
 		PreambleTemplate: conf.Code.PreambleTemplate,
-		CodeExtraOpts: common.ConfigCodeExtraOpts{
-			Directory:              conf.Code.Extra.Directory,
-			DisableImplementations: conf.Code.Extra.DisableImplementations,
-			Implementations: lo.Map(conf.Implementations, func(item toolConfigImplementation, _ int) common.ConfigImplementationProtocol {
+		UtilCodeOpts: common.ConfigUtilCodeOpts{
+			Directory: conf.Code.Util.Directory,
+		},
+		ImplementationCodeOpts: common.ConfigImplementationCodeOpts{
+			Directory: conf.Code.Implementation.Directory,
+			Disable:   conf.Code.Implementation.Disable,
+			Overrides: lo.Map(conf.Implementations, func(item toolConfigImplementation, _ int) common.ConfigImplementationProtocol {
 				return common.ConfigImplementationProtocol{
 					Protocol:          item.Protocol,
 					Name:              item.Name,
 					Disable:           item.Disable,
-					Directory:         item.Directory,
 					TemplateDirectory: item.TemplateDirectory,
 					Package:           item.Package,
 					ReusePackagePath:  item.ReusePackagePath,
@@ -311,24 +332,6 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (c
 
 	return res, nil
 }
-
-// func getExtraCodeOpts(conf toolConfig) common.ConfigCodeExtraOpts {
-//	return common.ConfigCodeExtraOpts{
-//		Directory:              conf.Code.Extra.Directory,
-//		DisableImplementations: conf.Code.Extra.DisableImplementations,
-//		Implementations: lo.Map(conf.Implementations, func(item toolConfigImplementation, _ int) common.ConfigImplementationProtocol {
-//			return common.ConfigImplementationProtocol{
-//				Protocol:          item.Protocol,
-//				Name:              item.Name,
-//				Disable:           item.Disable,
-//				Directory:         item.Directory,
-//				TemplateDirectory: item.TemplateDirectory,
-//				Package:           item.Package,
-//				ReusePackagePath:  item.ReusePackagePath,
-//			}
-//		}),
-//	}
-//}
 
 // selectArtifacts selects artifacts from the list of all artifacts based on the layout configuration.
 func selectArtifacts(artifacts []common.Artifact, layout []common.ConfigLayoutItem) (res []renderer.RenderQueueItem) {

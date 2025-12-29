@@ -60,8 +60,8 @@ type TemplateRenderManager struct {
 
 	FileName    string
 	PackageName string
-	// ExtraCodeProtocol marks the current file contains the protocol-specific extra code, e.g. bindings definitions, interfaces, etc.
-	// Empty for the ordinary files.
+	// ExtraCodeProtocol marks the current file contains the extra code (util or implementation code) for the given
+	// protocol. Empty for the ordinary files.
 	ExtraCodeProtocol string
 	// ImplementationManifest denotes which built-in implementation manifest was used to generate implementation code.
 	// Nil for ordinary files or if implementation is user-defined.

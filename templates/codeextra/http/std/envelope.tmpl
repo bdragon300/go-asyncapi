@@ -23,7 +23,7 @@ func NewEnvelopeOut() *EnvelopeOut {
 
 type EnvelopeOut struct {
 	*http.Request
-	messageBindings {{goQualE "http" "MessageBindings"}}
+	messageBindings {{goQualU "http" "MessageBindings"}}
 	body            *bytes.Buffer
 }
 
@@ -63,7 +63,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.Header.Set("Content-Type", contentType)
 }
 
-func (e *EnvelopeOut) SetBindings(bindings {{goQualE "http" "MessageBindings"}}) {
+func (e *EnvelopeOut) SetBindings(bindings {{goQualU "http" "MessageBindings"}}) {
 	e.messageBindings = bindings
 }
 

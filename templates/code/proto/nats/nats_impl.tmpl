@@ -7,7 +7,7 @@ func Connect{{ . | goIDUpper }}Bidi(
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
     opts ...{{goQual "github.com/nats-io/nats.go.Option"}},
 ) (*{{ . | goIDUpper }}Closable, error) {
-    client, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
+    client, err := {{goQualI .Protocol "NewClient"}}(url.String(), {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
     if err != nil {
         return nil, err
     }
@@ -25,7 +25,7 @@ func Connect{{ . | goIDUpper }}Producer(
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
     opts ...{{goQual "github.com/nats-io/nats.go.Option"}},
 ) (*{{ . | goIDUpper }}Closable, error) {
-    producer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
+    producer, err := {{goQualI .Protocol "NewClient"}}(url.String(), {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
     if err != nil {
         return nil, err
     }
@@ -42,7 +42,7 @@ func Connect{{ . | goIDUpper }}Consumer(
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
     opts ...{{goQual "github.com/nats-io/nats.go.Option"}},
 ) (*{{ . | goIDUpper }}Closable, error) {
-    consumer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(url.String(), {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
+    consumer, err := {{goQualI .Protocol "NewClient"}}(url.String(), {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
     if err != nil {
         return nil, err
     }

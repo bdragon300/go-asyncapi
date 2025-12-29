@@ -9,8 +9,8 @@ import (
 type PublishChannel struct {
 	*amqp091.Channel
 	exchangeName    string
-	channelBindings *{{goQualE "amqp" "ChannelBindings"}}
-	operationBindings *{{goQualE "amqp" "OperationBindings"}}
+	channelBindings *{{goQualU "amqp" "ChannelBindings"}}
+	operationBindings *{{goQualU "amqp" "OperationBindings"}}
 }
 
 type ImplementationRecord interface {
@@ -18,7 +18,7 @@ type ImplementationRecord interface {
 	RoutingKey() string
 }
 
-func (p PublishChannel) Send(ctx context.Context, envelopes ...{{goQualE "amqp" "EnvelopeWriter"}}) error {
+func (p PublishChannel) Send(ctx context.Context, envelopes ...{{goQualU "amqp" "EnvelopeWriter"}}) error {
 	var err error
 	for _, envelope := range envelopes {
 		rm := envelope.(ImplementationRecord)

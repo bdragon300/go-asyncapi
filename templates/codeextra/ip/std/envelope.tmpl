@@ -34,7 +34,7 @@ func (e *EnvelopeOut) SetHeaders(headers {{goQualR "Headers"}}) {
 
 func (e *EnvelopeOut) SetContentType(_ string) {}
 
-func (e *EnvelopeOut) SetBindings(_ {{goQualE "ip" "MessageBindings"}}) {}
+func (e *EnvelopeOut) SetBindings(_ {{goQualU "ip" "MessageBindings"}}) {}
 
 func (e *EnvelopeOut) HeaderBytes() ([]byte, error) {
 	h, ok := e.headers[HeaderIPHeaders]

@@ -26,13 +26,13 @@ type pinnable interface {
 	Pinnable() bool
 }
 
-type CodeExtraInfo struct {
+type UtilCodeInfo struct {
 	Protocol    string
 	FileName    string
 	PackageName string
 }
 
-type ImplementationCodeExtraInfo struct {
+type ImplementationCodeInfo struct {
 	Protocol string
 	// ImplementationManifest denotes which built-in implementation manifest was used to generate implementation code.
 	// Nil for ordinary files or if implementation is user-defined.
@@ -42,7 +42,7 @@ type ImplementationCodeExtraInfo struct {
 	ImplementationConfig common.ConfigImplementationProtocol
 }
 
-func (i ImplementationCodeExtraInfo) Name() string {
+func (i ImplementationCodeInfo) Name() string {
 	if i.ImplementationManifest != nil {
 		return i.ImplementationManifest.Name
 	}
@@ -75,15 +75,19 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		"goComment": func(text string) string { traceCall("goComment", text); return templateGoComment(text) },
 		"goQual": func(parts ...string) string {
 			traceCall("goQual", parts)
-			return templateGoQual(renderManager, parts...)
+			return templateGoQual(renderManager, parts)
 		},
 		"goQualR": func(parts ...string) string {
 			traceCall("goQualR", parts)
-			return templateGoQualRuntime(renderManager, parts...)
+			return templateGoQualRuntime(renderManager, parts)
 		},
-		"goQualE": func(protocol string, parts ...string) (string, error) {
-			traceCall("goQualE", protocol, parts)
-			return templateGoQualExtra(renderManager, protocol, parts...)
+		"goQualU": func(protocol string, parts ...string) (string, error) {
+			traceCall("goQualU", protocol, parts)
+			return templateGoQualExtra(renderManager, protocol, false, parts)
+		},
+		"goQualI": func(protocol string, parts ...string) (string, error) {
+			traceCall("goQualI", protocol, parts)
+			return templateGoQualExtra(renderManager, protocol, true, parts)
 		},
 		"goDef": func(r common.GolangType) (string, error) {
 			traceCall("goDef", r)
@@ -107,16 +111,16 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			switch v := obj.(type) {
 			case common.Artifact:
 				pkg, err = qualifiedTypeGeneratedPackage(renderManager, v)
-			case *CodeExtraInfo:
+			case *UtilCodeInfo:
 				if lo.IsNil(v) {
 					return "", errors.New("argument is nil")
 				}
-				pkg, err = qualifiedCodeExtraGeneratedPackage(renderManager, v.Protocol)
-			case *ImplementationCodeExtraInfo:
+				pkg, err = qualifiedCodeExtraGeneratedPackage(renderManager, v.Protocol, false)
+			case *ImplementationCodeInfo:
 				if lo.IsNil(v) {
 					return "", errors.New("argument is nil")
 				}
-				pkg, err = qualifiedCodeExtraGeneratedPackage(renderManager, v.Protocol)
+				pkg, err = qualifiedCodeExtraGeneratedPackage(renderManager, v.Protocol, true)
 			default:
 				return "", fmt.Errorf("type is not supported %[1]T: %[1]v", obj)
 			}
@@ -180,28 +184,16 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		},
 
 		// Other
-		"impl": func(protocol string) *ImplementationCodeExtraInfo {
+		"impl": func(protocol string) *ImplementationCodeInfo {
 			traceCall("impl", protocol)
-			s, ok := getFileStateByProtocol(protocol, renderManager, true)
+			s, ok := getExtraCodeFileByProtocol(protocol, renderManager, true)
 			if !ok {
 				return nil
 			}
-			return &ImplementationCodeExtraInfo{
+			return &ImplementationCodeInfo{
 				Protocol:               protocol,
 				ImplementationManifest: s.ImplementationManifest,
 				ImplementationConfig:   *s.ImplementationConfig,
-			}
-		},
-		"extra": func(protocol string) *CodeExtraInfo {
-			traceCall("extra", protocol)
-			s, ok := getFileStateByProtocol(protocol, renderManager, false)
-			if !ok {
-				return nil
-			}
-			return &CodeExtraInfo{
-				Protocol:    protocol,
-				FileName:    s.FileName,
-				PackageName: s.PackageName,
 			}
 		},
 		"toQuotable": func(s string) string {
@@ -231,16 +223,6 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 	}
 
 	return lo.Assign(sproutFunctions, extraFuncs)
-}
-
-// getFileStateByProtocol returns the FileRenderState for the given protocol and implementation flag. If not found, returns false.
-func getFileStateByProtocol(protocol string, renderManager *manager.TemplateRenderManager, implementation bool) (manager.FileRenderState, bool) {
-	states := slices.SortedStableFunc(maps.Values(renderManager.CommittedStates()), func(a, b manager.FileRenderState) int {
-		return strings.Compare(a.FileName, b.FileName)
-	})
-	return lo.Find(states, func(state manager.FileRenderState) bool {
-		return state.ExtraCodeProtocol == protocol && implementation == !lo.IsNil(state.ImplementationConfig)
-	})
 }
 
 // templateOnce adds the given o to the namespace if it is not already added. Return the object if it was not added before,
@@ -473,7 +455,7 @@ func templateRuntimeExpressionCode(mng *manager.TemplateRenderManager, c lang.Ba
 				%s = v
 			}`, varValueStmts, nextAnchor)
 			if addValidationCode {
-				fmtErrorf := templateGoQual(mng, "fmt", "Errorf")
+				fmtErrorf := templateGoQual(mng, []string{"fmt", "Errorf"})
 				ifExpr += fmt.Sprintf(` else {
 					err = %s("key %%q not found in map on locationPath /%s", %s)
 					return
@@ -498,7 +480,7 @@ func templateRuntimeExpressionCode(mng *manager.TemplateRenderManager, c lang.Ba
 				return
 			}
 			if addValidationCode {
-				fmtErrorf := templateGoQual(mng, "fmt", "Errorf")
+				fmtErrorf := templateGoQual(mng, []string{"fmt", "Errorf"})
 				body = append(body, fmt.Sprintf(`if len(%s) <= %s {
 					err = %s("index %%q is out of range in array of length %%d on locationPath /%s", %s, len(%s))
 					return
@@ -602,14 +584,8 @@ func qualifiedTypeGeneratedPackage(mng *manager.TemplateRenderManager, obj commo
 	return mng.ImportsManager.AddImport(pkgPath, d.PackageName), nil
 }
 
-func qualifiedCodeExtraGeneratedPackage(mng *manager.TemplateRenderManager, protocol string) (string, error) {
-	states := slices.SortedStableFunc(maps.Values(mng.CommittedStates()), func(a, b manager.FileRenderState) int {
-		return strings.Compare(a.FileName, b.FileName)
-	})
-	// Assuming all extra code files has the flat structure per protocol, we can just pick any file
-	state, found := lo.Find(states, func(state manager.FileRenderState) bool {
-		return state.ExtraCodeProtocol == protocol
-	})
+func qualifiedCodeExtraGeneratedPackage(mng *manager.TemplateRenderManager, protocol string, isImplementation bool) (string, error) {
+ state, found := getExtraCodeFileByProtocol(protocol, mng, isImplementation)
 	if !found {
 		return "", ErrNotPinned
 	}
@@ -623,14 +599,8 @@ func qualifiedCodeExtraGeneratedPackage(mng *manager.TemplateRenderManager, prot
 	return mng.ImportsManager.AddImport(pkgPath, state.PackageName), nil
 }
 
-func templateGoQualExtra(mng *manager.TemplateRenderManager, protocol string, parts ...string) (string, error) {
-	states := slices.SortedStableFunc(maps.Values(mng.CommittedStates()), func(a, b manager.FileRenderState) int {
-		return strings.Compare(a.FileName, b.FileName)
-	})
-	// Assuming all extra code files has the flat structure per protocol, we can just pick any file
-	state, found := lo.Find(states, func(state manager.FileRenderState) bool {
-		return state.ExtraCodeProtocol == protocol
-	})
+func templateGoQualExtra(mng *manager.TemplateRenderManager, protocol string, isImplementation bool, parts []string) (string, error) {
+	state, found := getExtraCodeFileByProtocol(protocol, mng, isImplementation)
 	if !found {
 		return "", ErrNotPinned
 	}
@@ -655,6 +625,17 @@ func templateGoQualExtra(mng *manager.TemplateRenderManager, protocol string, pa
 	return fmt.Sprintf("%s.%s", mng.ImportsManager.AddImport(pkgPath, pkgName), n), nil
 }
 
+// getExtraCodeFileByProtocol returns the FileRenderState for the given protocol and implementation flag. If not found, returns false.
+func getExtraCodeFileByProtocol(protocol string, renderManager *manager.TemplateRenderManager, isImplementation bool) (manager.FileRenderState, bool) {
+	states := slices.SortedStableFunc(maps.Values(renderManager.CommittedStates()), func(a, b manager.FileRenderState) int {
+		return strings.Compare(a.FileName, b.FileName)
+	})
+	// Assuming all extra code files has the flat structure per protocol, and we may pick any file
+	return lo.Find(states, func(state manager.FileRenderState) bool {
+		return state.ExtraCodeProtocol == protocol && isImplementation == !lo.IsNil(state.ImplementationConfig)
+	})
+}
+
 // templateGoQual returns a qualified name of the object in the generated code. Adds the import to the current file
 // if needed.
 //
@@ -663,14 +644,14 @@ func templateGoQualExtra(mng *manager.TemplateRenderManager, protocol string, pa
 //
 // Returns the qualified name of the object that is used to access it in the generated code. For example, “url.URL” or
 // “ipv4.Conn” for the examples above.
-func templateGoQual(mng *manager.TemplateRenderManager, parts ...string) string {
+func templateGoQual(mng *manager.TemplateRenderManager, parts []string) string {
 	pkgPath, pkgName, n := qualifiedToImport(parts)
 	return fmt.Sprintf("%s.%s", mng.ImportsManager.AddImport(pkgPath, pkgName), n)
 }
 
 // templateGoQualRuntime returns a qualified name of the object in the generated code. Adds the import to the runtime.
 // Works like templateGoQual but prepends the runtime package to the import path.
-func templateGoQualRuntime(mng *manager.TemplateRenderManager, parts ...string) string {
+func templateGoQualRuntime(mng *manager.TemplateRenderManager, parts []string) string {
 	p := append([]string{mng.RenderOpts.RuntimeModule}, parts...)
-	return templateGoQual(mng, p...)
+	return templateGoQual(mng, p)
 }

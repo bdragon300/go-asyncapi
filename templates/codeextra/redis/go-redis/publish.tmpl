@@ -14,7 +14,7 @@ type ImplementationRecord interface {
 	AsAny() any
 }
 
-func (p PublishChannel) Send(ctx context.Context, envelopes ...{{goQualE "redis" "EnvelopeWriter"}}) error {
+func (p PublishChannel) Send(ctx context.Context, envelopes ...{{goQualU "redis" "EnvelopeWriter"}}) error {
 	for i, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
 		if err := p.Client.Publish(ctx, p.Name, ir.AsAny()).Err(); err != nil {

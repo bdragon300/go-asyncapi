@@ -21,7 +21,7 @@ type Client struct {
 	*nats.Conn
 }
 
-func (c *Client) Subscriber(_ context.Context, address string, chb *{{goQualE "nats" "ChannelBindings"}}, opb *{{goQualE "nats" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "nats" "Subscriber"}}, error) {
+func (c *Client) Subscriber(_ context.Context, address string, chb *{{goQualU "nats" "ChannelBindings"}}, opb *{{goQualU "nats" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualU "nats" "Subscriber"}}, error) {
 	ctx2, cancel := context.WithCancel(context.Background())
 	return &Subscription{
 		Client:            c,
@@ -33,7 +33,7 @@ func (c *Client) Subscriber(_ context.Context, address string, chb *{{goQualE "n
 	}, nil
 }
 
-func (c *Client) Publisher(_ context.Context, _ string, chb *{{goQualE "nats" "ChannelBindings"}}, opb *{{goQualE "nats" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualE "nats" "Publisher"}}, error) {
+func (c *Client) Publisher(_ context.Context, _ string, chb *{{goQualU "nats" "ChannelBindings"}}, opb *{{goQualU "nats" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualU "nats" "Publisher"}}, error) {
 	ctx2, cancel := context.WithCancel(context.Background())
 	return &PublishChannel{
 		Client:            c,

@@ -9,7 +9,7 @@ import (
 	"github.com/gobwas/ws/wsutil"
 )
 
-func NewChannel(chb *{{goQualE "ws" "ChannelBindings"}}, opb *{{goQualE "ws" "OperationBindings"}}, conn net.Conn, clientSide bool) *Channel {
+func NewChannel(chb *{{goQualU "ws" "ChannelBindings"}}, opb *{{goQualU "ws" "OperationBindings"}}, conn net.Conn, clientSide bool) *Channel {
 	res := Channel{
 		Conn:              conn,
 		clientSide:        clientSide,
@@ -22,7 +22,7 @@ func NewChannel(chb *{{goQualE "ws" "ChannelBindings"}}, opb *{{goQualE "ws" "Op
 	return &res
 }
 
-type subscriberFunc func(envelope {{goQualE "ws" "EnvelopeReader"}})
+type subscriberFunc func(envelope {{goQualU "ws" "EnvelopeReader"}})
 
 type ImplementationRecord interface {
 	Bytes() []byte
@@ -37,15 +37,15 @@ type Channel struct {
 	// outgoing websocket frames, whereas the server-side code must unmask the payload back in incoming frames
 	// https://www.rfc-editor.org/rfc/rfc6455#section-5.3
 	clientSide        bool
-	channelBindings   *{{goQualE "ws" "ChannelBindings"}}
-	operationBindings *{{goQualE "ws" "OperationBindings"}}
+	channelBindings   *{{goQualU "ws" "ChannelBindings"}}
+	operationBindings *{{goQualU "ws" "OperationBindings"}}
 	callbacks         *{{goQualR "Ring"}}[subscriberFunc]
 	ctx               context.Context
 	cancel            context.CancelCauseFunc
 	once              *sync.Once
 }
 
-func (s Channel) Receive(ctx context.Context, cb func(envelope {{goQualE "ws" "EnvelopeReader"}})) error {
+func (s Channel) Receive(ctx context.Context, cb func(envelope {{goQualU "ws" "EnvelopeReader"}})) error {
 	element := s.callbacks.Append(cb)
 	defer func() {
 		s.callbacks.Remove(element)
@@ -62,7 +62,7 @@ func (s Channel) Receive(ctx context.Context, cb func(envelope {{goQualE "ws" "E
 	}
 }
 
-func (s Channel) Send(ctx context.Context, envelopes ...{{goQualE "ws" "EnvelopeWriter"}}) error {
+func (s Channel) Send(ctx context.Context, envelopes ...{{goQualU "ws" "EnvelopeWriter"}}) error {
 	for i, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
 		msg := ir.Bytes()

@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-type subscriberFunc func(envelope {{goQualE "tcp" "EnvelopeReader"}})
+type subscriberFunc func(envelope {{goQualU "tcp" "EnvelopeReader"}})
 
 func NewChannel(conn *net.TCPConn, scanner *bufio.Scanner, maxEnvelopeSize int) *Channel {
 	res := Channel{
@@ -34,7 +34,7 @@ type ImplementationRecord interface {
 	Bytes() []byte
 }
 
-func (c *Channel) Send(_ context.Context, envelopes ...{{goQualE "tcp" "EnvelopeWriter"}}) error {
+func (c *Channel) Send(_ context.Context, envelopes ...{{goQualU "tcp" "EnvelopeWriter"}}) error {
 	for _, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
 		if _, err := c.TCPConn.Write(ir.Bytes()); err != nil {
@@ -44,7 +44,7 @@ func (c *Channel) Send(_ context.Context, envelopes ...{{goQualE "tcp" "Envelope
 	return nil
 }
 
-func (c *Channel) Receive(ctx context.Context, cb func(envelope {{goQualE "tcp" "EnvelopeReader"}})) error {
+func (c *Channel) Receive(ctx context.Context, cb func(envelope {{goQualU "tcp" "EnvelopeReader"}})) error {
 	element := c.callbacks.Append(cb)
 	defer func() {
 		c.callbacks.Remove(element)

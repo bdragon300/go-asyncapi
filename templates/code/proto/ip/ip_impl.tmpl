@@ -14,7 +14,7 @@ func Connect{{ . | goIDUpper }}Bidi(
 	if err != nil {
         return nil, {{goQual "fmt.Errorf"}}("parse url: %w", err)
     }
-    client, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(localHost, h, url.Scheme + ":" + p, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    client, err := {{goQualI .Protocol "NewClient"}}(localHost, h, url.Scheme + ":" + p, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }
@@ -38,7 +38,7 @@ func Connect{{ . | goIDUpper }}Producer(
 	if err != nil {
         return nil, {{goQual "fmt.Errorf"}}("parse url: %w", err)
     }
-    producer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient("", h, url.Scheme + ":" + p, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    producer, err := {{goQualI .Protocol "NewClient"}}("", h, url.Scheme + ":" + p, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }
@@ -61,7 +61,7 @@ func Connect{{ . | goIDUpper }}Consumer(
 	if err != nil {
         return nil, {{goQual "fmt.Errorf"}}("parse url: %w", err)
     }
-    consumer, err := {{with impl .Protocol}}{{goPkg .}}{{end}}NewClient(h, "", url.Scheme + ":" + p, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    consumer, err := {{goQualI .Protocol "NewClient"}}(h, "", url.Scheme + ":" + p, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }

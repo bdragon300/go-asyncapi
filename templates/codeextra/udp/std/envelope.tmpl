@@ -26,7 +26,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.contentType = contentType
 }
 
-func (e *EnvelopeOut) SetBindings(_ {{goQualE "udp" "MessageBindings"}}) {}
+func (e *EnvelopeOut) SetBindings(_ {{goQualU "udp" "MessageBindings"}}) {}
 
 func (e *EnvelopeOut) SetRemoteAddr(addr net.Addr) {
 	e.remoteAddr = addr
