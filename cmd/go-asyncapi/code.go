@@ -298,11 +298,10 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (c
 			NameRe:        item.NameRe,
 			Not:           item.Not,
 			Render: common.CodeLayoutItemRenderOpts{
-				Template:         item.Render.Template,
-				File:             item.Render.File,
-				Package:          item.Render.Package,
-				Protocols:        item.Render.Protocols,
-				ProtoObjectsOnly: item.Render.ProtoObjectsOnly,
+				Template:  item.Render.Template,
+				File:      item.Render.File,
+				Package:   item.Render.Package,
+				Protocols: item.Render.Protocols,
 			},
 			ReusePackagePath: item.ReusePackagePath,
 		}

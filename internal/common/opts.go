@@ -42,11 +42,10 @@ type (
 	}
 
 	CodeLayoutItemRenderOpts struct {
-		Template         string
-		File             string
-		Package          string
-		Protocols        []string
-		ProtoObjectsOnly bool
+		Template  string
+		File      string
+		Package   string
+		Protocols []string
 	}
 
 	UtilCodeOpts struct {

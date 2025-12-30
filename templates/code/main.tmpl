@@ -10,9 +10,7 @@
     {{- end}}
 
 {{- else if eq .Object.Kind "channel" }}
-    {{- if not .CurrentLayoutItem.Render.ProtoObjectsOnly}}
-        {{- template "channel.tmpl" .Object}}
-    {{- end}}
+    {{- template "channel.tmpl" .Object}}
     {{- range $proto := .Object.ActiveProtocols}}
         {{- if $.CurrentLayoutItem.AppliedToProtocol $proto }}
             {{- $p := $.Object.ProtoChannel $proto }}
@@ -21,9 +19,7 @@
     {{- end}}
 
 {{- else if eq .Object.Kind "operation" }}
-    {{- if not .CurrentLayoutItem.Render.ProtoObjectsOnly}}
-        {{- template "operation.tmpl" .Object}}
-    {{- end}}
+    {{- template "operation.tmpl" .Object}}
     {{- range $proto := .Object.ActiveProtocols}}
         {{- if $.CurrentLayoutItem.AppliedToProtocol $proto }}
             {{- $p := $.Object.ProtoOperation $proto }}
@@ -32,9 +28,7 @@
     {{- end}}
 
 {{- else if eq .Object.Kind "message" }}
-    {{- if not .CurrentLayoutItem.Render.ProtoObjectsOnly}}
-        {{- template "message.tmpl" .Object}}
-    {{- end}}
+    {{- template "message.tmpl" .Object}}
     {{- range $proto := .Object.ActiveProtocols}}
         {{- if $.CurrentLayoutItem.AppliedToProtocol $proto }}
             {{- $p := $.Object.ProtoMessage $proto }}

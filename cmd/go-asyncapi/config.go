@@ -69,11 +69,10 @@ type (
 	}
 
 	toolConfigLayoutRender struct {
-		Protocols        []string `yaml:"protocols"`
-		ProtoObjectsOnly bool     `yaml:"protoObjectsOnly"`
-		Template         string   `yaml:"template"`
-		File             string   `yaml:"file"`
-		Package          string   `yaml:"package"` // TODO: make it inline template
+		Protocols []string `yaml:"protocols"`
+		Template  string   `yaml:"template"`
+		File      string   `yaml:"file"`
+		Package   string   `yaml:"package"` // TODO: make it inline template
 	}
 
 	toolConfigCodeUtil struct {
