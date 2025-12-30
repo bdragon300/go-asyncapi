@@ -1,4 +1,12 @@
 {{- /* dot == render.ProtoMessage */}}
+{{define "code/proto/http/message/bindings/values"}}
+{{- goQualU .Protocol "MessageBindings"}}{
+    {{- with .Bindings.Values.Map.http}}
+        {{with .headers }}Headers: {{toJSON . | goLit}},{{end}}
+        {{with .statusCode }}StatusCode: {{goLit .}},{{end}}
+    {{- end}}
+}
+{{- end}}
 {{template "code/proto/message/commonMethods" .}}
 {{if .IsPublisher}}{{template "code/proto/message/marshalMethods" .}}{{end}}
 {{if .IsSubscriber}}{{template "code/proto/message/unmarshalMethods" .}}{{end}}

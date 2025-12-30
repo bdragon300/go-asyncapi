@@ -1,4 +1,13 @@
 {{- /* dot == render.ProtoMessage */}}
+{{define "code/proto/amqp/message/bindings/values"}}
+{{- goQualU .Protocol "MessageBindings"}}{
+    {{- with .Bindings.Values.Map.amqp}}
+        {{with .contentEncoding }}ContentEncoding: {{goLit .}},{{end}}
+        {{with .messageType }}MessageType: {{goLit .}},{{end}}
+    {{- end}}
+}
+{{- end}}
+
 {{template "code/proto/message/commonMethods" .}}
 {{if .IsPublisher}}{{template "code/proto/message/marshalMethods" .}}{{end}}
 {{if .IsSubscriber}}{{template "code/proto/message/unmarshalMethods" .}}{{end}}

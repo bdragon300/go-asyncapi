@@ -50,8 +50,6 @@ type Message struct {
 	// message is bound to on the rendering stage.
 	AllActiveOperationsPromise *lang.ListPromise[common.Artifact]
 
-	// BindingsType is a Go struct for message bindings. Nil if message bindings are not set.
-	BindingsType *lang.GoStruct
 	// BindingsPromise is a promise to message bindings contents. Nil if message bindings are not set.
 	BindingsPromise *lang.Promise[*Bindings]
 
@@ -194,30 +192,11 @@ func (m *Message) ActiveProtocols() []string {
 }
 
 // BindingsProtocols returns a list of protocols that have bindings defined for this message.
-func (m *Message) BindingsProtocols() (res []string) {
-	if m.BindingsType == nil {
-		return nil
+func (m *Message) BindingsProtocols() []string {
+	if m.Bindings() != nil {
+		return lo.Uniq(m.Bindings().Protocols())
 	}
-	if m.BindingsPromise != nil {
-		res = append(res, m.BindingsPromise.T().Protocols()...)
-	}
-	return lo.Uniq(res)
-}
-
-// ProtoBindingsValue returns the struct initialization [lang.GoValue] of BindingsType for the given protocol.
-// The returned value contains all constant bindings values defined in document for the protocol.
-// If no bindings are set for the protocol, returns an empty [lang.GoValue].
-func (m *Message) ProtoBindingsValue(protoName string) common.Artifact {
-	res := &lang.GoValue{
-		Type:               &lang.GoSimple{TypeName: "ServerBindings", Import: protoName, IsRuntimeImport: true},
-		EmptyCurlyBrackets: true,
-	}
-	if m.BindingsPromise != nil {
-		if b, ok := m.BindingsPromise.T().Values.Get(protoName); ok {
-			res = b
-		}
-	}
-	return res
+	return nil
 }
 
 func (m *Message) Name() string {

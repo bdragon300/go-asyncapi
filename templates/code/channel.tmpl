@@ -23,18 +23,14 @@ func {{. | goIDUpper}}Address({{with .ParametersType}}params {{. | goUsage}}{{en
 {{- end}}
 }
 
-{{- with $bt := .BindingsType }}
-    {{ $bt | goDef }}
-    {{- range $proto := $.BindingsProtocols }}
-        {{- $bindingsValue := $.ProtoBindingsValue $proto }}
-        func (c {{ $bt | goUsage }}) {{ $proto | goIDUpper }}() {{$bindingsValue.Type | goUsage}} {
-            b := {{$bindingsValue | goUsage}}
-            {{- $jvals := $.Bindings.JSONValues.GetOrEmpty $proto }}
-            {{- range $jvals.Entries}}
-                {{.Key | toCamelCase }} := {{.Value | goLit}}
-                _ = {{goQual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}), &b.{{.Key}})
-            {{- end}}
-            return b
-        }
+{{- if .Bindings }}
+    type {{goIDUpper $}}Bindings struct{}
+
+    {{- range $proto := $.Bindings.Protocols}}
+        {{with tryTmpl (print "code/proto/" $proto "/channel/bindings/values") ($.ProtoChannel $proto)}}
+            func (c {{goIDUpper $}}Bindings) {{ goIDUpper $proto }}() {{goQualU $proto "ChannelBindings"}} {
+                return {{.}}
+            }
+        {{- end}}
     {{- end}}
 {{- end}}

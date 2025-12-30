@@ -8,7 +8,7 @@ func Connect{{ . | goIDUpper }}Bidi(
 ) (*{{ . | goIDUpper }}Closable, error) {
     var bindings *{{goQualU .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
+        bindings = {{goQualR "ToPtr"}}({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
     {{- end}}
     producer := {{goQualI .Protocol "NewProducer"}}(url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     consumer := {{goQualI .Protocol "NewConsumer"}}(bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
@@ -26,7 +26,7 @@ func Connect{{ . | goIDUpper }}Producer(
 ) (*{{ . | goIDUpper }}Closable, error) {
     var bindings *{{goQualU .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
+        bindings = {{goQualR "ToPtr"}}({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
     {{- end}}
     producer := {{goQualI .Protocol "NewProducer"}}(url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     return &{{ . | goIDUpper }}Closable{
@@ -43,7 +43,7 @@ func Connect{{ . | goIDUpper }}Consumer(
 ) (*{{ . | goIDUpper }}Closable, error) {
     var bindings *{{goQualU .Protocol "ServerBindings"}}
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goQualR "ToPtr"}}({{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}())
+        bindings = {{goQualR "ToPtr"}}({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
     {{- end}}
     consumer := {{goQualI .Protocol "NewConsumer"}}(bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     return &{{ . | goIDUpper }}Closable{

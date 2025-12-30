@@ -52,8 +52,6 @@ type Channel struct {
 	// and the order of promises resolving is not guaranteed.
 	AllActiveOperationsPromise *lang.ListPromise[common.Artifact]
 
-	// BindingsType is a Go struct for channel bindings. Nil if channel bindings are not set at all.
-	BindingsType *lang.GoStruct
 	// BindingsPromise is a promise to channel bindings contents. Nil if no bindings are set.
 	BindingsPromise *lang.Promise[*Bindings]
 }
@@ -135,30 +133,11 @@ func (c *Channel) ActiveProtocols() (res []string) {
 }
 
 // BindingsProtocols returns a list of protocols that have bindings defined for this channel.
-func (c *Channel) BindingsProtocols() (res []string) {
-	if c.BindingsType == nil {
-		return nil
+func (c *Channel) BindingsProtocols() []string {
+	if c.Bindings() != nil {
+		return lo.Uniq(c.Bindings().Protocols())
 	}
-	if c.BindingsPromise != nil {
-		res = append(res, c.BindingsPromise.T().Protocols()...)
-	}
-	return lo.Uniq(res)
-}
-
-// ProtoBindingsValue returns the struct initialization [lang.GoValue] of BindingsType for the given protocol.
-// The returned value contains all constant bindings values defined in document for the protocol.
-// If no bindings are set for the protocol, returns an empty [lang.GoValue].
-func (c *Channel) ProtoBindingsValue(protoName string) common.Artifact {
-	res := &lang.GoValue{
-		Type:               &lang.GoSimple{TypeName: "ChannelBindings", Import: protoName, IsRuntimeImport: true},
-		EmptyCurlyBrackets: true,
-	}
-	if c.BindingsPromise != nil {
-		if b, ok := c.BindingsPromise.T().Values.Get(protoName); ok {
-			res = b
-		}
-	}
-	return res
+	return nil
 }
 
 func (c *Channel) Name() string {

@@ -88,22 +88,6 @@ func ToUnion2[T0, T1 any](v any) *Union2[T0, T1] {
 	panic(fmt.Sprintf("v is not convertable neither to type %T nor to type %T", zero0, zero1))
 }
 
-// UnmarshalRawMessageUnion2 is utility that unmarshals the Union2 that holds the json.RawMessage and yaml.Node types
-// to the target object.
-func UnmarshalRawMessageUnion2(union Union2[json.RawMessage, yaml.Node], target any) error {
-	switch union.Selector {
-	case 0:
-		if err := json.Unmarshal(union.V0, target); err != nil {
-			return err
-		}
-	case 1:
-		if err := union.V1.Decode(target); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // Union3 is a union type that can hold one of three types. Typically, this is used for handling the JSON or YAML objects,
 // that can be marshalled/unmarshalled to different types.
 //

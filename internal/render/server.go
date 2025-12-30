@@ -46,8 +46,6 @@ type Server struct {
 	// VariablesPromises is a list of server variables defined for this server.
 	VariablesPromises types.OrderedMap[string, *lang.Promise[*ServerVariable]]
 
-	// BindingsType is a Go struct for server bindings. Nil if no bindings are set.
-	BindingsType *lang.GoStruct
 	// BindingsPromise is a promise to server bindings contents. Nil if no bindings are set.
 	BindingsPromise *lang.Promise[*Bindings]
 
@@ -104,30 +102,11 @@ func (s *Server) ActiveProtocols() []string {
 }
 
 // BindingsProtocols returns a list of protocols that have bindings defined for this server.
-func (s *Server) BindingsProtocols() (res []string) {
-	if s.BindingsType == nil {
-		return nil
+func (s *Server) BindingsProtocols() []string {
+	if s.Bindings() != nil {
+		return lo.Uniq(s.Bindings().Protocols())
 	}
-	if s.BindingsPromise != nil {
-		res = append(res, s.BindingsPromise.T().Protocols()...)
-	}
-	return lo.Uniq(res)
-}
-
-// ProtoBindingsValue returns the struct initialization [lang.GoValue] of BindingsType for the given protocol.
-// The returned value contains all constant bindings values defined in document for the protocol.
-// If no bindings are set for the protocol, returns an empty [lang.GoValue].
-func (s *Server) ProtoBindingsValue(protoName string) common.Artifact {
-	res := &lang.GoValue{
-		Type:               &lang.GoSimple{TypeName: "ServerBindings", Import: protoName, IsRuntimeImport: true},
-		EmptyCurlyBrackets: true,
-	}
-	if s.BindingsPromise != nil {
-		if b, ok := s.BindingsPromise.T().Values.Get(protoName); ok {
-			res = b
-		}
-	}
-	return res
+	return nil
 }
 
 // URL typically is used in templates to get the inflated server url by server variables values from the tool config.

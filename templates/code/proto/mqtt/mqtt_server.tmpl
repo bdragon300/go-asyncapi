@@ -1,4 +1,22 @@
 {{- /* dot == render.Server */}}
+{{define "code/proto/mqtt/server/bindings/values"}}
+{{- goQualU .Protocol "ServerBindings"}}{
+    {{- with .Bindings.Values.Map.mqtt}}
+        {{with .clientId }}ClientID: {{goLit .}},{{end}}
+        {{with .cleanSession }}CleanSession: {{goLit .}},{{end}}
+        {{with .lastWill }}LastWill: &{{goQualU "mqtt" "LastWill"}}{
+            {{with .topic }}Topic: {{goLit .}},{{end}}
+            {{with .qos }}QoS: {{goLit .}},{{end}}
+            {{with .message }}Message: {{goLit .}},{{end}}
+            {{with .retain }}Retain: {{goLit .}},{{end}}
+        },{{end}}
+        {{with .keepAlive }}KeepAlive: {{goQual "time.Duration"}}({{goLit .}}*{{goQual "time.Second"}}),{{end}}
+        {{with .sessionExpiryInterval }}SessionExpiryInterval: {{goQual "time.Duration"}}({{goLit .}}*{{goQual "time.Second"}}),{{end}}
+        {{with .maximumPacketSize }}MaximumPacketSize: {{goLit .}},{{end}}
+    {{- end}}
+}
+{{- end}}
+
 {{template "code/proto/server/newFunction" .}}
 {{- if .SecuritySchemes}}
     {{ template "code/proto/server/securityInterface" . }}

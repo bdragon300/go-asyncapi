@@ -1,4 +1,13 @@
 {{- /* dot == render.Server */}}
+{{define "code/proto/kafka/server/bindings/values"}}
+{{- goQualU .Protocol "ServerBindings"}}{
+    {{- with .Bindings.Values.Map.kafka}}
+        {{with .schemaRegistryUrl }}SchemaRegistryURL: {{goLit .}},{{end}}
+        {{with .schemaRegistryVendor }}SchemaRegistryVendor: {{goLit .}},{{end}}
+    {{- end}}
+}
+{{- end}}
+
 {{template "code/proto/server/newFunction" .}}
 {{- if .SecuritySchemes}}
     {{ template "code/proto/server/securityInterface" . }}

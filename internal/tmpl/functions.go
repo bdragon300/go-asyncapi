@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"maps"
 	"path"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -196,6 +197,18 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 				ImplementationConfig:   *s.ImplementationConfig,
 			}
 		},
+		"utilCode": func(protocol string) *UtilCodeInfo {
+			traceCall("utilCode", protocol)
+			s, ok := getExtraCodeFileByProtocol(protocol, renderManager, false)
+			if !ok {
+				return nil
+			}
+			return &UtilCodeInfo{
+				Protocol:    protocol,
+				FileName:    s.FileName,
+				PackageName: s.PackageName,
+			}
+		},
 		"toQuotable": func(s string) string {
 			traceCall("toQuotable", s)
 			return strings.TrimSuffix(strings.TrimPrefix(strconv.Quote(s), "\""), "\"")
@@ -219,6 +232,43 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		"runtimeExpressionCode": func(c lang.BaseRuntimeExpression, target *lang.GoStruct, addValidationCode bool) (items []runtimeExpressionCodeStep, err error) {
 			traceCall("runtimeExpressionCode", c, target, addValidationCode)
 			return templateRuntimeExpressionCode(renderManager, c, target, addValidationCode)
+		},
+		"mapping": func(v string, variantPairs ...any) (any, error) {
+			traceCall("mapping", v, variantPairs)
+			if len(variantPairs)%2 != 0 {
+				return "", fmt.Errorf("mapping requires even number of variantPairs, got %d", len(variantPairs))
+			}
+			for i:=0; i < len(variantPairs); i += 2 {
+				if variantPairs[i] == v {
+					return variantPairs[i+1], nil
+				}
+			}
+			return "", fmt.Errorf("unknown value %q", v)
+		},
+		"toList": func(v any) ([]any, error) {
+			traceCall("toList", v)
+			rval := reflect.ValueOf(v)
+			if rval.Kind() != reflect.Slice && rval.Kind() != reflect.Array {
+				return nil, fmt.Errorf("argument is not a slice or an array, got %[1]T(%[1]v)", v)
+			}
+			res := make([]any, rval.Len())
+			for i := 0; i < rval.Len(); i++ {
+				res[i] = rval.Index(i).Interface()
+			}
+			return res, nil
+		},
+		"hasKey": func(key string, m any) (bool, error) {  // Overwrites sprout's hasKey to accept any mapping type
+			traceCall("hasKey", key, m)
+			rval := reflect.ValueOf(m)
+			if rval.Kind() != reflect.Map {
+				return false, fmt.Errorf("argument is not a map, got %[1]T(%[1]v)", m)
+			}
+			kval := reflect.ValueOf(key)
+			if !kval.Type().AssignableTo(rval.Type().Key()) {
+				return false, fmt.Errorf("key type %s is not assignable to map key type %s", kval.Type(), rval.Type().Key())
+			}
+			val := rval.MapIndex(kval)
+			return val.IsValid(), nil
 		},
 	}
 

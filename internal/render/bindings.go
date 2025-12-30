@@ -4,7 +4,6 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/bdragon300/go-asyncapi/internal/types"
-	"github.com/samber/lo"
 )
 
 // Bindings represents the bindings object. It's used for all binding types: channel, operation, message, and server.
@@ -13,13 +12,11 @@ type Bindings struct {
 	OriginalName string
 
 	// Values is constant bindings values by protocol
-	Values types.OrderedMap[string, *lang.GoValue]
-	// JSONValues is jsonschema bindings values by protocol
-	JSONValues types.OrderedMap[string, types.OrderedMap[string, string]]
+	Values types.OrderedMap[string, any]
 }
 
 func (b *Bindings) Protocols() []string {
-	return lo.Uniq(append(b.Values.Keys(), b.JSONValues.Keys()...))
+	return b.Values.Keys()
 }
 
 func (b *Bindings) Name() string {

@@ -17,8 +17,6 @@ type GoSimple struct {
 	// Import is an optional package name or module to import a type from. E.g. "github.com/your/module" or "time"
 	// If set, then while rendering the usage of the type, this import will be added to the file's imports list.
 	Import string
-	// IsRuntimeImport is true if the Import field contains a subpackage in the tool's runtime subpackage. E.g. "kafka"
-	IsRuntimeImport bool // TODO: remove, Import is enough
 
 	// OriginalFormat is optional format of the type that is set for a type in document, e.g. "date-time" for string
 	OriginalFormat string

@@ -28,7 +28,7 @@ func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
 ) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error) {
     var err error
     {{- if .BindingsProtocols | has .Protocol}}
-        chBindings := {{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}()
+        chBindings := {{goPkg .Channel}}{{goIDUpper .Channel}}ChannelBindings{}.{{.Protocol | goIDUpper}}()
     {{- end }}
 
     {{- if or .IsPublisher .IsSubscriber}}
@@ -85,7 +85,7 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Address() {{goQualR "ParamSt
 
 {{- if .BindingsProtocols | has .Protocol}}
 func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Bindings() {{goQualU .Protocol "ChannelBindings"}} {
-    return {{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}()
+    return {{goPkg .Channel}}{{goIDUpper .Channel}}ChannelBindings{}.{{.Protocol | goIDUpper}}()
 }
 {{- end}}
 
@@ -120,7 +120,7 @@ type {{ .Channel | goIDUpper }}EnvelopeMarshaler{{.Protocol | goIDUpper}} interf
         }
         {{ with tryTmpl (print "code/proto/" $.Protocol "/channel/publishMethods/block1") .}}{{.}}{{end}}
         {{- if .BindingsProtocols | has $.Protocol }}
-            envelope.SetBindings({{.BindingsType | goUsage}}{}.{{$.Protocol | goIDUpper}}())
+            envelope.SetBindings({{goPkg $.Channel}}{{goIDUpper $.Channel}}ChannelBindings{}.{{$.Protocol | goIDUpper}}())
         {{- end}}
         return nil
     }

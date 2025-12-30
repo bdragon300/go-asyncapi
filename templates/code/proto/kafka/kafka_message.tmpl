@@ -1,4 +1,15 @@
 {{- /* dot == render.ProtoMessage */}}
+{{define "code/proto/kafka/message/bindings/values"}}
+{{- goQualU .Protocol "MessageBindings"}}{
+    {{- with .Bindings.Values.Map.kafka}}
+        {{with .key }}Key: {{toJSON . | goLit}},{{end}}
+        {{with .schemaIDLocation }}SchemaIDLocation: {{goLit .}},{{end}}
+        {{with .schemaIDPayloadEncoding }}SchemaIDPayloadEncoding: {{goLit .}},{{end}}
+        {{with .schemaLookupStrategy }}SchemaLookupStrategy: {{goLit .}},{{end}}
+    {{- end}}
+}
+{{- end}}
+
 {{template "code/proto/message/commonMethods" .}}
 {{if .IsPublisher}}{{template "code/proto/message/marshalMethods" .}}{{end}}
 {{if .IsSubscriber}}{{template "code/proto/message/unmarshalMethods" .}}{{end}}

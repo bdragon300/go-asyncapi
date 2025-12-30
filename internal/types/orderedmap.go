@@ -157,6 +157,10 @@ func (o OrderedMap[K, V]) Entries() []lo.Entry[K, V] {
 	})
 }
 
+func (o OrderedMap[K, V]) Map() map[K]V {
+	return o.data
+}
+
 // Len returns the number of items in the map.
 func (o OrderedMap[K, V]) Len() int {
 	return len(o.data)

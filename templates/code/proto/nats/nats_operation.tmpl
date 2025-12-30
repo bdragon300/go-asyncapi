@@ -1,5 +1,13 @@
 {{- /* dot == render.ProtoOperation */}}
 
+{{define "code/proto/nats/operation/bindings/values"}}
+{{- goQualU .Protocol "OperationBindings"}}{
+    {{- with .Bindings.Values.Map.nats}}
+        {{with .queue }}Queue: {{goLit .}},{{end}}
+    {{- end}}
+}
+{{- end}}
+
 {{template "code/proto/operation/serverInterface" .}}
 {{template "code/proto/operation/openFunction" .}}
 

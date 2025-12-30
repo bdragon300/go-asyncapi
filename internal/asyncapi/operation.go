@@ -29,7 +29,7 @@ type Operation struct {
 	Security     []SecurityScheme       `json:"security,omitzero" yaml:"security"`
 	Tags         []Tag                  `json:"tags,omitzero" yaml:"tags"`
 	ExternalDocs *ExternalDocumentation `json:"externalDocs,omitzero" yaml:"externalDocs"`
-	Bindings     *OperationBinding      `json:"bindings,omitzero" yaml:"bindings"`
+	Bindings     *Bindings              `json:"bindings,omitzero" yaml:"bindings"`
 	Traits       []OperationTrait       `json:"traits,omitzero" yaml:"traits"`
 	Messages     *[]StandaloneRef       `json:"messages,omitzero" yaml:"messages"`
 	Reply        *OperationReply        `json:"reply,omitzero" yaml:"reply"`
@@ -87,13 +87,6 @@ func (o Operation) build(ctx *compile.Context, operationKey string, flags map[co
 		ref := ctx.CurrentRefPointer("bindings")
 		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, nil)
 		ctx.PutPromise(res.BindingsPromise)
-
-		res.BindingsType = &lang.GoStruct{
-			BaseType: lang.BaseType{
-				OriginalName:  ctx.GenerateObjName(operationKey, "Bindings"),
-				HasDefinition: true,
-			},
-		}
 	}
 
 	// Security
@@ -137,7 +130,7 @@ type OperationTrait struct {
 	// Security     SecurityScheme  `json:"security,omitzero" yaml:"security"`
 	Tags         []Tag                  `json:"tags,omitzero" yaml:"tags"`
 	ExternalDocs *ExternalDocumentation `json:"externalDocs,omitzero" yaml:"externalDocs"`
-	Bindings     *OperationBinding      `json:"bindings,omitzero" yaml:"bindings"`
+	Bindings     *Bindings              `json:"bindings,omitzero" yaml:"bindings"`
 
 	Ref string `json:"$ref,omitzero" yaml:"$ref"`
 }

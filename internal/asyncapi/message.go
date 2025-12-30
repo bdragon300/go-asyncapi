@@ -26,7 +26,7 @@ type Message struct {
 	Description   string                 `json:"description,omitzero" yaml:"description"`
 	Tags          []Tag                  `json:"tags,omitzero" yaml:"tags"`
 	ExternalDocs  *ExternalDocumentation `json:"externalDocs,omitzero" yaml:"externalDocs"`
-	Bindings      *MessageBindings       `json:"bindings,omitzero" yaml:"bindings"`
+	Bindings      *Bindings              `json:"bindings,omitzero" yaml:"bindings"`
 	Examples      []MessageExample       `json:"examples,omitzero" yaml:"examples"`
 	Traits        []MessageTrait         `json:"traits,omitzero" yaml:"traits"`
 
@@ -125,13 +125,6 @@ func (m Message) build(ctx *compile.Context, messageKey string, flags map[common
 	// Bindings
 	if m.Bindings != nil {
 		ctx.Logger.Trace("Message bindings")
-		res.BindingsType = &lang.GoStruct{
-			BaseType: lang.BaseType{
-				OriginalName:  ctx.GenerateObjName(msgName, "Bindings"),
-				HasDefinition: true,
-			},
-		}
-
 		ref := ctx.CurrentRefPointer("bindings")
 		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, nil)
 		ctx.PutPromise(res.BindingsPromise)
@@ -208,7 +201,7 @@ type MessageTrait struct {
 	Description   string                 `json:"description,omitzero" yaml:"description"`
 	Tags          []Tag                  `json:"tags,omitzero" yaml:"tags"`
 	ExternalDocs  *ExternalDocumentation `json:"externalDocs,omitzero" yaml:"externalDocs"`
-	Bindings      *MessageBindings       `json:"bindings,omitzero" yaml:"bindings"`
+	Bindings      *Bindings              `json:"bindings,omitzero" yaml:"bindings"`
 	Examples      []MessageExample       `json:"examples,omitzero" yaml:"examples"`
 
 	Ref string `json:"$ref,omitzero" yaml:"$ref"`

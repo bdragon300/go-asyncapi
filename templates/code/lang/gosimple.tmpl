@@ -11,9 +11,7 @@
     {{- with tryTmpl (print "code/lang/typeFormat/" .OriginalType "/" .OriginalFormat "/usage") .}}
         {{- .}}
     {{- else }}
-        {{- if .IsRuntimeImport}}
-            {{- goQualR .Import .Name }}
-        {{- else if .Import }}
+        {{- if .Import }}
             {{- goQual .Import .Name }}
         {{- else }}
             {{- goPkg . }}{{ .Name }}

@@ -3,6 +3,16 @@
     envelope.SetOpCode(byte({{goQual "github.com/gobwas/ws.OpBinary"}}))
 {{- end}}
 
+{{define "code/proto/ws/channel/bindings/values"}}
+{{- goQualU .Protocol "ChannelBindings"}}{
+    {{- with .Bindings.Values.Map.ws}}
+        {{with .method }}Method: {{goLit .}},{{end}}
+        {{with .query }}Query: {{toJSON . | goLit}},{{end}}
+        {{with .headers }}Headers: {{toJSON . | goLit}},{{end}}
+    {{- end}}
+}
+{{- end}}
+
 {{template "code/proto/channel/newFunction" .}}
 {{template "code/proto/channel/serverInterface" .}}
 {{template "code/proto/channel/openFunction" .}}

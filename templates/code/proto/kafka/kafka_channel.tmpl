@@ -2,14 +2,35 @@
 {{define "code/proto/kafka/channel/newFunction/block1"}}
     res.topic = res.address.String()
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings := {{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}()
+        bindings := {{goPkg .Channel}}{{goIDUpper .Channel}}ChannelBindings{}.{{.Protocol | goIDUpper}}()
         if bindings.Topic != "" {
             res.topic = bindings.Topic
         }
     {{- end}}
 {{- end}}
+
 {{define "code/proto/kafka/channel/publishMethods/block1"}}
     envelope.SetTopic(c.Topic())
+{{- end}}
+
+{{define "code/proto/kafka/channel/bindings/values"}}
+{{- goQualU .Protocol "ChannelBindings"}}{
+    {{- with .Bindings.Values.Map.kafka}}
+        {{with .topic }}Topic: {{goLit .}},{{end}}
+        {{with .partitions }}Partitions: {{goLit .}},{{end}}
+        {{with .replicas }}Replicas: {{goLit .}},{{end}}
+        {{with .topicConfiguration }}TopicConfiguration: {{goQualU "kafka" "TopicConfiguration"}}{
+            {{with .cleanupPolicy }}CleanupPolicy: {{goQualU "kafka" "TopicCleanupPolicy"}}{
+                {{with .delete }}Delete: {{goLit .}},{{end}}
+                {{with .compact }}Compact: {{goLit .}},{{end}}
+            },{{end}}
+            {{with .retentionTime }}RetentionTime: {{goQual "time.Duration"}}({{goLit .}}*{{goQual "time.Milliseconds"}}),{{end}}
+            {{with .retentionBytes }}RetentionBytes: {{goLit .}},{{end}}
+            {{with .deleteRetentionTime }}DeleteRetentionTime: {{goQual "time.Duration"}}({{goLit .}}*{{goQual "time.Milliseconds"}}),{{end}}
+            {{with .maxMessageBytes }}MaxMessageBytes: {{goLit .}},{{end}}
+        },{{end}}
+    {{- end}}
+}
 {{- end}}
 
 {{template "code/proto/channel/newFunction" .}}

@@ -1,4 +1,12 @@
 {{- /* dot == render.ProtoOperation */}}
+{{define "code/proto/ws/channel/bindings/values"}}
+{{- goQualU .Protocol "OperationBindings"}}{
+    {{- with .Bindings.Values.Map.kafka}}
+        {{with .clientId }}ClientID: {{toJSON . | goLit }},{{end}}
+        {{with .groupId }}GroupID: {{toJSON . | goLit }},{{end}}
+    {{- end}}
+}
+{{- end}}
 
 {{template "code/proto/operation/serverInterface" .}}
 {{template "code/proto/operation/openFunction" .}}

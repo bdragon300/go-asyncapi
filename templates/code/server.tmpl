@@ -45,18 +45,14 @@ func {{. | goIDUpper}}URL(
     {{- end}}
 }
 
-{{- with $bt := .BindingsType}}
-    {{- $bt | goDef}}
-    {{- range $proto := $.BindingsProtocols}}
-        {{- $bindingsValue := $.ProtoBindingsValue $proto}}
-        func (c {{ $bt | goUsage }}) {{ $proto | goIDUpper }}() {{$bindingsValue.Type | goUsage}} {
-            b := {{$bindingsValue | goUsage}}
-            {{- $jvals := $.Bindings.JSONValues.GetOrEmpty $proto}}
-            {{- range $jval := $jvals.Entries}}
-                {{$jval.Key | toCamelCase }} := {{$jval.Value | goLit}}
-                _ = {{goQual "encoding/json.Unmarshal"}}([]byte({{$jval.Key | toCamelCase }}), &b.{{$jval.Key}})
-            {{- end}}
-            return b
-        }
+{{- if .Bindings }}
+    type {{goIDUpper $}}Bindings struct{}
+
+    {{- range $proto := $.Bindings.Protocols}}
+        {{with tryTmpl (print "code/proto/" $proto "/server/bindings/values") $}}
+            func (c {{goIDUpper $}}Bindings) {{ goIDUpper $proto }}() {{goQualU $proto "ServerBindings"}} {
+                return {{.}}
+            }
+        {{- end}}
     {{- end}}
 {{- end}}

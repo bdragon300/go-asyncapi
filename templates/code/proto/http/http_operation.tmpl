@@ -1,5 +1,12 @@
 {{- /* dot == render.ProtoOperation */}}
-
+{{define "code/proto/http/operation/bindings/values"}}
+{{- goQualU .Protocol "OperationBindings"}}{
+    {{- with .Bindings.Values.Map.http}}
+        {{with .method }}Method: {{goLit .}},{{end}}
+        {{with .query }}Query: {{toJSON . | goLit}},{{end}}
+    {{- end}}
+}
+{{- end}}
 {{template "code/proto/operation/serverInterface" .}}
 {{template "code/proto/operation/openFunction" .}}
 

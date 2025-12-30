@@ -1,4 +1,14 @@
 {{- /* dot == render.ProtoMessage */}}
+{{define "code/proto/mqtt/message/bindings/values"}}
+{{- goQualU .Protocol "MessageBindings"}}{
+    {{- with .Bindings.Values.Map.mqtt}}
+        {{with .payloadFormatIndicator }}PayloadFormatIndicator: {{goPkg (utilCode "mqtt")}}{{list 0 "PayloadFormatIndicatorUnspecified" 1 "PayloadFormatIndicatorUTF8" | mapping . | goLit}},{{end}}
+        {{with .correlationData }}CorrelationData: {{toJSON . | goLit}},{{end}}
+        {{with .contentType }}ContentType: {{goLit .}},{{end}}
+        {{with .responseTopic }}ResponseTopic: {{goLit .}},{{end}}
+    {{- end}}
+}
+{{- end}}
 {{template "code/proto/message/commonMethods" .}}
 {{if .IsPublisher}}{{template "code/proto/message/marshalMethods" .}}{{end}}
 {{if .IsSubscriber}}{{template "code/proto/message/unmarshalMethods" .}}{{end}}

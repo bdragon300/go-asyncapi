@@ -30,8 +30,6 @@ type Operation struct {
 	// ChannelPromise is the channel that this operation is bound with.
 	ChannelPromise *lang.Promise[*Channel]
 
-	// BindingsType is a Go struct for operation bindings. Nil if no bindings are set.
-	BindingsType *lang.GoStruct
 	// BindingsPromise is a promise to operation bindings contents. Nil if no bindings are set.
 	BindingsPromise *lang.Promise[*Bindings]
 
@@ -118,30 +116,11 @@ func (o *Operation) ActiveProtocols() []string {
 }
 
 // BindingsProtocols returns a list of protocols that have bindings defined for this operation.
-func (o *Operation) BindingsProtocols() (res []string) {
-	if o.BindingsType == nil {
-		return nil
+func (o *Operation) BindingsProtocols() []string {
+	if o.Bindings() != nil {
+		return lo.Uniq(o.Bindings().Protocols())
 	}
-	if o.BindingsPromise != nil {
-		res = append(res, o.BindingsPromise.T().Protocols()...)
-	}
-	return lo.Uniq(res)
-}
-
-// ProtoBindingsValue returns the struct initialization [lang.GoValue] of BindingsType for the given protocol.
-// The returned value contains all constant bindings values defined in document for the protocol.
-// If no bindings are set for the protocol, returns an empty [lang.GoValue].
-func (o *Operation) ProtoBindingsValue(protoName string) common.Artifact {
-	res := &lang.GoValue{
-		Type:               &lang.GoSimple{TypeName: "OperationBindings", Import: protoName, IsRuntimeImport: true},
-		EmptyCurlyBrackets: true,
-	}
-	if o.BindingsPromise != nil {
-		if b, ok := o.BindingsPromise.T().Values.Get(protoName); ok {
-			res = b
-		}
-	}
-	return res
+	return nil
 }
 
 // SecuritySchemes returns the list of security schemes defined for this operation.

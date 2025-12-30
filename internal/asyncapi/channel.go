@@ -22,7 +22,7 @@ type Channel struct {
 	Parameters   types.OrderedMap[string, Parameter] `json:"parameters,omitzero" yaml:"parameters"`
 	Tags         []Tag                               `json:"tags,omitzero" yaml:"tags"`
 	ExternalDocs *ExternalDocumentation              `json:"externalDocs,omitzero" yaml:"externalDocs"`
-	Bindings     *ChannelBindings                    `json:"bindings,omitzero" yaml:"bindings"`
+	Bindings     *Bindings                           `json:"bindings,omitzero" yaml:"bindings"`
 
 	XGoName string `json:"x-go-name,omitzero" yaml:"x-go-name"`
 	XIgnore bool   `json:"x-ignore,omitzero" yaml:"x-ignore"`
@@ -137,13 +137,6 @@ func (c Channel) build(ctx *compile.Context, channelKey string, flags map[common
 		ref := ctx.CurrentRefPointer("bindings")
 		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, nil)
 		ctx.PutPromise(res.BindingsPromise)
-
-		res.BindingsType = &lang.GoStruct{
-			BaseType: lang.BaseType{
-				OriginalName:  ctx.GenerateObjName(chName, "Bindings"),
-				HasDefinition: true,
-			},
-		}
 	}
 
 	return res, nil

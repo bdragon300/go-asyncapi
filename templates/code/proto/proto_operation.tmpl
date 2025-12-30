@@ -23,7 +23,7 @@ func Open{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
     {{if .SecuritySchemes}}security {{. | goIDUpper}}Security,{{end}}
 ) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error) {
     {{- if .BindingsProtocols | has .Protocol}}
-        opBindings := {{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}()
+        opBindings := {{goPkg .Operation}}{{goIDUpper .Operation}}OperationBindings{}.{{.Protocol | goIDUpper}}()
     {{- end }}
     ch, err := {{goPkg .Channel}}Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}(
         ctx,
@@ -45,7 +45,7 @@ func Open{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
 {{define "code/proto/operation/commonMethods"}}
 {{- if .BindingsProtocols | has .Protocol}}
 func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Bindings() {{goQualU .Protocol "OperationBindings"}} {
-    return {{.BindingsType | goUsage}}{}.{{.Protocol | goIDUpper}}()
+    return {{goPkg .Operation}}{{goIDUpper .Operation}}OperationBindings{}.{{.Protocol | goIDUpper}}()
 }
 {{- end}}
 

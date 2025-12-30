@@ -23,7 +23,7 @@ type Server struct {
 	Security        []SecurityScheme                         `json:"security,omitzero" yaml:"security"`
 	Tags            []Tag                                    `json:"tags,omitzero" yaml:"tags"`
 	ExternalDocs    *ExternalDocumentation                   `json:"externalDocs,omitzero" yaml:"externalDocs"`
-	Bindings        *ServerBindings                          `json:"bindings,omitzero" yaml:"bindings"`
+	Bindings        *Bindings                                `json:"bindings,omitzero" yaml:"bindings"`
 
 	XGoName string `json:"x-go-name,omitzero" yaml:"x-go-name"`
 	XIgnore bool   `json:"x-ignore,omitzero" yaml:"x-ignore"`
@@ -77,13 +77,6 @@ func (s Server) build(ctx *compile.Context, serverKey string) (common.Artifact, 
 	// Bindings
 	if s.Bindings != nil {
 		ctx.Logger.Trace("Server bindings")
-		res.BindingsType = &lang.GoStruct{
-			BaseType: lang.BaseType{
-				OriginalName:  ctx.GenerateObjName(srvName, "Bindings"),
-				HasDefinition: true,
-			},
-		}
-
 		ref := ctx.CurrentRefPointer("bindings")
 		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, nil)
 		ctx.PutPromise(res.BindingsPromise)

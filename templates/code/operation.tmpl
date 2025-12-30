@@ -1,18 +1,14 @@
 {{- /* dot == render.Operation */}}
 {{- pin .}}
 
-{{- with $bt := .BindingsType }}
-    {{ $bt | goDef }}
-    {{- range $proto := $.BindingsProtocols }}
-        {{- $bindingsValue := $.ProtoBindingsValue $proto }}
-        func (c {{ $bt | goUsage }}) {{ $proto | goIDUpper }}() {{$bindingsValue.Type | goUsage}} {
-            b := {{$bindingsValue | goUsage}}
-            {{- $jvals := $.Bindings.JSONValues.GetOrEmpty $proto }}
-            {{- range $jvals.Entries}}
-                {{.Key | toCamelCase }} := {{.Value | goLit}}
-                _ = {{goQual "encoding/json.Unmarshal"}}([]byte({{.Key | toCamelCase }}), &b.{{.Key}})
-            {{- end}}
-            return b
-        }
+{{- if .Bindings }}
+    type {{goIDUpper $}}Bindings struct{}
+
+    {{- range $proto := $.Bindings.Protocols}}
+        {{with tryTmpl (print "code/proto/" $proto "/operation/bindings/values") ($.ProtoOperation $proto)}}
+            func (c {{goIDUpper $}}Bindings) {{ goIDUpper $proto }}() {{goQualU $proto "OperationBindings"}} {
+                return {{.}}
+            }
+        {{- end}}
     {{- end}}
 {{- end}}

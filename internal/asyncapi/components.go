@@ -24,8 +24,8 @@ type ComponentsItem struct {
 	OperationTraits types.OrderedMap[string, OperationTrait] `json:"operationTraits,omitzero" yaml:"operationTraits"`
 	MessageTraits   types.OrderedMap[string, MessageTrait]   `json:"messageTraits,omitzero" yaml:"messageTraits"`
 
-	ServerBindings    types.OrderedMap[string, ServerBindings]   `json:"serverBindings,omitzero" yaml:"serverBindings"`
-	ChannelBindings   types.OrderedMap[string, ChannelBindings]  `json:"channelBindings,omitzero" yaml:"channelBindings"`
-	OperationBindings types.OrderedMap[string, OperationBinding] `json:"operationBindings,omitzero" yaml:"operationBindings"`
-	MessageBindings   types.OrderedMap[string, MessageBindings]  `json:"messageBindings,omitzero" yaml:"messageBindings"`
+	ServerBindings    types.OrderedMap[string, Bindings] `json:"serverBindings,omitzero" yaml:"serverBindings"`
+	ChannelBindings   types.OrderedMap[string, Bindings] `json:"channelBindings,omitzero" yaml:"channelBindings"`
+	OperationBindings types.OrderedMap[string, Bindings] `json:"operationBindings,omitzero" yaml:"operationBindings"`
+	MessageBindings   types.OrderedMap[string, Bindings] `json:"messageBindings,omitzero" yaml:"messageBindings"`
 }

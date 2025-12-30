@@ -1,7 +1,7 @@
 {{- /* dot == render.ProtoChannel */}}
 {{define "code/proto/amqp/channel/newFunction/block1"}}
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings := {{ .BindingsType | goUsage }}{}.{{.Protocol | goIDUpper}}()
+        bindings := {{goPkg .Channel}}{{goIDUpper .Channel}}ChannelBindings{}.{{.Protocol | goIDUpper}}()
         switch bindings.ChannelType {
         case {{goQualU .Protocol "ChannelTypeQueue"}}:
             res.queue = res.address.String()
@@ -18,8 +18,33 @@
         res.routingKey = res.address.String()
     {{- end}}
 {{- end}}
+
 {{define "code/proto/amqp/channel/publishMethods/block1"}}
     envelope.SetRoutingKey(c.RoutingKey())
+{{- end}}
+
+{{define "code/proto/amqp/channel/bindings/values"}}
+{{- goQualU .Protocol "ChannelBindings"}}{
+    {{- with .Bindings.Values.Map.amqp}}
+        {{with .is }}{{goLit .}},{{end}}
+        {{with .exchange }}ExchangeConfiguration: {{goQualU "amqp" "ExchangeConfiguration"}}{
+            {{if . | hasKey "name" }}Name: {{goQualR "ToPtr"}}({{goLit .name}}),{{end}}
+            {{with .type }}Type: {{list "default" "ExchangeTypeDefault" "topic" "ExchangeTypeTopic" "direct" "ExchangeTypeDirect" "fanout" "ExchangeTypeFanout" "headers" "ExchangeTypeHeaders" | mapping . | goLit}},{{end}}
+            {{if . | hasKey "durable" }}Durable: {{goQualR "ToPtr"}}({{goLit .durable}}),{{end}}
+            {{if . | hasKey "autoDelete" }}AutoDelete: {{goQualR "ToPtr"}}({{goLit .autoDelete}}),{{end}}
+            {{with .vhost }}VHost: {{goLit .}},{{end}}
+        },
+        {{- end}}
+        {{with .queue }}QueueConfiguration: {{goQualU "amqp" "QueueConfiguration"}}{
+            {{with .name }}Name: {{goLit .}},{{end}}
+            {{if . | hasKey "durable" }}Durable: {{goQualR "ToPtr"}}({{goLit .durable}}),{{end}}
+            {{if . | hasKey "exclusive" }}Exclusive: {{goQualR "ToPtr"}}({{goLit .exclusive}}),{{end}}
+            {{if . | hasKey "autoDelete" }}AutoDelete: {{goQualR "ToPtr"}}({{goLit .autoDelete}}),{{end}}
+            {{with .vhost }}VHost: {{goLit .}},{{end}}
+        },
+        {{- end}}
+    {{- end}}
+}
 {{- end}}
 
 {{template "code/proto/channel/newFunction" .}}
