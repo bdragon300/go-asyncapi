@@ -121,9 +121,9 @@ func cliDiagram(cmd *DiagramCmd, globalConfig toolConfig) error {
 	logger.Debug("Run objects rendering")
 	renderManager := manager.NewTemplateRenderManager(common.RenderOpts{})
 	templateDirs := []fs.FS{diagram.TemplateFS}
-	if cmdConfig.Code.TemplatesDir != "" {
-		logger.Debug("Custom templates location", "directory", cmdConfig.Code.TemplatesDir)
-		templateDirs = append(templateDirs, os.DirFS(cmdConfig.Code.TemplatesDir))
+	if cmdConfig.TemplatesDir != "" {
+		logger.Debug("Custom templates location", "directory", cmdConfig.TemplatesDir)
+		templateDirs = append(templateDirs, os.DirFS(cmdConfig.TemplatesDir))
 	}
 	tplLoader := tmpl.NewTemplateLoader(defaultMainTemplateName, templateDirs...)
 	logger.Trace("Parse templates", "dirs", templateDirs)
@@ -297,7 +297,7 @@ func cliDiagramMergeConfig(globalConfig toolConfig, cmd *DiagramCmd) (toolConfig
 
 	// Code generation
 
-	res.Code.TemplatesDir = coalesce(cmd.TemplateDir, globalConfig.Code.TemplatesDir)
+	res.TemplatesDir = coalesce(cmd.TemplateDir, globalConfig.TemplatesDir)
 
 	res.Locator.AllowRemoteReferences = coalesce(cmd.AllowRemoteRefs, globalConfig.Locator.AllowRemoteReferences)
 	res.Locator.RootDirectory = coalesce(cmd.LocatorRootDir, globalConfig.Locator.RootDirectory)

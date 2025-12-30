@@ -40,7 +40,7 @@ type ImplementationCodeInfo struct {
 	ImplementationManifest *codeextra.ImplementationManifest
 	// ImplementationConfig is configuration for the implementation code, both for built-in and user-defined implementations.
 	// Nil for ordinary files.
-	ImplementationConfig common.ImplementationCodeCustomizedOpts
+	ImplementationConfig common.ImplementationCodeCustomOpts
 }
 
 func (i ImplementationCodeInfo) Name() string {

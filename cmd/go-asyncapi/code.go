@@ -48,7 +48,7 @@ type CodeCmd struct {
 	ProjectModule string `arg:"-M,--module" help:"Project module name in the generated code. By default, read get from go.mod in the current working directory" placeholder:"MODULE"`
 	RuntimeModule string `arg:"--runtime-module" help:"Runtime module path" placeholder:"MODULE"`
 
-	TemplateDir            string `arg:"-T,--template-dir" help:"User templates directory" placeholder:"DIR"`
+	TemplateDir            string `arg:"-T,--template-dir" help:"User templates directory (excepting the util and implementation code, see config file reference)" placeholder:"DIR"`
 	PreambleTemplate       string `arg:"--preamble-template" help:"Preamble template name" placeholder:"NAME"`
 	DisableFormatting      bool   `arg:"--disable-formatting" help:"Disable code formatting"`
 	DisableImplementations bool   `arg:"--disable-implementations" help:"Do not generate implementations code"`
@@ -118,9 +118,9 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 	// Document objects
 	logger.Debug("Run objects rendering")
 	templateDirs := []fs.FS{templates.TemplateFS}
-	if cmdConfig.Code.TemplatesDir != "" {
-		logger.Debug("Custom templates location", "directory", cmdConfig.Code.TemplatesDir)
-		templateDirs = append(templateDirs, os.DirFS(cmdConfig.Code.TemplatesDir))
+	if cmdConfig.TemplatesDir != "" {
+		logger.Debug("Custom templates location", "directory", cmdConfig.TemplatesDir)
+		templateDirs = append(templateDirs, os.DirFS(cmdConfig.TemplatesDir))
 	}
 	tplLoader := tmpl.NewTemplateLoader(defaultMainTemplateName, templateDirs...)
 	logger.Trace("Parse templates", "dirs", templateDirs)
@@ -141,9 +141,9 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 	if cmd.ClientApp {
 		logger.Debug("Run client app rendering")
 		templateDirs = []fs.FS{templates.TemplateFS, client.TemplateFS}
-		if cmdConfig.Code.TemplatesDir != "" {
-			logger.Debug("Custom templates location", "directory", cmdConfig.Code.TemplatesDir)
-			templateDirs = append(templateDirs, os.DirFS(cmdConfig.Code.TemplatesDir))
+		if cmdConfig.TemplatesDir != "" {
+			logger.Debug("Custom templates location", "directory", cmdConfig.TemplatesDir)
+			templateDirs = append(templateDirs, os.DirFS(cmdConfig.TemplatesDir))
 		}
 		tplLoader = tmpl.NewTemplateLoader(defaultMainTemplateName, templateDirs...)
 		logger.Trace("Parse templates", "dirs", templateDirs)
@@ -228,6 +228,7 @@ func cliCodeMergeConfig(globalConfig toolConfig, cmd *CodeCmd) toolConfig {
 
 	res.ProjectModule = coalesce(cmd.ProjectModule, res.ProjectModule)
 	res.RuntimeModule = coalesce(cmd.RuntimeModule, res.RuntimeModule)
+	res.TemplatesDir = coalesce(cmd.TemplateDir, res.TemplatesDir)
 
 	res.Locator.AllowRemoteReferences = coalesce(cmd.AllowRemoteRefs, res.Locator.AllowRemoteReferences)
 	res.Locator.RootDirectory = coalesce(cmd.LocatorRootDir, res.Locator.RootDirectory)
@@ -236,7 +237,6 @@ func cliCodeMergeConfig(globalConfig toolConfig, cmd *CodeCmd) toolConfig {
 
 	res.Code.OnlyPublish = coalesce(cmd.OnlyPub, res.Code.OnlyPublish)
 	res.Code.OnlySubscribe = coalesce(cmd.OnlySub, res.Code.OnlySubscribe)
-	res.Code.TemplatesDir = coalesce(cmd.TemplateDir, res.Code.TemplatesDir)
 	res.Code.TargetDir = coalesce(cmd.TargetDir, res.Code.TargetDir)
 	res.Code.PreambleTemplate = coalesce(cmd.PreambleTemplate, res.Code.PreambleTemplate)
 	res.Code.DisableFormatting = coalesce(cmd.DisableFormatting, res.Code.DisableFormatting)
@@ -265,12 +265,18 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (c
 		PreambleTemplate: conf.Code.PreambleTemplate,
 		UtilCodeOpts: common.UtilCodeOpts{
 			Directory: conf.Code.Util.Directory,
+			Custom: lo.Map(conf.Code.Util.Custom, func(item toolConfigCodeUtilProtocol, _ int) common.UtilCodeCustomOpts {
+				return common.UtilCodeCustomOpts{
+					Protocol:          item.Protocol,
+					TemplateDirectory: item.TemplateDirectory,
+				}
+			}),
 		},
 		ImplementationCodeOpts: common.ImplementationCodeOpts{
 			Directory: conf.Code.Implementation.Directory,
 			Disable:   conf.Code.Implementation.Disable,
-			Customized: lo.Map(conf.Implementations, func(item toolConfigImplementation, _ int) common.ImplementationCodeCustomizedOpts {
-				return common.ImplementationCodeCustomizedOpts{
+			Custom: lo.Map(conf.Code.Implementation.Custom, func(item toolConfigImplementationProtocol, _ int) common.ImplementationCodeCustomOpts {
+				return common.ImplementationCodeCustomOpts{
 					Protocol:          item.Protocol,
 					Name:              item.Name,
 					Disable:           item.Disable,
@@ -283,15 +289,15 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (c
 	}
 
 	// Layout
-	for _, item := range conf.Layout {
-		l := common.LayoutItemOpts{
+	for _, item := range conf.Code.Layout {
+		l := common.CodeLayoutItemOpts{
 			Protocols:     item.Protocols,
 			ArtifactKinds: item.ArtifactKinds,
 			ModuleURLRe:   item.ModuleURLRe,
 			PathRe:        item.PathRe,
 			NameRe:        item.NameRe,
 			Not:           item.Not,
-			Render: common.LayoutItemRenderOpts{
+			Render: common.CodeLayoutItemRenderOpts{
 				Template:         item.Render.Template,
 				File:             item.Render.File,
 				Package:          item.Render.Package,
@@ -325,7 +331,7 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (c
 }
 
 // selectArtifacts selects artifacts from the list of all artifacts based on the layout configuration.
-func selectArtifacts(artifacts []common.Artifact, layout []common.LayoutItemOpts) (res []renderer.RenderQueueItem) {
+func selectArtifacts(artifacts []common.Artifact, layout []common.CodeLayoutItemOpts) (res []renderer.RenderQueueItem) {
 	logger := log.GetLogger("")
 
 	for _, l := range layout {

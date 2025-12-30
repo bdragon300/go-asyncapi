@@ -51,7 +51,7 @@ type TemplateRenderManager struct {
 	// CurrentObject is an object being currently rendered
 	CurrentObject common.Artifact
 	// CurrentLayoutItem is a layout item that was used to select the CurrentObject
-	CurrentLayoutItem common.LayoutItemOpts
+	CurrentLayoutItem common.CodeLayoutItemOpts
 	TemplateLoader    templateLoader
 
 	//
@@ -68,7 +68,7 @@ type TemplateRenderManager struct {
 	ImplementationManifest *codeextra.ImplementationManifest
 	// ImplementationConfig contains the configuration for the implementation code, both for built-in and user-defined implementations.
 	// Nil for ordinary files.
-	ImplementationConfig *common.ImplementationCodeCustomizedOpts
+	ImplementationConfig *common.ImplementationCodeCustomOpts
 	// Buffer is write-only file contents buffer. When Commit is called, it appends to the committed file contents.
 	Buffer *bytes.Buffer
 	// ImportsManager keeps the imports list for the current file
@@ -110,7 +110,7 @@ func (r *TemplateRenderManager) BeginFile(fileName, packageName string) {
 }
 
 // SetCodeObject is helper that just sets the CurrentObject and CurrentLayoutItem fields.
-func (r *TemplateRenderManager) SetCodeObject(obj common.Artifact, layoutItem common.LayoutItemOpts) {
+func (r *TemplateRenderManager) SetCodeObject(obj common.Artifact, layoutItem common.CodeLayoutItemOpts) {
 	r.CurrentObject = obj
 	r.CurrentLayoutItem = layoutItem
 }
@@ -146,5 +146,5 @@ type FileRenderState struct {
 	Imports           *ImportsManager
 	ExtraCodeProtocol      string
 	ImplementationManifest *codeextra.ImplementationManifest
-	ImplementationConfig   *common.ImplementationCodeCustomizedOpts
+	ImplementationConfig   *common.ImplementationCodeCustomOpts
 }

@@ -72,7 +72,7 @@ func cliClient(cmd *ClientCmd, globalConfig toolConfig) error {
 		Document:         cmd.Document,
 		ProjectModule:    projectModule,
 		RuntimeModule:    cmdConfig.RuntimeModule,
-		TemplateDir:      cmdConfig.Code.TemplatesDir,
+		TemplateDir:      cmdConfig.TemplatesDir,
 		PreambleTemplate: cmdConfig.Code.PreambleTemplate,
 		AllowRemoteRefs:  cmdConfig.Locator.AllowRemoteReferences,
 		LocatorRootDir:   cmdConfig.Locator.RootDirectory,
@@ -155,13 +155,14 @@ func runGoBuild(sourceFile, outputFile string) error {
 func cliClientMergeConfig(globalConfig toolConfig, cmd *ClientCmd) toolConfig {
 	res := globalConfig
 
+	res.TemplatesDir = coalesce(cmd.TemplateDir, globalConfig.TemplatesDir)
+
 	res.Client.OutputFile = coalesce(cmd.OutputExecFile, globalConfig.Client.OutputFile)
 	res.Client.OutputSourceFile = coalesce(cmd.OutputSourceFile, globalConfig.Client.OutputSourceFile)
 	res.Client.KeepSource = coalesce(cmd.KeepSource, globalConfig.Client.KeepSource)
 	res.Client.GoModTemplate = coalesce(cmd.GoModTemplate, globalConfig.Client.GoModTemplate)
 	res.Client.TempDir = coalesce(cmd.TempDir, globalConfig.Client.TempDir)
 
-	res.Code.TemplatesDir = coalesce(cmd.TemplateDir, globalConfig.Code.TemplatesDir)
 	res.Code.PreambleTemplate = coalesce(cmd.PreambleTemplate, globalConfig.Code.PreambleTemplate)
 
 	res.RuntimeModule = coalesce(cmd.RuntimeModule, globalConfig.RuntimeModule)

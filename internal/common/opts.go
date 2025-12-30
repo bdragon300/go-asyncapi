@@ -25,23 +25,23 @@ type (
 		RuntimeModule          string
 		ImportBase             string
 		PreambleTemplate       string
-		Layout                 []LayoutItemOpts
+		Layout                 []CodeLayoutItemOpts
 		UtilCodeOpts           UtilCodeOpts
 		ImplementationCodeOpts ImplementationCodeOpts
 	}
 
-	LayoutItemOpts struct {
+	CodeLayoutItemOpts struct {
 		Protocols        []string
 		ArtifactKinds    []string
 		ModuleURLRe      string
 		PathRe           string
 		NameRe           string
 		Not              bool
-		Render           LayoutItemRenderOpts
+		Render           CodeLayoutItemRenderOpts
 		ReusePackagePath string
 	}
 
-	LayoutItemRenderOpts struct {
+	CodeLayoutItemRenderOpts struct {
 		Template         string
 		File             string
 		Package          string
@@ -51,15 +51,21 @@ type (
 
 	UtilCodeOpts struct {
 		Directory string
+		Custom    []UtilCodeCustomOpts
+	}
+
+	UtilCodeCustomOpts struct {
+		Protocol          string
+		TemplateDirectory string
 	}
 
 	ImplementationCodeOpts struct {
-		Directory  string // Template expression, relative to the target directory
-		Disable    bool
-		Customized []ImplementationCodeCustomizedOpts
+		Directory string // Template expression, relative to the target directory
+		Disable   bool
+		Custom    []ImplementationCodeCustomOpts
 	}
 
-	ImplementationCodeCustomizedOpts struct {
+	ImplementationCodeCustomOpts struct {
 		Protocol          string
 		Name              string
 		Disable           bool
@@ -98,7 +104,7 @@ type (
 	}
 )
 
-func (r LayoutItemOpts) AppliedToProtocol(proto string) bool {
+func (r CodeLayoutItemOpts) AppliedToProtocol(proto string) bool {
 	if len(r.Render.Protocols) > 0 {
 		return lo.Contains(r.Render.Protocols, proto)
 	}

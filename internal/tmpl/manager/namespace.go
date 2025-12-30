@@ -79,7 +79,7 @@ func (s *NamespaceManager) String() string {
 
 type NamespaceArtifactItem struct {
 	Object      common.Artifact
-	Layout      common.LayoutItemOpts
+	Layout      common.CodeLayoutItemOpts
 	FileName    string
 	PackageName string
 	Rendered    bool  // TODO: remove

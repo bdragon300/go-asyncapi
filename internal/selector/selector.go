@@ -37,7 +37,7 @@ func GatherArtifacts[T artifactStorage](docs ...T) []common.Artifact {
 }
 
 // ApplyFilters selects the artifacts from the given list based on the code layout rule.
-func ApplyFilters(artifacts []common.Artifact, layoutItem common.LayoutItemOpts) []common.Artifact {
+func ApplyFilters(artifacts []common.Artifact, layoutItem common.CodeLayoutItemOpts) []common.Artifact {
 	logger := log.GetLogger("")
 
 	filtersChain := buildFiltersChain(layoutItem)
@@ -65,7 +65,7 @@ type protocolArtifact interface {
 	ActiveProtocols() []string
 }
 
-func buildFiltersChain(layoutItem common.LayoutItemOpts) []filterFunc {
+func buildFiltersChain(layoutItem common.CodeLayoutItemOpts) []filterFunc {
 	var filterChain []filterFunc
 	logger := log.GetLogger("")
 

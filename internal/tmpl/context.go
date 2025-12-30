@@ -27,7 +27,7 @@ type CodeTemplateContext struct {
 	// Object is the current object to render.
 	Object common.Artifact
 	// CurrentLayoutItem is the layout config item that is used to select the Object.
-	CurrentLayoutItem common.LayoutItemOpts
+	CurrentLayoutItem common.CodeLayoutItemOpts
 	// PackageName is the package name of the current file.
 	PackageName string
 	// ImportsManager keeps the imports list for the current file.

@@ -87,9 +87,9 @@ func cliUI(cmd *UICmd, globalConfig toolConfig) error {
 	logger.Debug("Run template rendering")
 	renderManager := manager.NewTemplateRenderManager(common.RenderOpts{})
 	templateDirs := []fs.FS{ui.TemplateFS}
-	if cmdConfig.Code.TemplatesDir != "" {
-		logger.Debug("Custom templates location", "directory", cmdConfig.Code.TemplatesDir)
-		templateDirs = append(templateDirs, os.DirFS(cmdConfig.Code.TemplatesDir))
+	if cmdConfig.TemplatesDir != "" {
+		logger.Debug("Custom templates location", "directory", cmdConfig.TemplatesDir)
+		templateDirs = append(templateDirs, os.DirFS(cmdConfig.TemplatesDir))
 	}
 	tplLoader := tmpl.NewTemplateLoader(defaultMainTemplateName, templateDirs...)
 	logger.Trace("Parse templates", "dirs", templateDirs)
@@ -304,6 +304,8 @@ func serveUI(address string, files map[string]servingUIContent) error {
 func cliUIMergeConfig(globalConfig toolConfig, cmd *UICmd) (toolConfig, error) {
 	res := globalConfig
 
+	res.TemplatesDir = coalesce(cmd.TemplatesDir, globalConfig.TemplatesDir)
+
 	res.UI.OutputFile = coalesce(cmd.Output, globalConfig.UI.OutputFile)
 	res.UI.Listen = coalesce(cmd.Listen, globalConfig.UI.Listen)
 	res.UI.ListenAddress = coalesce(cmd.ListenAddress, globalConfig.UI.ListenAddress)
@@ -311,8 +313,6 @@ func cliUIMergeConfig(globalConfig toolConfig, cmd *UICmd) (toolConfig, error) {
 	res.UI.ReferenceOnly = coalesce(cmd.ReferenceOnly, globalConfig.UI.ReferenceOnly)
 	res.UI.Bundle = coalesce(cmd.Bundle, globalConfig.UI.Bundle)
 	res.UI.BundleDir = coalesce(cmd.BundleDir, globalConfig.UI.BundleDir)
-
-	res.Code.TemplatesDir = coalesce(cmd.TemplatesDir, globalConfig.Code.TemplatesDir)
 
 	return res, nil
 }

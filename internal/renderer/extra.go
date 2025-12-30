@@ -5,7 +5,6 @@ import (
 	"io/fs"
 	"os"
 	"path"
-	"text/template"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/log"
@@ -22,14 +21,12 @@ const (
 	unknownProtocolSrcDir = "unknown"
 )
 
-type dirTemplateLoader interface {
-	ParseDir(subDir string, renderManager *manager.TemplateRenderManager) ([]string, error)
-	LoadTemplate(name string) (*template.Template, error)
-}
-
 func RenderUtilCode(protocols []string, opts common.RenderOpts, mng *manager.TemplateRenderManager, tplBase fs.FS) error {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
-	tplLoader := mng.TemplateLoader.(dirTemplateLoader)
+	prevTplLoader := mng.TemplateLoader
+	defer func() {
+		mng.TemplateLoader = prevTplLoader
+	}()
 
 	for _, protocol := range protocols {
 		logger.Debug("Render util code", "protocol", protocol)
@@ -50,10 +47,31 @@ func RenderUtilCode(protocols []string, opts common.RenderOpts, mng *manager.Tem
 		}
 		logger.Trace("-> Util code source directory", "srcDir", srcDir)
 
-		templates, err := tplLoader.ParseDir(srcDir, mng)
-		if err != nil {
-			return err
+		userConfig, _ := lo.Find(opts.UtilCodeOpts.Custom, func(item common.UtilCodeCustomOpts) bool {
+			return item.Protocol == protocol
+		})
+
+		var templates []string
+		if userConfig.TemplateDirectory != "" {
+			logger.Trace("-> Using the custom template directory", "directory", userConfig.TemplateDirectory)
+			ld := tmpl.NewTemplateLoader("", os.DirFS(userConfig.TemplateDirectory))
+			mng.TemplateLoader = ld
+
+			templates, err = ld.ParseDir(".", mng)
+			if err != nil {
+				return fmt.Errorf("parse templates from directory %q: %w", userConfig.TemplateDirectory, err)
+			}
+		} else {
+			logger.Trace("-> Using the built-in util code templates")
+			ld := tmpl.NewTemplateLoader("", tplBase)
+			mng.TemplateLoader = ld
+
+			templates, err = ld.ParseDir(srcDir, mng)
+			if err != nil {
+				return fmt.Errorf("parse templates from built-in util code for protocol %q: %w", protocol, err)
+			}
 		}
+
 		logger.Trace("-> Templates found", "files", templates)
 		if err = renderCodeExtraTemplates(templates, ctx, mng, nil); err != nil {
 			return fmt.Errorf("render templates for protocol %q: %w", protocol, err)
@@ -73,10 +91,10 @@ func RenderImplementationCode(protocols []string, opts common.RenderOpts, mng *m
 	for _, protocol := range protocols {
 		logger.Debug("Render implementation code", "protocol", protocol)
 
-		override, _ := lo.Find(opts.ImplementationCodeOpts.Customized, func(item common.ImplementationCodeCustomizedOpts) bool {
+		userConfig, _ := lo.Find(opts.ImplementationCodeOpts.Custom, func(item common.ImplementationCodeCustomOpts) bool {
 			return item.Protocol == protocol
 		})
-		if override.Disable {
+		if userConfig.Disable {
 			logger.Debug("-> Implementation is disabled for protocol, skipping")
 			continue
 		}
@@ -88,30 +106,30 @@ func RenderImplementationCode(protocols []string, opts common.RenderOpts, mng *m
 		}
 		logger.Trace("-> Directory", "result", directory)
 
-		pkgName, _ := lo.Coalesce(override.Package, utils.GetPackageName(directory))
+		pkgName, _ := lo.Coalesce(userConfig.Package, utils.GetPackageName(directory))
 		ctx = tmpl.CodeExtraTemplateContext{RenderOpts: opts, Protocol: protocol, Directory: directory, PackageName: pkgName}
 		logger.Trace("-> Package name", "name", pkgName)
 
 		var templates []string
-		if override.TemplateDirectory != "" {
-			logger.Trace("-> Using the custom template directory", "directory", override.TemplateDirectory)
-			ld := tmpl.NewTemplateLoader("", os.DirFS(override.TemplateDirectory))
+		if userConfig.TemplateDirectory != "" {
+			logger.Trace("-> Using the custom template directory", "directory", userConfig.TemplateDirectory)
+			ld := tmpl.NewTemplateLoader("", os.DirFS(userConfig.TemplateDirectory))
 			mng.TemplateLoader = ld
 
 			templates, err = ld.ParseDir(".", mng)
 			if err != nil {
-				return fmt.Errorf("parse templates from directory %q: %w", override.TemplateDirectory, err)
+				return fmt.Errorf("parse templates from directory %q: %w", userConfig.TemplateDirectory, err)
 			}
 		} else {
-			logger.Trace("-> Using the built-in implementations", "name", lo.CoalesceOrEmpty(override.Name, "<default>"))
+			logger.Trace("-> Using the built-in implementations", "name", lo.CoalesceOrEmpty(userConfig.Name, "<default>"))
 			ld := tmpl.NewTemplateLoader("", tplBase)
 			mng.TemplateLoader = ld
 
 			man, found := lo.Find(manifests, func(item codeextra.ImplementationManifest) bool {
-				return item.Protocol == protocol && (override.Name == "" || item.Name == override.Name)
+				return item.Protocol == protocol && (userConfig.Name == "" || item.Name == userConfig.Name)
 			})
 			if !found {
-				logger.Warn("-> No implementation found for protocol, skipping", "protocol", protocol)
+				logger.Warn("-> No implementation found for protocol, skipping", "protocol", protocol, "name", lo.CoalesceOrEmpty(userConfig.Name, "<default>"))
 				continue
 			}
 			logger.Debug("-> Using built-in implementation", "protocol", protocol)
@@ -124,14 +142,14 @@ func RenderImplementationCode(protocols []string, opts common.RenderOpts, mng *m
 		}
 
 		logger.Trace("-> Templates found", "files", templates)
-		if err = renderCodeExtraTemplates(templates, ctx, mng, &override); err != nil {
+		if err = renderCodeExtraTemplates(templates, ctx, mng, &userConfig); err != nil {
 			return fmt.Errorf("render templates for protocol %q: %w", protocol, err)
 		}
 	}
 	return nil
 }
 
-func renderCodeExtraTemplates(templates []string, ctx tmpl.CodeExtraTemplateContext, mng *manager.TemplateRenderManager, implConf *common.ImplementationCodeCustomizedOpts) error {
+func renderCodeExtraTemplates(templates []string, ctx tmpl.CodeExtraTemplateContext, mng *manager.TemplateRenderManager, implConf *common.ImplementationCodeCustomOpts) error {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
 	for _, templateFile := range templates {

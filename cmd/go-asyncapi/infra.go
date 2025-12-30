@@ -76,9 +76,9 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	// Document objects
 	logger.Debug("Run objects rendering")
 	templateDirs := []fs.FS{infra.TemplateFS}
-	if cmdConfig.Code.TemplatesDir != "" {
-		logger.Debug("Custom templates location", "directory", cmdConfig.Code.TemplatesDir)
-		templateDirs = append(templateDirs, os.DirFS(cmdConfig.Code.TemplatesDir))
+	if cmdConfig.TemplatesDir != "" {
+		logger.Debug("Custom templates location", "directory", cmdConfig.TemplatesDir)
+		templateDirs = append(templateDirs, os.DirFS(cmdConfig.TemplatesDir))
 	}
 	tplLoader := tmpl.NewTemplateLoader(defaultMainTemplateName, templateDirs...)
 	logger.Trace("Parse templates", "dirs", templateDirs)
@@ -132,6 +132,8 @@ func writeToFile(fileName string, buf io.Reader) error {
 func cliInfraMergeConfig(globalConfig toolConfig, cmd *InfraCmd) (toolConfig, error) {
 	res := globalConfig
 
+	res.TemplatesDir = coalesce(cmd.TemplateDir, globalConfig.TemplatesDir)
+
 	res.Infra.Engine = coalesce(cmd.Engine, globalConfig.Infra.Engine)
 	var outputFile string
 	switch res.Infra.Engine {
@@ -141,8 +143,6 @@ func cliInfraMergeConfig(globalConfig toolConfig, cmd *InfraCmd) (toolConfig, er
 		return res, fmt.Errorf("unknown engine: %s", cmd.Engine)
 	}
 	res.Infra.OutputFile = coalesce(cmd.OutputFile, outputFile)
-
-	res.Code.TemplatesDir = coalesce(cmd.TemplateDir, globalConfig.Code.TemplatesDir)
 
 	res.Locator.AllowRemoteReferences = coalesce(cmd.AllowRemoteRefs, globalConfig.Locator.AllowRemoteReferences)
 	res.Locator.RootDirectory = coalesce(cmd.LocatorRootDir, globalConfig.Locator.RootDirectory)

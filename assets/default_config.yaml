@@ -1,21 +1,19 @@
 configVersion: 1
 runtimeModule: github.com/bdragon300/go-asyncapi/run
 
-layout:
-  - artifactKinds: ["schema", "server", "channel", "operation", "message", "parameter"]
-    render:
-      file: "{{.Object.Kind}}s/{{.Object | goIDUpper }}.go"
-  - artifactKinds: ["security"]
-    render:
-      file: "{{.Object.Kind}}/{{.Object | goIDUpper }}.go"
-
 locator:
   timeout: 30s
 
 code:
   preambleTemplate: preamble.tmpl
   targetDir: ./asyncapi
-  implementationsDir: "{{ .Manifest.Protocol }}"
+  layout:
+    - artifactKinds: [ "schema", "server", "channel", "operation", "message", "parameter" ]
+      render:
+        file: "{{.Object.Kind}}s/{{.Object | goIDUpper }}.go"
+    - artifactKinds: [ "security" ]
+      render:
+        file: "{{.Object.Kind}}/{{.Object | goIDUpper }}.go"
   util:
     directory: "{{ .Protocol }}"
   implementation:

@@ -25,10 +25,9 @@ type (
 		ConfigVersion int    `yaml:"configVersion"`
 		ProjectModule string `yaml:"projectModule"`
 		RuntimeModule string `yaml:"runtimeModule"`
+		TemplatesDir  string `yaml:"templatesDir"`
 
-		Layout          []toolConfigLayout         `yaml:"layout"`
-		Locator         toolConfigLocator          `yaml:"locator"`
-		Implementations []toolConfigImplementation `yaml:"implementations"` // TODO: move to code.implementations
+		Locator toolConfigLocator `yaml:"locator"`
 
 		Code    toolConfigCode    `yaml:"code"`
 		Client  toolConfigClient  `yaml:"client"`
@@ -37,7 +36,28 @@ type (
 		UI      toolConfigUI      `yaml:"ui"`
 	}
 
-	toolConfigLayout struct {
+	toolConfigLocator struct {
+		AllowRemoteReferences bool          `yaml:"allowRemoteReferences"`
+		RootDirectory         string        `yaml:"rootDirectory"`
+		Timeout               time.Duration `yaml:"timeout"`
+		Command               string        `yaml:"command"`
+	}
+
+	toolConfigCode struct {
+		OnlyPublish       bool   `yaml:"onlyPublish"`
+		OnlySubscribe     bool   `yaml:"onlySubscribe"`
+		DisableFormatting bool   `yaml:"disableFormatting"`
+		TargetDir         string `yaml:"targetDir"`
+
+		Layout []toolConfigCodeLayout `yaml:"layout"`
+
+		PreambleTemplate string `yaml:"preambleTemplate"`
+
+		Util           toolConfigCodeUtil           `yaml:"util"`
+		Implementation toolConfigCodeImplementation `yaml:"implementation"`
+	}
+
+	toolConfigCodeLayout struct {
 		NameRe           string                 `yaml:"nameRe"`
 		ArtifactKinds    []string               `yaml:"artifactKinds"`
 		ModuleURLRe      string                 `yaml:"moduleURLRe"` // TODO: rename to locationRe or smth like that
@@ -56,36 +76,23 @@ type (
 		Package          string   `yaml:"package"` // TODO: make it inline template
 	}
 
-	toolConfigLocator struct {
-		AllowRemoteReferences bool          `yaml:"allowRemoteReferences"`
-		RootDirectory         string        `yaml:"rootDirectory"`
-		Timeout               time.Duration `yaml:"timeout"`
-		Command               string        `yaml:"command"`
-	}
-
-	toolConfigCode struct {
-		OnlyPublish       bool   `yaml:"onlyPublish"`
-		OnlySubscribe     bool   `yaml:"onlySubscribe"`
-		DisableFormatting bool   `yaml:"disableFormatting"`
-		TargetDir         string `yaml:"targetDir"`
-
-		TemplatesDir     string `yaml:"templatesDir"` // TODO: move to global config
-		PreambleTemplate string `yaml:"preambleTemplate"`
-
-		Util           toolConfigCodeUtil           `yaml:"util"`
-		Implementation toolConfigCodeImplementation `yaml:"implementation"`
-	}
-
 	toolConfigCodeUtil struct {
-		Directory string `yaml:"directory"` // Template expression, relative to the target directory
+		Directory string                       `yaml:"directory"` // Template expression, relative to the target directory
+		Custom    []toolConfigCodeUtilProtocol `yaml:"custom"`
+	}
+
+	toolConfigCodeUtilProtocol struct {
+		Protocol          string `yaml:"protocol"`
+		TemplateDirectory string `yaml:"templateDirectory"`
 	}
 
 	toolConfigCodeImplementation struct {
-		Directory string `yaml:"directory"` // Template expression, relative to the target directory
-		Disable   bool   `yaml:"disable"`
+		Directory string                             `yaml:"directory"` // Template expression, relative to the target directory
+		Disable   bool                               `yaml:"disable"`
+		Custom    []toolConfigImplementationProtocol `yaml:"custom"`
 	}
 
-	toolConfigImplementation struct {
+	toolConfigImplementationProtocol struct {
 		Protocol          string `yaml:"protocol"`
 		Name              string `yaml:"name"`
 		Disable           bool   `yaml:"disable"`
@@ -215,31 +222,36 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 	res.ConfigVersion = coalesce(userConf.ConfigVersion, defaultConf.ConfigVersion)
 	res.ProjectModule = coalesce(userConf.ProjectModule, defaultConf.ProjectModule)
 	res.RuntimeModule = coalesce(userConf.RuntimeModule, defaultConf.RuntimeModule)
-	res.Code.TemplatesDir = coalesce(userConf.Code.TemplatesDir, defaultConf.Code.TemplatesDir)
-	res.Code.TargetDir = coalesce(userConf.Code.TargetDir, defaultConf.Code.TargetDir)
+	res.TemplatesDir = coalesce(userConf.TemplatesDir, defaultConf.TemplatesDir)
 
 	// *Replace* layout
-	res.Layout = defaultConf.Layout
-	if len(userConf.Layout) > 0 {
-		res.Layout = userConf.Layout
+	res.Code.Layout = defaultConf.Code.Layout
+	if len(userConf.Code.Layout) > 0 {
+		res.Code.Layout = userConf.Code.Layout
+	}
+	res.Code.TargetDir = coalesce(userConf.Code.TargetDir, defaultConf.Code.TargetDir)
+	res.Code.PreambleTemplate = coalesce(userConf.Code.PreambleTemplate, defaultConf.Code.PreambleTemplate)
+	res.Code.DisableFormatting = coalesce(userConf.Code.DisableFormatting, defaultConf.Code.DisableFormatting)
+
+	// *Replace* the whole list
+	res.Code.Implementation.Custom = defaultConf.Code.Implementation.Custom
+	if len(userConf.Code.Implementation.Custom) > 0 {
+		res.Code.Implementation.Custom = userConf.Code.Implementation.Custom
+	}
+	res.Code.Implementation.Directory = coalesce(userConf.Code.Implementation.Directory, defaultConf.Code.Implementation.Directory)
+	res.Code.Implementation.Disable = coalesce(userConf.Code.Implementation.Disable, defaultConf.Code.Implementation.Disable)
+
+	res.Code.Util.Directory = coalesce(userConf.Code.Util.Directory, defaultConf.Code.Util.Directory)
+	// *Replace* the whole list
+	res.Code.Util.Custom = defaultConf.Code.Util.Custom
+	if len(userConf.Code.Util.Custom) > 0 {
+		res.Code.Util.Custom = userConf.Code.Util.Custom
 	}
 
 	res.Locator.AllowRemoteReferences = coalesce(userConf.Locator.AllowRemoteReferences, defaultConf.Locator.AllowRemoteReferences)
 	res.Locator.RootDirectory = coalesce(userConf.Locator.RootDirectory, defaultConf.Locator.RootDirectory)
 	res.Locator.Timeout = coalesce(userConf.Locator.Timeout, defaultConf.Locator.Timeout)
 	res.Locator.Command = coalesce(userConf.Locator.Command, defaultConf.Locator.Command)
-
-	res.Code.PreambleTemplate = coalesce(userConf.Code.PreambleTemplate, defaultConf.Code.PreambleTemplate)
-	res.Code.DisableFormatting = coalesce(userConf.Code.DisableFormatting, defaultConf.Code.DisableFormatting)
-
-	res.Implementations = defaultConf.Implementations
-	// *Replace* implementations.protocols
-	if len(userConf.Implementations) > 0 {
-		res.Implementations = userConf.Implementations
-	}
-	res.Code.Util.Directory = coalesce(userConf.Code.Util.Directory, defaultConf.Code.Util.Directory)
-	res.Code.Implementation.Directory = coalesce(userConf.Code.Implementation.Directory, defaultConf.Code.Implementation.Directory)
-	res.Code.Implementation.Disable = coalesce(userConf.Code.Implementation.Disable, defaultConf.Code.Implementation.Disable)
 
 	res.Client.GoModTemplate = coalesce(userConf.Client.GoModTemplate, defaultConf.Client.GoModTemplate)
 	res.Client.OutputFile = coalesce(userConf.Client.OutputFile, defaultConf.Client.OutputFile)
