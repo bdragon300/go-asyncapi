@@ -51,7 +51,6 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	}
 	compileOpts := compile.CompilationOpts{
 		AllowRemoteRefs:     cmdConfig.Locator.AllowRemoteReferences,
-		RuntimeModule:       cmdConfig.RuntimeModule,
 		GeneratePublishers:  true,
 		GenerateSubscribers: true,
 	}

@@ -2,7 +2,6 @@ package compile
 
 import (
 	"fmt"
-	"path"
 	"strings"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -27,7 +26,6 @@ type CompilationStorage interface {
 
 type CompilationOpts struct {
 	AllowRemoteRefs     bool
-	RuntimeModule       string
 	GeneratePublishers  bool
 	GenerateSubscribers bool
 }
@@ -111,12 +109,6 @@ func (c *Context) CurrentRef() jsonpointer.JSONPointer {
 
 func (c *Context) pathStack() []string {
 	return lo.Map(c.Stack.Items(), func(item DocumentTreeItem, _ int) string { return item.Key })
-}
-
-// RuntimeModule returns the import path of the runtime module with optional subpackage,
-// e.g. "github.com/bdragon300/go-asyncapi/run/kafka".
-func (c *Context) RuntimeModule(subPackage string) string {
-	return path.Join(c.CompileOpts.RuntimeModule, subPackage)
 }
 
 // GenerateObjName generates a valid Go object name from any given string appending the optional suffix.

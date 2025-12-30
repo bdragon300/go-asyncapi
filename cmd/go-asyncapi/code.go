@@ -261,7 +261,6 @@ func getCompileOpts(cfg toolConfig) compile.CompilationOpts {
 	isSub := cfg.Code.OnlySubscribe || !cfg.Code.OnlyPublish
 	return compile.CompilationOpts{
 		AllowRemoteRefs:     cfg.Locator.AllowRemoteReferences,
-		RuntimeModule:       cfg.RuntimeModule,
 		GeneratePublishers:  isPub,
 		GenerateSubscribers: isSub,
 	}
