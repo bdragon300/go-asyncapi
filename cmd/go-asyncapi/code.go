@@ -91,6 +91,8 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 		return fmt.Errorf("compilation: %w", err)
 	}
 
+	checkArtifacts(documents)
+
 	//
 	// Rendering
 	//
@@ -193,33 +195,22 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 // collectActiveServersProtocols returns a list of protocols that are used in servers that are active and selectable, i.e.
 // those, which will appear in the generated code. Used to determine which implementations to generate.
 func collectActiveServersProtocols(documents map[string]*compiler.Document) []string {
-	artifacts := lo.FlatMap(maps.Values(documents), func(doc *compiler.Document, _ int) []common.Artifact {
-		return doc.Artifacts()
-	})
-	r := lo.Uniq(lo.FilterMap(artifacts, func(obj common.Artifact, _ int) (string, bool) {
-		if v, ok := obj.(*render.Server); ok && v.Selectable() && v.Visible() {
-			return v.Protocol, true
-		}
-		return "", false
+	servers := collectVisibleArtifactsByType[*render.Server](documents)
+	r := lo.Uniq(lo.FilterMap(servers, func(obj *render.Server, _ int) (string, bool) {
+		return obj.Protocol, obj.Selectable()
 	}))
-	slices.Sort(r) // Sort to keep idempotency
 	return r
 }
 
 // collectAllProtocols returns a list of all protocols that are used both in bindings and active servers. Used to
 // determine which util code to generate.
 func collectAllProtocols(documents map[string]*compiler.Document) []string {
-	artifacts := lo.FlatMap(maps.Values(documents), func(doc *compiler.Document, _ int) []common.Artifact {
-		return doc.Artifacts()
-	})
-	bindingProtocols := lo.FlatMap(artifacts, func(obj common.Artifact, _ int) []string {
-		if v, ok := obj.(*render.Bindings); ok && v.Visible() { // Bindings are always non-selectable, so don't check Selectable()
-			return v.Protocols()
-		}
-		return nil
+	bindingsArtifacts := collectVisibleArtifactsByType[*render.Bindings](documents)
+	bindingProtocols := lo.FlatMap(bindingsArtifacts, func(obj *render.Bindings, _ int) []string {
+		// Bindings are always non-selectable, so we don't check Selectable() here
+		return obj.Protocols()
 	})
 	r := lo.Uniq(append(bindingProtocols, collectActiveServersProtocols(documents)...))
-	slices.Sort(r) // Sort to keep idempotency
 	return r
 }
 
@@ -492,6 +483,62 @@ func runLinking(objSources map[string]linker.ObjectSource) error {
 	})
 	logger.Info("Linking complete", "refs", refsCount)
 	return nil
+}
+
+// checkArtifacts briefly checks for the common mistakes in documents, that can lead to incorrect code generation or runtime errors.
+// The main purpose of this function is to inform the user about this.
+func checkArtifacts(documents map[string]*compiler.Document) {
+	logger := log.GetLogger(log.LoggerPrefixLinking)
+
+	// Servers, channels and operations have the common names
+	artifacts := lo.Flatten([][]common.Artifact{
+		lo.Map(collectVisibleArtifactsByType[*render.Server](documents), func(v *render.Server, _ int) common.Artifact { return v }),
+		lo.Map(collectVisibleArtifactsByType[*render.Channel](documents), func(v *render.Channel, _ int) common.Artifact { return v }),
+		lo.Map(collectVisibleArtifactsByType[*render.Operation](documents), func(v *render.Operation, _ int) common.Artifact { return v }),
+	})
+	duplications := lo.FindDuplicatesBy(artifacts, func(item common.Artifact) string {
+		return item.Name()
+	})
+	if v := duplications; len(v) > 0 {
+		logger.Warn("Some servers, channels or operations have common names. The generated code may contain errors", "names", v)
+	}
+
+	// Messages in operation is not a subset of channel messages.
+	// And Messages in operation reply is not a subset of its channel messages
+	operations := collectVisibleArtifactsByType[*render.Operation](documents)
+	for _, op := range operations {
+		if !lo.Every(op.Channel().Messages(), op.Messages()) {
+			logger.Warn("Messages list in Operation is not a subset of Messages list in the Operation's Channel. The generated code may contain errors", "operation", op.Pointer(), "channel", op.Channel().Pointer())
+		}
+
+		if op.OperationReply() == nil {
+			continue
+		}
+		ch := op.Channel()
+		if op.OperationReply().Channel() != nil {
+			ch = op.OperationReply().Channel()
+		}
+		if !lo.Every(ch.Messages(), op.OperationReply().Messages()) {
+			logger.Warn("Messages list in OperationReply is not a subset of Messages list in the OperationReply's Channel. The generated code may contain errors", "operationReply", op.OperationReply().Pointer(), "channel", ch.Pointer())
+		}
+	}
+}
+
+func collectVisibleArtifactsByType[T common.Artifact](documents map[string]*compiler.Document) []T {
+	artifacts := lo.FlatMap(maps.Values(documents), func(doc *compiler.Document, _ int) []common.Artifact {
+		return doc.Artifacts()
+	})
+	r := lo.FilterMap(artifacts, func(obj common.Artifact, _ int) (res T, k bool) {
+		if v, ok := obj.(T); ok && v.Visible() {
+			return v, true
+		}
+		return res, false
+	})
+	// Sort by name to keep idempotency
+	slices.SortStableFunc(r, func(a, b T) int {
+		return strings.Compare(a.Name(), b.Name())
+	})
+	return r
 }
 
 // postprocessGoFiles formats the file buffers in-place applying go fmt.
