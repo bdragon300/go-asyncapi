@@ -238,15 +238,15 @@ func downloadUIResource(url string) ([]byte, error) {
 	return data, nil
 }
 
-func buildUIResources(files []string, contents [][]byte, servePath string, embed bool) ([]common.UIHTMLResource, error) {
-	resources := lo.Map(files, func(srcPath string, ind int) common.UIHTMLResource {
+func buildUIResources(files []string, contents [][]byte, servePath string, embed bool) ([]common.UIHTMLResourceOpts, error) {
+	resources := lo.Map(files, func(srcPath string, ind int) common.UIHTMLResourceOpts {
 		u := lo.Must(jsonpointer.Parse(srcPath))
 		loc := u.FSPath
 		if u.URI != nil {
 			loc = u.URI.Path
 		}
 
-		r := common.UIHTMLResource{Location: srcPath, Embed: embed, FileExtension: path.Ext(loc)}
+		r := common.UIHTMLResourceOpts{Location: srcPath, Embed: embed, FileExtension: path.Ext(loc)}
 		if servePath != "" {
 			r.Location = path.Join(servePath, path.Base(loc))
 		}
@@ -317,6 +317,6 @@ func cliUIMergeConfig(globalConfig toolConfig, cmd *UICmd) (toolConfig, error) {
 	return res, nil
 }
 
-func getUIConfig(conf toolConfigUI) common.ConfigUI {
-	return common.ConfigUI{ReferenceOnly: lo.FromPtr(conf.ReferenceOnly)}
+func getUIConfig(conf toolConfigUI) common.UIRenderOpts {
+	return common.UIRenderOpts{ReferenceOnly: lo.FromPtr(conf.ReferenceOnly)}
 }

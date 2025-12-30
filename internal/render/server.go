@@ -112,16 +112,16 @@ func (s *Server) BindingsProtocols() []string {
 // URL typically is used in templates to get the inflated server url by server variables values from the tool config.
 //
 // By default, the function returns the full server url made from Host and Pathname for any input value. However, if
-// input is *non-empty* []common.ConfigServerVariable, it additionally substitutes the given variables to the host
+// input is *non-empty* []common.InfraServerVariableOpts, it additionally substitutes the given variables to the host
 // expression in the url. See asyncapi standard for more info.
 func (s *Server) URL(input any) (*url.URL, error) {
-	variables, ok := input.([]common.ConfigServerVariable)
+	variables, ok := input.([]common.InfraServerVariableOpts)
 	if lo.IsNil(input) || !ok || len(variables) == 0 {
 		return &url.URL{Scheme: s.Protocol, Host: s.Host, Path: s.Pathname}, nil
 	}
 
 	res := &url.URL{Scheme: s.Protocol, Path: s.Pathname}
-	params := lo.SliceToMap(variables, func(v common.ConfigServerVariable) (string, string) {
+	params := lo.SliceToMap(variables, func(v common.InfraServerVariableOpts) (string, string) {
 		return v.Name, v.Value
 	})
 	h, err := run.ParamString{Expr: s.Host, Parameters: params}.Expand()

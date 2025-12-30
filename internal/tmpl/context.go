@@ -27,7 +27,7 @@ type CodeTemplateContext struct {
 	// Object is the current object to render.
 	Object common.Artifact
 	// CurrentLayoutItem is the layout config item that is used to select the Object.
-	CurrentLayoutItem common.ConfigLayoutItem
+	CurrentLayoutItem common.LayoutItemOpts
 	// PackageName is the package name of the current file.
 	PackageName string
 	// ImportsManager keeps the imports list for the current file.
@@ -60,7 +60,7 @@ type ClientAppTemplateContext struct {
 // InfraTemplateContext is a context that is passed to the infrastructure templates.
 type InfraTemplateContext struct {
 	// ServerConfig is servers tool config for infra generation process
-	ServerConfig []common.ConfigInfraServerOpt
+	ServerConfig []common.InfraServerOpts
 	// Objects is rendering objects queue.
 	Objects []common.Artifact
 	// ActiveProtocols is a list of supported protocols, that are used in AsyncAPI document.
@@ -68,8 +68,8 @@ type InfraTemplateContext struct {
 }
 
 // ServerVariableGroups returns the server variables that are set in tool's config filtered by the server name.
-func (i InfraTemplateContext) ServerVariableGroups(serverName string) [][]common.ConfigServerVariable {
-	res, ok := lo.Find(i.ServerConfig, func(v common.ConfigInfraServerOpt) bool {
+func (i InfraTemplateContext) ServerVariableGroups(serverName string) [][]common.InfraServerVariableOpts {
+	res, ok := lo.Find(i.ServerConfig, func(v common.InfraServerOpts) bool {
 		return v.ServerName == serverName
 	})
 	if !ok {
@@ -83,7 +83,7 @@ type DiagramTemplateContext struct {
 	// Objects is rendering objects queue.
 	Objects []common.Artifact
 
-	Config common.ConfigDiagram
+	Config common.DiagramRenderOpts
 }
 
 func (d DiagramTemplateContext) ObjectsGroupedByLocation() iter.Seq2[string, []common.Artifact] {
@@ -102,7 +102,7 @@ type UITemplateContext struct {
 	DocumentURL jsonpointer.JSONPointer
 
 	// Resources is a list of resources to include in the generated html. Typically, CSS and JS files.
-	Resources []common.UIHTMLResource
+	Resources []common.UIHTMLResourceOpts
 
-	Config common.ConfigUI
+	Config common.UIRenderOpts
 }

@@ -15,7 +15,7 @@ import (
 )
 
 type RenderQueueItem struct {
-	LayoutItem common.ConfigLayoutItem
+	LayoutItem common.LayoutItemOpts
 	Object     common.Artifact
 	Err        error
 }

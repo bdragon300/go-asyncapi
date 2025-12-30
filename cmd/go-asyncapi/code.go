@@ -48,14 +48,10 @@ type CodeCmd struct {
 	ProjectModule string `arg:"-M,--module" help:"Project module name in the generated code. By default, read get from go.mod in the current working directory" placeholder:"MODULE"`
 	RuntimeModule string `arg:"--runtime-module" help:"Runtime module path" placeholder:"MODULE"`
 
-	TemplateDir       string `arg:"-T,--template-dir" help:"User templates directory" placeholder:"DIR"`
-	PreambleTemplate  string `arg:"--preamble-template" help:"Preamble template name" placeholder:"NAME"`
-	DisableFormatting bool   `arg:"--disable-formatting" help:"Disable code formatting"`
-
-	ImplementationsDir     string `arg:"--implementations-dir" help:"Directory to save the implementations code, counts from target dir" placeholder:"DIR"`
+	TemplateDir            string `arg:"-T,--template-dir" help:"User templates directory" placeholder:"DIR"`
+	PreambleTemplate       string `arg:"--preamble-template" help:"Preamble template name" placeholder:"NAME"`
+	DisableFormatting      bool   `arg:"--disable-formatting" help:"Disable code formatting"`
 	DisableImplementations bool   `arg:"--disable-implementations" help:"Do not generate implementations code"`
-
-	ExtraCodeDir string `arg:"--extra-code-dir" help:"Directory to save the extra code, counts from target dir" placeholder:"DIR"`
 
 	AllowRemoteRefs bool          `arg:"--allow-remote-refs" help:"Allow locator to fetch the documents from remote hosts"`
 	LocatorRootDir  string        `arg:"--locator-root-dir" help:"Root directory to search the documents" placeholder:"PATH"`
@@ -244,11 +240,7 @@ func cliCodeMergeConfig(globalConfig toolConfig, cmd *CodeCmd) toolConfig {
 	res.Code.TargetDir = coalesce(cmd.TargetDir, res.Code.TargetDir)
 	res.Code.PreambleTemplate = coalesce(cmd.PreambleTemplate, res.Code.PreambleTemplate)
 	res.Code.DisableFormatting = coalesce(cmd.DisableFormatting, res.Code.DisableFormatting)
-	res.Code.ImplementationsDir = coalesce(cmd.ImplementationsDir, res.Code.ImplementationsDir)
-	res.Code.DisableImplementations = coalesce(cmd.DisableImplementations, res.Code.DisableImplementations)
 
-	res.Code.Util.Directory = coalesce(cmd.ExtraCodeDir, res.Code.Util.Directory)
-	res.Code.Implementation.Directory = coalesce(cmd.ImplementationsDir, res.Code.Implementation.Directory)
 	res.Code.Implementation.Disable = coalesce(cmd.DisableImplementations, res.Code.Implementation.Disable)
 
 	res.Client.GoModTemplate = coalesce(cmd.goModTemplate, res.Client.GoModTemplate)
@@ -271,14 +263,14 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (c
 	res := common.RenderOpts{
 		RuntimeModule:    conf.RuntimeModule,
 		PreambleTemplate: conf.Code.PreambleTemplate,
-		UtilCodeOpts: common.ConfigUtilCodeOpts{
+		UtilCodeOpts: common.UtilCodeOpts{
 			Directory: conf.Code.Util.Directory,
 		},
-		ImplementationCodeOpts: common.ConfigImplementationCodeOpts{
+		ImplementationCodeOpts: common.ImplementationCodeOpts{
 			Directory: conf.Code.Implementation.Directory,
 			Disable:   conf.Code.Implementation.Disable,
-			Overrides: lo.Map(conf.Implementations, func(item toolConfigImplementation, _ int) common.ConfigImplementationProtocol {
-				return common.ConfigImplementationProtocol{
+			Customized: lo.Map(conf.Implementations, func(item toolConfigImplementation, _ int) common.ImplementationCodeCustomizedOpts {
+				return common.ImplementationCodeCustomizedOpts{
 					Protocol:          item.Protocol,
 					Name:              item.Name,
 					Disable:           item.Disable,
@@ -292,14 +284,14 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (c
 
 	// Layout
 	for _, item := range conf.Layout {
-		l := common.ConfigLayoutItem{
+		l := common.LayoutItemOpts{
 			Protocols:     item.Protocols,
 			ArtifactKinds: item.ArtifactKinds,
 			ModuleURLRe:   item.ModuleURLRe,
 			PathRe:        item.PathRe,
 			NameRe:        item.NameRe,
 			Not:           item.Not,
-			Render: common.ConfigLayoutItemRender{
+			Render: common.LayoutItemRenderOpts{
 				Template:         item.Render.Template,
 				File:             item.Render.File,
 				Package:          item.Render.Package,
@@ -333,7 +325,7 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (c
 }
 
 // selectArtifacts selects artifacts from the list of all artifacts based on the layout configuration.
-func selectArtifacts(artifacts []common.Artifact, layout []common.ConfigLayoutItem) (res []renderer.RenderQueueItem) {
+func selectArtifacts(artifacts []common.Artifact, layout []common.LayoutItemOpts) (res []renderer.RenderQueueItem) {
 	logger := log.GetLogger("")
 
 	for _, l := range layout {

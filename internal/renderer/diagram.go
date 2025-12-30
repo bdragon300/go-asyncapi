@@ -13,7 +13,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 )
 
-func RenderDiagramOneFile(objects []common.Artifact, fileName string, config common.ConfigDiagram, mng *manager.TemplateRenderManager) error {
+func RenderDiagramOneFile(objects []common.Artifact, fileName string, config common.DiagramRenderOpts, mng *manager.TemplateRenderManager) error {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
 	logger.Trace("Loading root template")
@@ -34,7 +34,7 @@ func RenderDiagramOneFile(objects []common.Artifact, fileName string, config com
 	return nil
 }
 
-func RenderDiagramMultipleFiles(documents map[string][]common.Artifact, fileExtension string, config common.ConfigDiagram, mng *manager.TemplateRenderManager) error {
+func RenderDiagramMultipleFiles(documents map[string][]common.Artifact, fileExtension string, config common.DiagramRenderOpts, mng *manager.TemplateRenderManager) error {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
 	logger.Trace("Loading root template")

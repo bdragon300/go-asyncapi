@@ -307,8 +307,8 @@ func cliDiagramMergeConfig(globalConfig toolConfig, cmd *DiagramCmd) (toolConfig
 	return res, nil
 }
 
-func getDiagramConfig(conf toolConfigDiagram) common.ConfigDiagram {
-	return common.ConfigDiagram{
+func getDiagramConfig(conf toolConfigDiagram) common.DiagramRenderOpts {
+	return common.DiagramRenderOpts{
 		ShowChannels:        !conf.ServersCentric,
 		ShowServers:         !conf.ChannelsCentric,
 		ShowDocumentBorders: conf.DocumentBorders,

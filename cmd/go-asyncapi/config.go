@@ -72,10 +72,8 @@ type (
 		TemplatesDir     string `yaml:"templatesDir"` // TODO: move to global config
 		PreambleTemplate string `yaml:"preambleTemplate"`
 
-		DisableImplementations bool                         `yaml:"disableImplementations"` // TODO: move to extra
-		ImplementationsDir     string                       `yaml:"implementationsDir"`     // TODO: remove // Template expression, relative to the target directory
-		Util                   toolConfigCodeUtil           `yaml:"util"`
-		Implementation         toolConfigCodeImplementation `yaml:"implementation"`
+		Util           toolConfigCodeUtil           `yaml:"util"`
+		Implementation toolConfigCodeImplementation `yaml:"implementation"`
 	}
 
 	toolConfigCodeUtil struct {
@@ -234,8 +232,6 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 	res.Code.PreambleTemplate = coalesce(userConf.Code.PreambleTemplate, defaultConf.Code.PreambleTemplate)
 	res.Code.DisableFormatting = coalesce(userConf.Code.DisableFormatting, defaultConf.Code.DisableFormatting)
 
-	res.Code.DisableImplementations = coalesce(userConf.Code.DisableImplementations, defaultConf.Code.DisableImplementations)
-	res.Code.ImplementationsDir = coalesce(userConf.Code.ImplementationsDir, defaultConf.Code.ImplementationsDir)
 	res.Implementations = defaultConf.Implementations
 	// *Replace* implementations.protocols
 	if len(userConf.Implementations) > 0 {

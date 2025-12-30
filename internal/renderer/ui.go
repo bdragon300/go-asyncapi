@@ -10,7 +10,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
 )
 
-func RenderUI(u *jsonpointer.JSONPointer, outFileName string, docContents map[string]any, resources []common.UIHTMLResource, config common.ConfigUI, mng *manager.TemplateRenderManager) error {
+func RenderUI(u *jsonpointer.JSONPointer, outFileName string, docContents map[string]any, resources []common.UIHTMLResourceOpts, config common.UIRenderOpts, mng *manager.TemplateRenderManager) error {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
 	logger.Trace("Loading root template")

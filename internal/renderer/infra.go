@@ -9,7 +9,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
 )
 
-func RenderInfra(objects []common.Artifact, activeProtocols []string, outputFileName string, serverConfig []common.ConfigInfraServerOpt, mng *manager.TemplateRenderManager) error {
+func RenderInfra(objects []common.Artifact, activeProtocols []string, outputFileName string, serverConfig []common.InfraServerOpts, mng *manager.TemplateRenderManager) error {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
 	logger.Debug("Objects selected", "count", len(objects))

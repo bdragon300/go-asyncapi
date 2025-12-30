@@ -73,7 +73,7 @@ func RenderImplementationCode(protocols []string, opts common.RenderOpts, mng *m
 	for _, protocol := range protocols {
 		logger.Debug("Render implementation code", "protocol", protocol)
 
-		override, _ := lo.Find(opts.ImplementationCodeOpts.Overrides, func(item common.ConfigImplementationProtocol) bool {
+		override, _ := lo.Find(opts.ImplementationCodeOpts.Customized, func(item common.ImplementationCodeCustomizedOpts) bool {
 			return item.Protocol == protocol
 		})
 		if override.Disable {
@@ -131,7 +131,7 @@ func RenderImplementationCode(protocols []string, opts common.RenderOpts, mng *m
 	return nil
 }
 
-func renderCodeExtraTemplates(templates []string, ctx tmpl.CodeExtraTemplateContext, mng *manager.TemplateRenderManager, implConf *common.ConfigImplementationProtocol) error {
+func renderCodeExtraTemplates(templates []string, ctx tmpl.CodeExtraTemplateContext, mng *manager.TemplateRenderManager, implConf *common.ImplementationCodeCustomizedOpts) error {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
 	for _, templateFile := range templates {

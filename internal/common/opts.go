@@ -25,23 +25,23 @@ type (
 		RuntimeModule          string
 		ImportBase             string
 		PreambleTemplate       string
-		Layout                 []ConfigLayoutItem
-		UtilCodeOpts           ConfigUtilCodeOpts
-		ImplementationCodeOpts ConfigImplementationCodeOpts
+		Layout                 []LayoutItemOpts
+		UtilCodeOpts           UtilCodeOpts
+		ImplementationCodeOpts ImplementationCodeOpts
 	}
 
-	ConfigLayoutItem struct {
+	LayoutItemOpts struct {
 		Protocols        []string
 		ArtifactKinds    []string
 		ModuleURLRe      string
 		PathRe           string
 		NameRe           string
 		Not              bool
-		Render           ConfigLayoutItemRender
+		Render           LayoutItemRenderOpts
 		ReusePackagePath string
 	}
 
-	ConfigLayoutItemRender struct {
+	LayoutItemRenderOpts struct {
 		Template         string
 		File             string
 		Package          string
@@ -49,17 +49,17 @@ type (
 		ProtoObjectsOnly bool
 	}
 
-	ConfigUtilCodeOpts struct {
+	UtilCodeOpts struct {
 		Directory string
 	}
 
-	ConfigImplementationCodeOpts struct {
-		Directory string // Template expression, relative to the target directory
-		Disable   bool
-		Overrides []ConfigImplementationProtocol
+	ImplementationCodeOpts struct {
+		Directory  string // Template expression, relative to the target directory
+		Disable    bool
+		Customized []ImplementationCodeCustomizedOpts
 	}
 
-	ConfigImplementationProtocol struct {
+	ImplementationCodeCustomizedOpts struct {
 		Protocol          string
 		Name              string
 		Disable           bool
@@ -68,29 +68,37 @@ type (
 		ReusePackagePath  string
 	}
 
-	ConfigInfraServerOpt struct {
+	InfraServerOpts struct {
 		ServerName     string
-		VariableGroups [][]ConfigServerVariable
+		VariableGroups [][]InfraServerVariableOpts
 	}
 
-	ConfigServerVariable struct {
+	InfraServerVariableOpts struct {
 		Name  string
 		Value string
 	}
 
-	ConfigDiagram struct {
+	DiagramRenderOpts struct {
 		ShowChannels        bool
 		ShowServers         bool
 		ShowDocumentBorders bool
 		D2DiagramDirection  D2DiagramDirection
 	}
 
-	ConfigUI struct {
+	UIRenderOpts struct {
 		ReferenceOnly bool
+	}
+
+	// UIHTMLResourceOpts represents a CSS or JS resource for UI rendering
+	UIHTMLResourceOpts struct {
+		Location      string
+		Content       string
+		Embed         bool
+		FileExtension string
 	}
 )
 
-func (r ConfigLayoutItem) AppliedToProtocol(proto string) bool {
+func (r LayoutItemOpts) AppliedToProtocol(proto string) bool {
 	if len(r.Render.Protocols) > 0 {
 		return lo.Contains(r.Render.Protocols, proto)
 	}
