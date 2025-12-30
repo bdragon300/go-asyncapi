@@ -14,7 +14,7 @@
 {{- end}}
 
 {{define "code/proto/kafka/channel/bindings/values"}}
-{{- goQualU .Protocol "ChannelBindings"}}{
+{{- goQualU "kafka" "ChannelBindings"}}{
     {{- with .Bindings.Values.Map.kafka}}
         {{with .topic }}Topic: {{goLit .}},{{end}}
         {{with .partitions }}Partitions: {{goLit .}},{{end}}

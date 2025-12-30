@@ -24,7 +24,7 @@
 {{- end}}
 
 {{define "code/proto/amqp/channel/bindings/values"}}
-{{- goQualU .Protocol "ChannelBindings"}}{
+{{- goQualU "amqp" "ChannelBindings"}}{
     {{- with .Bindings.Values.Map.amqp}}
         {{with .is }}{{goLit .}},{{end}}
         {{with .exchange }}ExchangeConfiguration: {{goQualU "amqp" "ExchangeConfiguration"}}{

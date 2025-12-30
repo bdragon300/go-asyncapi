@@ -203,3 +203,17 @@ type {{ .Channel | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
     {{if .IsSubscriber}}Consumer() {{goQualU .Protocol "Consumer"}}{{end}}
 }
 {{- end}}
+
+{{template "code/proto/channel/newFunction" .}}
+{{template "code/proto/channel/serverInterface" .}}
+{{template "code/proto/channel/openFunction" .}}
+
+type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
+    address    {{goQualR "ParamString"}}
+    {{if .IsPublisher}}publisher  {{goQualU .Protocol "Publisher"}}{{end}}
+    {{if .IsSubscriber}}subscriber {{goQualU .Protocol "Subscriber"}}{{end}}
+}
+
+{{template "code/proto/channel/commonMethods" .}}
+{{if .IsPublisher}}{{template "code/proto/channel/publishMethods" .}}{{end}}
+{{if .IsSubscriber}}{{template "code/proto/channel/subscribeMethods" .}}{{end}}

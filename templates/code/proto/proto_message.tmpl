@@ -102,3 +102,7 @@ func (m *{{ .InType | goIDUpper }}) Unmarshal{{ .Protocol | goIDUpper }}(r {{goQ
     {{template "code/proto/mime/messageDecoder/default" .}}
 {{- end}}
 {{- end}}
+
+{{template "code/proto/message/commonMethods" .}}
+{{if .IsPublisher}}{{template "code/proto/message/marshalMethods" .}}{{end}}
+{{if .IsSubscriber}}{{template "code/proto/message/unmarshalMethods" .}}{{end}}

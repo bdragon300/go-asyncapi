@@ -1,4 +1,2 @@
 {{- /* dot == render.ProtoMessage */}}
-{{template "code/proto/message/commonMethods" .}}
-{{if .IsPublisher}}{{template "code/proto/message/marshalMethods" .}}{{end}}
-{{if .IsSubscriber}}{{template "code/proto/message/unmarshalMethods" .}}{{end}}
+{{template "proto_message.tmpl" .}}

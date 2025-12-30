@@ -1,6 +1,6 @@
 {{- /* dot == render.ProtoOperation */}}
 {{define "code/proto/mqtt/operation/bindings/values"}}
-{{- goQualU .Protocol "OperationBindings"}}{
+{{- goQualU "mqtt" "OperationBindings"}}{
     {{- with .Bindings.Values.Map.mqtt}}
         {{with .qos }}QoS: {{goLit .}},{{end}}
         {{with .retain }}Retain: {{goLit .}},{{end}}
@@ -9,63 +9,4 @@
 }
 {{- end}}
 
-
-{{template "code/proto/operation/serverInterface" .}}
-{{template "code/proto/operation/openFunction" .}}
-
-type {{ . | goIDUpper }}Channel{{.Protocol | goIDUpper}} interface {
-{{range .BoundMessages}}
-    {{- if not (isVisible .) }}{{continue}}{{end}}
-    {{if .IsPublisher}}
-        Seal{{goIDUpper .}}({{goQualU $.Protocol "EnvelopeWriter"}}, {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
-        Publish{{goIDUpper .}}({{goQual "context.Context"}}, {{if not (impl $.Protocol)}}{{goQualU $.Protocol "EnvelopeWriter"}},{{end}} {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
-    {{- end}}
-    {{if .IsSubscriber}}
-        Unseal{{goIDUpper .}}({{goQualU $.Protocol "EnvelopeReader"}}, {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeUnmarshaler{{$.Protocol | goIDUpper}}) error
-        Subscribe{{goIDUpper .}}({{goQual "context.Context"}}, func({{ goPkg .InType}}{{ goIDUpper .}}Receiver)) error
-    {{- end}}
-{{- end}}
-}
-
-type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
-    Channel {{ . | goIDUpper }}Channel{{.Protocol | goIDUpper}}
-}
-
-{{template "code/proto/operation/commonMethods" .}}
-{{- if .IsPublisher}}
-    {{template "code/proto/operation/publishMethods" .}}
-{{- end}}
-{{- if .IsSubscriber}}
-    {{template "code/proto/operation/subscribeMethods" .}}
-{{- end}}
-
-{{- if or .IsReplyPublisher .IsReplySubscriber}}
-    {{- $replyCh := $.OperationReply.Channel }}
-    {{- $innerChannel := .ProtoChannel.Channel}}
-    {{- if .OperationReply.Channel}}{{$innerChannel = .OperationReply.Channel}}{{end}}
-
-    type {{ . | goIDUpper }}ReplyChannel{{.Protocol | goIDUpper}} interface {
-    {{range .BoundReplyMessages}}
-        {{- if not (isVisible .) }}{{continue}}{{end}}
-        {{if $.IsReplyPublisher}}
-            Seal{{goIDUpper .}}({{goQualU $.Protocol "EnvelopeWriter"}}, {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
-            Publish{{goIDUpper .}}({{goQual "context.Context"}}, {{if not (impl $.Protocol)}}{{goQualU $.Protocol "EnvelopeWriter"}},{{end}} {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
-        {{- end}}
-        {{if $.IsReplySubscriber}}
-            Unseal{{goIDUpper .}}({{goQualU $.Protocol "EnvelopeReader"}}, {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeUnmarshaler{{$.Protocol | goIDUpper}}) error
-            Subscribe{{goIDUpper .}}({{goQual "context.Context"}}, func({{ goPkg .InType}}{{ goIDUpper .}}Receiver)) error
-        {{- end}}
-    {{- end}}
-    }
-
-    type {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply struct {
-        Channel {{ . | goIDUpper }}ReplyChannel{{.Protocol | goIDUpper}}
-    }
-    {{- if .IsReplyPublisher}}
-        {{template "code/proto/operation/operationReply/publishMethods" .}}
-    {{- end}}
-    {{- if .IsReplySubscriber}}
-        {{template "code/proto/operation/operationReply/subscribeMethods" .}}
-    {{- end}}
-    {{template "code/proto/operation/operationReply/commonMethods" .}}
-{{- end}}
+{{template "proto_operation.tmpl" .}}

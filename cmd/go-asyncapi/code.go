@@ -499,8 +499,8 @@ func checkArtifacts(documents map[string]*compiler.Document) {
 	duplications := lo.FindDuplicatesBy(artifacts, func(item common.Artifact) string {
 		return item.Name()
 	})
-	if v := duplications; len(v) > 0 {
-		logger.Warn("Some servers, channels or operations have common names. The generated code may contain errors", "names", v)
+	if len(duplications) > 0 {
+		logger.Warn("Some servers, channels or operations have common names. The generated code may contain errors", "names", duplications)
 	}
 
 	// Messages in operation is not a subset of channel messages.

@@ -1,6 +1,6 @@
 {{- /* dot == render.ProtoMessage */}}
 {{define "code/proto/kafka/message/bindings/values"}}
-{{- goQualU .Protocol "MessageBindings"}}{
+{{- goQualU "kafka" "MessageBindings"}}{
     {{- with .Bindings.Values.Map.kafka}}
         {{with .key }}Key: {{toJSON . | goLit}},{{end}}
         {{with .schemaIDLocation }}SchemaIDLocation: {{goLit .}},{{end}}
@@ -10,6 +10,4 @@
 }
 {{- end}}
 
-{{template "code/proto/message/commonMethods" .}}
-{{if .IsPublisher}}{{template "code/proto/message/marshalMethods" .}}{{end}}
-{{if .IsSubscriber}}{{template "code/proto/message/unmarshalMethods" .}}{{end}}
+{{template "proto_message.tmpl" .}}
