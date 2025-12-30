@@ -620,11 +620,6 @@ func qualifiedTypeGeneratedPackage(mng *manager.TemplateRenderManager, obj commo
 		return "", nil // Type is not supposed to be found in the generated code (e.g. Go built-in types)
 	}
 
-	// Use the package path from reuse config if it is found
-	if d.Layout.ReusePackagePath != "" {
-		return mng.ImportsManager.AddImport(d.Layout.ReusePackagePath, ""), nil
-	}
-
 	// Files in the same directory (i.e. the same package) does not need to be imported
 	if path.Dir(d.FileName) == path.Dir(mng.FileName) {
 		return "", nil

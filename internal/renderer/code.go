@@ -105,16 +105,10 @@ func renderObject(item RenderQueueItem, templateName string, mng *manager.Templa
 	}
 
 	var res bytes.Buffer
-	importsSnapshot := mng.ImportsManager.Clone()
 	if err := tpl.Execute(&res, tplCtx); err != nil {
 		return err
 	}
+	mng.Buffer.Write(res.Bytes())
 
-	// If item is marked reused from other place, do not render the object and new imports, just update the namespace
-	if item.LayoutItem.ReusePackagePath != "" {
-		mng.ImportsManager = importsSnapshot
-	} else {
-		mng.Buffer.Write(res.Bytes())
-	}
 	return nil
 }

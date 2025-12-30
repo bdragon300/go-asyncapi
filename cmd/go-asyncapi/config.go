@@ -58,14 +58,13 @@ type (
 	}
 
 	toolConfigCodeLayout struct {
-		NameRe           string                 `yaml:"nameRe"`
-		ArtifactKinds    []string               `yaml:"artifactKinds"`
-		ModuleURLRe      string                 `yaml:"moduleURLRe"` // TODO: rename to locationRe or smth like that
-		PathRe           string                 `yaml:"pathRe"`      // TODO: remove? almost duplicate of moduleURLRe
-		Protocols        []string               `yaml:"protocols"`
-		Not              bool                   `yaml:"not"` // Inverts the match, i.e. NOT operation
-		Render           toolConfigLayoutRender `yaml:"render"`
-		ReusePackagePath string                 `yaml:"reusePackagePath"`
+		NameRe        string                 `yaml:"nameRe"`
+		ArtifactKinds []string               `yaml:"artifactKinds"`
+		ModuleURLRe   string                 `yaml:"moduleURLRe"` // TODO: rename to locationRe or smth like that
+		PathRe        string                 `yaml:"pathRe"`      // TODO: remove? almost duplicate of moduleURLRe
+		Protocols     []string               `yaml:"protocols"`
+		Not           bool                   `yaml:"not"` // Inverts the match, i.e. NOT operation
+		Render        toolConfigLayoutRender `yaml:"render"`
 	}
 
 	toolConfigLayoutRender struct {
@@ -97,7 +96,6 @@ type (
 		Disable           bool   `yaml:"disable"`
 		TemplateDirectory string `yaml:"templateDirectory"`
 		Package           string `yaml:"package"`
-		ReusePackagePath  string `yaml:"reusePackagePath"`
 	}
 
 	toolConfigClient struct {

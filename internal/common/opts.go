@@ -31,14 +31,13 @@ type (
 	}
 
 	CodeLayoutItemOpts struct {
-		Protocols        []string
-		ArtifactKinds    []string
-		ModuleURLRe      string
-		PathRe           string
-		NameRe           string
-		Not              bool
-		Render           CodeLayoutItemRenderOpts
-		ReusePackagePath string
+		Protocols     []string
+		ArtifactKinds []string
+		ModuleURLRe   string
+		PathRe        string
+		NameRe        string
+		Not           bool
+		Render        CodeLayoutItemRenderOpts
 	}
 
 	CodeLayoutItemRenderOpts struct {
@@ -70,7 +69,6 @@ type (
 		Disable           bool
 		TemplateDirectory string
 		Package           string
-		ReusePackagePath  string
 	}
 
 	InfraServerOpts struct {

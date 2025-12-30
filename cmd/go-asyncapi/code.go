@@ -282,7 +282,6 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (c
 					Disable:           item.Disable,
 					TemplateDirectory: item.TemplateDirectory,
 					Package:           item.Package,
-					ReusePackagePath:  item.ReusePackagePath,
 				}
 			}),
 		},
@@ -303,7 +302,6 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (c
 				Package:   item.Render.Package,
 				Protocols: item.Render.Protocols,
 			},
-			ReusePackagePath: item.ReusePackagePath,
 		}
 		logger.Debug("Use layout item", "value", l)
 		res.Layout = append(res.Layout, l)
