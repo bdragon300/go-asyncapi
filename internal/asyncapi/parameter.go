@@ -2,7 +2,6 @@ package asyncapi
 
 import (
 	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
-	"github.com/bdragon300/go-asyncapi/internal/render/lang"
 	"github.com/samber/lo"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -36,17 +35,7 @@ func (p Parameter) build(ctx *compile.Context, parameterKey string) (common.Arti
 	}
 
 	parName, _ := lo.Coalesce(p.XGoName, parameterKey)
-	res := &render.Parameter{
-		OriginalName: parName,
-		Type: &lang.GoTypeDefinition{
-			BaseType: lang.BaseType{
-				OriginalName:  ctx.GenerateObjName(parName, ""),
-				Description:   p.Description,
-				HasDefinition: true,
-			},
-			RedefinedType: &lang.GoSimple{TypeName: "string"},
-		},
-	}
+	res := &render.Parameter{OriginalName: ctx.GenerateObjName(parName, "")}
 
 	return res, nil
 }

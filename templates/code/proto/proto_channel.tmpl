@@ -2,12 +2,12 @@
 
 {{define "code/proto/channel/newFunction"}}
 func New{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
-    {{ with .ParametersType}}params {{ . | goUsage}},{{end}}
+    {{ if .Parameters.Len}}params {{ goIDUpper .Channel}}Parameters,{{end}}
     {{ if .IsPublisher}}publisher {{goQualU .Protocol "Publisher"}},{{end}}
     {{ if .IsSubscriber}}subscriber {{goQualU .Protocol "Subscriber"}},{{end}}
 ) *{{. | goIDUpper}}{{.Protocol | goIDUpper}} {
     res := {{. | goIDUpper}}{{.Protocol | goIDUpper}}{
-        address: {{.Channel | goIDUpper}}Address({{if .ParametersType}}params{{end}}),
+        address: {{.Channel | goIDUpper}}Address({{if .Parameters.Len}}params{{end}}),
         {{- if .IsPublisher}}publisher: publisher,{{end}}
         {{- if .IsSubscriber}}subscriber: subscriber,{{end}}
     }
@@ -22,7 +22,7 @@ func New{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
 func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
     ctx {{goQual "context.Context"}},
     server {{.Channel | goIDUpper }}Server{{.Protocol | goIDUpper}},
-    {{with .ParametersType}}params {{. | goUsage}},{{end}}
+    {{if .Parameters.Len}}params {{goIDUpper .}}Parameters,{{end}}
     {{if .BoundOperations}}opBindings *{{goQualU .Protocol "OperationBindings"}},{{end}}
     {{if .BoundOperations}}security {{goQualR "AnySecurityScheme"}},{{end}}
 ) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error) {
@@ -32,7 +32,7 @@ func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
     {{- end }}
 
     {{- if or .IsPublisher .IsSubscriber}}
-        address, err := {{.Channel | goIDUpper}}Address({{if .ParametersType}}params{{end}}).Expand()
+        address, err := {{.Channel | goIDUpper}}Address({{if .Parameters.Len}}params{{end}}).Expand()
         if err != nil {
             return nil, err
         }
@@ -71,7 +71,7 @@ func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
     {{- end}}
 
     return New{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
-        {{ if .ParametersType}}params,{{end}}
+        {{ if .Parameters.Len}}params,{{end}}
         {{ if .IsPublisher}}publisher,{{end}}
         {{ if .IsSubscriber}}subscriber,{{end}}
     ), nil
@@ -198,7 +198,7 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Subscribe(ctx {{goQual "cont
 
 {{define "code/proto/channel/serverInterface"}}
 type {{ .Channel | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
-    Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goQual "context.Context"}}{{with .ParametersType}},{{ goUsage . }}{{end}}{{if .BoundOperations}},*{{goQualU .Protocol "OperationBindings"}},{{goQualR "AnySecurityScheme"}}{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
+    Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goQual "context.Context"}}{{if .Parameters.Len}},{{goIDUpper .Channel}}Parameters{{end}}{{if .BoundOperations}},*{{goQualU .Protocol "OperationBindings"}},{{goQualR "AnySecurityScheme"}}{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
     {{if .IsPublisher}}Producer() {{goQualU .Protocol "Producer"}}{{end}}
     {{if .IsSubscriber}}Consumer() {{goQualU .Protocol "Consumer"}}{{end}}
 }

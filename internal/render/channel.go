@@ -34,10 +34,8 @@ type Channel struct {
 	// for the channel, which means that the channel is bound to all active servers.
 	AllActiveServersPromise *lang.ListPromise[common.Artifact]
 
-	// ParametersRefs is a list of refs to channel parameters.
-	ParametersRefs []*lang.Ref
-	// ParametersType is a Go struct for channel parameters. Nil if no parameters are set.
-	ParametersType *lang.GoStruct
+	// ParameterPromises is a list of promises to channel parameters.
+	ParameterPromises types.OrderedMap[string, *lang.Promise[*Parameter]]
 
 	// MessagesRefs is a list of references to messages that this channel is bound with, both for ones referenced
 	// by $ref or inlined definitions.
@@ -56,13 +54,10 @@ type Channel struct {
 	BindingsPromise *lang.Promise[*Bindings]
 }
 
-// Parameters returns a map of channel's Parameter objects by names which they defined in channel.
-//
-// It may return lang.Ref objects, because a key the parameter object is defined with in channel matters and
-// is used in channel address template, therefore, it should appear in the generated code as well.
+// Parameters returns a map of channel's Parameter objects by names which they defined in channel's parameters.
 func (c *Channel) Parameters() (res types.OrderedMap[string, *Parameter]) {
-	for _, ref := range c.ParametersRefs {
-		res.Set(ref.Name(), common.DerefArtifact(ref).(*Parameter))
+	for _, e := range c.ParameterPromises.Entries() {
+		res.Set(e.Key, e.Value.T())
 	}
 	return
 }

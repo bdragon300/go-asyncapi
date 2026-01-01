@@ -1,15 +1,19 @@
 {{- /* dot == render.Channel */}}
 {{- pin .}}
 
-{{- with .ParametersType }}
-    {{ . | goDef }}
+{{- with .Parameters.Entries }}
+    type {{goIDUpper $}}Parameters struct {
+    {{- range .}}
+        {{goIDUpper .Key}} {{goPkg .Value}}{{goIDUpper .Value}}
+    {{- end}}
+    }
 {{- end }}
 
-func {{. | goIDUpper}}Address({{with .ParametersType}}params {{. | goUsage}}{{end}}) {{goQualR "ParamString"}} {
-{{- if .ParametersType}}
+func {{. | goIDUpper}}Address({{if .Parameters.Len}}params {{goIDUpper $}}Parameters{{end}}) {{goQualR "ParamString"}} {
+{{- if .Parameters.Len}}
     paramMap := map[string]string{
-    {{- range .Parameters.Entries}}
-        {{.Key | goLit}}: string(params.{{.Key | goIDUpper }}),
+    {{- range .Parameters.Keys}}
+        {{goLit .}}: string(params.{{goIDUpper .}}),
     {{- end}}
     }
     return {{goQualR "ParamString"}}{

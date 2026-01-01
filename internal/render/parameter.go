@@ -10,8 +10,6 @@ type Parameter struct {
 	lang.BaseJSONPointed
 	// OriginalName is the name of the parameter as it was defined in the AsyncAPI document.
 	OriginalName string
-	// Type is the Go type of the parameter. Usually, it's ``string''.
-	Type common.GolangType
 }
 
 func (p *Parameter) Name() string {
@@ -27,7 +25,7 @@ func (p *Parameter) Selectable() bool {
 }
 
 func (p *Parameter) Visible() bool {
-	return p.Type.Visible()
+	return true
 }
 
 func (p *Parameter) String() string {

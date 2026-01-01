@@ -19,11 +19,11 @@ type {{. | goIDUpper}} struct {
     {{- if .ActiveProtocols | has $.Protocol }}
         func (s {{$ | goIDUpper}}) Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
             ctx {{goQual "context.Context"}},
-            {{with .ParametersType}}params {{ . | goUsage }},{{end}}
+            {{if .Parameters.Len}}params {{goPkg .}}{{goIDUpper .}}Parameters,{{end}}
             {{if .BoundOperations}}security {{goQualR "AnySecurityScheme"}},{{end}}
         ) (*{{goPkg .}}{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}, error) {
             return {{goPkg .}}Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
-                ctx, s, {{if .ParametersType}}params,{{end}}{{if .BoundOperations}}security,{{end}}
+                ctx, s, {{if .Parameters.Len}}params,{{end}}{{if .BoundOperations}}security,{{end}}
             )
         }
     {{- end}}

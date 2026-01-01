@@ -1,8 +1,8 @@
 {{- /* dot == render.ProtoOperation */}}
 
 type {{ . | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
-    Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goQual "context.Context"}}{{with .Channel.ParametersType}},{{goUsage .}}{{end}}{{if .Channel.BoundOperations}},{{goQualR "AnySecurityScheme"}}{{end}}) (*{{goPkg .Channel}}{{goIDUpper .Channel}}{{goIDUpper .Protocol}}, error)
-    Open{{. | goIDUpper}}{{.Protocol | goIDUpper}}(ctx {{goQual "context.Context"}}{{with .Channel.ParametersType}}, params {{ goUsage . }}{{end}}{{if .SecuritySchemes}}, security {{. | goIDUpper}}Security,{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
+    Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goQual "context.Context"}}{{if .Channel.Parameters.Len}},{{goPkg .Channel}}{{goIDUpper .Channel}}Parameters{{end}}{{if .Channel.BoundOperations}},{{goQualR "AnySecurityScheme"}}{{end}}) (*{{goPkg .Channel}}{{goIDUpper .Channel}}{{goIDUpper .Protocol}}, error)
+    Open{{. | goIDUpper}}{{.Protocol | goIDUpper}}({{goQual "context.Context"}}{{if .Channel.Parameters.Len}}, {{goPkg .Channel}}{{goIDUpper .Channel}}Parameters{{end}}{{if .SecuritySchemes}}, {{. | goIDUpper}}Security,{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
     {{if .Channel.IsPublisher}}Producer() {{goQualU .Protocol "Producer"}}{{end}}
     {{if .Channel.IsSubscriber}}Consumer() {{goQualU .Protocol "Consumer"}}{{end}}
 }
@@ -10,13 +10,13 @@ type {{ . | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
 func Open{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
     ctx {{goQual "context.Context"}},
     server {{. | goIDUpper }}Server{{.Protocol | goIDUpper}},
-    {{ with .Channel.ParametersType}}params {{. | goUsage}},{{end}}
+    {{ if .Channel.Parameters.Len}}params {{goPkg .Channel}}{{goIDUpper .Channel}}Parameters,{{end}}
     {{if .SecuritySchemes}}security {{. | goIDUpper}}Security,{{end}}
 ) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error) {
     ch, err := {{goPkg .Channel}}Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}(
         ctx,
         server,
-        {{if .Channel.ParametersType}}params,{{end}}
+        {{if .Channel.Parameters.Len}}params,{{end}}
         {{if .SecuritySchemes}}security{{else}}nil{{end}},
     )
     if err != nil {

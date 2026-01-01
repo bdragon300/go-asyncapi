@@ -46,7 +46,7 @@ func (c {{ $ | goIDUpper }}Closable) Close() error {
         {{- if $.BindingsProtocols | has $.Protocol}}
             bindings = {{goQualR "ToPtr"}}({{goPkg $}}{{goIDUpper $}}ServerBindings{}.{{$.Protocol | goIDUpper}}())
         {{- end}}
-        client, err := {{goPkg .}}NewClient(ctx, url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+        client, err := {{goQualI .Protocol "NewClient"}}(ctx, url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
         if err != nil {
             return nil, err
         }
@@ -70,7 +70,7 @@ func (c {{ $ | goIDUpper }}Closable) Close() error {
             {{- if $.BindingsProtocols | has $.Protocol}}
                 bindings = {{goQualR "ToPtr"}}({{goPkg $}}{{goIDUpper $}}ServerBindings{}.{{$.Protocol | goIDUpper}}())
             {{- end}}
-            producer, err := {{goPkg .}}NewClient(ctx, url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+            producer, err := {{goQualI .Protocol "NewClient"}}(ctx, url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
             if err != nil {
                 return nil, err
             }
@@ -94,7 +94,7 @@ func (c {{ $ | goIDUpper }}Closable) Close() error {
             {{- if $.BindingsProtocols | has $.Protocol}}
                 bindings = {{goQualR "ToPtr"}}({{goPkg $}}{{goIDUpper $}}ServerBindings{}.{{$.Protocol | goIDUpper}}())
             {{- end}}
-            consumer, err := {{goPkg .}}NewClient(ctx, url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+            consumer, err := {{goQualI .Protocol "NewClient"}}(ctx, url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
             if err != nil {
                 return nil, err
             }
@@ -113,12 +113,12 @@ func (c {{ $ | goIDUpper }}Closable) Close() error {
     {{- if .ActiveProtocols | has $.Protocol }}
         func (s {{$ | goIDUpper}}) Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
             ctx {{goQual "context.Context"}},
-            {{with .ParametersType}}params {{ . | goUsage }},{{end}}
+            {{if .Parameters.Len}}params {{goPkg .}}{{goIDUpper .}}Parameters,{{end}}
             {{if .BoundOperations}}opBindings *{{goQualU $.Protocol "OperationBindings"}},{{end}}
             {{if .BoundOperations}}security {{goQualR "AnySecurityScheme"}},{{end}}
         ) (*{{goPkg .}}{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}, error) {
             return {{goPkg .}}Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
-                ctx, s, {{if .ParametersType}}params,{{end}}{{if .BoundOperations}}opBindings, security,{{end}}
+                ctx, s, {{if .Parameters.Len}}params,{{end}}{{if .BoundOperations}}opBindings, security,{{end}}
             )
         }
     {{- end}}
@@ -130,11 +130,11 @@ func (c {{ $ | goIDUpper }}Closable) Close() error {
     {{- if .ActiveProtocols | has $.Protocol }}
         func (s {{$ | goIDUpper}}) Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
             ctx {{goQual "context.Context"}},
-            {{with .Channel.ParametersType}}params {{ . | goUsage }},{{end}}
+            {{if .Channel.Parameters.Len}}params {{goPkg .Channel}}{{goIDUpper .Channel}}Parameters,{{end}}
             {{if .SecuritySchemes}}security {{goPkg .}}{{. | goIDUpper}}Security,{{end}}
         ) (*{{goPkg .}}{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}, error) {
             return {{goPkg .}}Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
-                ctx, s, {{if .Channel.ParametersType}}params, {{end}}{{if .SecuritySchemes}}security, {{end}}
+                ctx, s, {{if .Channel.Parameters.Len}}params, {{end}}{{if .SecuritySchemes}}security, {{end}}
             )
         }
     {{- end}}

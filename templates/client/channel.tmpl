@@ -13,10 +13,10 @@ type {{$ | goIDUpper}}Cmd struct {
 }
 
 func channel{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}Cmd, opts channelOptions) error {
-    {{- if .ParametersType}}
-        channelParams := {{goUsage .ParametersType}}{
+    {{- if .Parameters.Len}}
+        channelParams := {{goPkg .}}{{goIDUpper .}}Parameters{
             {{- range .Parameters.Entries}}
-                {{.Key | goIDUpper}}: {{goUsage .Value.Type}}(args.{{.Key | goIDUpper}}),
+                {{.Key | goIDUpper}}: {{goPkg .Value}}{{goIDUpper .Value}}(args.{{.Key | goIDUpper}}),
             {{- end}}
         }
 	    {{goQual "log/slog.Debug"}}("Channel parameters", "value", channelParams)
@@ -51,10 +51,10 @@ type {{$ | goIDUpper}}Cmd struct {
 }
 
 func operation{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}Cmd, opts channelOptions) error {
-    {{- if .Channel.ParametersType}}
-        channelParams := {{goUsage .Channel.ParametersType}}{
+    {{- if .Channel.Parameters.Len}}
+        channelParams := {{goPkg .Channel}}{{goIDUpper .Channel}}Parameters{
             {{- range .Channel.Parameters.Entries}}
-                {{.Key | goIDUpper}}: {{goUsage .Value.Type}}(args.{{.Key | goIDUpper}}),
+                {{.Key | goIDUpper}}: {{goPkg .Value}}{{goIDUpper .Value}}(args.{{.Key | goIDUpper}}),
             {{- end}}
         }
 	    {{goQual "log/slog.Debug"}}("Channel parameters", "value", channelParams)
@@ -93,10 +93,10 @@ type {{$ | goIDUpper}}ReplyCmd struct {
 }
 
 func operationReply{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}ReplyCmd, opts channelOptions) error {
-    {{- if $channel.ParametersType}}
-        channelParams := {{goUsage $channel.ParametersType}}{
+    {{- if $channel.Parameters.Len}}
+        channelParams := {{goPkg $channel}}{{goIDUpper $channel}}Parameters{
             {{- range $channel.Parameters.Entries}}
-                {{.Key | goIDUpper}}: {{goUsage .Value.Type}}(args.{{.Key | goIDUpper}}),
+                {{.Key | goIDUpper}}: {{goPkg .Value}}{{goIDUpper .Value}}(args.{{.Key | goIDUpper}}),
             {{- end}}
         }
 	    {{goQual "log/slog.Debug"}}("Channel parameters", "value", channelParams)
@@ -186,8 +186,8 @@ if opts.publish {
             {{- end}}
         {{end}}
 
-        {{goQual "log/slog.Debug"}}("Opening channel", "name", {{.Name | goLit}}{{with $channel.ParametersType}}, "parameters", channelParams{{end}})
-        channel, err := server.Open{{$channel | goIDUpper}}{{.Protocol | goIDUpper}}(ctx{{with $channel.ParametersType}}, channelParams{{end}})
+        {{goQual "log/slog.Debug"}}("Opening channel", "name", {{.Name | goLit}}{{if $channel.Parameters.Len}}, "parameters", channelParams{{end}})
+        channel, err := server.Open{{$channel | goIDUpper}}{{.Protocol | goIDUpper}}(ctx{{if $channel.Parameters.Len}}, channelParams{{end}})
         if err != nil {
             return {{goQual "fmt.Errorf"}}("open channel: %w", err)
         }
@@ -247,8 +247,8 @@ if opts.publish {
             {{- end}}
         {{end}}
 
-        {{goQual "log/slog.Debug"}}("Opening channel", "name", {{.Name | goLit}}{{with $channel.ParametersType}}, "parameters", channelParams{{end}})
-        channel, err := server.Open{{$channel | goIDUpper}}{{.Protocol | goIDUpper}}(ctx{{with $channel.ParametersType}}, channelParams{{end}})
+        {{goQual "log/slog.Debug"}}("Opening channel", "name", {{.Name | goLit}}{{if $channel.Parameters.Len}}, "parameters", channelParams{{end}})
+        channel, err := server.Open{{$channel | goIDUpper}}{{.Protocol | goIDUpper}}(ctx{{if $channel.Parameters.Len}}, channelParams{{end}})
         if err != nil {
             return {{goQual "fmt.Errorf"}}("open channel: %w", err)
         }

@@ -8,7 +8,6 @@ import (
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
-	"github.com/bdragon300/go-asyncapi/internal/utils"
 )
 
 type Channel struct {
@@ -85,27 +84,12 @@ func (c Channel) build(ctx *compile.Context, channelKey string, flags map[common
 	if c.Parameters.Len() > 0 {
 		ctx.Logger.Trace("Channel parameters")
 		ctx.Logger.NextCallLevel()
-		res.ParametersType = &lang.GoStruct{
-			BaseType: lang.BaseType{
-				OriginalName:  ctx.GenerateObjName(chName, "Parameters"),
-				HasDefinition: true,
-			},
-		}
 		for _, paramName := range c.Parameters.Keys() {
 			ctx.Logger.Trace("Channel parameter", "name", paramName)
 			ref := ctx.CurrentRefPointer("parameters", paramName)
-			prmType := lang.NewGolangTypePromise(ref, func(obj common.Artifact) common.GolangType {
-				return obj.(*render.Parameter).Type
-			})
-			ctx.PutPromise(prmType)
-			res.ParametersType.Fields = append(res.ParametersType.Fields, lang.GoStructField{
-				OriginalName: utils.ToGolangName(paramName, true),
-				Type:         prmType,
-			})
-
-			prm := lang.NewRef(ref, paramName, nil)
-			res.ParametersRefs = append(res.ParametersRefs, prm)
+			prm := lang.NewPromise[*render.Parameter](ref, nil)
 			ctx.PutPromise(prm)
+			res.ParameterPromises.Set(paramName, prm)
 		}
 		ctx.Logger.PrevCallLevel()
 	}

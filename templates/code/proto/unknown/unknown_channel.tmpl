@@ -2,7 +2,7 @@
 {{template "code/proto/channel/newFunction" .}}
 
 type {{ .Channel | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
-    Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goQual "context.Context"}}{{with .ParametersType}},{{ goUsage . }}{{end}}{{if .BoundOperations}},{{goQualR "AnySecurityScheme"}}{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
+    Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goQual "context.Context"}}{{if .Parameters.Len}},{{ goIDUpper .Channel}}Parameters{{end}}{{if .BoundOperations}},{{goQualR "AnySecurityScheme"}}{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
     {{if .IsPublisher}}Producer() {{goQualU .Protocol "Producer"}}{{end}}
     {{if .IsSubscriber}}Consumer() {{goQualU .Protocol "Consumer"}}{{end}}
 }
@@ -10,13 +10,13 @@ type {{ .Channel | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
 func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
     ctx {{goQual "context.Context"}},
     server {{.Channel | goIDUpper }}Server{{.Protocol | goIDUpper}},
-    {{with .ParametersType}}params {{. | goUsage}},{{end}}
+    {{if .Parameters.Len}}params {{goIDUpper $}}Parameters,{{end}}
     {{if .BoundOperations}}security {{goQualR "AnySecurityScheme"}},{{end}}
 ) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error) {
     var err error
 
     {{- if or .IsPublisher .IsSubscriber}}
-        address, err := {{.Channel | goIDUpper}}Address({{if .ParametersType}}params{{end}}).Expand()
+        address, err := {{.Channel | goIDUpper}}Address({{if .Parameters.Len}}params{{end}}).Expand()
         if err != nil {
             return nil, err
         }
@@ -51,7 +51,7 @@ func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
     {{- end}}
 
     return New{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
-        {{ if .ParametersType}}params,{{end}}
+        {{ if .Parameters.Len}}params,{{end}}
         {{ if .IsPublisher}}publisher,{{end}}
         {{ if .IsSubscriber}}subscriber,{{end}}
     ), nil
