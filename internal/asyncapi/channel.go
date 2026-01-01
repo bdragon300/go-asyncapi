@@ -97,10 +97,9 @@ func (c Channel) build(ctx *compile.Context, channelKey string, flags map[common
 	for _, msgName := range c.Messages.Keys() {
 		ctx.Logger.Trace("Channel message", "name", msgName)
 		ref := ctx.CurrentRefPointer("messages", msgName)
-		// Do not consider the name which a message $ref is registered with, keeping the original message name in code.
-		prm2 := lang.NewRef(ref, "", nil)
-		ctx.PutPromise(prm2)
-		res.MessagesRefs = append(res.MessagesRefs, prm2)
+		prm := lang.NewPromise[*render.Message](ref, nil)
+		ctx.PutPromise(prm)
+		res.MessagesPromises = append(res.MessagesPromises, prm)
 	}
 
 	// All known Operations

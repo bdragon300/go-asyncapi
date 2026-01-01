@@ -37,9 +37,8 @@ type Channel struct {
 	// ParameterPromises is a list of promises to channel parameters.
 	ParameterPromises types.OrderedMap[string, *lang.Promise[*Parameter]]
 
-	// MessagesRefs is a list of references to messages that this channel is bound with, both for ones referenced
-	// by $ref or inlined definitions.
-	MessagesRefs []*lang.Ref
+	// MessagesPromises is a list of promises to messages that this channel is bound with.
+	MessagesPromises []*lang.Promise[*Message]
 
 	// AllActiveOperationsPromise contains all active operations in the document.
 	//
@@ -64,7 +63,7 @@ func (c *Channel) Parameters() (res types.OrderedMap[string, *Parameter]) {
 
 // Messages returns a list of Message.
 func (c *Channel) Messages() []*Message {
-	return lo.Map(c.MessagesRefs, func(prm *lang.Ref, _ int) *Message { return common.DerefArtifact(prm).(*Message) })
+	return lo.Map(c.MessagesPromises, func(m *lang.Promise[*Message], _ int) *Message { return m.T() })
 }
 
 // Bindings returns the [Bindings] object or nil if no bindings are set.
