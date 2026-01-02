@@ -4,9 +4,9 @@ import (
 	"github.com/rabbitmq/amqp091-go"
 )
 
-func NewEnvelopeOut() *EnvelopeOut {
+func NewEnvelopeOut(buf []byte) *EnvelopeOut {
 	return &EnvelopeOut{
-		Publishing: &amqp091.Publishing{},
+		Publishing: &amqp091.Publishing{Body: buf},
 	}
 }
 

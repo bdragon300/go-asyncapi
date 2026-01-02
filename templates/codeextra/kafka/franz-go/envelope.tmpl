@@ -4,9 +4,9 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
-func NewEnvelopeOut() *EnvelopeOut {
+func NewEnvelopeOut(buf []byte) *EnvelopeOut {
 	return &EnvelopeOut{
-		Record: &kgo.Record{},
+		Record: &kgo.Record{Value: buf},
 	}
 }
 

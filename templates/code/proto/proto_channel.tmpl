@@ -131,7 +131,7 @@ type {{ .Channel | goIDUpper }}EnvelopeMarshaler{{.Protocol | goIDUpper}} interf
         message {{ $.Channel | goIDUpper }}EnvelopeMarshaler{{$.Protocol | goIDUpper}},
     ) error {
         {{- with impl $.Protocol}}
-            envelope := {{goPkg .}}NewEnvelopeOut()
+            envelope := {{goPkg .}}NewEnvelopeOut(nil)
         {{- end}}
         if err := c.Seal{{. | goIDUpper}}(envelope, message); err != nil {
             return err

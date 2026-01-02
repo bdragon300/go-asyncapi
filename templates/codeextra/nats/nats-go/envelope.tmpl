@@ -5,10 +5,10 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-func NewEnvelopeOut() *EnvelopeOut {
-	return &EnvelopeOut{
-		Msg: nats.NewMsg(""),
-	}
+func NewEnvelopeOut(buf []byte) *EnvelopeOut {
+    m := nats.NewMsg("")
+    m.Data = buf
+    return &EnvelopeOut{Msg: m}
 }
 
 type EnvelopeOut struct {

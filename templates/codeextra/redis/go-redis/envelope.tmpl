@@ -1,21 +1,23 @@
 import (
+	"bytes"
+	"io"
 	"strings"
 
 	"github.com/redis/go-redis/v9"
 )
 
-func NewEnvelopeOut() *EnvelopeOut {
-	return &EnvelopeOut{Builder: &strings.Builder{}}
+func NewEnvelopeOut(buf []byte) *EnvelopeOut {
+	return &EnvelopeOut{Buffer: bytes.NewBuffer(buf)}
 }
 
 type EnvelopeOut struct {
-	*strings.Builder
+    *bytes.Buffer
 	headers     {{goQualR "Headers"}}
 	contentType string
 }
 
 func (e *EnvelopeOut) ResetPayload() {
-	e.Builder.Reset()
+	e.Buffer.Reset()
 }
 
 func (e *EnvelopeOut) SetHeaders(headers {{goQualR "Headers"}}) {
@@ -29,7 +31,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 func (e *EnvelopeOut) SetBindings(_ {{goQualU "redis" "MessageBindings"}}) {}
 
 func (e *EnvelopeOut) AsAny() any {
-	return e.Builder.String()
+	return e.Buffer.String()
 }
 
 func NewEnvelopeIn(msg *redis.Message) *EnvelopeIn {
@@ -38,7 +40,7 @@ func NewEnvelopeIn(msg *redis.Message) *EnvelopeIn {
 
 type EnvelopeIn struct {
 	*redis.Message
-	reader *strings.Reader
+	reader io.Reader
 }
 
 func (e *EnvelopeIn) Read(p []byte) (n int, err error) {

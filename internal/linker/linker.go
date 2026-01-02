@@ -154,9 +154,7 @@ func resolvePromise(p common.ObjectPromise, docLocation string, sources map[stri
 	}
 
 	srcArtifacts := sources[target].Artifacts()
-	if userCb = p.FindCallback(); userCb != nil {
-		cb = userCb
-	} else {
+	if cb = p.FindCallback(); cb == nil {
 		cb = func(item common.Artifact) bool { return ref.MatchPointer(item.Pointer().Pointer) }
 	}
 	found := lo.Filter(srcArtifacts, func(obj common.Artifact, _ int) bool { return cb(obj) })
@@ -192,11 +190,11 @@ func resolveListPromise(p common.ObjectListPromise, docURL string, sources map[s
 	if cb == nil {
 		panic("List promise must have a callback, this is a bug")
 	}
-	srcArtifacts := sources[docURL].Artifacts()
+	srcArtifacts := sources[docURL].Artifacts()  // FIXME: here we only assign the artifacts from the same document, should be from all documents
 	found := lo.Filter(srcArtifacts, func(obj common.Artifact, _ int) bool {
 		return cb(obj)
 	})
 
-	// Let the callaback decide which objects should be promise targets, don't do recursive resolving
+	// Let the callback decide which objects should be the promise targets, don't do recursive resolving
 	return found, true
 }

@@ -196,7 +196,7 @@ if opts.publish {
         {{goQual "log/slog.Debug"}}("Reading data to publish to {{$.Kind}}...")
         // If separator is empty, then don't use scanner and just read everything until EOF
         for b := range readStreamWithContext(ctx, opts.stream, opts.payloadSeparator) {
-            {{with impl .Protocol}}envelope := {{goPkg .}}NewEnvelopeOut(){{end}}
+            {{with impl .Protocol}}envelope := {{goPkg .}}NewEnvelopeOut(nil){{end}}
             n, err := envelope.Write(b)
             if err != nil {
                 return {{goQual "fmt.Errorf"}}("write envelope: %w", err)

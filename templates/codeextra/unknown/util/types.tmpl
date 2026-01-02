@@ -1,5 +1,5 @@
-func NewEnvelopeOut() *EnvelopeOut {
-    return &EnvelopeOut{Buffer: {{goQual "bytes.NewBuffer"}}(nil)}
+func NewEnvelopeOut(buf []byte) *EnvelopeOut {
+    return &EnvelopeOut{Buffer: {{goQual "bytes.NewBuffer"}}(buf)}
 }
 
 type EnvelopeOut struct {

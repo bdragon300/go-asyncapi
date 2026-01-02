@@ -5,8 +5,8 @@ import (
 	"github.com/gobwas/ws/wsutil"
 )
 
-func NewEnvelopeOut() *EnvelopeOut {
-	return &EnvelopeOut{Buffer: bytes.NewBuffer(make([]byte, 0))}
+func NewEnvelopeOut(buf []byte) *EnvelopeOut {
+	return &EnvelopeOut{Buffer: bytes.NewBuffer(buf)}
 }
 
 type EnvelopeOut struct {

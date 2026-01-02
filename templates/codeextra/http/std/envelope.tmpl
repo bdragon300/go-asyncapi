@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func NewEnvelopeOut() *EnvelopeOut {
+func NewEnvelopeOut(buf []byte) *EnvelopeOut {
 	req := &http.Request{ // Taken from http.NewRequestWithContext
 		Method:     "GET",
 		Proto:      "HTTP/1.1",
@@ -17,7 +17,7 @@ func NewEnvelopeOut() *EnvelopeOut {
 	}
 	return &EnvelopeOut{
 		Request: req.WithContext(context.Background()),
-		body:    bytes.NewBuffer(make([]byte, 0)),
+		body:    bytes.NewBuffer(buf),
 	}
 }
 

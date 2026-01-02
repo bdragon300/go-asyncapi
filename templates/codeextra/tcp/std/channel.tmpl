@@ -6,14 +6,12 @@ import (
 	"sync"
 )
 
-type subscriberFunc func(envelope {{goQualU "tcp" "EnvelopeReader"}})
-
 func NewChannel(conn *net.TCPConn, scanner *bufio.Scanner, maxEnvelopeSize int) *Channel {
 	res := Channel{
 		TCPConn:         conn,
 		scanner:         scanner,
 		maxEnvelopeSize: maxEnvelopeSize,
-		callbacks:       {{goQualR "NewRing"}}[subscriberFunc](),
+		callbacks:       {{goQualR "NewRing"}}[func({{goQualU "tcp" "EnvelopeReader"}})](),
 		once:            &sync.Once{},
 	}
 	res.ctx, res.cancel = context.WithCancelCause(context.Background())
@@ -24,7 +22,7 @@ type Channel struct {
 	*net.TCPConn
 	scanner         *bufio.Scanner
 	maxEnvelopeSize int
-	callbacks       *{{goQualR "Ring"}}[subscriberFunc]
+	callbacks       *{{goQualR "Ring"}}[func({{goQualU "tcp" "EnvelopeReader"}})]
 	ctx             context.Context
 	cancel          context.CancelCauseFunc
 	once            *sync.Once

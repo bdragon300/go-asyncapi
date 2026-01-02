@@ -4,9 +4,9 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-func NewEnvelopeOut() *EnvelopeOut {
+func NewEnvelopeOut(buf []byte) *EnvelopeOut {
 	return &EnvelopeOut{
-		OutboundMessage: OutboundMessage{Buffer: bytes.NewBuffer(make([]byte, 0))},
+		OutboundMessage: OutboundMessage{Buffer: bytes.NewBuffer(buf)},
 	}
 }
 
