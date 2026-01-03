@@ -190,7 +190,7 @@ func resolveListPromise(p common.ObjectListPromise, docURL string, sources map[s
 	if cb == nil {
 		panic("List promise must have a callback, this is a bug")
 	}
-	srcArtifacts := sources[docURL].Artifacts()  // FIXME: here we only assign the artifacts from the same document, should be from all documents
+	srcArtifacts := sources[docURL].Artifacts() // FIXME: here we only assign the artifacts from the same document, should be from all documents
 	found := lo.Filter(srcArtifacts, func(obj common.Artifact, _ int) bool {
 		return cb(obj)
 	})

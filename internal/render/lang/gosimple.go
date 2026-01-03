@@ -62,10 +62,6 @@ func (p *GoSimple) CanBeAddressed() bool {
 	return !p.IsInterface
 }
 
-func (p *GoSimple) CanBeDereferenced() bool {
-	return false
-}
-
 func (p *GoSimple) GoTemplate() string {
 	return "code/lang/gosimple"
 }

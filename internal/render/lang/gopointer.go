@@ -36,10 +36,6 @@ func (p *GoPointer) CanBeAddressed() bool {
 	return false
 }
 
-func (p *GoPointer) CanBeDereferenced() bool {
-	return true
-}
-
 func (p *GoPointer) GoTemplate() string {
 	return "code/lang/gopointer"
 }

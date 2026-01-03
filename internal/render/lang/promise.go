@@ -176,10 +176,6 @@ func (r *GolangTypePromise) CanBeAddressed() bool {
 	return r.target.CanBeAddressed()
 }
 
-func (r *GolangTypePromise) CanBeDereferenced() bool {
-	return r.target.CanBeDereferenced()
-}
-
 func (r *GolangTypePromise) GoTemplate() string {
 	return r.target.GoTemplate()
 }

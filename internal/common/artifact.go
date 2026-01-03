@@ -49,8 +49,6 @@ type GolangType interface {
 	//
 	// Values that always *not addressable* are `nil`, values of interface type, constants, etc.
 	CanBeAddressed() bool
-	// CanBeDereferenced returns true if this type is a pointer, so we can dereference it by using * operator.
-	CanBeDereferenced() bool
 	// GoTemplate returns a template name that renders this particular type.
 	GoTemplate() string
 }

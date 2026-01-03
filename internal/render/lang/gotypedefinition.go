@@ -25,10 +25,6 @@ func (p *GoTypeDefinition) CanBeAddressed() bool {
 	return true // In fact, type alias is a new type, so it is addressable by default, even if aliased type is not (e.g. interface)
 }
 
-func (p *GoTypeDefinition) CanBeDereferenced() bool {
-	return false // Type alias is not a pointer itself
-}
-
 func (p *GoTypeDefinition) GoTemplate() string {
 	return "code/lang/gotypedefinition"
 }

@@ -57,10 +57,6 @@ func (b *BaseType) CanBeAddressed() bool {
 	return true
 }
 
-func (b *BaseType) CanBeDereferenced() bool {
-	return false
-}
-
 func (b *BaseType) Pinnable() bool {
 	return b.HasDefinition
 }
