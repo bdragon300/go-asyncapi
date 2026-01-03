@@ -1,6 +1,5 @@
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 
@@ -21,12 +20,12 @@ func NewClient(serverURL string, bindings *{{goQualU "amqp" "ServerBindings"}}, 
 		conn, err = amqp091.DialConfig(serverURL, amqp091.Config{
 			SASL: []amqp091.Authentication{amqpAuth},
 		})
-	case {{goQualR "X509Security"}}:
-		tlsConfig := &tls.Config{
-			Certificates: []tls.Certificate{s.TLSCert()},
-			ClientAuth: tls.RequireAndVerifyClientCert,
-		}
-		conn, err = amqp091.DialTLS_ExternalAuth(serverURL, tlsConfig)
+	//case run.X509Security:
+	//	tlsConfig := &tls.Config{
+	//		Certificates: []tls.Certificate{s.TLSCert()},
+	//		ClientAuth: tls.RequireAndVerifyClientCert,
+	//	}
+	//	conn, err = amqp091.DialTLS_ExternalAuth(serverURL, tlsConfig)
 	case nil:
 		conn, err = amqp091.Dial(serverURL)
 	default:
