@@ -22,10 +22,10 @@ tasks:
     cmds:
       - "{{.TOOLS_DIR}}/hugo server"
 
-  generate-implementations:
-    desc: "Generate the code files from implementations templates"
+  inflate-codeextra:
+    desc: "Inflate codeextra templates into the Go code"
     cmds:
-      - go run ./gen_implementations.go
+      - go run ./inflate_codeextra.go {{.CLI_ARGS}}
 
   lint:
     desc: "Run linters"

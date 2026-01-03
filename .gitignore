@@ -28,6 +28,6 @@ go.work.sum
 
 # Other files
 /tmp
-/implementations_go
+/codeextra_go
 /asyncapi
 /.tools
