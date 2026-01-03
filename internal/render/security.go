@@ -3,6 +3,7 @@ package render
 import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
+	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/samber/lo"
 )
 
@@ -14,8 +15,8 @@ type SecurityScheme struct {
 	SchemeType  string
 	Description string
 
-	// InitValues contains the constant initialization values for this security generated struct.
-	InitValues *lang.GoValue
+	// Params contains security scheme parameters.
+	Params SecuritySchemeParams
 
 	// Dummy is true when security scheme is ignored (x-ignore: true)
 	Dummy bool
@@ -24,6 +25,30 @@ type SecurityScheme struct {
 	AllSecuredServersPromise *lang.ListPromise[common.Artifact]
 	// AllSecuredOperationsPromise contains all operations with security scheme applied.
 	AllSecuredOperationsPromise *lang.ListPromise[common.Artifact]
+}
+
+// SecuritySchemeParams is a struct that holds parameters for different types of security schemes.
+type SecuritySchemeParams struct {
+	In               string
+	Scheme           string
+	BearerFormat     string
+	Flows            *SecuritySchemeOAuthFlowsParams
+	OpenIDConnectURL string
+	Scopes           []string
+}
+
+type SecuritySchemeOAuthFlowsParams struct {
+	Implicit          *SecuritySchemeOAuthFlowParams
+	Password          *SecuritySchemeOAuthFlowParams
+	ClientCredentials *SecuritySchemeOAuthFlowParams
+	AuthorizationCode *SecuritySchemeOAuthFlowParams
+}
+
+type SecuritySchemeOAuthFlowParams struct {
+	AuthorizationURL string
+	TokenURL         string
+	RefreshURL       string
+	AvailableScopes  types.OrderedMap[string, string]
 }
 
 func (s *SecurityScheme) BoundServers() []*Server {

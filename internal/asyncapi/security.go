@@ -50,6 +50,7 @@ func (ss SecurityScheme) build(ctx *compile.Context, securitySchemeKey string) (
 		SchemeType:   ss.Type,
 		Description:  ss.Description,
 		Dummy:        ss.XIgnore,
+		Params:       ss.buildValues(),
 	}
 
 	// List promises for all secured servers and operations
@@ -67,28 +68,39 @@ func (ss SecurityScheme) build(ctx *compile.Context, securitySchemeKey string) (
 	ctx.PutListPromise(prm)
 	res.AllSecuredOperationsPromise = prm
 
-	switch ss.Type {
-	case "userPassword":
-		res.InitValues = ss.buildUserPasswordValues()
-	case "apiKey":
-		res.InitValues = ss.buildAPIKeyValues()
-	default:
-		ctx.Logger.Warn("Non-standard security scheme type", "type", ss.Type)
-		res.InitValues = &lang.GoValue{EmptyCurlyBrackets: true}
-	}
 	return &res, nil
 }
 
-func (ss SecurityScheme) buildUserPasswordValues() *lang.GoValue {
-	return &lang.GoValue{EmptyCurlyBrackets: true}
-}
+func (ss SecurityScheme) buildValues() render.SecuritySchemeParams {
+	setOAuthParams := func(v *OAuthFlow) *render.SecuritySchemeOAuthFlowParams {
+		if v == nil {
+			return nil
+		}
+		return &render.SecuritySchemeOAuthFlowParams{
+			AuthorizationURL: v.AuthorizationURL,
+			TokenURL:         v.TokenURL,
+			RefreshURL:       v.RefreshURL,
+			AvailableScopes:  v.AvailableScopes,
+		}
+	}
 
-func (ss SecurityScheme) buildAPIKeyValues() *lang.GoValue {
-	// TODO: fully move building of struct fields from here to templates
-	var val types.OrderedMap[string, any]
-	val.Set("In", ss.In)
+	res := render.SecuritySchemeParams{
+		In:               ss.In,
+		Scheme:           ss.Scheme,
+		BearerFormat:     ss.BearerFormat,
+		OpenIDConnectURL: ss.OpenIDConnectURL,
+		Scopes:           ss.Scopes,
+	}
+	if ss.Flows != nil {
+		res.Flows = &render.SecuritySchemeOAuthFlowsParams{}
 
-	return &lang.GoValue{EmptyCurlyBrackets: true, StructValues: val}
+		res.Flows.Implicit = setOAuthParams(ss.Flows.Implicit)
+		res.Flows.Password = setOAuthParams(ss.Flows.Password)
+		res.Flows.ClientCredentials = setOAuthParams(ss.Flows.ClientCredentials)
+		res.Flows.AuthorizationCode = setOAuthParams(ss.Flows.AuthorizationCode)
+	}
+
+	return res
 }
 
 type OAuthFlows struct {
