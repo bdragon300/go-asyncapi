@@ -3,9 +3,10 @@ import (
 )
 
 type SubscribeChannel struct {
-	channelBindings *{{goQualU "http" "ChannelBindings"}}
+	channelBindings   *{{goQualU "http" "ChannelBindings"}}
 	operationBindings *{{goQualU "http" "OperationBindings"}}
-	callbacks *{{goQualR "Ring"}}[subscriberFunc]
+	security          {{goQualR "AnySecurityScheme"}}
+	callbacks         *{{goQualR "Ring"}}[subscriberFunc]
 }
 
 func (s *SubscribeChannel) Receive(ctx context.Context, cb func(envelope {{goQualU "http" "EnvelopeReader"}})) error {
