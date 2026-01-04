@@ -1,6 +1,7 @@
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"net"
 )
 
@@ -11,6 +12,10 @@ type Decoder interface {
 }
 
 func NewConsumer(host, network string, security {{goPkgRun}}AnySecurityScheme) (*ConsumeClient, error) {
+	if security != nil {
+		return nil, fmt.Errorf("security schemes are not supported for TCP protocol")
+	}
+
 	if network == "" {
 		network = "tcp"
 	}
@@ -30,7 +35,11 @@ type ConsumeClient struct {
 	MaxEnvelopeSize int
 }
 
-func (c *ConsumeClient) Subscriber(_ context.Context, _ string, _ *{{goPkgUtil "tcp"}}ChannelBindings, _*{{goPkgUtil "tcp"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "tcp"}}Subscriber, error) {
+func (c *ConsumeClient) Subscriber(_ context.Context, _ string, _ *{{goPkgUtil "tcp"}}ChannelBindings, _ *{{goPkgUtil "tcp"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "tcp"}}Subscriber, error) {
+	if security != nil {
+		return nil, fmt.Errorf("security schemes are not supported for TCP protocol")
+	}
+
 	// Wait for a new connection
 	conn, err := c.AcceptTCP()
 	if err != nil {

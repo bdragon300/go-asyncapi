@@ -4,6 +4,8 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kversion"
+	"github.com/twmb/franz-go/pkg/sasl"
+	"github.com/twmb/franz-go/pkg/sasl/plain"
 )
 
 func NewProducer(hosts []string, bindings *{{goPkgUtil "kafka"}}ServerBindings, security {{goPkgRun}}AnySecurityScheme, extraOpts ...kgo.Opt) *ProduceClient {
@@ -11,20 +13,37 @@ func NewProducer(hosts []string, bindings *{{goPkgUtil "kafka"}}ServerBindings, 
 		hosts:     hosts,
 		bindings:  bindings,
 		extraOpts: extraOpts,
+		security:  security,
 	}
 }
 
 type ProduceClient struct {
-	hosts    []string
-	bindings *{{goPkgUtil "kafka"}}ServerBindings
+	hosts     []string
+	bindings  *{{goPkgUtil "kafka"}}ServerBindings
 	extraOpts []kgo.Opt
+	security  {{goPkgRun}}AnySecurityScheme
 }
 
 func (p ProduceClient) Publisher(_ context.Context, address string, chb *{{goPkgUtil "kafka"}}ChannelBindings, opb *{{goPkgUtil "kafka"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "kafka"}}Publisher, error) {
-	// TODO: schema registry https://github.com/twmb/franz-go/blob/master/examples/schema_registry/schema_registry.go
+	// TODO: schema registry https://github.com/twmb/franz-go/blo6b/master/examples/schema_registry/schema_registry.go
 	var opts []kgo.Opt
 
 	opts = append(opts, kgo.SeedBrokers(p.hosts...))
+
+	var saslMech []sasl.Mechanism
+	for _, sec := range []{{goPkgRun}}AnySecurityScheme{p.security, security} {
+		if sec == nil {
+			continue
+		}
+		mech, err := toSaslMechanism(sec)
+		if err != nil {
+			return nil, err
+		}
+		saslMech = append(saslMech, mech)
+	}
+	if len(saslMech) > 0 {
+		opts = append(opts, kgo.SASL(saslMech...))
+	}
 
 	topic := address
 	if chb != nil && chb.Topic != "" {
@@ -41,9 +60,9 @@ func (p ProduceClient) Publisher(_ context.Context, address string, chb *{{goPkg
 	}
 
 	return &PublishChannel{
-		Client:          cl,
-		Topic:           topic,
-		channelBindings: chb,
+		Client:            cl,
+		Topic:             topic,
+		channelBindings:   chb,
 		operationBindings: opb,
 	}, nil
 }
@@ -55,8 +74,8 @@ type ImplementationRecord interface {
 
 type PublishChannel struct {
 	*kgo.Client
-	Topic           string
-	channelBindings *{{goPkgUtil "kafka"}}ChannelBindings
+	Topic             string
+	channelBindings   *{{goPkgUtil "kafka"}}ChannelBindings
 	operationBindings *{{goPkgUtil "kafka"}}OperationBindings
 }
 
@@ -72,6 +91,15 @@ func (p PublishChannel) Send(ctx context.Context, envelopes ...{{goPkgUtil "kafk
 func (p PublishChannel) Close() error {
 	p.Client.Close()
 	return nil
+}
+
+func toSaslMechanism(security {{goPkgRun}}AnySecurityScheme) (sasl.Mechanism, error) {
+	switch v := security.(type) {
+	case {{goPkgRun}}UserPasswordSecurity:
+		u, p := v.UserPassword()
+		return plain.Auth{User: u, Pass: p}.AsMechanism(), nil
+	}
+	return nil, fmt.Errorf("unsupported security scheme: %v", security.AuthType())
 }
 
 func ParseProtocolVersion(protocolVersion string) (*kversion.Versions, error) {

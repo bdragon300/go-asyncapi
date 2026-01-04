@@ -1,6 +1,7 @@
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"net"
 )
 
@@ -10,6 +11,10 @@ import (
 // The third parameter localAddress sets the local address to bind to.
 // If empty, the bound address will be selected automatically by the system.
 func NewProducer(address, network, localAddress string, security {{goPkgRun}}AnySecurityScheme) (*ProduceClient, error) {
+	if security != nil {
+		return nil, fmt.Errorf("security schemes are not supported for TCP protocol")
+	}
+
 	if network == "" {
 		network = "tcp"
 	}
@@ -43,6 +48,10 @@ type ProduceClient struct {
 }
 
 func (p ProduceClient) Publisher(ctx context.Context, _ string, _ *{{goPkgUtil "tcp"}}ChannelBindings, _ *{{goPkgUtil "tcp"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "tcp"}}Publisher, error) {
+	if security != nil {
+		return nil, fmt.Errorf("security schemes are not supported for TCP protocol")
+	}
+
 	conn, err := p.DialContext(ctx, p.protocolFamily, p.address)
 	if err != nil {
 		return nil, err

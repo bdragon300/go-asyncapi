@@ -7,7 +7,10 @@ func Connect{{ . | goIDUpper }}Bidi(
     localAddress string,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    client := {{goPkgImpl .Protocol}}NewClient(localAddress, url.Host, url.Scheme, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    client, err := {{goPkgImpl .Protocol}}NewClient(localAddress, url.Host, url.Scheme, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    if err != nil {
+        return nil, err
+    }
     consumer, producer := client, client
     return &{{ . | goIDUpper }}Closable{
         {{. | goIDUpper}}{producer: producer, consumer: consumer},
@@ -21,7 +24,10 @@ func Connect{{ . | goIDUpper }}Producer(
     url *{{goPkgExt "net/url"}}URL,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    producer := {{goPkgImpl .Protocol}}NewClient("", url.Host, url.Scheme, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    producer, err := {{goPkgImpl .Protocol}}NewClient("", url.Host, url.Scheme, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    if err != nil {
+        return nil, err
+    }
     return &{{ . | goIDUpper }}Closable{
         {{. | goIDUpper}}{producer: producer},
     }, nil
@@ -34,7 +40,10 @@ func Connect{{ . | goIDUpper }}Consumer(
     url *{{goPkgExt "net/url"}}URL,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    consumer := {{goPkgImpl .Protocol}}NewClient(url.Host, "", url.Scheme, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    consumer, err := {{goPkgImpl .Protocol}}NewClient(url.Host, "", url.Scheme, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    if err != nil {
+        return nil, err
+    }
     return &{{ . | goIDUpper }}Closable{
         {{. | goIDUpper}}{consumer: consumer},
     }, nil

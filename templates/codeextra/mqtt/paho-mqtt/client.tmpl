@@ -1,5 +1,6 @@
 import (
 	"context"
+	"fmt"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
@@ -24,6 +25,12 @@ func NewClient(ctx context.Context, serverURL string, bindings *{{goPkgUtil "mqt
 		}
 	}
 
+	if security != nil {
+		if err := applySecurity(co, security); err != nil {
+			return nil, err
+		}
+	}
+
 	cl := mqtt.NewClient(co)
 	tok := cl.Connect()
 	select {
@@ -36,17 +43,21 @@ func NewClient(ctx context.Context, serverURL string, bindings *{{goPkgUtil "mqt
 	}
 
 	return &Client{
-		Client:      cl,
-		bindings:    bindings,
+		Client:   cl,
+		bindings: bindings,
 	}, nil
 }
 
 type Client struct {
 	mqtt.Client
-	bindings    *{{goPkgUtil "mqtt"}}ServerBindings
+	bindings *{{goPkgUtil "mqtt"}}ServerBindings
 }
 
 func (c *Client) Subscriber(ctx context.Context, address string, chb *{{goPkgUtil "mqtt"}}ChannelBindings, opb *{{goPkgUtil "mqtt"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "mqtt"}}Subscriber, error) {
+	if security != nil {
+		return nil, fmt.Errorf("publisher security not supported")
+	}
+
 	var qos byte
 	if opb != nil {
 		qos = byte(opb.QoS)
@@ -79,14 +90,30 @@ func (c *Client) Subscriber(ctx context.Context, address string, chb *{{goPkgUti
 }
 
 func (c *Client) Publisher(_ context.Context, address string, chb *{{goPkgUtil "mqtt"}}ChannelBindings, opb *{{goPkgUtil "mqtt"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "mqtt"}}Publisher, error) {
+	if security != nil {
+		return nil, fmt.Errorf("publisher security not supported")
+	}
+
 	ctx2, cancel := context.WithCancel(context.Background())
 	r := PublishChannel{
-		Client:          c.Client,
-		Topic:           address,
-		channelBindings: chb,
+		Client:            c.Client,
+		Topic:             address,
+		channelBindings:   chb,
 		operationBindings: opb,
-		ctx:             ctx2,
-		cancel:          cancel,
+		ctx:               ctx2,
+		cancel:            cancel,
 	}
 	return &r, nil
+}
+
+func applySecurity(co *mqtt.ClientOptions, sec {{goPkgRun}}AnySecurityScheme) error {
+	switch v := sec.(type) {
+	case {{goPkgRun}}UserPasswordSecurity:
+		u, p := v.UserPassword()
+		co.SetUsername(u)
+		co.SetPassword(p)
+		return nil
+	}
+
+	return fmt.Errorf("unsupported security scheme: %v", sec.AuthType())
 }

@@ -1,5 +1,6 @@
 import (
 	"context"
+	"fmt"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -9,6 +10,12 @@ func NewClient(serverURL string, security {{goPkgRun}}AnySecurityScheme) (*Clien
 	if err != nil {
 		return nil, err
 	}
+	if security != nil {
+		if err = applySecurity(opts, security); err != nil {
+			return nil, err
+		}
+	}
+
 	cl := redis.NewClient(opts)
 	return &Client{Client: cl}, nil
 }
@@ -17,13 +24,54 @@ type Client struct {
 	*redis.Client
 }
 
-func (c *Client) Publisher(_ context.Context, address string, _ *{{goPkgUtil "redis"}}ChannelBindings, _ *{{goPkgUtil "redis"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "redis"}}Publisher, error) {
+func (c *Client) Publisher(ctx context.Context, address string, _ *{{goPkgUtil "redis"}}ChannelBindings, _ *{{goPkgUtil "redis"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "redis"}}Publisher, error) {
+	if security != nil {
+		if err := authenticateConn(ctx, c.Client.Conn(), security); err != nil {
+			return nil, err
+		}
+	}
+
 	return &PublishChannel{Client: c.Client, Name: address}, nil
 }
 
 func (c *Client) Subscriber(ctx context.Context, address string, _ *{{goPkgUtil "redis"}}ChannelBindings, _ *{{goPkgUtil "redis"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "redis"}}Subscriber, error) {
+	if security != nil {
+		if err := authenticateConn(ctx, c.Client.Conn(), security); err != nil {
+			return nil, err
+		}
+	}
+
 	return &SubscriberChannel{
 		PubSub: c.Client.Subscribe(ctx, address),
 		Name:   address,
 	}, nil
+}
+
+func applySecurity(opts *redis.Options, security {{goPkgRun}}AnySecurityScheme) error {
+	switch v := security.(type) {
+	case {{goPkgRun}}UserPasswordSecurity:
+		u, p := v.UserPassword()
+		opts.Username = u
+		opts.Password = p
+		return nil
+	case {{goPkgRun}}APIKeySecurity:
+		k := v.APIKey()
+		opts.Password = k
+		return nil
+	}
+
+	return fmt.Errorf("unsupported security scheme: %v", security.AuthType())
+}
+
+func authenticateConn(ctx context.Context, conn *redis.Conn, security {{goPkgRun}}AnySecurityScheme) error {
+	switch v := security.(type) {
+	case {{goPkgRun}}UserPasswordSecurity:
+		u, p := v.UserPassword()
+		return conn.AuthACL(ctx, u, p).Err()
+	case {{goPkgRun}}APIKeySecurity:
+		k := v.APIKey()
+		return conn.Auth(ctx, k).Err()
+	}
+
+	return fmt.Errorf("unsupported security scheme: %v", security.AuthType())
 }

@@ -11,6 +11,10 @@ func NewClient(localHost, remoteHost, protocolFamily string, security {{goPkgRun
 	var err error
 	res := &Client{MaxEnvelopeSize: DefaultMaxEnvelopeSize}
 
+	if security != nil {
+		return nil, fmt.Errorf("security schemes are not supported for IP protocol")
+	}
+
 	res.localProtocolFamily = protocolFamily
 	if res.localProtocolFamily == "" {
 		res.localProtocolFamily = "ip:0"
@@ -52,10 +56,16 @@ type Client struct {
 }
 
 func (c *Client) Subscriber(ctx context.Context, _ string, _ *{{goPkgUtil "ip"}}ChannelBindings, _ *{{goPkgUtil "ip"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "ip"}}Subscriber, error) {
+	if security != nil {
+		return nil, fmt.Errorf("security schemes are not supported for IP protocol")
+	}
 	return c.channel(ctx)
 }
 
 func (c *Client) Publisher(ctx context.Context, _ string, _ *{{goPkgUtil "ip"}}ChannelBindings, _ *{{goPkgUtil "ip"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "ip"}}Publisher, error) {
+	if security != nil {
+		return nil, fmt.Errorf("security schemes are not supported for IP protocol")
+	}
 	return c.channel(ctx)
 }
 

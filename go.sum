@@ -24,6 +24,10 @@ github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiE
 github.com/aymanbagabas/go-osc52/v2 v2.0.1/go.mod h1:uYgXzlJ7ZpABp8OJ+exZzJJhRNQ2ASbcXHWsFqH8hp8=
 github.com/bdragon300/go-asyncapi/run v0.0.0-20250924075449-4d66ac090fb3 h1:HWKVbkz1LRWGQIDiOUTEA7szabvs3mYcwpLTlH7lK+c=
 github.com/bdragon300/go-asyncapi/run v0.0.0-20250924075449-4d66ac090fb3/go.mod h1:mC7SBVvP3/ycNbGNfnar+0zBboxJzn8VdmqnfPR9x+E=
+github.com/bdragon300/go-asyncapi/run v0.0.0-20250925135355-918fc0d1d533 h1:DPOe6iw7jL8P5bDNpVzSAX4aDFxm9JJYct+K27qCR4w=
+github.com/bdragon300/go-asyncapi/run v0.0.0-20250925135355-918fc0d1d533/go.mod h1:mC7SBVvP3/ycNbGNfnar+0zBboxJzn8VdmqnfPR9x+E=
+github.com/bdragon300/go-asyncapi/run v0.0.0-20260104100738-919185f6bfc3 h1:WDVQ+Fzwlp/5e0xDXCpXW0oiyDpuDGt+DdCxaOt5gjw=
+github.com/bdragon300/go-asyncapi/run v0.0.0-20260104100738-919185f6bfc3/go.mod h1:mC7SBVvP3/ycNbGNfnar+0zBboxJzn8VdmqnfPR9x+E=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
 github.com/buger/jsonparser v1.1.1/go.mod h1:6RYKKt7H4d4+iWqouImQ9R2FZql3VbhNgx27UK13J/0=
 github.com/charmbracelet/colorprofile v0.3.1 h1:k8dTHMd7fgw4bnFd7jXTLZrSU/CQrKnL3m+AxCzDz40=

@@ -16,7 +16,11 @@ const DefaultMaxEnvelopeSize = 1024
 //
 // For receiving the data, the localAddress arg sets the address to listen for incoming UDP packets.
 // The defaultRemoteAddress arg is ignored.
-func NewClient(localAddress, defaultRemoteAddress, protocolFamily string, security {{goPkgRun}}AnySecurityScheme) *Client {
+func NewClient(localAddress, defaultRemoteAddress, protocolFamily string, security {{goPkgRun}}AnySecurityScheme) (*Client, error) {
+	if security != nil {
+		return nil, fmt.Errorf("security schemes are not supported for UDP protocol")
+	}
+
 	if protocolFamily == "" {
 		protocolFamily = "udp"
 	}
@@ -25,14 +29,14 @@ func NewClient(localAddress, defaultRemoteAddress, protocolFamily string, securi
 		DefaultRemoteAddress: defaultRemoteAddress,
 		MaxEnvelopeSize:      DefaultMaxEnvelopeSize,
 		protocolFamily:       protocolFamily,
-	}
+	}, nil
 }
 
 type Client struct {
-	Config               net.ListenConfig
+	Config net.ListenConfig
 
 	// LocalAddress is the local address that will be used to listen for incoming UDP packets.
-	LocalAddress         string
+	LocalAddress string
 
 	// DefaultRemoteAddress is the remote address that will be used if it not set in the envelope.
 	DefaultRemoteAddress string
@@ -46,10 +50,18 @@ type Client struct {
 }
 
 func (c Client) Publisher(ctx context.Context, _ string, _ *{{goPkgUtil "udp"}}ChannelBindings, _ *{{goPkgUtil "udp"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "udp"}}Publisher, error) {
+	if security != nil {
+		return nil, fmt.Errorf("security schemes are not supported for UDP protocol")
+	}
+
 	return c.channel(ctx)
 }
 
 func (c Client) Subscriber(ctx context.Context, _ string, _ *{{goPkgUtil "udp"}}ChannelBindings, _ *{{goPkgUtil "udp"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "udp"}}Subscriber, error) {
+	if security != nil {
+		return nil, fmt.Errorf("security schemes are not supported for UDP protocol")
+	}
+
 	return c.channel(ctx)
 }
 

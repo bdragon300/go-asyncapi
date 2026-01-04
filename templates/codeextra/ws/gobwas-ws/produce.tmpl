@@ -10,12 +10,14 @@ func NewProducer(serverURL *url.URL, bindings *{{goPkgUtil "ws"}}ServerBindings,
 	return &ProduceClient{
 		bindings:  bindings,
 		serverURL: serverURL,
+		security:  security,
 	}
 }
 
 type ProduceClient struct {
 	bindings  *{{goPkgUtil "ws"}}ServerBindings
 	serverURL *url.URL
+	security  {{goPkgRun}}AnySecurityScheme
 }
 
 func (p ProduceClient) Publisher(ctx context.Context, address string, chb *{{goPkgUtil "ws"}}ChannelBindings, opb *{{goPkgUtil "ws"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "ws"}}Publisher, error) {
@@ -23,10 +25,47 @@ func (p ProduceClient) Publisher(ctx context.Context, address string, chb *{{goP
 		return nil, fmt.Errorf("unsupported method %s", chb.Method)
 	}
 	u := p.serverURL.JoinPath(address)
+
+	s := p.security
+	if security != nil {
+		s = security
+	}
+
+	if s != nil {
+		if err := applySecurity(u, s); err != nil {
+			return nil, err
+		}
+	}
 	netConn, _, _, err := ws.Dial(ctx, u.String())
 	if err != nil {
 		return nil, err
 	}
 
 	return NewChannel(chb, opb, netConn, true), nil
+}
+
+func applySecurity(u *url.URL, security {{goPkgRun}}AnySecurityScheme) error {
+	switch v := security.(type) {
+	case {{goPkgRun}}UserPasswordSecurity:
+		u.User = url.UserPassword(v.UserPassword())
+	case {{goPkgRun}}APIKeySecurity:
+		key := v.APIKey()
+		switch v.In() {
+		case "user":
+			u.User = url.User(key)
+		case "password":
+			if u.User != nil {
+				username := u.User.Username()
+				u.User = url.UserPassword(username, key)
+			} else {
+				u.User = url.UserPassword("", key)
+			}
+		default:
+			return fmt.Errorf("unsupported 'in' for apiKey security scheme: %s", v.In())
+		}
+	default:
+		return fmt.Errorf("unsupported security scheme: %v", security.AuthType())
+	}
+
+	return nil
 }

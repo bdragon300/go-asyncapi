@@ -1,129 +1,135 @@
 import (
+	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"net"
+	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 )
 
-func NewChannel(chb *{{goPkgUtil "ws"}}ChannelBindings, opb *{{goPkgUtil "ws"}}OperationBindings, conn net.Conn, clientSide bool) *Channel {
-	res := Channel{
-		Conn:              conn,
-		clientSide:        clientSide,
-		channelBindings:   chb,
-		operationBindings: opb,
-		callbacks:         {{goPkgRun}}NewRing[subscriberFunc](),
-		once:              &sync.Once{},
+// TODO: remove httpResponseTimeout, allow to use smth like http.requestHandler or nothing
+func NewConsumer(bindings *{{goPkgUtil "ws"}}ServerBindings, security {{goPkgRun}}AnySecurityScheme) *ConsumeClient {
+	return &ConsumeClient{
+		Upgrader:    ws.DefaultHTTPUpgrader,
+		bindings:    bindings,
+		security:    security,
+		connections: make(map[string]chan *Channel),
+		mu:          new(sync.RWMutex),
 	}
-	res.ctx, res.cancel = context.WithCancelCause(context.Background())
-	return &res
 }
 
-type subscriberFunc func(envelope {{goPkgUtil "ws"}}EnvelopeReader)
-
-type ImplementationRecord interface {
-	Bytes() []byte
-	OpCode() ws.OpCode
+type HTTPUpgraderInterface interface {
+	Upgrade(r *http.Request, w http.ResponseWriter) (conn net.Conn, rw *bufio.ReadWriter, hs ws.Handshake, err error)
 }
 
-type Channel struct {
-	net.Conn
-
-	// clientSide determines if this channel is a client-side or a server-side.
-	// To prevent cache spoofing attack, the client-side application must additionally mask the payload in
-	// outgoing websocket frames, whereas the server-side code must unmask the payload back in incoming frames
-	// https://www.rfc-editor.org/rfc/rfc6455#section-5.3
-	clientSide        bool
-	channelBindings   *{{goPkgUtil "ws"}}ChannelBindings
-	operationBindings *{{goPkgUtil "ws"}}OperationBindings
-	callbacks         *{{goPkgRun}}Ring[subscriberFunc]
-	ctx               context.Context
-	cancel            context.CancelCauseFunc
-	once              *sync.Once
+type ConsumeClient struct {
+	http.ServeMux
+	Upgrader    HTTPUpgraderInterface
+	bindings    *{{goPkgUtil "ws"}}ServerBindings
+	security    {{goPkgRun}}AnySecurityScheme
+	connections map[string]chan *Channel
+	mu          *sync.RWMutex
 }
 
-func (s Channel) Receive(ctx context.Context, cb func(envelope {{goPkgUtil "ws"}}EnvelopeReader)) error {
-	element := s.callbacks.Append(cb)
-	defer func() {
-		s.callbacks.Remove(element)
-	}()
-	s.once.Do(func() {
-		go s.readConn()
-	})
+func (c *ConsumeClient) Subscriber(ctx context.Context, address string, chb *{{goPkgUtil "ws"}}ChannelBindings, opb *{{goPkgUtil "ws"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "ws"}}Subscriber, error) {
+	s := c.security
+	if security != nil {
+		s = security
+	}
 
+	c.ensureChannel(address, chb, opb, s) // FIXME: maybe it's better to take the path from bindings?
+	// Wait for a new connection
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
-	case <-s.ctx.Done():
-		return context.Cause(s.ctx)
+		return nil, ctx.Err()
+	case conn := <-c.connections[address]:
+		return conn, nil
 	}
 }
 
-func (s Channel) Send(ctx context.Context, envelopes ...{{goPkgUtil "ws"}}EnvelopeWriter) error {
-	for i, envelope := range envelopes {
-		ir := envelope.(ImplementationRecord)
-		msg := ir.Bytes()
+func (c *ConsumeClient) ensureChannel(channelName string, chb *{{goPkgUtil "ws"}}ChannelBindings, opb *{{goPkgUtil "ws"}}OperationBindings, sec {{goPkgRun}}AnySecurityScheme) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-		select {
-		case <-s.ctx.Done():
-			return context.Cause(s.ctx)
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-			var err error
-			if s.clientSide {
-				err = wsutil.WriteClientMessage(s.Conn, ir.OpCode(), msg)
-			} else {
-				err = wsutil.WriteServerMessage(s.Conn, ir.OpCode(), msg)
-			}
-			if err != nil {
-				return fmt.Errorf("envelope #%d: %w", i, err)
-			}
-		}
-	}
-	return nil
-}
-
-func (s Channel) Close() error {
-	s.cancel(nil)
-	return s.Conn.Close()
-}
-
-func (s Channel) readConn() {
-	var err error
-	defer func() {
-		s.cancel(err)
-	}()
-
-	for {
-		var msgs []wsutil.Message
-		if s.clientSide {
-			msgs, err = wsutil.ReadServerMessage(s.Conn, nil)
-		} else {
-			msgs, err = wsutil.ReadClientMessage(s.Conn, nil)
-		}
-		if err != nil {
-			// If sender did not set websocket frame OpCode, its default is [ws.OpContinuation].
-			if errors.Is(err, ws.ErrProtocolContinuationUnexpected) {
-				err = fmt.Errorf("%w (sender did not set OpCode?)", err)
-			}
-			return
-		}
-		for _, msg := range msgs {
-			select {
-			case <-s.ctx.Done():
-				return
-			default:
-				cb, ok := s.callbacks.Next()
-				if !ok {
-					err = fmt.Errorf("no subscribers for connection %s->%s", s.Conn.RemoteAddr(), s.Conn.LocalAddr())
+	if _, ok := c.connections[channelName]; !ok { // HandleFunc panics if called more than once for the same channel
+		c.connections[channelName] = make(chan *Channel)
+		c.HandleFunc(channelName, func(w http.ResponseWriter, req *http.Request) {
+			if chb != nil {
+				needMethod := chb.Method
+				if needMethod != "" && strings.ToUpper(needMethod) != req.Method {
+					http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 					return
 				}
-				cb(NewEnvelopeIn(msg))
 			}
+
+			c.mu.RLock()
+			defer c.mu.RUnlock()
+			if _, ok := c.connections[channelName]; !ok {
+				http.Error(w, "channel not found", http.StatusNotFound)
+				return
+			}
+
+			if sec != nil {
+				authOk, err := checkSecurity(req, sec)
+				if err != nil {
+					http.Error(w, "internal server error", http.StatusInternalServerError)
+					return
+				}
+				if !authOk {
+					http.Error(w, "unauthorized", http.StatusUnauthorized)
+					return
+				}
+			}
+
+			netConn, _, _, err := c.Upgrader.Upgrade(req, w)
+			if err != nil {
+				// TODO: error log
+				http.Error(w, "internal server error", http.StatusInternalServerError)
+				return
+			}
+
+			conn := NewChannel(chb, opb, netConn, false)
+			select {
+			case <-req.Context().Done():
+				// TODO: error log
+				defer conn.Close()
+				_ = ws{{goPkgUtil "ws"}}WriteServerMessage(netConn, ws.OpClose, []byte("connection closed"))
+			case c.connections[channelName] <- conn:
+			}
+		})
+	}
+}
+
+func checkSecurity(req *http.Request, sec {{goPkgRun}}AnySecurityScheme) (bool, error) {
+	uAuth := req.URL.User
+	if uAuth == nil {
+		return false, nil
+	}
+
+	switch v := sec.(type) {
+	case {{goPkgRun}}UserPasswordSecurity:
+		uUser := uAuth.Username()
+		uPass, _ := uAuth.Password()
+		user, pass := v.UserPassword()
+		return uUser == user && uPass == pass, nil
+	case {{goPkgRun}}APIKeySecurity:
+		key := v.APIKey()
+		switch v.In() {
+		case "user":
+			uUser := uAuth.Username()
+			return uUser == key, nil
+		case "password":
+			uPass, ok := uAuth.Password()
+			if !ok {
+				return false, nil // No api key provided
+			}
+			return uPass == key, nil
 		}
 	}
+
+	return false, fmt.Errorf("unsupported security scheme: %v", sec.AuthType())
 }

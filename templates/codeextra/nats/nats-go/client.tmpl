@@ -5,15 +5,23 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-func NewClient(serverURL string, security {{goPkgRun}}AnySecurityScheme, extraOpts ...nats.Option)(*Client, error) {
+func NewClient(serverURL string, security {{goPkgRun}}AnySecurityScheme, extraOpts ...nats.Option) (*Client, error) {
 	// Unfortunately, the official nats client doesn't accept the context object.
+	if security != nil {
+		authOpt, err := getAuth(security)
+		if err != nil {
+			return nil, err
+		}
+		extraOpts = append(extraOpts, authOpt)
+	}
+
 	client, err := nats.Connect(serverURL, extraOpts...)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Client{
-		Conn:        client,
+		Conn: client,
 	}, nil
 }
 
@@ -22,6 +30,10 @@ type Client struct {
 }
 
 func (c *Client) Subscriber(_ context.Context, address string, chb *{{goPkgUtil "nats"}}ChannelBindings, opb *{{goPkgUtil "nats"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "nats"}}Subscriber, error) {
+	if security != nil {
+		return nil, fmt.Errorf("operation security schemes are not supported")
+	}
+
 	ctx2, cancel := context.WithCancel(context.Background())
 	return &Subscription{
 		Client:            c,
@@ -34,6 +46,10 @@ func (c *Client) Subscriber(_ context.Context, address string, chb *{{goPkgUtil 
 }
 
 func (c *Client) Publisher(_ context.Context, _ string, chb *{{goPkgUtil "nats"}}ChannelBindings, opb *{{goPkgUtil "nats"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "nats"}}Publisher, error) {
+	if security != nil {
+		return nil, fmt.Errorf("operation security schemes are not supported")
+	}
+
 	ctx2, cancel := context.WithCancel(context.Background())
 	return &PublishChannel{
 		Client:            c,
@@ -50,4 +66,16 @@ func (c *Client) Close() error {
 	}
 	c.Conn.Close()
 	return nil
+}
+
+func getAuth(security {{goPkgRun}}AnySecurityScheme) (nats.Option, error) {
+	switch v := security.(type) {
+	case {{goPkgRun}}UserPasswordSecurity:
+		u, p := v.UserPassword()
+		return nats.UserInfo(u, p), nil
+	case {{goPkgRun}}APIKeySecurity:
+		k := v.APIKey()
+		return nats.Token(k), nil
+	}
+	return nil, fmt.Errorf("unsupported security scheme: %v", security.AuthType())
 }
