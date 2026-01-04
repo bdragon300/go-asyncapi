@@ -1,6 +1,6 @@
 {{- /* dot == render.ProtoMessage */}}
 {{define "code/proto/amqp/message/bindings/values"}}
-{{- goQualU "amqp" "MessageBindings"}}{
+{{- goPkgUtil "amqp"}}MessageBindings{
     {{- with .Bindings.Values.Map.amqp}}
         {{with .contentEncoding }}ContentEncoding: {{goLit .}},{{end}}
         {{with .messageType }}MessageType: {{goLit .}},{{end}}

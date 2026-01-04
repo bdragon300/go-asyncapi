@@ -9,7 +9,7 @@ import (
 //
 // The third parameter localAddress sets the local address to bind to.
 // If empty, the bound address will be selected automatically by the system.
-func NewProducer(address, network, localAddress string, security {{goQualR "AnySecurityScheme"}}) (*ProduceClient, error) {
+func NewProducer(address, network, localAddress string, security {{goPkgRun}}AnySecurityScheme) (*ProduceClient, error) {
 	if network == "" {
 		network = "tcp"
 	}
@@ -42,7 +42,7 @@ type ProduceClient struct {
 	protocolFamily string
 }
 
-func (p ProduceClient) Publisher(ctx context.Context, _ string, _ *{{goQualU "tcp" "ChannelBindings"}}, _ *{{goQualU "tcp" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualU "tcp" "Publisher"}}, error) {
+func (p ProduceClient) Publisher(ctx context.Context, _ string, _ *{{goPkgUtil "tcp"}}ChannelBindings, _ *{{goPkgUtil "tcp"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "tcp"}}Publisher, error) {
 	conn, err := p.DialContext(ctx, p.protocolFamily, p.address)
 	if err != nil {
 		return nil, err

@@ -21,20 +21,20 @@ func NewEnvelopeOut(buf []byte) *EnvelopeOut {
 
 type EnvelopeOut struct {
 	*bytes.Buffer
-	headers {{goQualR "Headers"}}
+	headers {{goPkgRun}}Headers
 }
 
 func (e *EnvelopeOut) ResetPayload() {
 	e.Buffer.Reset()
 }
 
-func (e *EnvelopeOut) SetHeaders(headers {{goQualR "Headers"}}) {
+func (e *EnvelopeOut) SetHeaders(headers {{goPkgRun}}Headers) {
 	e.headers = headers
 }
 
 func (e *EnvelopeOut) SetContentType(_ string) {}
 
-func (e *EnvelopeOut) SetBindings(_ {{goQualU "ip" "MessageBindings"}}) {}
+func (e *EnvelopeOut) SetBindings(_ {{goPkgUtil "ip"}}MessageBindings) {}
 
 func (e *EnvelopeOut) HeaderBytes() ([]byte, error) {
 	h, ok := e.headers[HeaderIPHeaders]
@@ -66,8 +66,8 @@ type EnvelopeIn struct {
 	IPVersion int
 }
 
-func (e *EnvelopeIn) Headers() {{goQualR "Headers"}} {
-	return {{goQualR "Headers"}}{
+func (e *EnvelopeIn) Headers() {{goPkgRun}}Headers {
+	return {{goPkgRun}}Headers{
 		HeaderIPVersion: e.IPVersion,
 		HeaderIPHeaders: e.IPHeaders,
 	}

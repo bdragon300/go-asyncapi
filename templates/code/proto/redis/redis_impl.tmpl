@@ -2,11 +2,11 @@
 
 {{define "code/proto/redis/server/impl/github.com/redis/go-redis/connectFunction"}}
 func Connect{{ . | goIDUpper }}Bidi(
-    ctx {{goQual "context.Context"}},
-    url *{{goQual "net/url.URL"}},
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    client, err := {{goQualI .Protocol "NewClient"}}(url.String(), {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    client, err := {{goPkgImpl .Protocol}}NewClient(url.String(), {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }
@@ -19,11 +19,11 @@ func Connect{{ . | goIDUpper }}Bidi(
 
 {{define "code/proto/redis/server/impl/github.com/redis/go-redis/connectProducerFunction"}}
 func Connect{{ . | goIDUpper }}Producer(
-    ctx {{goQual "context.Context"}},
-    url *{{goQual "net/url.URL"}},
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    producer, err := {{goQualI .Protocol "NewClient"}}(url.String(), {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    producer, err := {{goPkgImpl .Protocol}}NewClient(url.String(), {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }
@@ -35,11 +35,11 @@ func Connect{{ . | goIDUpper }}Producer(
 
 {{define "code/proto/redis/server/impl/github.com/redis/go-redis/connectConsumerFunction"}}
 func Connect{{ . | goIDUpper }}Consumer(
-    ctx {{goQual "context.Context"}},
-    url *{{goQual "net/url.URL"}},
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    consumer, err := {{goQualI .Protocol "NewClient"}}(url.String(), {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    consumer, err := {{goPkgImpl .Protocol}}NewClient(url.String(), {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }

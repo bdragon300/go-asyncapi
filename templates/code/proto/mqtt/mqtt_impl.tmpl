@@ -2,16 +2,16 @@
 
 {{define "code/proto/mqtt/server/impl/github.com/eclipse/paho.mqtt.golang/connectFunction"}}
 func Connect{{ . | goIDUpper }}Bidi(
-    ctx {{goQual "context.Context"}},
-    url *{{goQual "net/url.URL"}},
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
-    opts *{{goQual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}},
+    opts *{{goPkgExt "github.com/eclipse/paho.mqtt.golang"}}ClientOptions,
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualU .Protocol "ServerBindings"}}
+    var bindings *{{goPkgUtil .Protocol}}ServerBindings
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goQualR "ToPtr"}}({{goPkg .}}{{goIDUpper .}}ServerBindings.{{.Protocol | goIDUpper}}())
+        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}ServerBindings.{{.Protocol | goIDUpper}}())
     {{- end}}
-    client, err := {{goQualI .Protocol "NewClient"}}(ctx, url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts)
+    client, err := {{goPkgImpl .Protocol}}NewClient(ctx, url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts)
     if err != nil {
         return nil, err
     }
@@ -24,16 +24,16 @@ func Connect{{ . | goIDUpper }}Bidi(
 
 {{define "code/proto/mqtt/server/impl/github.com/eclipse/paho.mqtt.golang/connectProducerFunction"}}
 func Connect{{ . | goIDUpper }}Producer(
-    ctx {{goQual "context.Context"}},
-    url *{{goQual "net/url.URL"}},
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
-    opts *{{goQual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}},
+    opts *{{goPkgExt "github.com/eclipse/paho.mqtt.golang"}}ClientOptions,
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualU .Protocol "ServerBindings"}}
+    var bindings *{{goPkgUtil .Protocol}}ServerBindings
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goQualR "ToPtr"}}({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
+        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    producer, err := {{goQualI .Protocol "NewClient"}}(ctx, url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts)
+    producer, err := {{goPkgImpl .Protocol}}NewClient(ctx, url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts)
     if err != nil {
         return nil, err
     }
@@ -45,16 +45,16 @@ func Connect{{ . | goIDUpper }}Producer(
 
 {{define "code/proto/mqtt/server/impl/github.com/eclipse/paho.mqtt.golang/connectConsumerFunction"}}
 func Connect{{ . | goIDUpper }}Consumer(
-    ctx {{goQual "context.Context"}},
-    url *{{goQual "net/url.URL"}},
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
-    opts *{{goQual "github.com/eclipse/paho.mqtt.golang.ClientOptions"}},
+    opts *{{goPkgExt "github.com/eclipse/paho.mqtt.golang"}}ClientOptions,
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualU .Protocol "ServerBindings"}}
+    var bindings *{{goPkgUtil .Protocol}}ServerBindings
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goQualR "ToPtr"}}({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
+        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    consumer, err := {{goQualI .Protocol "NewClient"}}(ctx, url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts)
+    consumer, err := {{goPkgImpl .Protocol}}NewClient(ctx, url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts)
     if err != nil {
         return nil, err
     }

@@ -2,19 +2,19 @@
 
 {{define "code/proto/ip/server/impl/net/connectFunction"}}
 func Connect{{ . | goIDUpper }}Bidi(
-    ctx {{goQual "context.Context"}},
-    url *{{goQual "net/url.URL"}},
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
     localHost string,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    if !{{goQual "strings.Contains"}}(url.Host, ":") {
-        return nil, {{goQual "errors.New"}}("missing ip protocol family in url port")
+    if !{{goPkgExt "strings"}}Contains(url.Host, ":") {
+        return nil, {{goPkgExt "errors"}}New("missing ip protocol family in url port")
     }
-    h, p, err := {{goQual "net.SplitHostPort"}}(url.Host)
+    h, p, err := {{goPkgExt "net"}}SplitHostPort(url.Host)
 	if err != nil {
-        return nil, {{goQual "fmt.Errorf"}}("parse url: %w", err)
+        return nil, {{goPkgExt "fmt"}}Errorf("parse url: %w", err)
     }
-    client, err := {{goQualI .Protocol "NewClient"}}(localHost, h, url.Scheme + ":" + p, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    client, err := {{goPkgImpl .Protocol}}NewClient(localHost, h, url.Scheme + ":" + p, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }
@@ -27,18 +27,18 @@ func Connect{{ . | goIDUpper }}Bidi(
 
 {{define "code/proto/ip/server/impl/net/connectProducerFunction"}}
 func Connect{{ . | goIDUpper }}Producer(
-    ctx {{goQual "context.Context"}},
-    url *{{goQual "net/url.URL"}},
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    if !{{goQual "strings.Contains"}}(url.Host, ":") {
-        return nil, {{goQual "errors.New"}}("missing ip protocol family in url port")
+    if !{{goPkgExt "strings"}}Contains(url.Host, ":") {
+        return nil, {{goPkgExt "errors"}}New("missing ip protocol family in url port")
     }
-    h, p, err := {{goQual "net.SplitHostPort"}}(url.Host)
+    h, p, err := {{goPkgExt "net"}}SplitHostPort(url.Host)
 	if err != nil {
-        return nil, {{goQual "fmt.Errorf"}}("parse url: %w", err)
+        return nil, {{goPkgExt "fmt"}}Errorf("parse url: %w", err)
     }
-    producer, err := {{goQualI .Protocol "NewClient"}}("", h, url.Scheme + ":" + p, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    producer, err := {{goPkgImpl .Protocol}}NewClient("", h, url.Scheme + ":" + p, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }
@@ -50,18 +50,18 @@ func Connect{{ . | goIDUpper }}Producer(
 
 {{define "code/proto/ip/server/impl/net/connectConsumerFunction"}}
 func Connect{{ . | goIDUpper }}Consumer(
-    ctx {{goQual "context.Context"}},
-    url *{{goQual "net/url.URL"}},
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    if !{{goQual "strings.Contains"}}(url.Host, ":") {
-        return nil, {{goQual "errors.New"}}("missing ip protocol family in url port")
+    if !{{goPkgExt "strings"}}Contains(url.Host, ":") {
+        return nil, {{goPkgExt "errors"}}New("missing ip protocol family in url port")
     }
-    h, p, err := {{goQual "net.SplitHostPort"}}(url.Host)
+    h, p, err := {{goPkgExt "net"}}SplitHostPort(url.Host)
 	if err != nil {
-        return nil, {{goQual "fmt.Errorf"}}("parse url: %w", err)
+        return nil, {{goPkgExt "fmt"}}Errorf("parse url: %w", err)
     }
-    consumer, err := {{goQualI .Protocol "NewClient"}}(h, "", url.Scheme + ":" + p, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    consumer, err := {{goPkgImpl .Protocol}}NewClient(h, "", url.Scheme + ":" + p, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }

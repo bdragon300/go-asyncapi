@@ -3,7 +3,7 @@ import (
 	"net/url"
 )
 
-func NewProducer(serverURL *url.URL, bindings *{{goQualU "http" "ServerBindings"}}, security {{goQualR "AnySecurityScheme"}}) *ProduceClient {
+func NewProducer(serverURL *url.URL, bindings *{{goPkgUtil "http"}}ServerBindings, security {{goPkgRun}}AnySecurityScheme) *ProduceClient {
 	return &ProduceClient{
 		bindings:  bindings,
 		serverURL: serverURL,
@@ -12,12 +12,12 @@ func NewProducer(serverURL *url.URL, bindings *{{goQualU "http" "ServerBindings"
 }
 
 type ProduceClient struct {
-	bindings  *{{goQualU "http" "ServerBindings"}}
+	bindings  *{{goPkgUtil "http"}}ServerBindings
 	serverURL *url.URL
-	security  {{goQualR "AnySecurityScheme"}}
+	security  {{goPkgRun}}AnySecurityScheme
 }
 
-func (p ProduceClient) Publisher(_ context.Context, address string, chb *{{goQualU "http" "ChannelBindings"}}, opb *{{goQualU "http" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualU "http" "Publisher"}}, error) {
+func (p ProduceClient) Publisher(_ context.Context, address string, chb *{{goPkgUtil "http"}}ChannelBindings, opb *{{goPkgUtil "http"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "http"}}Publisher, error) {
 	u := p.serverURL
 	// Append the address to the server URL path
 	if u.Path == "" {

@@ -8,7 +8,7 @@ func NewEnvelopeOut(buf []byte) *EnvelopeOut {
 
 type EnvelopeOut struct {
 	*bytes.Buffer
-	headers     {{goQualR "Headers"}}
+	headers     {{goPkgRun}}Headers
 	contentType string
 }
 
@@ -16,7 +16,7 @@ func (e *EnvelopeOut) ResetPayload() {
 	e.Buffer.Reset()
 }
 
-func (e *EnvelopeOut) SetHeaders(headers {{goQualR "Headers"}}) {
+func (e *EnvelopeOut) SetHeaders(headers {{goPkgRun}}Headers) {
 	e.headers = headers
 }
 
@@ -24,7 +24,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.contentType = contentType
 }
 
-func (e *EnvelopeOut) SetBindings(_ {{goQualU "tcp" "MessageBindings"}}) {}
+func (e *EnvelopeOut) SetBindings(_ {{goPkgUtil "tcp"}}MessageBindings) {}
 
 func NewEnvelopeIn(msg []byte) *EnvelopeIn {
 	return &EnvelopeIn{Reader: bytes.NewReader(msg)}
@@ -34,6 +34,6 @@ type EnvelopeIn struct {
 	*bytes.Reader
 }
 
-func (e *EnvelopeIn) Headers() {{goQualR "Headers"}} {
+func (e *EnvelopeIn) Headers() {{goPkgRun}}Headers {
 	return nil
 }

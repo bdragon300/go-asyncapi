@@ -6,7 +6,7 @@ import (
 // Pub
 type (
 	Producer interface {
-		Publisher(ctx context.Context, address string, chBindings *ChannelBindings, opBindings *OperationBindings, security {{goQualR "AnySecurityScheme"}}) (Publisher, error)
+		Publisher(ctx context.Context, address string, chBindings *ChannelBindings, opBindings *OperationBindings, security {{goPkgRun}}AnySecurityScheme) (Publisher, error)
 	}
 	Publisher interface {
 		Send(ctx context.Context, envelopes ...EnvelopeWriter) error
@@ -15,7 +15,7 @@ type (
 	EnvelopeWriter interface {
 		io.Writer
 		ResetPayload()
-		SetHeaders(headers {{goQualR "Headers"}})
+		SetHeaders(headers {{goPkgRun}}Headers)
 		SetContentType(contentType string)
 		SetBindings(bindings MessageBindings)
 
@@ -30,7 +30,7 @@ type EnvelopeMarshaler interface {
 // Sub
 type (
 	Consumer interface {
-		Subscriber(ctx context.Context, address string, chBindings *ChannelBindings, opBindings *OperationBindings, security {{goQualR "AnySecurityScheme"}}) (Subscriber, error)
+		Subscriber(ctx context.Context, address string, chBindings *ChannelBindings, opBindings *OperationBindings, security {{goPkgRun}}AnySecurityScheme) (Subscriber, error)
 	}
 	Subscriber interface {
 		Receive(ctx context.Context, cb func(envelope EnvelopeReader)) error
@@ -38,7 +38,7 @@ type (
 	}
 	EnvelopeReader interface {
 		io.Reader
-		Headers() {{goQualR "Headers"}}
+		Headers() {{goPkgRun}}Headers
 
 		Ack() error
 		Nack(requeue bool) error

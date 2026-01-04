@@ -1,6 +1,6 @@
 {{- /* dot == render.ProtoMessage */}}
 {{define "code/proto/http/message/bindings/values"}}
-{{- goQualU "http" "MessageBindings"}}{
+{{- goPkgUtil "http"}}MessageBindings{
     {{- with .Bindings.Values.Map.http}}
         {{with .headers }}Headers: {{toJSON . | goLit}},{{end}}
         {{with .statusCode }}StatusCode: {{goLit .}},{{end}}

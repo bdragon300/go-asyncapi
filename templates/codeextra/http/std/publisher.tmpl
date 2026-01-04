@@ -5,7 +5,7 @@ import (
 	"net/url"
 )
 
-func NewPublisher(chb *{{goQualU "http" "ChannelBindings"}}, opb *{{goQualU "http" "OperationBindings"}}, channelURL *url.URL, sec {{goQualR "AnySecurityScheme"}}) *PublishChannel {
+func NewPublisher(chb *{{goPkgUtil "http"}}ChannelBindings, opb *{{goPkgUtil "http"}}OperationBindings, channelURL *url.URL, sec {{goPkgRun}}AnySecurityScheme) *PublishChannel {
 	return &PublishChannel{
 		Client:            http.DefaultClient,
 		channelURL:        channelURL,
@@ -18,9 +18,9 @@ func NewPublisher(chb *{{goQualU "http" "ChannelBindings"}}, opb *{{goQualU "htt
 type PublishChannel struct {
 	Client            *http.Client
 	channelURL        *url.URL
-	channelBindings   *{{goQualU "http" "ChannelBindings"}}
-	operationBindings *{{goQualU "http" "OperationBindings"}}
-	security          {{goQualR "AnySecurityScheme"}}
+	channelBindings   *{{goPkgUtil "http"}}ChannelBindings
+	operationBindings *{{goPkgUtil "http"}}OperationBindings
+	security          {{goPkgRun}}AnySecurityScheme
 }
 
 type ImplementationRecord interface {
@@ -28,7 +28,7 @@ type ImplementationRecord interface {
 	// TODO: Bindings?
 }
 
-func (p PublishChannel) Send(ctx context.Context, envelopes ...{{goQualU "http" "EnvelopeWriter"}}) error {
+func (p PublishChannel) Send(ctx context.Context, envelopes ...{{goPkgUtil "http"}}EnvelopeWriter) error {
 	method := "GET"
 	if p.operationBindings != nil && p.operationBindings.Method != "" {
 		method = p.operationBindings.Method
@@ -58,9 +58,9 @@ func (p PublishChannel) applySecurity(req *http.Request) error {
 	u := req.URL
 
 	switch v := p.security.(type) {
-	case {{goQualR "UserPasswordSecurity"}}:
+	case {{goPkgRun}}UserPasswordSecurity:
 		u.User = url.UserPassword(v.UserPassword())
-	case {{goQualR "APIKeySecurity"}}:
+	case {{goPkgRun}}APIKeySecurity:
 		key := v.APIKey()
 		switch v.In() {
 		case "user":

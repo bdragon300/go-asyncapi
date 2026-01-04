@@ -1,10 +1,10 @@
 {{- /* dot == render.ProtoChannel */}}
 {{define "code/proto/ws/channel/publishMethods/block2"}}
-    envelope.SetOpCode(byte({{goQual "github.com/gobwas/ws.OpBinary"}}))
+    envelope.SetOpCode(byte({{goPkgExt "github.com/gobwas/ws"}}OpBinary))
 {{- end}}
 
 {{define "code/proto/ws/channel/bindings/values"}}
-{{- goQualU "ws" "ChannelBindings"}}{
+{{- goPkgUtil "ws"}}ChannelBindings{
     {{- with .Bindings.Values.Map.ws}}
         {{with .method }}Method: {{goLit .}},{{end}}
         {{with .query }}Query: {{toJSON . | goLit}},{{end}}

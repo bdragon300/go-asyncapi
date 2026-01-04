@@ -10,19 +10,19 @@ type KafkaCliMixin struct {
     .Kind == "channel" or "operation"
     */}}
 {{define "client/channeloperation/kafka/github.com/twmb/franz-go/setup"}}
-var clientOptions []{{goQual "github.com/twmb/franz-go/pkg/kgo.Opt"}}
-logLevel := {{goQual "github.com/twmb/franz-go/pkg/kgo.LogLevelNone"}}
+var clientOptions []{{goPkgExt "github.com/twmb/franz-go/pkg/kgo"}}Opt
+logLevel := {{goPkgExt "github.com/twmb/franz-go/pkg/kgo"}}LogLevelNone
 if opts.debug {
-    logLevel = {{goQual "github.com/twmb/franz-go/pkg/kgo.LogLevelDebug"}}
+    logLevel = {{goPkgExt "github.com/twmb/franz-go/pkg/kgo"}}LogLevelDebug
 }
-clientOptions = append(clientOptions, {{goQual "github.com/twmb/franz-go/pkg/kgo.WithLogger"}}({{goQual "github.com/twmb/franz-go/pkg/kgo.BasicLogger"}}({{goQual "os.Stderr"}}, logLevel, nil)))
-clientOptions = append(clientOptions, {{goQual "github.com/twmb/franz-go/pkg/kgo.AllowAutoTopicCreation"}}())
+clientOptions = append(clientOptions, {{goPkgExt "github.com/twmb/franz-go/pkg/kgo"}}WithLogger({{goPkgExt "github.com/twmb/franz-go/pkg/kgo"}}BasicLogger({{goPkgExt "os"}}Stderr, logLevel, nil)))
+clientOptions = append(clientOptions, {{goPkgExt "github.com/twmb/franz-go/pkg/kgo"}}AllowAutoTopicCreation())
 {{- end}}
 
 {{define "client/channeloperation/kafka/github.com/twmb/franz-go/producer/connect"}}
 server, err := {{goPkg .Server}}Connect{{.Server | goIDUpper}}Producer(ctx, serverURL, clientOptions...)
 if err != nil {
-    return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
+    return {{goPkgExt "fmt"}}Errorf("connect server %s: %w", serverURL, err)
 }
 defer server.Close()
 {{- end}}
@@ -30,7 +30,7 @@ defer server.Close()
 {{define "client/channeloperation/kafka/github.com/twmb/franz-go/consumer/connect"}}
 server, err := {{goPkg .Server}}Connect{{.Server | goIDUpper}}Consumer(ctx, serverURL, clientOptions...)
 if err != nil {
-    return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
+    return {{goPkgExt "fmt"}}Errorf("connect server %s: %w", serverURL, err)
 }
 defer server.Close()
 {{- end}}

@@ -12,7 +12,7 @@ func NewEnvelopeOut(buf []byte) *EnvelopeOut {
 
 type EnvelopeOut struct {
 	*kgo.Record
-	messageBindings {{goQualU "kafka" "MessageBindings"}}
+	messageBindings {{goPkgUtil "kafka"}}MessageBindings
 }
 
 func (e *EnvelopeOut) Write(p []byte) (n int, err error) {
@@ -24,7 +24,7 @@ func (e *EnvelopeOut) ResetPayload() {
 	e.Value = e.Value[:0]
 }
 
-func (e *EnvelopeOut) SetHeaders(headers {{goQualR "Headers"}}) {
+func (e *EnvelopeOut) SetHeaders(headers {{goPkgRun}}Headers) {
 	for k, v := range headers.ToByteValues() {
 		e.Record.Headers = append(e.Record.Headers, kgo.RecordHeader{Key: k, Value: v})
 	}
@@ -34,7 +34,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.Record.Headers = append(e.Record.Headers, kgo.RecordHeader{Key: "Content-Type", Value: []byte(contentType)})
 }
 
-func (e *EnvelopeOut) SetBindings(bindings {{goQualU "kafka" "MessageBindings"}}) {
+func (e *EnvelopeOut) SetBindings(bindings {{goPkgUtil "kafka"}}MessageBindings) {
 	e.messageBindings = bindings
 }
 
@@ -62,8 +62,8 @@ func (e EnvelopeIn) Read(p []byte) (n int, err error) {
 	return e.rd.Read(p)
 }
 
-func (e EnvelopeIn) Headers() {{goQualR "Headers"}} {
-	res := make({{goQualR "Headers"}}, len(e.Record.Headers))
+func (e EnvelopeIn) Headers() {{goPkgRun}}Headers {
+	res := make({{goPkgRun}}Headers, len(e.Record.Headers))
 	for _, h := range e.Record.Headers {
 		res[h.Key] = h.Value
 	}

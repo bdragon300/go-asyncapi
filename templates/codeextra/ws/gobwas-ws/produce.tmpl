@@ -6,7 +6,7 @@ import (
 	"github.com/gobwas/ws"
 )
 
-func NewProducer(serverURL *url.URL, bindings *{{goQualU "ws" "ServerBindings"}}, security {{goQualR "AnySecurityScheme"}}) *ProduceClient {
+func NewProducer(serverURL *url.URL, bindings *{{goPkgUtil "ws"}}ServerBindings, security {{goPkgRun}}AnySecurityScheme) *ProduceClient {
 	return &ProduceClient{
 		bindings:  bindings,
 		serverURL: serverURL,
@@ -14,11 +14,11 @@ func NewProducer(serverURL *url.URL, bindings *{{goQualU "ws" "ServerBindings"}}
 }
 
 type ProduceClient struct {
-	bindings  *{{goQualU "ws" "ServerBindings"}}
+	bindings  *{{goPkgUtil "ws"}}ServerBindings
 	serverURL *url.URL
 }
 
-func (p ProduceClient) Publisher(ctx context.Context, address string, chb *{{goQualU "ws" "ChannelBindings"}}, opb *{{goQualU "ws" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualU "ws" "Publisher"}}, error) {
+func (p ProduceClient) Publisher(ctx context.Context, address string, chb *{{goPkgUtil "ws"}}ChannelBindings, opb *{{goPkgUtil "ws"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "ws"}}Publisher, error) {
 	if chb != nil && chb.Method != "" && chb.Method != "GET" {
 		return nil, fmt.Errorf("unsupported method %s", chb.Method)
 	}

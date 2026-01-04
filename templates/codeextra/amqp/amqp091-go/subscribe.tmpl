@@ -14,11 +14,11 @@ type SubscribeChannel struct {
 	ConsumeArgs amqp091.Table
 
 	queueName       string
-	channelBindings *{{goQualU "amqp" "ChannelBindings"}}
-	operationBindings *{{goQualU "amqp" "OperationBindings"}}
+	channelBindings *{{goPkgUtil "amqp"}}ChannelBindings
+	operationBindings *{{goPkgUtil "amqp"}}OperationBindings
 }
 
-func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope {{goQualU "amqp" "EnvelopeReader"}})) (err error) {
+func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope {{goPkgUtil "amqp"}}EnvelopeReader)) (err error) {
 	// TODO: consumer tag in x- schema argument
 	// Separate context is used to stop consumer process for a particular consumer tag on function exit.
 	consumerCtx, cancel := context.WithCancel(ctx)
@@ -29,7 +29,7 @@ func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope {{goQual
 		ack = s.operationBindings.Ack
 	}
 	if s.channelBindings != nil {
-		exclusive = {{goQualR "FromPtrOrZero"}}(s.channelBindings.QueueConfiguration.Exclusive)
+		exclusive = {{goPkgRun}}FromPtrOrZero(s.channelBindings.QueueConfiguration.Exclusive)
 	}
 	deliveries, err := s.ConsumeWithContext(
 		consumerCtx,

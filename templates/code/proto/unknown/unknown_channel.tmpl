@@ -2,16 +2,16 @@
 {{template "code/proto/channel/newFunction" .}}
 
 type {{ .Channel | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
-    Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goQual "context.Context"}}{{if .Parameters.Len}},{{ goIDUpper .Channel}}Parameters{{end}}{{if .BoundOperations}},{{goQualR "AnySecurityScheme"}}{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
-    {{if .IsPublisher}}Producer() {{goQualU .Protocol "Producer"}}{{end}}
-    {{if .IsSubscriber}}Consumer() {{goQualU .Protocol "Consumer"}}{{end}}
+    Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goPkgExt "context"}}Context{{if .Parameters.Len}},{{ goIDUpper .Channel}}Parameters{{end}}{{if .BoundOperations}},{{goPkgRun}}AnySecurityScheme{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
+    {{if .IsPublisher}}Producer() {{goPkgUtil .Protocol}}Producer{{end}}
+    {{if .IsSubscriber}}Consumer() {{goPkgUtil .Protocol}}Consumer{{end}}
 }
 
 func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
-    ctx {{goQual "context.Context"}},
+    ctx {{goPkgExt "context"}}Context,
     server {{.Channel | goIDUpper }}Server{{.Protocol | goIDUpper}},
     {{if .Parameters.Len}}params {{goIDUpper $}}Parameters,{{end}}
-    {{if .BoundOperations}}security {{goQualR "AnySecurityScheme"}},{{end}}
+    {{if .BoundOperations}}security {{goPkgRun}}AnySecurityScheme,{{end}}
 ) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error) {
     var err error
 
@@ -22,7 +22,7 @@ func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
         }
     {{- end}}
     {{- if .IsPublisher}}
-        var publisher {{goQualU .Protocol "Publisher"}}
+        var publisher {{goPkgUtil .Protocol}}Publisher
         producer := server.Producer()
         if producer != nil {
             publisher, err = producer.Publisher(
@@ -36,7 +36,7 @@ func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
         }
     {{- end}}
     {{- if .IsSubscriber}}
-        var subscriber {{goQualU .Protocol "Subscriber"}}
+        var subscriber {{goPkgUtil .Protocol}}Subscriber
         consumer := server.Consumer()
         if consumer != nil {
             subscriber, err = consumer.Subscriber(
@@ -58,9 +58,9 @@ func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
 }
 
 type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
-    address    {{goQualR "ParamString"}}
-    {{if .IsPublisher}}publisher  {{goQualU .Protocol "Publisher"}}{{end}}
-    {{if .IsSubscriber}}subscriber {{goQualU .Protocol "Subscriber"}}{{end}}
+    address    {{goPkgRun}}ParamString
+    {{if .IsPublisher}}publisher  {{goPkgUtil .Protocol}}Publisher{{end}}
+    {{if .IsSubscriber}}subscriber {{goPkgUtil .Protocol}}Subscriber{{end}}
 }
 
 {{template "code/proto/channel/commonMethods" .}}

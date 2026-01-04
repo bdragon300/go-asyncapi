@@ -6,7 +6,7 @@
 
     {{- range $proto := $.Bindings.Protocols}}
         {{with tryTmpl (print "code/proto/" $proto "/message/bindings/values") ($.ProtoMessage $proto)}}
-            func (c {{goIDUpper $}}Bindings) {{ goIDUpper $proto }}() {{goQualU $proto "MessageBindings"}} {
+            func (c {{goIDUpper $}}Bindings) {{ goIDUpper $proto }}() {{goPkgUtil $proto}}MessageBindings {
                 return {{.}}
             }
         {{- end}}

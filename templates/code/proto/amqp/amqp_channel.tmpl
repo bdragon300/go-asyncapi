@@ -3,7 +3,7 @@
     {{- if .BindingsProtocols | has .Protocol}}
         bindings := {{goPkg .Channel}}{{goIDUpper .Channel}}ChannelBindings{}.{{.Protocol | goIDUpper}}()
         switch bindings.ChannelType {
-        case {{goQualU .Protocol "ChannelTypeQueue"}}:
+        case {{goPkgUtil .Protocol }}ChannelTypeQueue:
             res.queue = res.address.String()
         default:
             res.routingKey = res.address.String()
@@ -24,22 +24,22 @@
 {{- end}}
 
 {{define "code/proto/amqp/channel/bindings/values"}}
-{{- goQualU "amqp" "ChannelBindings"}}{
+{{- goPkgUtil "amqp"}}ChannelBindings{
     {{- with .Bindings.Values.Map.amqp}}
         {{with .is }}{{goLit .}},{{end}}
-        {{with .exchange }}ExchangeConfiguration: {{goQualU "amqp" "ExchangeConfiguration"}}{
-            {{if . | hasKey "name" }}Name: {{goQualR "ToPtr"}}({{goLit .name}}),{{end}}
+        {{with .exchange }}ExchangeConfiguration: {{goPkgUtil "amqp"}}ExchangeConfiguration{
+            {{if . | hasKey "name" }}Name: {{goPkgRun}}ToPtr({{goLit .name}}),{{end}}
             {{with .type }}Type: {{list "default" "ExchangeTypeDefault" "topic" "ExchangeTypeTopic" "direct" "ExchangeTypeDirect" "fanout" "ExchangeTypeFanout" "headers" "ExchangeTypeHeaders" | mapping . | goLit}},{{end}}
-            {{if . | hasKey "durable" }}Durable: {{goQualR "ToPtr"}}({{goLit .durable}}),{{end}}
-            {{if . | hasKey "autoDelete" }}AutoDelete: {{goQualR "ToPtr"}}({{goLit .autoDelete}}),{{end}}
+            {{if . | hasKey "durable" }}Durable: {{goPkgRun}}ToPtr({{goLit .durable}}),{{end}}
+            {{if . | hasKey "autoDelete" }}AutoDelete: {{goPkgRun}}ToPtr({{goLit .autoDelete}}),{{end}}
             {{with .vhost }}VHost: {{goLit .}},{{end}}
         },
         {{- end}}
-        {{with .queue }}QueueConfiguration: {{goQualU "amqp" "QueueConfiguration"}}{
+        {{with .queue }}QueueConfiguration: {{goPkgUtil "amqp"}}QueueConfiguration{
             {{with .name }}Name: {{goLit .}},{{end}}
-            {{if . | hasKey "durable" }}Durable: {{goQualR "ToPtr"}}({{goLit .durable}}),{{end}}
-            {{if . | hasKey "exclusive" }}Exclusive: {{goQualR "ToPtr"}}({{goLit .exclusive}}),{{end}}
-            {{if . | hasKey "autoDelete" }}AutoDelete: {{goQualR "ToPtr"}}({{goLit .autoDelete}}),{{end}}
+            {{if . | hasKey "durable" }}Durable: {{goPkgRun}}ToPtr({{goLit .durable}}),{{end}}
+            {{if . | hasKey "exclusive" }}Exclusive: {{goPkgRun}}ToPtr({{goLit .exclusive}}),{{end}}
+            {{if . | hasKey "autoDelete" }}AutoDelete: {{goPkgRun}}ToPtr({{goLit .autoDelete}}),{{end}}
             {{with .vhost }}VHost: {{goLit .}},{{end}}
         },
         {{- end}}
@@ -52,9 +52,9 @@
 {{template "code/proto/channel/openFunction" .}}
 
 type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
-    address    {{goQualR "ParamString"}}
-    {{if .IsPublisher}}publisher  {{goQualU .Protocol "Publisher"}}{{end}}
-    {{if .IsSubscriber}}subscriber {{goQualU .Protocol "Subscriber"}}{{end}}
+    address    {{goPkgRun}}ParamString
+    {{if .IsPublisher}}publisher  {{goPkgUtil .Protocol}}Publisher{{end}}
+    {{if .IsSubscriber}}subscriber {{goPkgUtil .Protocol}}Subscriber{{end}}
     exchange   string
     queue      string
     routingKey string

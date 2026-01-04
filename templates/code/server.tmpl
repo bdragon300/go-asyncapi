@@ -8,7 +8,7 @@ const {{. | goIDUpper}}ProtocolVersion = {{.ProtocolVersion | goLit}}
 func {{. | goIDUpper}}URL(
 {{- range .Variables.Entries}}
     {{- .Value | goID}} string,
-{{- end }}) (*{{goQual "net/url.URL"}}, error) {
+{{- end }}) (*{{goPkgExt "net/url"}}URL, error) {
     {{- if gt .Variables.Len 0}}
         {{- range .Variables.Entries}}
             {{- if .Value.Default}}
@@ -23,25 +23,25 @@ func {{. | goIDUpper}}URL(
             {{- end}}
         }
 
-        res := &{{goQual "net/url.URL"}}{Scheme: {{.Protocol | goLit}}}
+        res := &{{goPkgExt "net/url"}}URL{Scheme: {{.Protocol | goLit}}}
         {{- if .Host}}
-            h, err := {{goQualR "ParamString"}}{Expr: {{.Host | goLit}}, Parameters: paramMap}.Expand()
+            h, err := {{goPkgRun}}ParamString{Expr: {{.Host | goLit}}, Parameters: paramMap}.Expand()
             if err != nil {
-                return nil, {{goQual "fmt.Errorf"}}("expand host: %w", err)
+                return nil, {{goPkgExt "fmt"}}Errorf("expand host: %w", err)
             }
             res.Host = h
         {{- end}}
         {{- if .Pathname}}
-            p, err := {{goQualR "ParamString"}}{Expr: {{.Pathname | goLit}}, Parameters: paramMap}.Expand()
+            p, err := {{goPkgRun}}ParamString{Expr: {{.Pathname | goLit}}, Parameters: paramMap}.Expand()
             if err != nil {
-                return nil, {{goQual "fmt.Errorf"}}.Errorf("expand pathname: %w", err)
+                return nil, {{goPkgExt "fmt"}}Errorf("expand pathname: %w", err)
             }
             res.Path = p
         {{- end}}
 
         return res, nil
     {{- else}}
-        return &{{goQual "net/url.URL"}}{Scheme: {{.Protocol | goLit}}, Host: {{.Host | goLit}}, Path: {{.Pathname | goLit}}}, nil
+        return &{{goPkgExt "net/url"}}URL{Scheme: {{.Protocol | goLit}}, Host: {{.Host | goLit}}, Path: {{.Pathname | goLit}}}, nil
     {{- end}}
 }
 
@@ -50,7 +50,7 @@ func {{. | goIDUpper}}URL(
 
     {{- range $proto := $.Bindings.Protocols}}
         {{with tryTmpl (print "code/proto/" $proto "/server/bindings/values") $}}
-            func (c {{goIDUpper $}}Bindings) {{ goIDUpper $proto }}() {{goQualU $proto "ServerBindings"}} {
+            func (c {{goIDUpper $}}Bindings) {{ goIDUpper $proto }}() {{goPkgUtil $proto}}ServerBindings {
                 return {{.}}
             }
         {{- end}}

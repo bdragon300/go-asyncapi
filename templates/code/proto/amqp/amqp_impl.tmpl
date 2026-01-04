@@ -2,15 +2,15 @@
 
 {{define "code/proto/amqp/server/impl/github.com/rabbitmq/amqp091-go/connectFunction"}}
 func Connect{{ . | goIDUpper }}Bidi(
-    ctx {{goQual "context.Context"}},
-    url *{{goQual "net/url.URL"}},
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualU .Protocol "ServerBindings"}}
+    var bindings *{{goPkgUtil .Protocol}}ServerBindings
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goQualR "ToPtr"}}({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
+        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    client, err := {{goQualI .Protocol "NewClient"}}(url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    client, err := {{goPkgImpl .Protocol}}NewClient(url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }
@@ -23,15 +23,15 @@ func Connect{{ . | goIDUpper }}Bidi(
 
 {{define "code/proto/amqp/server/impl/github.com/rabbitmq/amqp091-go/connectProducerFunction"}}
 func Connect{{ . | goIDUpper }}Producer(
-    ctx {{goQual "context.Context"}},
-    url *{{goQual "net/url.URL"}},
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualU .Protocol "ServerBindings"}}
+    var bindings *{{goPkgUtil .Protocol}}ServerBindings
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goQualR "ToPtr"}}({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
+        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    producer, err := {{goQualI .Protocol "NewClient"}}(url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    producer, err := {{goPkgImpl .Protocol}}NewClient(url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }
@@ -43,15 +43,15 @@ func Connect{{ . | goIDUpper }}Producer(
 
 {{define "code/proto/amqp/server/impl/github.com/rabbitmq/amqp091-go/connectConsumerFunction"}}
 func Connect{{ . | goIDUpper }}Consumer(
-    ctx {{goQual "context.Context"}},
-    url *{{goQual "net/url.URL"}},
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualU .Protocol "ServerBindings"}}
+    var bindings *{{goPkgUtil .Protocol}}ServerBindings
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goQualR "ToPtr"}}({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
+        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    consumer, err := {{goQualI .Protocol "NewClient"}}NewClient(url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    consumer, err := {{goPkgImpl .Protocol}}NewClient(url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }

@@ -1,10 +1,10 @@
 {{- /* dot == render.ProtoOperation */}}
 {{define "code/proto/mqtt/operation/bindings/values"}}
-{{- goQualU "mqtt" "OperationBindings"}}{
+{{- goPkgUtil "mqtt"}}OperationBindings{
     {{- with .Bindings.Values.Map.mqtt}}
         {{with .qos }}QoS: {{goLit .}},{{end}}
         {{with .retain }}Retain: {{goLit .}},{{end}}
-        {{with .messageExpiryInterval }}MessageExpiryInterval: {{goQual "time.Duration"}}({{goLit .}}*{{goQual "time.Second"}}),{{end}}
+        {{with .messageExpiryInterval }}MessageExpiryInterval: {{goPkgExt "time"}}Duration({{goLit .}}*{{goPkgExt "time"}}Second),{{end}}
     {{- end}}
 }
 {{- end}}

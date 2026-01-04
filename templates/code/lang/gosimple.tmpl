@@ -12,7 +12,7 @@
         {{- .}}
     {{- else }}
         {{- if .Import }}
-            {{- goQual .Import .Name }}
+            {{- goPkgExt .Import }}{{.Name}}
         {{- else }}
             {{- goPkg . }}{{ .Name }}
         {{- end }}

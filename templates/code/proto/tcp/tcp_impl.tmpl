@@ -2,15 +2,15 @@
 
 {{define "code/proto/tcp/server/impl/net/connectFunction"}}
 func Connect{{ . | goIDUpper }}Bidi(
-    ctx {{goQual "context.Context"}},
-    url *{{goQual "net/url.URL"}},
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    producer, err := {{goQualI .Protocol "NewProducer"}}(url.Host, url.Scheme, "", {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    producer, err := {{goPkgImpl .Protocol}}NewProducer(url.Host, url.Scheme, "", {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }
-    consumer, err := {{goQualI .Protocol "NewConsumer"}}(url.Host, url.Scheme, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    consumer, err := {{goPkgImpl .Protocol}}NewConsumer(url.Host, url.Scheme, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }
@@ -22,11 +22,11 @@ func Connect{{ . | goIDUpper }}Bidi(
 
 {{define "code/proto/tcp/server/impl/net/connectProducerFunction"}}
 func Connect{{ . | goIDUpper }}Producer(
-    ctx {{goQual "context.Context"}},
-    url *{{goQual "net/url.URL"}},
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    producer, err := {{goQualI .Protocol "NewProducer"}}(url.Host, url.Scheme, "", {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    producer, err := {{goPkgImpl .Protocol}}NewProducer(url.Host, url.Scheme, "", {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }
@@ -38,11 +38,11 @@ func Connect{{ . | goIDUpper }}Producer(
 
 {{define "code/proto/tcp/server/impl/net/connectConsumerFunction"}}
 func Connect{{ . | goIDUpper }}Consumer(
-    ctx {{goQual "context.Context"}},
-    url *{{goQual "net/url.URL"}},
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
 ) (*{{ . | goIDUpper }}Closable, error) {
-    consumer, err := {{goQualI .Protocol "NewConsumer"}}(url.Host, url.Scheme, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+    consumer, err := {{goPkgImpl .Protocol}}NewConsumer(url.Host, url.Scheme, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }

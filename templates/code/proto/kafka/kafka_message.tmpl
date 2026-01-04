@@ -1,6 +1,6 @@
 {{- /* dot == render.ProtoMessage */}}
 {{define "code/proto/kafka/message/bindings/values"}}
-{{- goQualU "kafka" "MessageBindings"}}{
+{{- goPkgUtil "kafka"}}MessageBindings{
     {{- with .Bindings.Values.Map.kafka}}
         {{with .key }}Key: {{toJSON . | goLit}},{{end}}
         {{with .schemaIDLocation }}SchemaIDLocation: {{goLit .}},{{end}}

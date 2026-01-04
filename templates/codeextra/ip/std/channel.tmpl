@@ -14,14 +14,14 @@ func NewChannel(conn *net.IPConn, bufferSize int, remoteAddress net.Addr) *Chann
 		IPConn:        conn,
 		remoteAddress: remoteAddress,
 		bufferSize:    bufferSize,
-		callbacks:     {{goQualR "NewRing"}}[subscriberFunc](),
+		callbacks:     {{goPkgRun}}NewRing[subscriberFunc](),
 		once:          &sync.Once{},
 	}
 	res.ctx, res.cancel = context.WithCancelCause(context.Background())
 	return &res
 }
 
-type subscriberFunc func(envelope {{goQualU "ip" "EnvelopeReader"}})
+type subscriberFunc func(envelope {{goPkgUtil "ip"}}EnvelopeReader)
 
 type Channel struct {
 	*net.IPConn
@@ -29,7 +29,7 @@ type Channel struct {
 	remoteAddress    net.Addr // Ignored if includeIPHeaders is true, see TCP/IP stack docs
 	bufferSize       int
 	includeIPHeaders bool
-	callbacks        *{{goQualR "Ring"}}[subscriberFunc]
+	callbacks        *{{goPkgRun}}Ring[subscriberFunc]
 	ctx              context.Context
 	cancel           context.CancelCauseFunc
 	once             *sync.Once
@@ -40,7 +40,7 @@ type ImplementationRecord interface {
 	HeaderBytes() ([]byte, error)
 }
 
-func (c *Channel) Send(_ context.Context, envelopes ...{{goQualU "ip" "EnvelopeWriter"}}) error {
+func (c *Channel) Send(_ context.Context, envelopes ...{{goPkgUtil "ip"}}EnvelopeWriter) error {
 	for i, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
 		msg := ir.Bytes()
@@ -60,7 +60,7 @@ func (c *Channel) Send(_ context.Context, envelopes ...{{goQualU "ip" "EnvelopeW
 	return nil
 }
 
-func (c *Channel) Receive(ctx context.Context, cb func(envelope {{goQualU "ip" "EnvelopeReader"}})) error {
+func (c *Channel) Receive(ctx context.Context, cb func(envelope {{goPkgUtil "ip"}}EnvelopeReader)) error {
 	element := c.callbacks.Append(cb)
 	defer func() {
 		c.callbacks.Remove(element)

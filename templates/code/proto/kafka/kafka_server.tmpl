@@ -1,6 +1,6 @@
 {{- /* dot == render.Server */}}
 {{define "code/proto/kafka/server/bindings/values"}}
-{{- goQualU "kafka" "ServerBindings"}}{
+{{- goPkgUtil "kafka"}}ServerBindings{
     {{- with .Bindings.Values.Map.kafka}}
         {{with .schemaRegistryUrl }}SchemaRegistryURL: {{goLit .}},{{end}}
         {{with .schemaRegistryVendor }}SchemaRegistryVendor: {{goLit .}},{{end}}

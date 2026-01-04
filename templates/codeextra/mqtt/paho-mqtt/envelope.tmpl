@@ -15,20 +15,20 @@ type OutboundMessage struct {
 	topic       string
 	qos         byte
 	retained    bool
-	headers     {{goQualR "Headers"}}
+	headers     {{goPkgRun}}Headers
 	contentType string
 }
 
 type EnvelopeOut struct {
 	OutboundMessage
-	messageBindings {{goQualU "mqtt" "MessageBindings"}}
+	messageBindings {{goPkgUtil "mqtt"}}MessageBindings
 }
 
 func (e *EnvelopeOut) ResetPayload() {
 	e.Buffer.Reset()
 }
 
-func (e *EnvelopeOut) SetHeaders(headers {{goQualR "Headers"}}) {
+func (e *EnvelopeOut) SetHeaders(headers {{goPkgRun}}Headers) {
 	e.headers = headers
 }
 
@@ -36,7 +36,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.contentType = contentType
 }
 
-func (e *EnvelopeOut) SetBindings(bindings {{goQualU "mqtt" "MessageBindings"}}) {
+func (e *EnvelopeOut) SetBindings(bindings {{goPkgUtil "mqtt"}}MessageBindings) {
 	e.messageBindings = bindings
 }
 
@@ -59,13 +59,13 @@ func NewEnvelopeIn(msg mqtt.Message) *EnvelopeIn {
 type EnvelopeIn struct {
 	mqtt.Message
 	reader  *bytes.Reader
-	headers {{goQualR "Headers"}}
+	headers {{goPkgRun}}Headers
 }
 
 func (e *EnvelopeIn) Read(p []byte) (n int, err error) {
 	return e.reader.Read(p)
 }
 
-func (e *EnvelopeIn) Headers() {{goQualR "Headers"}} {
+func (e *EnvelopeIn) Headers() {{goPkgRun}}Headers {
 	return e.headers
 }

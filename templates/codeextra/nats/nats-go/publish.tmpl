@@ -5,13 +5,13 @@ import (
 type PublishChannel struct {
 	Client  *Client
 
-	channelBindings   *{{goQualU "nats" "ChannelBindings"}}
-	operationBindings *{{goQualU "nats" "OperationBindings"}}
+	channelBindings   *{{goPkgUtil "nats"}}ChannelBindings
+	operationBindings *{{goPkgUtil "nats"}}OperationBindings
 	ctx               context.Context
 	cancel            context.CancelFunc
 }
 
-func (p PublishChannel) Send(ctx context.Context, envelopes ...{{goQualU "nats" "EnvelopeWriter"}}) error {
+func (p PublishChannel) Send(ctx context.Context, envelopes ...{{goPkgUtil "nats"}}EnvelopeWriter) error {
 	for _, env := range envelopes {
 		if err := p.Client.PublishMsg(env.(*EnvelopeOut).Msg); err != nil {
 			return err

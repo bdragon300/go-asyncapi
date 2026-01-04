@@ -13,7 +13,7 @@ func NewEnvelopeOut(buf []byte) *EnvelopeOut {
 
 type EnvelopeOut struct {
 	*nats.Msg
-	messageBindings {{goQualU "nats" "MessageBindings"}}
+	messageBindings {{goPkgUtil "nats"}}MessageBindings
 }
 
 func (e *EnvelopeOut) Write(p []byte) (n int, err error) {
@@ -25,7 +25,7 @@ func (e *EnvelopeOut) ResetPayload() {
 	e.Data = e.Data[:0]
 }
 
-func (e *EnvelopeOut) SetHeaders(headers {{goQualR "Headers"}}) {
+func (e *EnvelopeOut) SetHeaders(headers {{goPkgRun}}Headers) {
 	if e.Header == nil {
 		e.Header = nats.Header{}
 	}
@@ -41,7 +41,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.Header.Set("Content-Type", contentType)
 }
 
-func (e *EnvelopeOut) SetBindings(bindings {{goQualU "nats" "MessageBindings"}}) {
+func (e *EnvelopeOut) SetBindings(bindings {{goPkgUtil "nats"}}MessageBindings) {
 	e.messageBindings = bindings
 }
 
@@ -65,11 +65,11 @@ func (e *EnvelopeIn) Read(p []byte) (n int, err error) {
 	return e.rd.Read(p)
 }
 
-func (e *EnvelopeIn) Headers() {{goQualR "Headers"}} {
+func (e *EnvelopeIn) Headers() {{goPkgRun}}Headers {
 	if e.Header == nil {
-		return {{goQualR "Headers"}}{}
+		return {{goPkgRun}}Headers{}
 	}
-	hdrs := make({{goQualR "Headers"}}, len(e.Header))
+	hdrs := make({{goPkgRun}}Headers, len(e.Header))
 	for k, v := range e.Header {
 		if len(v) > 0 {
 			hdrs[k] = []byte(v[0])

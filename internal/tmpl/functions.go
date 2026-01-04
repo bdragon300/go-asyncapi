@@ -22,8 +22,7 @@ import (
 )
 
 type pinnable interface {
-	// Pinnable is true if the object may be pinned to a specific file in the generated code and then be referenced
-	// from other files.
+	// Pinnable is true if the object may be pinned to generated file to be referenced from other generated code.
 	Pinnable() bool
 }
 
@@ -74,21 +73,33 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		"goIDUpper": func(val any) string { traceCall("goIDUpper", val); return templateGoID(renderManager, val, true) },
 		"goID":      func(val any) string { traceCall("goID", val); return templateGoID(renderManager, val, false) },
 		"goComment": func(text string) string { traceCall("goComment", text); return templateGoComment(text) },
-		"goQual": func(parts ...string) string {
-			traceCall("goQual", parts)
-			return templateGoQual(renderManager, parts)
+		"goPkg": func(obj common.Artifact) (pkg string, err error) {
+			traceCall("goPkg", obj)
+			pkg, err = importPinnedArtifact(renderManager, obj)
+			if err != nil {
+				return "", fmt.Errorf("%s: %w", obj, err)
+			}
+			return lo.Ternary(pkg != "", pkg+".", ""), nil
 		},
-		"goQualR": func(parts ...string) string {
-			traceCall("goQualR", parts)
-			return templateGoQualRuntime(renderManager, parts)
+		"goPkgUtil": func(parts ...string) (string, error) {
+			traceCall("goPkgUtil", parts)
+			pkg, err := importCodeExtraPackage(renderManager, parts, false)
+			return lo.Ternary(pkg != "", pkg+".", ""), err
 		},
-		"goQualU": func(protocol string, parts ...string) (string, error) {
-			traceCall("goQualU", protocol, parts)
-			return templateGoQualExtra(renderManager, protocol, false, parts)
+		"goPkgImpl": func(parts ...string) (string, error) {
+			traceCall("goPkgImpl", parts)
+			pkg, err := importCodeExtraPackage(renderManager, parts, true)
+			return lo.Ternary(pkg != "", pkg+".", ""), err
 		},
-		"goQualI": func(protocol string, parts ...string) (string, error) {
-			traceCall("goQualI", protocol, parts)
-			return templateGoQualExtra(renderManager, protocol, true, parts)
+		"goPkgRun": func(parts ...string) string {
+			traceCall("goPkgRun", parts)
+			pkg := importRuntimeSubpackage(renderManager, parts)
+			return lo.Ternary(pkg != "", pkg+".", "")
+		},
+		"goPkgExt": func(parts ...string) string {
+			traceCall("goPkgExt", parts)
+			pkg := importExternalPackage(renderManager, parts)
+			return lo.Ternary(pkg != "", pkg+".", "")
 		},
 		"goDef": func(r common.GolangType) (string, error) {
 			traceCall("goDef", r)
@@ -106,30 +117,6 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 				return "", fmt.Errorf("%s: %w", r, err)
 			}
 			return res, nil
-		},
-		"goPkg": func(obj any) (pkg string, err error) {
-			traceCall("goPkg", obj)
-			switch v := obj.(type) {
-			case common.Artifact:
-				pkg, err = qualifiedTypeGeneratedPackage(renderManager, v)
-			case *UtilCodeInfo:
-				if lo.IsNil(v) {
-					return "", errors.New("argument is nil")
-				}
-				pkg, err = qualifiedCodeExtraGeneratedPackage(renderManager, v.Protocol, false)
-			case *ImplementationCodeInfo:
-				if lo.IsNil(v) {
-					return "", errors.New("argument is nil")
-				}
-				pkg, err = qualifiedCodeExtraGeneratedPackage(renderManager, v.Protocol, true)
-			default:
-				return "", fmt.Errorf("type is not supported %[1]T: %[1]v", obj)
-			}
-
-			if err != nil {
-				return "", fmt.Errorf("%s: %w", obj, err)
-			}
-			return lo.Ternary(pkg != "", pkg+".", ""), nil
 		},
 		"goUsage": func(r common.GolangType) (string, error) {
 			traceCall("goUsage", r)
@@ -238,7 +225,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			if len(variantPairs)%2 != 0 {
 				return "", fmt.Errorf("mapping requires even number of variantPairs, got %d", len(variantPairs))
 			}
-			for i:=0; i < len(variantPairs); i += 2 {
+			for i := 0; i < len(variantPairs); i += 2 {
 				if variantPairs[i] == v {
 					return variantPairs[i+1], nil
 				}
@@ -257,7 +244,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			}
 			return res, nil
 		},
-		"hasKey": func(key string, m any) (bool, error) {  // Overwrites sprout's hasKey to accept any mapping type
+		"hasKey": func(key string, m any) (bool, error) { // Overwrites sprout's hasKey to accept any mapping type
 			traceCall("hasKey", key, m)
 			rval := reflect.ValueOf(m)
 			if rval.Kind() != reflect.Map {
@@ -505,7 +492,7 @@ func templateRuntimeExpressionCode(mng *manager.TemplateRenderManager, c lang.Ba
 				%s = v
 			}`, varValueStmts, nextAnchor)
 			if addValidationCode {
-				fmtErrorf := templateGoQual(mng, []string{"fmt", "Errorf"})
+				fmtErrorf := importExternalPackage(mng, []string{"fmt"}) + ".Errorf"
 				ifExpr += fmt.Sprintf(` else {
 					err = %s("key %%q not found in map on locationPath /%s", %s)
 					return
@@ -530,7 +517,7 @@ func templateRuntimeExpressionCode(mng *manager.TemplateRenderManager, c lang.Ba
 				return
 			}
 			if addValidationCode {
-				fmtErrorf := templateGoQual(mng, []string{"fmt", "Errorf"})
+				fmtErrorf := importExternalPackage(mng, []string{"fmt"}) + ".Errorf"
 				body = append(body, fmt.Sprintf(`if len(%s) <= %s {
 					err = %s("index %%q is out of range in array of length %%d on locationPath /%s", %s, len(%s))
 					return
@@ -608,10 +595,50 @@ func templateRuntimeExpressionCode(mng *manager.TemplateRenderManager, c lang.Ba
 	return
 }
 
-// qualifiedTypeGeneratedPackage returns the package name or alias of module where the object is defined to use this name
-// further in the generated code. If object is already defined in *current module*, returns empty string with no error.
-// If we don't know where the object is defined, returns ErrNotPinned.
-func qualifiedTypeGeneratedPackage(mng *manager.TemplateRenderManager, obj common.Artifact) (string, error) {
+// getExtraCodeFileByProtocol returns the FileRenderState for the given protocol and implementation flag. If not found, returns false.
+func getExtraCodeFileByProtocol(protocol string, renderManager *manager.TemplateRenderManager, isImplementation bool) (manager.FileRenderState, bool) {
+	states := slices.SortedStableFunc(maps.Values(renderManager.CommittedStates()), func(a, b manager.FileRenderState) int {
+		return strings.Compare(a.FileName, b.FileName)
+	})
+	// Assuming all extra code files has the flat structure per protocol, and we may pick any file
+	return lo.Find(states, func(state manager.FileRenderState) bool {
+		return state.ExtraCodeProtocol == protocol && isImplementation == !lo.IsNil(state.ImplementationConfig)
+	})
+}
+
+// importExternalPackage imports the external package and returns its alias or package name as prefix to prepend to the
+// imported object in the generated code.
+func importExternalPackage(mng *manager.TemplateRenderManager, parts []string) string {
+	_, pkgPath, pkgName := getImportPath(parts, false)
+	return mng.ImportsManager.AddImport(pkgPath, pkgName)
+}
+
+// importRuntimeSubpackage imports the given runtime subpackage and returns its alias or package name as prefix to prepend to the
+// imported object in the generated code.
+func importRuntimeSubpackage(mng *manager.TemplateRenderManager, parts []string) string {
+	p := append([]string{mng.RenderOpts.RuntimeModule}, parts...)
+	return importExternalPackage(mng, p)
+}
+
+func importCodeExtraPackage(mng *manager.TemplateRenderManager, parts []string, isImplementation bool) (string, error) {
+	protocol, middle, pkg := getImportPath(parts, true)
+	state, found := getExtraCodeFileByProtocol(protocol, mng, isImplementation)
+	if !found {
+		return "", ErrNotPinned
+	}
+
+	// Check if the import is current package (assuming the directory is equal to package)
+	if path.Dir(state.FileName) == path.Dir(mng.FileName) && pkg == "" {
+		return "", nil // Import from the current package
+	}
+
+	pkgPath := path.Join(mng.RenderOpts.ImportBase, path.Dir(state.FileName), middle, pkg)
+	return mng.ImportsManager.AddImport(pkgPath, state.PackageName), nil
+}
+
+// importPinnedArtifact imports the pinned artifact into the current file and returns imported package alias or name.
+// If artifact is pinned to the current package, returns empty string. If artifact has not been pinned yet, returns ErrNotPinned.
+func importPinnedArtifact(mng *manager.TemplateRenderManager, obj common.Artifact) (string, error) {
 	d, found := mng.NamespaceManager.FindArtifact(obj)
 	if !found {
 		if v, ok := obj.(pinnable); ok && v.Pinnable() {
@@ -629,74 +656,28 @@ func qualifiedTypeGeneratedPackage(mng *manager.TemplateRenderManager, obj commo
 	return mng.ImportsManager.AddImport(pkgPath, d.PackageName), nil
 }
 
-func qualifiedCodeExtraGeneratedPackage(mng *manager.TemplateRenderManager, protocol string, isImplementation bool) (string, error) {
- state, found := getExtraCodeFileByProtocol(protocol, mng, isImplementation)
-	if !found {
-		return "", ErrNotPinned
+// getImportPath joins path parts into an import path and splits the result into three components:
+// first part, middle part, and last part. If split is true, the first and last parts are removed from the middle part.
+func getImportPath(parts []string, split bool) (first string, middle string, last string) {
+	if len(parts) == 0 {
+		panic("import path cannot be empty")
 	}
 
-	// Files in the same directory (i.e. the same package) does not need to be imported
-	if path.Dir(state.FileName) == path.Dir(mng.FileName) {
-		return "", nil
-	}
-
-	pkgPath := path.Join(mng.RenderOpts.ImportBase, path.Dir(state.FileName))
-	return mng.ImportsManager.AddImport(pkgPath, state.PackageName), nil
-}
-
-func templateGoQualExtra(mng *manager.TemplateRenderManager, protocol string, isImplementation bool, parts []string) (string, error) {
-	state, found := getExtraCodeFileByProtocol(protocol, mng, isImplementation)
-	if !found {
-		return "", ErrNotPinned
-	}
-	fileDir := path.Dir(state.FileName)
-	if fileDir == "." {
-		fileDir = ""
-	}
-
-	// Check if the qualified name requires to be imported or is located in current package (assuming the directory is equal to package)
-	if fileDir == path.Dir(mng.FileName) {
-		pkgPath, _, n := qualifiedToImport(append([]string{""}, parts...))
-		if pkgPath == "" {
-			return n, nil // Name is in current package and doesn't require import
+	p := path.Join(parts...)
+	parts = strings.Split(p, "/")
+	if len(parts) > 0 {
+		first = parts[0]
+		if split {
+			parts = parts[1:]
 		}
 	}
-
-	parts = append([]string{mng.RenderOpts.ImportBase, fileDir}, parts...)
-	pkgPath, pkgName, n := qualifiedToImport(parts)
-	if fileDir != path.Dir(mng.FileName) {
-		pkgName = state.PackageName // Use the package name of the extra code file
+	if len(parts) > 0 {
+		last = parts[len(parts)-1]
+		if split {
+			parts = parts[:len(parts)-1]
+		}
 	}
-	return fmt.Sprintf("%s.%s", mng.ImportsManager.AddImport(pkgPath, pkgName), n), nil
-}
+	middle = path.Join(parts...)
 
-// getExtraCodeFileByProtocol returns the FileRenderState for the given protocol and implementation flag. If not found, returns false.
-func getExtraCodeFileByProtocol(protocol string, renderManager *manager.TemplateRenderManager, isImplementation bool) (manager.FileRenderState, bool) {
-	states := slices.SortedStableFunc(maps.Values(renderManager.CommittedStates()), func(a, b manager.FileRenderState) int {
-		return strings.Compare(a.FileName, b.FileName)
-	})
-	// Assuming all extra code files has the flat structure per protocol, and we may pick any file
-	return lo.Find(states, func(state manager.FileRenderState) bool {
-		return state.ExtraCodeProtocol == protocol && isImplementation == !lo.IsNil(state.ImplementationConfig)
-	})
-}
-
-// templateGoQual returns a qualified name of the object in the generated code. Adds the import to the current file
-// if needed.
-//
-// Receives the import path and the object name in format “path/to/package.name”. For example, “net/url.URL” or
-// “golang.org/x/net/ipv4.Conn”. This could be a single string or a sequence of strings that are joined together.
-//
-// Returns the qualified name of the object that is used to access it in the generated code. For example, “url.URL” or
-// “ipv4.Conn” for the examples above.
-func templateGoQual(mng *manager.TemplateRenderManager, parts []string) string {
-	pkgPath, pkgName, n := qualifiedToImport(parts)
-	return fmt.Sprintf("%s.%s", mng.ImportsManager.AddImport(pkgPath, pkgName), n)
-}
-
-// templateGoQualRuntime returns a qualified name of the object in the generated code. Adds the import to the runtime.
-// Works like templateGoQual but prepends the runtime package to the import path.
-func templateGoQualRuntime(mng *manager.TemplateRenderManager, parts []string) string {
-	p := append([]string{mng.RenderOpts.RuntimeModule}, parts...)
-	return templateGoQual(mng, p)
+	return
 }

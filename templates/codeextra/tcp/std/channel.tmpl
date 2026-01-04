@@ -11,7 +11,7 @@ func NewChannel(conn *net.TCPConn, scanner *bufio.Scanner, maxEnvelopeSize int) 
 		TCPConn:         conn,
 		scanner:         scanner,
 		maxEnvelopeSize: maxEnvelopeSize,
-		callbacks:       {{goQualR "NewRing"}}[func({{goQualU "tcp" "EnvelopeReader"}})](),
+		callbacks:       {{goPkgRun}}NewRing[func({{goPkgUtil "tcp"}}EnvelopeReader)](),
 		once:            &sync.Once{},
 	}
 	res.ctx, res.cancel = context.WithCancelCause(context.Background())
@@ -22,7 +22,7 @@ type Channel struct {
 	*net.TCPConn
 	scanner         *bufio.Scanner
 	maxEnvelopeSize int
-	callbacks       *{{goQualR "Ring"}}[func({{goQualU "tcp" "EnvelopeReader"}})]
+	callbacks       *{{goPkgRun}}Ring[func({{goPkgUtil "tcp"}}EnvelopeReader)]
 	ctx             context.Context
 	cancel          context.CancelCauseFunc
 	once            *sync.Once
@@ -32,7 +32,7 @@ type ImplementationRecord interface {
 	Bytes() []byte
 }
 
-func (c *Channel) Send(_ context.Context, envelopes ...{{goQualU "tcp" "EnvelopeWriter"}}) error {
+func (c *Channel) Send(_ context.Context, envelopes ...{{goPkgUtil "tcp"}}EnvelopeWriter) error {
 	for _, envelope := range envelopes {
 		ir := envelope.(ImplementationRecord)
 		if _, err := c.TCPConn.Write(ir.Bytes()); err != nil {
@@ -42,7 +42,7 @@ func (c *Channel) Send(_ context.Context, envelopes ...{{goQualU "tcp" "Envelope
 	return nil
 }
 
-func (c *Channel) Receive(ctx context.Context, cb func(envelope {{goQualU "tcp" "EnvelopeReader"}})) error {
+func (c *Channel) Receive(ctx context.Context, cb func(envelope {{goPkgUtil "tcp"}}EnvelopeReader)) error {
 	element := c.callbacks.Append(cb)
 	defer func() {
 		c.callbacks.Remove(element)

@@ -1,12 +1,12 @@
 {{- /* dot == render.ProtoOperation */}}
 {{define "code/proto/amqp/operation/bindings/values"}}
-{{- goQualU "amqp" "OperationBindings"}}{
+{{- goPkgUtil "amqp"}}OperationBindings{
     {{- with .Bindings.Values.Map.amqp}}
-        {{with .expiration }}Expiration: {{goQual "time.Duration"}}({{goLit .}}*{{goQual "time.Milliseconds"}}),{{end}}
+        {{with .expiration }}Expiration: {{goPkgExt "time"}}Duration({{goLit .}}*{{goPkgExt "time"}}Milliseconds),{{end}}
         {{with .userId }}UserID: {{goLit .}},{{end}}
         {{with .cc }}CC: []string{ {{ range (toList .)}}{{goLit .}},{{end}} },{{end}}
         {{with .priority }}Priority: {{goLit .}},{{end}}
-        {{with .deliveryMode }}DeliveryMode: {{goPkg (utilCode "amqp")}}{{list 1 "DeliveryModeTransient" 2 "DeliveryModePersistent" | mapping . | goLit}},{{end}}
+        {{with .deliveryMode }}DeliveryMode: {{goPkgUtil "amqp"}}{{list 1 "DeliveryModeTransient" 2 "DeliveryModePersistent" | mapping . | goLit}},{{end}}
         {{with .mandatory }}Mandatory: {{goLit .}},{{end}}
         {{with .bcc }}BCC: []string{ {{ range (toList .)}}{{goLit .}},{{end}} },{{end}}
         {{with .replyTo }}ReplyTo: {{goLit .}},{{end}}

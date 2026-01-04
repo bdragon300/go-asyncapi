@@ -23,7 +23,7 @@ func NewEnvelopeOut(buf []byte) *EnvelopeOut {
 
 type EnvelopeOut struct {
 	*http.Request
-	messageBindings {{goQualU "http" "MessageBindings"}}
+	messageBindings {{goPkgUtil "http"}}MessageBindings
 	body            *bytes.Buffer
 }
 
@@ -39,7 +39,7 @@ func (e *EnvelopeOut) ResetPayload() {
 	e.body.Reset()
 }
 
-func (e *EnvelopeOut) SetHeaders(headers {{goQualR "Headers"}}) {
+func (e *EnvelopeOut) SetHeaders(headers {{goPkgRun}}Headers) {
 	for name, value := range headers {
 		switch v := value.(type) {
 		case string:
@@ -63,7 +63,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.Header.Set("Content-Type", contentType)
 }
 
-func (e *EnvelopeOut) SetBindings(bindings {{goQualU "http" "MessageBindings"}}) {
+func (e *EnvelopeOut) SetBindings(bindings {{goPkgUtil "http"}}MessageBindings) {
 	e.messageBindings = bindings
 }
 
@@ -95,8 +95,8 @@ func (e *EnvelopeIn) Read(p []byte) (n int, err error) {
 	return
 }
 
-func (e *EnvelopeIn) Headers() {{goQualR "Headers"}} {
-	res := make({{goQualR "Headers"}})
+func (e *EnvelopeIn) Headers() {{goPkgRun}}Headers {
+	res := make({{goPkgRun}}Headers)
 	for name, val := range e.Request.Header {
 		res[name] = val
 	}

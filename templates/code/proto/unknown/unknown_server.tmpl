@@ -9,8 +9,8 @@
 
 {{- /* TODO: consider IsPublisher and IsSubscriber}} */}}
 type {{. | goIDUpper}} struct {
-    producer {{goQualU .Protocol "Producer"}}
-    consumer {{goQualU .Protocol "Consumer"}}
+    producer {{goPkgUtil .Protocol}}Producer
+    consumer {{goPkgUtil .Protocol}}Consumer
 }
 
 {{template "code/proto/server/commonMethods" .}}
@@ -18,9 +18,9 @@ type {{. | goIDUpper}} struct {
 {{- range .BoundChannels}}
     {{- if .ActiveProtocols | has $.Protocol }}
         func (s {{$ | goIDUpper}}) Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
-            ctx {{goQual "context.Context"}},
+            ctx {{goPkgExt "context"}}Context,
             {{if .Parameters.Len}}params {{goPkg .}}{{goIDUpper .}}Parameters,{{end}}
-            {{if .BoundOperations}}security {{goQualR "AnySecurityScheme"}},{{end}}
+            {{if .BoundOperations}}security {{goPkgRun}}AnySecurityScheme,{{end}}
         ) (*{{goPkg .}}{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}, error) {
             return {{goPkg .}}Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
                 ctx, s, {{if .Parameters.Len}}params,{{end}}{{if .BoundOperations}}security,{{end}}

@@ -9,19 +9,19 @@
     }
 {{- end }}
 
-func {{. | goIDUpper}}Address({{if .Parameters.Len}}params {{goIDUpper $}}Parameters{{end}}) {{goQualR "ParamString"}} {
+func {{. | goIDUpper}}Address({{if .Parameters.Len}}params {{goIDUpper $}}Parameters{{end}}) {{goPkgRun}}ParamString {
 {{- if .Parameters.Len}}
     paramMap := map[string]string{
     {{- range .Parameters.Keys}}
         {{goLit .}}: string(params.{{goIDUpper .}}),
     {{- end}}
     }
-    return {{goQualR "ParamString"}}{
+    return {{goPkgRun}}ParamString{
         Expr: {{ .Address | goLit}},
         Parameters: paramMap,
     }
 {{- else}}
-    return {{goQualR "ParamString"}}{
+    return {{goPkgRun}}ParamString{
         Expr: {{ .Address | goLit}},
     }
 {{- end}}
@@ -32,7 +32,7 @@ func {{. | goIDUpper}}Address({{if .Parameters.Len}}params {{goIDUpper $}}Parame
 
     {{- range $proto := $.Bindings.Protocols}}
         {{with tryTmpl (print "code/proto/" $proto "/channel/bindings/values") ($.ProtoChannel $proto)}}
-            func (c {{goIDUpper $}}Bindings) {{ goIDUpper $proto }}() {{goQualU $proto "ChannelBindings"}} {
+            func (c {{goIDUpper $}}Bindings) {{ goIDUpper $proto }}() {{goPkgUtil $proto}}ChannelBindings {
                 return {{.}}
             }
         {{- end}}

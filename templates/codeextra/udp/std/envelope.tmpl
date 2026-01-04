@@ -9,7 +9,7 @@ func NewEnvelopeOut(buf []byte) *EnvelopeOut {
 
 type EnvelopeOut struct {
 	*bytes.Buffer
-	headers     {{goQualR "Headers"}}
+	headers     {{goPkgRun}}"Headers
 	contentType string
 	remoteAddr  net.Addr
 }
@@ -18,7 +18,7 @@ func (e *EnvelopeOut) ResetPayload() {
 	e.Buffer.Reset()
 }
 
-func (e *EnvelopeOut) SetHeaders(headers {{goQualR "Headers"}}) {
+func (e *EnvelopeOut) SetHeaders(headers {{goPkgRun}}Headers) {
 	e.headers = headers
 }
 
@@ -26,7 +26,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.contentType = contentType
 }
 
-func (e *EnvelopeOut) SetBindings(_ {{goQualU "udp" "MessageBindings"}}) {}
+func (e *EnvelopeOut) SetBindings(_ {{goPkgUtil "udp"}}MessageBindings) {}
 
 func (e *EnvelopeOut) SetRemoteAddr(addr net.Addr) {
 	e.remoteAddr = addr
@@ -45,7 +45,7 @@ type EnvelopeIn struct {
 	remoteAddr net.Addr
 }
 
-func (e *EnvelopeIn) Headers() {{goQualR "Headers"}} {
+func (e *EnvelopeIn) Headers() {{goPkgRun}}Headers {
 	return nil
 }
 

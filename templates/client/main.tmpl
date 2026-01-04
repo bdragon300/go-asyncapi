@@ -7,7 +7,7 @@ const (
 	DefaultProxyHost      = "127.0.0.1"
 )
 
-var ErrExited = {{goQual "errors.New"}}("exited")
+var ErrExited = {{goPkgExt "errors"}}New("exited")
 
 {{- range .ActiveProtocols}}
 {{tryTmpl (print "client/server/" . "/cliMixin") $}}
@@ -25,7 +25,7 @@ type MainCli struct {
 	Headers      map[string]string `arg:"--headers" help:"Message header to send; format: key=value [key=value ...]"`
 	EndOfMessage string            `arg:"--end-of-message" help:"Delimiter that separates the message payloads in stream. Empty string means EOF (or Ctrl-D in interactive terminal)" default:"\n"`
 
-	RunTimeout {{goQual "time.Duration"}} `arg:"--run-timeout" help:"Timeout to run the command. By default, the command runs indefinitely"`
+	RunTimeout {{goPkgExt "time"}}Duration `arg:"--run-timeout" help:"Timeout to run the command. By default, the command runs indefinitely"`
 }
 
 type DirectionCliCmd struct {
@@ -58,33 +58,33 @@ type DirectionCliCmd struct {
 			{{- end}}
 
 			// Other
-			URL  *{{goQual "net/url.URL"}} `arg:"--url" help:"Override server URL"`
+			URL  *{{goPkgExt "net/url"}}URL `arg:"--url" help:"Override server URL"`
 		}
 	{{- end}}
 {{- end}}
 
 type channelOptions struct {
-	cliParser *{{goQual "github.com/alexflint/go-arg.Parser"}}
+	cliParser *{{goPkgExt "github.com/alexflint/go-arg"}}Parser
 
 	publish          bool
 	debug            bool
 	multipleMessages bool
 	payloadSeparator string
 
-	stream         {{goQual "io.ReadWriter"}}
+	stream         {{goPkgExt "io"}}ReadWriter
 	publishHeaders map[string]string
 	proxyHost      string
 }
 
 func main() {
 	cliArgs := MainCli{}
-	cliParser := {{goQual "github.com/alexflint/go-arg.MustParse"}}(&cliArgs)
+	cliParser := {{goPkgExt "github.com/alexflint/go-arg"}}MustParse(&cliArgs)
 
-	logLevel := {{goQual "log/slog.LevelError"}}
+	logLevel := {{goPkgExt "log/slog"}}LevelError
 	if cliArgs.Debug {
-		logLevel = {{goQual "log/slog.LevelDebug"}}
+		logLevel = {{goPkgExt "log/slog"}}LevelDebug
 	}
-	{{goQual "log/slog.SetLogLoggerLevel"}}(logLevel)
+	{{goPkgExt "log/slog"}}SetLogLoggerLevel(logLevel)
 
 	var dirCmd *DirectionCliCmd
 	switch {
@@ -112,33 +112,33 @@ func main() {
 	switch cliArgs.File {
 	case "-":
 		if chanOptions.publish {
-			{{goQual "log/slog.Debug"}}("Reading from stdin")
-			chanOptions.stream = {{goQual "os.Stdin"}}
+			{{goPkgExt "log/slog"}}Debug("Reading from stdin")
+			chanOptions.stream = {{goPkgExt "os"}}Stdin
 		} else {
-			{{goQual "log/slog.Debug"}}("Writing to stdout")
-			chanOptions.stream = {{goQual "os.Stdout"}}
+			{{goPkgExt "log/slog"}}Debug("Writing to stdout")
+			chanOptions.stream = {{goPkgExt "os"}}Stdout
 		}
 	case "":
 		showCliError("No file specified. Append --help for more information", cliParser)
 	default:
-		flag := {{goQual "os.O_CREATE"}} | {{goQual "os.O_WRONLY"}} | {{goQual "os.O_APPEND"}}
+		flag := {{goPkgExt "os"}}O_CREATE | {{goPkgExt "os"}}O_WRONLY | {{goPkgExt "os"}}O_APPEND
 		if chanOptions.publish {
-			flag = {{goQual "os.O_RDONLY"}}
+			flag = {{goPkgExt "os"}}O_RDONLY
 		}
-		{{goQual "log/slog.Debug"}}("Opening file", "name", cliArgs.File, "flag", {{goQual "fmt.Sprintf"}}("%#x", flag), "mode", {{goQual "fmt.Sprintf"}}("%#o", OutputFileCreateMode))
-		f, err := {{goQual "os.OpenFile"}}(cliArgs.File, flag, OutputFileCreateMode)
+		{{goPkgExt "log/slog"}}Debug("Opening file", "name", cliArgs.File, "flag", {{goPkgExt "fmt"}}Sprintf("%#x", flag), "mode", {{goPkgExt "fmt"}}Sprintf("%#o", OutputFileCreateMode))
+		f, err := {{goPkgExt "os"}}OpenFile(cliArgs.File, flag, OutputFileCreateMode)
 		if err != nil {
-			{{goQual "log/slog.Error"}}(err.Error())
-			{{goQual "os.Exit"}}(1)
+			{{goPkgExt "log/slog"}}Error(err.Error())
+			{{goPkgExt "os"}}Exit(1)
 		}
 		defer f.Close()
 		chanOptions.stream = f
 	}
 
-	ctx := {{goQual "context.Background"}}()
+	ctx := {{goPkgExt "context"}}Background()
 	if cliArgs.RunTimeout > 0 {
-		var cancel {{goQual "context.CancelFunc"}}
-		ctx, cancel = {{goQual "context.WithTimeout"}}(ctx, cliArgs.RunTimeout)
+		var cancel {{goPkgExt "context"}}CancelFunc
+		ctx, cancel = {{goPkgExt "context"}}WithTimeout(ctx, cliArgs.RunTimeout)
 		defer cancel()
 	}
 
@@ -162,13 +162,13 @@ func main() {
 	}
 
 	switch {
-	case {{goQual "errors.Is"}}(err, {{goQual "context.DeadlineExceeded"}}):
-		{{goQual "log/slog.Warn"}}("Running timeout exceeded", "err", err)
+	case {{goPkgExt "errors"}}Is(err, {{goPkgExt "context"}}DeadlineExceeded):
+		{{goPkgExt "log/slog"}}Warn("Running timeout exceeded", "err", err)
 	case err != nil:
-		{{goQual "log/slog.Error"}}(err.Error())
-		{{goQual "os.Exit"}}(1)
-	case {{goQual "errors.Is"}}(ctx.Err(), {{goQual "context.DeadlineExceeded"}}):
-		{{goQual "log/slog.Warn"}}("Running timeout exceeded")
+		{{goPkgExt "log/slog"}}Error(err.Error())
+		{{goPkgExt "os"}}Exit(1)
+	case {{goPkgExt "errors"}}Is(ctx.Err(), {{goPkgExt "context"}}DeadlineExceeded):
+		{{goPkgExt "log/slog"}}Warn("Running timeout exceeded")
 	}
 }
 

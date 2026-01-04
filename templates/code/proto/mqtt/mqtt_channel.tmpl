@@ -11,9 +11,9 @@
 {{template "code/proto/channel/openFunction" .}}
 
 type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
-    address    {{goQualR "ParamString"}}
-    {{if .IsPublisher}}publisher  {{goQualU .Protocol "Publisher"}}{{end}}
-    {{if .IsSubscriber}}subscriber {{goQualU .Protocol "Subscriber"}}{{end}}
+    address    {{goPkgRun}}ParamString
+    {{if .IsPublisher}}publisher  {{goPkgUtil .Protocol}}Publisher{{end}}
+    {{if .IsSubscriber}}subscriber {{goPkgUtil .Protocol}}Subscriber{{end}}
     topic string
 }
 

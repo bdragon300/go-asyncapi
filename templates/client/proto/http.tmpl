@@ -1,19 +1,19 @@
 {{define "client/channeloperation/http/net/http/consumer/connect"}}
 server, err := {{goPkg $.Server}}Connect{{$.Server | goIDUpper}}Consumer(ctx, serverURL)
 if err != nil {
-    return {{goQual "fmt.Errorf"}}("connect server %s: %w", serverURL, err)
+    return {{goPkgExt "fmt"}}Errorf("connect server %s: %w", serverURL, err)
 }
 defer server.Close()
-hServer := {{goQual "net/http.Server"}}{
+hServer := {{goPkgExt "net/http"}}Server{
     Addr: serverURL.Host,
-    Handler: server.Consumer().({{goQual "net/http.Handler"}}),
-    BaseContext: func(_ {{goQual "net.Listener"}}) {{goQual "context.Context"}} {
+    Handler: server.Consumer().({{goPkgExt "net/http"}}Handler),
+    BaseContext: func(_ {{goPkgExt "net"}}Listener) {{goPkgExt "context"}}Context {
         return ctx
     },
 }
 go func() {
-    if err := hServer.ListenAndServe(); err != nil && err != {{goQual "net/http.ErrServerClosed"}} {
-        {{goQual "log.Fatalf"}}("listen and serve: %v", err)
+    if err := hServer.ListenAndServe(); err != nil && err != {{goPkgExt "net/http"}}ErrServerClosed {
+        {{goPkgExt "log"}}Fatalf("listen and serve: %v", err)
     }
 }()
 {{- end}}

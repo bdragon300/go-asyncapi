@@ -1,37 +1,37 @@
 {{/* dot == lang.GoSimple */}}
 {{define "code/lang/typeFormat/string/date-time/definition"}}
-    {{- goQual "time.Time" }}
+    {{- goPkgExt "time" }}Time
 {{- end}}
 {{define "code/lang/typeFormat/string/date-time/usage"}}
-    {{- goQual "time.Time" }}
+    {{- goPkgExt "time" }}Time
 {{- end}}
 
 {{define "code/lang/typeFormat/string/datetime/definition"}}
-    {{- goQual "time.Time" }}
+    {{- goPkgExt "time" }}Time
 {{- end}}
 {{define "code/lang/typeFormat/string/datetime/usage"}}
-    {{- goQual "time.Time" }}
+    {{- goPkgExt "time" }}Time
 {{- end}}
 
 {{define "code/lang/typeFormat/string/ipv4/definition"}}
-    {{- goQual "net.IP" }}
+    {{- goPkgExt "net" }}IP
 {{- end}}
 {{define "code/lang/typeFormat/string/ipv4/usage"}}
-    {{- goQual "net.IP" }}
+    {{- goPkgExt "net" }}IP
 {{- end}}
 
 {{define "code/lang/typeFormat/string/ipv6/definition"}}
-    {{- goQual "net.IP" }}
+    {{- goPkgExt "net" }}IP
 {{- end}}
 {{define "code/lang/typeFormat/string/ipv6/usage"}}
-    {{- goQual "net.IP" }}
+    {{- goPkgExt "net" }}IP
 {{- end}}
 
 {{define "code/lang/typeFormat/string/uuid/definition"}}
-    {{- goQual "github.com/google/uuid.UUID" }}
+    {{- goPkgExt "github.com/google/uuid" }}UUID
 {{- end}}
 {{define "code/lang/typeFormat/string/uuid/usage"}}
-    {{- goQual "github.com/google/uuid.UUID" }}
+    {{- goPkgExt "github.com/google/uuid" }}UUID
 {{- end}}
 
 {{define "code/lang/typeFormat/string/binary/definition" -}}
@@ -126,8 +126,8 @@
 {{- end}}
 
 {{define "code/lang/typeFormat/number/decimal/definition"}}
-    {{- goQual "github.com/shopspring/decimal.Decimal" }}
+    {{- goPkgExt "github.com/shopspring/decimal" }}Decimal
 {{- end}}
 {{define "code/lang/typeFormat/number/decimal/usage"}}
-    {{- goQual "github.com/shopspring/decimal.Decimal" }}
+    {{- goPkgExt "github.com/shopspring/decimal" }}Decimal
 {{- end}}

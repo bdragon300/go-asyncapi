@@ -24,7 +24,7 @@ func (e *EnvelopeOut) ResetPayload() {
 	e.Body = e.Body[:0]
 }
 
-func (e *EnvelopeOut) SetHeaders(headers {{goQualR "Headers"}}) {
+func (e *EnvelopeOut) SetHeaders(headers {{goPkgRun}}Headers) {
 	e.Publishing.Headers = map[string]any(headers)
 }
 
@@ -32,7 +32,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.ContentType = contentType
 }
 
-func (e *EnvelopeOut) SetBindings(bindings {{goQualU "amqp" "MessageBindings"}}) {
+func (e *EnvelopeOut) SetBindings(bindings {{goPkgUtil "amqp"}}MessageBindings) {
 	e.Publishing.ContentEncoding = bindings.ContentEncoding
 	e.Type = bindings.MessageType
 }
@@ -65,7 +65,7 @@ func (e EnvelopeIn) Read(p []byte) (n int, err error) {
 	return e.reader.Read(p)
 }
 
-func (e EnvelopeIn) Headers() {{goQualR "Headers"}} {
+func (e EnvelopeIn) Headers() {{goPkgRun}}Headers {
 	return map[string]any(e.Delivery.Headers)
 }
 

@@ -5,7 +5,7 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-func NewClient(serverURL string, security {{goQualR "AnySecurityScheme"}}, extraOpts ...nats.Option)(*Client, error) {
+func NewClient(serverURL string, security {{goPkgRun}}AnySecurityScheme, extraOpts ...nats.Option)(*Client, error) {
 	// Unfortunately, the official nats client doesn't accept the context object.
 	client, err := nats.Connect(serverURL, extraOpts...)
 	if err != nil {
@@ -21,7 +21,7 @@ type Client struct {
 	*nats.Conn
 }
 
-func (c *Client) Subscriber(_ context.Context, address string, chb *{{goQualU "nats" "ChannelBindings"}}, opb *{{goQualU "nats" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualU "nats" "Subscriber"}}, error) {
+func (c *Client) Subscriber(_ context.Context, address string, chb *{{goPkgUtil "nats"}}ChannelBindings, opb *{{goPkgUtil "nats"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "nats"}}Subscriber, error) {
 	ctx2, cancel := context.WithCancel(context.Background())
 	return &Subscription{
 		Client:            c,
@@ -33,7 +33,7 @@ func (c *Client) Subscriber(_ context.Context, address string, chb *{{goQualU "n
 	}, nil
 }
 
-func (c *Client) Publisher(_ context.Context, _ string, chb *{{goQualU "nats" "ChannelBindings"}}, opb *{{goQualU "nats" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualU "nats" "Publisher"}}, error) {
+func (c *Client) Publisher(_ context.Context, _ string, chb *{{goPkgUtil "nats"}}ChannelBindings, opb *{{goPkgUtil "nats"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "nats"}}Publisher, error) {
 	ctx2, cancel := context.WithCancel(context.Background())
 	return &PublishChannel{
 		Client:            c,

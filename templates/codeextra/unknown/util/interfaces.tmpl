@@ -1,16 +1,16 @@
 // Pub
 type (
 	Producer interface {
-		Publisher(ctx {{goQual "context.Context"}}, address string, security {{goQualR "AnySecurityScheme"}}) (Publisher, error)
+		Publisher(ctx {{goPkgExt "context"}}Context, address string, security {{goPkgRun}}AnySecurityScheme) (Publisher, error)
 	}
 	Publisher interface {
-		Send(ctx {{goQual "context.Context"}}, envelopes ...EnvelopeWriter) error
+		Send(ctx {{goPkgExt "context"}}Context, envelopes ...EnvelopeWriter) error
 		Close() error
 	}
 	EnvelopeWriter interface {
-        {{goQual "io.Writer"}}
+        {{goPkgExt "io"}}Writer
 		ResetPayload()
-		SetHeaders(headers {{goQualR "Headers"}})
+		SetHeaders(headers {{goPkgRun}}Headers)
 		SetContentType(contentType string)
 	}
 )
@@ -18,14 +18,14 @@ type (
 // Sub
 type (
 	Consumer interface {
-		Subscriber(ctx {{goQual "context.Context"}}, address string, security {{goQualR "AnySecurityScheme"}}) (Subscriber, error)
+		Subscriber(ctx {{goPkgExt "context"}}Context, address string, security {{goPkgRun}}AnySecurityScheme) (Subscriber, error)
 	}
 	Subscriber interface {
-		Receive(ctx {{goQual "context.Context"}}, cb func(envelope EnvelopeReader)) error
+		Receive(ctx {{goPkgExt "context"}}Context, cb func(envelope EnvelopeReader)) error
 		Close() error
 	}
 	EnvelopeReader interface {
-        {{goQual "io.Reader"}}
-		Headers() {{goQualR "Headers"}}
+        {{goPkgExt "io"}}Reader
+		Headers() {{goPkgRun}}Headers
 	}
 )

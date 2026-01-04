@@ -1,7 +1,7 @@
 {{- /* dot == render.ProtoOperation */}}
 
 {{define "code/proto/nats/operation/bindings/values"}}
-{{- goQualU "nats" "OperationBindings"}}{
+{{- goPkgUtil "nats"}}OperationBindings{
     {{- with .Bindings.Values.Map.nats}}
         {{with .queue }}Queue: {{goLit .}},{{end}}
     {{- end}}

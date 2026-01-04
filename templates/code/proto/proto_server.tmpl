@@ -1,7 +1,7 @@
 {{- /* dot == render.Server */}}
 
 {{define "code/proto/server/newFunction"}}
-func New{{ . | goIDUpper }}(producer {{goQualU .Protocol "Producer"}}, consumer {{goQualU .Protocol "Consumer"}}) *{{. | goIDUpper}} {
+func New{{ . | goIDUpper }}(producer {{goPkgUtil .Protocol}}Producer, consumer {{goPkgUtil .Protocol}}Consumer) *{{. | goIDUpper}} {
     return &{{. | goIDUpper}}{
         producer: producer,
         consumer: consumer,
@@ -25,11 +25,11 @@ type {{ $ | goIDUpper }}Closable struct {
 
 func (c {{ $ | goIDUpper }}Closable) Close() error {
     var err error
-    if v, ok := any(c.producer).({{goQual "io.Closer"}}); ok {
-        err = {{goQual "errors.Join"}}(err, v.Close())
+    if v, ok := any(c.producer).({{goPkgExt "io"}}Closer); ok {
+        err = {{goPkgExt "errors"}}Join(err, v.Close())
     }
-    if v, ok := any(c.consumer).({{goQual "io.Closer"}}); ok {
-        err = {{goQual "errors.Join"}}(err, v.Close())
+    if v, ok := any(c.consumer).({{goPkgExt "io"}}Closer); ok {
+        err = {{goPkgExt "errors"}}Join(err, v.Close())
     }
     return err
 }
@@ -38,15 +38,15 @@ func (c {{ $ | goIDUpper }}Closable) Close() error {
     {{.}}
 {{- else}}
     func Connect{{ $ | goIDUpper }}Bidi(
-        ctx {{goQual "context.Context"}},
-        url *{{goQual "net/url.URL"}},
+        ctx {{goPkgExt "context"}}Context,
+        url *{{goPkgExt "net/url"}}URL,
         {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
     ) (*{{ $ | goIDUpper }}Closable, error) {
-        var bindings *{{goQualU .Protocol "ServerBindings"}}
+        var bindings *{{goPkgUtil $.Protocol}}ServerBindings
         {{- if $.BindingsProtocols | has $.Protocol}}
-            bindings = {{goQualR "ToPtr"}}({{goPkg $}}{{goIDUpper $}}ServerBindings{}.{{$.Protocol | goIDUpper}}())
+            bindings = {{goPkgRun}}ToPtr({{goPkg $}}{{goIDUpper $}}ServerBindings{}.{{$.Protocol | goIDUpper}}())
         {{- end}}
-        client, err := {{goQualI .Protocol "NewClient"}}(ctx, url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+        client, err := {{goPkgImpl .Protocol}}NewClient(ctx, url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
         if err != nil {
             return nil, err
         }
@@ -62,15 +62,15 @@ func (c {{ $ | goIDUpper }}Closable) Close() error {
         {{.}}
     {{- else}}
         func Connect{{ $ | goIDUpper }}Producer(
-            ctx {{goQual "context.Context"}},
-            url *{{goQual "net/url.URL"}},
+            ctx {{goPkgExt "context"}}Context,
+            url *{{goPkgExt "net/url"}}URL,
             {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
         ) (*{{ $ | goIDUpper }}Closable, error) {
-            var bindings *{{goQualU $.Protocol "ServerBindings"}}
+            var bindings *{{goPkgUtil $.Protocol}}ServerBindings
             {{- if $.BindingsProtocols | has $.Protocol}}
-                bindings = {{goQualR "ToPtr"}}({{goPkg $}}{{goIDUpper $}}ServerBindings{}.{{$.Protocol | goIDUpper}}())
+                bindings = {{goPkgRun}}ToPtr({{goPkg $}}{{goIDUpper $}}ServerBindings{}.{{$.Protocol | goIDUpper}}())
             {{- end}}
-            producer, err := {{goQualI .Protocol "NewClient"}}(ctx, url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+            producer, err := {{goPkgImpl .Protocol}}NewClient(ctx, url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
             if err != nil {
                 return nil, err
             }
@@ -86,15 +86,15 @@ func (c {{ $ | goIDUpper }}Closable) Close() error {
         {{.}}
     {{- else}}
         func Connect{{ $ | goIDUpper }}Consumer(
-            ctx {{goQual "context.Context"}},
-            url *{{goQual "net/url.URL"}},
+            ctx {{goPkgExt "context"}}Context,
+            url *{{goPkgExt "net/url"}}URL,
             {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
         ) (*{{ $ | goIDUpper }}Closable, error) {
-            var bindings *{{goQualU $.Protocol "ServerBindings"}}
+            var bindings *{{goPkgUtil $.Protocol}}ServerBindings
             {{- if $.BindingsProtocols | has $.Protocol}}
-                bindings = {{goQualR "ToPtr"}}({{goPkg $}}{{goIDUpper $}}ServerBindings{}.{{$.Protocol | goIDUpper}}())
+                bindings = {{goPkgRun}}ToPtr({{goPkg $}}{{goIDUpper $}}ServerBindings{}.{{$.Protocol | goIDUpper}}())
             {{- end}}
-            consumer, err := {{goQualI .Protocol "NewClient"}}(ctx, url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+            consumer, err := {{goPkgImpl .Protocol}}NewClient(ctx, url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
             if err != nil {
                 return nil, err
             }
@@ -112,10 +112,10 @@ func (c {{ $ | goIDUpper }}Closable) Close() error {
 {{- range .BoundChannels}}
     {{- if .ActiveProtocols | has $.Protocol }}
         func (s {{$ | goIDUpper}}) Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
-            ctx {{goQual "context.Context"}},
+            ctx {{goPkgExt "context"}}Context,
             {{if .Parameters.Len}}params {{goPkg .}}{{goIDUpper .}}Parameters,{{end}}
-            {{if .BoundOperations}}opBindings *{{goQualU $.Protocol "OperationBindings"}},{{end}}
-            {{if .BoundOperations}}security {{goQualR "AnySecurityScheme"}},{{end}}
+            {{if .BoundOperations}}opBindings *{{goPkgUtil $.Protocol}}OperationBindings,{{end}}
+            {{if .BoundOperations}}security {{goPkgRun}}AnySecurityScheme,{{end}}
         ) (*{{goPkg .}}{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}, error) {
             return {{goPkg .}}Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
                 ctx, s, {{if .Parameters.Len}}params,{{end}}{{if .BoundOperations}}opBindings, security,{{end}}
@@ -129,7 +129,7 @@ func (c {{ $ | goIDUpper }}Closable) Close() error {
 {{- range .BoundOperations}}
     {{- if .ActiveProtocols | has $.Protocol }}
         func (s {{$ | goIDUpper}}) Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
-            ctx {{goQual "context.Context"}},
+            ctx {{goPkgExt "context"}}Context,
             {{if .Channel.Parameters.Len}}params {{goPkg .Channel}}{{goIDUpper .Channel}}Parameters,{{end}}
             {{if .SecuritySchemes}}security {{goPkg .}}{{. | goIDUpper}}Security,{{end}}
         ) (*{{goPkg .}}{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}, error) {
@@ -146,16 +146,16 @@ func (s {{. | goIDUpper}}) Name() string {
     return "{{ . | goIDUpper }}"
 }
 
-func (s {{. | goIDUpper}}) Producer() {{goQualU .Protocol "Producer"}} {
+func (s {{. | goIDUpper}}) Producer() {{goPkgUtil .Protocol}}Producer {
     return s.producer
 }
 
-func (s {{. | goIDUpper}}) Consumer() {{goQualU .Protocol "Consumer"}} {
+func (s {{. | goIDUpper}}) Consumer() {{goPkgUtil .Protocol}}Consumer {
     return s.consumer
 }
 
 {{- if .BindingsProtocols | has .Protocol}}
-func (s {{. | goIDUpper}}) Bindings() {{goQualU .Protocol "ServerBindings"}} {
+func (s {{. | goIDUpper}}) Bindings() {{goPkgUtil .Protocol}}ServerBindings {
     return {{goPkg $}}{{goIDUpper $}}ServerBindings{}.{{.Protocol | goIDUpper}}()
 }
 {{- end}}
@@ -172,8 +172,8 @@ func (s {{. | goIDUpper}}) Bindings() {{goQualU .Protocol "ServerBindings"}} {
 
 {{- /* TODO: consider IsPublisher and IsSubscriber}} */}}
 type {{. | goIDUpper}} struct {
-    producer {{goQualU .Protocol "Producer"}}
-    consumer {{goQualU .Protocol "Consumer"}}
+    producer {{goPkgUtil .Protocol}}Producer
+    consumer {{goPkgUtil .Protocol}}Consumer
 }
 
 {{template "code/proto/server/commonMethods" .}}

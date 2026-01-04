@@ -9,7 +9,7 @@
 {{define "code/lang/gomap/usage"}}
     {{- if .HasDefinition }}
         {{if .Import }}
-            {{ goQual .Import (goIDUpper .) }}
+            {{ goPkgExt .Import }}{{goIDUpper .}}
         {{- else }}
             {{ goPkg . }}{{ . | goIDUpper }}
         {{- end }}

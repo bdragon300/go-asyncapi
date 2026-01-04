@@ -2,17 +2,17 @@
 
 {{define "code/proto/kafka/server/impl/github.com/twmb/franz-go/connectFunction"}}
 func Connect{{ . | goIDUpper }}Bidi(
-    ctx {{goQual "context.Context"}},
-    url *{{goQual "net/url.URL"}},
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
-    opts ...{{goQual "github.com/twmb/franz-go/pkg/kgo.Opt"}},
+    opts ...{{goPkgExt "github.com/twmb/franz-go/pkg/kgo"}}Opt,
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualU .Protocol "ServerBindings"}}
+    var bindings *{{goPkgUtil .Protocol}}ServerBindings
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goQualR "ToPtr"}}({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
+        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    producer := {{goQualI .Protocol "NewProducer"}}([]string{url.Host}, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
-    consumer := {{goQualI .Protocol "NewConsumer"}}([]string{url.Host}, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
+    producer := {{goPkgImpl .Protocol}}NewProducer([]string{url.Host}, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
+    consumer := {{goPkgImpl .Protocol}}NewConsumer([]string{url.Host}, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
     return &{{ . | goIDUpper }}Closable{
         {{. | goIDUpper}}{producer: producer, consumer: consumer},
     }, nil
@@ -21,16 +21,16 @@ func Connect{{ . | goIDUpper }}Bidi(
 
 {{define "code/proto/kafka/server/impl/github.com/twmb/franz-go/connectProducerFunction"}}
 func Connect{{ . | goIDUpper }}Producer(
-    ctx {{goQual "context.Context"}},
-    url *{{goQual "net/url.URL"}},
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
-    opts ...{{goQual "github.com/twmb/franz-go/pkg/kgo.Opt"}},
+    opts ...{{goPkgExt "github.com/twmb/franz-go/pkg/kgo"}}Opt,
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualU .Protocol "ServerBindings"}}
+    var bindings *{{goPkgUtil .Protocol}}ServerBindings
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goQualR "ToPtr"}}({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
+        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    producer := {{goQualI .Protocol "NewProducer"}}([]string{url.Host}, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
+    producer := {{goPkgImpl .Protocol}}NewProducer([]string{url.Host}, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
     return &{{ . | goIDUpper }}Closable{
         {{. | goIDUpper}}{producer: producer},
     }, nil
@@ -39,16 +39,16 @@ func Connect{{ . | goIDUpper }}Producer(
 
 {{define "code/proto/kafka/server/impl/github.com/twmb/franz-go/connectConsumerFunction"}}
 func Connect{{ . | goIDUpper }}Consumer(
-    ctx {{goQual "context.Context"}},
-    url *{{goQual "net/url.URL"}},
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
     {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
-    opts ...{{goQual "github.com/twmb/franz-go/pkg/kgo.Opt"}},
+    opts ...{{goPkgExt "github.com/twmb/franz-go/pkg/kgo"}}Opt,
 ) (*{{ . | goIDUpper }}Closable, error) {
-    var bindings *{{goQualU .Protocol "ServerBindings"}}
+    var bindings *{{goPkgUtil .Protocol}}ServerBindings
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goQualR "ToPtr"}}({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
+        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
     {{- end}}
-    consumer := {{goQualI .Protocol "NewConsumer"}}([]string{url.Host}, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
+    consumer := {{goPkgImpl .Protocol}}NewConsumer([]string{url.Host}, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, opts...)
     return &{{ . | goIDUpper }}Closable{
         {{. | goIDUpper}}{consumer: consumer},
     }, nil

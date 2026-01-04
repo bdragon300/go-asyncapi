@@ -14,19 +14,19 @@
 {{- end}}
 
 {{define "code/proto/kafka/channel/bindings/values"}}
-{{- goQualU "kafka" "ChannelBindings"}}{
+{{- goPkgUtil "kafka"}}ChannelBindings{
     {{- with .Bindings.Values.Map.kafka}}
         {{with .topic }}Topic: {{goLit .}},{{end}}
         {{with .partitions }}Partitions: {{goLit .}},{{end}}
         {{with .replicas }}Replicas: {{goLit .}},{{end}}
-        {{with .topicConfiguration }}TopicConfiguration: {{goQualU "kafka" "TopicConfiguration"}}{
-            {{with .cleanupPolicy }}CleanupPolicy: {{goQualU "kafka" "TopicCleanupPolicy"}}{
+        {{with .topicConfiguration }}TopicConfiguration: {{goPkgUtil "kafka"}}TopicConfiguration{
+            {{with .cleanupPolicy }}CleanupPolicy: {{goPkgUtil "kafka"}}TopicCleanupPolicy{
                 {{with .delete }}Delete: {{goLit .}},{{end}}
                 {{with .compact }}Compact: {{goLit .}},{{end}}
             },{{end}}
-            {{with .retentionTime }}RetentionTime: {{goQual "time.Duration"}}({{goLit .}}*{{goQual "time.Milliseconds"}}),{{end}}
+            {{with .retentionTime }}RetentionTime: {{goPkgExt "time"}}Duration({{goLit .}}*{{goPkgExt "time"}}Milliseconds),{{end}}
             {{with .retentionBytes }}RetentionBytes: {{goLit .}},{{end}}
-            {{with .deleteRetentionTime }}DeleteRetentionTime: {{goQual "time.Duration"}}({{goLit .}}*{{goQual "time.Milliseconds"}}),{{end}}
+            {{with .deleteRetentionTime }}DeleteRetentionTime: {{goPkgExt "time"}}Duration({{goLit .}}*{{goPkgExt "time"}}Milliseconds),{{end}}
             {{with .maxMessageBytes }}MaxMessageBytes: {{goLit .}},{{end}}
         },{{end}}
     {{- end}}
@@ -38,9 +38,9 @@
 {{template "code/proto/channel/openFunction" .}}
 
 type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
-    address    {{goQualR "ParamString"}}
-    {{if .IsPublisher}}publisher  {{goQualU .Protocol "Publisher"}}{{end}}
-    {{if .IsSubscriber}}subscriber {{goQualU .Protocol "Subscriber"}}{{end}}
+    address    {{goPkgRun}}ParamString
+    {{if .IsPublisher}}publisher  {{goPkgUtil .Protocol}}Publisher{{end}}
+    {{if .IsSubscriber}}subscriber {{goPkgUtil .Protocol}}Subscriber{{end}}
     topic string
 }
 

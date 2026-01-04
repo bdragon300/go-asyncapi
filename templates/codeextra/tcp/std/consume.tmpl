@@ -10,7 +10,7 @@ type Decoder interface {
 	Decode(v any) error
 }
 
-func NewConsumer(host, network string, security {{goQualR "AnySecurityScheme"}}) (*ConsumeClient, error) {
+func NewConsumer(host, network string, security {{goPkgRun}}AnySecurityScheme) (*ConsumeClient, error) {
 	if network == "" {
 		network = "tcp"
 	}
@@ -30,7 +30,7 @@ type ConsumeClient struct {
 	MaxEnvelopeSize int
 }
 
-func (c *ConsumeClient) Subscriber(_ context.Context, _ string, _ *{{goQualU "tcp" "ChannelBindings"}}, _*{{goQualU "tcp" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualU "tcp" "Subscriber"}}, error) {
+func (c *ConsumeClient) Subscriber(_ context.Context, _ string, _ *{{goPkgUtil "tcp"}}ChannelBindings, _*{{goPkgUtil "tcp"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "tcp"}}Subscriber, error) {
 	// Wait for a new connection
 	conn, err := c.AcceptTCP()
 	if err != nil {

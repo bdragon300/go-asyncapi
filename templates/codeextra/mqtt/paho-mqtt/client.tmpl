@@ -4,7 +4,7 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-func NewClient(ctx context.Context, serverURL string, bindings *{{goQualU "mqtt" "ServerBindings"}}, initClientOptions *mqtt.ClientOptions, security {{goQualR "AnySecurityScheme"}}) (*Client, error) {
+func NewClient(ctx context.Context, serverURL string, bindings *{{goPkgUtil "mqtt"}}ServerBindings, initClientOptions *mqtt.ClientOptions, security {{goPkgRun}}AnySecurityScheme) (*Client, error) {
 	co := initClientOptions
 	if co == nil {
 		co = mqtt.NewClientOptions()
@@ -43,16 +43,16 @@ func NewClient(ctx context.Context, serverURL string, bindings *{{goQualU "mqtt"
 
 type Client struct {
 	mqtt.Client
-	bindings    *{{goQualU "mqtt" "ServerBindings"}}
+	bindings    *{{goPkgUtil "mqtt"}}ServerBindings
 }
 
-func (c *Client) Subscriber(ctx context.Context, address string, chb *{{goQualU "mqtt" "ChannelBindings"}}, opb *{{goQualU "mqtt" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualU "mqtt" "Subscriber"}}, error) {
+func (c *Client) Subscriber(ctx context.Context, address string, chb *{{goPkgUtil "mqtt"}}ChannelBindings, opb *{{goPkgUtil "mqtt"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "mqtt"}}Subscriber, error) {
 	var qos byte
 	if opb != nil {
 		qos = byte(opb.QoS)
 	}
 
-	ch := make(chan {{goQualU "mqtt" "EnvelopeReader"}})
+	ch := make(chan {{goPkgUtil "mqtt"}}EnvelopeReader)
 	tok := c.Client.Subscribe(address, qos, func(_ mqtt.Client, message mqtt.Message) {
 		ch <- NewEnvelopeIn(message)
 	})
@@ -78,7 +78,7 @@ func (c *Client) Subscriber(ctx context.Context, address string, chb *{{goQualU 
 	return &r, nil
 }
 
-func (c *Client) Publisher(_ context.Context, address string, chb *{{goQualU "mqtt" "ChannelBindings"}}, opb *{{goQualU "mqtt" "OperationBindings"}}, security {{goQualR "AnySecurityScheme"}}) ({{goQualU "mqtt" "Publisher"}}, error) {
+func (c *Client) Publisher(_ context.Context, address string, chb *{{goPkgUtil "mqtt"}}ChannelBindings, opb *{{goPkgUtil "mqtt"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "mqtt"}}Publisher, error) {
 	ctx2, cancel := context.WithCancel(context.Background())
 	r := PublishChannel{
 		Client:          c.Client,
