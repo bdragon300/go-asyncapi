@@ -21,6 +21,7 @@ const defaultPackage = "main"
 var (
 	golangTypeReplaceRe = regexp.MustCompile("[^a-zA-Z0-9_]+")
 	fileNameReplaceRe   = regexp.MustCompile("[^a-zA-Z0-9_-]+")
+	splitWordRe         = regexp.MustCompile(`([a-z])([A-Z])|([A-Z])([0-9])|([0-9])([A-Z])|([A-Z])([A-Z])([a-z])`)
 )
 
 // initialisms are the commonly used acronyms inside identifiers, that should be written upper case according to the
@@ -160,7 +161,7 @@ func NormalizePathItem(s string) string {
 		newString = "empty" + NormalizePathItem(base32.StdEncoding.EncodeToString(hsh.Sum([]byte(s))))
 	}
 
-	return lo.SnakeCase(newString)
+	return SnakeCase(newString)
 }
 
 // GetPackageName returns the package name as a valid Go identifier extracted from the directory path.
@@ -173,4 +174,28 @@ func GetPackageName(directory string) string {
 		return defaultPackage
 	}
 	return ToGolangName(pkgName, false)
+}
+
+// SnakeCase converts string to snake case.
+func SnakeCase(str string) string {
+	items := Words(str)
+	for i := range items {
+		items[i] = strings.ToLower(items[i])
+	}
+	return strings.Join(items, "_")
+}
+
+// Words splits string into a slice of its words. Implementation initially is taken from [lo.Words] and
+// modified to treat numbers as part of words.
+func Words(str string) []string {
+	str = splitWordRe.ReplaceAllString(str, `$1$3$5$7 $2$4$6$8$9`)
+	var result strings.Builder
+	for _, r := range str {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			result.WriteRune(r)
+		} else {
+			result.WriteRune(' ')
+		}
+	}
+	return strings.Fields(result.String())
 }
