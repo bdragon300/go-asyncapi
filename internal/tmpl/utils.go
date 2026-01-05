@@ -2,11 +2,8 @@ package tmpl
 
 import (
 	"net/url"
-	"path"
 	"strconv"
 	"strings"
-
-	"github.com/samber/lo"
 )
 
 // unescapeJSONPointerFragmentPart unescapes a path item in JSON Pointer. Returns the unescaped string if it is a string,
@@ -48,47 +45,4 @@ func unescapeJSONPointerFragmentPart(value string) (any, error) {
 
 	// RFC6901 JSON Pointer unescape: replace `~1` to `/` and `~0` to `~`
 	return strings.ReplaceAll(strings.ReplaceAll(value, "~1", "/"), "~0", "~"), nil
-}
-
-// qualifiedToImport accepts the import expression and splits it into package path and imported name.
-// Additionally, it returns the package name (the last part of the package path).
-//
-// This function accepts the import expression as a single string or a sequence of strings that are joined together.
-// The last part if it is not a path, is considered as a name.
-//
-// Expression syntax is `path/to/package[.name]`.
-//
-// Examples:
-//
-//	qualifiedToImport("a") -> "a", "a", ""
-//	qualifiedToImport("", "a") -> "", "", "a"
-//	qualifiedToImport("a.x") -> "a", "a", "x"
-//	qualifiedToImport("a/b/c") -> "a/b/c", "c", ""
-//	qualifiedToImport("a", "x") -> "a", "a", "x"
-//	qualifiedToImport("a/b.c", "x") -> "a/b.c", "b.c", "x"
-//	qualifiedToImport("n", "d", "a/b.x") -> "n/d/a/b", "b", "x"
-//	qualifiedToImport("n", "d", "a/b.c", "x") -> "n/d/a/b.c", "b.c", "x"
-func qualifiedToImport(exprParts []string) (pkgPath string, pkgName string, name string) {
-	switch len(exprParts) {
-	case 0:
-		panic("Empty parameters, at least one is required")
-	case 1:
-		pkgPath = exprParts[0]
-	default:
-		lastPart := exprParts[len(exprParts)-1]
-		sep := lo.Ternary(strings.Contains(lastPart, "/") || strings.Contains(lastPart, "."), "/", ".")
-		pkgPath = path.Join(exprParts[:len(exprParts)-1]...) + sep + lastPart
-	}
-
-	// Split the expression into package path and name.
-	// The name is the sequence after the last dot (package path can contain dots in last part).
-	if pos := strings.LastIndex(pkgPath, "."); pos >= 0 {
-		name = pkgPath[pos+1:]
-		pkgPath = pkgPath[:pos]
-	}
-	pkgName = pkgPath
-	if pos := strings.LastIndex(pkgPath, "/"); pos >= 0 {
-		pkgName = pkgPath[pos+1:]
-	}
-	return
 }
