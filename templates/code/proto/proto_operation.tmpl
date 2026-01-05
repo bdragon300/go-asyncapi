@@ -11,6 +11,7 @@
 
 {{define "code/proto/operation/securityInterface"}}
 type {{. | goIDUpper}}Security interface {
+    {{goPkgRun}}AnySecurityScheme
     {{. | goIDUpper }}Security()
 }
 {{- end}}

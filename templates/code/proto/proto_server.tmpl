@@ -11,6 +11,7 @@ func New{{ . | goIDUpper }}(producer {{goPkgUtil .Protocol}}Producer, consumer {
 
 {{define "code/proto/server/securityInterface"}}
 type {{. | goIDUpper}}Security interface {
+    {{goPkgRun}}AnySecurityScheme
     {{. | goIDUpper }}Security()
 }
 {{- end}}
