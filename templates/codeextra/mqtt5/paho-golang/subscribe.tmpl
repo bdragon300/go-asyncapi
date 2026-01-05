@@ -1,0 +1,49 @@
+import (
+	"context"
+	"sync"
+
+	"github.com/eclipse/paho.golang/autopaho"
+)
+
+type SubscribeChannel struct {
+	Conn  *autopaho.ConnectionManager
+	Topic string
+
+	mu     *sync.Mutex
+	ctx    context.Context
+	cancel context.CancelFunc
+}
+
+func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope {{goPkgUtil "mqtt5"}}EnvelopeReader)) error {
+	var removeHandler func()
+	func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		removeHandler = s.Conn.AddOnPublishReceived(func(r autopaho.PublishReceived) (bool, error) {
+			if r.Packet.Topic != s.Topic {
+				return false, nil
+			}
+			cb(NewEnvelopeIn(r))
+			return true, nil
+		})
+	}()
+
+	var err error
+	select {
+	case <-ctx.Done():
+		err = ctx.Err()
+	case <-s.ctx.Done():
+		err = s.ctx.Err()
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	removeHandler()
+
+	return err
+}
+
+func (s SubscribeChannel) Close() error {
+	s.cancel()
+	return nil
+}

@@ -1,0 +1,12 @@
+{{- /* dot == render.ProtoOperation */}}
+{{define "code/proto/mqtt5/operation/bindings/values"}}
+{{- goPkgUtil "mqtt5"}}OperationBindings{
+    {{- with .Bindings.Values.Map.mqtt5}}
+        {{with .qos }}QoS: {{goLit .}},{{end}}
+        {{with .retain }}Retain: {{goLit .}},{{end}}
+        {{with .messageExpiryInterval }}MessageExpiryInterval: {{goPkgExt "time"}}Duration({{goLit .}}*{{goPkgExt "time"}}Second),{{end}}
+    {{- end}}
+}
+{{- end}}
+
+{{template "proto_operation.tmpl" .}}

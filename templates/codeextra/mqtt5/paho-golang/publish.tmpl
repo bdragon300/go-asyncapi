@@ -1,0 +1,56 @@
+import (
+	"context"
+	"fmt"
+
+	"github.com/eclipse/paho.golang/autopaho"
+	"github.com/eclipse/paho.golang/paho"
+)
+
+type PublishChannel struct {
+	Conn  *autopaho.ConnectionManager
+	Topic string
+
+	operationBindings *{{goPkgUtil "mqtt5"}}OperationBindings
+	ctx               context.Context
+	cancel            context.CancelFunc
+}
+
+type ImplementationRecord interface {
+	AsPahoGolangRecord() paho.Publish
+}
+
+func (p PublishChannel) Send(ctx context.Context, envelopes ...{{goPkgUtil "mqtt5"}}EnvelopeWriter) error {
+	for ind, envelope := range envelopes {
+		select {
+		case <-p.ctx.Done():
+			return p.ctx.Err()
+		default:
+		}
+
+		r := envelope.(ImplementationRecord).AsPahoGolangRecord()
+		pub := r
+		pub.Topic = p.Topic
+
+		if p.operationBindings != nil {
+			pub.QoS = byte(p.operationBindings.QoS)
+			pub.Retain = p.operationBindings.Retain
+			if p.operationBindings.MessageExpiryInterval != 0 {
+				mei := uint32(p.operationBindings.MessageExpiryInterval.Seconds())
+				pub.Properties.MessageExpiry = &mei
+			}
+		}
+
+		resp, err := p.Conn.Publish(ctx, &pub)
+		if err != nil {
+			return fmt.Errorf("publish, envelope %v: %w", ind, err)
+		} else if resp.ReasonCode != 0 && resp.ReasonCode != 16 { // 16 = Server received message but there are no subscribers
+			return fmt.Errorf("publish, envelope %v: server returned reason code %v", ind, resp.ReasonCode)
+		}
+	}
+	return nil
+}
+
+func (p PublishChannel) Close() error {
+	p.cancel()
+	return nil
+}

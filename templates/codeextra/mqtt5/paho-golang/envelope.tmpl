@@ -1,0 +1,74 @@
+import (
+	"bytes"
+	"fmt"
+
+	"github.com/eclipse/paho.golang/autopaho"
+	"github.com/eclipse/paho.golang/paho"
+)
+
+func NewEnvelopeOut(buf []byte) *EnvelopeOut {
+	return &EnvelopeOut{
+		Publish: paho.Publish{Payload: buf, Properties: &paho.PublishProperties{}},
+	}
+}
+
+type EnvelopeOut struct {
+	paho.Publish
+}
+
+func (e *EnvelopeOut) Write(p []byte) (n int, err error) {
+	e.Payload = append(e.Payload, p...)
+	return len(p), nil
+}
+
+func (e *EnvelopeOut) ResetPayload() {
+	e.Payload = e.Payload[:0]
+}
+
+func (e *EnvelopeOut) SetHeaders(headers {{goPkgRun}}Headers) {
+	for k, v := range headers {
+		e.Properties.User = append(e.Properties.User, paho.UserProperty{Key: k, Value: fmt.Sprint(v)})
+	}
+}
+
+func (e *EnvelopeOut) SetContentType(contentType string) {
+	e.Properties.ContentType = contentType
+}
+
+func (e *EnvelopeOut) SetBindings(b {{goPkgUtil "mqtt5"}}MessageBindings) {
+	if b.PayloadFormatIndicator != {{goPkgUtil "mqtt5"}}PayloadFormatIndicatorUnspecified {
+		pfi := byte(b.PayloadFormatIndicator)
+		e.Properties.PayloadFormat = &pfi
+	}
+	e.Properties.ContentType = b.ContentType
+	e.Properties.ResponseTopic = b.ResponseTopic
+}
+
+func (e *EnvelopeOut) AsPahoGolangRecord() paho.Publish {
+	return e.Publish
+}
+
+func NewEnvelopeIn(msg autopaho.PublishReceived) *EnvelopeIn {
+	return &EnvelopeIn{PublishReceived: msg, reader: bytes.NewReader(msg.Packet.Payload)}
+}
+
+type EnvelopeIn struct {
+	autopaho.PublishReceived
+	reader *bytes.Reader
+}
+
+func (e *EnvelopeIn) Read(p []byte) (n int, err error) {
+	return e.reader.Read(p)
+}
+
+func (e *EnvelopeIn) Headers() {{goPkgRun}}Headers {
+	if e.Packet.Properties == nil {
+		return nil
+	}
+
+	headers := make({{goPkgRun}}Headers, len(e.Packet.Properties.User))
+	for _, up := range e.Packet.Properties.User {
+		headers[up.Key] = up.Value
+	}
+	return headers
+}

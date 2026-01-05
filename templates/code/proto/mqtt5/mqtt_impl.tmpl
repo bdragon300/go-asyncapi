@@ -1,0 +1,65 @@
+{{- /* dot == render.Server */}}
+
+{{define "code/proto/mqtt5/server/impl/github.com/eclipse-paho/paho.golang/connectFunction"}}
+func Connect{{ . | goIDUpper }}Bidi(
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
+    {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
+    initialConf *{{goPkgExt "github.com/eclipse/paho.golang/autopaho"}}ClientConfig,
+) (*{{ . | goIDUpper }}Closable, error) {
+    var bindings *{{goPkgUtil .Protocol}}ServerBindings
+    {{- if .BindingsProtocols | has .Protocol}}
+        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}ServerBindings.{{.Protocol | goIDUpper}}())
+    {{- end}}
+    client, err := {{goPkgImpl .Protocol}}NewClient(ctx, url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, initialConf)
+    if err != nil {
+        return nil, err
+    }
+    producer, consumer := client, client
+    return &{{ . | goIDUpper }}Closable{
+        {{. | goIDUpper}}{producer: producer, consumer: consumer},
+    }, nil
+}
+{{- end}}
+
+{{define "code/proto/mqtt5/server/impl/github.com/eclipse-paho/paho.golang/connectProducerFunction"}}
+func Connect{{ . | goIDUpper }}Producer(
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
+    {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
+    initialConf *{{goPkgExt "github.com/eclipse/paho.golang/autopaho"}}ClientConfig,
+) (*{{ . | goIDUpper }}Closable, error) {
+    var bindings *{{goPkgUtil .Protocol}}ServerBindings
+    {{- if .BindingsProtocols | has .Protocol}}
+        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
+    {{- end}}
+    producer, err := {{goPkgImpl .Protocol}}NewClient(ctx, url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, initialConf)
+    if err != nil {
+        return nil, err
+    }
+    return &{{ . | goIDUpper }}Closable{
+        {{. | goIDUpper}}{producer: producer},
+    }, nil
+}
+{{- end}}
+
+{{define "code/proto/mqtt5/server/impl/github.com/eclipse-paho/paho.golang/connectConsumerFunction"}}
+func Connect{{ . | goIDUpper }}Consumer(
+    ctx {{goPkgExt "context"}}Context,
+    url *{{goPkgExt "net/url"}}URL,
+    {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
+    initialConf *{{goPkgExt "github.com/eclipse/paho.golang/autopaho"}}ClientConfig,
+) (*{{ . | goIDUpper }}Closable, error) {
+    var bindings *{{goPkgUtil .Protocol}}ServerBindings
+    {{- if .BindingsProtocols | has .Protocol}}
+        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
+    {{- end}}
+    consumer, err := {{goPkgImpl .Protocol}}NewClient(ctx, url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, initialConf)
+    if err != nil {
+        return nil, err
+    }
+    return &{{ . | goIDUpper }}Closable{
+        {{. | goIDUpper}}{consumer: consumer},
+    }, nil
+}
+{{- end}}

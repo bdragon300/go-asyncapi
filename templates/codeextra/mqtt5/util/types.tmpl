@@ -1,0 +1,43 @@
+import (
+	"time"
+)
+
+type PayloadFormatIndicator int
+
+const (
+	PayloadFormatIndicatorUnspecified PayloadFormatIndicator = 0
+	PayloadFormatIndicatorUTF8        PayloadFormatIndicator = 1
+)
+
+type (
+	ServerBindings struct {
+		ClientID              string
+		CleanSession          bool
+		LastWill              *LastWill
+		KeepAlive             time.Duration
+		SessionExpiryInterval time.Duration
+		MaximumPacketSize     int
+	}
+
+	LastWill struct {
+		Topic   string
+		QoS     int
+		Message string
+		Retain  bool
+	}
+
+	ChannelBindings struct{}
+
+	OperationBindings struct {
+		QoS                   int
+		Retain                bool
+		MessageExpiryInterval time.Duration
+	}
+
+	MessageBindings struct {
+		PayloadFormatIndicator PayloadFormatIndicator
+		CorrelationData        any    // jsonschema contents
+		ContentType            string
+		ResponseTopic          string
+	}
+)

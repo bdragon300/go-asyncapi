@@ -22,6 +22,12 @@
   dir: mqtt/paho-mqtt
   default: true
 
+- protocol: mqtt5
+  name: github.com/eclipse-paho/paho.golang
+  url: https://github.com/eclipse-paho/paho.golang
+  dir: mqtt5/paho-golang
+  default: true
+
 - protocol: ws
   name: github.com/gobwas/ws
   url: https://github.com/gobwas/ws

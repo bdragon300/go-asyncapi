@@ -1,0 +1,13 @@
+{{- /* dot == render.ProtoMessage */}}
+{{define "code/proto/mqtt5/message/bindings/values"}}
+{{- goPkgUtil "mqtt5"}}MessageBindings{
+    {{- with .Bindings.Values.Map.mqtt5}}
+        {{with .payloadFormatIndicator }}PayloadFormatIndicator: {{goPkgUtil "mqtt5"}}{{list 0 "PayloadFormatIndicatorUnspecified" 1 "PayloadFormatIndicatorUTF8" | mapping . | goLit}},{{end}}
+        {{with .correlationData }}CorrelationData: {{toJSON . | goLit}},{{end}}
+        {{with .contentType }}ContentType: {{goLit .}},{{end}}
+        {{with .responseTopic }}ResponseTopic: {{goLit .}},{{end}}
+    {{- end}}
+}
+{{- end}}
+
+{{template "proto_message.tmpl" .}}

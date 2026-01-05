@@ -1,16 +1,18 @@
 {{- /* dot == render.Server */}}
-{{define "code/proto/mqtt/server/bindings/values"}}
-{{- goPkgUtil "mqtt"}}ServerBindings{
-    {{- with .Bindings.Values.Map.mqtt}}
+{{define "code/proto/mqtt5/server/bindings/values"}}
+{{- goPkgUtil "mqtt5"}}ServerBindings{
+    {{- with .Bindings.Values.Map.mqtt5}}
         {{with .clientId }}ClientID: {{goLit .}},{{end}}
         {{with .cleanSession }}CleanSession: {{goLit .}},{{end}}
-        {{with .lastWill }}LastWill: &{{goPkgUtil "mqtt"}}LastWill{
+        {{with .lastWill }}LastWill: &{{goPkgUtil "mqtt5"}}LastWill{
             {{with .topic }}Topic: {{goLit .}},{{end}}
             {{with .qos }}QoS: {{goLit .}},{{end}}
             {{with .message }}Message: {{goLit .}},{{end}}
             {{with .retain }}Retain: {{goLit .}},{{end}}
         },{{end}}
         {{with .keepAlive }}KeepAlive: {{goPkgExt "time"}}Duration({{goLit .}}*{{goPkgExt "time"}}Second),{{end}}
+        {{with .sessionExpiryInterval }}SessionExpiryInterval: {{goPkgExt "time"}}Duration({{goLit .}}*{{goPkgExt "time"}}Second),{{end}}
+        {{with .maximumPacketSize }}MaximumPacketSize: {{goLit .}},{{end}}
     {{- end}}
 }
 {{- end}}

@@ -4,7 +4,6 @@
     {{- with .Bindings.Values.Map.mqtt}}
         {{with .qos }}QoS: {{goLit .}},{{end}}
         {{with .retain }}Retain: {{goLit .}},{{end}}
-        {{with .messageExpiryInterval }}MessageExpiryInterval: {{goPkgExt "time"}}Duration({{goLit .}}*{{goPkgExt "time"}}Second),{{end}}
     {{- end}}
 }
 {{- end}}
