@@ -23,11 +23,12 @@ package linker
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/bdragon300/go-asyncapi/internal/log"
-
 	"github.com/samber/lo"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
@@ -78,20 +79,22 @@ func ResolveListPromises(sources map[string]ObjectSource) {
 
 	for assigned > 0 {
 		assigned = 0
-		for docURL, source := range sources {
+		for _, source := range sources {
 			for _, p := range source.ListPromises() {
 				if p.Assigned() {
 					continue // Assigned on previous iterations
 				}
-				if res, ok := resolveListPromise(p, docURL, sources); ok {
-					targets := strings.Join(
-						lo.Map(lo.Slice(res, 0, 2), func(item common.Artifact, _ int) string { return item.String() }),
-						", ",
-					)
-					if len(res) > 2 {
-						targets += ", ..."
+				if res, ok := resolveListPromise(p, sources); ok {
+					if logger.GetLevel() <= log.TraceLevel {
+						targets := strings.Join(
+							lo.Map(lo.Slice(res, 0, 2), func(item common.Artifact, _ int) string { return item.String() }),
+							", ",
+						)
+						if len(res) > 2 {
+							targets += ", ..."
+						}
+						logger.Trace("Internal list promise resolved", "count", len(res), "targets", targets)
 					}
-					logger.Trace("Internal list promise resolved", "count", len(res), "targets", targets)
 
 					p.AssignList(res)
 					assigned++
@@ -184,14 +187,17 @@ func resolvePromise(p common.ObjectPromise, docLocation string, sources map[stri
 	}
 }
 
-func resolveListPromise(p common.ObjectListPromise, docURL string, sources map[string]ObjectSource) ([]common.Artifact, bool) {
+func resolveListPromise(p common.ObjectListPromise, sources map[string]ObjectSource) ([]common.Artifact, bool) {
 	// Exclude links from selection in order to avoid duplicates in list
 	cb := p.FindCallback()
 	if cb == nil {
 		panic("List promise must have a callback, this is a bug")
 	}
-	srcArtifacts := sources[docURL].Artifacts() // FIXME: here we only assign the artifacts from the same document, should be from all documents
-	found := lo.Filter(srcArtifacts, func(obj common.Artifact, _ int) bool {
+	urls := slices.Sorted(maps.Keys(sources))
+	artifacts := lo.FlatMap(urls, func(docURL string, _ int) []common.Artifact {
+		return sources[docURL].Artifacts()
+	})
+	found := lo.Filter(artifacts, func(obj common.Artifact, _ int) bool {
 		return cb(obj)
 	})
 

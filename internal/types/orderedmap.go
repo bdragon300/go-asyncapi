@@ -151,7 +151,7 @@ func (o OrderedMap[K, V]) Keys() []K {
 }
 
 // Entries returns the entries of the map in the order the keys were added.
-func (o OrderedMap[K, V]) Entries() []lo.Entry[K, V] {
+func (o OrderedMap[K, V]) Entries() []lo.Entry[K, V] { // TODO: replace to iterators
 	return lo.Map(o.keys, func(item K, _ int) lo.Entry[K, V] {
 		return lo.Entry[K, V]{Key: item, Value: o.data[item]}
 	})
