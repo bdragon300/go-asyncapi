@@ -240,6 +240,8 @@ func cliCodeMergeConfig(globalConfig toolConfig, cmd *CodeCmd) toolConfig {
 }
 
 func getCompileOpts(cfg toolConfig) compile.CompilationOpts {
+	// When both flags are not set, both pub and sub are enabled. If one of them is set, only that one is enabled.
+	// If both are set, both are enabled as well, but this is a weird case.
 	isPub := cfg.Code.OnlyPublish || !cfg.Code.OnlySubscribe
 	isSub := cfg.Code.OnlySubscribe || !cfg.Code.OnlyPublish
 	return compile.CompilationOpts{

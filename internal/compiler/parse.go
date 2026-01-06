@@ -31,5 +31,4 @@ func guessDocumentKind(decoder AnyDecoder) (DocumentKind, error) {
 		panic("openapi not implemented") // TODO
 	}
 	panic("jsonschema not implemented") // TODO
-	// Assume that some data is jsonschema, TODO: maybe it's better to match more strict?
 }

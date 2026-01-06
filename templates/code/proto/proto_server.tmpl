@@ -17,9 +17,7 @@ type {{. | goIDUpper}}Security interface {
 {{- end}}
 
 {{define "code/proto/server/connectFunctions"}}
-{{- if and .IsPublisher .IsSubscriber}}{{/*FIXME: why 'and' here instead of 'or'?*/}}
 {{- with impl .Protocol}}
-
 type {{ $ | goIDUpper }}Closable struct {
     {{$ | goIDUpper}}
 }
@@ -35,27 +33,29 @@ func (c {{ $ | goIDUpper }}Closable) Close() error {
     return err
 }
 
-{{- with tryTmpl (print "code/proto/" $.Protocol "/server/impl/" .Name "/connectFunction") $}}
-    {{.}}
-{{- else}}
-    func Connect{{ $ | goIDUpper }}Bidi(
-        ctx {{goPkgExt "context"}}Context,
-        url *{{goPkgExt "net/url"}}URL,
-        {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
-    ) (*{{ $ | goIDUpper }}Closable, error) {
-        var bindings *{{goPkgUtil $.Protocol}}ServerBindings
-        {{- if $.BindingsProtocols | has $.Protocol}}
-            bindings = {{goPkgRun}}ToPtr({{goPkg $}}{{goIDUpper $}}ServerBindings{}.{{$.Protocol | goIDUpper}}())
-        {{- end}}
-        client, err := {{goPkgImpl .Protocol}}NewClient(ctx, url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
-        if err != nil {
-            return nil, err
+{{- if and $.IsPublisher $.IsSubscriber}}
+    {{- with tryTmpl (print "code/proto/" $.Protocol "/server/impl/" .Name "/connectFunction") $}}
+        {{.}}
+    {{- else}}
+        func Connect{{ $ | goIDUpper }}Bidi(
+            ctx {{goPkgExt "context"}}Context,
+            url *{{goPkgExt "net/url"}}URL,
+            {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
+        ) (*{{ $ | goIDUpper }}Closable, error) {
+            var bindings *{{goPkgUtil $.Protocol}}ServerBindings
+            {{- if $.BindingsProtocols | has $.Protocol}}
+                bindings = {{goPkgRun}}ToPtr({{goPkg $}}{{goIDUpper $}}ServerBindings{}.{{$.Protocol | goIDUpper}}())
+            {{- end}}
+            client, err := {{goPkgImpl .Protocol}}NewClient(ctx, url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
+            if err != nil {
+                return nil, err
+            }
+            producer, consumer := client, client
+            return &{{ $ | goIDUpper }}Closable{
+                {{$ | goIDUpper}}{producer: producer, consumer: consumer},
+            }, nil
         }
-        producer, consumer := client, client
-        return &{{ $ | goIDUpper }}Closable{
-            {{$ | goIDUpper}}{producer: producer, consumer: consumer},
-        }, nil
-    }
+    {{- end}}
 {{- end}}
 
 {{- if $.IsPublisher}}
@@ -104,7 +104,6 @@ func (c {{ $ | goIDUpper }}Closable) Close() error {
             }, nil
         }
     {{- end}}
-{{- end}}
 {{- end}}
 {{- end}}
 {{- end}}
