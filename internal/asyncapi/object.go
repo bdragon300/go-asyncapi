@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 
@@ -277,22 +278,22 @@ func (o Object) buildLangStruct(ctx *compile.Context, flags map[common.SchemaTag
 	}
 
 	// regular properties
-	for _, entry := range o.Properties.Entries() {
-		ctx.Logger.Trace("Object property", "name", entry.Key)
-		ref := ctx.CurrentRefPointer("properties", entry.Key)
+	for k, v := range o.Properties.Entries() {
+		ctx.Logger.Trace("Object property", "name", k)
+		ref := ctx.CurrentRefPointer("properties", k)
 		prm := lang.NewGolangTypePromise(ref, nil)
 		ctx.PutPromise(prm)
 
 		var langObj common.GolangType = prm
-		if lo.Contains(o.Required, entry.Key) {
+		if lo.Contains(o.Required, k) {
 			langObj = &lang.GoPointer{Type: langObj}
 		}
 
-		propName, _ := lo.Coalesce(entry.Value.XGoName, entry.Key)
+		propName, _ := lo.Coalesce(v.XGoName, k)
 		f := lang.GoStructField{
 			OriginalName:     utils.ToGolangName(propName, true),
-			MarshalName:      entry.Key,
-			Description:      entry.Value.Description,
+			MarshalName:      k,
+			Description:      v.Description,
 			Type:             langObj,
 			ContentTypesFunc: contentTypesFunc,
 		}
@@ -478,7 +479,7 @@ func (o Object) getStructFieldRenderInfo(ctx *compile.Context) lang.StructFieldR
 			ctx.Logger.Trace("Extra tags", "names", res.TagNames)
 		case 1:
 			res.Tags = o.XGoTags.V1
-			ctx.Logger.Trace("Extra tags", "tags", lo.FromEntries(res.Tags.Entries()))
+			ctx.Logger.Trace("Extra tags", "tags", maps.Collect(res.Tags.Entries()))
 		}
 	}
 	if res.TagValues = o.XGoTagsValues; len(res.TagValues) > 0 {

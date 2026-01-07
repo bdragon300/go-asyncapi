@@ -2,8 +2,8 @@
 {{/* dot == render.Channel */}}
 type {{$ | goIDUpper}}Cmd struct {
     // Parameters
-    {{- range .Parameters.Entries}}
-	    {{.Key | goIDUpper}} string `arg:"--{{.Key | toQuotable | toKebabCase}},required" help:"Channel parameter: {{.Key | toQuotable}}"`
+    {{- range $k := .Parameters.Entries}}
+	    {{$k | goIDUpper}} string `arg:"--{{$k | toQuotable | toKebabCase}},required" help:"Channel parameter: {{$k | toQuotable}}"`
     {{- end}}
 
 	// Servers
@@ -15,8 +15,8 @@ type {{$ | goIDUpper}}Cmd struct {
 func channel{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}Cmd, opts channelOptions) error {
     {{- if .Parameters.Len}}
         channelParams := {{goPkg .}}{{goIDUpper .}}Parameters{
-            {{- range .Parameters.Entries}}
-                {{.Key | goIDUpper}}: {{goPkg .Value}}{{goIDUpper .Value}}(args.{{.Key | goIDUpper}}),
+            {{- range $k, $v := .Parameters.Entries}}
+                {{$k | goIDUpper}}: {{goPkg $v}}{{goIDUpper $v}}(args.{{$k | goIDUpper}}),
             {{- end}}
         }
 	    {{goPkgExt "log/slog"}}Debug("Channel parameters", "value", channelParams)
@@ -40,8 +40,8 @@ func channel{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}
 {{/* dot == render.Operation */}}
 type {{$ | goIDUpper}}Cmd struct {
     // Parameters
-    {{- range .Channel.Parameters.Entries}}
-	    {{.Key | goIDUpper}} string `arg:"--{{.Key | toQuotable | toKebabCase}},required" help:"Channel parameter: {{.Key | toQuotable}}"`
+    {{- range $k := .Channel.Parameters.Entries}}
+	    {{$k | goIDUpper}} string `arg:"--{{$k | toQuotable | toKebabCase}},required" help:"Channel parameter: {{$k | toQuotable}}"`
     {{- end}}
 
 	// Servers
@@ -53,8 +53,8 @@ type {{$ | goIDUpper}}Cmd struct {
 func operation{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}Cmd, opts channelOptions) error {
     {{- if .Channel.Parameters.Len}}
         channelParams := {{goPkg .Channel}}{{goIDUpper .Channel}}Parameters{
-            {{- range .Channel.Parameters.Entries}}
-                {{.Key | goIDUpper}}: {{goPkg .Value}}{{goIDUpper .Value}}(args.{{.Key | goIDUpper}}),
+            {{- range $k, $v := .Channel.Parameters.Entries}}
+                {{$k | goIDUpper}}: {{goPkg $v}}{{goIDUpper $v}}(args.{{$k | goIDUpper}}),
             {{- end}}
         }
 	    {{goPkgExt "log/slog"}}Debug("Channel parameters", "value", channelParams)
@@ -82,8 +82,8 @@ func operation{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper
 {{- end}}
 type {{$ | goIDUpper}}ReplyCmd struct {
     // Parameters
-    {{- range $channel.Parameters.Entries}}
-	    {{.Key | goIDUpper}} string `arg:"--{{.Key | toQuotable | toKebabCase}},required" help:"Channel parameter: {{.Key | toQuotable}}"`
+    {{- range $k := $channel.Parameters.Entries}}
+	    {{$k | goIDUpper}} string `arg:"--{{$k | toQuotable | toKebabCase}},required" help:"Channel parameter: {{$k | toQuotable}}"`
     {{- end}}
 
 	// Servers
@@ -95,8 +95,8 @@ type {{$ | goIDUpper}}ReplyCmd struct {
 func operationReply{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}ReplyCmd, opts channelOptions) error {
     {{- if $channel.Parameters.Len}}
         channelParams := {{goPkg $channel}}{{goIDUpper $channel}}Parameters{
-            {{- range $channel.Parameters.Entries}}
-                {{.Key | goIDUpper}}: {{goPkg .Value}}{{goIDUpper .Value}}(args.{{.Key | goIDUpper}}),
+            {{- range $k, $v := $channel.Parameters.Entries}}
+                {{$k | goIDUpper}}: {{goPkg $v}}{{goIDUpper $v}}(args.{{$k | goIDUpper}}),
             {{- end}}
         }
 	    {{goPkgExt "log/slog"}}Debug("Channel parameters", "value", channelParams)
@@ -144,7 +144,7 @@ func operationReply{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goID
 serverURL := args.{{$.Server | goIDUpper}}Cmd.URL
 if serverURL == nil {
     u, err := {{goPkg .}}{{. | goIDUpper}}URL(
-        {{range .Variables.Entries}}args.{{$.Server | goIDUpper}}Cmd.{{.Value | goIDUpper}},{{end}}
+        {{range $_, $v := .Variables.Entries}}args.{{$.Server | goIDUpper}}Cmd.{{$v | goIDUpper}},{{end}}
     )
     if err != nil {
         return {{goPkgExt "fmt"}}Errorf("url: %w", err)

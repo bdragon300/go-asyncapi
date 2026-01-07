@@ -6,20 +6,20 @@ const {{. | goIDUpper}}ProtocolVersion = {{.ProtocolVersion | goLit}}
 {{- end}}
 
 func {{. | goIDUpper}}URL(
-{{- range .Variables.Entries}}
-    {{- .Value | goID}} string,
+{{- range $_, $v := .Variables.Entries}}
+    {{- $v | goID}} string,
 {{- end }}) (*{{goPkgExt "net/url"}}URL, error) {
     {{- if gt .Variables.Len 0}}
-        {{- range .Variables.Entries}}
-            {{- if .Value.Default}}
-                if {{.Value | goID}} == "" {
-                    {{.Value | goID}} = {{.Value.Default | goLit}}
+        {{- range $_, $v := .Variables.Entries}}
+            {{- if $v.Default}}
+                if {{$v | goID}} == "" {
+                    {{$v | goID}} = {{$v.Default | goLit}}
                 }
             {{- end}}
         {{- end}}
         paramMap := map[string]string{
-            {{- range .Variables.Entries}}
-                {{.Key | goLit}}: {{.Value | goID}},
+            {{- range $k, $v := .Variables.Entries}}
+                {{$k | goLit}}: {{$v | goID}},
             {{- end}}
         }
 

@@ -47,8 +47,8 @@ type DirectionCliCmd struct {
 			{{if tryTmpl (print "client/server/" (.Protocol) "/cliMixin") .}}{{.Protocol | goIDUpper}}CliMixin{{end}}
 
 			// Server variables
-			{{- range .Variables.Entries}}
-				{{- with .Value}}
+			{{- range $_, $v := .Variables.Entries}}
+				{{- with $v}}
 					{{- if .Default}}
 						{{. | goIDUpper}} string `arg:"--{{.Name | toQuotable | toKebabCase}}" help:"Server variable: {{.Name | toQuotable}}" default:"{{.Default | toQuotable}}"`
 					{{- else}}

@@ -16,7 +16,6 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/renderer"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
-	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/bdragon300/go-asyncapi/templates/infra"
 	"github.com/samber/lo"
 )
@@ -158,22 +157,28 @@ func getInfraServerConfig(opts []toolConfigInfraServerOpt) []common.InfraServerO
 	for _, opt := range opts {
 		switch opt.Variables.Selector {
 		case 0:
+			var varGroups [][]common.InfraServerVariableOpts
+			for k, v := range opt.Variables.V0.Entries() {
+				varGroups = append(varGroups, []common.InfraServerVariableOpts{
+					{Name: k, Value: v},
+				})
+			}
 			res = append(res, common.InfraServerOpts{
-				ServerName: opt.ServerName,
-				VariableGroups: [][]common.InfraServerVariableOpts{
-					lo.Map(opt.Variables.V0.Entries(), func(item lo.Entry[string, string], _ int) common.InfraServerVariableOpts {
-						return common.InfraServerVariableOpts{Name: item.Key, Value: item.Value}
-					}),
-				},
+				ServerName:     opt.ServerName,
+				VariableGroups: varGroups,
 			})
 		case 1:
-			res = append(res, common.InfraServerOpts{
-				ServerName: opt.ServerName,
-				VariableGroups: lo.Map(opt.Variables.V1, func(item types.OrderedMap[string, string], _ int) []common.InfraServerVariableOpts {
-					return lo.Map(item.Entries(), func(item lo.Entry[string, string], _ int) common.InfraServerVariableOpts {
-						return common.InfraServerVariableOpts{Name: item.Key, Value: item.Value}
+			var varGroups [][]common.InfraServerVariableOpts
+			for _, g := range opt.Variables.V1 {
+				for k, v := range g.Entries() {
+					varGroups = append(varGroups, []common.InfraServerVariableOpts{
+						{Name: k, Value: v},
 					})
-				}),
+				}
+			}
+			res = append(res, common.InfraServerOpts{
+				ServerName:     opt.ServerName,
+				VariableGroups: varGroups,
 			})
 		}
 	}

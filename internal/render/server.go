@@ -56,8 +56,8 @@ type Server struct {
 // Variables returns the [types.OrderedMap] with server variables by name. Returns empty [types.OrderedMap] if variables
 // are not set.
 func (s *Server) Variables() (res types.OrderedMap[string, *ServerVariable]) {
-	for _, entry := range s.VariablesPromises.Entries() {
-		res.Set(entry.Key, entry.Value.T())
+	for k, v := range s.VariablesPromises.Entries() {
+		res.Set(k, v.T())
 	}
 	return
 }

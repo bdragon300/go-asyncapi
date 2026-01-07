@@ -1,6 +1,6 @@
 {{/* dot:
   .Server == render.Server
-  .ServerVariables == []common.ConfigServerVariable
+  .ServerVariables == []common.InfraServerVariableOpts
   */}}
 {{define "infra/docker/mqtt/services"}}
   "{{.Server.Name | toQuotable}}{{range .ServerVariables}}_{{.Value | toQuotable}}{{end}}":
@@ -18,7 +18,7 @@
 
 {{/* dot:
   .Server == render.Server
-  .ServerVariables == []common.ConfigServerVariable
+  .ServerVariables == []common.InfraServerVariableOpts
   */}}
 {{define "infra/docker/mqtt/volumes"}}
   "{{.Server.Name | goID}}-data{{range .ServerVariables}}_{{.Value | goID}}{{end}}":

@@ -3,6 +3,7 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	"iter"
 
 	"github.com/samber/lo"
 
@@ -10,9 +11,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// OrderedMap is a map that preserves the global order of keys.
-// This is important for keeping the tool's result the same across runs.
-// This map contains the unmarshaling logic for JSON and YAML. Not thread-safe.
+// OrderedMap is a map that preserves the keys insertion order.
+//
+// This is a naive and inefficient implementation hastily crafted just for the project needs. It has the JSON and YAML
+// (un)marshalling support and basic map operations. Not thread-safe.
 type OrderedMap[K comparable, V any] struct {
 	data map[K]V
 	keys []K
@@ -64,6 +66,7 @@ func (o OrderedMap[K, V]) MarshalJSON() ([]byte, error) {
 	return buf, nil
 }
 
+// IsZero returns true if the map is empty. Primarily use is to make the "omitzero" tag work in JSON/YAML serialization.
 func (o OrderedMap[K, V]) IsZero() bool {
 	return len(o.data) == 0
 }
@@ -105,27 +108,19 @@ func (o OrderedMap[K, V]) MustGet(key K) V {
 	return v
 }
 
-// GetOrEmpty returns the value for the given key or zero value if the key is not found.
-func (o OrderedMap[K, V]) GetOrEmpty(key K) (res V) {
-	if v, ok := o.Get(key); ok {
-		return v
-	}
-	return
-}
-
 // Has returns true if the key is found in the map.
 func (o OrderedMap[K, V]) Has(key K) bool {
 	_, ok := o.data[key]
 	return ok
 }
 
-// Set sets the value for a given key. Places the key to the end of the order, even if it already exists.
+// Set sets the value for a given key. Always places the entry to the last position, even if it already exists.
 func (o *OrderedMap[K, V]) Set(key K, value V) {
 	if o.data == nil {
 		o.data = make(map[K]V)
 	}
 	if _, ok := o.data[key]; ok {
-		o.keys = lo.DropWhile(o.keys, func(item K) bool { return item == key })
+		o.keys = lo.Filter(o.keys, func(item K, _ int) bool { return item != key })
 	}
 	o.data[key] = value
 	o.keys = append(o.keys, key)
@@ -140,7 +135,7 @@ func (o *OrderedMap[K, V]) Delete(key K) bool {
 		return false
 	}
 
-	o.keys = lo.DropWhile(o.keys, func(item K) bool { return item == key })
+	o.keys = lo.Filter(o.keys, func(item K, _ int) bool { return item != key })
 	delete(o.data, key)
 	return true
 }
@@ -150,13 +145,18 @@ func (o OrderedMap[K, V]) Keys() []K {
 	return o.keys
 }
 
-// Entries returns the entries of the map in the order the keys were added.
-func (o OrderedMap[K, V]) Entries() []lo.Entry[K, V] { // TODO: replace to iterators
-	return lo.Map(o.keys, func(item K, _ int) lo.Entry[K, V] {
-		return lo.Entry[K, V]{Key: item, Value: o.data[item]}
-	})
+// Entries returns an iterator over the map entries -- key-value pairs.
+func (o OrderedMap[K, V]) Entries() iter.Seq2[K, V] {
+	return func(yield func(K, V) bool) {
+		for _, key := range o.keys {
+			if !yield(key, o.data[key]) {
+				return
+			}
+		}
+	}
 }
 
+// Map returns the underlying map. Note that the order of keys is not preserved in the returned map.
 func (o OrderedMap[K, V]) Map() map[K]V {
 	return o.data
 }

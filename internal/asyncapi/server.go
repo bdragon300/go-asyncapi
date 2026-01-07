@@ -94,12 +94,12 @@ func (s Server) build(ctx *compile.Context, serverKey string) (common.Artifact, 
 	}
 
 	// Server variables
-	for _, v := range s.Variables.Entries() {
-		ctx.Logger.Trace("Server variable", "name", v.Key)
-		ref := ctx.CurrentRefPointer("variables", v.Key)
+	for k := range s.Variables.Entries() {
+		ctx.Logger.Trace("Server variable", "name", k)
+		ref := ctx.CurrentRefPointer("variables", k)
 		prm := lang.NewPromise[*render.ServerVariable](ref, nil)
 		ctx.PutPromise(prm)
-		res.VariablesPromises.Set(v.Key, prm)
+		res.VariablesPromises.Set(k, prm)
 	}
 
 	ctx.Logger.Trace("Server", "proto", s.Protocol)

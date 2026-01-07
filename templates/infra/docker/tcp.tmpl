@@ -1,6 +1,6 @@
 {{/* dot:
   .Server == render.Server
-  .ServerVariables == []common.ConfigServerVariable
+  .ServerVariables == []common.InfraServerVariableOpts
   */}}
 {{define "infra/docker/tcp/services"}}
   "{{.Server.Name | toQuotable}}{{range .ServerVariables}}_{{.Value | toQuotable}}{{end}}":

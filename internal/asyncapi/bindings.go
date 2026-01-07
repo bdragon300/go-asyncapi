@@ -36,24 +36,24 @@ func (b *Bindings) build(ctx *compile.Context, bindingsKey string) (common.Artif
 
 	res := render.Bindings{OriginalName: bindingsKey}
 
-	for _, e := range b.ProtocolValues.Entries() {
+	for k, v := range b.ProtocolValues.Entries() {
 		contents := make(map[string]any)
-		switch e.Value.Selector {
+		switch v.Selector {
 		case 0:
-			ctx.Logger.Trace("Bindings", "proto", e.Key, "format", "json")
-			if err := json.Unmarshal(e.Value.V0, &contents); err != nil {
-				return nil, types.CompileError{Path: ctx.CurrentRefPointer(), Proto: e.Key, Err: fmt.Errorf("json unmarshal: %w", err)}
+			ctx.Logger.Trace("Bindings", "proto", k, "format", "json")
+			if err := json.Unmarshal(v.V0, &contents); err != nil {
+				return nil, types.CompileError{Path: ctx.CurrentRefPointer(), Proto: k, Err: fmt.Errorf("json unmarshal: %w", err)}
 			}
 		case 1:
-			ctx.Logger.Trace("Bindings", "proto", e.Key, "format", "yaml")
-			if err := e.Value.V1.Decode(&contents); err != nil {
-				return nil, types.CompileError{Path: ctx.CurrentRefPointer(), Proto: e.Key, Err: fmt.Errorf("yaml unmarshal: %w", err)}
+			ctx.Logger.Trace("Bindings", "proto", k, "format", "yaml")
+			if err := v.V1.Decode(&contents); err != nil {
+				return nil, types.CompileError{Path: ctx.CurrentRefPointer(), Proto: k, Err: fmt.Errorf("yaml unmarshal: %w", err)}
 			}
 		default:
-			panic(fmt.Errorf("invalid selector value %d, this is a bug", e.Value.Selector))
+			panic(fmt.Errorf("invalid selector value %d, this is a bug", v.Selector))
 		}
 
-		res.Values.Set(e.Key, contents)
+		res.Values.Set(k, contents)
 	}
 
 	return &res, nil

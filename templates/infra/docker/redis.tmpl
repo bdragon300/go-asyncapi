@@ -1,6 +1,6 @@
 {{/* dot:
   .Server == render.Server
-  .ServerVariables == []common.ConfigServerVariable
+  .ServerVariables == []common.InfraServerVariableOpts
   */}}
 {{define "infra/docker/redis/services"}}
   "{{.Server.Name | toQuotable}}{{range .ServerVariables}}_{{.Value | toQuotable}}{{end}}":
@@ -16,7 +16,7 @@
 
 {{/* dot:
   .Server == render.Server
-  .ServerVariables == []common.ConfigServerVariable
+  .ServerVariables == []common.InfraServerVariableOpts
   */}}
 {{define "infra/docker/redis/volumes"}}
   "{{.Server.Name | goID}}{{range .ServerVariables}}_{{.Value | goID}}{{end}}":

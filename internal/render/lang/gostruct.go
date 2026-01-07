@@ -2,6 +2,7 @@ package lang
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -9,8 +10,6 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/common"
 
 	"github.com/bdragon300/go-asyncapi/internal/log"
-	"github.com/samber/lo"
-
 	"github.com/bdragon300/go-asyncapi/internal/types"
 )
 
@@ -73,17 +72,17 @@ func (f *GoStructField) RenderTags() string {
 
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 	tags := f.getTags(fieldRenderer.StructRenderInfo())
-	logger.Trace("--> Rendering field tags", "field", f.OriginalName, "values", lo.FromEntries(tags.Entries()))
+	logger.Trace("--> Rendering field tags", "field", f.OriginalName, "values", maps.Collect(tags.Entries()))
 	if tags.Len() == 0 {
 		return ""
 	}
 
 	var b strings.Builder
-	for _, e := range tags.Entries() {
+	for k, v := range tags.Entries() {
 		if b.Len() > 0 {
 			b.WriteRune(' ')
 		}
-		b.WriteString(fmt.Sprintf(`%s:%q`, e.Key, e.Value))
+		b.WriteString(fmt.Sprintf(`%s:%q`, k, v))
 	}
 
 	str := b.String()
@@ -109,8 +108,8 @@ func (f *GoStructField) getTags(structRenderInfo StructFieldRenderInfo) types.Or
 	for _, item := range tagNames {
 		res.Set(item, strings.Join(tagValues, ","))
 	}
-	for _, item := range structRenderInfo.Tags.Entries() {
-		res.Set(item.Key, item.Value)
+	for k, v := range structRenderInfo.Tags.Entries() {
+		res.Set(k, v)
 	}
 	return res
 }

@@ -34,12 +34,14 @@ func WalkAndCompile(ctx *compile.Context, object reflect.Value) error {
 	// Special types
 	switch v := object.Interface().(type) {
 	case orderedMap:
-		mEntries := object.MethodByName("Entries")
-		entries := mEntries.Call(nil)[0]
-		for j := 0; j < entries.Len(); j++ {
-			entry := entries.Index(j)
-			pushStack(ctx, entry.FieldByName("Key").String(), ctx.Stack.Top().Flags)
-			err := traverse(ctx, entry.FieldByName("Value"))
+		mKeys := object.MethodByName("Keys")
+		mMustGet := object.MethodByName("MustGet")
+		keys := mKeys.Call(nil)[0]
+		for j := 0; j < keys.Len(); j++ {
+			key := keys.Index(j)
+			val := mMustGet.Call([]reflect.Value{key})[0]
+			pushStack(ctx, key.String(), ctx.Stack.Top().Flags)
+			err := traverse(ctx, val)
 			ctx.Stack.Pop()
 			if err != nil {
 				return err

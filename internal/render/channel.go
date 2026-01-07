@@ -55,8 +55,8 @@ type Channel struct {
 
 // Parameters returns a map of channel's Parameter objects by names which they defined in channel's parameters.
 func (c *Channel) Parameters() (res types.OrderedMap[string, *Parameter]) {
-	for _, e := range c.ParameterPromises.Entries() {
-		res.Set(e.Key, e.Value.T())
+	for k, v := range c.ParameterPromises.Entries() {
+		res.Set(k, v.T())
 	}
 	return
 }

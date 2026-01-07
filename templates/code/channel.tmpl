@@ -1,10 +1,10 @@
 {{- /* dot == render.Channel */}}
 {{- pin .}}
 
-{{- with .Parameters.Entries }}
+{{- if .Parameters.Len }}
     type {{goIDUpper $}}Parameters struct {
-    {{- range .}}
-        {{goIDUpper .Key}} {{goPkg .Value}}{{goIDUpper .Value}}
+    {{- range $k, $v := .Parameters.Entries}}
+        {{goIDUpper $k}} {{goPkg $v}}{{goIDUpper $v}}
     {{- end}}
     }
 {{- end }}
