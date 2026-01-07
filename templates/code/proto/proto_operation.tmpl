@@ -44,6 +44,10 @@ func Open{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
 {{- end}}
 
 {{define "code/proto/operation/commonMethods"}}
+func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Close() error {
+    return c.Channel.Close()
+}
+
 {{- if .BindingsProtocols | has .Protocol}}
 func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Bindings() {{goPkgUtil .Protocol}}OperationBindings {
     return {{goPkg .Operation}}{{goIDUpper .Operation}}OperationBindings{}.{{.Protocol | goIDUpper}}()
@@ -153,6 +157,7 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Bindings() {{goPkgUtil .Prot
 {{template "code/proto/operation/openFunction" .}}
 
 type {{ . | goIDUpper }}Channel{{.Protocol | goIDUpper}} interface {
+    Close() error
 {{range .BoundMessages}}
     {{- if not (isVisible .) }}{{continue}}{{end}}
     {{if .IsPublisher}}
@@ -184,6 +189,7 @@ type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
     {{- if .OperationReply.Channel}}{{$innerChannel = .OperationReply.Channel}}{{end}}
 
     type {{ . | goIDUpper }}ReplyChannel{{.Protocol | goIDUpper}} interface {
+        Close() error
     {{range .BoundReplyMessages}}
         {{- if not (isVisible .) }}{{continue}}{{end}}
         {{if $.IsReplyPublisher}}

@@ -29,6 +29,7 @@ func Open{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
 }
 
 type {{ . | goIDUpper }}Channel{{.Protocol | goIDUpper}} interface {
+    Close() error
 {{range .BoundMessages}}
     {{- if not (isVisible .) }}{{continue}}{{end}}
     {{if .IsPublisher}}
@@ -60,6 +61,7 @@ type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
     {{- if .OperationReply.Channel}}{{$innerChannel = .OperationReply.Channel}}{{end}}
 
     type {{ . | goIDUpper }}ReplyChannel{{.Protocol | goIDUpper}} interface {
+        Close() error
     {{range .BoundReplyMessages}}
         {{- if not (isVisible .) }}{{continue}}{{end}}
         {{if $.IsReplyPublisher}}
