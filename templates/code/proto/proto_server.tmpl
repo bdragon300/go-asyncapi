@@ -114,11 +114,10 @@ func (c {{ $ | goIDUpper }}Closable) Close() error {
         func (s {{$ | goIDUpper}}) Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
             ctx {{goPkgExt "context"}}Context,
             {{if .Parameters.Len}}params {{goPkg .}}{{goIDUpper .}}Parameters,{{end}}
-            {{if .BoundOperations}}opBindings *{{goPkgUtil $.Protocol}}OperationBindings,{{end}}
             {{if .BoundOperations}}security {{goPkgRun}}AnySecurityScheme,{{end}}
         ) (*{{goPkg .}}{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}, error) {
             return {{goPkg .}}Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
-                ctx, s, {{if .Parameters.Len}}params,{{end}}{{if .BoundOperations}}opBindings, security,{{end}}
+                ctx, s, {{if .Parameters.Len}}params,{{end}}{{if .BoundOperations}}nil, security,{{end}}
             )
         }
     {{- end}}

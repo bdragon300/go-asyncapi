@@ -198,7 +198,7 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Subscribe(ctx {{goPkgExt "co
 
 {{define "code/proto/channel/serverInterface"}}
 type {{ .Channel | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
-    Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goPkgExt "context"}}Context{{if .Parameters.Len}},{{goIDUpper .Channel}}Parameters{{end}}{{if .BoundOperations}},*{{goPkgUtil .Protocol}}OperationBindings,{{goPkgRun}}AnySecurityScheme{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
+    Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goPkgExt "context"}}Context{{if .Parameters.Len}},{{goIDUpper .Channel}}Parameters{{end}}{{if .BoundOperations}},{{goPkgRun}}AnySecurityScheme{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
     {{if .IsPublisher}}Producer() {{goPkgUtil .Protocol}}Producer{{end}}
     {{if .IsSubscriber}}Consumer() {{goPkgUtil .Protocol}}Consumer{{end}}
 }

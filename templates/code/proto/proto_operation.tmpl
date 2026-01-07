@@ -2,7 +2,7 @@
 
 {{define "code/proto/operation/serverInterface"}}
     type {{ . | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
-        Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goPkgExt "context"}}Context{{if .Channel.Parameters.Len}},{{goPkg .Channel}}{{goIDUpper .Channel}}Parameters{{end}}{{if .Channel.BoundOperations}},*{{goPkgUtil .Protocol}}OperationBindings,{{goPkgRun}}AnySecurityScheme{{end}}) (*{{goPkg .Channel}}{{goIDUpper .Channel}}{{goIDUpper .Protocol}}, error)
+        Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goPkgExt "context"}}Context{{if .Channel.Parameters.Len}},{{goPkg .Channel}}{{goIDUpper .Channel}}Parameters{{end}}{{if .Channel.BoundOperations}},{{goPkgRun}}AnySecurityScheme{{end}}) (*{{goPkg .Channel}}{{goIDUpper .Channel}}{{goIDUpper .Protocol}}, error)
         Open{{. | goIDUpper}}{{.Protocol | goIDUpper}}({{goPkgExt "context"}}Context{{if .Channel.Parameters.Len}}, {{goPkg .Channel}}{{goIDUpper .Channel}}Parameters{{end}}{{if .SecuritySchemes}}, {{. | goIDUpper}}Security,{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
         {{if .Channel.IsPublisher}}Producer() {{goPkgUtil .Protocol}}Producer{{end}}
         {{if .Channel.IsSubscriber}}Consumer() {{goPkgUtil .Protocol}}Consumer{{end}}
