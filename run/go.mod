@@ -1,3 +1,3 @@
 module github.com/bdragon300/go-asyncapi/run
 
-go 1.24.4
+go 1.22
