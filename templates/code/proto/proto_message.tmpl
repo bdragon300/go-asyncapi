@@ -37,7 +37,7 @@ func (m *{{ .OutType | goIDUpper }}) Marshal{{ .Protocol | goIDUpper }}(w {{goPk
 
 {{- if .BindingsProtocols | has .Protocol}}
     func (c {{.OutType | goUsage}}) Bindings{{.Protocol | goIDUpper}}() {{goPkgUtil .Protocol}}MessageBindings {
-        return {{goPkg .Message}}{{goIDUpper .Message}}MessageBindings{}.{{.Protocol | goIDUpper}}()
+        return {{goPkg .Message}}{{goIDUpper .Message}}Bindings{}.{{.Protocol | goIDUpper}}()
     }
 {{- end}}
 {{- end}}
@@ -78,7 +78,7 @@ func (m *{{ .InType | goIDUpper }}) Unmarshal{{ .Protocol | goIDUpper }}(r {{goP
 
 {{- if .BindingsProtocols | has .Protocol}}
     func (c {{.InType | goUsage}}) Bindings{{.Protocol | goIDUpper}}() {{goPkgUtil .Protocol}}MessageBindings {
-        return {{goPkg .Message}}{{goIDUpper .Message}}MessageBindings{}.{{.Protocol | goIDUpper}}()
+        return {{goPkg .Message}}{{goIDUpper .Message}}Bindings{}.{{.Protocol | goIDUpper}}()
     }
 {{- end}}
 {{- end}}

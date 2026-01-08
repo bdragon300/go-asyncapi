@@ -2,7 +2,7 @@
 {{define "code/proto/kafka/channel/newFunction/block1"}}
     res.topic = res.address.String()
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings := {{goPkg .Channel}}{{goIDUpper .Channel}}ChannelBindings{}.{{.Protocol | goIDUpper}}()
+        bindings := {{goPkg .Channel}}{{goIDUpper .Channel}}Bindings{}.{{.Protocol | goIDUpper}}()
         if bindings.Topic != "" {
             res.topic = bindings.Topic
         }

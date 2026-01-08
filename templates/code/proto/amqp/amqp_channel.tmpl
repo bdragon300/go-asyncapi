@@ -1,7 +1,7 @@
 {{- /* dot == render.ProtoChannel */}}
 {{define "code/proto/amqp/channel/newFunction/block1"}}
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings := {{goPkg .Channel}}{{goIDUpper .Channel}}ChannelBindings{}.{{.Protocol | goIDUpper}}()
+        bindings := {{goPkg .Channel}}{{goIDUpper .Channel}}Bindings{}.{{.Protocol | goIDUpper}}()
         switch bindings.ChannelType {
         case {{goPkgUtil .Protocol }}ChannelTypeQueue:
             res.queue = res.address.String()
