@@ -5,3 +5,7 @@
 {{define "client/operation/amqp/publish/prepareEnvelope"}}
     envelope.SetRoutingKey(channel.RoutingKey())
 {{- end}}
+
+{{define "client/operationReply/amqp/publish/prepareEnvelope"}}
+    envelope.SetRoutingKey(channel.RoutingKey())
+{{- end}}

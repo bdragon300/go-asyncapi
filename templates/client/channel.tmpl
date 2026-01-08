@@ -8,11 +8,12 @@ type {{$ | goIDUpper}}Cmd struct {
 
 	// Servers
     {{- range .BoundServers}}
+        {{- if not (impl .Protocol)}}{{continue}}{{end}}
 	    {{. | goIDUpper}}Cmd *{{. | goIDUpper}}CliCmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Server: {{.Name | toQuotable}}"`
     {{- end}}
 }
 
-func channel{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}Cmd, opts channelOptions) error {
+func channel{{$ | goIDUpper}}(ctx {{goPkgExt "context"}}Context, args *{{$ | goIDUpper}}Cmd, opts channelOptions) error {
     {{- if .Parameters.Len}}
         channelParams := {{goPkg .}}{{goIDUpper .}}Parameters{
             {{- range $k, $v := .Parameters.Entries}}
@@ -24,6 +25,7 @@ func channel{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}
 
 	switch {
     {{- range .BoundServers}}
+        {{- if not (impl .Protocol)}}{{continue}}{{end}}
         {{$implTemplateCtx := dict "Object" $ "Server" . "Kind" "channel"}}
         case args.{{. | goIDUpper}}Cmd != nil:
             {{template "client/pubsub/proto/serverPubSub" $implTemplateCtx}}
@@ -46,11 +48,12 @@ type {{$ | goIDUpper}}Cmd struct {
 
 	// Servers
     {{- range .Channel.BoundServers}}
+        {{- if not (impl .Protocol)}}{{continue}}{{end}}
 	    {{. | goIDUpper}}Cmd *{{. | goIDUpper}}CliCmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Server: {{.Name | toQuotable}}"`
     {{- end}}
 }
 
-func operation{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}Cmd, opts channelOptions) error {
+func operation{{$ | goIDUpper}}(ctx {{goPkgExt "context"}}Context, args *{{$ | goIDUpper}}Cmd, opts channelOptions) error {
     {{- if .Channel.Parameters.Len}}
         channelParams := {{goPkg .Channel}}{{goIDUpper .Channel}}Parameters{
             {{- range $k, $v := .Channel.Parameters.Entries}}
@@ -62,6 +65,7 @@ func operation{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper
 
 	switch {
     {{- range .Channel.BoundServers}}
+        {{- if not (impl .Protocol)}}{{continue}}{{end}}
         {{$implTemplateCtx := dict "Object" $ "Server" . "Kind" "operation"}}
         case args.{{. | goIDUpper}}Cmd != nil:
             {{template "client/pubsub/proto/serverPubSub" $implTemplateCtx}}
@@ -88,11 +92,12 @@ type {{$ | goIDUpper}}ReplyCmd struct {
 
 	// Servers
     {{- range $channel.BoundServers}}
+        {{- if not (impl .Protocol)}}{{continue}}{{end}}
 	    {{. | goIDUpper}}Cmd *{{. | goIDUpper}}CliCmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Server: {{.Name | toQuotable}}"`
     {{- end}}
 }
 
-func operationReply{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goIDUpper}}ReplyCmd, opts channelOptions) error {
+func operationReply{{$ | goIDUpper}}(ctx {{goPkgExt "context"}}Context, args *{{$ | goIDUpper}}ReplyCmd, opts channelOptions) error {
     {{- if $channel.Parameters.Len}}
         channelParams := {{goPkg $channel}}{{goIDUpper $channel}}Parameters{
             {{- range $k, $v := $channel.Parameters.Entries}}
@@ -104,6 +109,7 @@ func operationReply{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goID
 
 	switch {
     {{- range $channel.BoundServers}}
+        {{- if not (impl .Protocol)}}{{continue}}{{end}}
         {{$implTemplateCtx := dict "Object" $ "Server" . "Kind" "operationReply"}}
         case args.{{. | goIDUpper}}Cmd != nil:
             {{template "client/pubsub/proto/serverPubSub" $implTemplateCtx}}
@@ -122,29 +128,19 @@ func operationReply{{$ | goIDUpper}}(ctx {{"context.Context"}}, args *{{$ | goID
     .Server == render.Server
     .Kind == "channel" or "operation" or "operationReply"
     */}}
-
-{{- $channel := .Object}}
 {{- $isPublisher := .Object.IsPublisher}}
 {{- $isSubscriber := .Object.IsSubscriber}}
 
-{{- if eq .Kind "operation"}}
-    {{- $channel = .Object.Channel}}
-    {{- $isPublisher = .Object.HasPublishingCode}}
-    {{- $isSubscriber = .Object.HasSubscribingCode}}
-{{- else if eq .Kind "operationReply"}}
-    {{- $channel = .Object.Channel}}
-    {{- if .Object.OperationReply.Channel}}
-        {{- $channel = .Object.OperationReply.Channel}}
-    {{- end}}
+{{- if or (eq .Kind "operation") (eq .Kind "operationReply")}}
     {{- $isPublisher = .Object.HasPublishingCode}}
     {{- $isSubscriber = .Object.HasSubscribingCode}}
 {{- end}}
 
-{{- with .Server}}
+{{- $impl := impl $.Server.Protocol}}
 serverURL := args.{{$.Server | goIDUpper}}Cmd.URL
 if serverURL == nil {
-    u, err := {{goPkg .}}{{. | goIDUpper}}URL(
-        {{range $_, $v := .Variables.Entries}}args.{{$.Server | goIDUpper}}Cmd.{{$v | goIDUpper}},{{end}}
+    u, err := {{goPkg $.Server}}{{goIDUpper $.Server}}URL(
+        {{range $_, $v := $.Server.Variables.Entries}}args.{{goIDUpper $.Server}}Cmd.{{goIDUpper $v}},{{end}}
     )
     if err != nil {
         return {{goPkgExt "fmt"}}Errorf("url: %w", err)
@@ -160,43 +156,34 @@ if opts.proxyHost != "" {
 }
 {{goPkgExt "log/slog"}}Debug("Server URL", "value", serverURL)
 
-{{- with impl .Protocol}}
-    {{goPkgExt "log/slog"}}Debug("Using implementation {{.Name | toQuotable}}")
-    {{- with tryTmpl (print "client/channeloperation/" $.Server.Protocol "/" .Name "/setup") $}}
-        // Implementation-specific code
-        {{.}}
-        // End of implementation-specific code
-    {{- end}}
-{{end}}
+{{goPkgExt "log/slog"}}Debug("Using implementation {{$impl.Name | toQuotable}}")
+{{- with tryTmpl (print "client/channeloperation/" $.Server.Protocol "/" $impl.Name "/setup") $}}
+    // Implementation-specific code
+    {{.}}
+    // End of implementation-specific code
+{{- end}}
 
 {{goPkgExt "log/slog"}}Debug("Connecting to server", "name", {{$.Server.Name | goLit}}, "url", serverURL)
 if opts.publish {
-    {{- if and .IsPublisher $isPublisher}}
-        {{- with impl .Protocol}}
-            {{- with tryTmpl (print "client/channeloperation/" $.Server.Protocol "/" .Name "/producer/connect") $}}
-                // Implementation-specific code
-                {{.}}
-                // End of implementation-specific code
-            {{- else}}
-                server, err := {{goPkg $.Server}}Connect{{$.Server | goIDUpper}}Producer(ctx, serverURL)
-                if err != nil {
-                    return {{goPkgExt "fmt"}}Errorf("connect server %s: %w", serverURL, err)
-                }
-                defer server.Close()
-            {{- end}}
+    {{- if and $.Server.IsPublisher $isPublisher}}
+        {{- with tryTmpl (print "client/channeloperation/" $.Server.Protocol "/" $impl.Name "/producer/connect") $}}
+            // Implementation-specific code
+            {{.}}
+            // End of implementation-specific code
+        {{- else}}
+            server, err := {{goPkg $.Server}}Connect{{$.Server | goIDUpper}}Producer(ctx, serverURL)
+            if err != nil {
+                return {{goPkgExt "fmt"}}Errorf("connect server %s: %w", serverURL, err)
+            }
+            defer server.Close()
         {{end}}
 
-        {{goPkgExt "log/slog"}}Debug("Opening channel", "name", {{.Name | goLit}}{{if $channel.Parameters.Len}}, "parameters", channelParams{{end}})
-        channel, err := server.Open{{$channel | goIDUpper}}{{.Protocol | goIDUpper}}(ctx{{if $channel.Parameters.Len}}, channelParams{{end}})
-        if err != nil {
-            return {{goPkgExt "fmt"}}Errorf("open channel: %w", err)
-        }
-        defer channel.Close()
+        {{template "client/pubsub/proto/serverPubSub/open" $}}
 
         {{goPkgExt "log/slog"}}Debug("Reading data to publish to {{$.Kind}}...")
         // If separator is empty, then don't use scanner and just read everything until EOF
         for b := range readStreamWithContext(ctx, opts.stream, opts.payloadSeparator) {
-            {{with impl .Protocol}}envelope := {{goPkgImpl .Protocol}}NewEnvelopeOut(nil){{end}}
+            envelope := {{goPkgImpl $.Server.Protocol}}NewEnvelopeOut(nil)
             n, err := envelope.Write(b)
             if err != nil {
                 return {{goPkgExt "fmt"}}Errorf("write envelope: %w", err)
@@ -204,19 +191,17 @@ if opts.publish {
             {{goPkgExt "log/slog"}}Debug("Read message payload", "bytes", n)
             parsedHeaders := parseHeaders(opts.publishHeaders)
             envelope.SetHeaders(parsedHeaders)
-            {{ with tryTmpl (print "client/" $.Kind "/" .Protocol "/publish/prepareEnvelope") $.Object}}
+            {{ with tryTmpl (print "client/" $.Kind "/" $.Server.Protocol "/publish/prepareEnvelope") $.Object}}
                 // Protocol-specific code
                 {{.}}
                 // End of protocol-specific code
             {{end}}
 
-            {{- with impl .Protocol}}
-                {{- with tryTmpl (print "client/message/" $.Server.Protocol "/" .Name "/publish") $}}
-                    // Implementation-specific code
-                    {{.}}
-                    // End of implementation-specific code
-                {{- end}}
-            {{end}}
+            {{- with tryTmpl (print "client/message/" $.Server.Protocol "/" $impl.Name "/publish") $}}
+                // Implementation-specific code
+                {{.}}
+                // End of implementation-specific code
+            {{- end}}
 
             if opts.debug {
                 {{goPkgExt "log/slog"}}Debug("Publishing message", "bytes", n, "payload", cutPayload(b, MaxLogPayloadSize), "headers", parsedHeaders)
@@ -228,37 +213,30 @@ if opts.publish {
                 break
             }
         }
+        _ = channel
     {{- else}}
-        return {{goPkgExt "fmt"}}Errorf("publishing for {{$.Kind}} {{.Name | toQuotable}} is not supported in specification or disabled")
+        return {{goPkgExt "fmt"}}Errorf("publishing for {{$.Kind}} {{$.Server.Name | toQuotable}} is not supported in specification or disabled")
     {{- end}}
 } else {
-    {{- if and .IsSubscriber $isSubscriber}}
-        {{- with impl .Protocol}}
-            {{- with tryTmpl (print "client/channeloperation/" $.Server.Protocol "/" .Name "/consumer/connect") $}}
-                // Implementation-specific code
-                {{.}}
-                // End of implementation-specific code
-            {{- else}}
-                server, err := {{goPkg $.Server}}Connect{{$.Server | goIDUpper}}Consumer(ctx, serverURL)
-                if err != nil {
-                    return {{goPkgExt "fmt"}}Errorf("connect server %s: %w", serverURL, err)
-                }
-                defer server.Close()
-            {{- end}}
-        {{end}}
-
-        {{goPkgExt "log/slog"}}Debug("Opening channel", "name", {{.Name | goLit}}{{if $channel.Parameters.Len}}, "parameters", channelParams{{end}})
-        channel, err := server.Open{{$channel | goIDUpper}}{{.Protocol | goIDUpper}}(ctx{{if $channel.Parameters.Len}}, channelParams{{end}})
-        if err != nil {
-            return {{goPkgExt "fmt"}}Errorf("open channel: %w", err)
-        }
-        defer channel.Close()
+    {{- if and $.Server.IsSubscriber $isSubscriber}}
+        {{- with tryTmpl (print "client/channeloperation/" $.Server.Protocol "/" $impl.Name "/consumer/connect") $}}
+            // Implementation-specific code
+            {{.}}
+            // End of implementation-specific code
+        {{- else}}
+            server, err := {{goPkg $.Server}}Connect{{goIDUpper $.Server}}Consumer(ctx, serverURL)
+            if err != nil {
+                return {{goPkgExt "fmt"}}Errorf("connect server %s: %w", serverURL, err)
+            }
+            defer server.Close()
+        {{- end}}
+        {{template "client/pubsub/proto/serverPubSub/open" $}}
 
         {{goPkgExt "log/slog"}}Debug("Subscribing to {{$.Kind}}...", "separator", opts.payloadSeparator)
         subCtx, cancel := {{goPkgExt "context"}}WithCancelCause(ctx)
         defer cancel(ErrExited)
         payloadSeparator := []byte(opts.payloadSeparator)
-        err = channel.Subscribe(subCtx, func(e {{goPkgUtil .Protocol}}EnvelopeReader) {
+        err = channel.Subscribe(subCtx, func(e {{goPkgUtil $.Server.Protocol}}EnvelopeReader) {
             b, err := {{goPkgExt "io"}}ReadAll(e)
             if err != nil {
                 cancel({{goPkgExt "fmt"}}Errorf("read: %w", err))
@@ -274,11 +252,11 @@ if opts.publish {
                 {{goPkgExt "log/slog"}}Debug("Received message", "bytes", len(b), "payload", p, "headers", e.Headers())
             }
             if _, err = opts.stream.Write(b); err != nil {
-                cancel({{goPkgExt "fmt"}}Errorf("write stream: %w", err))
+                cancel({{goPkgExt "fmt"}}Errorf("write to stream: %w", err))
                 return
             }
             if _, err = opts.stream.Write(payloadSeparator); err != nil {
-                cancel({{goPkgExt "fmt"}}Errorf("write stream: %w", err))
+                cancel({{goPkgExt "fmt"}}Errorf("write payload separator to stream: %w", err))
                 return
             }
             if !opts.multipleMessages {
@@ -294,10 +272,42 @@ if opts.publish {
         case err != nil:
             return {{goPkgExt "fmt"}}Errorf("subscribe: %w", err)
         }
+        _ = channel
     {{- else}}
-        return {{goPkgExt "fmt"}}Errorf("subscribing for {{$.Kind}} {{.Name | toQuotable}} is not supported in specification or disabled")
+        return {{goPkgExt "fmt"}}Errorf("subscribing for {{$.Kind}} {{$.Server.Name | toQuotable}} is not supported in specification or disabled")
     {{- end}}
 }
 {{- end}}
 
+{{define "client/pubsub/proto/serverPubSub/open"}}
+{{- with $.Object}}
+    {{- if eq $.Kind "channel"}}
+        {{goPkgExt "log/slog"}}Debug("Opening channel", "name", {{.Name | goLit}}{{if .Parameters.Len}}, "parameters", channelParams{{end}})
+        object, err := server.Open{{goIDUpper .}}{{goIDUpper $.Server.Protocol}}(
+            ctx,
+            {{if .Parameters.Len}}channelParams,{{end}}
+        )
+        channel := object
+    {{- else if eq $.Kind "operation" }}
+        {{goPkgExt "log/slog"}}Debug("Opening operation", "name", {{.Name | goLit}}{{if .Channel.Parameters.Len}}, "parameters", channelParams{{end}})
+        object, err := server.Open{{goIDUpper .}}{{goIDUpper $.Server.Protocol}}(
+            ctx,
+            {{if .Channel.Parameters.Len}}channelParams,{{end}}
+        )
+        channel := object.Channel.({{goPkg .Channel}}{{goIDUpper .Channel}}{{goIDUpper $.Server.Protocol}})
+    {{- else if eq $.Kind "operationReply" }}
+        {{- with $channel := .BoundOperationReplyChannel }}
+            {{goPkgExt "log/slog"}}Debug("Opening operation reply", "name", {{.Name | goLit}}{{if $channel.Parameters.Len}}, "parameters", channelParams{{end}})
+            object, err := server.Open{{goIDUpper $channel}}{{goIDUpper $.Server.Protocol}}(
+                ctx,
+                {{if $channel.Parameters.Len}}channelParams,{{end}}
+            )
+            channel := object
+        {{- end}}
+    {{- end}}
+    if err != nil {
+        return {{goPkgExt "fmt"}}Errorf("open {{.Kind}}: %w", err)
+    }
+{{- end}}
+defer object.Close()
 {{- end}}

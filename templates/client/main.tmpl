@@ -1,4 +1,4 @@
-{{/* dot == tmpl.AppTemplateContext */}}
+{{/* dot == tmpl.ClientAppTemplateContext */}}
 
 const (
 	MaxLogPayloadSize     = 128
@@ -10,7 +10,8 @@ const (
 var ErrExited = {{goPkgExt "errors"}}New("exited")
 
 {{- range .ActiveProtocols}}
-{{tryTmpl (print "client/server/" . "/cliMixin") $}}
+    {{- if not (impl .)}}{{continue}}{{end}}
+    {{tryTmpl (print "client/server/" . "/cliMixin") $}}
 {{- end}}
 
 type MainCli struct {
@@ -43,6 +44,7 @@ type DirectionCliCmd struct {
 
 {{- range .Objects}}
 	{{- if and (eq .Kind "server") (isVisible .)}}
+        {{- if not (impl .Protocol)}}{{continue}}{{end}}
 		type {{. | goIDUpper}}CliCmd struct {
 			{{if tryTmpl (print "client/server/" (.Protocol) "/cliMixin") .}}{{.Protocol | goIDUpper}}CliMixin{{end}}
 

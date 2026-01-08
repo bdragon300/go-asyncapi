@@ -73,6 +73,19 @@ func (o *Operation) OperationReply() *OperationReply {
 	return nil
 }
 
+// BoundOperationReplyChannel returns a Channel bound to Operation's OperationReply.
+// If OperationReply is not set, returns nil.
+func (o *Operation) BoundOperationReplyChannel() *Channel {
+	if o.OperationReply() != nil {
+		c := o.OperationReply().Channel()
+		if c != nil {
+			return c
+		}
+		return o.Channel()
+	}
+	return nil
+}
+
 // ProtoOperation returns the ProtoOperation object for the given protocol.
 func (o *Operation) ProtoOperation(protocol string) *ProtoOperation {
 	return &ProtoOperation{Operation: o, Protocol: protocol}

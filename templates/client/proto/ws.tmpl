@@ -18,10 +18,14 @@ go func() {
 }()
 {{- end}}
 
+{{define "client/channel/ws/publish/prepareEnvelope"}}
+envelope.SetOpCode(byte({{goPkgExt "github.com/gobwas/ws"}}OpText))
+{{- end}}
+
 {{define "client/operation/ws/publish/prepareEnvelope"}}
 envelope.SetOpCode(byte({{goPkgExt "github.com/gobwas/ws"}}OpText))
 {{- end}}
 
-{{define "client/channel/ws/publish/prepareEnvelope"}}
+{{define "client/operationReply/ws/publish/prepareEnvelope"}}
 envelope.SetOpCode(byte({{goPkgExt "github.com/gobwas/ws"}}OpText))
 {{- end}}

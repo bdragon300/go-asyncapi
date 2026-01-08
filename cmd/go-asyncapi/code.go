@@ -108,8 +108,8 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 	logger.Debug("Extra code rendering complete")
 
 	// Extra code: implementations code
+	activeProtocols = collectActiveServersProtocols(documents)
 	if !renderOpts.ImplementationCodeOpts.Disable {
-		activeProtocols = collectActiveServersProtocols(documents)
 		logger.Debug("Run implementations code rendering", "protocols", activeProtocols)
 		if err = renderer.RenderImplementationCode(activeProtocols, renderOpts, renderManager, codeextra.TemplateFS); err != nil {
 			return fmt.Errorf("render implementation code: %w", err)

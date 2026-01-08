@@ -5,9 +5,9 @@ type KafkaCliMixin struct {
 {{- end}}
 
 {{- /*
-    .ChannelOrOperation == render.Channel or render.Operation;
+    .Object == render.Channel or render.Operation;
     .Server == render.Server
-    .Kind == "channel" or "operation"
+    .Kind == "channel" or "operation" or "operationReply"
     */}}
 {{define "client/channeloperation/kafka/github.com/twmb/franz-go/setup"}}
 var clientOptions []{{goPkgExt "github.com/twmb/franz-go/pkg/kgo"}}Opt
@@ -46,5 +46,9 @@ if args.{{.Server | goIDUpper}}Cmd.MessageKey != "" {
 {{- end}}
 
 {{define "client/operation/kafka/publish/prepareEnvelope"}}
+    envelope.SetTopic(channel.Topic())
+{{- end}}
+
+{{define "client/operationReply/kafka/publish/prepareEnvelope"}}
     envelope.SetTopic(channel.Topic())
 {{- end}}

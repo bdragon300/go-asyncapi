@@ -3,7 +3,7 @@
     .Server == render.Server
     .Kind == "channel" or "operation" or "operationReply"
     */}}
-{{define "client/channeloperation/mqtt/github.com/eclipse/paho.mqtt.golang/producer/connect"}}
+{{define "client/channeloperation/mqtt5/github.com/eclipse-paho/paho.golang/producer/connect"}}
 server, err := {{goPkg .Server}}Connect{{.Server | goIDUpper}}Producer(ctx, serverURL, nil)
 if err != nil {
     return {{goPkgExt "fmt"}}Errorf("connect server %s: %w", serverURL, err)
@@ -11,22 +11,10 @@ if err != nil {
 defer server.Close()
 {{- end}}
 
-{{define "client/channeloperation/mqtt/github.com/eclipse/paho.mqtt.golang/consumer/connect"}}
+{{define "client/channeloperation/mqtt5/github.com/eclipse-paho/paho.golang/consumer/connect"}}
 server, err := {{goPkg .Server}}Connect{{.Server | goIDUpper}}Consumer(ctx, serverURL, nil)
 if err != nil {
     return {{goPkgExt "fmt"}}Errorf("connect server %s: %w", serverURL, err)
 }
 defer server.Close()
-{{- end}}
-
-{{define "client/channel/mqtt/publish/prepareEnvelope"}}
-    envelope.SetTopic(channel.Topic())
-{{- end}}
-
-{{define "client/operation/mqtt/publish/prepareEnvelope"}}
-    envelope.SetTopic(channel.Topic())
-{{- end}}
-
-{{define "client/operationReply/mqtt/publish/prepareEnvelope"}}
-    envelope.SetTopic(channel.Topic())
 {{- end}}

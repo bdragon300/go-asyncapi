@@ -1,7 +1,7 @@
 {{- /*
-    .ChannelOrOperation == render.Channel or render.Operation;
+    .Object == render.Channel or render.Operation;
     .Server == render.Server
-    .Kind == "channel" or "operation"
+    .Kind == "channel" or "operation" or "operationReply"
     */}}
 {{define "client/channeloperation/udp/net/producer/connect"}}
 server, err := {{goPkg .Server}}Connect{{.Server | goIDUpper}}Producer(ctx, serverURL)
