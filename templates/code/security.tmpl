@@ -32,84 +32,80 @@ func (s {{goIDUpper .}}Security) UserPassword() (string, string) {
 {{/* Different services may accept the API key as a standalone value or as a username/password value.
      So, we generate here two variants for both cases, since the AsyncAPI doesn't allow to distinguish this for 'apiKey' type.
   */}}
-func New{{goIDUpper .}}SecurityStandalone(credentials func() string) {{goIDUpper .}}SecurityStandalone {
-    res := {{goIDUpper .}}SecurityStandalone{
-        in: {{goLit .Params.In}},
-    }
-    res.credentials = credentials
+func New{{goIDUpper .}}Security(credentials func() string) {{goIDUpper .}}Security {
+    res := {{goIDUpper .}}Security{credentials: credentials}
     return res
 }
 
-type {{goIDUpper .}}SecurityStandalone struct {
-    in          string
+type {{goIDUpper .}}Security struct {
     credentials func() string
 }
 
-func (s {{goIDUpper .}}SecurityStandalone) AuthType() string {
+func (s {{goIDUpper .}}Security) AuthType() string {
     return "apiKey"
 }
 
-func (s {{goIDUpper .}}SecurityStandalone) APIKey() string {
+func (s {{goIDUpper .}}Security) APIKey() string {
     return s.credentials()
 }
 
-func (s {{goIDUpper .}}SecurityStandalone) In() string {
-    return s.in
+func (s {{goIDUpper .}}Security) In() string {
+    return {{goLit .Params.In}}
 }
 
 {{- range .BoundServers}}
-    func (s {{goIDUpper $}}SecurityStandalone) {{. | goIDUpper}}Security() {}
+    func (s {{goIDUpper $}}Security) {{. | goIDUpper}}Security() {}
 {{- end}}
 {{- range .BoundOperations}}
-    func (s {{goIDUpper $}}SecurityStandalone) {{. | goIDUpper}}Security() {}
+    func (s {{goIDUpper $}}Security) {{. | goIDUpper}}Security() {}
 {{- end}}
-
-func New{{goIDUpper .}}SecurityPair(credentials func() (username, password string)) {{goIDUpper .}}SecurityPair {
-    res := {{goIDUpper .}}SecurityPair{
-        in: {{goLit .Params.In}},
+    
+func New{{goIDUpper .}}SecurityUserPassword(credentials func() (username, password string)) {{goIDUpper .}}SecurityUserPassword {
+    res := {{goIDUpper .}}SecurityUserPassword{credentials: credentials}
+    return res
+}
+    
+func New{{goIDUpper .}}SecurityUserOrPassword(credentials func() string) {{goIDUpper .}}SecurityUserPassword {
+    res := {{goIDUpper .}}SecurityUserPassword{}
+    res.credentials = func() (string, string) {
+        {{- if eq .Params.In "user"}}
+            return credentials(), ""
+        {{- else if eq .Params.In "password"}}
+            return "", credentials()
+        {{- else}}
+            return "", ""  // WARNING: 'in' param must be either 'user' or 'password', got {{goLit .Params.In}}
+        {{- end}}
     }
-    res.credentials = credentials
     return res
 }
 
-type {{goIDUpper .}}SecurityPair struct {
-    in          string
+type {{goIDUpper .}}SecurityUserPassword struct {
     credentials func() (string, string)
 }
 
-func (s {{goIDUpper .}}SecurityPair) AuthType() string {
+func (s {{goIDUpper .}}SecurityUserPassword) AuthType() string {
     return "apiKey"
 }
 
-func (s {{goIDUpper .}}SecurityPair) UserPassword() (string, string) {
+func (s {{goIDUpper .}}SecurityUserPassword) UserPassword() (string, string) {
     return s.credentials()
 }
 
-func (s {{goIDUpper .}}SecurityPair) APIKey() string {
-    user, pass := s.credentials()
-    switch s.in {
-    case "user":
-        return user
-    case "password":
-        return pass
-    }
-    return ""
-}
-
-func (s {{goIDUpper .}}SecurityPair) In() string {
-    return s.in
+func (s {{goIDUpper .}}SecurityUserPassword) In() string {
+    return {{goLit .Params.In}}
 }
 
 {{- range .BoundServers}}
-    func (s {{goIDUpper $}}SecurityPair) {{. | goIDUpper}}Security() {}
+    func (s {{goIDUpper $}}SecurityUserPassword) {{. | goIDUpper}}Security() {}
 {{- end}}
 {{- range .BoundOperations}}
-    func (s {{goIDUpper $}}SecurityPair) {{. | goIDUpper}}Security() {}
+    func (s {{goIDUpper $}}SecurityUserPassword) {{. | goIDUpper}}Security() {}
 {{- end}}
 
 {{- end}}
 
 {{/* dot == render.SecurityScheme */}}
 {{with tryTmpl (print "code/security/" .SchemeType) .}}
+    {{- pin $}}
     {{.}}
 {{end}}

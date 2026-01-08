@@ -9,7 +9,7 @@ func Connect{{ . | goIDUpper }}Bidi(
 ) (*{{ . | goIDUpper }}Closable, error) {
     var bindings *{{goPkgUtil .Protocol}}ServerBindings
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}ServerBindings.{{.Protocol | goIDUpper}}())
+        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}Bindings.{{.Protocol | goIDUpper}}())
     {{- end}}
     client, err := {{goPkgImpl .Protocol}}NewClient(ctx, url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, initialConf)
     if err != nil {
@@ -31,7 +31,7 @@ func Connect{{ . | goIDUpper }}Producer(
 ) (*{{ . | goIDUpper }}Closable, error) {
     var bindings *{{goPkgUtil .Protocol}}ServerBindings
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
+        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}Bindings{}.{{.Protocol | goIDUpper}}())
     {{- end}}
     producer, err := {{goPkgImpl .Protocol}}NewClient(ctx, url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, initialConf)
     if err != nil {
@@ -52,7 +52,7 @@ func Connect{{ . | goIDUpper }}Consumer(
 ) (*{{ . | goIDUpper }}Closable, error) {
     var bindings *{{goPkgUtil .Protocol}}ServerBindings
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}ServerBindings{}.{{.Protocol | goIDUpper}}())
+        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}Bindings{}.{{.Protocol | goIDUpper}}())
     {{- end}}
     consumer, err := {{goPkgImpl .Protocol}}NewClient(ctx, url.String(), bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}}, initialConf)
     if err != nil {

@@ -72,9 +72,10 @@ func (s *Server) Bindings() *Bindings {
 
 // SecuritySchemes returns the list of security schemes defined for this server.
 func (s *Server) SecuritySchemes() []*SecurityScheme {
-	return lo.Map(s.SecuritySchemePromises, func(item *lang.Promise[*SecurityScheme], _ int) *SecurityScheme {
+	r := lo.Map(s.SecuritySchemePromises, func(item *lang.Promise[*SecurityScheme], _ int) *SecurityScheme {
 		return item.T()
 	})
+	return r
 }
 
 // BoundChannels returns a list of channels that are bound to this server.
