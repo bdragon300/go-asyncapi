@@ -1,6 +1,6 @@
 {{- /* dot == render.ProtoChannel */}}
 
-{{define "code/proto/channel/newFunction"}}
+{{block "code/proto/channel/newFunction" .}}
 func New{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
     {{ if .Parameters.Len}}params {{ goIDUpper .Channel}}Parameters,{{end}}
     {{ if .IsPublisher}}publisher {{goPkgUtil .Protocol}}Publisher,{{end}}
@@ -18,7 +18,17 @@ func New{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
 }
 {{- end}}
 
-{{define "code/proto/channel/openFunction"}}
+
+{{block "code/proto/channel/serverInterface" .}}
+type {{ .Channel | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
+    Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goPkgExt "context"}}Context{{if .Parameters.Len}},{{goIDUpper .Channel}}Parameters{{end}}{{if .BoundOperations}},{{goPkgRun}}AnySecurityScheme{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
+    {{if .IsPublisher}}Producer() {{goPkgUtil .Protocol}}Producer{{end}}
+    {{if .IsSubscriber}}Consumer() {{goPkgUtil .Protocol}}Consumer{{end}}
+}
+{{- end}}
+
+
+{{block "code/proto/channel/openFunction" .}}
 func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
     ctx {{goPkgExt "context"}}Context,
     server {{.Channel | goIDUpper }}Server{{.Protocol | goIDUpper}},
@@ -78,7 +88,14 @@ func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
 }
 {{- end}}
 
-{{define "code/proto/channel/commonMethods"}}
+type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
+    address    {{goPkgRun}}ParamString
+    {{if .IsPublisher}}publisher  {{goPkgUtil .Protocol}}Publisher{{end}}
+    {{if .IsSubscriber}}subscriber {{goPkgUtil .Protocol}}Subscriber{{end}}
+}
+
+
+{{block "code/proto/channel/commonMethods" .}}
 func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Address() {{goPkgRun}}ParamString {
     return c.address
 }
@@ -104,7 +121,8 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Close() (err error) {
 }
 {{- end}}
 
-{{define "code/proto/channel/publishMethods"}}
+
+{{if .IsPublisher}}{{block "code/proto/channel/publishMethods" .}}
 type {{ .Channel | goIDUpper }}EnvelopeMarshaler{{.Protocol | goIDUpper}} interface {
     Marshal{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}(envelope {{goPkgUtil .Protocol}}EnvelopeWriter) error
 }
@@ -148,9 +166,10 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Publisher() {{goPkgUtil .Pro
 func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Publish(ctx {{goPkgExt "context"}}Context, envelopes ...{{goPkgUtil .Protocol}}EnvelopeWriter) error {
     return c.publisher.Send(ctx, envelopes...)
 }
-{{- end}}
+{{- end}}{{end}}
 
-{{define "code/proto/channel/subscribeMethods"}}
+
+{{if .IsSubscriber}}{{block "code/proto/channel/subscribeMethods" .}}
 type {{ .Channel | goIDUpper }}EnvelopeUnmarshaler{{.Protocol | goIDUpper}} interface {
     Unmarshal{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}(envelope {{goPkgUtil .Protocol}}EnvelopeReader) error
 }
@@ -194,26 +213,4 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Subscriber() {{goPkgUtil .Pr
 func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Subscribe(ctx {{goPkgExt "context"}}Context, cb func(envelope {{goPkgUtil .Protocol}}EnvelopeReader)) error {
     return c.subscriber.Receive(ctx, cb)
 }
-{{- end}}
-
-{{define "code/proto/channel/serverInterface"}}
-type {{ .Channel | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
-    Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goPkgExt "context"}}Context{{if .Parameters.Len}},{{goIDUpper .Channel}}Parameters{{end}}{{if .BoundOperations}},{{goPkgRun}}AnySecurityScheme{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
-    {{if .IsPublisher}}Producer() {{goPkgUtil .Protocol}}Producer{{end}}
-    {{if .IsSubscriber}}Consumer() {{goPkgUtil .Protocol}}Consumer{{end}}
-}
-{{- end}}
-
-{{template "code/proto/channel/newFunction" .}}
-{{template "code/proto/channel/serverInterface" .}}
-{{template "code/proto/channel/openFunction" .}}
-
-type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
-    address    {{goPkgRun}}ParamString
-    {{if .IsPublisher}}publisher  {{goPkgUtil .Protocol}}Publisher{{end}}
-    {{if .IsSubscriber}}subscriber {{goPkgUtil .Protocol}}Subscriber{{end}}
-}
-
-{{template "code/proto/channel/commonMethods" .}}
-{{if .IsPublisher}}{{template "code/proto/channel/publishMethods" .}}{{end}}
-{{if .IsSubscriber}}{{template "code/proto/channel/subscribeMethods" .}}{{end}}
+{{- end}}{{end}}

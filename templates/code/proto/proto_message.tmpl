@@ -1,9 +1,10 @@
 {{- /* dot == render.ProtoMessage */}}
 
-{{define "code/proto/message/commonMethods"}}
+{{block "code/proto/message/commonMethods" .}}
 {{- end}}
 
-{{define "code/proto/message/marshalMethods"}}
+
+{{if .IsPublisher}}{{block "code/proto/message/marshalMethods" .}}
 {{- range .BoundChannels}}
     {{- if and (isVisible .) .IsPublisher}}
         func (m *{{ $.OutType | goIDUpper }}) Marshal{{. | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope {{goPkgUtil $.Protocol}}EnvelopeWriter) error {
@@ -31,7 +32,15 @@ func (m *{{ .OutType | goIDUpper }}) MarshalEnvelope{{ .Protocol | goIDUpper }}(
 }
 
 func (m *{{ .OutType | goIDUpper }}) Marshal{{ .Protocol | goIDUpper }}(w {{goPkgExt "io"}}Writer) error {
-    {{- template "code/proto/message/encoder" .}}
+    {{- block "code/proto/message/encoder" .}}
+        // MIME type: {{.EffectiveContentType}}
+        {{- with tryTmpl (print "code/proto/mime/messageEncoder/" .EffectiveContentType) .}}
+            {{.}}
+        {{- else}}
+            {{/*TODO: print log warning about using the default encoder*/}}
+            {{template "code/proto/mime/messageEncoder/default" .}}
+        {{- end}}
+    {{- end}}
     return nil
 }
 
@@ -40,9 +49,10 @@ func (m *{{ .OutType | goIDUpper }}) Marshal{{ .Protocol | goIDUpper }}(w {{goPk
         return {{goPkg .Message}}{{goIDUpper .Message}}Bindings{}.{{.Protocol | goIDUpper}}()
     }
 {{- end}}
-{{- end}}
+{{- end}}{{end}}
 
-{{define "code/proto/message/unmarshalMethods"}}
+
+{{if .IsSubscriber}}{{block "code/proto/message/unmarshalMethods" .}}
 {{- range .BoundChannels}}
     {{- if and (isVisible .) .IsSubscriber}}
         func (m *{{ $.InType | goIDUpper }}) Unmarshal{{. | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope {{goPkgUtil $.Protocol}}EnvelopeReader) error {
@@ -72,7 +82,15 @@ func (m *{{ .InType | goIDUpper }}) UnmarshalEnvelope{{ .Protocol | goIDUpper }}
 }
 
 func (m *{{ .InType | goIDUpper }}) Unmarshal{{ .Protocol | goIDUpper }}(r {{goPkgExt "io"}}Reader) error {
-    {{- template "code/proto/message/decoder" .}}
+    {{- block "code/proto/message/decoder" .}}
+        // MIME type: {{.EffectiveContentType}}
+        {{- with tryTmpl (print "code/proto/mime/messageDecoder/" .EffectiveContentType) .}}
+            {{.}}
+        {{- else}}
+            {{/*TODO: print log warning about using the default decoder*/}}
+            {{template "code/proto/mime/messageDecoder/default" .}}
+        {{- end}}
+    {{- end}}
     return nil
 }
 
@@ -81,28 +99,7 @@ func (m *{{ .InType | goIDUpper }}) Unmarshal{{ .Protocol | goIDUpper }}(r {{goP
         return {{goPkg .Message}}{{goIDUpper .Message}}Bindings{}.{{.Protocol | goIDUpper}}()
     }
 {{- end}}
-{{- end}}
+{{- end}}{{end}}
 
-{{define "code/proto/message/encoder"}}
-    // MIME type: {{.EffectiveContentType}}
-{{- with tryTmpl (print "code/proto/mime/messageEncoder/" .EffectiveContentType) .}}
-    {{.}}
-{{- else}}
-    {{/*TODO: print log warning about using the default encoder*/}}
-    {{template "code/proto/mime/messageEncoder/default" .}}
-{{- end}}
-{{- end}}
 
-{{define "code/proto/message/decoder"}}
-    // MIME type: {{.EffectiveContentType}}
-{{- with tryTmpl (print "code/proto/mime/messageDecoder/" .EffectiveContentType) .}}
-    {{.}}
-{{- else}}
-    {{/*TODO: print log warning about using the default decoder*/}}
-    {{template "code/proto/mime/messageDecoder/default" .}}
-{{- end}}
-{{- end}}
 
-{{template "code/proto/message/commonMethods" .}}
-{{if .IsPublisher}}{{template "code/proto/message/marshalMethods" .}}{{end}}
-{{if .IsSubscriber}}{{template "code/proto/message/unmarshalMethods" .}}{{end}}

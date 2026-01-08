@@ -1,6 +1,6 @@
 {{- /* dot == render.Server */}}
 
-{{define "code/proto/server/newFunction"}}
+{{block "code/proto/server/newFunction" .}}
 func New{{ . | goIDUpper }}(producer {{goPkgUtil .Protocol}}Producer, consumer {{goPkgUtil .Protocol}}Consumer) *{{. | goIDUpper}} {
     return &{{. | goIDUpper}}{
         producer: producer,
@@ -9,14 +9,16 @@ func New{{ . | goIDUpper }}(producer {{goPkgUtil .Protocol}}Producer, consumer {
 }
 {{- end}}
 
-{{define "code/proto/server/securityInterface"}}
+
+{{- if .SecuritySchemes}}{{block "code/proto/server/securityInterface" .}}
 type {{. | goIDUpper}}Security interface {
     {{goPkgRun}}AnySecurityScheme
     {{. | goIDUpper }}Security()
 }
-{{- end}}
+{{- end}}{{- end}}
 
-{{define "code/proto/server/connectFunctions"}}
+
+{{- if impl .Protocol}}{{block "code/proto/server/connectFunctions" .}}
 {{- with impl .Protocol}}
 type {{ $ | goIDUpper }}Closable struct {
     {{$ | goIDUpper}}
@@ -106,41 +108,17 @@ func (c {{ $ | goIDUpper }}Closable) Close() error {
     {{- end}}
 {{- end}}
 {{- end}}
-{{- end}}
+{{- end}}{{end}}
 
-{{define "code/proto/server/channelOpenMethods"}}
-{{- range .BoundChannels}}
-    {{- if .ActiveProtocols | has $.Protocol }}
-        func (s {{$ | goIDUpper}}) Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
-            ctx {{goPkgExt "context"}}Context,
-            {{if .Parameters.Len}}params {{goPkg .}}{{goIDUpper .}}Parameters,{{end}}
-            {{if .BoundOperations}}security {{goPkgRun}}AnySecurityScheme,{{end}}
-        ) (*{{goPkg .}}{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}, error) {
-            return {{goPkg .}}Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
-                ctx, s, {{if .Parameters.Len}}params,{{end}}{{if .BoundOperations}}nil, security,{{end}}
-            )
-        }
-    {{- end}}
-{{- end}}
-{{- end}}
 
-{{define "code/proto/server/operationOpenMethods"}}
-{{- range .BoundOperations}}
-    {{- if .ActiveProtocols | has $.Protocol }}
-        func (s {{$ | goIDUpper}}) Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
-            ctx {{goPkgExt "context"}}Context,
-            {{if .Channel.Parameters.Len}}params {{goPkg .Channel}}{{goIDUpper .Channel}}Parameters,{{end}}
-            {{if .SecuritySchemes}}security {{goPkg .}}{{. | goIDUpper}}Security,{{end}}
-        ) (*{{goPkg .}}{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}, error) {
-            return {{goPkg .}}Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
-                ctx, s, {{if .Channel.Parameters.Len}}params, {{end}}{{if .SecuritySchemes}}security, {{end}}
-            )
-        }
-    {{- end}}
-{{- end}}
-{{- end}}
+{{- /* TODO: consider IsPublisher and IsSubscriber}} */}}
+type {{. | goIDUpper}} struct {
+    producer {{goPkgUtil .Protocol}}Producer
+    consumer {{goPkgUtil .Protocol}}Consumer
+}
 
-{{define "code/proto/server/commonMethods" }}
+
+{{block "code/proto/server/commonMethods" .}}
 func (s {{. | goIDUpper}}) Name() string {
     return "{{ . | goIDUpper }}"
 }
@@ -158,23 +136,38 @@ func (s {{. | goIDUpper}}) Bindings() {{goPkgUtil .Protocol}}ServerBindings {
     return {{goPkg $}}{{goIDUpper $}}Bindings{}.{{.Protocol | goIDUpper}}()
 }
 {{- end}}
-
 {{- end}}
 
-{{template "code/proto/server/newFunction" .}}
-{{- if .SecuritySchemes}}
-    {{ template "code/proto/server/securityInterface" . }}
+
+{{block "code/proto/server/channelOpenMethods" .}}
+{{- range .BoundChannels}}
+    {{- if .ActiveProtocols | has $.Protocol }}
+        func (s {{$ | goIDUpper}}) Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
+            ctx {{goPkgExt "context"}}Context,
+            {{if .Parameters.Len}}params {{goPkg .}}{{goIDUpper .}}Parameters,{{end}}
+            {{if .BoundOperations}}security {{goPkgRun}}AnySecurityScheme,{{end}}
+        ) (*{{goPkg .}}{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}, error) {
+            return {{goPkg .}}Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
+                ctx, s, {{if .Parameters.Len}}params,{{end}}{{if .BoundOperations}}nil, security,{{end}}
+            )
+        }
+    {{- end}}
 {{- end}}
-{{- if impl .Protocol}}
-    {{template "code/proto/server/connectFunctions" .}}
 {{- end}}
 
-{{- /* TODO: consider IsPublisher and IsSubscriber}} */}}
-type {{. | goIDUpper}} struct {
-    producer {{goPkgUtil .Protocol}}Producer
-    consumer {{goPkgUtil .Protocol}}Consumer
-}
 
-{{template "code/proto/server/commonMethods" .}}
-{{template "code/proto/server/channelOpenMethods" .}}
-{{template "code/proto/server/operationOpenMethods" .}}
+{{block "code/proto/server/operationOpenMethods" .}}
+{{- range .BoundOperations}}
+    {{- if .ActiveProtocols | has $.Protocol }}
+        func (s {{$ | goIDUpper}}) Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
+            ctx {{goPkgExt "context"}}Context,
+            {{if .Channel.Parameters.Len}}params {{goPkg .Channel}}{{goIDUpper .Channel}}Parameters,{{end}}
+            {{if .SecuritySchemes}}security {{goPkg .}}{{. | goIDUpper}}Security,{{end}}
+        ) (*{{goPkg .}}{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}, error) {
+            return {{goPkg .}}Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
+                ctx, s, {{if .Channel.Parameters.Len}}params, {{end}}{{if .SecuritySchemes}}security, {{end}}
+            )
+        }
+    {{- end}}
+{{- end}}
+{{- end}}

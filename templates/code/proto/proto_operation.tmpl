@@ -1,6 +1,6 @@
 {{- /* dot == render.ProtoOperation */}}
 
-{{define "code/proto/operation/serverInterface"}}
+{{block "code/proto/operation/serverInterface" .}}
     type {{ . | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
         Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goPkgExt "context"}}Context{{if .Channel.Parameters.Len}},{{goPkg .Channel}}{{goIDUpper .Channel}}Parameters{{end}}{{if .Channel.BoundOperations}},{{goPkgRun}}AnySecurityScheme{{end}}) (*{{goPkg .Channel}}{{goIDUpper .Channel}}{{goIDUpper .Protocol}}, error)
         Open{{. | goIDUpper}}{{.Protocol | goIDUpper}}({{goPkgExt "context"}}Context{{if .Channel.Parameters.Len}}, {{goPkg .Channel}}{{goIDUpper .Channel}}Parameters{{end}}{{if .SecuritySchemes}}, {{. | goIDUpper}}Security,{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
@@ -9,14 +9,16 @@
     }
 {{- end}}
 
-{{define "code/proto/operation/securityInterface"}}
+
+{{if .SecuritySchemes}}{{block "code/proto/operation/securityInterface" .}}
 type {{. | goIDUpper}}Security interface {
     {{goPkgRun}}AnySecurityScheme
     {{. | goIDUpper }}Security()
 }
-{{- end}}
+{{- end}}{{- end}}
 
-{{define "code/proto/operation/openFunction"}}
+
+{{block "code/proto/operation/openFunction" .}}
 func Open{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
     ctx {{goPkgExt "context"}}Context,
     server {{. | goIDUpper }}Server{{.Protocol | goIDUpper}},
@@ -43,7 +45,27 @@ func Open{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
 }
 {{- end}}
 
-{{define "code/proto/operation/commonMethods"}}
+type {{ . | goIDUpper }}Channel{{.Protocol | goIDUpper}} interface {
+    Close() error
+    {{range .BoundMessages}}
+        {{- if not (isVisible .) }}{{continue}}{{end}}
+        {{if .IsPublisher}}
+            Seal{{goIDUpper .}}({{goPkgUtil $.Protocol}}EnvelopeWriter, {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
+            Publish{{goIDUpper .}}({{goPkgExt "context"}}Context, {{if not (impl $.Protocol)}}{{goPkgUtil $.Protocol}}EnvelopeWriter,{{end}} {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
+        {{- end}}
+        {{if .IsSubscriber}}
+            Unseal{{goIDUpper .}}({{goPkgUtil $.Protocol}}EnvelopeReader, {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeUnmarshaler{{$.Protocol | goIDUpper}}) error
+            Subscribe{{goIDUpper .}}({{goPkgExt "context"}}Context, func({{ goPkg .InType}}{{ goIDUpper .}}Receiver)) error
+        {{- end}}
+    {{- end}}
+}
+
+type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
+    Channel {{ . | goIDUpper }}Channel{{.Protocol | goIDUpper}}
+}
+
+
+{{block "code/proto/operation/commonMethods" .}}
 func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Close() error {
     return c.Channel.Close()
 }
@@ -61,7 +83,8 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Bindings() {{goPkgUtil .Prot
 {{- end}}
 {{- end}}
 
-{{define "code/proto/operation/publishMethods"}}
+
+{{- if .IsPublisher}}{{block "code/proto/operation/publishMethods" .}}
 {{- range .BoundMessages}}
     {{- if not (isVisible .) }}{{continue}}{{end}}
     func (o {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}) Seal{{. | goIDUpper}}(
@@ -79,10 +102,10 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Bindings() {{goPkgUtil .Prot
         return o.Channel.Publish{{. | goIDUpper}}(ctx, {{if not (impl $.Protocol)}}envelope,{{end}} message)
     }
 {{- end}}
-{{- end}}
+{{- end}}{{- end}}
 
 
-{{define "code/proto/operation/subscribeMethods"}}
+{{- if .IsSubscriber}}{{block "code/proto/operation/subscribeMethods" .}}
 {{- range .BoundMessages}}
     {{- if not (isVisible .) }}{{continue}}{{end}}
     func (o {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}) Unseal{{. | goIDUpper}}(
@@ -99,89 +122,8 @@ func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Bindings() {{goPkgUtil .Prot
         return o.Channel.Subscribe{{. | goIDUpper}}(ctx, cb)
     }
 {{- end}}
-{{- end}}
+{{- end}}{{- end}}
 
-{{define "code/proto/operation/operationReply/commonMethods"}}
-{{- end}}
-
-{{define "code/proto/operation/operationReply/publishMethods"}}
-{{- range .BoundReplyMessages }}
-    {{- $replyCh := $.OperationReply.Channel }}
-    {{- if not (isVisible .) }}{{continue}}{{end}}
-    func (o {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply) Seal{{. | goIDUpper}}(
-        envelope {{goPkgUtil $.Protocol}}EnvelopeWriter,
-        message {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}},
-    ) error {
-        return o.Channel.Seal{{. | goIDUpper}}(envelope, message)
-    }
-
-    func (o {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply) Reply{{. | goIDUpper}}(
-        ctx {{goPkgExt "context"}}Context,
-        {{if not (impl $.Protocol)}}envelope {{goPkgUtil $.Protocol}}EnvelopeWriter,{{end}}
-        {{if $.OperationReply.OperationReplyAddress}}
-            {{- $ctx := dict "SourceVarName" "o" "RuntimeExpression" $.OperationReply.OperationReplyAddress.BaseRuntimeExpression "TargetType" .OutType}}
-            message interface{ {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}; SetReplyAddress{{ $ | goIDUpper }}(a {{template "code/runtimeExpression/varType" $ctx}}) },
-            replyAddress {{template "code/runtimeExpression/varType" $ctx}},
-        {{- else }}
-            message {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}},
-        {{- end}}
-    ) error {
-        {{- if $.OperationReply.OperationReplyAddress}}
-            message.SetReplyAddress{{$ | goIDUpper}}(replyAddress)
-        {{- end}}
-        return o.Channel.Publish{{. | goIDUpper}}(ctx, {{if not (impl $.Protocol)}}envelope, {{end}}message)
-    }
-{{- end}}
-{{- end}}
-
-{{define "code/proto/operation/operationReply/subscribeMethods"}}
-{{- range .BoundReplyMessages }}
-    {{- if not (isVisible .) }}{{continue}}{{end}}
-    func (o {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply) Unseal{{. | goIDUpper}}(
-        envelope {{goPkgUtil $.Protocol}}EnvelopeReader,
-        message {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeUnmarshaler{{$.Protocol | goIDUpper}},
-    ) error {
-        return o.Channel.Unseal{{. | goIDUpper}}(envelope, message)
-    }
-
-    func (o {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply) Subscribe{{. | goIDUpper}}(
-        ctx {{goPkgExt "context"}}Context,
-        cb func(message {{ goPkg .InType}}{{ goIDUpper .}}Receiver),
-    ) (err error) {
-        return o.Channel.Subscribe{{. | goIDUpper}}(ctx, cb)
-    }
-{{- end}}
-{{- end}}
-
-{{template "code/proto/operation/serverInterface" .}}
-{{template "code/proto/operation/openFunction" .}}
-
-type {{ . | goIDUpper }}Channel{{.Protocol | goIDUpper}} interface {
-    Close() error
-{{range .BoundMessages}}
-    {{- if not (isVisible .) }}{{continue}}{{end}}
-    {{if .IsPublisher}}
-        Seal{{goIDUpper .}}({{goPkgUtil $.Protocol}}EnvelopeWriter, {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
-        Publish{{goIDUpper .}}({{goPkgExt "context"}}Context, {{if not (impl $.Protocol)}}{{goPkgUtil $.Protocol}}EnvelopeWriter,{{end}} {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
-    {{- end}}
-    {{if .IsSubscriber}}
-        Unseal{{goIDUpper .}}({{goPkgUtil $.Protocol}}EnvelopeReader, {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeUnmarshaler{{$.Protocol | goIDUpper}}) error
-        Subscribe{{goIDUpper .}}({{goPkgExt "context"}}Context, func({{ goPkg .InType}}{{ goIDUpper .}}Receiver)) error
-    {{- end}}
-{{- end}}
-}
-
-type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
-    Channel {{ . | goIDUpper }}Channel{{.Protocol | goIDUpper}}
-}
-
-{{template "code/proto/operation/commonMethods" .}}
-{{- if .IsPublisher}}
-    {{template "code/proto/operation/publishMethods" .}}
-{{- end}}
-{{- if .IsSubscriber}}
-    {{template "code/proto/operation/subscribeMethods" .}}
-{{- end}}
 
 {{- if or .IsReplyPublisher .IsReplySubscriber}}
     {{- $replyCh := $.OperationReply.Channel }}
@@ -190,27 +132,72 @@ type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
 
     type {{ . | goIDUpper }}ReplyChannel{{.Protocol | goIDUpper}} interface {
         Close() error
-    {{range .BoundReplyMessages}}
-        {{- if not (isVisible .) }}{{continue}}{{end}}
-        {{if $.IsReplyPublisher}}
-            Seal{{goIDUpper .}}({{goPkgUtil $.Protocol}}EnvelopeWriter, {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
-            Publish{{goIDUpper .}}({{goPkgExt "context"}}Context, {{if not (impl $.Protocol)}}{{goPkgUtil $.Protocol}}EnvelopeWriter,{{end}} {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
+        {{range .BoundReplyMessages}}
+            {{- if not (isVisible .) }}{{continue}}{{end}}
+            {{if $.IsReplyPublisher}}
+                Seal{{goIDUpper .}}({{goPkgUtil $.Protocol}}EnvelopeWriter, {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
+                Publish{{goIDUpper .}}({{goPkgExt "context"}}Context, {{if not (impl $.Protocol)}}{{goPkgUtil $.Protocol}}EnvelopeWriter,{{end}} {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
+            {{- end}}
+            {{if $.IsReplySubscriber}}
+                Unseal{{goIDUpper .}}({{goPkgUtil $.Protocol}}EnvelopeReader, {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeUnmarshaler{{$.Protocol | goIDUpper}}) error
+                Subscribe{{goIDUpper .}}({{goPkgExt "context"}}Context, func({{ goPkg .InType}}{{ goIDUpper .}}Receiver)) error
+            {{- end}}
         {{- end}}
-        {{if $.IsReplySubscriber}}
-            Unseal{{goIDUpper .}}({{goPkgUtil $.Protocol}}EnvelopeReader, {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeUnmarshaler{{$.Protocol | goIDUpper}}) error
-            Subscribe{{goIDUpper .}}({{goPkgExt "context"}}Context, func({{ goPkg .InType}}{{ goIDUpper .}}Receiver)) error
-        {{- end}}
-    {{- end}}
     }
 
     type {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply struct {
         Channel {{ . | goIDUpper }}ReplyChannel{{.Protocol | goIDUpper}}
     }
-    {{- if .IsReplyPublisher}}
-        {{template "code/proto/operation/operationReply/publishMethods" .}}
+
+    {{- if .IsReplyPublisher}}{{block "code/proto/operation/operationReply/publishMethods" .}}
+        {{- range .BoundReplyMessages }}
+            {{- $replyCh := $.OperationReply.Channel }}
+            {{- if not (isVisible .) }}{{continue}}{{end}}
+            func (o {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply) Seal{{. | goIDUpper}}(
+                envelope {{goPkgUtil $.Protocol}}EnvelopeWriter,
+                message {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}},
+            ) error {
+                return o.Channel.Seal{{. | goIDUpper}}(envelope, message)
+            }
+
+            func (o {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply) Reply{{. | goIDUpper}}(
+                ctx {{goPkgExt "context"}}Context,
+                {{if not (impl $.Protocol)}}envelope {{goPkgUtil $.Protocol}}EnvelopeWriter,{{end}}
+                {{if $.OperationReply.OperationReplyAddress}}
+                    {{- $ctx := dict "SourceVarName" "o" "RuntimeExpression" $.OperationReply.OperationReplyAddress.BaseRuntimeExpression "TargetType" .OutType}}
+                    message interface{ {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}; SetReplyAddress{{ $ | goIDUpper }}(a {{template "code/runtimeExpression/varType" $ctx}}) },
+                    replyAddress {{template "code/runtimeExpression/varType" $ctx}},
+                {{- else }}
+                    message {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}},
+                {{- end}}
+            ) error {
+                {{- if $.OperationReply.OperationReplyAddress}}
+                    message.SetReplyAddress{{$ | goIDUpper}}(replyAddress)
+                {{- end}}
+                return o.Channel.Publish{{. | goIDUpper}}(ctx, {{if not (impl $.Protocol)}}envelope, {{end}}message)
+            }
+        {{- end}}
+    {{- end}}{{end}}
+
+    {{- if .IsReplySubscriber}}{{block "code/proto/operation/operationReply/subscribeMethods" .}}
+        {{- range .BoundReplyMessages }}
+            {{- if not (isVisible .) }}{{continue}}{{end}}
+            func (o {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply) Unseal{{. | goIDUpper}}(
+                envelope {{goPkgUtil $.Protocol}}EnvelopeReader,
+                message {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeUnmarshaler{{$.Protocol | goIDUpper}},
+            ) error {
+                return o.Channel.Unseal{{. | goIDUpper}}(envelope, message)
+            }
+
+            func (o {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply) Subscribe{{. | goIDUpper}}(
+                ctx {{goPkgExt "context"}}Context,
+                cb func(message {{ goPkg .InType}}{{ goIDUpper .}}Receiver),
+            ) (err error) {
+                return o.Channel.Subscribe{{. | goIDUpper}}(ctx, cb)
+            }
+        {{- end}}
+    {{- end}}{{end}}
+
+    {{block "code/proto/operation/operationReply/commonMethods" .}}
     {{- end}}
-    {{- if .IsReplySubscriber}}
-        {{template "code/proto/operation/operationReply/subscribeMethods" .}}
-    {{- end}}
-    {{template "code/proto/operation/operationReply/commonMethods" .}}
 {{- end}}
