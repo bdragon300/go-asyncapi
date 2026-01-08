@@ -1,0 +1,219 @@
+{{- /* dot:
+    .Object == render.Channel or render.Operation;
+    .Server == render.Server
+    .Kind == "channel" or "operation" or "operationReply"
+    */}}
+{{define "client/pubsub/proto/serverPubSub"}}
+{{- $isPublisher := .Object.IsPublisher}}
+{{- $isSubscriber := .Object.IsSubscriber}}
+
+{{- if eq .Object.Kind "operation"}}
+    {{- $isPublisher = .Object.HasPublishingCode}}
+    {{- $isSubscriber = .Object.HasSubscribingCode}}
+{{- end}}
+
+{{- $impl := impl $.Server.Protocol}}
+serverURL := args.{{$.Server | goIDUpper}}Cmd.URL
+if serverURL == nil {
+    u, err := {{goPkg $.Server}}{{goIDUpper $.Server}}URL(
+        {{range $_, $v := $.Server.Variables.Entries}}args.{{goIDUpper $.Server}}Cmd.{{goIDUpper $v}},{{end}}
+    )
+    if err != nil {
+        return {{goPkgExt "fmt"}}Errorf("url: %w", err)
+    }
+    serverURL = u
+}
+if opts.proxyHost != "" {
+    if port := serverURL.Port(); port != "" {
+        serverURL.Host = {{goPkgExt "net"}}JoinHostPort(opts.proxyHost, port)
+    } else {
+        serverURL.Host = opts.proxyHost
+    }
+}
+{{goPkgExt "log/slog"}}Debug("Server URL", "value", serverURL)
+
+{{goPkgExt "log/slog"}}Debug("Using implementation {{$impl.Name | toQuotable}}")
+{{- with tryTmpl (print "client/channeloperation/" $.Server.Protocol "/" $impl.Name "/setup") $}}
+    // Implementation-specific code
+    {{.}}
+    // End of implementation-specific code
+{{- end}}
+
+{{goPkgExt "log/slog"}}Debug("Connecting to server", "name", {{$.Server.Name | goLit}}, "url", serverURL)
+if opts.publish {
+    {{- if and $.Server.IsPublisher $isPublisher}}
+        {{if $.Server.SecuritySchemes}}var serverSecurity {{goPkg $.Server}}{{goIDUpper $.Server}}Security{{end}}
+        {{- range $scheme := $.Server.SecuritySchemes}}
+            {{- $ctx := dict "Server" $.Server "SecurityScheme" $scheme}}
+            {{- with tryTmpl (print "client/security/" $scheme.SchemeType "/getCredentials") $ctx}}
+                // Security scheme: {{$scheme.SchemeType}}
+                {{.}}
+            {{- end}}
+        {{- end}}
+        {{- with tryTmpl (print "client/channeloperation/" $.Server.Protocol "/" $impl.Name "/producer/connect") $}}
+            // Implementation-specific code
+            {{.}}
+            // End of implementation-specific code
+        {{- else}}
+            server, err := {{goPkg $.Server}}Connect{{$.Server | goIDUpper}}Producer(ctx, serverURL{{if $.Server.SecuritySchemes}}, securityScheme{{end}})
+            if err != nil {
+                return {{goPkgExt "fmt"}}Errorf("connect server %s: %w", serverURL, err)
+            }
+            defer server.Close()
+        {{end}}
+
+        {{template "client/pubsub/proto/serverPubSub/open" $}}
+
+        {{goPkgExt "log/slog"}}Debug("Reading data to publish to {{$.Kind}}...")
+        // If separator is empty, then don't use scanner and just read everything until EOF
+        for b := range readStreamWithContext(ctx, opts.stream, opts.payloadSeparator) {
+            envelope := {{goPkgImpl $.Server.Protocol}}NewEnvelopeOut(nil)
+            n, err := envelope.Write(b)
+            if err != nil {
+                return {{goPkgExt "fmt"}}Errorf("write envelope: %w", err)
+            }
+            {{goPkgExt "log/slog"}}Debug("Read message payload", "bytes", n)
+            parsedHeaders := parseHeaders(opts.publishHeaders)
+            envelope.SetHeaders(parsedHeaders)
+            {{ with tryTmpl (print "client/" $.Kind "/" $.Server.Protocol "/publish/prepareEnvelope") $.Object}}
+                // Protocol-specific code
+                {{.}}
+                // End of protocol-specific code
+            {{end}}
+
+            {{- with tryTmpl (print "client/message/" $.Server.Protocol "/" $impl.Name "/publish") $}}
+                // Implementation-specific code
+                {{.}}
+                // End of implementation-specific code
+            {{- end}}
+
+            if opts.debug {
+                {{goPkgExt "log/slog"}}Debug("Publishing message", "bytes", n, "payload", cutPayload(b, MaxLogPayloadSize), "headers", parsedHeaders)
+            }
+            if err := channel.Publish(ctx, envelope); err != nil {
+                return {{goPkgExt "fmt"}}Errorf("publish: %w", err)
+            }
+            if !opts.multipleMessages {
+                break
+            }
+        }
+        _ = channel // avoid unused variable
+    {{- else}}
+        return {{goPkgExt "fmt"}}Errorf("publishing for {{$.Kind}} {{$.Server.Name | toQuotable}} is not supported in specification or disabled")
+    {{- end}}
+} else {
+    {{- if and $.Server.IsSubscriber $isSubscriber}}
+        {{if $.Server.SecuritySchemes}}var serverSecurity {{goPkg $.Server}}{{goIDUpper $.Server}}Security{{end}}
+        {{- range $scheme := $.Server.SecuritySchemes}}
+            {{- $ctx := dict "Server" $.Server "SecurityScheme" $scheme}}
+            {{- with tryTmpl (print "client/security/" $scheme.SchemeType "/getCredentials") $ctx}}
+                // Security scheme: {{$scheme.SchemeType}}
+                {{.}}
+            {{- end}}
+        {{- end}}
+        {{- with tryTmpl (print "client/channeloperation/" $.Server.Protocol "/" $impl.Name "/consumer/connect") $}}
+            // Implementation-specific code
+            {{.}}
+            // End of implementation-specific code
+        {{- else}}
+            server, err := {{goPkg $.Server}}Connect{{goIDUpper $.Server}}Consumer(ctx, serverURL{{if $.Server.SecuritySchemes}}, securityScheme{{end}})
+            if err != nil {
+                return {{goPkgExt "fmt"}}Errorf("connect server %s: %w", serverURL, err)
+            }
+            defer server.Close()
+        {{- end}}
+
+        {{template "client/pubsub/proto/serverPubSub/open" $}}
+
+        {{goPkgExt "log/slog"}}Debug("Subscribing to {{$.Kind}}...", "separator", opts.payloadSeparator)
+        subCtx, cancel := {{goPkgExt "context"}}WithCancelCause(ctx)
+        defer cancel(ErrExited)
+        payloadSeparator := []byte(opts.payloadSeparator)
+        err = channel.Subscribe(subCtx, func(e {{goPkgUtil $.Server.Protocol}}EnvelopeReader) {
+            b, err := {{goPkgExt "io"}}ReadAll(e)
+            if err != nil {
+                cancel({{goPkgExt "fmt"}}Errorf("read: %w", err))
+                return
+            }
+            if opts.debug {
+                var p string
+                if len(b) > MaxLogPayloadSize {
+                    p = {{goPkgExt "strings"}}ToValidUTF8(string(b[:MaxLogPayloadSize]), "") + "..."
+                } else {
+                    p = {{goPkgExt "strings"}}ToValidUTF8(string(b), "")
+                }
+                {{goPkgExt "log/slog"}}Debug("Received message", "bytes", len(b), "payload", p, "headers", e.Headers())
+            }
+            if _, err = opts.stream.Write(b); err != nil {
+                cancel({{goPkgExt "fmt"}}Errorf("write to stream: %w", err))
+                return
+            }
+            if _, err = opts.stream.Write(payloadSeparator); err != nil {
+                cancel({{goPkgExt "fmt"}}Errorf("write payload separator to stream: %w", err))
+                return
+            }
+            if !opts.multipleMessages {
+                cancel(ErrExited)
+            }
+        })
+        ctxCause := {{goPkgExt "context"}}Cause(subCtx)
+        switch {
+        case {{goPkgExt "errors"}}Is(ctxCause, ErrExited):
+            return nil
+        case ctxCause != nil:
+            return {{goPkgExt "fmt"}}Errorf("message processing: %w", ctxCause)
+        case err != nil:
+            return {{goPkgExt "fmt"}}Errorf("subscribe: %w", err)
+        }
+        _ = channel // avoid unused variable
+    {{- else}}
+        return {{goPkgExt "fmt"}}Errorf("subscribing for {{$.Kind}} {{$.Server.Name | toQuotable}} is not supported in specification or disabled")
+    {{- end}}
+}
+{{- end}}
+
+{{define "client/pubsub/proto/serverPubSub/open"}}
+{{- with $.Object}}
+    {{- if eq $.Object.Kind "channel"}}
+        {{goPkgExt "log/slog"}}Debug("Opening channel", "name", {{.Name | goLit}}{{if .Parameters.Len}}, "parameters", channelParams{{end}})
+        object, err := server.Open{{goIDUpper .}}{{goIDUpper $.Server.Protocol}}(
+            ctx,
+            {{if .Parameters.Len}}channelParams,{{end}}
+            {{if .BoundOperations}}nil,{{end}}
+        )
+        channel := object
+    {{- else if eq .Kind "operation" }}
+        {{if .SecuritySchemes}}var operationSecurity {{goPkg $.Object}}{{goIDUpper $.Object}}Security{{end}}
+        {{- range $scheme := .SecuritySchemes}}
+            {{- $ctx := dict "Server" $.Server "SecurityScheme" $scheme}}
+            {{- with tryTmpl (print "client/security/" ($scheme.SchemeType) "/getCredentials") $ctx}}
+                // Security scheme: {{$scheme.SchemeType}}
+                {{.}}
+            {{- end}}
+        {{- end}}
+        {{- if eq $.Kind "operation" }}
+            {{goPkgExt "log/slog"}}Debug("Opening operation", "name", {{.Name | goLit}}{{if .Channel.Parameters.Len}}, "parameters", channelParams{{end}})
+            object, err := server.Open{{goIDUpper .}}{{goIDUpper $.Server.Protocol}}(
+                ctx,
+                {{if .Channel.Parameters.Len}}channelParams,{{end}}
+                {{if .SecuritySchemes}}operationSecurity,{{end}}
+            )
+            channel := object.Channel.({{goPkg .Channel}}{{goIDUpper .Channel}}{{goIDUpper $.Server.Protocol}})
+        {{- else if eq $.Kind "operationReply" }}
+            {{- with $channel := .BoundOperationReplyChannel }}
+                {{goPkgExt "log/slog"}}Debug("Opening operation reply", "name", {{.Name | goLit}}{{if $channel.Parameters.Len}}, "parameters", channelParams{{end}})
+                object, err := server.Open{{goIDUpper $channel}}{{goIDUpper $.Server.Protocol}}(
+                    ctx,
+                    {{if $channel.Parameters.Len}}channelParams,{{end}}
+                    {{if $channel.BoundOperations}}{{if $.Object.SecuritySchemes}}operationSecurity{{else}}nil{{end}},{{end}}
+                )
+                channel := object
+            {{- end}}
+        {{- end}}
+    {{- end}}
+    if err != nil {
+        return {{goPkgExt "fmt"}}Errorf("open {{.Kind}}: %w", err)
+    }
+{{- end}}
+defer object.Close()
+{{- end}}

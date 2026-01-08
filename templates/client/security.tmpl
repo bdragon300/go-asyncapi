@@ -1,0 +1,95 @@
+{{define "client/security/userPassword/cmdFlags"}}
+UserPasswordUser     *string `arg:"--userpassword-user,env:SECURITY_USERPASSWORD_USER" help:"Security credentials: userPassword: user"`
+UserPasswordPassword *string `arg:"--userpassword-password,env:SECURITY_USERPASSWORD_PASSWORD" help:"Security credentials: userPassword: password"`
+{{- end}}
+
+{{define "client/security/userPassword/server/getCredentials"}}
+{{- /* dot:
+    .Server == render.Server
+    .SecurityScheme == render.SecurityScheme
+    */}}
+if args.{{goIDUpper $.Server}}Cmd.UserPasswordUser != nil || args.{{goIDUpper $.Server}}Cmd.UserPasswordPassword != nil {
+    serverSecurity = {{goPkg $.SecurityScheme}}New{{goIDUpper $.SecurityScheme}}Security(func() (string, string) {
+        var user, pass string
+        if args.{{goIDUpper $.Server}}Cmd.UserPasswordUser != nil {
+            user = *args.{{goIDUpper $.Server}}Cmd.UserPasswordUser
+        }
+        if args.{{goIDUpper $.Server}}Cmd.UserPasswordPassword != nil {
+            pass = *args.{{goIDUpper $.Server}}Cmd.UserPasswordPassword
+        }
+        return user, pass
+    })
+}
+{{- end}}
+
+{{define "client/security/userPassword/operation/getCredentials"}}
+{{- /* dot:
+    .Server == render.Server
+    .SecurityScheme == render.SecurityScheme
+    */}}
+if args.UserPasswordUser != nil || args.UserPasswordPassword != nil {
+    operationSecurity = {{goPkg $.SecurityScheme}}New{{goIDUpper $.SecurityScheme}}Security(func() (string, string) {
+        var user, pass string
+        if args.UserPasswordUser != nil {
+            user = *args.UserPasswordUser
+        }
+        if args.UserPasswordPassword != nil {
+            pass = *args.UserPasswordPassword
+        }
+        return user, pass
+    })
+}
+{{- end}}
+
+{{define "client/security/apiKey/cmdFlags"}}
+APIKeyValue    *string `arg:"--apikey,env:SECURITY_APIKEY" help:"Security credentials: apiKey"`
+APIKeyUserPass bool    `arg:"--apikey-userpass" help:"Pass the api key as user or password (depending on 'in' flag) instead of passing it as a standalone value"`
+{{- end}}
+
+{{define "client/security/apiKey/server/getCredentials"}}
+{{- /* dot:
+    .Server == render.Server
+    .SecurityScheme == render.SecurityScheme
+    */}}
+if args.{{goIDUpper $.Server}}Cmd.APIKeyValue != nil {
+    if args.{{goIDUpper $.Server}}Cmd.APIKeyUserPass
+        serverSecurity = {{goPkg $.SecurityScheme}}New{{goIDUpper $.SecurityScheme}}SecurityUserOrPassword(func() string {
+            if args.{{goIDUpper $.Server}}Cmd.APIKeyValue != nil {
+                return *args.{{goIDUpper $.Server}}Cmd.APIKeyValue
+            }
+            return ""
+        })
+    } else {
+        serverSecurity = {{goPkg $.SecurityScheme}}New{{goIDUpper $.SecurityScheme}}Security(func() string {
+            if args.{{goIDUpper $.Server}}Cmd.APIKeyValue != nil {
+                return *args.{{goIDUpper $.Server}}Cmd.APIKeyValue
+            }
+            return ""
+        })
+    }
+}
+{{- end}}
+
+{{define "client/security/apiKey/operation/getCredentials"}}
+{{- /* dot:
+    .Server == render.Server
+    .SecurityScheme == render.SecurityScheme
+    */}}
+if args.APIKeyValue != nil {
+    if args.APIKeyUserPass
+        operationSecurity = {{goPkg $.SecurityScheme}}New{{goIDUpper $.SecurityScheme}}SecurityUserOrPassword(func() string {
+            if args.APIKeyValue != nil {
+                return *args.APIKeyValue
+            }
+            return ""
+        })
+    } else {
+        operationSecurity = {{goPkg $.SecurityScheme}}New{{goIDUpper $.SecurityScheme}}Security(func() string {
+            if args.APIKeyValue != nil {
+                return *args.APIKeyValue
+            }
+            return ""
+        })
+    }
+}
+{{- end}}

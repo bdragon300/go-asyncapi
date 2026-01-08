@@ -31,9 +31,10 @@ type MainCli struct {
 
 type DirectionCliCmd struct {
 {{- range .Objects}}
-	{{- if and (eq .Kind "channel") (isVisible .)}}
+    {{- if not (isVisible .)}}{{continue}}{{end}}
+	{{- if eq .Kind "channel"}}
 		{{ . | goIDUpper }}Cmd *{{ . | goIDUpper }}Cmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Channel: {{.Name | toQuotable}}"`
-	{{- else if and (eq .Kind "operation") (isVisible .)}}
+	{{- else if eq .Kind "operation"}}
 		{{ . | goIDUpper }}Cmd *{{ . | goIDUpper }}Cmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Operation: {{.Name | toQuotable}}"`
         {{- if .OperationReply}}
             {{. | goIDUpper}}ReplyCmd *{{. | goIDUpper}}ReplyCmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}-reply" help:"OperationReply: {{.Name | toQuotable}}"`
@@ -43,10 +44,17 @@ type DirectionCliCmd struct {
 }
 
 {{- range .Objects}}
-	{{- if and (eq .Kind "server") (isVisible .)}}
+    {{- if not (isVisible .)}}{{continue}}{{end}}
+	{{- if eq .Kind "server"}}
         {{- if not (impl .Protocol)}}{{continue}}{{end}}
 		type {{. | goIDUpper}}CliCmd struct {
 			{{if tryTmpl (print "client/server/" (.Protocol) "/cliMixin") .}}{{.Protocol | goIDUpper}}CliMixin{{end}}
+            {{- range $scheme := .SecuritySchemes}}
+                {{- with tryTmpl (print "client/security/" ($scheme.SchemeType) "/cmdFlags") nil}}
+                    // Security scheme: {{$scheme.SchemeType}}
+                    {{.}}
+                {{- end}}
+            {{- end}}
 
 			// Server variables
 			{{- range $_, $v := .Variables.Entries}}
@@ -147,10 +155,11 @@ func main() {
 	var err error
 	switch {
 	{{- range .Objects}}
-		{{- if and (eq .Kind "channel") (isVisible .)}}
+        {{- if not (isVisible .)}}{{continue}}{{end}}
+		{{- if eq .Kind "channel"}}
 			case dirCmd.{{. | goIDUpper}}Cmd != nil:
 				err = channel{{. | goIDUpper}}(ctx, dirCmd.{{. | goIDUpper}}Cmd, chanOptions)
-		{{- else if and (eq .Kind "operation") (isVisible .)}}
+		{{- else if eq .Kind "operation"}}
 			case dirCmd.{{. | goIDUpper}}Cmd != nil:
 				err = operation{{. | goIDUpper}}(ctx, dirCmd.{{. | goIDUpper}}Cmd, chanOptions)
             {{- if .OperationReply}}
@@ -175,9 +184,10 @@ func main() {
 }
 
 {{- range .Objects}}
-	{{- if and (eq .Kind "channel") (isVisible .)}}
+    {{- if not (isVisible .)}}{{continue}}{{end}}
+	{{- if eq .Kind "channel"}}
 		{{template "client/channel" .}}
-	{{- else if and (eq .Kind "operation") (isVisible .)}}
+	{{- else if eq .Kind "operation"}}
 		{{template "client/operation" .}}
         {{- if .OperationReply}}
             {{template "client/operationReply" .}}
