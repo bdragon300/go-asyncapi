@@ -13,10 +13,10 @@
 {{- end}}
 
 {{- $impl := impl $.Server.Protocol}}
-serverURL := args.{{$.Server | goIDUpper}}Cmd.URL
+serverURL := args.{{$.Server | goID}}Cmd.URL
 if serverURL == nil {
-    u, err := {{goPkg $.Server}}{{goIDUpper $.Server}}URL(
-        {{range $_, $v := $.Server.Variables.Entries}}args.{{goIDUpper $.Server}}Cmd.{{goIDUpper $v}},{{end}}
+    u, err := {{goPkg $.Server}}{{goID $.Server}}URL(
+        {{range $_, $v := $.Server.Variables.Entries}}args.{{goID $.Server}}Cmd.{{goID $v}},{{end}}
     )
     if err != nil {
         return {{goPkgExt "fmt"}}Errorf("url: %w", err)
@@ -42,7 +42,7 @@ if opts.proxyHost != "" {
 {{goPkgExt "log/slog"}}Debug("Connecting to server", "name", {{$.Server.Name | goLit}}, "url", serverURL)
 if opts.publish {
     {{- if and $.Server.IsPublisher $isPublisher}}
-        {{if $.Server.SecuritySchemes}}var serverSecurity {{goPkg $.Server}}{{goIDUpper $.Server}}Security{{end}}
+        {{if $.Server.SecuritySchemes}}var serverSecurity {{goPkg $.Server}}{{goID $.Server}}Security{{end}}
         {{- range $scheme := $.Server.SecuritySchemes}}
             {{- $ctx := dict "Server" $.Server "SecurityScheme" $scheme}}
             {{- with tryTmpl (print "client/security/" $scheme.SchemeType "/getCredentials") $ctx}}
@@ -55,7 +55,7 @@ if opts.publish {
             {{.}}
             // End of implementation-specific code
         {{- else}}
-            server, err := {{goPkg $.Server}}Connect{{$.Server | goIDUpper}}Producer(ctx, serverURL{{if $.Server.SecuritySchemes}}, securityScheme{{end}})
+            server, err := {{goPkg $.Server}}Connect{{$.Server | goID}}Producer(ctx, serverURL{{if $.Server.SecuritySchemes}}, securityScheme{{end}})
             if err != nil {
                 return {{goPkgExt "fmt"}}Errorf("connect server %s: %w", serverURL, err)
             }
@@ -103,7 +103,7 @@ if opts.publish {
     {{- end}}
 } else {
     {{- if and $.Server.IsSubscriber $isSubscriber}}
-        {{if $.Server.SecuritySchemes}}var serverSecurity {{goPkg $.Server}}{{goIDUpper $.Server}}Security{{end}}
+        {{if $.Server.SecuritySchemes}}var serverSecurity {{goPkg $.Server}}{{goID $.Server}}Security{{end}}
         {{- range $scheme := $.Server.SecuritySchemes}}
             {{- $ctx := dict "Server" $.Server "SecurityScheme" $scheme}}
             {{- with tryTmpl (print "client/security/" $scheme.SchemeType "/getCredentials") $ctx}}
@@ -116,7 +116,7 @@ if opts.publish {
             {{.}}
             // End of implementation-specific code
         {{- else}}
-            server, err := {{goPkg $.Server}}Connect{{goIDUpper $.Server}}Consumer(ctx, serverURL{{if $.Server.SecuritySchemes}}, securityScheme{{end}})
+            server, err := {{goPkg $.Server}}Connect{{goID $.Server}}Consumer(ctx, serverURL{{if $.Server.SecuritySchemes}}, securityScheme{{end}})
             if err != nil {
                 return {{goPkgExt "fmt"}}Errorf("connect server %s: %w", serverURL, err)
             }
@@ -176,14 +176,14 @@ if opts.publish {
 {{- with $.Object}}
     {{- if eq $.Object.Kind "channel"}}
         {{goPkgExt "log/slog"}}Debug("Opening channel", "name", {{.Name | goLit}}{{if .Parameters.Len}}, "parameters", channelParams{{end}})
-        object, err := server.Open{{goIDUpper .}}{{goIDUpper $.Server.Protocol}}(
+        object, err := server.Open{{goID .}}{{goID $.Server.Protocol}}(
             ctx,
             {{if .Parameters.Len}}channelParams,{{end}}
             {{if .BoundOperations}}nil,{{end}}
         )
         channel := object
     {{- else if eq .Kind "operation" }}
-        {{if .SecuritySchemes}}var operationSecurity {{goPkg $.Object}}{{goIDUpper $.Object}}Security{{end}}
+        {{if .SecuritySchemes}}var operationSecurity {{goPkg $.Object}}{{goID $.Object}}Security{{end}}
         {{- range $scheme := .SecuritySchemes}}
             {{- $ctx := dict "Server" $.Server "SecurityScheme" $scheme}}
             {{- with tryTmpl (print "client/security/" ($scheme.SchemeType) "/getCredentials") $ctx}}
@@ -193,16 +193,16 @@ if opts.publish {
         {{- end}}
         {{- if eq $.Kind "operation" }}
             {{goPkgExt "log/slog"}}Debug("Opening operation", "name", {{.Name | goLit}}{{if .Channel.Parameters.Len}}, "parameters", channelParams{{end}})
-            object, err := server.Open{{goIDUpper .}}{{goIDUpper $.Server.Protocol}}(
+            object, err := server.Open{{goID .}}{{goID $.Server.Protocol}}(
                 ctx,
                 {{if .Channel.Parameters.Len}}channelParams,{{end}}
                 {{if .SecuritySchemes}}operationSecurity,{{end}}
             )
-            channel := object.Channel.({{goPkg .Channel}}{{goIDUpper .Channel}}{{goIDUpper $.Server.Protocol}})
+            channel := object.Channel.({{goPkg .Channel}}{{goID .Channel}}{{goID $.Server.Protocol}})
         {{- else if eq $.Kind "operationReply" }}
             {{- with $channel := .BoundOperationReplyChannel }}
                 {{goPkgExt "log/slog"}}Debug("Opening operation reply", "name", {{.Name | goLit}}{{if $channel.Parameters.Len}}, "parameters", channelParams{{end}})
-                object, err := server.Open{{goIDUpper $channel}}{{goIDUpper $.Server.Protocol}}(
+                object, err := server.Open{{goID $channel}}{{goID $.Server.Protocol}}(
                     ctx,
                     {{if $channel.Parameters.Len}}channelParams,{{end}}
                     {{if $channel.BoundOperations}}{{if $.Object.SecuritySchemes}}operationSecurity{{else}}nil{{end}},{{end}}

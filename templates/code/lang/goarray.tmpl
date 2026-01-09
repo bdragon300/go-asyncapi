@@ -2,16 +2,16 @@
 
 {{define "code/lang/goarray/definition"}}
     {{- if .Description }}
-        {{ print (goIDUpper .) "--" .Description | goComment }}
+        {{ print (goID .) "--" .Description | goComment }}
     {{- end }}
-    type {{ . | goIDUpper }} [{{ with .Size }}{{.}}{{ end }}]{{ .ItemsType | goUsage }}
+    type {{ . | goID }} [{{ with .Size }}{{.}}{{ end }}]{{ .ItemsType | goUsage }}
 {{- end}}
 {{define "code/lang/goarray/usage"}}
     {{- if .HasDefinition }}
         {{- if .Import }}
-            {{- goPkgExt .Import }}{{goIDUpper .}}
+            {{- goPkgExt .Import }}{{goID .}}
         {{- else }}
-            {{- goPkg . }}{{ . | goIDUpper }}
+            {{- goPkg . }}{{ . | goID }}
         {{- end }}
     {{- else -}}
         [{{ with .Size }}{{.}}{{ end }}]{{ .ItemsType | goUsage }}

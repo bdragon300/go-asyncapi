@@ -1,51 +1,51 @@
 {{- /* dot == render.Server */}}
 
 {{define "code/proto/udp/server/impl/net/connectFunction"}}
-func Connect{{ . | goIDUpper }}Bidi(
+func Connect{{ . | goID }}Bidi(
     ctx {{goPkgExt "context"}}Context,
     url *{{goPkgExt "net/url"}}URL,
     localAddress string,
-    {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
-) (*{{ . | goIDUpper }}Closable, error) {
+    {{with $.SecuritySchemes}}security {{$ | goID}}Security,{{end}}
+) (*{{ . | goID }}Closable, error) {
     client, err := {{goPkgImpl .Protocol}}NewClient(localAddress, url.Host, url.Scheme, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }
     consumer, producer := client, client
-    return &{{ . | goIDUpper }}Closable{
-        {{. | goIDUpper}}{producer: producer, consumer: consumer},
+    return &{{ . | goID }}Closable{
+        {{. | goID}}{producer: producer, consumer: consumer},
     }, nil
 }
 {{- end}}
 
 {{define "code/proto/udp/server/impl/net/connectProducerFunction"}}
-func Connect{{ . | goIDUpper }}Producer(
+func Connect{{ . | goID }}Producer(
     ctx {{goPkgExt "context"}}Context,
     url *{{goPkgExt "net/url"}}URL,
-    {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
-) (*{{ . | goIDUpper }}Closable, error) {
+    {{with $.SecuritySchemes}}security {{$ | goID}}Security,{{end}}
+) (*{{ . | goID }}Closable, error) {
     producer, err := {{goPkgImpl .Protocol}}NewClient("", url.Host, url.Scheme, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }
-    return &{{ . | goIDUpper }}Closable{
-        {{. | goIDUpper}}{producer: producer},
+    return &{{ . | goID }}Closable{
+        {{. | goID}}{producer: producer},
     }, nil
 }
 {{- end}}
 
 {{define "code/proto/udp/server/impl/net/connectConsumerFunction"}}
-func Connect{{ . | goIDUpper }}Consumer(
+func Connect{{ . | goID }}Consumer(
     ctx {{goPkgExt "context"}}Context,
     url *{{goPkgExt "net/url"}}URL,
-    {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
-) (*{{ . | goIDUpper }}Closable, error) {
+    {{with $.SecuritySchemes}}security {{$ | goID}}Security,{{end}}
+) (*{{ . | goID }}Closable, error) {
     consumer, err := {{goPkgImpl .Protocol}}NewClient(url.Host, "", url.Scheme, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     if err != nil {
         return nil, err
     }
-    return &{{ . | goIDUpper }}Closable{
-        {{. | goIDUpper}}{consumer: consumer},
+    return &{{ . | goID }}Closable{
+        {{. | goID}}{consumer: consumer},
     }, nil
 }
 {{- end}}

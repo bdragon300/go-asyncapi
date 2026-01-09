@@ -1,7 +1,7 @@
 {{- /* dot == render.ProtoChannel */}}
 {{define "code/proto/amqp/channel/newFunction/block1"}}
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings := {{goPkg .Channel}}{{goIDUpper .Channel}}Bindings{}.{{.Protocol | goIDUpper}}()
+        bindings := {{goPkg .Channel}}{{goID .Channel}}Bindings{}.{{.Protocol | goID}}()
         switch bindings.ChannelType {
         case {{goPkgUtil .Protocol }}ChannelTypeQueue:
             res.queue = res.address.String()
@@ -51,7 +51,7 @@
 {{template "code/proto/channel/serverInterface" .}}
 {{template "code/proto/channel/openFunction" .}}
 
-type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
+type {{. | goID}}{{.Protocol | goID}} struct {
     address    {{goPkgRun}}ParamString
     {{if .IsPublisher}}publisher  {{goPkgUtil .Protocol}}Publisher{{end}}
     {{if .IsSubscriber}}subscriber {{goPkgUtil .Protocol}}Subscriber{{end}}
@@ -60,15 +60,15 @@ type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
     routingKey string
 }
 
-func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Exchange() string {
+func (c {{. | goID}}{{.Protocol | goID}}) Exchange() string {
     return c.exchange
 }
 
-func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Queue() string {
+func (c {{. | goID}}{{.Protocol | goID}}) Queue() string {
     return c.queue
 }
 
-func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) RoutingKey() string {
+func (c {{. | goID}}{{.Protocol | goID}}) RoutingKey() string {
     return c.routingKey
 }
 

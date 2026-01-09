@@ -42,7 +42,7 @@
     if _, err := {{ goPkgExt "io"}}Copy(&b, r); err != nil {
         return {{ goPkgExt "fmt"}}Errorf("read message: %w", err)
     }
-    m.payload = {{goPkg .PayloadType}}{{.PayloadType | goIDUpper}}(b.String())
+    m.payload = {{goPkg .PayloadType}}{{.PayloadType | goID}}(b.String())
 {{- end}}
 
 {{define "code/proto/mime/messageEncoder/application/x-yaml"}}

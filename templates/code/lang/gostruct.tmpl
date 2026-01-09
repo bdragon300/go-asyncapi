@@ -2,9 +2,9 @@
 
 {{define "code/lang/gostruct/definition"}}
     {{- if .Description }}
-        {{- print (goIDUpper .) "--" .Description | goComment }}
+        {{- print (goID .) "--" .Description | goComment }}
     {{- end }}
-    type {{ . | goIDUpper }} struct {
+    type {{ . | goID }} struct {
         {{- range .Fields }}
             {{- if .Description }}
                 {{ print .Name "--" .Description | goComment }}
@@ -16,9 +16,9 @@
 {{define "code/lang/gostruct/usage"}}
     {{- if .HasDefinition }}
         {{- if .Import }}
-            {{- goPkgExt .Import }}{{goIDUpper .}}
+            {{- goPkgExt .Import }}{{goID .}}
         {{- else }}
-            {{- goPkg . }}{{ . | goIDUpper }}
+            {{- goPkg . }}{{ . | goID }}
         {{- end }}
     {{- else -}}
         struct {

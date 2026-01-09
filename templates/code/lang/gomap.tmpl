@@ -2,16 +2,16 @@
 
 {{define "code/lang/gomap/definition"}}
     {{- if .Description }}
-        {{ print (goIDUpper .) "--" .Description | goComment }}
+        {{ print (goID .) "--" .Description | goComment }}
     {{- end }}
-    type {{ . | goIDUpper }} map[{{ .KeyType | goUsage }}]{{ .ValueType | goUsage }}
+    type {{ . | goID }} map[{{ .KeyType | goUsage }}]{{ .ValueType | goUsage }}
 {{- end}}
 {{define "code/lang/gomap/usage"}}
     {{- if .HasDefinition }}
         {{if .Import }}
-            {{ goPkgExt .Import }}{{goIDUpper .}}
+            {{ goPkgExt .Import }}{{goID .}}
         {{- else }}
-            {{ goPkg . }}{{ . | goIDUpper }}
+            {{ goPkg . }}{{ . | goID }}
         {{- end }}
     {{- else -}}
         map[{{ .KeyType | goUsage }}]{{ .ValueType | goUsage }}

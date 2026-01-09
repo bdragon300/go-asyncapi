@@ -8,7 +8,7 @@
 {{- end}}
 
 {{- /* TODO: consider IsPublisher and IsSubscriber}} */}}
-type {{. | goIDUpper}} struct {
+type {{. | goID}} struct {
     producer {{goPkgUtil .Protocol}}Producer
     consumer {{goPkgUtil .Protocol}}Consumer
 }
@@ -17,12 +17,12 @@ type {{. | goIDUpper}} struct {
 
 {{- range .BoundChannels}}
     {{- if .ActiveProtocols | has $.Protocol }}
-        func (s {{$ | goIDUpper}}) Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
+        func (s {{$ | goID}}) Open{{ . | goID }}{{$.Protocol | goID}}(
             ctx {{goPkgExt "context"}}Context,
-            {{if .Parameters.Len}}params {{goPkg .}}{{goIDUpper .}}Parameters,{{end}}
+            {{if .Parameters.Len}}params {{goPkg .}}{{goID .}}Parameters,{{end}}
             {{if .BoundOperations}}security {{goPkgRun}}AnySecurityScheme,{{end}}
-        ) (*{{goPkg .}}{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}, error) {
-            return {{goPkg .}}Open{{ . | goIDUpper }}{{$.Protocol | goIDUpper}}(
+        ) (*{{goPkg .}}{{ . | goID }}{{$.Protocol | goID}}, error) {
+            return {{goPkg .}}Open{{ . | goID }}{{$.Protocol | goID}}(
                 ctx, s, {{if .Parameters.Len}}params,{{end}}{{if .BoundOperations}}security,{{end}}
             )
         }

@@ -10,10 +10,10 @@ code:
   layout:
     - artifactKinds: [ "schema", "server", "channel", "operation", "message", "parameter" ]
       render:
-        file: "{{.Object.Kind}}s/{{.Object | goIDUpper }}.go"
+        file: "{{.Object.Kind}}s/{{.Object | goID }}.go"
     - artifactKinds: [ "security" ]
       render:
-        file: "{{.Object.Kind}}/{{.Object | goIDUpper }}.go"
+        file: "{{.Object.Kind}}/{{.Object | goID }}.go"
   util:
     directory: "{{ .Protocol }}"
   implementation:

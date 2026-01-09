@@ -1,9 +1,9 @@
 {{/* dot == render.Operation */}}
 {{define "client/operation"}}
-type {{$ | goIDUpper}}Cmd struct {
+type {{$ | goID}}Cmd struct {
     // Parameters
     {{- range $k := .Channel.Parameters.Entries}}
-	    {{$k | goIDUpper}} string `arg:"--{{$k | toQuotable | toKebabCase}},required" help:"Channel parameter: {{$k | toQuotable}}"`
+	    {{$k | goID}} string `arg:"--{{$k | toQuotable | toKebabCase}},required" help:"Channel parameter: {{$k | toQuotable}}"`
     {{- end}}
 
     {{- range $scheme := .SecuritySchemes}}
@@ -16,15 +16,15 @@ type {{$ | goIDUpper}}Cmd struct {
 	// Servers
     {{- range .Channel.BoundServers}}
         {{- if not (impl .Protocol)}}{{continue}}{{end}}
-	    {{. | goIDUpper}}Cmd *{{. | goIDUpper}}CliCmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Server: {{.Name | toQuotable}}"`
+	    {{. | goID}}Cmd *{{. | goID}}CliCmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Server: {{.Name | toQuotable}}"`
     {{- end}}
 }
 
-func operation{{$ | goIDUpper}}(ctx {{goPkgExt "context"}}Context, args *{{$ | goIDUpper}}Cmd, opts channelOptions) error {
+func operation{{$ | goID}}(ctx {{goPkgExt "context"}}Context, args *{{$ | goID}}Cmd, opts channelOptions) error {
     {{- if .Channel.Parameters.Len}}
-        channelParams := {{goPkg .Channel}}{{goIDUpper .Channel}}Parameters{
+        channelParams := {{goPkg .Channel}}{{goID .Channel}}Parameters{
             {{- range $k, $v := .Channel.Parameters.Entries}}
-                {{$k | goIDUpper}}: {{goPkg $v}}{{goIDUpper $v}}(args.{{$k | goIDUpper}}),
+                {{$k | goID}}: {{goPkg $v}}{{goID $v}}(args.{{$k | goID}}),
             {{- end}}
         }
 	    {{goPkgExt "log/slog"}}Debug("Channel parameters", "value", channelParams)
@@ -34,7 +34,7 @@ func operation{{$ | goIDUpper}}(ctx {{goPkgExt "context"}}Context, args *{{$ | g
     {{- range .Channel.BoundServers}}
         {{- if not (impl .Protocol)}}{{continue}}{{end}}
         {{$implTemplateCtx := dict "Object" $ "Server" . "Kind" "operation"}}
-        case args.{{. | goIDUpper}}Cmd != nil:
+        case args.{{. | goID}}Cmd != nil:
             {{template "client/pubsub/proto/serverPubSub" $implTemplateCtx}}
     {{- end}}
 	default:
@@ -50,10 +50,10 @@ func operation{{$ | goIDUpper}}(ctx {{goPkgExt "context"}}Context, args *{{$ | g
 {{- if .OperationReply.Channel }}
     {{$channel = .OperationReply.Channel }}
 {{- end}}
-type {{$ | goIDUpper}}ReplyCmd struct {
+type {{$ | goID}}ReplyCmd struct {
     // Parameters
     {{- range $k := $channel.Parameters.Entries}}
-	    {{$k | goIDUpper}} string `arg:"--{{$k | toQuotable | toKebabCase}},required" help:"Channel parameter: {{$k | toQuotable}}"`
+	    {{$k | goID}} string `arg:"--{{$k | toQuotable | toKebabCase}},required" help:"Channel parameter: {{$k | toQuotable}}"`
     {{- end}}
 
     {{- range $scheme := .SecuritySchemes}}
@@ -66,15 +66,15 @@ type {{$ | goIDUpper}}ReplyCmd struct {
 	// Servers
     {{- range $channel.BoundServers}}
         {{- if not (impl .Protocol)}}{{continue}}{{end}}
-	    {{. | goIDUpper}}Cmd *{{. | goIDUpper}}CliCmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Server: {{.Name | toQuotable}}"`
+	    {{. | goID}}Cmd *{{. | goID}}CliCmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Server: {{.Name | toQuotable}}"`
     {{- end}}
 }
 
-func operationReply{{$ | goIDUpper}}(ctx {{goPkgExt "context"}}Context, args *{{$ | goIDUpper}}ReplyCmd, opts channelOptions) error {
+func operationReply{{$ | goID}}(ctx {{goPkgExt "context"}}Context, args *{{$ | goID}}ReplyCmd, opts channelOptions) error {
     {{- if $channel.Parameters.Len}}
-        channelParams := {{goPkg $channel}}{{goIDUpper $channel}}Parameters{
+        channelParams := {{goPkg $channel}}{{goID $channel}}Parameters{
             {{- range $k, $v := $channel.Parameters.Entries}}
-                {{$k | goIDUpper}}: {{goPkg $v}}{{goIDUpper $v}}(args.{{$k | goIDUpper}}),
+                {{$k | goID}}: {{goPkg $v}}{{goID $v}}(args.{{$k | goID}}),
             {{- end}}
         }
 	    {{goPkgExt "log/slog"}}Debug("Channel parameters", "value", channelParams)
@@ -84,7 +84,7 @@ func operationReply{{$ | goIDUpper}}(ctx {{goPkgExt "context"}}Context, args *{{
     {{- range $channel.BoundServers}}
         {{- if not (impl .Protocol)}}{{continue}}{{end}}
         {{$implTemplateCtx := dict "Object" $ "Server" . "Kind" "operationReply"}}
-        case args.{{. | goIDUpper}}Cmd != nil:
+        case args.{{. | goID}}Cmd != nil:
             {{template "client/pubsub/proto/serverPubSub" $implTemplateCtx}}
     {{- end}}
 	default:

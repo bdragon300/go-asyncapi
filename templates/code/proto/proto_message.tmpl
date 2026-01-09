@@ -7,14 +7,14 @@
 {{if .IsPublisher}}{{block "code/proto/message/marshalMethods" .}}
 {{- range .BoundChannels}}
     {{- if and (isVisible .) .IsPublisher}}
-        func (m *{{ $.OutType | goIDUpper }}) Marshal{{. | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope {{goPkgUtil $.Protocol}}EnvelopeWriter) error {
-            return m.MarshalEnvelope{{$.Protocol | goIDUpper}}(envelope)
+        func (m *{{ $.OutType | goID }}) Marshal{{. | goID}}{{$.Protocol | goID}}(envelope {{goPkgUtil $.Protocol}}EnvelopeWriter) error {
+            return m.MarshalEnvelope{{$.Protocol | goID}}(envelope)
         }
     {{- end}}
 {{- end}}
 
-func (m *{{ .OutType | goIDUpper }}) MarshalEnvelope{{ .Protocol | goIDUpper }}(envelope {{goPkgUtil .Protocol}}EnvelopeWriter) error {
-    if err := m.Marshal{{ .Protocol | goIDUpper }}(envelope); err != nil {
+func (m *{{ .OutType | goID }}) MarshalEnvelope{{ .Protocol | goID }}(envelope {{goPkgUtil .Protocol}}EnvelopeWriter) error {
+    if err := m.Marshal{{ .Protocol | goID }}(envelope); err != nil {
         return err
     }
     envelope.SetContentType({{.EffectiveContentType | goLit}})
@@ -31,7 +31,7 @@ func (m *{{ .OutType | goIDUpper }}) MarshalEnvelope{{ .Protocol | goIDUpper }}(
     return nil
 }
 
-func (m *{{ .OutType | goIDUpper }}) Marshal{{ .Protocol | goIDUpper }}(w {{goPkgExt "io"}}Writer) error {
+func (m *{{ .OutType | goID }}) Marshal{{ .Protocol | goID }}(w {{goPkgExt "io"}}Writer) error {
     {{- block "code/proto/message/encoder" .}}
         // MIME type: {{.EffectiveContentType}}
         {{- with tryTmpl (print "code/proto/mime/messageEncoder/" .EffectiveContentType) .}}
@@ -45,8 +45,8 @@ func (m *{{ .OutType | goIDUpper }}) Marshal{{ .Protocol | goIDUpper }}(w {{goPk
 }
 
 {{- if .BindingsProtocols | has .Protocol}}
-    func (c {{.OutType | goUsage}}) Bindings{{.Protocol | goIDUpper}}() {{goPkgUtil .Protocol}}MessageBindings {
-        return {{goPkg .Message}}{{goIDUpper .Message}}Bindings{}.{{.Protocol | goIDUpper}}()
+    func (c {{.OutType | goUsage}}) Bindings{{.Protocol | goID}}() {{goPkgUtil .Protocol}}MessageBindings {
+        return {{goPkg .Message}}{{goID .Message}}Bindings{}.{{.Protocol | goID}}()
     }
 {{- end}}
 {{- end}}{{end}}
@@ -55,14 +55,14 @@ func (m *{{ .OutType | goIDUpper }}) Marshal{{ .Protocol | goIDUpper }}(w {{goPk
 {{if .IsSubscriber}}{{block "code/proto/message/unmarshalMethods" .}}
 {{- range .BoundChannels}}
     {{- if and (isVisible .) .IsSubscriber}}
-        func (m *{{ $.InType | goIDUpper }}) Unmarshal{{. | goIDUpper}}{{$.Protocol | goIDUpper}}(envelope {{goPkgUtil $.Protocol}}EnvelopeReader) error {
-            return m.UnmarshalEnvelope{{$.Protocol | goIDUpper}}(envelope)
+        func (m *{{ $.InType | goID }}) Unmarshal{{. | goID}}{{$.Protocol | goID}}(envelope {{goPkgUtil $.Protocol}}EnvelopeReader) error {
+            return m.UnmarshalEnvelope{{$.Protocol | goID}}(envelope)
         }
     {{- end}}
 {{- end}}
 
-func (m *{{ .InType | goIDUpper }}) UnmarshalEnvelope{{ .Protocol | goIDUpper }}(envelope {{goPkgUtil .Protocol}}EnvelopeReader) error {
-    if err := m.Unmarshal{{ .Protocol | goIDUpper }}(envelope); err != nil {
+func (m *{{ .InType | goID }}) UnmarshalEnvelope{{ .Protocol | goID }}(envelope {{goPkgUtil .Protocol}}EnvelopeReader) error {
+    if err := m.Unmarshal{{ .Protocol | goID }}(envelope); err != nil {
         return err
     }
     {{- if .HeadersTypePromise }}
@@ -81,7 +81,7 @@ func (m *{{ .InType | goIDUpper }}) UnmarshalEnvelope{{ .Protocol | goIDUpper }}
     return nil
 }
 
-func (m *{{ .InType | goIDUpper }}) Unmarshal{{ .Protocol | goIDUpper }}(r {{goPkgExt "io"}}Reader) error {
+func (m *{{ .InType | goID }}) Unmarshal{{ .Protocol | goID }}(r {{goPkgExt "io"}}Reader) error {
     {{- block "code/proto/message/decoder" .}}
         // MIME type: {{.EffectiveContentType}}
         {{- with tryTmpl (print "code/proto/mime/messageDecoder/" .EffectiveContentType) .}}
@@ -95,8 +95,8 @@ func (m *{{ .InType | goIDUpper }}) Unmarshal{{ .Protocol | goIDUpper }}(r {{goP
 }
 
 {{- if .BindingsProtocols | has .Protocol}}
-    func (c {{.InType | goUsage}}) Bindings{{.Protocol | goIDUpper}}() {{goPkgUtil .Protocol}}MessageBindings {
-        return {{goPkg .Message}}{{goIDUpper .Message}}Bindings{}.{{.Protocol | goIDUpper}}()
+    func (c {{.InType | goUsage}}) Bindings{{.Protocol | goID}}() {{goPkgUtil .Protocol}}MessageBindings {
+        return {{goPkg .Message}}{{goID .Message}}Bindings{}.{{.Protocol | goID}}()
     }
 {{- end}}
 {{- end}}{{end}}

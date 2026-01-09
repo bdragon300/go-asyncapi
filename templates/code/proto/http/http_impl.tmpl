@@ -1,53 +1,53 @@
 {{- /* dot == render.Server */}}
 
 {{define "code/proto/http/server/impl/net/http/connectFunction"}}
-func Connect{{ . | goIDUpper }}Bidi(
+func Connect{{ . | goID }}Bidi(
     ctx {{goPkgExt "context"}}Context,
     url *{{goPkgExt "net/url"}}URL,
-    {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
-) (*{{ . | goIDUpper }}Closable, error) {
+    {{with $.SecuritySchemes}}security {{$ | goID}}Security,{{end}}
+) (*{{ . | goID }}Closable, error) {
     var bindings *{{goPkgUtil .Protocol}}ServerBindings
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}Bindings{}.{{.Protocol | goIDUpper}}())
+        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goID .}}Bindings{}.{{.Protocol | goID}}())
     {{- end}}
     producer := {{goPkgImpl .Protocol}}NewProducer(url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
     consumer := {{goPkgImpl .Protocol}}NewConsumer(bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
-    return &{{ . | goIDUpper }}Closable{
-        {{. | goIDUpper}}{producer: producer, consumer: consumer},
+    return &{{ . | goID }}Closable{
+        {{. | goID}}{producer: producer, consumer: consumer},
     }, nil
 }
 {{- end}}
 
 {{define "code/proto/http/server/impl/net/http/connectProducerFunction"}}
-func Connect{{ . | goIDUpper }}Producer(
+func Connect{{ . | goID }}Producer(
     ctx {{goPkgExt "context"}}Context,
     url *{{goPkgExt "net/url"}}URL,
-    {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
-) (*{{ . | goIDUpper }}Closable, error) {
+    {{with $.SecuritySchemes}}security {{$ | goID}}Security,{{end}}
+) (*{{ . | goID }}Closable, error) {
     var bindings *{{goPkgUtil .Protocol}}ServerBindings
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}Bindings{}.{{.Protocol | goIDUpper}}())
+        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goID .}}Bindings{}.{{.Protocol | goID}}())
     {{- end}}
     producer := {{goPkgImpl .Protocol}}NewProducer(url, bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
-    return &{{ . | goIDUpper }}Closable{
-        {{. | goIDUpper}}{producer: producer},
+    return &{{ . | goID }}Closable{
+        {{. | goID}}{producer: producer},
     }, nil
 }
 {{- end}}
 
 {{define "code/proto/http/server/impl/net/http/connectConsumerFunction"}}
-func Connect{{ . | goIDUpper }}Consumer(
+func Connect{{ . | goID }}Consumer(
     ctx {{goPkgExt "context"}}Context,
     url *{{goPkgExt "net/url"}}URL,
-    {{with $.SecuritySchemes}}security {{$ | goIDUpper}}Security,{{end}}
-) (*{{ . | goIDUpper }}Closable, error) {
+    {{with $.SecuritySchemes}}security {{$ | goID}}Security,{{end}}
+) (*{{ . | goID }}Closable, error) {
     var bindings *{{goPkgUtil .Protocol}}ServerBindings
     {{- if .BindingsProtocols | has .Protocol}}
-        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goIDUpper .}}Bindings{}.{{.Protocol | goIDUpper}}())
+        bindings = {{goPkgRun}}ToPtr({{goPkg .}}{{goID .}}Bindings{}.{{.Protocol | goID}}())
     {{- end}}
     consumer := {{goPkgImpl .Protocol}}NewConsumer(bindings, {{if $.SecuritySchemes}}security{{else}}nil{{end}})
-    return &{{ . | goIDUpper }}Closable{
-        {{. | goIDUpper}}{consumer: consumer},
+    return &{{ . | goID }}Closable{
+        {{. | goID}}{consumer: consumer},
     }, nil
 }
 {{- end}}

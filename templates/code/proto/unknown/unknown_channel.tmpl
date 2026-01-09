@@ -1,22 +1,22 @@
 {{- /* dot == render.ProtoChannel */}}
 {{template "code/proto/channel/newFunction" .}}
 
-type {{ .Channel | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
-    Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goPkgExt "context"}}Context{{if .Parameters.Len}},{{ goIDUpper .Channel}}Parameters{{end}}{{if .BoundOperations}},{{goPkgRun}}AnySecurityScheme{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
+type {{ .Channel | goID }}Server{{.Protocol | goID}} interface {
+    Open{{.Channel | goID}}{{.Protocol | goID}}({{goPkgExt "context"}}Context{{if .Parameters.Len}},{{ goID .Channel}}Parameters{{end}}{{if .BoundOperations}},{{goPkgRun}}AnySecurityScheme{{end}}) (*{{. | goID}}{{.Protocol | goID}}, error)
     {{if .IsPublisher}}Producer() {{goPkgUtil .Protocol}}Producer{{end}}
     {{if .IsSubscriber}}Consumer() {{goPkgUtil .Protocol}}Consumer{{end}}
 }
 
-func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
+func Open{{ .Channel | goID }}{{.Protocol | goID}}(
     ctx {{goPkgExt "context"}}Context,
-    server {{.Channel | goIDUpper }}Server{{.Protocol | goIDUpper}},
-    {{if .Parameters.Len}}params {{goIDUpper $}}Parameters,{{end}}
+    server {{.Channel | goID }}Server{{.Protocol | goID}},
+    {{if .Parameters.Len}}params {{goID $}}Parameters,{{end}}
     {{if .BoundOperations}}security {{goPkgRun}}AnySecurityScheme,{{end}}
-) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error) {
+) (*{{. | goID}}{{.Protocol | goID}}, error) {
     var err error
 
     {{- if or .IsPublisher .IsSubscriber}}
-        address, err := {{.Channel | goIDUpper}}Address({{if .Parameters.Len}}params{{end}}).Expand()
+        address, err := {{.Channel | goID}}Address({{if .Parameters.Len}}params{{end}}).Expand()
         if err != nil {
             return nil, err
         }
@@ -50,14 +50,14 @@ func Open{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
         }
     {{- end}}
 
-    return New{{ .Channel | goIDUpper }}{{.Protocol | goIDUpper}}(
+    return New{{ .Channel | goID }}{{.Protocol | goID}}(
         {{ if .Parameters.Len}}params,{{end}}
         {{ if .IsPublisher}}publisher,{{end}}
         {{ if .IsSubscriber}}subscriber,{{end}}
     ), nil
 }
 
-type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
+type {{. | goID}}{{.Protocol | goID}} struct {
     address    {{goPkgRun}}ParamString
     {{if .IsPublisher}}publisher  {{goPkgUtil .Protocol}}Publisher{{end}}
     {{if .IsSubscriber}}subscriber {{goPkgUtil .Protocol}}Subscriber{{end}}

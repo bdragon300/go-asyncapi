@@ -1,23 +1,23 @@
 {{/* dot == render.Channel */}}
 {{define "client/channel"}}
-type {{$ | goIDUpper}}Cmd struct {
+type {{$ | goID}}Cmd struct {
     // Parameters
     {{- range $k := .Parameters.Entries}}
-	    {{$k | goIDUpper}} string `arg:"--{{$k | toQuotable | toKebabCase}},required" help:"Channel parameter: {{$k | toQuotable}}"`
+	    {{$k | goID}} string `arg:"--{{$k | toQuotable | toKebabCase}},required" help:"Channel parameter: {{$k | toQuotable}}"`
     {{- end}}
 
 	// Servers
     {{- range .BoundServers}}
         {{- if not (impl .Protocol)}}{{continue}}{{end}}
-	    {{. | goIDUpper}}Cmd *{{. | goIDUpper}}CliCmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Server: {{.Name | toQuotable}}"`
+	    {{. | goID}}Cmd *{{. | goID}}CliCmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Server: {{.Name | toQuotable}}"`
     {{- end}}
 }
 
-func channel{{$ | goIDUpper}}(ctx {{goPkgExt "context"}}Context, args *{{$ | goIDUpper}}Cmd, opts channelOptions) error {
+func channel{{$ | goID}}(ctx {{goPkgExt "context"}}Context, args *{{$ | goID}}Cmd, opts channelOptions) error {
     {{- if .Parameters.Len}}
-        channelParams := {{goPkg .}}{{goIDUpper .}}Parameters{
+        channelParams := {{goPkg .}}{{goID .}}Parameters{
             {{- range $k, $v := .Parameters.Entries}}
-                {{$k | goIDUpper}}: {{goPkg $v}}{{goIDUpper $v}}(args.{{$k | goIDUpper}}),
+                {{$k | goID}}: {{goPkg $v}}{{goID $v}}(args.{{$k | goID}}),
             {{- end}}
         }
 	    {{goPkgExt "log/slog"}}Debug("Channel parameters", "value", channelParams)
@@ -27,7 +27,7 @@ func channel{{$ | goIDUpper}}(ctx {{goPkgExt "context"}}Context, args *{{$ | goI
     {{- range .BoundServers}}
         {{- if not (impl .Protocol)}}{{continue}}{{end}}
         {{$implTemplateCtx := dict "Object" $ "Server" . "Kind" "channel"}}
-        case args.{{. | goIDUpper}}Cmd != nil:
+        case args.{{. | goID}}Cmd != nil:
             {{template "client/pubsub/proto/serverPubSub" $implTemplateCtx}}
     {{- end}}
 	default:

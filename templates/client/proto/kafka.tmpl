@@ -20,7 +20,7 @@ clientOptions = append(clientOptions, {{goPkgExt "github.com/twmb/franz-go/pkg/k
 {{- end}}
 
 {{define "client/channeloperation/kafka/github.com/twmb/franz-go/producer/connect"}}
-server, err := {{goPkg .Server}}Connect{{.Server | goIDUpper}}Producer(ctx, serverURL, {{if $.Server.SecuritySchemes}}serverSecurity, {{end}}clientOptions...)
+server, err := {{goPkg .Server}}Connect{{.Server | goID}}Producer(ctx, serverURL, {{if $.Server.SecuritySchemes}}serverSecurity, {{end}}clientOptions...)
 if err != nil {
     return {{goPkgExt "fmt"}}Errorf("connect server %s: %w", serverURL, err)
 }
@@ -28,7 +28,7 @@ defer server.Close()
 {{- end}}
 
 {{define "client/channeloperation/kafka/github.com/twmb/franz-go/consumer/connect"}}
-server, err := {{goPkg .Server}}Connect{{.Server | goIDUpper}}Consumer(ctx, serverURL, {{if $.Server.SecuritySchemes}}serverSecurity, {{end}}clientOptions...)
+server, err := {{goPkg .Server}}Connect{{.Server | goID}}Consumer(ctx, serverURL, {{if $.Server.SecuritySchemes}}serverSecurity, {{end}}clientOptions...)
 if err != nil {
     return {{goPkgExt "fmt"}}Errorf("connect server %s: %w", serverURL, err)
 }
@@ -36,8 +36,8 @@ defer server.Close()
 {{- end}}
 
 {{define "client/message/kafka/github.com/twmb/franz-go/publish"}}
-if args.{{.Server | goIDUpper}}Cmd.MessageKey != "" {
-    envelope.Key = []byte(args.{{.Server | goIDUpper}}Cmd.MessageKey)
+if args.{{.Server | goID}}Cmd.MessageKey != "" {
+    envelope.Key = []byte(args.{{.Server | goID}}Cmd.MessageKey)
 }
 {{- end}}
 

@@ -1,19 +1,19 @@
 {{- /* dot == render.ProtoOperation */}}
 
-type {{ . | goIDUpper }}Server{{.Protocol | goIDUpper}} interface {
-    Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}({{goPkgExt "context"}}Context{{if .Channel.Parameters.Len}},{{goPkg .Channel}}{{goIDUpper .Channel}}Parameters{{end}}{{if .Channel.BoundOperations}},{{goPkgRun}}AnySecurityScheme{{end}}) (*{{goPkg .Channel}}{{goIDUpper .Channel}}{{goIDUpper .Protocol}}, error)
-    Open{{. | goIDUpper}}{{.Protocol | goIDUpper}}({{goPkgExt "context"}}Context{{if .Channel.Parameters.Len}}, {{goPkg .Channel}}{{goIDUpper .Channel}}Parameters{{end}}{{if .SecuritySchemes}}, {{. | goIDUpper}}Security,{{end}}) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error)
+type {{ . | goID }}Server{{.Protocol | goID}} interface {
+    Open{{.Channel | goID}}{{.Protocol | goID}}({{goPkgExt "context"}}Context{{if .Channel.Parameters.Len}},{{goPkg .Channel}}{{goID .Channel}}Parameters{{end}}{{if .Channel.BoundOperations}},{{goPkgRun}}AnySecurityScheme{{end}}) (*{{goPkg .Channel}}{{goID .Channel}}{{goID .Protocol}}, error)
+    Open{{. | goID}}{{.Protocol | goID}}({{goPkgExt "context"}}Context{{if .Channel.Parameters.Len}}, {{goPkg .Channel}}{{goID .Channel}}Parameters{{end}}{{if .SecuritySchemes}}, {{. | goID}}Security,{{end}}) (*{{. | goID}}{{.Protocol | goID}}, error)
     {{if .Channel.IsPublisher}}Producer() {{goPkgUtil .Protocol}}Producer{{end}}
     {{if .Channel.IsSubscriber}}Consumer() {{goPkgUtil .Protocol}}Consumer{{end}}
 }
 
-func Open{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
+func Open{{ . | goID }}{{.Protocol | goID}}(
     ctx {{goPkgExt "context"}}Context,
-    server {{. | goIDUpper }}Server{{.Protocol | goIDUpper}},
-    {{ if .Channel.Parameters.Len}}params {{goPkg .Channel}}{{goIDUpper .Channel}}Parameters,{{end}}
-    {{if .SecuritySchemes}}security {{. | goIDUpper}}Security,{{end}}
-) (*{{. | goIDUpper}}{{.Protocol | goIDUpper}}, error) {
-    ch, err := {{goPkg .Channel}}Open{{.Channel | goIDUpper}}{{.Protocol | goIDUpper}}(
+    server {{. | goID }}Server{{.Protocol | goID}},
+    {{ if .Channel.Parameters.Len}}params {{goPkg .Channel}}{{goID .Channel}}Parameters,{{end}}
+    {{if .SecuritySchemes}}security {{. | goID}}Security,{{end}}
+) (*{{. | goID}}{{.Protocol | goID}}, error) {
+    ch, err := {{goPkg .Channel}}Open{{.Channel | goID}}{{.Protocol | goID}}(
         ctx,
         server,
         {{if .Channel.Parameters.Len}}params,{{end}}
@@ -23,28 +23,28 @@ func Open{{ . | goIDUpper }}{{.Protocol | goIDUpper}}(
         return nil, err
     }
 
-    return &{{. | goIDUpper}}{{.Protocol | goIDUpper}}{
+    return &{{. | goID}}{{.Protocol | goID}}{
         Channel: ch,
     }, nil
 }
 
-type {{ . | goIDUpper }}Channel{{.Protocol | goIDUpper}} interface {
+type {{ . | goID }}Channel{{.Protocol | goID}} interface {
     Close() error
 {{range .BoundMessages}}
     {{- if not (isVisible .) }}{{continue}}{{end}}
     {{if .IsPublisher}}
-        Seal{{goIDUpper .}}({{goPkgUtil $.Protocol}}EnvelopeWriter, {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
-        Publish{{goIDUpper .}}({{goPkgExt "context"}}Context, {{if not (impl $.Protocol)}}{{goPkgUtil $.Protocol}}EnvelopeWriter,{{end}} {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
+        Seal{{goID .}}({{goPkgUtil $.Protocol}}EnvelopeWriter, {{goPkg $.Channel}}{{ goID $.Channel }}EnvelopeMarshaler{{$.Protocol | goID}}) error
+        Publish{{goID .}}({{goPkgExt "context"}}Context, {{if not (impl $.Protocol)}}{{goPkgUtil $.Protocol}}EnvelopeWriter,{{end}} {{goPkg $.Channel}}{{ goID $.Channel }}EnvelopeMarshaler{{$.Protocol | goID}}) error
     {{- end}}
     {{if .IsSubscriber}}
-        Unseal{{goIDUpper .}}({{goPkgUtil $.Protocol}}EnvelopeReader, {{goPkg $.Channel}}{{ goIDUpper $.Channel }}EnvelopeUnmarshaler{{$.Protocol | goIDUpper}}) error
-        Subscribe{{goIDUpper .}}({{goPkgExt "context"}}Context, func({{ goPkg .InType}}{{ goIDUpper .}}Receiver)) error
+        Unseal{{goID .}}({{goPkgUtil $.Protocol}}EnvelopeReader, {{goPkg $.Channel}}{{ goID $.Channel }}EnvelopeUnmarshaler{{$.Protocol | goID}}) error
+        Subscribe{{goID .}}({{goPkgExt "context"}}Context, func({{ goPkg .InType}}{{ goID .}}Receiver)) error
     {{- end}}
 {{- end}}
 }
 
-type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
-    Channel {{ . | goIDUpper }}Channel{{.Protocol | goIDUpper}}
+type {{. | goID}}{{.Protocol | goID}} struct {
+    Channel {{ . | goID }}Channel{{.Protocol | goID}}
 }
 
 {{template "code/proto/operation/commonMethods" .}}
@@ -60,23 +60,23 @@ type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
     {{- $innerChannel := .ProtoChannel.Channel}}
     {{- if .OperationReply.Channel}}{{$innerChannel = .OperationReply.Channel}}{{end}}
 
-    type {{ . | goIDUpper }}ReplyChannel{{.Protocol | goIDUpper}} interface {
+    type {{ . | goID }}ReplyChannel{{.Protocol | goID}} interface {
         Close() error
     {{range .BoundReplyMessages}}
         {{- if not (isVisible .) }}{{continue}}{{end}}
         {{if $.IsReplyPublisher}}
-            Seal{{goIDUpper .}}({{goPkgUtil $.Protocol}}EnvelopeWriter, {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
-            Publish{{goIDUpper .}}({{goPkgExt "context"}}Context, {{if not (impl $.Protocol)}}{{goPkgUtil $.Protocol}}EnvelopeWriter,{{end}} {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeMarshaler{{$.Protocol | goIDUpper}}) error
+            Seal{{goID .}}({{goPkgUtil $.Protocol}}EnvelopeWriter, {{goPkg $replyCh}}{{ goID $replyCh }}EnvelopeMarshaler{{$.Protocol | goID}}) error
+            Publish{{goID .}}({{goPkgExt "context"}}Context, {{if not (impl $.Protocol)}}{{goPkgUtil $.Protocol}}EnvelopeWriter,{{end}} {{goPkg $replyCh}}{{ goID $replyCh }}EnvelopeMarshaler{{$.Protocol | goID}}) error
         {{- end}}
         {{if $.IsReplySubscriber}}
-            Unseal{{goIDUpper .}}({{goPkgUtil $.Protocol}}EnvelopeReader, {{goPkg $replyCh}}{{ goIDUpper $replyCh }}EnvelopeUnmarshaler{{$.Protocol | goIDUpper}}) error
-            Subscribe{{goIDUpper .}}({{goPkgExt "context"}}Context, func({{ goPkg .InType}}{{ goIDUpper .}}Receiver)) error
+            Unseal{{goID .}}({{goPkgUtil $.Protocol}}EnvelopeReader, {{goPkg $replyCh}}{{ goID $replyCh }}EnvelopeUnmarshaler{{$.Protocol | goID}}) error
+            Subscribe{{goID .}}({{goPkgExt "context"}}Context, func({{ goPkg .InType}}{{ goID .}}Receiver)) error
         {{- end}}
     {{- end}}
     }
 
-    type {{$ | goIDUpper}}{{$.Protocol | goIDUpper}}Reply struct {
-        Channel {{ . | goIDUpper }}ReplyChannel{{.Protocol | goIDUpper}}
+    type {{$ | goID}}{{$.Protocol | goID}}Reply struct {
+        Channel {{ . | goID }}ReplyChannel{{.Protocol | goID}}
     }
     {{- if .IsReplyPublisher}}
         {{template "code/proto/operation/operationReply/publishMethods" .}}

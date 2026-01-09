@@ -49,7 +49,7 @@ classes: {
     .Config == common.ConfigDiagram
     */}}
 {{define "diagram/document"}}
-{{ goID .Location }}: "📄 {{.Location | toQuotable | ellipsisStart 40}}" {
+{{ goIDLower .Location }}: "📄 {{.Location | toQuotable | ellipsisStart 40}}" {
     class: document
 }
 {{- end}}

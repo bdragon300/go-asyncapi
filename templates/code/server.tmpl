@@ -2,24 +2,24 @@
 {{- pin .}}
 
 {{- if .ProtocolVersion}}
-const {{. | goIDUpper}}ProtocolVersion = {{.ProtocolVersion | goLit}}
+const {{. | goID}}ProtocolVersion = {{.ProtocolVersion | goLit}}
 {{- end}}
 
-func {{. | goIDUpper}}URL(
+func {{. | goID}}URL(
 {{- range $_, $v := .Variables.Entries}}
-    {{- $v | goID}} string,
+    {{- $v | goIDLower}} string,
 {{- end }}) (*{{goPkgExt "net/url"}}URL, error) {
     {{- if gt .Variables.Len 0}}
         {{- range $_, $v := .Variables.Entries}}
             {{- if $v.Default}}
-                if {{$v | goID}} == "" {
-                    {{$v | goID}} = {{$v.Default | goLit}}
+                if {{$v | goIDLower}} == "" {
+                    {{$v | goIDLower}} = {{$v.Default | goLit}}
                 }
             {{- end}}
         {{- end}}
         paramMap := map[string]string{
             {{- range $k, $v := .Variables.Entries}}
-                {{$k | goLit}}: {{$v | goID}},
+                {{$k | goLit}}: {{$v | goIDLower}},
             {{- end}}
         }
 
@@ -46,11 +46,11 @@ func {{. | goIDUpper}}URL(
 }
 
 {{- if .Bindings }}
-    type {{goIDUpper $}}Bindings struct{}
+    type {{goID $}}Bindings struct{}
 
     {{- range $proto := $.Bindings.Protocols}}
         {{with tryTmpl (print "code/proto/" $proto "/server/bindings/values") $}}
-            func (c {{goIDUpper $}}Bindings) {{ goIDUpper $proto }}() {{goPkgUtil $proto}}ServerBindings {
+            func (c {{goID $}}Bindings) {{ goID $proto }}() {{goPkgUtil $proto}}ServerBindings {
                 return {{.}}
             }
         {{- end}}

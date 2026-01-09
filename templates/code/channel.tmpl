@@ -2,18 +2,18 @@
 {{- pin .}}
 
 {{- if .Parameters.Len }}
-    type {{goIDUpper $}}Parameters struct {
+    type {{goID $}}Parameters struct {
     {{- range $k, $v := .Parameters.Entries}}
-        {{goIDUpper $k}} {{goPkg $v}}{{goIDUpper $v}}
+        {{goID $k}} {{goPkg $v}}{{goID $v}}
     {{- end}}
     }
 {{- end }}
 
-func {{. | goIDUpper}}Address({{if .Parameters.Len}}params {{goIDUpper $}}Parameters{{end}}) {{goPkgRun}}ParamString {
+func {{. | goID}}Address({{if .Parameters.Len}}params {{goID $}}Parameters{{end}}) {{goPkgRun}}ParamString {
 {{- if .Parameters.Len}}
     paramMap := map[string]string{
     {{- range .Parameters.Keys}}
-        {{goLit .}}: string(params.{{goIDUpper .}}),
+        {{goLit .}}: string(params.{{goID .}}),
     {{- end}}
     }
     return {{goPkgRun}}ParamString{
@@ -28,11 +28,11 @@ func {{. | goIDUpper}}Address({{if .Parameters.Len}}params {{goIDUpper $}}Parame
 }
 
 {{- if .Bindings }}
-    type {{goIDUpper $}}Bindings struct{}
+    type {{goID $}}Bindings struct{}
 
     {{- range $proto := $.Bindings.Protocols}}
         {{with tryTmpl (print "code/proto/" $proto "/channel/bindings/values") ($.ProtoChannel $proto)}}
-            func (c {{goIDUpper $}}Bindings) {{ goIDUpper $proto }}() {{goPkgUtil $proto}}ChannelBindings {
+            func (c {{goID $}}Bindings) {{ goID $proto }}() {{goPkgUtil $proto}}ChannelBindings {
                 return {{.}}
             }
         {{- end}}

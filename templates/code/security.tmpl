@@ -1,29 +1,29 @@
 {{/* dot == render.SecurityScheme */}}
 
 {{define "code/security/userPassword"}}
-func New{{goIDUpper .}}Security(credentials func() (username, password string)) {{goIDUpper .}}Security {
-    res := {{goIDUpper .}}Security{}
+func New{{goID .}}Security(credentials func() (username, password string)) {{goID .}}Security {
+    res := {{goID .}}Security{}
     res.credentials = credentials
     return res
 }
 
-type {{goIDUpper .}}Security struct {
+type {{goID .}}Security struct {
     credentials func() (string, string)
 }
 
-func (s {{goIDUpper .}}Security) AuthType() string {
+func (s {{goID .}}Security) AuthType() string {
     return "userPassword"
 }
 
-func (s {{goIDUpper .}}Security) UserPassword() (string, string) {
+func (s {{goID .}}Security) UserPassword() (string, string) {
     return s.credentials()
 }
 
 {{- range .BoundServers}}
-    func (s {{goIDUpper $}}Security) {{. | goIDUpper}}Security() {}
+    func (s {{goID $}}Security) {{. | goID}}Security() {}
 {{- end}}
 {{- range .BoundOperations}}
-    func (s {{goIDUpper $}}Security) {{. | goIDUpper}}Security() {}
+    func (s {{goID $}}Security) {{. | goID}}Security() {}
 {{- end}}
 
 {{- end}}
@@ -32,41 +32,41 @@ func (s {{goIDUpper .}}Security) UserPassword() (string, string) {
 {{/* Different services may accept the API key as a standalone value or as a username/password value.
      So, we generate here two variants for both cases, since the AsyncAPI doesn't allow to distinguish this for 'apiKey' type.
   */}}
-func New{{goIDUpper .}}Security(credentials func() string) {{goIDUpper .}}Security {
-    res := {{goIDUpper .}}Security{credentials: credentials}
+func New{{goID .}}Security(credentials func() string) {{goID .}}Security {
+    res := {{goID .}}Security{credentials: credentials}
     return res
 }
 
-type {{goIDUpper .}}Security struct {
+type {{goID .}}Security struct {
     credentials func() string
 }
 
-func (s {{goIDUpper .}}Security) AuthType() string {
+func (s {{goID .}}Security) AuthType() string {
     return "apiKey"
 }
 
-func (s {{goIDUpper .}}Security) APIKey() string {
+func (s {{goID .}}Security) APIKey() string {
     return s.credentials()
 }
 
-func (s {{goIDUpper .}}Security) In() string {
+func (s {{goID .}}Security) In() string {
     return {{goLit .Params.In}}
 }
 
 {{- range .BoundServers}}
-    func (s {{goIDUpper $}}Security) {{. | goIDUpper}}Security() {}
+    func (s {{goID $}}Security) {{. | goID}}Security() {}
 {{- end}}
 {{- range .BoundOperations}}
-    func (s {{goIDUpper $}}Security) {{. | goIDUpper}}Security() {}
+    func (s {{goID $}}Security) {{. | goID}}Security() {}
 {{- end}}
     
-func New{{goIDUpper .}}SecurityUserPassword(credentials func() (username, password string)) {{goIDUpper .}}SecurityUserPassword {
-    res := {{goIDUpper .}}SecurityUserPassword{credentials: credentials}
+func New{{goID .}}SecurityUserPassword(credentials func() (username, password string)) {{goID .}}SecurityUserPassword {
+    res := {{goID .}}SecurityUserPassword{credentials: credentials}
     return res
 }
     
-func New{{goIDUpper .}}SecurityUserOrPassword(credentials func() string) {{goIDUpper .}}SecurityUserPassword {
-    res := {{goIDUpper .}}SecurityUserPassword{}
+func New{{goID .}}SecurityUserOrPassword(credentials func() string) {{goID .}}SecurityUserPassword {
+    res := {{goID .}}SecurityUserPassword{}
     res.credentials = func() (string, string) {
         {{- if eq .Params.In "user"}}
             return credentials(), ""
@@ -79,27 +79,27 @@ func New{{goIDUpper .}}SecurityUserOrPassword(credentials func() string) {{goIDU
     return res
 }
 
-type {{goIDUpper .}}SecurityUserPassword struct {
+type {{goID .}}SecurityUserPassword struct {
     credentials func() (string, string)
 }
 
-func (s {{goIDUpper .}}SecurityUserPassword) AuthType() string {
+func (s {{goID .}}SecurityUserPassword) AuthType() string {
     return "apiKey"
 }
 
-func (s {{goIDUpper .}}SecurityUserPassword) UserPassword() (string, string) {
+func (s {{goID .}}SecurityUserPassword) UserPassword() (string, string) {
     return s.credentials()
 }
 
-func (s {{goIDUpper .}}SecurityUserPassword) In() string {
+func (s {{goID .}}SecurityUserPassword) In() string {
     return {{goLit .Params.In}}
 }
 
 {{- range .BoundServers}}
-    func (s {{goIDUpper $}}SecurityUserPassword) {{. | goIDUpper}}Security() {}
+    func (s {{goID $}}SecurityUserPassword) {{. | goID}}Security() {}
 {{- end}}
 {{- range .BoundOperations}}
-    func (s {{goIDUpper $}}SecurityUserPassword) {{. | goIDUpper}}Security() {}
+    func (s {{goID $}}SecurityUserPassword) {{. | goID}}Security() {}
 {{- end}}
 
 {{- end}}

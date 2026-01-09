@@ -9,7 +9,7 @@
     ports:
       - "{{$port}}:6379"
     volumes:
-      - "{{.Server.Name | goID}}{{range .ServerVariables}}_{{.Value | goID}}{{end}}:/data"
+      - "{{.Server.Name | goIDLower}}{{range .ServerVariables}}_{{.Value | goIDLower}}{{end}}:/data"
     hostname: "{{($.Server.URL .ServerVariables).Hostname | toQuotable}}"
     restart: on-failure
 {{- end}}
@@ -19,5 +19,5 @@
   .ServerVariables == []common.InfraServerVariableOpts
   */}}
 {{define "infra/docker/redis/volumes"}}
-  "{{.Server.Name | goID}}{{range .ServerVariables}}_{{.Value | goID}}{{end}}":
+  "{{.Server.Name | goIDLower}}{{range .ServerVariables}}_{{.Value | goIDLower}}{{end}}":
 {{- end}}

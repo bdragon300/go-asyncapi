@@ -2,16 +2,16 @@
 
 {{define "code/lang/gotypedefinition/definition"}}
     {{- if .Description }}
-        {{ print (goIDUpper .) "--" .Description | goComment }}
+        {{ print (goID .) "--" .Description | goComment }}
     {{- end }}
-    type {{ . | goIDUpper }} {{ .RedefinedType | goDef }}
+    type {{ . | goID }} {{ .RedefinedType | goDef }}
 {{- end}}
 {{define "code/lang/gotypedefinition/usage"}}
     {{- if .HasDefinition }}
         {{- if .Import }}
-            {{- goPkgExt .Import }}{{goIDUpper .}}
+            {{- goPkgExt .Import }}{{goID .}}
         {{- else }}
-            {{- goPkg . }}{{ . | goIDUpper }}
+            {{- goPkg . }}{{ . | goID }}
         {{- end }}
     {{- else }}
         {{- .RedefinedType | goUsage }}

@@ -70,8 +70,8 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 	extraFuncs := template.FuncMap{
 		// go* functions return Go code snippets
 		"goLit":     func(val any) (string, error) { traceCall("goLit", val); return templateGoLit(renderManager, val) },
-		"goIDUpper": func(val any) string { traceCall("goIDUpper", val); return templateGoID(renderManager, val, true) },
-		"goID":      func(val any) string { traceCall("goID", val); return templateGoID(renderManager, val, false) },
+		"goID": func(val any) string { traceCall("goID", val); return templateGoID(renderManager, val, true) },
+		"goIDLower":      func(val any) string { traceCall("goIDLower", val); return templateGoID(renderManager, val, false) },
 		"goComment": func(text string) string { traceCall("goComment", text); return templateGoComment(text) },
 		"goPkg": func(obj common.Artifact) (pkg string, err error) {
 			traceCall("goPkg", obj)

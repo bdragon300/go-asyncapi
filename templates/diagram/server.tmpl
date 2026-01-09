@@ -3,7 +3,7 @@
     .Config == common.ConfigDiagram
     */}}
 {{define "diagram/server"}}
-{{- if $.Config.ShowDocumentBorders}}{{goID $.Object.Pointer.Location}}.{{end}}{{ goID $.Object }}: "🖥 [{{$.Object.Protocol}}] {{$.Object.Host | toQuotable}}" {
+{{- if $.Config.ShowDocumentBorders}}{{goIDLower $.Object.Pointer.Location}}.{{end}}{{ goIDLower $.Object }}: "🖥 [{{$.Object.Protocol}}] {{$.Object.Host | toQuotable}}" {
     class: server
     {{- with tryTmpl (print "diagram/server/proto/" $.Object.Protocol) $ }}{{.}}{{end}}
 }

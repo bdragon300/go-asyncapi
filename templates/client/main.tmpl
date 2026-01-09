@@ -33,11 +33,11 @@ type DirectionCliCmd struct {
 {{- range .Objects}}
     {{- if not (isVisible .)}}{{continue}}{{end}}
 	{{- if eq .Kind "channel"}}
-		{{ . | goIDUpper }}Cmd *{{ . | goIDUpper }}Cmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Channel: {{.Name | toQuotable}}"`
+		{{ . | goID }}Cmd *{{ . | goID }}Cmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Channel: {{.Name | toQuotable}}"`
 	{{- else if eq .Kind "operation"}}
-		{{ . | goIDUpper }}Cmd *{{ . | goIDUpper }}Cmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Operation: {{.Name | toQuotable}}"`
+		{{ . | goID }}Cmd *{{ . | goID }}Cmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}" help:"Operation: {{.Name | toQuotable}}"`
         {{- if .OperationReply}}
-            {{. | goIDUpper}}ReplyCmd *{{. | goIDUpper}}ReplyCmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}-reply" help:"OperationReply: {{.Name | toQuotable}}"`
+            {{. | goID}}ReplyCmd *{{. | goID}}ReplyCmd `arg:"subcommand:{{.Name | toQuotable | toKebabCase}}-reply" help:"OperationReply: {{.Name | toQuotable}}"`
         {{- end}}
 	{{- end}}
 {{- end}}
@@ -47,8 +47,8 @@ type DirectionCliCmd struct {
     {{- if not (isVisible .)}}{{continue}}{{end}}
 	{{- if eq .Kind "server"}}
         {{- if not (impl .Protocol)}}{{continue}}{{end}}
-		type {{. | goIDUpper}}CliCmd struct {
-			{{if tryTmpl (print "client/server/" (.Protocol) "/cliMixin") .}}{{.Protocol | goIDUpper}}CliMixin{{end}}
+		type {{. | goID}}CliCmd struct {
+			{{if tryTmpl (print "client/server/" (.Protocol) "/cliMixin") .}}{{.Protocol | goID}}CliMixin{{end}}
             {{- range $scheme := .SecuritySchemes}}
                 {{- with tryTmpl (print "client/security/" ($scheme.SchemeType) "/cmdFlags") nil}}
                     // Security scheme: {{$scheme.SchemeType}}
@@ -60,9 +60,9 @@ type DirectionCliCmd struct {
 			{{- range $_, $v := .Variables.Entries}}
 				{{- with $v}}
 					{{- if .Default}}
-						{{. | goIDUpper}} string `arg:"--{{.Name | toQuotable | toKebabCase}}" help:"Server variable: {{.Name | toQuotable}}" default:"{{.Default | toQuotable}}"`
+						{{. | goID}} string `arg:"--{{.Name | toQuotable | toKebabCase}}" help:"Server variable: {{.Name | toQuotable}}" default:"{{.Default | toQuotable}}"`
 					{{- else}}
-						{{. | goIDUpper}} string `arg:"--{{.Name | toQuotable | toKebabCase}},required" help:"Server variable: {{.Name | toQuotable}}"`
+						{{. | goID}} string `arg:"--{{.Name | toQuotable | toKebabCase}},required" help:"Server variable: {{.Name | toQuotable}}"`
 					{{- end}}
 				{{- end}}
 			{{- end}}
@@ -157,14 +157,14 @@ func main() {
 	{{- range .Objects}}
         {{- if not (isVisible .)}}{{continue}}{{end}}
 		{{- if eq .Kind "channel"}}
-			case dirCmd.{{. | goIDUpper}}Cmd != nil:
-				err = channel{{. | goIDUpper}}(ctx, dirCmd.{{. | goIDUpper}}Cmd, chanOptions)
+			case dirCmd.{{. | goID}}Cmd != nil:
+				err = channel{{. | goID}}(ctx, dirCmd.{{. | goID}}Cmd, chanOptions)
 		{{- else if eq .Kind "operation"}}
-			case dirCmd.{{. | goIDUpper}}Cmd != nil:
-				err = operation{{. | goIDUpper}}(ctx, dirCmd.{{. | goIDUpper}}Cmd, chanOptions)
+			case dirCmd.{{. | goID}}Cmd != nil:
+				err = operation{{. | goID}}(ctx, dirCmd.{{. | goID}}Cmd, chanOptions)
             {{- if .OperationReply}}
-            case dirCmd.{{. | goIDUpper}}ReplyCmd != nil:
-                err = operationReply{{. | goIDUpper}}(ctx, dirCmd.{{. | goIDUpper}}ReplyCmd, chanOptions)
+            case dirCmd.{{. | goID}}ReplyCmd != nil:
+                err = operationReply{{. | goID}}(ctx, dirCmd.{{. | goID}}ReplyCmd, chanOptions)
             {{- end}}
 		{{- end}}
 	{{- end}}

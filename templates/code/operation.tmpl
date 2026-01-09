@@ -2,11 +2,11 @@
 {{- pin .}}
 
 {{- if .Bindings }}
-    type {{goIDUpper $}}Bindings struct{}
+    type {{goID $}}Bindings struct{}
 
     {{- range $proto := $.Bindings.Protocols}}
         {{with tryTmpl (print "code/proto/" $proto "/operation/bindings/values") ($.ProtoOperation $proto)}}
-            func (c {{goIDUpper $}}Bindings) {{ goIDUpper $proto }}() {{goPkgUtil $proto}}OperationBindings {
+            func (c {{goID $}}Bindings) {{ goID $proto }}() {{goPkgUtil $proto}}OperationBindings {
                 return {{.}}
             }
         {{- end}}

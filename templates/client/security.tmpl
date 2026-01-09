@@ -8,14 +8,14 @@ UserPasswordPassword *string `arg:"--userpassword-password,env:SECURITY_USERPASS
     .Server == render.Server
     .SecurityScheme == render.SecurityScheme
     */}}
-if args.{{goIDUpper $.Server}}Cmd.UserPasswordUser != nil || args.{{goIDUpper $.Server}}Cmd.UserPasswordPassword != nil {
-    serverSecurity = {{goPkg $.SecurityScheme}}New{{goIDUpper $.SecurityScheme}}Security(func() (string, string) {
+if args.{{goID $.Server}}Cmd.UserPasswordUser != nil || args.{{goID $.Server}}Cmd.UserPasswordPassword != nil {
+    serverSecurity = {{goPkg $.SecurityScheme}}New{{goID $.SecurityScheme}}Security(func() (string, string) {
         var user, pass string
-        if args.{{goIDUpper $.Server}}Cmd.UserPasswordUser != nil {
-            user = *args.{{goIDUpper $.Server}}Cmd.UserPasswordUser
+        if args.{{goID $.Server}}Cmd.UserPasswordUser != nil {
+            user = *args.{{goID $.Server}}Cmd.UserPasswordUser
         }
-        if args.{{goIDUpper $.Server}}Cmd.UserPasswordPassword != nil {
-            pass = *args.{{goIDUpper $.Server}}Cmd.UserPasswordPassword
+        if args.{{goID $.Server}}Cmd.UserPasswordPassword != nil {
+            pass = *args.{{goID $.Server}}Cmd.UserPasswordPassword
         }
         return user, pass
     })
@@ -28,7 +28,7 @@ if args.{{goIDUpper $.Server}}Cmd.UserPasswordUser != nil || args.{{goIDUpper $.
     .SecurityScheme == render.SecurityScheme
     */}}
 if args.UserPasswordUser != nil || args.UserPasswordPassword != nil {
-    operationSecurity = {{goPkg $.SecurityScheme}}New{{goIDUpper $.SecurityScheme}}Security(func() (string, string) {
+    operationSecurity = {{goPkg $.SecurityScheme}}New{{goID $.SecurityScheme}}Security(func() (string, string) {
         var user, pass string
         if args.UserPasswordUser != nil {
             user = *args.UserPasswordUser
@@ -51,18 +51,18 @@ APIKeyUserPass bool    `arg:"--apikey-userpass" help:"Pass the api key as user o
     .Server == render.Server
     .SecurityScheme == render.SecurityScheme
     */}}
-if args.{{goIDUpper $.Server}}Cmd.APIKeyValue != nil {
-    if args.{{goIDUpper $.Server}}Cmd.APIKeyUserPass
-        serverSecurity = {{goPkg $.SecurityScheme}}New{{goIDUpper $.SecurityScheme}}SecurityUserOrPassword(func() string {
-            if args.{{goIDUpper $.Server}}Cmd.APIKeyValue != nil {
-                return *args.{{goIDUpper $.Server}}Cmd.APIKeyValue
+if args.{{goID $.Server}}Cmd.APIKeyValue != nil {
+    if args.{{goID $.Server}}Cmd.APIKeyUserPass
+        serverSecurity = {{goPkg $.SecurityScheme}}New{{goID $.SecurityScheme}}SecurityUserOrPassword(func() string {
+            if args.{{goID $.Server}}Cmd.APIKeyValue != nil {
+                return *args.{{goID $.Server}}Cmd.APIKeyValue
             }
             return ""
         })
     } else {
-        serverSecurity = {{goPkg $.SecurityScheme}}New{{goIDUpper $.SecurityScheme}}Security(func() string {
-            if args.{{goIDUpper $.Server}}Cmd.APIKeyValue != nil {
-                return *args.{{goIDUpper $.Server}}Cmd.APIKeyValue
+        serverSecurity = {{goPkg $.SecurityScheme}}New{{goID $.SecurityScheme}}Security(func() string {
+            if args.{{goID $.Server}}Cmd.APIKeyValue != nil {
+                return *args.{{goID $.Server}}Cmd.APIKeyValue
             }
             return ""
         })
@@ -77,14 +77,14 @@ if args.{{goIDUpper $.Server}}Cmd.APIKeyValue != nil {
     */}}
 if args.APIKeyValue != nil {
     if args.APIKeyUserPass
-        operationSecurity = {{goPkg $.SecurityScheme}}New{{goIDUpper $.SecurityScheme}}SecurityUserOrPassword(func() string {
+        operationSecurity = {{goPkg $.SecurityScheme}}New{{goID $.SecurityScheme}}SecurityUserOrPassword(func() string {
             if args.APIKeyValue != nil {
                 return *args.APIKeyValue
             }
             return ""
         })
     } else {
-        operationSecurity = {{goPkg $.SecurityScheme}}New{{goIDUpper $.SecurityScheme}}Security(func() string {
+        operationSecurity = {{goPkg $.SecurityScheme}}New{{goID $.SecurityScheme}}Security(func() string {
             if args.APIKeyValue != nil {
                 return *args.APIKeyValue
             }

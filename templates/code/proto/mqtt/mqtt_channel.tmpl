@@ -10,14 +10,14 @@
 {{template "code/proto/channel/serverInterface" .}}
 {{template "code/proto/channel/openFunction" .}}
 
-type {{. | goIDUpper}}{{.Protocol | goIDUpper}} struct {
+type {{. | goID}}{{.Protocol | goID}} struct {
     address    {{goPkgRun}}ParamString
     {{if .IsPublisher}}publisher  {{goPkgUtil .Protocol}}Publisher{{end}}
     {{if .IsSubscriber}}subscriber {{goPkgUtil .Protocol}}Subscriber{{end}}
     topic string
 }
 
-func (c {{. | goIDUpper}}{{.Protocol | goIDUpper}}) Topic() string {
+func (c {{. | goID}}{{.Protocol | goID}}) Topic() string {
     return c.topic
 }
 

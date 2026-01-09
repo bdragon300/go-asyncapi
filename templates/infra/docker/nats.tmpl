@@ -11,7 +11,7 @@
     - "6222:6222"
     - "8222:8222"  # Web UI
     volumes:
-      - "{{.Server.Name | goID}}{{range .ServerVariables}}_{{.Value | goID}}{{end}}:/data"
+      - "{{.Server.Name | goIDLower}}{{range .ServerVariables}}_{{.Value | goIDLower}}{{end}}:/data"
 {{- end}}
 
 {{/* dot:
@@ -19,5 +19,5 @@
   .ServerVariables == []common.InfraServerVariableOpts
   */}}
 {{define "infra/docker/nats/volumes"}}
-  "{{.Server.Name | goID}}{{range .ServerVariables}}_{{.Value | goID}}{{end}}":
+  "{{.Server.Name | goIDLower}}{{range .ServerVariables}}_{{.Value | goIDLower}}{{end}}":
 {{- end}}
