@@ -1,0 +1,26 @@
+{{/* dot:
+  .Server == render.Server
+  .ServerVariables == []common.InfraServerVariableOpts
+  */}}
+{{define "infra/docker/mqtt5/services"}}
+  "{{.Server.Name | toQuotable}}{{range .ServerVariables}}_{{.Value | toQuotable}}{{end}}":
+    {{- $port := ($.Server.URL .ServerVariables).Port | default "1883"}}
+    image: emqx/emqx:latest
+    ports:
+      - "{{$port}}:1883"
+      {{with once "port_18083"}}- "18083:18083"{{end}}  # Management UI, creds:admin/public
+    volumes:
+      - "{{.Server.Name | goIDLower}}-data{{range .ServerVariables}}_{{.Value | goIDLower}}{{end}}:/opt/emqx/data"
+      - "{{.Server.Name | goIDLower}}-log{{range .ServerVariables}}_{{.Value | goIDLower}}{{end}}:/opt/emqx/log"
+    hostname: "{{($.Server.URL .ServerVariables).Hostname | toQuotable}}"
+    restart: on-failure
+{{- end}}
+
+{{/* dot:
+  .Server == render.Server
+  .ServerVariables == []common.InfraServerVariableOpts
+  */}}
+{{define "infra/docker/mqtt5/volumes"}}
+  "{{.Server.Name | goIDLower}}-data{{range .ServerVariables}}_{{.Value | goIDLower}}{{end}}":
+  "{{.Server.Name | goIDLower}}-log{{range .ServerVariables}}_{{.Value | goIDLower}}{{end}}":
+{{- end}}
