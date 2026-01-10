@@ -4,6 +4,7 @@ import (
 	"github.com/go-sprout/sprout"
 	"github.com/go-sprout/sprout/registry/checksum"
 	"github.com/go-sprout/sprout/registry/conversion"
+	"github.com/go-sprout/sprout/registry/crypto"
 	"github.com/go-sprout/sprout/registry/encoding"
 	"github.com/go-sprout/sprout/registry/env"
 	"github.com/go-sprout/sprout/registry/filesystem"
@@ -29,6 +30,7 @@ func init() {
 	lo.Must0(handler.AddRegistries(
 		checksum.NewRegistry(),
 		conversion.NewRegistry(),
+		crypto.NewRegistry(),
 		encoding.NewRegistry(),
 		env.NewRegistry(),
 		filesystem.NewRegistry(),

@@ -78,6 +78,16 @@ func (s *Server) SecuritySchemes() []*SecurityScheme {
 	return r
 }
 
+// FirstSecurityScheme returns the first security scheme defined for this server or nil if no security schemes are set.
+// This function exists because the "first" function in `sprout` returns error if the list is empty.
+// https://docs.atom.codes/sprout/registries/slices#first
+func (s *Server) FirstSecurityScheme() *SecurityScheme {
+	if len(s.SecuritySchemePromises) == 0 {
+		return nil
+	}
+	return s.SecuritySchemePromises[0].T()
+}
+
 // BoundChannels returns a list of channels that are bound to this server.
 func (s *Server) BoundChannels() []*Channel {
 	r := lo.FilterMap(s.AllActiveChannelsPromise.T(), func(r common.Artifact, _ int) (*Channel, bool) {

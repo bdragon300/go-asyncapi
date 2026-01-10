@@ -5,7 +5,21 @@
 {{define "infra/docker/nats/services"}}
   "{{.Server.Name | toQuotable}}{{range .ServerVariables}}_{{.Value | toQuotable}}{{end}}":
     {{- $port := ($.Server.URL .ServerVariables).Port | default "4222"}}
+    {{- if .Server.FirstSecurityScheme}}
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM nats:latest
+        {{- range .Server.SecuritySchemes}}
+          {{- if eq .SchemeType "userPassword" }}
+        CMD ["--user", "user", "--pass", "password"]  # Credentials: user:password
+          {{- else if eq .SchemeType "apiKey" }}
+        CMD ["--token", "apiKey"]  # API Key: apiKey
+          {{- end}}
+        {{- end}}
+    {{- else}}
     image: nats:latest
+    {{- end}}
     ports:
     - "{{$port}}:4222"
     - "6222:6222"

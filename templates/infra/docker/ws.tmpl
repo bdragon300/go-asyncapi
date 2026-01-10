@@ -9,13 +9,33 @@
       context: .
       dockerfile_inline: |
         FROM alpine:latest
-        RUN apk add --no-cache websocat
+        RUN apk add --no-cache websocat nginx
+        RUN echo 'server {\n\
+          listen {{$port}};\n\
+          server_name "{{($.Server.URL .ServerVariables).Hostname | toQuotable}}";\n\
+          location / {\n\
+              proxy_pass http://127.0.0.1:{{if ne $port "8080"}}8080{{else}}18080{{end}};\n\
+          }\n\
+          {{- with .Server.FirstSecurityScheme}}
+              {{- if or (eq .SchemeType "userPassword") (eq .SchemeType "apiKey") }}
+          auth_basic "{{.Name}}";\n\
+          auth_basic_user_file /etc/nginx/.htpasswd;\n\
+              {{- end}}
+          {{- end}}
+        }' > /etc/nginx/conf.d/default.conf
+        {{- with .Server.FirstSecurityScheme}}
+            {{- if eq .SchemeType "userPassword" }}
+        RUN echo 'user:{{bcrypt "password" | replace "$" "$$"}}' > /etc/nginx/.htpasswd  # Credentials: user:password
+            {{- else if eq .SchemeType "apiKey" }}
+        RUN echo ':{{bcrypt "password" | replace "$" "$$"}}' > /etc/nginx/.htpasswd  # Password: password
+            {{- end}}
+        {{- end}}
       tags:
         - websocat-alpine:latest
       network: host
     stdin_open: true
     tty: true
-    command: ["websocat", "-s", "0.0.0.0:{{$port}}"]
+    command: ["websocat", "-s", "127.0.0.1:{{if ne $port "8080"}}8080{{else}}18080{{end}}"]
     ports:
       - "{{$port}}:{{$port}}"
     hostname: "{{($.Server.URL .ServerVariables).Hostname | toQuotable}}"

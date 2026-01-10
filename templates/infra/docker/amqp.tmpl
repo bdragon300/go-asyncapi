@@ -13,9 +13,16 @@
       - "{{.Server.Name | goIDLower}}{{range .ServerVariables}}_{{.Value | goIDLower}}{{end}}:/var/lib/rabbitmq"
     hostname: "{{($.Server.URL .ServerVariables).Hostname | toQuotable}}"
     restart: on-failure
+    {{- with .Server.FirstSecurityScheme}}
+        {{- if eq .SchemeType "userPassword"}}
     environment:
       - RABBITMQ_DEFAULT_USER=user
       - RABBITMQ_DEFAULT_PASS=password
+        {{- else if eq .SchemeType "apiKey"}}
+    environment:
+      - RABBITMQ_DEFAULT_PASS=apiKey
+        {{- end}}
+    {{- end}}
 {{- end}}
 
 {{/* dot:

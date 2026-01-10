@@ -5,7 +5,22 @@
 {{define "infra/docker/mqtt/services"}}
   "{{.Server.Name | toQuotable}}{{range .ServerVariables}}_{{.Value | toQuotable}}{{end}}":
     {{- $port := ($.Server.URL .ServerVariables).Port | default "1883"}}
+    {{- with .Server.FirstSecurityScheme}}
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM emqx/emqx:latest
+      {{- if eq .SchemeType "userPassword" }}
+        RUN echo 'user_id,password,is_superuser\n\user,password,true' > /tmp/auth_bootstrap.csv  # Credentials: user:password
+    environment:
+        - EMQX__AUTHENTICATION__MECHANISM=password_based
+        - EMQX__AUTHENTICATION__BACKEND=built_in_database
+        - EMQX__AUTHENTICATION__BOOTSTRAP_FILE=/tmp/auth_bootstrap.csv
+        - EMQX__AUTHENTICATION__BOOTSTRAP_TYPE=plain
+      {{- end}}
+    {{- else}}
     image: emqx/emqx:latest
+    {{- end}}
     ports:
       - "{{$port}}:1883"
       {{with once "port_18083"}}- "18083:18083"{{end}}  # Management UI, creds:admin/public

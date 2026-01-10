@@ -5,7 +5,20 @@
 {{define "infra/docker/redis/services"}}
   "{{.Server.Name | toQuotable}}{{range .ServerVariables}}_{{.Value | toQuotable}}{{end}}":
     {{- $port := ($.Server.URL .ServerVariables).Port | default "6379"}}
+    {{- with .Server.FirstSecurityScheme}}
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM redis:latest
+      {{- if eq .SchemeType "userPassword" }}
+        RUN echo 'user user allcommands allkeys allchannels on >password' >> /usr/local/etc/redis/redis.conf  # Credentials: user:password
+      {{- else if eq .SchemeType "apiKey" }}
+        RUN echo 'user default allcommands allkeys allchannels on >password' >> /usr/local/etc/redis/redis.conf  # Password: password
+      {{- end }}
+        CMD [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+    {{- else}}
     image: redis:latest
+    {{- end}}
     ports:
       - "{{$port}}:6379"
     volumes:
