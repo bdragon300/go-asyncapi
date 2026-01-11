@@ -3,7 +3,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/redis/go-redis/v9"
+	goRedis "github.com/redis/go-redis/v9" {{/* Import alias to avoid conflict with generated package name */}}
 )
 
 func NewEnvelopeOut(buf []byte) *EnvelopeOut {
@@ -34,12 +34,12 @@ func (e *EnvelopeOut) AsAny() any {
 	return e.Buffer.String()
 }
 
-func NewEnvelopeIn(msg *redis.Message) *EnvelopeIn {
+func NewEnvelopeIn(msg *goRedis.Message) *EnvelopeIn {
 	return &EnvelopeIn{Message: msg, reader: strings.NewReader(msg.Payload)}
 }
 
 type EnvelopeIn struct {
-	*redis.Message
+	*goRedis.Message
 	reader io.Reader
 }
 

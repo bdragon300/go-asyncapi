@@ -4,16 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
+	stdHTTP "net/http" {{/* Import alias to avoid conflict with generated package name */}}
 )
 
 func NewEnvelopeOut(buf []byte) *EnvelopeOut {
-	req := &http.Request{ // Taken from http.NewRequestWithContext
+	req := &stdHTTP.Request{ // Taken from http.NewRequestWithContext
 		Method:     "GET",
 		Proto:      "HTTP/1.1",
 		ProtoMajor: 1,
 		ProtoMinor: 1,
-		Header:     make(http.Header),
+		Header:     make(stdHTTP.Header),
 	}
 	return &EnvelopeOut{
 		Request: req.WithContext(context.Background()),
@@ -22,7 +22,7 @@ func NewEnvelopeOut(buf []byte) *EnvelopeOut {
 }
 
 type EnvelopeOut struct {
-	*http.Request
+	*stdHTTP.Request
 	messageBindings {{goPkgUtil "http"}}MessageBindings
 	body            *bytes.Buffer
 }
@@ -67,7 +67,7 @@ func (e *EnvelopeOut) SetBindings(bindings {{goPkgUtil "http"}}MessageBindings) 
 	e.messageBindings = bindings
 }
 
-func (e *EnvelopeOut) AsStdRecord() *http.Request {
+func (e *EnvelopeOut) AsStdRecord() *stdHTTP.Request {
 	reqCopy := e.Request.Clone(context.Background())
 	reqCopy.Body = io.NopCloser(e.body)
 	reqCopy.ContentLength = int64(e.body.Len())
@@ -78,13 +78,13 @@ func (e *EnvelopeOut) AsStdRecord() *http.Request {
 	return reqCopy
 }
 
-func NewEnvelopeIn(req *http.Request, responseWriter http.ResponseWriter) *EnvelopeIn {
+func NewEnvelopeIn(req *stdHTTP.Request, responseWriter stdHTTP.ResponseWriter) *EnvelopeIn {
 	return &EnvelopeIn{Request: req, ResponseWriter: responseWriter}
 }
 
 type EnvelopeIn struct {
-	*http.Request
-	ResponseWriter http.ResponseWriter
+	*stdHTTP.Request
+	ResponseWriter stdHTTP.ResponseWriter
 }
 
 func (e *EnvelopeIn) Read(p []byte) (n int, err error) {

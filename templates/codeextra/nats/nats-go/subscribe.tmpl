@@ -3,7 +3,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/nats-io/nats.go"
+	natsGo "github.com/nats-io/nats.go" {{/* Import alias to avoid conflict with generated package name */}}
 )
 
 type Subscription struct {
@@ -17,7 +17,7 @@ type Subscription struct {
 }
 
 func (r *Subscription) Receive(ctx context.Context, cb func(envelope {{goPkgUtil "nats"}}EnvelopeReader)) (err error) {
-	var sub *nats.Subscription
+	var sub *natsGo.Subscription
 	if r.operationBindings != nil && r.operationBindings.Queue != "" {
 		sub, err = r.Client.QueueSubscribeSync(r.Subject, r.operationBindings.Queue)
 		if err != nil {

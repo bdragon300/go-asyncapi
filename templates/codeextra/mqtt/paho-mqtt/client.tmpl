@@ -2,13 +2,13 @@ import (
 	"context"
 	"fmt"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
+	paho "github.com/eclipse/paho.mqtt.golang"
 )
 
-func NewClient(ctx context.Context, serverURL string, bindings *{{goPkgUtil "mqtt"}}ServerBindings, security {{goPkgRun}}AnySecurityScheme, initClientOptions *mqtt.ClientOptions) (*Client, error) {
+func NewClient(ctx context.Context, serverURL string, bindings *{{goPkgUtil "mqtt"}}ServerBindings, security {{goPkgRun}}AnySecurityScheme, initClientOptions *paho.ClientOptions) (*Client, error) {
 	co := initClientOptions
 	if co == nil {
-		co = mqtt.NewClientOptions()
+		co = paho.NewClientOptions()
 	}
 
 	co.AddBroker(serverURL)
@@ -31,7 +31,7 @@ func NewClient(ctx context.Context, serverURL string, bindings *{{goPkgUtil "mqt
 		}
 	}
 
-	cl := mqtt.NewClient(co)
+	cl := paho.NewClient(co)
 	tok := cl.Connect()
 	select {
 	case <-ctx.Done():
@@ -49,7 +49,7 @@ func NewClient(ctx context.Context, serverURL string, bindings *{{goPkgUtil "mqt
 }
 
 type Client struct {
-	mqtt.Client
+	paho.Client
 	bindings *{{goPkgUtil "mqtt"}}ServerBindings
 }
 
@@ -64,7 +64,7 @@ func (c *Client) Subscriber(ctx context.Context, address string, chb *{{goPkgUti
 	}
 
 	ch := make(chan {{goPkgUtil "mqtt"}}EnvelopeReader)
-	tok := c.Client.Subscribe(address, qos, func(_ mqtt.Client, message mqtt.Message) {
+	tok := c.Client.Subscribe(address, qos, func(_ paho.Client, message paho.Message) {
 		ch <- NewEnvelopeIn(message)
 	})
 	select {
@@ -106,7 +106,7 @@ func (c *Client) Publisher(_ context.Context, address string, chb *{{goPkgUtil "
 	return &r, nil
 }
 
-func applySecurity(co *mqtt.ClientOptions, sec {{goPkgRun}}AnySecurityScheme) error {
+func applySecurity(co *paho.ClientOptions, sec {{goPkgRun}}AnySecurityScheme) error {
 	switch v := sec.(type) {
 	case {{goPkgRun}}UserPasswordSecurity:
 		u, p := v.UserPassword()

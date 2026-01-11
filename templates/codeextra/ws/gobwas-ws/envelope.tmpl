@@ -1,7 +1,7 @@
 import (
 	"bytes"
 
-	"github.com/gobwas/ws"
+	wsclient "github.com/gobwas/ws" {{/* Import alias to avoid conflict with generated package name */}}
 	"github.com/gobwas/ws/wsutil"
 )
 
@@ -11,7 +11,7 @@ func NewEnvelopeOut(buf []byte) *EnvelopeOut {
 
 type EnvelopeOut struct {
 	*bytes.Buffer
-	opCode      ws.OpCode
+	opCode      wsclient.OpCode
 	headers     {{goPkgRun}}Headers
 	contentType string
 }
@@ -31,10 +31,10 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 func (e *EnvelopeOut) SetBindings(_ {{goPkgUtil "ws"}}MessageBindings) {}
 
 func (e *EnvelopeOut) SetOpCode(opCode byte) {
-	e.opCode = ws.OpCode(opCode)
+	e.opCode = wsclient.OpCode(opCode)
 }
 
-func (e *EnvelopeOut) OpCode() ws.OpCode {
+func (e *EnvelopeOut) OpCode() wsclient.OpCode {
 	return e.opCode
 }
 

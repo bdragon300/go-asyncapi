@@ -7,14 +7,14 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gobwas/ws"
+	wsclient "github.com/gobwas/ws" {{/* Import alias to avoid conflict with generated package name */}}
 	"github.com/gobwas/ws/wsutil"
 )
 
 // TODO: remove httpResponseTimeout, allow to use smth like http.requestHandler or nothing
 func NewConsumer(bindings *{{goPkgUtil "ws"}}ServerBindings, security {{goPkgRun}}AnySecurityScheme) *ConsumeClient {
 	return &ConsumeClient{
-		Upgrader:    ws.DefaultHTTPUpgrader,
+		Upgrader:    wsclient.DefaultHTTPUpgrader,
 		bindings:    bindings,
 		security:    security,
 		connections: make(map[string]chan *Channel),
@@ -23,7 +23,7 @@ func NewConsumer(bindings *{{goPkgUtil "ws"}}ServerBindings, security {{goPkgRun
 }
 
 type HTTPUpgraderInterface interface {
-	Upgrade(r *http.Request, w http.ResponseWriter) (conn net.Conn, rw *bufio.ReadWriter, hs ws.Handshake, err error)
+	Upgrade(r *http.Request, w http.ResponseWriter) (conn net.Conn, rw *bufio.ReadWriter, hs wsclient.Handshake, err error)
 }
 
 type ConsumeClient struct {
@@ -97,7 +97,7 @@ func (c *ConsumeClient) ensureChannel(channelName string, chb *{{goPkgUtil "ws"}
 			case <-req.Context().Done():
 				// TODO: error log
 				defer conn.Close()
-				_ = ws{{goPkgUtil "ws"}}WriteServerMessage(netConn, ws.OpClose, []byte("connection closed"))
+				_ = wsutil.WriteServerMessage(netConn, wsclient.OpClose, []byte("connection closed"))
 			case c.connections[channelName] <- conn:
 			}
 		})

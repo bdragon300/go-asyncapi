@@ -1,7 +1,7 @@
 import (
 	"context"
 	"fmt"
-	"net/http"
+	stdHTTP "net/http" {{/* Import alias to avoid conflict with generated package name */}}
 	"strings"
 	"sync"
 )
@@ -18,7 +18,7 @@ func NewConsumer(bindings *{{goPkgUtil "http"}}ServerBindings, security {{goPkgR
 type subscriberFunc func(envelope {{goPkgUtil "http"}}EnvelopeReader)
 
 type ConsumeClient struct {
-	http.ServeMux
+	stdHTTP.ServeMux
 	bindings *{{goPkgUtil "http"}}ServerBindings
 	security {{goPkgRun}}AnySecurityScheme
 	mu       *sync.RWMutex
@@ -51,11 +51,11 @@ func (c *ConsumeClient) Subscriber(_ context.Context, address string, chb *{{goP
 func (c *ConsumeClient) ensureChannel(channelName string, opb *{{goPkgUtil "http"}}OperationBindings, sec {{goPkgRun}}AnySecurityScheme) {
 	if _, ok := c.subscribers[channelName]; !ok {
 		c.subscribers[channelName] = {{goPkgRun}}NewRing[subscriberFunc]()
-		c.HandleFunc(channelName, func(w http.ResponseWriter, req *http.Request) {
+		c.HandleFunc(channelName, func(w stdHTTP.ResponseWriter, req *stdHTTP.Request) {
 			if opb != nil {
 				needMethod := opb.Method
 				if needMethod != "" && strings.ToUpper(needMethod) != req.Method {
-					http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+					stdHTTP.Error(w, "method not allowed", stdHTTP.StatusMethodNotAllowed)
 					return
 				}
 			}
@@ -63,11 +63,11 @@ func (c *ConsumeClient) ensureChannel(channelName string, opb *{{goPkgUtil "http
 			if sec != nil {
 				authOk, err := c.checkSecurity(req, sec)
 				if err != nil {
-					http.Error(w, "internal server error", http.StatusInternalServerError)
+					stdHTTP.Error(w, "internal server error", stdHTTP.StatusInternalServerError)
 					return
 				}
 				if !authOk {
-					http.Error(w, "unauthorized", http.StatusUnauthorized)
+					stdHTTP.Error(w, "unauthorized", stdHTTP.StatusUnauthorized)
 					return
 				}
 			}
@@ -75,12 +75,12 @@ func (c *ConsumeClient) ensureChannel(channelName string, opb *{{goPkgUtil "http
 			c.mu.RLock()
 			defer c.mu.RUnlock()
 			if _, ok := c.subscribers[channelName]; !ok {
-				http.Error(w, "channel not found", http.StatusNotFound)
+				stdHTTP.Error(w, "channel not found", stdHTTP.StatusNotFound)
 				return
 			}
 			cb, ok := c.subscribers[channelName].Next()
 			if !ok {
-				http.Error(w, "no subscribers", http.StatusServiceUnavailable)
+				stdHTTP.Error(w, "no subscribers", stdHTTP.StatusServiceUnavailable)
 				return
 			}
 			cb(NewEnvelopeIn(req, w))
@@ -88,7 +88,7 @@ func (c *ConsumeClient) ensureChannel(channelName string, opb *{{goPkgUtil "http
 	}
 }
 
-func (c *ConsumeClient) checkSecurity(req *http.Request, sec {{goPkgRun}}AnySecurityScheme) (bool, error) {
+func (c *ConsumeClient) checkSecurity(req *stdHTTP.Request, sec {{goPkgRun}}AnySecurityScheme) (bool, error) {
 	uAuth := req.URL.User
 	if uAuth == nil {
 		return false, nil

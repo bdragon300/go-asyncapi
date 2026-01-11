@@ -1,11 +1,11 @@
 import (
 	"context"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
+	paho "github.com/eclipse/paho.mqtt.golang"
 )
 
 type SubscribeChannel struct {
-	Client mqtt.Client
+	Client paho.Client
 	Topic  string
 
 	channelBindings *{{goPkgUtil "mqtt"}}ChannelBindings

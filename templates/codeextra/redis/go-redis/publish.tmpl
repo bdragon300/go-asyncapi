@@ -2,11 +2,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redis/go-redis/v9"
+	goRedis "github.com/redis/go-redis/v9" {{/* Import alias to avoid conflict with generated package name */}}
 )
 
 type PublishChannel struct {
-	Client *redis.Client
+	Client *goRedis.Client
 	Name   string
 }
 

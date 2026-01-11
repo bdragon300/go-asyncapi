@@ -1,7 +1,7 @@
 import (
 	"bytes"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
+	paho "github.com/eclipse/paho.mqtt.golang"
 )
 
 func NewEnvelopeOut(buf []byte) *EnvelopeOut {
@@ -52,12 +52,12 @@ func (e *EnvelopeOut) SetRetained(retained bool) {
 	e.retained = retained
 }
 
-func NewEnvelopeIn(msg mqtt.Message) *EnvelopeIn {
+func NewEnvelopeIn(msg paho.Message) *EnvelopeIn {
 	return &EnvelopeIn{Message: msg, reader: bytes.NewReader(msg.Payload())}
 }
 
 type EnvelopeIn struct {
-	mqtt.Message
+	paho.Message
 	reader  *bytes.Reader
 	headers {{goPkgRun}}Headers
 }

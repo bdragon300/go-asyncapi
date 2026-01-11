@@ -2,17 +2,17 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/nats-io/nats.go"
+	natsGo "github.com/nats-io/nats.go" {{/* Import alias to avoid conflict with generated package name */}}
 )
 
 func NewEnvelopeOut(buf []byte) *EnvelopeOut {
-    m := nats.NewMsg("")
+    m := natsGo.NewMsg("")
     m.Data = buf
     return &EnvelopeOut{Msg: m}
 }
 
 type EnvelopeOut struct {
-	*nats.Msg
+	*natsGo.Msg
 	messageBindings {{goPkgUtil "nats"}}MessageBindings
 }
 
@@ -27,7 +27,7 @@ func (e *EnvelopeOut) ResetPayload() {
 
 func (e *EnvelopeOut) SetHeaders(headers {{goPkgRun}}Headers) {
 	if e.Header == nil {
-		e.Header = nats.Header{}
+		e.Header = natsGo.Header{}
 	}
 	for k, v := range headers.ToByteValues() {
 		e.Header.Set(k, string(v))
@@ -36,7 +36,7 @@ func (e *EnvelopeOut) SetHeaders(headers {{goPkgRun}}Headers) {
 
 func (e *EnvelopeOut) SetContentType(contentType string) {
 	if e.Header == nil {
-		e.Header = nats.Header{}
+		e.Header = natsGo.Header{}
 	}
 	e.Header.Set("Content-Type", contentType)
 }
@@ -49,7 +49,7 @@ func (e *EnvelopeOut) SetSubject(subject string) {
 	e.Subject = subject
 }
 
-func NewEnvelopeIn(msg *nats.Msg) *EnvelopeIn {
+func NewEnvelopeIn(msg *natsGo.Msg) *EnvelopeIn {
 	return &EnvelopeIn{
 		Msg: msg,
 		rd:  bytes.NewReader(msg.Data),
@@ -57,7 +57,7 @@ func NewEnvelopeIn(msg *nats.Msg) *EnvelopeIn {
 }
 
 type EnvelopeIn struct {
-	*nats.Msg
+	*natsGo.Msg
 	rd io.Reader
 }
 

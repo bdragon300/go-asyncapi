@@ -2,11 +2,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redis/go-redis/v9"
+	goRedis "github.com/redis/go-redis/v9" {{/* Import alias to avoid conflict with generated package name */}}
 )
 
 func NewClient(serverURL string, security {{goPkgRun}}AnySecurityScheme) (*Client, error) {
-	opts, err := redis.ParseURL(serverURL)
+	opts, err := goRedis.ParseURL(serverURL)
 	if err != nil {
 		return nil, err
 	}
@@ -16,12 +16,12 @@ func NewClient(serverURL string, security {{goPkgRun}}AnySecurityScheme) (*Clien
 		}
 	}
 
-	cl := redis.NewClient(opts)
+	cl := goRedis.NewClient(opts)
 	return &Client{Client: cl}, nil
 }
 
 type Client struct {
-	*redis.Client
+	*goRedis.Client
 }
 
 func (c *Client) Publisher(ctx context.Context, address string, _ *{{goPkgUtil "redis"}}ChannelBindings, _ *{{goPkgUtil "redis"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "redis"}}Publisher, error) {
@@ -47,7 +47,7 @@ func (c *Client) Subscriber(ctx context.Context, address string, _ *{{goPkgUtil 
 	}, nil
 }
 
-func applySecurity(opts *redis.Options, security {{goPkgRun}}AnySecurityScheme) error {
+func applySecurity(opts *goRedis.Options, security {{goPkgRun}}AnySecurityScheme) error {
 	switch v := security.(type) {
 	case {{goPkgRun}}UserPasswordSecurity:
 		u, p := v.UserPassword()
@@ -63,7 +63,7 @@ func applySecurity(opts *redis.Options, security {{goPkgRun}}AnySecurityScheme) 
 	return fmt.Errorf("unsupported security scheme: %v", security.AuthType())
 }
 
-func authenticateConn(ctx context.Context, conn *redis.Conn, security {{goPkgRun}}AnySecurityScheme) error {
+func authenticateConn(ctx context.Context, conn *goRedis.Conn, security {{goPkgRun}}AnySecurityScheme) error {
 	switch v := security.(type) {
 	case {{goPkgRun}}UserPasswordSecurity:
 		u, p := v.UserPassword()

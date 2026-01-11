@@ -1,13 +1,13 @@
 import (
 	"context"
 	"fmt"
-	"net/http"
+	stdHTTP "net/http" {{/* Import alias to avoid conflict with generated package name */}}
 	"net/url"
 )
 
 func NewPublisher(chb *{{goPkgUtil "http"}}ChannelBindings, opb *{{goPkgUtil "http"}}OperationBindings, channelURL *url.URL, sec {{goPkgRun}}AnySecurityScheme) *PublishChannel {
 	return &PublishChannel{
-		Client:            http.DefaultClient,
+		Client:            stdHTTP.DefaultClient,
 		channelURL:        channelURL,
 		channelBindings:   chb,
 		operationBindings: opb,
@@ -16,7 +16,7 @@ func NewPublisher(chb *{{goPkgUtil "http"}}ChannelBindings, opb *{{goPkgUtil "ht
 }
 
 type PublishChannel struct {
-	Client            *http.Client
+	Client            *stdHTTP.Client
 	channelURL        *url.URL
 	channelBindings   *{{goPkgUtil "http"}}ChannelBindings
 	operationBindings *{{goPkgUtil "http"}}OperationBindings
@@ -24,7 +24,7 @@ type PublishChannel struct {
 }
 
 type ImplementationRecord interface {
-	AsStdRecord() *http.Request
+	AsStdRecord() *stdHTTP.Request
 	// TODO: Bindings?
 }
 
@@ -54,7 +54,7 @@ func (p PublishChannel) Send(ctx context.Context, envelopes ...{{goPkgUtil "http
 	return nil
 }
 
-func (p PublishChannel) applySecurity(req *http.Request) error {
+func (p PublishChannel) applySecurity(req *stdHTTP.Request) error {
 	u := req.URL
 
 	switch v := p.security.(type) {

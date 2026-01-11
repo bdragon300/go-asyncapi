@@ -3,7 +3,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/gobwas/ws"
+	wsclient "github.com/gobwas/ws" {{/* Import alias to avoid conflict with generated package name */}}
 )
 
 func NewProducer(serverURL *url.URL, bindings *{{goPkgUtil "ws"}}ServerBindings, security {{goPkgRun}}AnySecurityScheme) *ProduceClient {
@@ -36,7 +36,7 @@ func (p ProduceClient) Publisher(ctx context.Context, address string, chb *{{goP
 			return nil, err
 		}
 	}
-	netConn, _, _, err := ws.Dial(ctx, u.String())
+	netConn, _, _, err := wsclient.Dial(ctx, u.String())
 	if err != nil {
 		return nil, err
 	}
