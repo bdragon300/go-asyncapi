@@ -3,8 +3,10 @@
     .Config == common.ConfigDiagram
     */}}
 {{define "diagram/server"}}
-{{- if $.Config.ShowDocumentBorders}}{{goIDLower $.Object.Pointer.Location}}.{{end}}{{ goIDLower $.Object }}: "🖥 [{{$.Object.Protocol}}] {{$.Object.Host | toQuotable}}" {
+{{- with $.Object}}
+{{- if $.Config.ShowDocumentBorders}}{{goIDLower .Pointer.Location}}.{{end}}{{ goIDLower . }}: "🖥 [{{.Protocol}}] {{toQuotable .Host}}{{with .SecuritySchemes}}\n {{range .}} 🔒{{toQuotable .SchemeType}} {{end}}{{end}}" {
     class: server
-    {{- with tryTmpl (print "diagram/server/proto/" $.Object.Protocol) $ }}{{.}}{{end}}
+    {{- with tryTmpl (print "diagram/server/proto/" .Protocol) $ }}{{.}}{{end}}
 }
+{{- end}}
 {{- end}}
