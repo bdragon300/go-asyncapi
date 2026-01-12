@@ -31,10 +31,12 @@ func {{. | goID}}Address({{if .Parameters.Len}}params {{goID $}}Parameters{{end}
     type {{goID $}}Bindings struct{}
 
     {{- range $proto := $.Bindings.Protocols}}
-        {{with tryTmpl (print "code/proto/" $proto "/channel/bindings/values") ($.ProtoChannel $proto)}}
-            func (c {{goID $}}Bindings) {{ goID $proto }}() {{goPkgUtil $proto}}ChannelBindings {
-                return {{.}}
-            }
+        func (c {{goID $}}Bindings) {{ goID $proto }}() {{goPkgUtil $proto}}ChannelBindings {
+        {{- with tryTmpl (print "code/proto/" $proto "/channel/bindings/values") ($.ProtoChannel $proto)}}
+            return {{.}}
+        {{- else}}
+            return {{goPkgUtil $proto}}ChannelBindings{}
         {{- end}}
+        }
     {{- end}}
 {{- end}}

@@ -62,7 +62,7 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	// Rendering
 	//
 	activeProtocols := collectActiveServersProtocols(documents)
-	logger.Debug("Renders protocols", "value", activeProtocols)
+	logger.Debug("Collected active servers protocols", "value", activeProtocols)
 
 	// TODO: refactor RenderOpts -- it almost not needed here, it's related to codegen.
 	//       Also consider to include add InfraServerOpts (replace RenderOpts to interface in manager?)

@@ -49,10 +49,12 @@ func {{. | goID}}URL(
     type {{goID $}}Bindings struct{}
 
     {{- range $proto := $.Bindings.Protocols}}
-        {{with tryTmpl (print "code/proto/" $proto "/server/bindings/values") $}}
-            func (c {{goID $}}Bindings) {{ goID $proto }}() {{goPkgUtil $proto}}ServerBindings {
-                return {{.}}
-            }
+        func (c {{goID $}}Bindings) {{ goID $proto }}() {{goPkgUtil $proto}}ServerBindings {
+        {{- with tryTmpl (print "code/proto/" $proto "/server/bindings/values") $}}
+            return {{.}}
+        {{- else}}
+            return {{goPkgUtil $proto}}ServerBindings{}
         {{- end}}
+        }
     {{- end}}
 {{- end}}

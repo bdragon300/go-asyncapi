@@ -5,11 +5,13 @@
     type {{goID $}}Bindings struct{}
 
     {{- range $proto := $.Bindings.Protocols}}
-        {{with tryTmpl (print "code/proto/" $proto "/message/bindings/values") ($.ProtoMessage $proto)}}
-            func (c {{goID $}}Bindings) {{ goID $proto }}() {{goPkgUtil $proto}}MessageBindings {
-                return {{.}}
-            }
+        func (c {{goID $}}Bindings) {{ goID $proto }}() {{goPkgUtil $proto}}MessageBindings {
+        {{- with tryTmpl (print "code/proto/" $proto "/message/bindings/values") ($.ProtoMessage $proto)}}
+            return {{.}}
+        {{- else}}
+            return {{goPkgUtil $proto}}MessageBindings{}
         {{- end}}
+        }
     {{- end}}
 {{- end }}
 
@@ -17,9 +19,8 @@
     type {{ . | goID }}Sender interface {
         SetPayload(payload {{.PayloadType | goUsage}}) *{{ .OutType | goID }}
         SetHeaders(headers {{.HeadersType | goUsage}}) *{{ .OutType | goID }}
-        {{- if isVisible .CorrelationID}}
-            {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" .CorrelationID.BaseRuntimeExpression "TargetType" .OutType}}
-            SetCorrelationID(value {{template "code/runtimeExpression/varType" $ctx}}) *{{ .OutType | goID }}
+        {{- with runtimeExpression .CorrelationID .OutType false}}
+            SetCorrelationID(value {{goUsage .LastVarType}}) *{{ $.OutType | goID }}
         {{- end}}
     }
 
@@ -35,10 +36,11 @@
         return m
     }
 
-    {{- if isVisible .CorrelationID}}
-        {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" .CorrelationID.BaseRuntimeExpression "TargetType" .OutType}}
-        func (m *{{ .OutType | goID }}) SetCorrelationID(value {{template "code/runtimeExpression/varType" $ctx}}) *{{ .OutType | goID }} {
-            {{template "code/runtimeExpression/setterBody" $ctx}}
+    {{- with runtimeExpression .CorrelationID .OutType false}}
+        func (m *{{ $.OutType | goID }}) SetCorrelationID(value {{goUsage .LastVarType}}) *{{ goID $.OutType }} {
+            {{.FirstVar}} := m.{{.FieldKind | toTitleCase}}
+            {{template "code/runtimeExpression/setterBody" .}}
+            m.{{.FieldKind | toTitleCase}} = {{.FirstVar}}
             return m
         }
     {{- end}}
@@ -46,10 +48,13 @@
     {{- range $op := .BoundPubReplyOperations}}
         {{- $opr := $op.OperationReply}}
         {{- if and (isVisible $op) (isVisible $opr) $opr.OperationReplyAddress }}
-            {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" $opr.OperationReplyAddress.BaseRuntimeExpression "TargetType" $.OutType}}
-            func (m *{{ $.OutType | goID }}) SetReplyAddress{{$op | goID}}(value {{template "code/runtimeExpression/varType" $ctx}}) {
-                {{template "code/runtimeExpression/setterBody" $ctx}}
-            }
+            {{- with runtimeExpression $opr.OperationReplyAddress $.OutType false}}
+                func (m *{{ $.OutType | goID }}) SetReplyAddress{{$op | goID}}(value {{goUsage .LastVarType}}) {
+                    {{.FirstVar}} := m.{{.FieldKind | toTitleCase}}
+                    {{template "code/runtimeExpression/setterBody" .}}
+                    m.{{.FieldKind | toTitleCase}} = {{.FirstVar}}
+                }
+            {{- end}}
         {{- end}}
     {{- end}}
 {{- end}}
@@ -58,9 +63,8 @@
     type {{ $ | goID }}Receiver interface {
         Payload() {{.PayloadType | goUsage}}
         Headers() {{.HeadersType | goUsage}}
-        {{- if isVisible .CorrelationID}}
-            {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" .CorrelationID.BaseRuntimeExpression "TargetType" .InType}}
-            CorrelationID() (value {{template "code/runtimeExpression/varType" $ctx}}, err error)
+        {{- with runtimeExpression .CorrelationID $.InType false}}
+            CorrelationID() (value {{goUsage .LastVarType}}, err error)
         {{- end}}
     }
 
@@ -74,10 +78,11 @@
         return m.headers
     }
 
-    {{- if isVisible .CorrelationID}}
-        {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" .CorrelationID.BaseRuntimeExpression "TargetType" .InType}}
-        func (m {{ .InType | goID }}) CorrelationID() (value {{template "code/runtimeExpression/varType" $ctx}}, err error) {
-            {{template "code/runtimeExpression/getterBody" $ctx}}
+    {{- with runtimeExpression .CorrelationID $.InType false}}
+        func (m {{ $.InType | goID }}) CorrelationID() (value {{goUsage .LastVarType}}, err error) {
+            {{.FirstVar}} := m.{{.FieldKind}}
+            {{template "code/runtimeExpression/getterBody" .}}
+            {{if .CodeSteps}}value = {{.LastVar}}{{end}}
             return
         }
     {{- end}}
@@ -85,11 +90,14 @@
     {{- range $op := .BoundSubReplyOperations}}
         {{- $opr := $op.OperationReply}}
         {{- if and (isVisible $op) (isVisible $opr) $opr.OperationReplyAddress}}
-            {{- $ctx := dict "SourceVarName" "m" "RuntimeExpression" $opr.OperationReplyAddress.BaseRuntimeExpression "TargetType" $.InType}}
-            func (m *{{ $.InType | goID }}) ReplyAddress{{$op | goID}}() (value {{template "code/runtimeExpression/varType" $ctx}}, err error) {
-                {{template "code/runtimeExpression/getterBody" $ctx}}
-                return
-            }
+            {{- with runtimeExpression $opr.OperationReplyAddress $.InType false}}
+                func (m *{{ $.InType | goID }}) ReplyAddress{{$op | goID}}() (value {{goUsage .LastVarType}}, err error) {
+                    {{.FirstVar}} := m.{{.FieldKind}}
+                    {{template "code/runtimeExpression/getterBody" .}}
+                    {{if .CodeSteps}}value = {{.LastVar}}{{end}}
+                    return
+                }
+            {{- end}}
         {{- end}}
     {{- end}}
 {{- end}}

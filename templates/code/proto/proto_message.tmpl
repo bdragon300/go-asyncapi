@@ -20,7 +20,7 @@ func (m *{{ .OutType | goID }}) MarshalEnvelope{{ .Protocol | goID }}(envelope {
     envelope.SetContentType({{.EffectiveContentType | goLit}})
     {{- if .HeadersTypePromise}}
         {{- /* Headers schema is defined */}}
-        envelope.SetHeaders({
+        envelope.SetHeaders({{goPkgRun}}Headers{
         {{- range .HeadersType.Fields}}
             {{ .Name | goLit}}: m.Headers.{{.Name}},
         {{- end}}

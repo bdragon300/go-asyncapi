@@ -229,7 +229,7 @@ type ProtoMessage struct {
 }
 
 func (p *ProtoMessage) Pinnable() bool {
-	return false
+	return false // ProtoMessage is a temporary object, it cannot be referenced from code, so cannot be pinned
 }
 
 func (p *ProtoMessage) String() string {

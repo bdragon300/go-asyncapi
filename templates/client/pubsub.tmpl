@@ -55,7 +55,7 @@ if opts.publish {
             {{.}}
             // End of implementation-specific code
         {{- else}}
-            server, err := {{goPkg $.Server}}Connect{{$.Server | goID}}Producer(ctx, serverURL{{if $.Server.SecuritySchemes}}, securityScheme{{end}})
+            server, err := {{goPkg $.Server}}Connect{{$.Server | goID}}Producer(ctx, serverURL{{if $.Server.SecuritySchemes}}, serverSecurity{{end}})
             if err != nil {
                 return {{goPkgExt "fmt"}}Errorf("connect server %s: %w", serverURL, err)
             }
@@ -116,7 +116,7 @@ if opts.publish {
             {{.}}
             // End of implementation-specific code
         {{- else}}
-            server, err := {{goPkg $.Server}}Connect{{goID $.Server}}Consumer(ctx, serverURL{{if $.Server.SecuritySchemes}}, securityScheme{{end}})
+            server, err := {{goPkg $.Server}}Connect{{goID $.Server}}Consumer(ctx, serverURL{{if $.Server.SecuritySchemes}}, serverSecurity{{end}})
             if err != nil {
                 return {{goPkgExt "fmt"}}Errorf("connect server %s: %w", serverURL, err)
             }

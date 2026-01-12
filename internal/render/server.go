@@ -79,7 +79,8 @@ func (s *Server) SecuritySchemes() []*SecurityScheme {
 }
 
 // FirstSecurityScheme returns the first security scheme defined for this server or nil if no security schemes are set.
-// This function exists because the "first" function in `sprout` returns error if the list is empty.
+// This function exists only because the Sprout's `first` template function returns error if the list is empty,
+// therefore we can't check-and-get the first item in `with` conditions: `{{with first $list}}...{{end}}`.
 // https://docs.atom.codes/sprout/registries/slices#first
 func (s *Server) FirstSecurityScheme() *SecurityScheme {
 	if len(s.SecuritySchemePromises) == 0 {

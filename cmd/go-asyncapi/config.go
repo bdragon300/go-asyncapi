@@ -161,12 +161,12 @@ type (
 	toolConfigUI struct {
 		OutputFile string `yaml:"outputFile"`
 
-		Listen        *bool  `yaml:"listen"`
-		ListenAddress string `yaml:"listenAddress"`
-		ListenPath    string `yaml:"listenPath"`
-		ReferenceOnly *bool  `yaml:"referenceOnly"`
-		Bundle        *bool  `yaml:"bundle"`
-		BundleDir     string `yaml:"bundleDir"`
+		Listen             *bool  `yaml:"listen"`
+		ListenAddress      string `yaml:"listenAddress"`
+		ListenPath         string `yaml:"listenPath"`
+		DoNotEmbedContents *bool  `yaml:"doNotEmbedContents"`
+		Bundle             *bool  `yaml:"bundle"`
+		BundleDir          string `yaml:"bundleDir"`
 	}
 )
 
@@ -226,9 +226,11 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 	if len(userConf.Code.Layout) > 0 {
 		res.Code.Layout = userConf.Code.Layout
 	}
+	res.Code.OnlyPublish = coalesce(userConf.Code.OnlyPublish, defaultConf.Code.OnlyPublish)
+	res.Code.OnlySubscribe = coalesce(userConf.Code.OnlySubscribe, defaultConf.Code.OnlySubscribe)
+	res.Code.DisableFormatting = coalesce(userConf.Code.DisableFormatting, defaultConf.Code.DisableFormatting)
 	res.Code.TargetDir = coalesce(userConf.Code.TargetDir, defaultConf.Code.TargetDir)
 	res.Code.PreambleTemplate = coalesce(userConf.Code.PreambleTemplate, defaultConf.Code.PreambleTemplate)
-	res.Code.DisableFormatting = coalesce(userConf.Code.DisableFormatting, defaultConf.Code.DisableFormatting)
 
 	// *Replace* the whole list
 	res.Code.Implementation.Custom = defaultConf.Code.Implementation.Custom
@@ -294,7 +296,7 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 	res.UI.Listen = coalesce(userConf.UI.Listen, defaultConf.UI.Listen)
 	res.UI.ListenAddress = coalesce(userConf.UI.ListenAddress, defaultConf.UI.ListenAddress)
 	res.UI.ListenPath = coalesce(userConf.UI.ListenPath, defaultConf.UI.ListenPath)
-	res.UI.ReferenceOnly = coalesce(userConf.UI.ReferenceOnly, defaultConf.UI.ReferenceOnly)
+	res.UI.DoNotEmbedContents = coalesce(userConf.UI.DoNotEmbedContents, defaultConf.UI.DoNotEmbedContents)
 	res.UI.Bundle = coalesce(userConf.UI.Bundle, defaultConf.UI.Bundle)
 	res.UI.BundleDir = coalesce(userConf.UI.BundleDir, defaultConf.UI.BundleDir)
 

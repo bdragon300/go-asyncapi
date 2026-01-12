@@ -49,6 +49,25 @@ func (i ImplementationCodeInfo) Name() string {
 	return i.ImplementationConfig.Name
 }
 
+type RuntimeExpressionInfo struct {
+	Expression  lang.BaseRuntimeExpression
+	Target    *lang.GoStruct
+	FieldKind string
+	CodeSteps []runtimeExpressionCodeStep
+	FirstVar    string
+	LastVar     string
+	LastVarType common.GolangType
+	mng         *manager.TemplateRenderManager
+}
+
+type runtimeExpressionCodeStep struct {
+	CodeLines       []string
+	VarName         string
+	VarValue        string
+	VarValueVarName string
+	VarType         common.GolangType
+}
+
 // GetTemplateFunctions returns a map of functions to use in templates. These functions include all
 // [github.com/go-sprout/sprout] functions and go-asyncapi specific functions.
 func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template.FuncMap {
@@ -70,8 +89,8 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 	extraFuncs := template.FuncMap{
 		// go* functions return Go code snippets
 		"goLit":     func(val any) (string, error) { traceCall("goLit", val); return templateGoLit(renderManager, val) },
-		"goID": func(val any) string { traceCall("goID", val); return templateGoID(renderManager, val, true) },
-		"goIDLower":      func(val any) string { traceCall("goIDLower", val); return templateGoID(renderManager, val, false) },
+		"goID":      func(val any) string { traceCall("goID", val); return templateGoID(renderManager, val, true) },
+		"goIDLower": func(val any) string { traceCall("goIDLower", val); return templateGoID(renderManager, val, false) },
 		"goComment": func(text string) string { traceCall("goComment", text); return templateGoComment(text) },
 		"goPkg": func(obj common.Artifact) (pkg string, err error) {
 			traceCall("goPkg", obj)
@@ -216,11 +235,49 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			}
 			return ""
 		},
-		"runtimeExpressionCode": func(c lang.BaseRuntimeExpression, target *lang.GoStruct, addValidationCode bool) (items []runtimeExpressionCodeStep, err error) {
-			traceCall("runtimeExpressionCode", c, target, addValidationCode)
-			return templateRuntimeExpressionCode(renderManager, c, target, addValidationCode)
+		"runtimeExpression": func(a common.Artifact, target *lang.GoStruct, addValidationCode bool) *RuntimeExpressionInfo {
+			traceCall("runtimeExpression", a, target)
+			if lo.IsNil(a) {
+				logger.Trace("--> artifact is nil")
+				return nil
+			}
+			if !a.Visible() {
+				logger.Trace("--> artifact is not visible")
+				return nil
+			}
+			type exprObj interface {
+				RuntimeExpressionObject() lang.BaseRuntimeExpression
+			}
+			eobj, ok := a.(exprObj)
+			if !ok {
+				panic("Artifact is not a runtime expression object, this is bug")
+			}
+			e := eobj.RuntimeExpressionObject()
+
+			steps, err := generateRuntimeExpressionExtractionCode(renderManager, e, target, addValidationCode)
+			if err != nil {
+				logger.Warn(fmt.Sprintf("Cannot resolve runtime expression, skipping. Hint: %s has no schema", e.StructFieldKind), "expression", e.OriginalExpression, "err", err)
+				return nil
+			}
+
+			lastVar := "v0"
+			var lastVarType common.GolangType = &lang.GoSimple{TypeName: "any"}
+			if len(steps) > 0 {
+				lastVar = lo.LastOrEmpty(steps).VarName
+				lastVarType = lo.LastOrEmpty(steps).VarType
+			}
+			return &RuntimeExpressionInfo{
+				Expression:  e,
+				Target:      target,
+				FieldKind:   string(e.StructFieldKind),
+				CodeSteps:   steps,
+				FirstVar:    "v0",
+				LastVar:     lastVar,
+				LastVarType: lastVarType,
+				mng:         renderManager,
+			}
 		},
-		"mapping": func(v string, variantPairs ...any) (any, error) {
+		"mapping": func(v string, variantPairs []any) (any, error) {
 			traceCall("mapping", v, variantPairs)
 			if len(variantPairs)%2 != 0 {
 				return "", fmt.Errorf("mapping requires even number of variantPairs, got %d", len(variantPairs))
@@ -423,28 +480,20 @@ func templateGoComment(text string) string {
 	return b.String()
 }
 
-type runtimeExpressionCodeStep struct {
-	CodeLines       []string
-	VarName         string
-	VarValue        string
-	VarValueVarName string
-	VarType         common.GolangType
-}
-
-// templateRuntimeExpressionCode returns the Go code that extracts the value from the targetStruct according to the
+// generateRuntimeExpressionExtractionCode returns the Go code that extracts the value from the targetStruct according to the
 // runtime expression c. If addValidationCode is true, the result also contains the additional error handing code,
 // that is typically used for property getter functions.
 //
 // The function returns a list of extract steps. Each step contains one or more lines of Go code and some meta information.
-func templateRuntimeExpressionCode(mng *manager.TemplateRenderManager, c lang.BaseRuntimeExpression, targetStruct *lang.GoStruct, addValidationCode bool) (items []runtimeExpressionCodeStep, err error) {
-	// TODO: consider also AdditionalProperties in object
+func generateRuntimeExpressionExtractionCode(mng *manager.TemplateRenderManager, c lang.BaseRuntimeExpression, targetStruct *lang.GoStruct, addValidationCode bool) (items []runtimeExpressionCodeStep, err error) {
+	// TODO: consider also AdditionalProperties in object and unions
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
 	field, ok := lo.Find(targetStruct.Fields, func(item lang.GoStructField) bool {
 		return strings.EqualFold(item.OriginalName, string(c.StructFieldKind))
 	})
 	if !ok {
-		return nil, fmt.Errorf("field %s not found in %s", c.StructFieldKind, targetStruct)
+		return nil, fmt.Errorf("field %q not found in jsonschema object %s", c.StructFieldKind, targetStruct.Pointer())
 	}
 
 	locationPath := c.LocationPath
@@ -459,18 +508,18 @@ func templateRuntimeExpressionCode(mng *manager.TemplateRenderManager, c lang.Ba
 
 		memberName, err2 := unescapeJSONPointerFragmentPart(locationPath[pathIdx])
 		if err2 != nil {
-			err = fmt.Errorf("cannot unescape runtime expression, locationPath %q, item %q: %w", locationPath, locationPath[pathIdx], err)
+			err = fmt.Errorf("unescape runtime expression part %q by path %q: %w", locationPath[pathIdx], locationPath, err)
 			return
 		}
 
 		switch typ := baseType.(type) {
 		case *lang.GoStruct:
-			logger.Trace("---> GoStruct", "locationPath", locationPath[:pathIdx], "member", memberName, "object", typ.String())
+			logger.Trace("---> GoStruct", "expression path", locationPath[:pathIdx], "member", memberName, "object", typ.String())
 			fld, ok := lo.Find(typ.Fields, func(item lang.GoStructField) bool { return item.MarshalName == memberName })
 			if !ok {
 				err = fmt.Errorf(
-					"field %q not found in struct %s, locationPath: /%s",
-					memberName, typ.OriginalName, strings.Join(locationPath[:pathIdx], "/"),
+					"field %q not found in jsonschema object %s, expression path: /%s",
+					memberName, typ.Pointer(), strings.Join(locationPath[:pathIdx], "/"),
 				)
 				return
 			}
@@ -478,7 +527,7 @@ func templateRuntimeExpressionCode(mng *manager.TemplateRenderManager, c lang.Ba
 			baseType = fld.Type
 			body = []string{fmt.Sprintf("%s := %s", nextAnchor, varValueStmts)}
 		case *lang.GoMap:
-			logger.Trace("---> GoMap", "locationPath", locationPath[:pathIdx], "member", memberName, "object", typ.String())
+			logger.Trace("---> GoMap", "expression path", locationPath[:pathIdx], "member", memberName, "object", typ.String())
 			varValueStmts = fmt.Sprintf("%s[%s]", anchor, toGoLiteral(memberName))
 			baseType = typ.ValueType
 			// TODO: replace templateGoUsage calls to smth another to remove import from impl, this is a potential circular import
@@ -494,7 +543,7 @@ func templateRuntimeExpressionCode(mng *manager.TemplateRenderManager, c lang.Ba
 			if addValidationCode {
 				fmtErrorf := importExternalPackage(mng, []string{"fmt"}) + ".Errorf"
 				ifExpr += fmt.Sprintf(` else {
-					err = %s("key %%q not found in map on locationPath /%s", %s)
+					err = %s("key %%q not found in map, expression path /%s", %s)
 					return
 				}`, fmtErrorf, strings.Join(locationPath[:pathIdx], "/"), toGoLiteral(memberName))
 			}
@@ -506,12 +555,12 @@ func templateRuntimeExpressionCode(mng *manager.TemplateRenderManager, c lang.Ba
 				ifExpr,
 			}
 		case *lang.GoArray:
-			logger.Trace("---> GoArray", "locationPath", locationPath[:pathIdx], "member", memberName, "object", typ.String())
+			logger.Trace("---> GoArray", "expression path", locationPath[:pathIdx], "member", memberName, "object", typ.String())
 			if _, ok := memberName.(string); ok {
 				err = fmt.Errorf(
-					"index %q is not a number, array %s, locationPath: /%s",
+					"path item %q must be numeric to access jsonschema array %s, expression path: /%s",
 					memberName,
-					typ.OriginalName,
+					typ.Pointer(),
 					strings.Join(locationPath[:pathIdx], "/"),
 				)
 				return
@@ -519,7 +568,7 @@ func templateRuntimeExpressionCode(mng *manager.TemplateRenderManager, c lang.Ba
 			if addValidationCode {
 				fmtErrorf := importExternalPackage(mng, []string{"fmt"}) + ".Errorf"
 				body = append(body, fmt.Sprintf(`if len(%s) <= %s {
-					err = %s("index %%q is out of range in array of length %%d on locationPath /%s", %s, len(%s))
+					err = %s("index %%q is out of range in array of length %%d on expression path /%s", %s, len(%s))
 					return
 				}`, anchor, toGoLiteral(memberName), fmtErrorf, strings.Join(locationPath[:pathIdx], "/"), toGoLiteral(memberName), anchor))
 			}
@@ -527,11 +576,13 @@ func templateRuntimeExpressionCode(mng *manager.TemplateRenderManager, c lang.Ba
 			baseType = typ.ItemsType
 			body = append(body, fmt.Sprintf("%s := %s", nextAnchor, varValueStmts))
 		case *lang.GoSimple: // Should be a terminal type in chain, raise error otherwise (if any locationPath parts left to resolve)
-			logger.Trace("---> GoSimple", "locationPath", locationPath[:pathIdx], "member", memberName, "object", typ.String())
+			logger.Trace("---> GoSimple", "expression path", locationPath[:pathIdx], "member", memberName, "object", typ.String())
 			if pathIdx >= len(locationPath)-1 { // Primitive types should get addressed by the last locationPath item
 				err = fmt.Errorf(
-					"primitive type %q does not contain any fields, locationPath: /%s",
+					"cannot evaluate %s for a primitive type %s %s, expression path: /%s",
+					strings.Join(locationPath[pathIdx:], "/"),
 					typ.Name(),
+					lo.CoalesceOrEmpty(typ.Pointer().String(), "<internal>"),
 					strings.Join(locationPath[:pathIdx], "/"),
 				)
 				return
@@ -540,12 +591,12 @@ func templateRuntimeExpressionCode(mng *manager.TemplateRenderManager, c lang.Ba
 		case lang.GolangWrappedType:
 			logger.Trace(
 				"---> GolangWrappedType",
-				"locationPath", locationPath[:pathIdx], "member", memberName, "object", baseType.String(), "type", fmt.Sprintf("%T", typ),
+				"expression path", locationPath[:pathIdx], "member", memberName, "object", baseType.String(), "type", fmt.Sprintf("%T", typ),
 			)
 			t := typ.UnwrapGolangType()
 			if lo.IsNil(t) {
 				err = fmt.Errorf(
-					"wrapper type %T contains nil, locationPath: /%s",
+					"wrapper type %T contains nil; expression path: /%s",
 					typ,
 					strings.Join(locationPath[:pathIdx], "/"),
 				)
@@ -556,12 +607,12 @@ func templateRuntimeExpressionCode(mng *manager.TemplateRenderManager, c lang.Ba
 		case lang.GolangReferenceType:
 			logger.Trace(
 				"---> GolangReferenceType",
-				"locationPath", locationPath[:pathIdx], "member", memberName, "object", baseType.String(), "type", fmt.Sprintf("%T", typ),
+				"expression path", locationPath[:pathIdx], "member", memberName, "object", baseType.String(), "type", fmt.Sprintf("%T", typ),
 			)
 			t := typ.DerefGolangType()
 			if lo.IsNil(t) {
 				err = fmt.Errorf(
-					"reference type %T contains nil, locationPath: /%s",
+					"reference type %T contains nil; expression path: /%s",
 					typ,
 					strings.Join(locationPath[:pathIdx], "/"),
 				)
@@ -570,10 +621,11 @@ func templateRuntimeExpressionCode(mng *manager.TemplateRenderManager, c lang.Ba
 			baseType = t
 			continue
 		default:
-			logger.Trace("---> Unknown type", "locationPath", locationPath[:pathIdx], "object", typ.String(), "type", fmt.Sprintf("%T", typ))
+			logger.Trace("---> Unknown type", "expression path", locationPath[:pathIdx], "object", typ.String(), "type", fmt.Sprintf("%T", typ))
 			err = fmt.Errorf(
-				"type %s is not addressable, locationPath: /%s",
+				"type %s is not addressable: %s, expression path: /%s",
 				typ.Name(),
+				typ.Pointer(),
 				strings.Join(locationPath[:pathIdx], "/"),
 			)
 			return

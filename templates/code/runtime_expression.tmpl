@@ -1,14 +1,8 @@
-{{/* dot:
-  .SourceVarName == string: variable name of type with Headers/Payload attributes
-  .RuntimeExpression == lang.BaseRuntimeExpression
-  .TargetType == *lang.Struct
-  */}}
+{{/* dot == tmpl.RuntimeExpressionInfo */}}
 
 {{define "code/runtimeExpression/setterBody"}}
-v0 := {{.SourceVarName}}.{{.RuntimeExpression.StructFieldKind | toString | toTitleCase}}
-{{- $steps := runtimeExpressionCode .RuntimeExpression .TargetType false}}
 {{- /* Render extraction steps except the last one */}}
-{{- range initial $steps}}
+{{- range initial .CodeSteps}}
     {{- range .CodeLines}}
         {{.}}
     {{- end}}
@@ -16,30 +10,19 @@ v0 := {{.SourceVarName}}.{{.RuntimeExpression.StructFieldKind | toString | toTit
 
 {{- $exprVal := "value"}}
 {{- /* Set value and collapse the value back */}}
-{{- range reverse $steps }}
+{{- range reverse .CodeSteps }}
     {{.VarValue}} = {{$exprVal}}
     {{- $exprVal = .VarValueVarName}}
 {{- end}}
-
-{{.SourceVarName}}.{{.RuntimeExpression.StructFieldKind | toString | toTitleCase}} = v0
 {{- end}}
 
 {{define "code/runtimeExpression/getterBody"}}
-v0 := {{.SourceVarName}}.{{.RuntimeExpression.StructFieldKind | toString | untitle}}
-{{- $steps := runtimeExpressionCode .RuntimeExpression .TargetType true}}
 {{- /* Render extraction steps except the last one */}}
-{{- range $steps}}
+{{- range .CodeSteps}}
     {{- range .CodeLines}}
         {{.}}
     {{- end}}
 {{- end}}
 
 {{- /* Assign value to the result var and exit */}}
-{{if $steps}}value = {{(last $steps).VarName}}{{end}}
-{{- end}}
-
-
-{{define "code/runtimeExpression/varType"}}
-{{- $steps := runtimeExpressionCode .RuntimeExpression .TargetType false}}
-{{- if $steps }}{{(last $steps).VarType | goUsage}}{{else}}any{{end}}
 {{- end}}

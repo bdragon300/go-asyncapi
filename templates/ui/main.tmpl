@@ -25,11 +25,11 @@
       {{- end }}
     {{- end }}
     <script>
-      {{- if not .Config.ReferenceOnly }}
+      {{- if not .Config.DoNotEmbedContents }}
         const schemaContents = "{{ .DocumentContents | toJSON | js }}";
       {{- end }}
       AsyncApiStandalone.render({
-        schema: {{if .Config.ReferenceOnly }}{
+        schema: {{if .Config.DoNotEmbedContents }}{
           url: "{{ .DocumentURL.String | js }}",
           options: { method: "GET", mode: "cors" },
         }{{else}}schemaContents{{end}},

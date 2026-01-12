@@ -68,10 +68,13 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 
 	if logger.GetLevel() == log.TraceLevel {
 		buf := lo.Must(yaml.Marshal(cmdConfig))
-		logger.Trace("Use the resulting config", "value", string(buf))
+		logger.Trace("Use the merged config", "contents", string(buf))
 	}
 
 	compileOpts := getCompileOpts(cmdConfig)
+	if compileOpts.GenerateSubscribers != compileOpts.GeneratePublishers {
+		logger.Info(fmt.Sprintf("Requested to generate only the %s code", lo.Ternary(compileOpts.GeneratePublishers, "publishing", "subscribing")))
+	}
 	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Code.TargetDir, true)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
@@ -91,13 +94,13 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 		return fmt.Errorf("compilation: %w", err)
 	}
 
-	checkArtifacts(documents)
-
 	//
 	// Rendering
 	//
 	activeProtocols := collectAllProtocols(documents)
-	logger.Debug("Collected active protocols", "value", activeProtocols)
+	logger.Debug("Collected protocols", "value", activeProtocols)
+
+	checkArtifacts(documents)
 
 	// Extra code: utils code
 	logger.Debug("Run util code rendering", "protocols", activeProtocols)
@@ -109,8 +112,9 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 
 	// Extra code: implementations code
 	activeProtocols = collectActiveServersProtocols(documents)
+	logger.Debug("Collected active servers protocols", "value", activeProtocols)
 	if !renderOpts.ImplementationCodeOpts.Disable {
-		logger.Debug("Run implementations code rendering", "protocols", activeProtocols)
+		logger.Debug("Run implementations code rendering")
 		if err = renderer.RenderImplementationCode(activeProtocols, renderOpts, renderManager, codeextra.TemplateFS); err != nil {
 			return fmt.Errorf("render implementation code: %w", err)
 		}
@@ -490,7 +494,12 @@ func runLinking(objSources map[string]linker.ObjectSource) error {
 // checkArtifacts briefly checks for the common mistakes in documents, that can lead to incorrect code generation or runtime errors.
 // The main purpose of this function is to inform the user about this.
 func checkArtifacts(documents map[string]*compiler.Document) {
-	logger := log.GetLogger(log.LoggerPrefixLinking)
+	logger := log.GetLogger(log.LoggerPrefixRendering)
+
+	// No active servers. This means no implementations, no protocol-specific channels/operations code, etc.
+	if len(collectVisibleArtifactsByType[*render.Server](documents)) == 0 {
+		logger.Warn("No active servers defined in root 'servers:' section. The generated code may lack of libraries and most of functionality")
+	}
 
 	// Servers, channels and operations have the common names
 	artifacts := lo.Flatten([][]common.Artifact{
@@ -498,11 +507,12 @@ func checkArtifacts(documents map[string]*compiler.Document) {
 		lo.Map(collectVisibleArtifactsByType[*render.Channel](documents), func(v *render.Channel, _ int) common.Artifact { return v }),
 		lo.Map(collectVisibleArtifactsByType[*render.Operation](documents), func(v *render.Operation, _ int) common.Artifact { return v }),
 	})
-	duplications := lo.FindDuplicatesBy(artifacts, func(item common.Artifact) string {
+	names := lo.Map(artifacts, func(item common.Artifact, _ int) string {
 		return item.Name()
 	})
+	duplications := lo.FindDuplicates(names)
 	if len(duplications) > 0 {
-		logger.Warn("Some servers, channels or operations have common names. The generated code may contain errors", "names", duplications)
+		logger.Warn("Some servers, channels or operations have common names. The generated code may contain errors", "duplicatedNames", duplications)
 	}
 
 	// Messages in operation is not a subset of channel messages.
@@ -510,7 +520,7 @@ func checkArtifacts(documents map[string]*compiler.Document) {
 	operations := collectVisibleArtifactsByType[*render.Operation](documents)
 	for _, op := range operations {
 		if !lo.Every(op.Channel().Messages(), op.Messages()) {
-			logger.Warn("Messages list in Operation is not a subset of Messages list in the Operation's Channel. The generated code may contain errors", "operation", op.Pointer(), "channel", op.Channel().Pointer())
+			logger.Warn("Operation contains Messages that are not listed in Operation's Channel. The generated code may contain errors", "operation", op.Pointer(), "channel", op.Channel().Pointer())
 		}
 
 		if op.OperationReply() == nil {
@@ -521,7 +531,7 @@ func checkArtifacts(documents map[string]*compiler.Document) {
 			ch = op.OperationReply().Channel()
 		}
 		if !lo.Every(ch.Messages(), op.OperationReply().Messages()) {
-			logger.Warn("Messages list in OperationReply is not a subset of Messages list in the OperationReply's Channel. The generated code may contain errors", "operationReply", op.OperationReply().Pointer(), "channel", ch.Pointer())
+			logger.Warn("OperationReply contains Messages that are not listed in OperationReply's Channel. The generated code may contain errors", "operationReply", op.OperationReply().Pointer(), "channel", ch.Pointer())
 		}
 	}
 }

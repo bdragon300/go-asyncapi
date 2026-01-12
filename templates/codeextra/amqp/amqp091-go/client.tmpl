@@ -20,12 +20,6 @@ func NewClient(serverURL string, bindings *{{goPkgUtil "amqp"}}ServerBindings, s
 		conn, err = amqp091.DialConfig(serverURL, amqp091.Config{
 			SASL: []amqp091.Authentication{amqpAuth},
 		})
-	//case run.X509Security:
-	//	tlsConfig := &tls.Config{
-	//		Certificates: []tls.Certificate{s.TLSCert()},
-	//		ClientAuth: tls.RequireAndVerifyClientCert,
-	//	}
-	//	conn, err = amqp091.DialTLS_ExternalAuth(serverURL, tlsConfig)
 	case nil:
 		conn, err = amqp091.Dial(serverURL)
 	default:
@@ -103,7 +97,7 @@ func (c Client) Subscriber(_ context.Context, address string, chb *{{goPkgUtil "
 	queueName := address
 	var durable, autoDelete, exclusive bool
 	if chb != nil {
-		if chb.ChannelType == {{goPkgUtil "amqp"}}ChannelTypeQueue {
+		if chb.Is == {{goPkgUtil "amqp"}}ChannelTypeQueue {
 			routingKey = "#" // Receive all messages
 		}
 		qc := chb.QueueConfiguration

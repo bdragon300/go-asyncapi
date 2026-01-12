@@ -73,10 +73,16 @@ const (
 // BaseRuntimeExpression is a base for types, that can contain the runtime expressions, such as [CorrelationID] and
 // [OperationReplyAddress].
 type BaseRuntimeExpression struct {
+	// OriginalExpression is the original runtime expression string from the document.
+	OriginalExpression string
 	// StructFieldName describes which field in target struct to use: payload or headers.
 	StructFieldKind RuntimeExpressionStructFieldKind
 	// LocationPath is JSONPointer fragment with field location, split in parts by "/".
 	LocationPath []string
+}
+
+func (b BaseRuntimeExpression) RuntimeExpressionObject() BaseRuntimeExpression {
+	return b
 }
 
 // GolangWrappedType is an interface for [common.GolangType] types (such as pointers, aliases) that are able to

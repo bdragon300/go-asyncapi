@@ -15,9 +15,9 @@ code:
       render:
         file: "{{.Object.Kind}}/{{.Object | goID }}.go"
   util:
-    directory: "{{ .Protocol }}"
+    directory: "proto/{{ .Protocol }}"
   implementation:
-    directory: "{{ .Protocol }}"
+    directory: "proto/{{ .Protocol }}"
 
 
 client:

@@ -49,8 +49,9 @@ func (c CorrelationID) build(ctx *compile.Context, correlationIDKey string) (com
 		OriginalName: correlationIDKey,
 		Description:  c.Description,
 		BaseRuntimeExpression: lang.BaseRuntimeExpression{
-			StructFieldKind: structField,
-			LocationPath:    locationPath,
+			OriginalExpression: c.Location,
+			StructFieldKind:    structField,
+			LocationPath:       locationPath,
 		},
 	}, nil
 }

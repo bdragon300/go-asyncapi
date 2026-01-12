@@ -185,8 +185,8 @@ func SnakeCase(str string) string {
 	return strings.Join(items, "_")
 }
 
-// Words splits string into a slice of its words. Implementation initially is taken from [lo.Words] and
-// modified to treat numbers as part of words.
+// Words splits string into a slice of its words. Implementation initially is taken from [github.com/samber/lo.Words] and
+// modified to treat digits as part of a word.
 func Words(str string) []string {
 	str = splitWordRe.ReplaceAllString(str, `$1$3$5$7 $2$4$6$8$9`)
 	var result strings.Builder

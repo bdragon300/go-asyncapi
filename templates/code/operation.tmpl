@@ -5,10 +5,12 @@
     type {{goID $}}Bindings struct{}
 
     {{- range $proto := $.Bindings.Protocols}}
-        {{with tryTmpl (print "code/proto/" $proto "/operation/bindings/values") ($.ProtoOperation $proto)}}
-            func (c {{goID $}}Bindings) {{ goID $proto }}() {{goPkgUtil $proto}}OperationBindings {
-                return {{.}}
-            }
+        func (c {{goID $}}Bindings) {{ goID $proto }}() {{goPkgUtil $proto}}OperationBindings {
+        {{- with tryTmpl (print "code/proto/" $proto "/operation/bindings/values") ($.ProtoOperation $proto)}}
+            return {{.}}
+        {{- else}}
+            return {{goPkgUtil $proto}}OperationBindings{}
         {{- end}}
+        }
     {{- end}}
 {{- end}}

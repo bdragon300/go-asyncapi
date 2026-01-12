@@ -7,6 +7,13 @@ type {{ . | goID }}Server{{.Protocol | goID}} interface {
     {{if .Channel.IsSubscriber}}Consumer() {{goPkgUtil .Protocol}}Consumer{{end}}
 }
 
+{{if .SecuritySchemes}}{{block "code/proto/operation/securityInterface" .}}
+type {{. | goID}}Security interface {
+    {{goPkgRun}}AnySecurityScheme
+    {{. | goID }}Security()
+}
+{{- end}}{{- end}}
+
 func Open{{ . | goID }}{{.Protocol | goID}}(
     ctx {{goPkgExt "context"}}Context,
     server {{. | goID }}Server{{.Protocol | goID}},

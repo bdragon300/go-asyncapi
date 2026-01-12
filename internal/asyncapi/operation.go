@@ -49,10 +49,7 @@ func (o Operation) Compile(ctx *compile.Context) error {
 }
 
 func (o Operation) build(ctx *compile.Context, operationKey string, flags map[common.SchemaTag]string) (common.Artifact, error) {
-	ignore := o.XIgnore ||
-		o.Action == OperationActionSend && !ctx.CompileOpts.GeneratePublishers ||
-		o.Action == OperationActionReceive && !ctx.CompileOpts.GenerateSubscribers
-	if ignore {
+	if o.XIgnore {
 		ctx.Logger.Debug("Operation denoted to be ignored")
 		return &render.Operation{Dummy: true}, nil
 	}
@@ -68,8 +65,8 @@ func (o Operation) build(ctx *compile.Context, operationKey string, flags map[co
 		IsSelectable:      isSelectable,
 		IsPublisher:       o.Action == OperationActionSend && ctx.CompileOpts.GeneratePublishers,
 		IsSubscriber:      o.Action == OperationActionReceive && ctx.CompileOpts.GenerateSubscribers,
-		IsReplyPublisher:  o.Reply != nil && o.Action == OperationActionReceive && ctx.CompileOpts.GenerateSubscribers,
-		IsReplySubscriber: o.Reply != nil && o.Action == OperationActionSend && ctx.CompileOpts.GeneratePublishers,
+		IsReplyPublisher:  o.Reply != nil && o.Action == OperationActionReceive && ctx.CompileOpts.GeneratePublishers,
+		IsReplySubscriber: o.Reply != nil && o.Action == OperationActionSend && ctx.CompileOpts.GenerateSubscribers,
 	}
 
 	if o.Channel == nil {
@@ -124,10 +121,10 @@ func (o Operation) build(ctx *compile.Context, operationKey string, flags map[co
 }
 
 type OperationTrait struct {
-	Title       string `json:"title,omitzero" yaml:"title"`
-	Summary     string `json:"summary,omitzero" yaml:"summary"`
-	Description string `json:"description,omitzero" yaml:"description"`
-	// Security     SecurityScheme  `json:"security,omitzero" yaml:"security"`
+	Title        string                 `json:"title,omitzero" yaml:"title"`
+	Summary      string                 `json:"summary,omitzero" yaml:"summary"`
+	Description  string                 `json:"description,omitzero" yaml:"description"`
+	Security     []SecurityScheme       `json:"security,omitzero" yaml:"security"`
 	Tags         []Tag                  `json:"tags,omitzero" yaml:"tags"`
 	ExternalDocs *ExternalDocumentation `json:"externalDocs,omitzero" yaml:"externalDocs"`
 	Bindings     *Bindings              `json:"bindings,omitzero" yaml:"bindings"`
@@ -234,8 +231,9 @@ func (o OperationReplyAddress) build(ctx *compile.Context, operationKey string) 
 		OriginalName: operationKey,
 		Description:  o.Description,
 		BaseRuntimeExpression: lang.BaseRuntimeExpression{
-			StructFieldKind: structField,
-			LocationPath:    locationPath,
+			OriginalExpression: o.Location,
+			StructFieldKind:    structField,
+			LocationPath:       locationPath,
 		},
 	}
 

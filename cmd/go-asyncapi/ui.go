@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -38,9 +40,9 @@ type UICmd struct {
 	ListenAddress string `arg:"-a,--listen-address" help:"Address to bind the local server to, default to :8090" placeholder:"ADDRESS"`
 	ListenPath    string `arg:"--listen-path" help:"Path to serve the UI at, default to /" placeholder:"PATH"`
 
-	ReferenceOnly *bool  `arg:"--reference-only" help:"Do not embed the document into the html, load it from the passed URL instead"`
-	Bundle        *bool  `arg:"--bundle" help:"Bundle 3rd-party JS/CSS resources into the output HTML file"`
-	BundleDir     string `arg:"--bundle-dir" help:"Directory with files to bundle instead of built-in ones" placeholder:"DIR"`
+	DoNotEmbedContents *bool  `arg:"--do-not-embed-contents" help:"Place the passed external URL to document into HTML instead of embedding its contents"`
+	Bundle             *bool  `arg:"--bundle" help:"Bundle 3rd-party JS/CSS resources into the output HTML file"`
+	BundleDir          string `arg:"--bundle-dir" help:"Directory with files to bundle instead of built-in ones" placeholder:"DIR"`
 
 	TemplatesDir string `arg:"-T,--templates-dir" help:"User templates directory" placeholder:"DIR"`
 }
@@ -66,9 +68,9 @@ func cliUI(cmd *UICmd, globalConfig toolConfig) error {
 	// Parsing the document
 	//
 	rawDocument := make(map[string]any)
-	if lo.FromPtr(cmdConfig.UI.ReferenceOnly) {
+	if lo.FromPtr(cmdConfig.UI.DoNotEmbedContents) {
 		if docURL.URI == nil {
-			return fmt.Errorf("document path must be an URL")
+			return fmt.Errorf("document path must be an URL to external resource")
 		}
 	} else {
 		logger.Debug("Reading the file", "path", cmd.Document)
@@ -132,11 +134,20 @@ func cliUI(cmd *UICmd, globalConfig toolConfig) error {
 		return fmt.Errorf("render ui: %w", err)
 	}
 
+	listenPath := path.Clean(cmdConfig.UI.ListenPath)
+	// Normalize listen path, must start and end with /
+	if !strings.HasPrefix(listenPath, "/") {
+		listenPath = "/" + listenPath
+	}
+	if !strings.HasSuffix(listenPath, "/") {
+		listenPath += "/"
+	}
+
 	renderState := renderManager.CommittedStates()[fileName]
 	if lo.FromPtr(cmdConfig.UI.Listen) {
 		logger.Info("Starting HTTP server", "address", cmdConfig.UI.ListenAddress)
 		files := map[string]servingUIContent{
-			cmdConfig.UI.ListenPath: { // main page
+			listenPath: { // main page
 				Contents: renderState.Buffer.Bytes(),
 				Headers:  map[string]string{"Content-Type": "text/html; charset=utf-8"},
 			},
@@ -153,10 +164,10 @@ func cliUI(cmd *UICmd, globalConfig toolConfig) error {
 				default:
 					r.Headers["Content-Type"] = "application/octet-stream"
 				}
-				files[path.Join(cmdConfig.UI.ListenPath, path.Base(resource.Location))] = r
+				files[path.Join(listenPath, path.Base(resource.Location))] = r
 			}
 		}
-		if err = serveUI(cmdConfig.UI.ListenAddress, files); err != nil {
+		if err = serveUI(cmdConfig.UI.ListenAddress, listenPath, files); err != nil {
 			return fmt.Errorf("serve http: %w", err)
 		}
 	} else {
@@ -169,6 +180,7 @@ func cliUI(cmd *UICmd, globalConfig toolConfig) error {
 			return fmt.Errorf("write output file %q: %w", outputPath, err)
 		}
 		logger.Debug("Writing complete")
+		logger.Info("HINT: To serve the UI locally, use -l flag")
 	}
 
 	return nil
@@ -264,10 +276,11 @@ type servingUIContent struct {
 	Headers  map[string]string
 }
 
-func serveUI(address string, files map[string]servingUIContent) error {
+func serveUI(address, listenPath string, files map[string]servingUIContent) error {
+	logger := log.GetLogger("")
+
 	httpHandler := func(content servingUIContent) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			logger := log.GetLogger("")
 			logger.Debug("HTTP request", "remote", r.RemoteAddr, "method", r.Method, "url", r.RequestURI)
 			if r.Method != http.MethodGet {
 				logger.Error("Method not allowed", "method", r.Method)
@@ -295,6 +308,15 @@ func serveUI(address string, files map[string]servingUIContent) error {
 		Handler:  mux,
 		ErrorLog: log.GetLogger("").StandardLog(),
 	}
+	var u url.URL
+	u.Scheme = "http"
+	host, port, err := net.SplitHostPort(address)
+	if err != nil {
+		return fmt.Errorf("parse listen address %q: %w", address, err)
+	}
+	u.Host = net.JoinHostPort(lo.CoalesceOrEmpty(host, "localhost"), port)
+	u.Path = listenPath
+	logger.Info("Open this URL in your browser", "url", u.String())
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return err
 	}
@@ -310,7 +332,7 @@ func cliUIMergeConfig(globalConfig toolConfig, cmd *UICmd) (toolConfig, error) {
 	res.UI.Listen = coalesce(cmd.Listen, globalConfig.UI.Listen)
 	res.UI.ListenAddress = coalesce(cmd.ListenAddress, globalConfig.UI.ListenAddress)
 	res.UI.ListenPath = coalesce(cmd.ListenPath, globalConfig.UI.ListenPath)
-	res.UI.ReferenceOnly = coalesce(cmd.ReferenceOnly, globalConfig.UI.ReferenceOnly)
+	res.UI.DoNotEmbedContents = coalesce(cmd.DoNotEmbedContents, globalConfig.UI.DoNotEmbedContents)
 	res.UI.Bundle = coalesce(cmd.Bundle, globalConfig.UI.Bundle)
 	res.UI.BundleDir = coalesce(cmd.BundleDir, globalConfig.UI.BundleDir)
 
@@ -318,5 +340,5 @@ func cliUIMergeConfig(globalConfig toolConfig, cmd *UICmd) (toolConfig, error) {
 }
 
 func getUIConfig(conf toolConfigUI) common.UIRenderOpts {
-	return common.UIRenderOpts{ReferenceOnly: lo.FromPtr(conf.ReferenceOnly)}
+	return common.UIRenderOpts{DoNotEmbedContents: lo.FromPtr(conf.DoNotEmbedContents)}
 }

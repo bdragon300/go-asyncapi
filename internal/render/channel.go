@@ -164,7 +164,7 @@ type ProtoChannel struct {
 }
 
 func (p *ProtoChannel) Pinnable() bool {
-	return false
+	return false // ProtoChannel is a temporary object, it cannot be referenced from code, so cannot be pinned
 }
 
 func (p *ProtoChannel) String() string {

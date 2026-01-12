@@ -2,7 +2,7 @@
 {{define "code/proto/amqp/channel/newFunction/block1"}}
     {{- if .BindingsProtocols | has .Protocol}}
         bindings := {{goPkg .Channel}}{{goID .Channel}}Bindings{}.{{.Protocol | goID}}()
-        switch bindings.ChannelType {
+        switch bindings.Is {
         case {{goPkgUtil .Protocol }}ChannelTypeQueue:
             res.queue = res.address.String()
         default:
@@ -26,10 +26,10 @@
 {{define "code/proto/amqp/channel/bindings/values"}}
 {{- goPkgUtil "amqp"}}ChannelBindings{
     {{- with .Bindings.Values.Map.amqp}}
-        {{with .is }}{{goLit .}},{{end}}
+        {{with .is }}Is: {{goPkgUtil "amqp"}}{{list "routingKey" "ChannelTypeRoutingKey" "queue" "ChannelTypeQueue" | mapping .}},{{end}}
         {{with .exchange }}ExchangeConfiguration: {{goPkgUtil "amqp"}}ExchangeConfiguration{
             {{if . | hasKey "name" }}Name: {{goPkgRun}}ToPtr({{goLit .name}}),{{end}}
-            {{with .type }}Type: {{list "default" "ExchangeTypeDefault" "topic" "ExchangeTypeTopic" "direct" "ExchangeTypeDirect" "fanout" "ExchangeTypeFanout" "headers" "ExchangeTypeHeaders" | mapping . | goLit}},{{end}}
+            {{with .type }}Type: {{goPkgUtil "amqp"}}{{list "default" "ExchangeTypeDefault" "topic" "ExchangeTypeTopic" "direct" "ExchangeTypeDirect" "fanout" "ExchangeTypeFanout" "headers" "ExchangeTypeHeaders" | mapping .}},{{end}}
             {{if . | hasKey "durable" }}Durable: {{goPkgRun}}ToPtr({{goLit .durable}}),{{end}}
             {{if . | hasKey "autoDelete" }}AutoDelete: {{goPkgRun}}ToPtr({{goLit .autoDelete}}),{{end}}
             {{with .vhost }}VHost: {{goLit .}},{{end}}

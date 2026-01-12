@@ -138,9 +138,10 @@ func (o *Operation) BindingsProtocols() []string {
 
 // SecuritySchemes returns the list of security schemes defined for this operation.
 func (o *Operation) SecuritySchemes() []*SecurityScheme {
-	return lo.Map(o.SecuritySchemePromises, func(item *lang.Promise[*SecurityScheme], _ int) *SecurityScheme {
+	r := lo.Map(o.SecuritySchemePromises, func(item *lang.Promise[*SecurityScheme], _ int) *SecurityScheme {
 		return item.T()
 	})
+	return r
 }
 
 func (o *Operation) HasPublishingCode() bool {
@@ -162,11 +163,11 @@ func (o *Operation) Kind() common.ArtifactKind {
 func (o *Operation) Selectable() bool {
 	// Proto channels for each supported protocol
 	// If bound channel is not selectable, then operation is not selectable as well
-	return !o.Dummy && o.ChannelPromise.T().Selectable() && o.IsSelectable && (o.IsPublisher || o.IsSubscriber)
+	return !o.Dummy && o.ChannelPromise.T().Selectable() && o.IsSelectable && (o.HasPublishingCode() || o.HasSubscribingCode())
 }
 
 func (o *Operation) Visible() bool {
-	return !o.Dummy && o.ChannelPromise.T().Visible() && (o.IsPublisher || o.IsSubscriber)
+	return !o.Dummy && o.ChannelPromise.T().Visible() && (o.HasPublishingCode() || o.HasSubscribingCode())
 }
 
 func (o *Operation) String() string {
@@ -183,7 +184,7 @@ type ProtoOperation struct {
 }
 
 func (p *ProtoOperation) Pinnable() bool {
-	return false
+	return false // ProtoOperation is a temporary object, it cannot be referenced from code, so cannot be pinned
 }
 
 func (p *ProtoOperation) String() string {

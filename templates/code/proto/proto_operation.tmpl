@@ -9,14 +9,12 @@
     }
 {{- end}}
 
-
 {{if .SecuritySchemes}}{{block "code/proto/operation/securityInterface" .}}
 type {{. | goID}}Security interface {
     {{goPkgRun}}AnySecurityScheme
     {{. | goID }}Security()
 }
 {{- end}}{{- end}}
-
 
 {{block "code/proto/operation/openFunction" .}}
 func Open{{ . | goID }}{{.Protocol | goID}}(
@@ -163,15 +161,14 @@ func (c {{. | goID}}{{.Protocol | goID}}) Bindings() {{goPkgUtil .Protocol}}Oper
             func (o {{$ | goID}}{{$.Protocol | goID}}Reply) Reply{{. | goID}}(
                 ctx {{goPkgExt "context"}}Context,
                 {{if not (impl $.Protocol)}}envelope {{goPkgUtil $.Protocol}}EnvelopeWriter,{{end}}
-                {{if $.OperationReply.OperationReplyAddress}}
-                    {{- $ctx := dict "SourceVarName" "o" "RuntimeExpression" $.OperationReply.OperationReplyAddress.BaseRuntimeExpression "TargetType" .OutType}}
-                    message interface{ {{goPkg $replyCh}}{{ goID $replyCh }}EnvelopeMarshaler{{$.Protocol | goID}}; SetReplyAddress{{ $ | goID }}(a {{template "code/runtimeExpression/varType" $ctx}}) },
-                    replyAddress {{template "code/runtimeExpression/varType" $ctx}},
-                {{- else }}
+                {{- with runtimeExpression $.OperationReply.OperationReplyAddress .OutType false}}
+                    message interface{ {{goPkg $replyCh}}{{ goID $replyCh }}EnvelopeMarshaler{{$.Protocol | goID}}; SetReplyAddress{{ $ | goID }}(a {{goUsage .LastVarType}}) },
+                    replyAddress {{goUsage .LastVarType}},
+                {{- else}}
                     message {{goPkg $replyCh}}{{ goID $replyCh }}EnvelopeMarshaler{{$.Protocol | goID}},
                 {{- end}}
             ) error {
-                {{- if $.OperationReply.OperationReplyAddress}}
+                {{- if runtimeExpression $.OperationReply.OperationReplyAddress .OutType false}}
                     message.SetReplyAddress{{$ | goID}}(replyAddress)
                 {{- end}}
                 return o.Channel.Publish{{. | goID}}(ctx, {{if not (impl $.Protocol)}}envelope, {{end}}message)

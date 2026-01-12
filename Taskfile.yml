@@ -25,7 +25,7 @@ tasks:
   inflate-codeextra:
     desc: "Inflate codeextra templates into the Go code"
     cmds:
-      - go run ./inflate_codeextra.go {{.CLI_ARGS}}
+      - go run tools/inflate_codeextra.go {{.CLI_ARGS}}
 
   lint:
     desc: "Run linters"

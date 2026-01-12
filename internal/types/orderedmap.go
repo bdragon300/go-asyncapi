@@ -145,7 +145,7 @@ func (o OrderedMap[K, V]) Keys() []K {
 	return o.keys
 }
 
-// Entries returns an iterator over the map entries -- key-value pairs.
+// Entries returns an iterator over the map entries in insertion/modification order -- key-value pairs.
 func (o OrderedMap[K, V]) Entries() iter.Seq2[K, V] {
 	return func(yield func(K, V) bool) {
 		for _, key := range o.keys {
