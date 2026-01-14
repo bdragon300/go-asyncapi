@@ -4,7 +4,17 @@
     .Kind == "channel" or "operation" or "operationReply"
     */}}
 {{define "client/channeloperation/mqtt5/github.com/eclipse-paho/paho.golang/producer/connect"}}
-server, err := {{goPkg .Server}}Connect{{.Server | goID}}Producer(ctx, serverURL, {{if $.Server.SecuritySchemes}}serverSecurity, {{end}}nil)
+mqttConfig := &{{goPkgExt "github.com/eclipse/paho.golang/autopaho" }}ClientConfig{
+    KeepAlive: 20,
+    ClientConfig: {{goPkgExt "github.com/eclipse/paho.golang/paho"}}ClientConfig{
+        ClientID: {{goPkgExt "strconv"}}Itoa({{goPkgExt "time"}}Now().Nanosecond()),
+    },
+    Errors: {{goPkgExt "log/slog"}}NewLogLogger({{goPkgExt "log/slog"}}Default().Handler(), {{goPkgExt "log/slog"}}LevelError),
+}
+if opts.debug {
+    mqttConfig.Debug = {{goPkgExt "log/slog"}}NewLogLogger({{goPkgExt "log/slog"}}Default().Handler(), {{goPkgExt "log/slog"}}LevelDebug)
+}
+server, err := {{goPkg .Server}}Connect{{.Server | goID}}Producer(ctx, serverURL, {{if $.Server.SecuritySchemes}}serverSecurity, {{end}}mqttConfig)
 if err != nil {
     return {{goPkgExt "fmt"}}Errorf("connect server %s: %w", serverURL, err)
 }
@@ -12,7 +22,17 @@ defer server.Close()
 {{- end}}
 
 {{define "client/channeloperation/mqtt5/github.com/eclipse-paho/paho.golang/consumer/connect"}}
-server, err := {{goPkg .Server}}Connect{{.Server | goID}}Consumer(ctx, serverURL, {{if $.Server.SecuritySchemes}}serverSecurity, {{end}}nil)
+mqttConfig := &{{goPkgExt "github.com/eclipse/paho.golang/autopaho" }}ClientConfig{
+    KeepAlive: 20,
+    ClientConfig: {{goPkgExt "github.com/eclipse/paho.golang/paho"}}ClientConfig{
+        ClientID: {{goPkgExt "strconv"}}Itoa({{goPkgExt "time"}}Now().Nanosecond()),
+    },
+    Errors: {{goPkgExt "log/slog"}}NewLogLogger({{goPkgExt "log/slog"}}Default().Handler(), {{goPkgExt "log/slog"}}LevelError),
+}
+if opts.debug {
+    mqttConfig.Debug = {{goPkgExt "log/slog"}}NewLogLogger({{goPkgExt "log/slog"}}Default().Handler(), {{goPkgExt "log/slog"}}LevelDebug)
+}
+server, err := {{goPkg .Server}}Connect{{.Server | goID}}Consumer(ctx, serverURL, {{if $.Server.SecuritySchemes}}serverSecurity, {{end}}mqttConfig)
 if err != nil {
     return {{goPkgExt "fmt"}}Errorf("connect server %s: %w", serverURL, err)
 }

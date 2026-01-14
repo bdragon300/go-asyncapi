@@ -2,7 +2,9 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strconv"
 	"sync"
+	"time"
 
 	"github.com/eclipse/paho.golang/autopaho"
 	"github.com/eclipse/paho.golang/paho"
@@ -11,7 +13,7 @@ import (
 func NewClient(ctx context.Context, serverURL string, bindings *{{goPkgUtil "mqtt5"}}ServerBindings, security {{goPkgRun}}AnySecurityScheme, initClientConfig *autopaho.ClientConfig) (*Client, error) {
 	co := initClientConfig
 	if co == nil {
-		co = &autopaho.ClientConfig{}
+		co = &autopaho.ClientConfig{KeepAlive: 20, ClientConfig: paho.ClientConfig{ClientID: strconv.Itoa(time.Now().Nanosecond()) } }
 	}
 
 	u, err := url.Parse(serverURL)

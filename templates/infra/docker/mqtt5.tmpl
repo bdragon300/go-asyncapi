@@ -11,19 +11,17 @@
       dockerfile_inline: |
         FROM emqx/emqx:latest
       {{- if eq .SchemeType "userPassword" }}
-        RUN echo 'user_id,password,is_superuser\n\user,password,true' > /tmp/auth_bootstrap.csv  # Credentials: user:password
+        RUN echo 'user_id,password,is_superuser\nuser,password,true' > /opt/emqx/etc/auth-built-in-db-bootstrap.csv  # Credentials: user/password
     environment:
-        - EMQX__AUTHENTICATION__MECHANISM=password_based
-        - EMQX__AUTHENTICATION__BACKEND=built_in_database
-        - EMQX__AUTHENTICATION__BOOTSTRAP_FILE=/tmp/auth_bootstrap.csv
-        - EMQX__AUTHENTICATION__BOOTSTRAP_TYPE=plain
+      - EMQX_AUTHENTICATION__1__MECHANISM=password_based
+      - EMQX_AUTHENTICATION__1__BACKEND=built_in_database
       {{- end}}
     {{- else}}
     image: emqx/emqx:latest
     {{- end}}
     ports:
       - "{{$port}}:1883"
-      {{with once "port_18083"}}- "18083:18083"{{end}}  # Management UI, creds:admin/public
+      {{with once "port_18083"}}- "18083:18083"{{end}}  # Management UI, credentials: admin/public
     volumes:
       - "{{.Server.Name | goIDLower}}-data{{range .ServerVariables}}_{{.Value | goIDLower}}{{end}}:/opt/emqx/data"
       - "{{.Server.Name | goIDLower}}-log{{range .ServerVariables}}_{{.Value | goIDLower}}{{end}}:/opt/emqx/log"

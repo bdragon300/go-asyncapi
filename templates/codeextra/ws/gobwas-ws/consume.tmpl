@@ -1,12 +1,13 @@
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
 	"sync"
 
-	wsclient "github.com/gobwas/ws" {{/* Import alias to avoid conflict with generated package name */}}
+	wsclient "github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 )
 
@@ -15,6 +16,7 @@ func NewConsumer(bindings *{{goPkgUtil "ws"}}ServerBindings, security {{goPkgRun
 	return &ConsumeClient{
 		Upgrader:    wsclient.DefaultHTTPUpgrader,
 		bindings:    bindings,
+		security:    security,
 		connections: make(map[string]chan *Channel),
 		mu:          new(sync.RWMutex),
 	}
@@ -28,12 +30,18 @@ type ConsumeClient struct {
 	http.ServeMux
 	Upgrader    HTTPUpgraderInterface
 	bindings    *{{goPkgUtil "ws"}}ServerBindings
+	security    {{goPkgRun}}AnySecurityScheme
 	connections map[string]chan *Channel
 	mu          *sync.RWMutex
 }
 
 func (c *ConsumeClient) Subscriber(ctx context.Context, address string, chb *{{goPkgUtil "ws"}}ChannelBindings, opb *{{goPkgUtil "ws"}}OperationBindings, security {{goPkgRun}}AnySecurityScheme) ({{goPkgUtil "ws"}}Subscriber, error) {
-	c.ensureChannel(address, chb, opb) // FIXME: maybe it's better to take the path from bindings?
+	sec := c.security
+	if security != nil {
+		sec = security
+	}
+
+	c.ensureChannel(address, chb, opb, sec) // FIXME: maybe it's better to take the path from bindings?
 	// Wait for a new connection
 	select {
 	case <-ctx.Done():
@@ -43,7 +51,7 @@ func (c *ConsumeClient) Subscriber(ctx context.Context, address string, chb *{{g
 	}
 }
 
-func (c *ConsumeClient) ensureChannel(channelName string, chb *{{goPkgUtil "ws"}}ChannelBindings, opb *{{goPkgUtil "ws"}}OperationBindings) {
+func (c *ConsumeClient) ensureChannel(channelName string, chb *{{goPkgUtil "ws"}}ChannelBindings, opb *{{goPkgUtil "ws"}}OperationBindings, sec {{goPkgRun}}AnySecurityScheme) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -54,6 +62,18 @@ func (c *ConsumeClient) ensureChannel(channelName string, chb *{{goPkgUtil "ws"}
 				needMethod := chb.Method
 				if needMethod != "" && strings.ToUpper(needMethod) != req.Method {
 					http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+					return
+				}
+			}
+
+			if sec != nil {
+				authOk, err := c.checkSecurity(req, sec)
+				if err != nil {
+					http.Error(w, "internal server error", http.StatusInternalServerError)
+					return
+				}
+				if !authOk {
+					http.Error(w, "unauthorized", http.StatusUnauthorized)
 					return
 				}
 			}
@@ -82,4 +102,27 @@ func (c *ConsumeClient) ensureChannel(channelName string, chb *{{goPkgUtil "ws"}
 			}
 		})
 	}
+}
+
+func (c *ConsumeClient) checkSecurity(req *http.Request, sec {{goPkgRun}}AnySecurityScheme) (bool, error) {
+	uUser, uPass, ok := req.BasicAuth()
+	if !ok {
+		return false, nil // No auth provided
+	}
+
+	switch v := sec.(type) {
+	case {{goPkgRun}}UserPasswordSecurity:
+		user, pass := v.UserPassword()
+		return uUser == user && uPass == pass, nil
+	case {{goPkgRun}}APIKeySecurity:
+		key := v.APIKey()
+		switch v.In() {
+		case "user":
+			return uUser == key, nil
+		case "password":
+			return uPass == key, nil
+		}
+	}
+
+	return false, fmt.Errorf("unsupported security scheme: %v", sec.AuthType())
 }

@@ -52,7 +52,7 @@ APIKeyUserPass bool    `arg:"--apikey-userpass" help:"Pass the api key as user o
     .SecurityScheme == render.SecurityScheme
     */}}
 if args.{{goID $.Server}}Cmd.APIKeyValue != nil {
-    if args.{{goID $.Server}}Cmd.APIKeyUserPass
+    if args.{{goID $.Server}}Cmd.APIKeyUserPass {
         serverSecurity = {{goPkg $.SecurityScheme}}New{{goID $.SecurityScheme}}SecurityUserOrPassword(func() string {
             if args.{{goID $.Server}}Cmd.APIKeyValue != nil {
                 return *args.{{goID $.Server}}Cmd.APIKeyValue

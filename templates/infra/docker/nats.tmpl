@@ -12,9 +12,9 @@
         FROM nats:latest
         {{- range .Server.SecuritySchemes}}
           {{- if eq .SchemeType "userPassword" }}
-        CMD ["--user", "user", "--pass", "password"]  # Credentials: user:password
+        CMD ["--user", "user", "--pass", "password"]  # Credentials: user/password
           {{- else if eq .SchemeType "apiKey" }}
-        CMD ["--token", "apiKey"]  # API Key: apiKey
+        CMD ["--auth", "apiKey"]  # API Key: apiKey
           {{- end}}
         {{- end}}
     {{- else}}

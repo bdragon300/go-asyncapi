@@ -21,7 +21,7 @@
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - KAFKA_CLIENT_LISTENER_NAME=EXTERNAL
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@{{($.Server.URL .ServerVariables).Hostname | toQuotable}}:9093
-    {{- with .Server.FirstSecurityScheme}}w
+    {{- with .Server.FirstSecurityScheme}}
       {{- if eq .SchemeType "userPassword" }}
       # Credentials: user:password
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:SASL_PLAINTEXT,EXTERNAL:SASL_PLAINTEXT,PLAINTEXT:PLAINTEXT

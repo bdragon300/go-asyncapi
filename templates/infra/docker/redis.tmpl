@@ -10,10 +10,11 @@
       context: .
       dockerfile_inline: |
         FROM redis:latest
+        RUN mkdir -p /usr/local/etc/redis
       {{- if eq .SchemeType "userPassword" }}
-        RUN echo 'user user allcommands allkeys allchannels on >password' >> /usr/local/etc/redis/redis.conf  # Credentials: user:password
+        RUN echo 'user user allcommands allkeys allchannels on >password' >> /usr/local/etc/redis/redis.conf  # Credentials: user/password
       {{- else if eq .SchemeType "apiKey" }}
-        RUN echo 'user default allcommands allkeys allchannels on >password' >> /usr/local/etc/redis/redis.conf  # Password: password
+        RUN echo 'requirepass apiKey' >> /usr/local/etc/redis/redis.conf  # API Key: apiKey
       {{- end }}
         CMD [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
     {{- else}}

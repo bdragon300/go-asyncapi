@@ -45,7 +45,7 @@ if opts.publish {
         {{if $.Server.SecuritySchemes}}var serverSecurity {{goPkg $.Server}}{{goID $.Server}}Security{{end}}
         {{- range $scheme := $.Server.SecuritySchemes}}
             {{- $ctx := dict "Server" $.Server "SecurityScheme" $scheme}}
-            {{- with tryTmpl (print "client/security/" $scheme.SchemeType "/getCredentials") $ctx}}
+            {{- with tryTmpl (print "client/security/" $scheme.SchemeType "/server/getCredentials") $ctx}}
                 // Security scheme: {{$scheme.SchemeType}}
                 {{.}}
             {{- end}}
@@ -106,7 +106,7 @@ if opts.publish {
         {{if $.Server.SecuritySchemes}}var serverSecurity {{goPkg $.Server}}{{goID $.Server}}Security{{end}}
         {{- range $scheme := $.Server.SecuritySchemes}}
             {{- $ctx := dict "Server" $.Server "SecurityScheme" $scheme}}
-            {{- with tryTmpl (print "client/security/" $scheme.SchemeType "/getCredentials") $ctx}}
+            {{- with tryTmpl (print "client/security/" $scheme.SchemeType "/server/getCredentials") $ctx}}
                 // Security scheme: {{$scheme.SchemeType}}
                 {{.}}
             {{- end}}
@@ -186,7 +186,7 @@ if opts.publish {
         {{if .SecuritySchemes}}var operationSecurity {{goPkg $.Object}}{{goID $.Object}}Security{{end}}
         {{- range $scheme := .SecuritySchemes}}
             {{- $ctx := dict "Server" $.Server "SecurityScheme" $scheme}}
-            {{- with tryTmpl (print "client/security/" ($scheme.SchemeType) "/getCredentials") $ctx}}
+            {{- with tryTmpl (print "client/security/" ($scheme.SchemeType) "/operation/getCredentials") $ctx}}
                 // Security scheme: {{$scheme.SchemeType}}
                 {{.}}
             {{- end}}

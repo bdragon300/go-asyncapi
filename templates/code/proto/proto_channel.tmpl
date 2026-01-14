@@ -138,7 +138,7 @@ type {{ .Channel | goID }}EnvelopeMarshaler{{.Protocol | goID}} interface {
         }
         {{ with tryTmpl (print "code/proto/" $.Protocol "/channel/publishMethods/block1") .}}{{.}}{{end}}
         {{- if .BindingsProtocols | has $.Protocol }}
-            envelope.SetBindings({{goPkg $.Channel}}{{goID $.Channel}}Bindings{}.{{$.Protocol | goID}}())
+            envelope.SetBindings({{goPkg .}}{{goID .}}Bindings{}.{{$.Protocol | goID}}())
         {{- end}}
         return nil
     }

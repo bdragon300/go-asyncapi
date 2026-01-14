@@ -89,28 +89,21 @@ func (c *ConsumeClient) ensureChannel(channelName string, opb *{{goPkgUtil "http
 }
 
 func (c *ConsumeClient) checkSecurity(req *stdHTTP.Request, sec {{goPkgRun}}AnySecurityScheme) (bool, error) {
-	uAuth := req.URL.User
-	if uAuth == nil {
-		return false, nil
-	}
+	uUser, uPass, ok := req.BasicAuth()
+    if !ok {
+        return false, nil // No auth provided
+    }
 
 	switch v := sec.(type) {
 	case {{goPkgRun}}UserPasswordSecurity:
-		uUser := uAuth.Username()
-		uPass, _ := uAuth.Password()
 		user, pass := v.UserPassword()
 		return uUser == user && uPass == pass, nil
 	case {{goPkgRun}}APIKeySecurity:
 		key := v.APIKey()
 		switch v.In() {
 		case "user":
-			uUser := uAuth.Username()
 			return uUser == key, nil
 		case "password":
-			uPass, ok := uAuth.Password()
-			if !ok {
-				return false, nil // No api key provided
-			}
 			return uPass == key, nil
 		}
 	}

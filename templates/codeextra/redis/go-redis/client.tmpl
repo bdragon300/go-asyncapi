@@ -70,7 +70,7 @@ func authenticateConn(ctx context.Context, conn *goRedis.Conn, security {{goPkgR
 		return conn.AuthACL(ctx, u, p).Err()
 	case {{goPkgRun}}APIKeySecurity:
 		k := v.APIKey()
-		return conn.Auth(ctx, k).Err()
+        return conn.Auth(ctx, k).Err()
 	}
 
 	return fmt.Errorf("unsupported security scheme: %v", security.AuthType())

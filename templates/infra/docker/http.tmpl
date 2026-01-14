@@ -28,9 +28,13 @@
         }' > /etc/nginx/conf.d/default.conf
         {{- with .Server.FirstSecurityScheme}}
             {{- if eq .SchemeType "userPassword" }}
-        RUN echo 'user:{{bcrypt "password" | replace "$" "$$"}}' > /etc/nginx/.htpasswd  # Credentials: user:password
+        RUN echo 'user:{{bcrypt "password" | replace "$" "$$"}}' > /etc/nginx/.htpasswd  # Credentials: user/password
             {{- else if eq .SchemeType "apiKey" }}
-        RUN echo ':{{bcrypt "password" | replace "$" "$$"}}' > /etc/nginx/.htpasswd  # Password: password
+                {{- if eq .Params.In "user" }}
+        RUN echo 'apiKey:{{bcrypt "" | replace "$" "$$"}}' > /etc/nginx/.htpasswd  # API Key: apiKey
+                {{- else if eq .Params.In "password" }}
+        RUN echo ':{{bcrypt "apiKey" | replace "$" "$$"}}' > /etc/nginx/.htpasswd  # API Key: apiKey
+                {{- end}}
             {{- end}}
         {{- end}}
       network: host

@@ -1,9 +1,11 @@
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
+	"net/http"
 	"net/url"
 
-	wsclient "github.com/gobwas/ws" {{/* Import alias to avoid conflict with generated package name */}}
+	wsclient "github.com/gobwas/ws"
 )
 
 func NewProducer(serverURL *url.URL, bindings *{{goPkgUtil "ws"}}ServerBindings, security {{goPkgRun}}AnySecurityScheme) *ProduceClient {
@@ -31,12 +33,16 @@ func (p ProduceClient) Publisher(ctx context.Context, address string, chb *{{goP
 		s = security
 	}
 
+	d := wsclient.DefaultDialer
 	if s != nil {
-		if err := applySecurity(u, s); err != nil {
+		h, err := getAuthHeaders(s)
+		if err != nil {
 			return nil, err
 		}
+		d.Header = h
 	}
-	netConn, _, _, err := wsclient.Dial(ctx, u.String())
+
+	netConn, _, _, err := d.Dial(ctx, u.String())
 	if err != nil {
 		return nil, err
 	}
@@ -44,28 +50,31 @@ func (p ProduceClient) Publisher(ctx context.Context, address string, chb *{{goP
 	return NewChannel(chb, opb, netConn, true), nil
 }
 
-func applySecurity(u *url.URL, security {{goPkgRun}}AnySecurityScheme) error {
+func getAuthHeaders(security {{goPkgRun}}AnySecurityScheme) (wsclient.HandshakeHeaderHTTP, error) {
+	h := make(http.Header)
+
 	switch v := security.(type) {
 	case {{goPkgRun}}UserPasswordSecurity:
-		u.User = url.UserPassword(v.UserPassword())
+		u, p := v.UserPassword()
+		h.Set("Authorization", "Basic "+basicAuth(u, p))
 	case {{goPkgRun}}APIKeySecurity:
 		key := v.APIKey()
 		switch v.In() {
 		case "user":
-			u.User = url.User(key)
+			h.Set("Authorization", "Basic "+basicAuth(key, ""))
 		case "password":
-			if u.User != nil {
-				username := u.User.Username()
-				u.User = url.UserPassword(username, key)
-			} else {
-				u.User = url.UserPassword("", key)
-			}
+			h.Set("Authorization", "Basic "+basicAuth("", key))
 		default:
-			return fmt.Errorf("unsupported 'in' for apiKey security scheme: %s", v.In())
+			return nil, fmt.Errorf("unsupported 'in' for apiKey security scheme: %s", v.In())
 		}
 	default:
-		return fmt.Errorf("unsupported security scheme: %v", security.AuthType())
+		return nil, fmt.Errorf("unsupported security scheme: %v", security.AuthType())
 	}
 
-	return nil
+	return wsclient.HandshakeHeaderHTTP(h), nil
+}
+
+func basicAuth(username, password string) string {
+	auth := username + ":" + password
+	return base64.StdEncoding.EncodeToString([]byte(auth))
 }

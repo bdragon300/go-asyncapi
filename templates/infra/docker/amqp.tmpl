@@ -8,7 +8,7 @@
     image: rabbitmq:management-alpine
     ports:
       - "{{$port}}:5672"
-      {{with once "port_15672"}}- "15672:15672"{{end}}  # Management UI, creds:user/password
+      {{with once "port_15672"}}- "15672:15672"{{end}}  # Management UI, credentials:user/password
     volumes:
       - "{{.Server.Name | goIDLower}}{{range .ServerVariables}}_{{.Value | goIDLower}}{{end}}:/var/lib/rabbitmq"
     hostname: "{{($.Server.URL .ServerVariables).Hostname | toQuotable}}"
@@ -18,9 +18,6 @@
     environment:
       - RABBITMQ_DEFAULT_USER=user
       - RABBITMQ_DEFAULT_PASS=password
-        {{- else if eq .SchemeType "apiKey"}}
-    environment:
-      - RABBITMQ_DEFAULT_PASS=apiKey
         {{- end}}
     {{- end}}
 {{- end}}
