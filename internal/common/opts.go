@@ -89,7 +89,6 @@ type (
 	}
 
 	UIRenderOpts struct {
-		DoNotEmbedContents bool
 	}
 
 	// UIHTMLResourceOpts represents a CSS or JS resource for UI rendering

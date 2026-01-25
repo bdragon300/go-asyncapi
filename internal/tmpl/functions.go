@@ -26,6 +26,11 @@ type pinnable interface {
 	Pinnable() bool
 }
 
+type runtimeExpressionArtifact interface {
+	common.Artifact
+	RuntimeExpressionObject() lang.BaseRuntimeExpression
+}
+
 type UtilCodeInfo struct {
 	Protocol    string
 	FileName    string
@@ -50,22 +55,66 @@ func (i ImplementationCodeInfo) Name() string {
 }
 
 type RuntimeExpressionInfo struct {
+	// Expression contains the runtime expression info
 	Expression  lang.BaseRuntimeExpression
+	// Target is struct to extract a value from according the Expression
 	Target    *lang.GoStruct
-	FieldKind string
-	CodeSteps []runtimeExpressionCodeStep
-	FirstVar    string
-	LastVar     string
-	LastVarType common.GolangType
-	mng         *manager.TemplateRenderManager
+	// CodeSteps contains the code that recursively extracts the variable from Target struct.
+	CodeSteps []RuntimeExpressionCodeStep
 }
 
-type runtimeExpressionCodeStep struct {
-	CodeLines       []string
-	VarName         string
-	VarValue        string
-	VarValueVarName string
-	VarType         common.GolangType
+// InputVar returns the input variable of extraction code
+func (r RuntimeExpressionInfo) InputVar() string {
+	if len(r.CodeSteps) > 0 {
+		return r.CodeSteps[0].InputVar
+	}
+	return "v0"
+}
+
+// OutputVar returns the output variable of extraction code
+func (r RuntimeExpressionInfo) OutputVar() string {
+	if len(r.CodeSteps) > 0 {
+		return r.CodeSteps[len(r.CodeSteps)-1].OutputVar
+	}
+	return "v0"
+}
+
+// OutputType returns the output variable type of extraction code
+func (r RuntimeExpressionInfo) OutputType() common.GolangType {
+	if len(r.CodeSteps) > 0 {
+		return r.CodeSteps[len(r.CodeSteps)-1].OutputType
+	}
+	return &lang.GoSimple{TypeName: "any"}
+}
+
+// RuntimeExpressionCodeStep describes a code step to extract a value according to a runtime expression part.
+//
+// Every code step takes an InputVar (can be either a surrounding function argument or the previous step result),
+// applies the Operator to it and assigns the result to OutputVar with adding optional utility code.
+//
+// Struct field extraction:
+//
+//   v1 := v0.Foo
+//
+// Slice element extraction with bounds check:
+//
+//   if len(v0) <= 1 {
+//       err = fmt.Errorf("index %q is out of range in array of length %d on expression path /bar/1", "1", len(v0))
+//       return
+//   v1 := v0[1]
+type RuntimeExpressionCodeStep struct {
+	// ExpressionPart is a part of runtime expression that is used to extract
+	ExpressionPart string
+	// Lines contain the lines of extraction code in Go
+	Lines     []string
+	// InputVar is a variable name in the extraction code that keeps the value to extract on this step
+	InputVar   string
+	// Operator is a Go code snippet to apply to InputVar: "v1[0]" for array, "v1.foo" for struct, etc.
+	Operator  string
+	// OutputVar is a variable that is defined in the extraction code and stores the value extracted on this step
+	OutputVar string
+	// OutputType is type representation of OutputVar
+	OutputType common.GolangType
 }
 
 // GetTemplateFunctions returns a map of functions to use in templates. These functions include all
@@ -142,38 +191,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			return templateGoUsage(renderManager, r)
 		},
 
-		// Artifact helpers
-		"innerType": func(val common.GolangType) common.GolangType {
-			traceCall("innerType", val)
-			if v, ok := any(val).(golangWrapperType); ok {
-				return v.UnwrapGolangType()
-			}
-			return nil
-		},
-		"isVisible": func(a common.Artifact) common.Artifact {
-			traceCall("isVisible", a)
-			return lo.Ternary(!lo.IsNil(a) && a.Visible(), a, nil)
-		},
-
-		// Call templates dynamically
-		"tmpl": func(templateName string, ctx any) (string, error) {
-			traceCall("tmpl", templateName, ctx)
-			return templateExecTemplate(renderManager, templateName, ctx)
-		},
-		"tryTmpl": func(templateName string, ctx any) (string, error) {
-			traceCall("tryTmpl", templateName, ctx)
-			res, err := templateExecTemplate(renderManager, templateName, ctx)
-			switch {
-			case errors.Is(err, ErrTemplateNotFound):
-				return "", nil
-			case err != nil:
-				return "", err
-			}
-
-			return res, nil
-		},
-
-		// Working with template namespace
+		// Codegen helpers
 		"pin": func(a common.Artifact) (string, error) {
 			traceCall("pin", a)
 			if lo.IsNil(a) {
@@ -185,12 +203,21 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			renderManager.NamespaceManager.DeclareArtifact(a, renderManager, false)
 			return "", nil
 		},
+		"isVisible": func(a common.Artifact) common.Artifact {
+			traceCall("isVisible", a)
+			return lo.Ternary(!lo.IsNil(a) && a.Visible(), a, nil)
+		},
 		"once": func(r any) any {
 			traceCall("once", r)
 			return templateOnce(renderManager, r)
 		},
-
-		// Other
+		"innerType": func(val common.GolangType) common.GolangType {
+			traceCall("innerType", val)
+			if v, ok := any(val).(golangWrapperType); ok {
+				return v.UnwrapGolangType()
+			}
+			return nil
+		},
 		"impl": func(protocol string) *ImplementationCodeInfo {
 			traceCall("impl", protocol)
 			s, ok := getExtraCodeFileByProtocol(protocol, renderManager, true)
@@ -215,6 +242,53 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 				PackageName: s.PackageName,
 			}
 		},
+		"runtimeExpression": func(a runtimeExpressionArtifact, target *lang.GoStruct, addValidationCode bool) *RuntimeExpressionInfo {
+			traceCall("runtimeExpression", a, target)
+			if lo.IsNil(a) {
+				logger.Trace("--> artifact is nil")
+				return nil
+			}
+			if !a.Visible() {
+				logger.Trace("--> artifact is not visible")
+				return nil
+			}
+			e := a.RuntimeExpressionObject()
+
+			steps, err := generateRuntimeExpressionExtractionCode(renderManager, e, target, addValidationCode)
+			if err != nil {
+				logger.Warn(fmt.Sprintf("Cannot resolve runtime expression, skipping. Hint: %s has no schema", e.StructFieldKind), "expression", e.OriginalExpression, "err", err)
+				return nil
+			}
+
+			return &RuntimeExpressionInfo{
+				Expression:  e,
+				Target:      target,
+				CodeSteps:   steps,
+			}
+		},
+
+		// Template execution
+		"tmpl": func(templateName string, ctx any) (string, error) {
+			traceCall("tmpl", templateName, ctx)
+			return templateExecTemplate(renderManager, templateName, ctx)
+		},
+		"tryTmpl": func(templateName string, ctx any) (string, error) {
+			traceCall("tryTmpl", templateName, ctx)
+			res, err := templateExecTemplate(renderManager, templateName, ctx)
+			switch {
+			case errors.Is(err, ErrTemplateNotFound):
+				return "", nil
+			case err != nil:
+				return "", err
+			}
+
+			return res, nil
+		},
+
+		// Template namespace
+
+
+		// Other
 		"toQuotable": func(s string) string {
 			traceCall("toQuotable", s)
 			return strings.TrimSuffix(strings.TrimPrefix(strconv.Quote(s), "\""), "\"")
@@ -235,59 +309,17 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			}
 			return ""
 		},
-		"runtimeExpression": func(a common.Artifact, target *lang.GoStruct, addValidationCode bool) *RuntimeExpressionInfo {
-			traceCall("runtimeExpression", a, target)
-			if lo.IsNil(a) {
-				logger.Trace("--> artifact is nil")
-				return nil
-			}
-			if !a.Visible() {
-				logger.Trace("--> artifact is not visible")
-				return nil
-			}
-			type exprObj interface {
-				RuntimeExpressionObject() lang.BaseRuntimeExpression
-			}
-			eobj, ok := a.(exprObj)
-			if !ok {
-				panic("Artifact is not a runtime expression object, this is bug")
-			}
-			e := eobj.RuntimeExpressionObject()
-
-			steps, err := generateRuntimeExpressionExtractionCode(renderManager, e, target, addValidationCode)
-			if err != nil {
-				logger.Warn(fmt.Sprintf("Cannot resolve runtime expression, skipping. Hint: %s has no schema", e.StructFieldKind), "expression", e.OriginalExpression, "err", err)
-				return nil
-			}
-
-			lastVar := "v0"
-			var lastVarType common.GolangType = &lang.GoSimple{TypeName: "any"}
-			if len(steps) > 0 {
-				lastVar = lo.LastOrEmpty(steps).VarName
-				lastVarType = lo.LastOrEmpty(steps).VarType
-			}
-			return &RuntimeExpressionInfo{
-				Expression:  e,
-				Target:      target,
-				FieldKind:   string(e.StructFieldKind),
-				CodeSteps:   steps,
-				FirstVar:    "v0",
-				LastVar:     lastVar,
-				LastVarType: lastVarType,
-				mng:         renderManager,
-			}
-		},
-		"mapping": func(v string, variantPairs []any) (any, error) {
+		"mapping": func(v any, variantPairs ...any) any {
 			traceCall("mapping", v, variantPairs)
 			if len(variantPairs)%2 != 0 {
-				return "", fmt.Errorf("mapping requires even number of variantPairs, got %d", len(variantPairs))
+				panic(fmt.Errorf("mapping requires even number of variantPairs, got %d", len(variantPairs)))
 			}
 			for i := 0; i < len(variantPairs); i += 2 {
 				if variantPairs[i] == v {
-					return variantPairs[i+1], nil
+					return variantPairs[i+1]
 				}
 			}
-			return "", fmt.Errorf("unknown value %q", v)
+			return nil
 		},
 		"toList": func(v any) ([]any, error) {
 			traceCall("toList", v)
@@ -301,7 +333,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			}
 			return res, nil
 		},
-		"hasKey": func(key string, m any) (bool, error) { // Overwrites sprout's hasKey to accept any mapping type
+		"hasKey": func(key any, m any) (bool, error) { // Overwrites sprout's hasKey to accept any mapping type
 			traceCall("hasKey", key, m)
 			rval := reflect.ValueOf(m)
 			if rval.Kind() != reflect.Map {
@@ -485,7 +517,7 @@ func templateGoComment(text string) string {
 // that is typically used for property getter functions.
 //
 // The function returns a list of extract steps. Each step contains one or more lines of Go code and some meta information.
-func generateRuntimeExpressionExtractionCode(mng *manager.TemplateRenderManager, c lang.BaseRuntimeExpression, targetStruct *lang.GoStruct, addValidationCode bool) (items []runtimeExpressionCodeStep, err error) {
+func generateRuntimeExpressionExtractionCode(mng *manager.TemplateRenderManager, c lang.BaseRuntimeExpression, targetStruct *lang.GoStruct, addValidationCode bool) (items []RuntimeExpressionCodeStep, err error) {
 	// TODO: consider also AdditionalProperties in object and unions
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
@@ -500,11 +532,9 @@ func generateRuntimeExpressionExtractionCode(mng *manager.TemplateRenderManager,
 	baseType := field.Type
 	for pathIdx := 0; pathIdx < len(locationPath); {
 		var body []string
-		var varValueStmts string
-
-		// Anchor is a variable that holds the current value of the locationPath item
-		anchor := fmt.Sprintf("v%d", pathIdx)
-		nextAnchor := fmt.Sprintf("v%d", pathIdx+1)
+		var operator string
+		input := fmt.Sprintf("v%d", pathIdx)
+		output := fmt.Sprintf("v%d", pathIdx+1)
 
 		memberName, err2 := unescapeJSONPointerFragmentPart(locationPath[pathIdx])
 		if err2 != nil {
@@ -514,7 +544,7 @@ func generateRuntimeExpressionExtractionCode(mng *manager.TemplateRenderManager,
 
 		switch typ := baseType.(type) {
 		case *lang.GoStruct:
-			logger.Trace("---> GoStruct", "expression path", locationPath[:pathIdx], "member", memberName, "object", typ.String())
+			logger.Trace("-> GoStruct", "expression path", locationPath[:pathIdx], "member", memberName, "object", typ.String())
 			fld, ok := lo.Find(typ.Fields, func(item lang.GoStructField) bool { return item.MarshalName == memberName })
 			if !ok {
 				err = fmt.Errorf(
@@ -523,15 +553,15 @@ func generateRuntimeExpressionExtractionCode(mng *manager.TemplateRenderManager,
 				)
 				return
 			}
-			varValueStmts = fmt.Sprintf("%s.%s", anchor, fld.OriginalName)
+			operator = fmt.Sprintf("%s.%s", input, fld.OriginalName)
 			baseType = fld.Type
-			body = []string{fmt.Sprintf("%s := %s", nextAnchor, varValueStmts)}
+			body = []string{fmt.Sprintf("%s := %s", output, operator)}
 		case *lang.GoMap:
-			logger.Trace("---> GoMap", "expression path", locationPath[:pathIdx], "member", memberName, "object", typ.String())
-			varValueStmts = fmt.Sprintf("%s[%s]", anchor, toGoLiteral(memberName))
+			logger.Trace("-> GoMap", "expression path", locationPath[:pathIdx], "member", memberName, "object", typ.String())
+			operator = fmt.Sprintf("%s[%s]", input, toGoLiteral(memberName))
 			baseType = typ.ValueType
 			// TODO: replace templateGoUsage calls to smth another to remove import from impl, this is a potential circular import
-			varExpr := fmt.Sprintf("var %s %s", nextAnchor, lo.Must(templateGoUsage(mng, typ.ValueType)))
+			varExpr := fmt.Sprintf("var %s %s", output, lo.Must(templateGoUsage(mng, typ.ValueType)))
 			if typ.ValueType.CanBeAddressed() {
 				// Append ` = new(TYPE)` to initialize a pointer
 				varExpr += fmt.Sprintf(" = new(%s)", lo.Must(templateGoUsage(mng, typ.ValueType)))
@@ -539,7 +569,7 @@ func generateRuntimeExpressionExtractionCode(mng *manager.TemplateRenderManager,
 
 			ifExpr := fmt.Sprintf(`if v, ok := %s; ok {
 				%s = v
-			}`, varValueStmts, nextAnchor)
+			}`, operator, output)
 			if addValidationCode {
 				fmtErrorf := importExternalPackage(mng, []string{"fmt"}) + ".Errorf"
 				ifExpr += fmt.Sprintf(` else {
@@ -550,12 +580,12 @@ func generateRuntimeExpressionExtractionCode(mng *manager.TemplateRenderManager,
 			body = []string{
 				fmt.Sprintf(`if %s == nil { 
 					%s = make(%s) 
-				}`, anchor, anchor, lo.Must(templateGoUsage(mng, typ))),
+				}`, input, input, lo.Must(templateGoUsage(mng, typ))),
 				varExpr,
 				ifExpr,
 			}
 		case *lang.GoArray:
-			logger.Trace("---> GoArray", "expression path", locationPath[:pathIdx], "member", memberName, "object", typ.String())
+			logger.Trace("-> GoArray", "expression path", locationPath[:pathIdx], "member", memberName, "object", typ.String())
 			if _, ok := memberName.(string); ok {
 				err = fmt.Errorf(
 					"path item %q must be numeric to access jsonschema array %s, expression path: /%s",
@@ -570,13 +600,13 @@ func generateRuntimeExpressionExtractionCode(mng *manager.TemplateRenderManager,
 				body = append(body, fmt.Sprintf(`if len(%s) <= %s {
 					err = %s("index %%q is out of range in array of length %%d on expression path /%s", %s, len(%s))
 					return
-				}`, anchor, toGoLiteral(memberName), fmtErrorf, strings.Join(locationPath[:pathIdx], "/"), toGoLiteral(memberName), anchor))
+				}`, input, toGoLiteral(memberName), fmtErrorf, strings.Join(locationPath[:pathIdx], "/"), toGoLiteral(memberName), input))
 			}
-			varValueStmts = fmt.Sprintf("%s[%s]", anchor, toGoLiteral(memberName))
+			operator = fmt.Sprintf("%s[%s]", input, toGoLiteral(memberName))
 			baseType = typ.ItemsType
-			body = append(body, fmt.Sprintf("%s := %s", nextAnchor, varValueStmts))
+			body = append(body, fmt.Sprintf("%s := %s", output, operator))
 		case *lang.GoSimple: // Should be a terminal type in chain, raise error otherwise (if any locationPath parts left to resolve)
-			logger.Trace("---> GoSimple", "expression path", locationPath[:pathIdx], "member", memberName, "object", typ.String())
+			logger.Trace("-> GoSimple", "expression path", locationPath[:pathIdx], "member", memberName, "object", typ.String())
 			if pathIdx >= len(locationPath)-1 { // Primitive types should get addressed by the last locationPath item
 				err = fmt.Errorf(
 					"cannot evaluate %s for a primitive type %s %s, expression path: /%s",
@@ -590,7 +620,7 @@ func generateRuntimeExpressionExtractionCode(mng *manager.TemplateRenderManager,
 			baseType = typ
 		case lang.GolangWrappedType:
 			logger.Trace(
-				"---> GolangWrappedType",
+				"-> GolangWrappedType",
 				"expression path", locationPath[:pathIdx], "member", memberName, "object", baseType.String(), "type", fmt.Sprintf("%T", typ),
 			)
 			t := typ.UnwrapGolangType()
@@ -606,7 +636,7 @@ func generateRuntimeExpressionExtractionCode(mng *manager.TemplateRenderManager,
 			continue
 		case lang.GolangReferenceType:
 			logger.Trace(
-				"---> GolangReferenceType",
+				"-> GolangReferenceType",
 				"expression path", locationPath[:pathIdx], "member", memberName, "object", baseType.String(), "type", fmt.Sprintf("%T", typ),
 			)
 			t := typ.DerefGolangType()
@@ -621,7 +651,7 @@ func generateRuntimeExpressionExtractionCode(mng *manager.TemplateRenderManager,
 			baseType = t
 			continue
 		default:
-			logger.Trace("---> Unknown type", "expression path", locationPath[:pathIdx], "object", typ.String(), "type", fmt.Sprintf("%T", typ))
+			logger.Trace("-> Unknown type", "expression path", locationPath[:pathIdx], "object", typ.String(), "type", fmt.Sprintf("%T", typ))
 			err = fmt.Errorf(
 				"type %s is not addressable: %s, expression path: /%s",
 				typ.Name(),
@@ -632,14 +662,15 @@ func generateRuntimeExpressionExtractionCode(mng *manager.TemplateRenderManager,
 		}
 
 		pathIdx++
-		item := runtimeExpressionCodeStep{
-			CodeLines:       body,
-			VarName:         nextAnchor,
-			VarValue:        varValueStmts,
-			VarValueVarName: anchor,
-			VarType:         baseType,
+		item := RuntimeExpressionCodeStep{
+			ExpressionPart: fmt.Sprint(memberName),
+			Lines:      body,
+			InputVar:   input,
+			Operator:   operator,
+			OutputVar:  output,
+			OutputType: baseType,
 		}
-		logger.Trace("---> Add step", "lines", body, "varName", nextAnchor, "varValue", varValueStmts, "varType", baseType.String())
+		logger.Trace("-> Runtime expression step", "lines", body, "expression path", locationPath[:pathIdx], "outputType", baseType.String())
 
 		items = append(items, item)
 	}

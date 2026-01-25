@@ -40,9 +40,8 @@ type UICmd struct {
 	ListenAddress string `arg:"-a,--listen-address" help:"Address to bind the local server to, default to :8090" placeholder:"ADDRESS"`
 	ListenPath    string `arg:"--listen-path" help:"Path to serve the UI at, default to /" placeholder:"PATH"`
 
-	DoNotEmbedContents *bool  `arg:"--do-not-embed-contents" help:"Place the passed external URL to document into HTML instead of embedding its contents"`
-	Bundle             *bool  `arg:"--bundle" help:"Bundle 3rd-party JS/CSS resources into the output HTML file"`
-	BundleDir          string `arg:"--bundle-dir" help:"Directory with files to bundle instead of built-in ones" placeholder:"DIR"`
+	Bundle    *bool  `arg:"--bundle" help:"Bundle 3rd-party JS/CSS resources into the output HTML file"`
+	BundleDir string `arg:"--bundle-dir" help:"Directory with files to bundle instead of built-in ones" placeholder:"DIR"`
 
 	TemplatesDir string `arg:"-T,--templates-dir" help:"User templates directory" placeholder:"DIR"`
 }
@@ -68,19 +67,13 @@ func cliUI(cmd *UICmd, globalConfig toolConfig) error {
 	// Parsing the document
 	//
 	rawDocument := make(map[string]any)
-	if lo.FromPtr(cmdConfig.UI.DoNotEmbedContents) {
-		if docURL.URI == nil {
-			return fmt.Errorf("document path must be an URL to external resource")
-		}
-	} else {
-		logger.Debug("Reading the file", "path", cmd.Document)
-		buf, newDecoder, err := compiler.ReadDocument(docURL, locator, logger)
-		if err != nil {
-			return fmt.Errorf("read document: %w", err)
-		}
-		if err = newDecoder(bytes.NewReader(buf)).Decode(&rawDocument); err != nil {
-			return fmt.Errorf("decode document: %w", err)
-		}
+	logger.Debug("Reading the file", "path", cmd.Document)
+	buf, newDecoder, err := compiler.ReadDocument(docURL, locator, logger)
+	if err != nil {
+		return fmt.Errorf("read document: %w", err)
+	}
+	if err = newDecoder(bytes.NewReader(buf)).Decode(&rawDocument); err != nil {
+		return fmt.Errorf("decode document: %w", err)
 	}
 
 	//
@@ -103,7 +96,7 @@ func cliUI(cmd *UICmd, globalConfig toolConfig) error {
 	if fileName == "" {
 		fileName = strings.TrimSuffix(path.Base(cmd.Document), path.Ext(cmd.Document)) + defaultUIOutputFileExtension
 	}
-	uiConfig := getUIConfig(cmdConfig.UI)
+	uiConfig := common.UIRenderOpts{}
 
 	var resourceContents [][]byte
 	resourceLocations := builtinUIResourceURLs
@@ -332,13 +325,8 @@ func cliUIMergeConfig(globalConfig toolConfig, cmd *UICmd) (toolConfig, error) {
 	res.UI.Listen = coalesce(cmd.Listen, globalConfig.UI.Listen)
 	res.UI.ListenAddress = coalesce(cmd.ListenAddress, globalConfig.UI.ListenAddress)
 	res.UI.ListenPath = coalesce(cmd.ListenPath, globalConfig.UI.ListenPath)
-	res.UI.DoNotEmbedContents = coalesce(cmd.DoNotEmbedContents, globalConfig.UI.DoNotEmbedContents)
 	res.UI.Bundle = coalesce(cmd.Bundle, globalConfig.UI.Bundle)
 	res.UI.BundleDir = coalesce(cmd.BundleDir, globalConfig.UI.BundleDir)
 
 	return res, nil
-}
-
-func getUIConfig(conf toolConfigUI) common.UIRenderOpts {
-	return common.UIRenderOpts{DoNotEmbedContents: lo.FromPtr(conf.DoNotEmbedContents)}
 }

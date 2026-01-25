@@ -27,6 +27,7 @@ import (
 //
 // [JSON Schema Specification Draft 07]: https://json-schema.org/specification-links#draft-7
 type Object struct {
+	// TODO: check all fields according to the spec. Ex: missed writeOnly
 	Type                 *types.Union2[string, []string]            `json:"type,omitzero" yaml:"type"`
 	AdditionalItems      *types.Union2[Object, bool]                `json:"additionalItems,omitzero" yaml:"additionalItems"`
 	AdditionalProperties *types.Union2[Object, bool]                `json:"additionalProperties,omitzero" yaml:"additionalProperties"`

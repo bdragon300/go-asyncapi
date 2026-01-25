@@ -161,12 +161,11 @@ type (
 	toolConfigUI struct {
 		OutputFile string `yaml:"outputFile"`
 
-		Listen             *bool  `yaml:"listen"`
-		ListenAddress      string `yaml:"listenAddress"`
-		ListenPath         string `yaml:"listenPath"`
-		DoNotEmbedContents *bool  `yaml:"doNotEmbedContents"`
-		Bundle             *bool  `yaml:"bundle"`
-		BundleDir          string `yaml:"bundleDir"`
+		Listen        *bool  `yaml:"listen"`
+		ListenAddress string `yaml:"listenAddress"`
+		ListenPath    string `yaml:"listenPath"`
+		Bundle        *bool  `yaml:"bundle"`
+		BundleDir     string `yaml:"bundleDir"`
 	}
 )
 
@@ -296,7 +295,6 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 	res.UI.Listen = coalesce(userConf.UI.Listen, defaultConf.UI.Listen)
 	res.UI.ListenAddress = coalesce(userConf.UI.ListenAddress, defaultConf.UI.ListenAddress)
 	res.UI.ListenPath = coalesce(userConf.UI.ListenPath, defaultConf.UI.ListenPath)
-	res.UI.DoNotEmbedContents = coalesce(userConf.UI.DoNotEmbedContents, defaultConf.UI.DoNotEmbedContents)
 	res.UI.Bundle = coalesce(userConf.UI.Bundle, defaultConf.UI.Bundle)
 	res.UI.BundleDir = coalesce(userConf.UI.BundleDir, defaultConf.UI.BundleDir)
 

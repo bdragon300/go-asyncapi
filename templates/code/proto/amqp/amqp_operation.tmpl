@@ -6,7 +6,7 @@
         {{with .userId }}UserID: {{goLit .}},{{end}}
         {{with .cc }}CC: []string{ {{ range (toList .)}}{{goLit .}},{{end}} },{{end}}
         {{with .priority }}Priority: {{goLit .}},{{end}}
-        {{with .deliveryMode }}DeliveryMode: {{goPkgUtil "amqp"}}{{list 1 "DeliveryModeTransient" 2 "DeliveryModePersistent" | mapping .}},{{end}}
+        {{with .deliveryMode }}DeliveryMode: {{with mapping . 1 "DeliveryModeTransient" 2 "DeliveryModePersistent"}}{{goPkgUtil "amqp"}}{{.}}{{else}}{{goLit .}}{{end}},{{end}}
         {{with .mandatory }}Mandatory: {{goLit .}},{{end}}
         {{with .bcc }}BCC: []string{ {{ range (toList .)}}{{goLit .}},{{end}} },{{end}}
         {{with .replyTo }}ReplyTo: {{goLit .}},{{end}}

@@ -20,7 +20,7 @@
         SetPayload(payload {{.PayloadType | goUsage}}) *{{ .OutType | goID }}
         SetHeaders(headers {{.HeadersType | goUsage}}) *{{ .OutType | goID }}
         {{- with runtimeExpression .CorrelationID .OutType false}}
-            SetCorrelationID(value {{goUsage .LastVarType}}) *{{ $.OutType | goID }}
+            SetCorrelationID(value {{goUsage .OutputType}}) *{{ $.OutType | goID }}
         {{- end}}
     }
 
@@ -37,10 +37,10 @@
     }
 
     {{- with runtimeExpression .CorrelationID .OutType false}}
-        func (m *{{ $.OutType | goID }}) SetCorrelationID(value {{goUsage .LastVarType}}) *{{ goID $.OutType }} {
-            {{.FirstVar}} := m.{{.FieldKind | toTitleCase}}
+        func (m *{{ $.OutType | goID }}) SetCorrelationID(value {{goUsage .OutputType}}) *{{ goID $.OutType }} {
+            {{.InputVar}} := m.{{toString .Expression.StructFieldKind | toTitleCase}}
             {{template "code/runtimeExpression/setterBody" .}}
-            m.{{.FieldKind | toTitleCase}} = {{.FirstVar}}
+            m.{{toString .Expression.StructFieldKind | toTitleCase}} = {{.InputVar}}
             return m
         }
     {{- end}}
@@ -49,10 +49,10 @@
         {{- $opr := $op.OperationReply}}
         {{- if and (isVisible $op) (isVisible $opr) $opr.OperationReplyAddress }}
             {{- with runtimeExpression $opr.OperationReplyAddress $.OutType false}}
-                func (m *{{ $.OutType | goID }}) SetReplyAddress{{$op | goID}}(value {{goUsage .LastVarType}}) {
-                    {{.FirstVar}} := m.{{.FieldKind | toTitleCase}}
+                func (m *{{ $.OutType | goID }}) SetReplyAddress{{$op | goID}}(value {{goUsage .OutputType}}) {
+                    {{.InputVar}} := m.{{toString .Expression.StructFieldKind | toTitleCase}}
                     {{template "code/runtimeExpression/setterBody" .}}
-                    m.{{.FieldKind | toTitleCase}} = {{.FirstVar}}
+                    m.{{toString .Expression.StructFieldKind | toTitleCase}} = {{.InputVar}}
                 }
             {{- end}}
         {{- end}}
@@ -64,7 +64,7 @@
         Payload() {{.PayloadType | goUsage}}
         Headers() {{.HeadersType | goUsage}}
         {{- with runtimeExpression .CorrelationID $.InType false}}
-            CorrelationID() (value {{goUsage .LastVarType}}, err error)
+            CorrelationID() (value {{goUsage .OutputType}}, err error)
         {{- end}}
     }
 
@@ -78,11 +78,11 @@
         return m.headers
     }
 
-    {{- with runtimeExpression .CorrelationID $.InType false}}
-        func (m {{ $.InType | goID }}) CorrelationID() (value {{goUsage .LastVarType}}, err error) {
-            {{.FirstVar}} := m.{{.FieldKind}}
+    {{- with runtimeExpression .CorrelationID $.InType true}}
+        func (m {{ $.InType | goID }}) CorrelationID() (value {{goUsage .OutputType}}, err error) {
+            {{.InputVar}} := m.{{.Expression.StructFieldKind}}
             {{template "code/runtimeExpression/getterBody" .}}
-            {{if .CodeSteps}}value = {{.LastVar}}{{end}}
+            {{if .CodeSteps}}value = {{.OutputVar}}{{end}}
             return
         }
     {{- end}}
@@ -90,11 +90,11 @@
     {{- range $op := .BoundSubReplyOperations}}
         {{- $opr := $op.OperationReply}}
         {{- if and (isVisible $op) (isVisible $opr) $opr.OperationReplyAddress}}
-            {{- with runtimeExpression $opr.OperationReplyAddress $.InType false}}
-                func (m *{{ $.InType | goID }}) ReplyAddress{{$op | goID}}() (value {{goUsage .LastVarType}}, err error) {
-                    {{.FirstVar}} := m.{{.FieldKind}}
+            {{- with runtimeExpression $opr.OperationReplyAddress $.InType true}}
+                func (m *{{ $.InType | goID }}) ReplyAddress{{$op | goID}}() (value {{goUsage .OutputType}}, err error) {
+                    {{.InputVar}} := m.{{.Expression.StructFieldKind}}
                     {{template "code/runtimeExpression/getterBody" .}}
-                    {{if .CodeSteps}}value = {{.LastVar}}{{end}}
+                    {{if .CodeSteps}}value = {{.OutputVar}}{{end}}
                     return
                 }
             {{- end}}

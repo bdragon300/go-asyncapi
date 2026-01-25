@@ -162,8 +162,8 @@ func (c {{. | goID}}{{.Protocol | goID}}) Bindings() {{goPkgUtil .Protocol}}Oper
                 ctx {{goPkgExt "context"}}Context,
                 {{if not (impl $.Protocol)}}envelope {{goPkgUtil $.Protocol}}EnvelopeWriter,{{end}}
                 {{- with runtimeExpression $.OperationReply.OperationReplyAddress .OutType false}}
-                    message interface{ {{goPkg $replyCh}}{{ goID $replyCh }}EnvelopeMarshaler{{$.Protocol | goID}}; SetReplyAddress{{ $ | goID }}(a {{goUsage .LastVarType}}) },
-                    replyAddress {{goUsage .LastVarType}},
+                    message interface{ {{goPkg $replyCh}}{{ goID $replyCh }}EnvelopeMarshaler{{$.Protocol | goID}}; SetReplyAddress{{ $ | goID }}(a {{goUsage .OutputType}}) },
+                    replyAddress {{goUsage .OutputType}},
                 {{- else}}
                     message {{goPkg $replyCh}}{{ goID $replyCh }}EnvelopeMarshaler{{$.Protocol | goID}},
                 {{- end}}

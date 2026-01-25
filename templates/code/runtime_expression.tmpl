@@ -3,7 +3,8 @@
 {{define "code/runtimeExpression/setterBody"}}
 {{- /* Render extraction steps except the last one */}}
 {{- range initial .CodeSteps}}
-    {{- range .CodeLines}}
+    // {{.ExpressionPart}}
+    {{- range .Lines}}
         {{.}}
     {{- end}}
 {{- end}}
@@ -11,15 +12,16 @@
 {{- $exprVal := "value"}}
 {{- /* Set value and collapse the value back */}}
 {{- range reverse .CodeSteps }}
-    {{.VarValue}} = {{$exprVal}}
-    {{- $exprVal = .VarValueVarName}}
+    {{.Operator}} = {{$exprVal}}
+    {{- $exprVal = .InputVar}}
 {{- end}}
 {{- end}}
 
 {{define "code/runtimeExpression/getterBody"}}
 {{- /* Render extraction steps except the last one */}}
 {{- range .CodeSteps}}
-    {{- range .CodeLines}}
+    // {{.ExpressionPart}}
+    {{- range .Lines}}
         {{.}}
     {{- end}}
 {{- end}}
