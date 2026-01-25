@@ -30,6 +30,8 @@ See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for m
 
 ## Supported protocols
 
+`go-asyncapi` is able to generate the abstract code for any protocol, but for these protocols it also adds the supporting code:
+
 |                                                                             | Protocol       | Library                                                                            |
 |-----------------------------------------------------------------------------|----------------|------------------------------------------------------------------------------------|
 | {{< figure src="images/amqp.svg" alt="AMQP" class="brand-icon">}}           | AMQP           | [github.com/rabbitmq/amqp091-go](https://github.com/rabbitmq/amqp091-go)           |
@@ -43,6 +45,12 @@ See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for m
 | {{< figure src="images/tcpudp.svg" alt="TCP" class="brand-icon">}}          | TCP            | [net](https://pkg.go.dev/net)                                                      |
 | {{< figure src="images/tcpudp.svg" alt="UDP" class="brand-icon">}}          | UDP            | [net](https://pkg.go.dev/net)                                                      |
 | {{< figure src="images/websocket.svg" alt="WebSocket" class="brand-icon">}} | WebSocket      | [github.com/gobwas/ws](https://github.com/gobwas/ws)                               |
+
+## Installation
+
+```bash
+go install github.com/bdragon300/go-asyncapi/cmd/go-asyncapi@latest
+```
 
 ## Usage
 
@@ -114,14 +122,6 @@ err := myChannel.SubscribeMyMessage(ctx, func(msg messages.MyMessage) {
 if err != nil {
 	log.Fatalf("subscribe: %v", err)
 }
-```
-
-
-
-## Installation
-
-```bash
-go install github.com/bdragon300/go-asyncapi/cmd/go-asyncapi@latest
 ```
 
 ## Project status

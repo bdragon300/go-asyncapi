@@ -25,6 +25,8 @@ See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for m
 
 ## Supported protocols
 
+`go-asyncapi` is able to generate the abstract code for any protocol, but for these protocols it also adds the supporting code: 
+
 |                                                                                                                                         | Protocol       | Library                                                                            |
 |-----------------------------------------------------------------------------------------------------------------------------------------|----------------|------------------------------------------------------------------------------------|
 | <img alt="AMQP" src="https://bdragon300.github.io/go-asyncapi/images/amqp.svg" style="height: 1.5em; vertical-align: middle">           | AMQP           | [github.com/rabbitmq/amqp091-go](https://github.com/rabbitmq/amqp091-go)           |
@@ -38,6 +40,13 @@ See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for m
 | <img alt="TCP" src="https://bdragon300.github.io/go-asyncapi/images/tcpudp.svg" style="height: 1.5em; vertical-align: middle">          | TCP            | [net](https://pkg.go.dev/net)                                                      |
 | <img alt="UDP" src="https://bdragon300.github.io/go-asyncapi/images/tcpudp.svg" style="height: 1.5em; vertical-align: middle">          | UDP            | [net](https://pkg.go.dev/net)                                                      |
 | <img alt="Websocket" src="https://bdragon300.github.io/go-asyncapi/images/websocket.svg" style="height: 1.5em; vertical-align: middle"> | Websocket      | [github.com/gobwas/ws](https://github.com/gobwas/ws)                               |
+
+
+## Installation
+
+```bash
+go install github.com/bdragon300/go-asyncapi/cmd/go-asyncapi@latest
+```
 
 ## Usage
 
@@ -109,12 +118,6 @@ err := myChannel.SubscribeMyMessage(ctx, func(msg messages.MyMessage) {
 if err != nil {
 	log.Fatalf("subscribe: %v", err)
 }
-```
-
-## Installation
-
-```bash
-go install github.com/bdragon300/go-asyncapi/cmd/go-asyncapi@latest
 ```
 
 ## Project status
