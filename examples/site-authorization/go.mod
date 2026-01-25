@@ -3,7 +3,7 @@ module site-authorization
 go 1.24.4
 
 require (
-	github.com/bdragon300/go-asyncapi/run v0.0.0-20250707112618-16964b883284
+	github.com/bdragon300/go-asyncapi/run v0.0.0-20260125180937-130e7f46902c
 	github.com/twmb/franz-go v1.19.5
 )
 

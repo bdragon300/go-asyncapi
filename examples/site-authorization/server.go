@@ -4,8 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/bdragon300/go-asyncapi/run/kafka"
-	"github.com/twmb/franz-go/pkg/kgo"
 	"math/rand/v2"
 	"net"
 	"net/url"
@@ -13,9 +11,12 @@ import (
 	"site-authorization/asyncapi/channels"
 	"site-authorization/asyncapi/messages"
 	"site-authorization/asyncapi/parameters"
+	"site-authorization/asyncapi/proto/kafka"
 	"site-authorization/asyncapi/schemas"
 	"site-authorization/asyncapi/servers"
 	"strconv"
+
+	"github.com/twmb/franz-go/pkg/kgo"
 )
 
 type ResponseMode int
@@ -66,7 +67,7 @@ func main() {
 
 func serverLoop(ctx context.Context, server channels.AuthChannelServerKafka, env parameters.EnvironmentName, responseMode ResponseMode) error {
 	fmt.Println("Awaiting auth requests...")
-	channel, err := server.OpenAuthChannelKafka(ctx, channels.AuthChannelParameters{EnvironmentName: env})
+	channel, err := server.OpenAuthChannelKafka(ctx, channels.AuthChannelParameters{EnvironmentName: env}, nil)
 	if err != nil {
 		return fmt.Errorf("open auth channel: %w", err)
 	}
@@ -103,7 +104,7 @@ func serverLoop(ctx context.Context, server channels.AuthChannelServerKafka, env
 	return nil
 }
 
-func handleAuthRequest(msg messages.AuthRequestMsgSender, responseMode ResponseMode) ([]messages.AuthResponseMsgOut, error) {
+func handleAuthRequest(msg messages.AuthRequestMsgReceiver, responseMode ResponseMode) ([]messages.AuthResponseMsgOut, error) {
 	fmt.Printf("Received auth request: %+v\n", msg.Payload())
 
 	var res []messages.AuthResponseMsgOut

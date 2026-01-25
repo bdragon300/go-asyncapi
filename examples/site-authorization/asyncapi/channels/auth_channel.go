@@ -7,10 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/run"
-	"github.com/bdragon300/go-asyncapi/run/kafka"
-	kafka2 "site-authorization/asyncapi/impl/kafka"
 	"site-authorization/asyncapi/messages"
 	"site-authorization/asyncapi/parameters"
+	"site-authorization/asyncapi/proto/kafka"
 )
 
 type AuthChannelParameters struct {
@@ -40,10 +39,18 @@ func NewAuthChannelKafka(
 	return &res
 }
 
+type AuthChannelServerKafka interface {
+	OpenAuthChannelKafka(context.Context, AuthChannelParameters, run.AnySecurityScheme) (*AuthChannelKafka, error)
+	Producer() kafka.Producer
+	Consumer() kafka.Consumer
+}
+
 func OpenAuthChannelKafka(
 	ctx context.Context,
-	params AuthChannelParameters,
 	server AuthChannelServerKafka,
+	params AuthChannelParameters,
+	opBindings *kafka.OperationBindings,
+	security run.AnySecurityScheme,
 ) (*AuthChannelKafka, error) {
 	var err error
 	address, err := AuthChannelAddress(params).Expand()
@@ -53,7 +60,13 @@ func OpenAuthChannelKafka(
 	var publisher kafka.Publisher
 	producer := server.Producer()
 	if producer != nil {
-		publisher, err = producer.Publisher(ctx, address, nil, nil)
+		publisher, err = producer.Publisher(
+			ctx,
+			address,
+			nil,
+			opBindings,
+			security,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -61,7 +74,13 @@ func OpenAuthChannelKafka(
 	var subscriber kafka.Subscriber
 	consumer := server.Consumer()
 	if consumer != nil {
-		subscriber, err = consumer.Subscriber(ctx, address, nil, nil)
+		subscriber, err = consumer.Subscriber(
+			ctx,
+			address,
+			nil,
+			opBindings,
+			security,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -74,12 +93,15 @@ func OpenAuthChannelKafka(
 	), nil
 }
 
-// AuthChannelKafka--Channel for authentication requests and responses.
 type AuthChannelKafka struct {
 	address    run.ParamString
 	publisher  kafka.Publisher
 	subscriber kafka.Subscriber
 	topic      string
+}
+
+func (c AuthChannelKafka) Topic() string {
+	return c.topic
 }
 
 func (c AuthChannelKafka) Address() run.ParamString {
@@ -94,10 +116,6 @@ func (c AuthChannelKafka) Close() (err error) {
 		err = errors.Join(err, c.subscriber.Close())
 	}
 	return
-}
-
-func (c AuthChannelKafka) Topic() string {
-	return c.topic
 }
 
 type AuthChannelEnvelopeMarshalerKafka interface {
@@ -121,7 +139,7 @@ func (c AuthChannelKafka) PublishAuthRequestMsg(
 
 	message AuthChannelEnvelopeMarshalerKafka,
 ) error {
-	envelope := kafka2.NewEnvelopeOut()
+	envelope := kafka.NewEnvelopeOut(nil)
 	if err := c.SealAuthRequestMsg(envelope, message); err != nil {
 		return err
 	}
@@ -145,7 +163,7 @@ func (c AuthChannelKafka) PublishAuthResponseMsg(
 
 	message AuthChannelEnvelopeMarshalerKafka,
 ) error {
-	envelope := kafka2.NewEnvelopeOut()
+	envelope := kafka.NewEnvelopeOut(nil)
 	if err := c.SealAuthResponseMsg(envelope, message); err != nil {
 		return err
 	}
@@ -174,20 +192,24 @@ func (c AuthChannelKafka) UnsealAuthRequestMsg(
 
 func (c AuthChannelKafka) SubscribeAuthRequestMsg(
 	ctx context.Context,
-	cb func(message messages.AuthRequestMsgSender),
+	cb func(message messages.AuthRequestMsgReceiver),
 ) (err error) {
-	subCtx, cancel := context.WithCancelCause(ctx)
-	defer cancel(nil)
+	subCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-	return c.Subscribe(subCtx, func(envelope kafka.EnvelopeReader) {
+	subErr := c.Subscribe(subCtx, func(envelope kafka.EnvelopeReader) {
 		message := new(messages.AuthRequestMsgIn)
 		if err2 := c.UnsealAuthRequestMsg(envelope, message); err2 != nil {
-			err = fmt.Errorf("open message envelope: %w", err2)
-			cancel(err)
+			err = fmt.Errorf("%w: %w", run.ErrUnsealEnvelope, err2)
+			cancel()
 			return
 		}
 		cb(message)
 	})
+	if err != nil {
+		return err
+	}
+	return subErr
 }
 func (c AuthChannelKafka) UnsealAuthResponseMsg(
 	envelope kafka.EnvelopeReader,
@@ -198,20 +220,24 @@ func (c AuthChannelKafka) UnsealAuthResponseMsg(
 
 func (c AuthChannelKafka) SubscribeAuthResponseMsg(
 	ctx context.Context,
-	cb func(message messages.AuthResponseMsgSender),
+	cb func(message messages.AuthResponseMsgReceiver),
 ) (err error) {
-	subCtx, cancel := context.WithCancelCause(ctx)
-	defer cancel(nil)
+	subCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-	return c.Subscribe(subCtx, func(envelope kafka.EnvelopeReader) {
+	subErr := c.Subscribe(subCtx, func(envelope kafka.EnvelopeReader) {
 		message := new(messages.AuthResponseMsgIn)
 		if err2 := c.UnsealAuthResponseMsg(envelope, message); err2 != nil {
-			err = fmt.Errorf("open message envelope: %w", err2)
-			cancel(err)
+			err = fmt.Errorf("%w: %w", run.ErrUnsealEnvelope, err2)
+			cancel()
 			return
 		}
 		cb(message)
 	})
+	if err != nil {
+		return err
+	}
+	return subErr
 }
 
 func (c AuthChannelKafka) Subscriber() kafka.Subscriber {
@@ -220,10 +246,4 @@ func (c AuthChannelKafka) Subscriber() kafka.Subscriber {
 
 func (c AuthChannelKafka) Subscribe(ctx context.Context, cb func(envelope kafka.EnvelopeReader)) error {
 	return c.subscriber.Receive(ctx, cb)
-}
-
-type AuthChannelServerKafka interface {
-	OpenAuthChannelKafka(ctx context.Context, params AuthChannelParameters) (*AuthChannelKafka, error)
-	Producer() kafka.Producer
-	Consumer() kafka.Consumer
 }

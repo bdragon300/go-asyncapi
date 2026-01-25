@@ -5,15 +5,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	http2 "http-server/asyncapi/impl/http"
 	"http-server/asyncapi/messages"
+	http2 "http-server/asyncapi/proto/http"
 	"http-server/asyncapi/schemas"
 	"http-server/asyncapi/servers"
 	"net"
 	"net/http"
 	"strconv"
-
-	http3 "github.com/bdragon300/go-asyncapi/run/http"
 )
 
 func main() {
@@ -64,7 +62,7 @@ func main() {
 	// because [net/http] server provides no other way to write the response other than the [http.ResponseWriter],
 	// that being passed to the handler as an argument.
 	// Envelope encapsulates the [http.Request] and [http.ResponseWriter] passed to handler.
-	err = channel.Subscribe(ctx, func(envelope http3.EnvelopeReader) {
+	err = channel.Subscribe(ctx, func(envelope http2.EnvelopeReader) {
 		req := envelope.(*http2.EnvelopeIn)
 
 		// Unseal a message by hand (i.e. read and unmarshal it).

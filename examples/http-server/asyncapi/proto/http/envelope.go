@@ -3,34 +3,35 @@
 package http
 
 import (
+	"github.com/bdragon300/go-asyncapi/run"
+)
+
+import (
 	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
-
-	"github.com/bdragon300/go-asyncapi/run"
-	runHttp "github.com/bdragon300/go-asyncapi/run/http"
+	stdHTTP "net/http"
 )
 
-func NewEnvelopeOut() *EnvelopeOut {
-	req := &http.Request{ // Taken from http.NewRequestWithContext
+func NewEnvelopeOut(buf []byte) *EnvelopeOut {
+	req := &stdHTTP.Request{ // Taken from http.NewRequestWithContext
 		Method:     "GET",
 		Proto:      "HTTP/1.1",
 		ProtoMajor: 1,
 		ProtoMinor: 1,
-		Header:     make(http.Header),
+		Header:     make(stdHTTP.Header),
 	}
 	return &EnvelopeOut{
 		Request: req.WithContext(context.Background()),
-		body:    bytes.NewBuffer(make([]byte, 0)),
+		body:    bytes.NewBuffer(buf),
 	}
 }
 
 type EnvelopeOut struct {
-	*http.Request
-	messageBindings runHttp.MessageBindings
+	*stdHTTP.Request
+	messageBindings MessageBindings
 	body            *bytes.Buffer
 }
 
@@ -70,11 +71,11 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.Header.Set("Content-Type", contentType)
 }
 
-func (e *EnvelopeOut) SetBindings(bindings runHttp.MessageBindings) {
+func (e *EnvelopeOut) SetBindings(bindings MessageBindings) {
 	e.messageBindings = bindings
 }
 
-func (e *EnvelopeOut) AsStdRecord() *http.Request {
+func (e *EnvelopeOut) AsStdRecord() *stdHTTP.Request {
 	reqCopy := e.Request.Clone(context.Background())
 	reqCopy.Body = io.NopCloser(e.body)
 	reqCopy.ContentLength = int64(e.body.Len())
@@ -85,13 +86,13 @@ func (e *EnvelopeOut) AsStdRecord() *http.Request {
 	return reqCopy
 }
 
-func NewEnvelopeIn(req *http.Request, responseWriter http.ResponseWriter) *EnvelopeIn {
+func NewEnvelopeIn(req *stdHTTP.Request, responseWriter stdHTTP.ResponseWriter) *EnvelopeIn {
 	return &EnvelopeIn{Request: req, ResponseWriter: responseWriter}
 }
 
 type EnvelopeIn struct {
-	*http.Request
-	ResponseWriter http.ResponseWriter
+	*stdHTTP.Request
+	ResponseWriter stdHTTP.ResponseWriter
 }
 
 func (e *EnvelopeIn) Read(p []byte) (n int, err error) {

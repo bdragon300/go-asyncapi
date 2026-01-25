@@ -4,84 +4,70 @@ package operations
 
 import (
 	"context"
-	"github.com/bdragon300/go-asyncapi/run/kafka"
+	"github.com/bdragon300/go-asyncapi/run"
 	"site-authorization/asyncapi/channels"
-	kafka2 "site-authorization/asyncapi/impl/kafka"
+	"site-authorization/asyncapi/messages"
+	"site-authorization/asyncapi/proto/kafka"
 )
 
-func NewAuthRequestOperationKafka(
-	params channels.AuthChannelParameters,
-	publisher kafka.Publisher,
-
-) *AuthRequestOperationKafka {
-	res := AuthRequestOperationKafka{
-		Channel: channels.NewAuthChannelKafka(params, publisher, nil),
-	}
-	return &res
+type AuthRequestOperationServerKafka interface {
+	OpenAuthChannelKafka(context.Context, channels.AuthChannelParameters, run.AnySecurityScheme) (*channels.AuthChannelKafka, error)
+	OpenAuthRequestOperationKafka(context.Context, channels.AuthChannelParameters) (*AuthRequestOperationKafka, error)
+	Producer() kafka.Producer
+	Consumer() kafka.Consumer
 }
 
 func OpenAuthRequestOperationKafka(
 	ctx context.Context,
-	params channels.AuthChannelParameters,
 	server AuthRequestOperationServerKafka,
+	params channels.AuthChannelParameters,
+
 ) (*AuthRequestOperationKafka, error) {
-	address, err := channels.AuthChannelAddress(params).Expand()
+	ch, err := channels.OpenAuthChannelKafka(
+		ctx,
+		server,
+		params,
+		nil,
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
-	var publisher kafka.Publisher
-	producer := server.Producer()
-	if producer != nil {
-		publisher, err = producer.Publisher(ctx, address, nil, nil)
-		if err != nil {
-			return nil, err
-		}
-	}
 
-	res := &AuthRequestOperationKafka{
-		Channel: channels.NewAuthChannelKafka(params, publisher, nil),
-	}
-	return res, nil
+	return &AuthRequestOperationKafka{
+		Channel: ch,
+	}, nil
+}
+
+type AuthRequestOperationChannelKafka interface {
+	Close() error
+
+	SealAuthRequestMsg(kafka.EnvelopeWriter, channels.AuthChannelEnvelopeMarshalerKafka) error
+	PublishAuthRequestMsg(context.Context, channels.AuthChannelEnvelopeMarshalerKafka) error
+
+	UnsealAuthRequestMsg(kafka.EnvelopeReader, channels.AuthChannelEnvelopeUnmarshalerKafka) error
+	SubscribeAuthRequestMsg(context.Context, func(messages.AuthRequestMsgReceiver)) error
 }
 
 type AuthRequestOperationKafka struct {
-	Channel *channels.AuthChannelKafka
+	Channel AuthRequestOperationChannelKafka
 }
 
-func (o AuthRequestOperationKafka) Close() error {
-	return o.Channel.Close()
-}
-
-type AuthRequestOperationEnvelopeMarshalerKafka interface {
-	MarshalAuthRequestOperationKafka(envelope kafka.EnvelopeWriter) error
+func (c AuthRequestOperationKafka) Close() error {
+	return c.Channel.Close()
 }
 
 func (o AuthRequestOperationKafka) SealAuthRequestMsg(
 	envelope kafka.EnvelopeWriter,
-	message AuthRequestOperationEnvelopeMarshalerKafka,
+	message channels.AuthChannelEnvelopeMarshalerKafka,
 ) error {
-	if err := message.MarshalAuthRequestOperationKafka(envelope); err != nil {
-		return err
-	}
-
-	envelope.SetTopic(o.Channel.Topic())
-	return nil
+	return o.Channel.SealAuthRequestMsg(envelope, message)
 }
 
 func (o AuthRequestOperationKafka) PublishAuthRequestMsg(
 	ctx context.Context,
 
-	message AuthRequestOperationEnvelopeMarshalerKafka,
+	message channels.AuthChannelEnvelopeMarshalerKafka,
 ) error {
-	envelope := kafka2.NewEnvelopeOut()
-	if err := o.SealAuthRequestMsg(envelope, message); err != nil {
-		return err
-	}
-
-	return o.Channel.Publish(ctx, envelope)
-}
-
-type AuthRequestOperationServerKafka interface {
-	OpenAuthRequestOperationKafka(ctx context.Context, params channels.AuthChannelParameters) (*AuthRequestOperationKafka, error)
-	Producer() kafka.Producer
+	return o.Channel.PublishAuthRequestMsg(ctx, message)
 }

@@ -3,23 +3,24 @@
 package kafka
 
 import (
-	"bytes"
-
 	"github.com/bdragon300/go-asyncapi/run"
-	runKafka "github.com/bdragon300/go-asyncapi/run/kafka"
+)
+
+import (
+	"bytes"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
-func NewEnvelopeOut() *EnvelopeOut {
+func NewEnvelopeOut(buf []byte) *EnvelopeOut {
 	return &EnvelopeOut{
-		Record: &kgo.Record{},
+		Record: &kgo.Record{Value: buf},
 	}
 }
 
 type EnvelopeOut struct {
 	*kgo.Record
-	messageBindings runKafka.MessageBindings
+	messageBindings MessageBindings
 }
 
 func (e *EnvelopeOut) Write(p []byte) (n int, err error) {
@@ -41,7 +42,7 @@ func (e *EnvelopeOut) SetContentType(contentType string) {
 	e.Record.Headers = append(e.Record.Headers, kgo.RecordHeader{Key: "Content-Type", Value: []byte(contentType)})
 }
 
-func (e *EnvelopeOut) SetBindings(bindings runKafka.MessageBindings) {
+func (e *EnvelopeOut) SetBindings(bindings MessageBindings) {
 	e.messageBindings = bindings
 }
 

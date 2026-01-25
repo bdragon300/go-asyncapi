@@ -7,9 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bdragon300/go-asyncapi/run"
-	"github.com/bdragon300/go-asyncapi/run/http"
-	http2 "http-server/asyncapi/impl/http"
 	"http-server/asyncapi/messages"
+	"http-server/asyncapi/proto/http"
 )
 
 func EchoChannelAddress() run.ParamString {
@@ -29,10 +28,16 @@ func NewEchoChannelHTTP(
 	return &res
 }
 
+type EchoChannelServerHTTP interface {
+	OpenEchoChannelHTTP(context.Context) (*EchoChannelHTTP, error)
+	Producer() http.Producer
+	Consumer() http.Consumer
+}
+
 func OpenEchoChannelHTTP(
 	ctx context.Context,
-
 	server EchoChannelServerHTTP,
+
 ) (*EchoChannelHTTP, error) {
 	var err error
 	address, err := EchoChannelAddress().Expand()
@@ -42,7 +47,13 @@ func OpenEchoChannelHTTP(
 	var publisher http.Publisher
 	producer := server.Producer()
 	if producer != nil {
-		publisher, err = producer.Publisher(ctx, address, nil, nil)
+		publisher, err = producer.Publisher(
+			ctx,
+			address,
+			nil,
+			nil,
+			nil,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -50,7 +61,13 @@ func OpenEchoChannelHTTP(
 	var subscriber http.Subscriber
 	consumer := server.Consumer()
 	if consumer != nil {
-		subscriber, err = consumer.Subscriber(ctx, address, nil, nil)
+		subscriber, err = consumer.Subscriber(
+			ctx,
+			address,
+			nil,
+			nil,
+			nil,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -63,7 +80,6 @@ func OpenEchoChannelHTTP(
 	), nil
 }
 
-// EchoChannelHTTP--Channel for echoing messages.
 type EchoChannelHTTP struct {
 	address    run.ParamString
 	publisher  http.Publisher
@@ -104,7 +120,7 @@ func (c EchoChannelHTTP) PublishServerRequest(
 
 	message EchoChannelEnvelopeMarshalerHTTP,
 ) error {
-	envelope := http2.NewEnvelopeOut()
+	envelope := http.NewEnvelopeOut(nil)
 	if err := c.SealServerRequest(envelope, message); err != nil {
 		return err
 	}
@@ -127,7 +143,7 @@ func (c EchoChannelHTTP) PublishServerResponse(
 
 	message EchoChannelEnvelopeMarshalerHTTP,
 ) error {
-	envelope := http2.NewEnvelopeOut()
+	envelope := http.NewEnvelopeOut(nil)
 	if err := c.SealServerResponse(envelope, message); err != nil {
 		return err
 	}
@@ -156,20 +172,24 @@ func (c EchoChannelHTTP) UnsealServerRequest(
 
 func (c EchoChannelHTTP) SubscribeServerRequest(
 	ctx context.Context,
-	cb func(message messages.ServerRequestSender),
+	cb func(message messages.ServerRequestReceiver),
 ) (err error) {
-	subCtx, cancel := context.WithCancelCause(ctx)
-	defer cancel(nil)
+	subCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-	return c.Subscribe(subCtx, func(envelope http.EnvelopeReader) {
+	subErr := c.Subscribe(subCtx, func(envelope http.EnvelopeReader) {
 		message := new(messages.ServerRequestIn)
 		if err2 := c.UnsealServerRequest(envelope, message); err2 != nil {
-			err = fmt.Errorf("open message envelope: %w", err2)
-			cancel(err)
+			err = fmt.Errorf("%w: %w", run.ErrUnsealEnvelope, err2)
+			cancel()
 			return
 		}
 		cb(message)
 	})
+	if err != nil {
+		return err
+	}
+	return subErr
 }
 func (c EchoChannelHTTP) UnsealServerResponse(
 	envelope http.EnvelopeReader,
@@ -180,20 +200,24 @@ func (c EchoChannelHTTP) UnsealServerResponse(
 
 func (c EchoChannelHTTP) SubscribeServerResponse(
 	ctx context.Context,
-	cb func(message messages.ServerResponseSender),
+	cb func(message messages.ServerResponseReceiver),
 ) (err error) {
-	subCtx, cancel := context.WithCancelCause(ctx)
-	defer cancel(nil)
+	subCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-	return c.Subscribe(subCtx, func(envelope http.EnvelopeReader) {
+	subErr := c.Subscribe(subCtx, func(envelope http.EnvelopeReader) {
 		message := new(messages.ServerResponseIn)
 		if err2 := c.UnsealServerResponse(envelope, message); err2 != nil {
-			err = fmt.Errorf("open message envelope: %w", err2)
-			cancel(err)
+			err = fmt.Errorf("%w: %w", run.ErrUnsealEnvelope, err2)
+			cancel()
 			return
 		}
 		cb(message)
 	})
+	if err != nil {
+		return err
+	}
+	return subErr
 }
 
 func (c EchoChannelHTTP) Subscriber() http.Subscriber {
@@ -202,10 +226,4 @@ func (c EchoChannelHTTP) Subscriber() http.Subscriber {
 
 func (c EchoChannelHTTP) Subscribe(ctx context.Context, cb func(envelope http.EnvelopeReader)) error {
 	return c.subscriber.Receive(ctx, cb)
-}
-
-type EchoChannelServerHTTP interface {
-	OpenEchoChannelHTTP(ctx context.Context) (*EchoChannelHTTP, error)
-	Producer() http.Producer
-	Consumer() http.Consumer
 }

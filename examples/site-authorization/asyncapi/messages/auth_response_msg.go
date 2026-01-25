@@ -5,10 +5,16 @@ package messages
 import (
 	"encoding/json"
 	"github.com/bdragon300/go-asyncapi/run"
-	"github.com/bdragon300/go-asyncapi/run/kafka"
 	"io"
+	"site-authorization/asyncapi/proto/kafka"
 	"site-authorization/asyncapi/schemas"
 )
+
+type AuthResponseMsgSender interface {
+	SetPayload(payload schemas.AuthEvent) *AuthResponseMsgOut
+	SetHeaders(headers map[string]any) *AuthResponseMsgOut
+	SetCorrelationID(value int) *AuthResponseMsgOut
+}
 
 // AuthResponseMsgOut-- (Outbound Message)
 type AuthResponseMsgOut struct {
@@ -16,32 +22,27 @@ type AuthResponseMsgOut struct {
 	Headers map[string]any
 }
 
-func (m *AuthResponseMsgOut) WithPayload(payload schemas.AuthEvent) *AuthResponseMsgOut {
+func (m *AuthResponseMsgOut) SetPayload(payload schemas.AuthEvent) *AuthResponseMsgOut {
 	m.Payload = payload
 	return m
 }
 
-func (m *AuthResponseMsgOut) WithHeaders(headers map[string]any) *AuthResponseMsgOut {
+func (m *AuthResponseMsgOut) SetHeaders(headers map[string]any) *AuthResponseMsgOut {
 	m.Headers = headers
 	return m
 }
-func (m AuthResponseMsgOut) SetCorrelationID(value int) {
-
+func (m *AuthResponseMsgOut) SetCorrelationID(value int) *AuthResponseMsgOut {
 	v0 := m.Payload
-	v0.ID = value
 
+	v0.ID = value
 	m.Payload = v0
+	return m
 }
 
-type AuthResponseMsgSender interface {
+type AuthResponseMsgReceiver interface {
 	Payload() schemas.AuthEvent
 	Headers() map[string]any
 	CorrelationID() (value int, err error)
-}
-type AuthResponseMsgReceiver interface {
-	WithPayload(payload schemas.AuthEvent) *AuthResponseMsgOut
-	WithHeaders(headers map[string]any) *AuthResponseMsgOut
-	SetCorrelationID(value int)
 }
 
 // AuthResponseMsgIn-- (Inbound Message)
@@ -58,8 +59,9 @@ func (m *AuthResponseMsgIn) Headers() map[string]any {
 	return m.headers
 }
 func (m AuthResponseMsgIn) CorrelationID() (value int, err error) {
-
 	v0 := m.payload
+
+	// id
 	v1 := v0.ID
 	value = v1
 	return
@@ -79,6 +81,7 @@ func (m *AuthResponseMsgOut) MarshalEnvelopeKafka(envelope kafka.EnvelopeWriter)
 }
 
 func (m *AuthResponseMsgOut) MarshalKafka(w io.Writer) error {
+	// MIME type: application/json
 
 	// Default encoder
 	enc := json.NewEncoder(w)
@@ -91,9 +94,6 @@ func (m *AuthResponseMsgOut) MarshalKafka(w io.Writer) error {
 func (m *AuthResponseMsgIn) UnmarshalAuthChannelKafka(envelope kafka.EnvelopeReader) error {
 	return m.UnmarshalEnvelopeKafka(envelope)
 }
-func (m *AuthResponseMsgIn) UnmarshalAuthResponseOperationKafka(envelope kafka.EnvelopeReader) error {
-	return m.UnmarshalEnvelopeKafka(envelope)
-}
 
 func (m *AuthResponseMsgIn) UnmarshalEnvelopeKafka(envelope kafka.EnvelopeReader) error {
 	if err := m.UnmarshalKafka(envelope); err != nil {
@@ -104,6 +104,7 @@ func (m *AuthResponseMsgIn) UnmarshalEnvelopeKafka(envelope kafka.EnvelopeReader
 }
 
 func (m *AuthResponseMsgIn) UnmarshalKafka(r io.Reader) error {
+	// MIME type: application/json
 
 	// Default decoder
 	dec := json.NewDecoder(r)

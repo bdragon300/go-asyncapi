@@ -3,34 +3,55 @@
 package kafka
 
 import (
+	"github.com/bdragon300/go-asyncapi/run"
+)
+
+import (
 	"context"
 	"errors"
 	"fmt"
-	runKafka "github.com/bdragon300/go-asyncapi/run/kafka"
 
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/sasl"
 )
 
-func NewConsumer(hosts []string, bindings *runKafka.ServerBindings, extraOpts ...kgo.Opt) *ConsumeClient {
+func NewConsumer(hosts []string, bindings *ServerBindings, security run.AnySecurityScheme, extraOpts ...kgo.Opt) *ConsumeClient {
 	return &ConsumeClient{
 		hosts:     hosts,
 		bindings:  bindings,
 		extraOpts: extraOpts,
+		security:  security,
 	}
 }
 
 type ConsumeClient struct {
 	hosts     []string
-	bindings  *runKafka.ServerBindings
+	bindings  *ServerBindings
 	extraOpts []kgo.Opt
+	security  run.AnySecurityScheme
 }
 
-func (c ConsumeClient) Subscriber(_ context.Context, address string, chb *runKafka.ChannelBindings, opb *runKafka.OperationBindings) (runKafka.Subscriber, error) {
+func (c ConsumeClient) Subscriber(_ context.Context, address string, chb *ChannelBindings, opb *OperationBindings, security run.AnySecurityScheme) (Subscriber, error) {
 	// TODO: schema registry https://github.com/twmb/franz-go/blob/master/examples/schema_registry/schema_registry.go
 	// TODO: chb.ClientID, chb.GroupID
 	var opts []kgo.Opt
 
 	opts = append(opts, kgo.SeedBrokers(c.hosts...))
+
+	var saslMech []sasl.Mechanism
+	for _, sec := range []run.AnySecurityScheme{c.security, security} {
+		if sec == nil {
+			continue
+		}
+		mech, err := toSaslMechanism(sec)
+		if err != nil {
+			return nil, err
+		}
+		saslMech = append(saslMech, mech)
+	}
+	if len(saslMech) > 0 {
+		opts = append(opts, kgo.SASL(saslMech...))
+	}
 
 	topic := address
 	if chb != nil && chb.Topic != "" {
@@ -58,11 +79,11 @@ type SubscribeChannel struct {
 	*kgo.Client
 	Topic             string
 	IgnoreFetchErrors bool // TODO: add opts for Subscriber/Publisher interfaces
-	channelBindings   *runKafka.ChannelBindings
-	operationBindings *runKafka.OperationBindings
+	channelBindings   *ChannelBindings
+	operationBindings *OperationBindings
 }
 
-func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope runKafka.EnvelopeReader)) error {
+func (s SubscribeChannel) Receive(ctx context.Context, cb func(envelope EnvelopeReader)) error {
 	for {
 		fetches := s.Client.PollFetches(ctx)
 		if fetches.Err0() != nil {

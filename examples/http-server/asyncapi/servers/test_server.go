@@ -5,9 +5,8 @@ package servers
 import (
 	"context"
 	"errors"
-	"github.com/bdragon300/go-asyncapi/run/http"
 	"http-server/asyncapi/channels"
-	http2 "http-server/asyncapi/impl/http"
+	"http-server/asyncapi/proto/http"
 	"io"
 	"net/url"
 )
@@ -38,32 +37,43 @@ func (c TestServerClosable) Close() error {
 	return err
 }
 
-func ConnectTestServerBidi(ctx context.Context, url *url.URL) (*TestServerClosable, error) {
+func ConnectTestServerBidi(
+	ctx context.Context,
+	url *url.URL,
+
+) (*TestServerClosable, error) {
 	var bindings *http.ServerBindings
-	producer := http2.NewProducer(url, bindings)
-	consumer := http2.NewConsumer(bindings)
+	producer := http.NewProducer(url, bindings, nil)
+	consumer := http.NewConsumer(bindings, nil)
 	return &TestServerClosable{
 		TestServer{producer: producer, consumer: consumer},
 	}, nil
 }
 
-func ConnectTestServerProducer(ctx context.Context, url *url.URL) (*TestServerClosable, error) {
+func ConnectTestServerProducer(
+	ctx context.Context,
+	url *url.URL,
+
+) (*TestServerClosable, error) {
 	var bindings *http.ServerBindings
-	producer := http2.NewProducer(url, bindings)
+	producer := http.NewProducer(url, bindings, nil)
 	return &TestServerClosable{
 		TestServer{producer: producer},
 	}, nil
 }
 
-func ConnectTestServerConsumer(ctx context.Context, url *url.URL) (*TestServerClosable, error) {
+func ConnectTestServerConsumer(
+	ctx context.Context,
+	url *url.URL,
+
+) (*TestServerClosable, error) {
 	var bindings *http.ServerBindings
-	consumer := http2.NewConsumer(bindings)
+	consumer := http.NewConsumer(bindings, nil)
 	return &TestServerClosable{
 		TestServer{consumer: consumer},
 	}, nil
 }
 
-// TestServer--Test HTTP server
 type TestServer struct {
 	producer http.Producer
 	consumer http.Consumer

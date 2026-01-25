@@ -3,25 +3,29 @@
 package http
 
 import (
-	"context"
-	"net/url"
-
-	runHttp "github.com/bdragon300/go-asyncapi/run/http"
+	"github.com/bdragon300/go-asyncapi/run"
 )
 
-func NewProducer(serverURL *url.URL, bindings *runHttp.ServerBindings) *ProduceClient {
+import (
+	"context"
+	"net/url"
+)
+
+func NewProducer(serverURL *url.URL, bindings *ServerBindings, security run.AnySecurityScheme) *ProduceClient {
 	return &ProduceClient{
 		bindings:  bindings,
 		serverURL: serverURL,
+		security:  security,
 	}
 }
 
 type ProduceClient struct {
-	bindings  *runHttp.ServerBindings
+	bindings  *ServerBindings
 	serverURL *url.URL
+	security  run.AnySecurityScheme
 }
 
-func (p ProduceClient) Publisher(_ context.Context, address string, chb *runHttp.ChannelBindings, opb *runHttp.OperationBindings) (runHttp.Publisher, error) {
+func (p ProduceClient) Publisher(_ context.Context, address string, chb *ChannelBindings, opb *OperationBindings, security run.AnySecurityScheme) (Publisher, error) {
 	u := p.serverURL
 	// Append the address to the server URL path
 	if u.Path == "" {
@@ -32,5 +36,9 @@ func (p ProduceClient) Publisher(_ context.Context, address string, chb *runHttp
 	if address != "" {
 		u = u.JoinPath(address)
 	}
-	return NewPublisher(chb, opb, u), nil
+	s := p.security
+	if security != nil {
+		s = security
+	}
+	return NewPublisher(chb, opb, u, s), nil
 }

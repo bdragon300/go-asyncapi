@@ -5,10 +5,15 @@ package messages
 import (
 	"encoding/json"
 	"github.com/bdragon300/go-asyncapi/run"
-	"github.com/bdragon300/go-asyncapi/run/http"
+	"http-server/asyncapi/proto/http"
 	"http-server/asyncapi/schemas"
 	"io"
 )
+
+type ServerResponseSender interface {
+	SetPayload(payload schemas.EchoResponse) *ServerResponseOut
+	SetHeaders(headers map[string]any) *ServerResponseOut
+}
 
 // ServerResponseOut-- (Outbound Message)
 type ServerResponseOut struct {
@@ -16,23 +21,19 @@ type ServerResponseOut struct {
 	Headers map[string]any
 }
 
-func (m *ServerResponseOut) WithPayload(payload schemas.EchoResponse) *ServerResponseOut {
+func (m *ServerResponseOut) SetPayload(payload schemas.EchoResponse) *ServerResponseOut {
 	m.Payload = payload
 	return m
 }
 
-func (m *ServerResponseOut) WithHeaders(headers map[string]any) *ServerResponseOut {
+func (m *ServerResponseOut) SetHeaders(headers map[string]any) *ServerResponseOut {
 	m.Headers = headers
 	return m
 }
 
-type ServerResponseSender interface {
+type ServerResponseReceiver interface {
 	Payload() schemas.EchoResponse
 	Headers() map[string]any
-}
-type ServerResponseReceiver interface {
-	WithPayload(payload schemas.EchoResponse) *ServerResponseOut
-	WithHeaders(headers map[string]any) *ServerResponseOut
 }
 
 // ServerResponseIn-- (Inbound Message)
@@ -63,6 +64,7 @@ func (m *ServerResponseOut) MarshalEnvelopeHTTP(envelope http.EnvelopeWriter) er
 }
 
 func (m *ServerResponseOut) MarshalHTTP(w io.Writer) error {
+	// MIME type: application/json
 
 	// Default encoder
 	enc := json.NewEncoder(w)
@@ -85,6 +87,7 @@ func (m *ServerResponseIn) UnmarshalEnvelopeHTTP(envelope http.EnvelopeReader) e
 }
 
 func (m *ServerResponseIn) UnmarshalHTTP(r io.Reader) error {
+	// MIME type: application/json
 
 	// Default decoder
 	dec := json.NewDecoder(r)

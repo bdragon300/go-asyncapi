@@ -5,7 +5,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/twmb/franz-go/pkg/kgo"
 	"math/rand/v2"
 	"net"
 	"net/url"
@@ -17,6 +16,8 @@ import (
 	"site-authorization/asyncapi/schemas"
 	"site-authorization/asyncapi/servers"
 	"strconv"
+
+	"github.com/twmb/franz-go/pkg/kgo"
 )
 
 func main() {
@@ -104,7 +105,7 @@ func awaitAuthResponse(ctx context.Context, consumer operations.AuthResponseOper
 	defer cancel(nil)
 
 	// Wait for an authorization response with given correlation ID, skip others
-	err = subscriber.SubscribeAuthResponseMsg(awaitCtx, func(message messages.AuthResponseMsgSender) {
+	err = subscriber.SubscribeAuthResponseMsg(awaitCtx, func(message messages.AuthResponseMsgReceiver) {
 		if message.Payload().EventType != "AuthResponse" {
 			fmt.Printf("Ignoring message with event type %s, expected AuthResponse\n", message.Payload().EventType)
 			return

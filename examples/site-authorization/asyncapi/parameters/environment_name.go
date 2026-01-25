@@ -2,5 +2,4 @@
 
 package parameters
 
-// EnvironmentName--The name of the environment for which the authentication is being requested.
 type EnvironmentName string

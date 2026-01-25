@@ -5,13 +5,13 @@ package servers
 import (
 	"context"
 	"errors"
-	"github.com/bdragon300/go-asyncapi/run/kafka"
+	"github.com/bdragon300/go-asyncapi/run"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"io"
 	"net/url"
 	"site-authorization/asyncapi/channels"
-	kafka2 "site-authorization/asyncapi/impl/kafka"
 	"site-authorization/asyncapi/operations"
+	"site-authorization/asyncapi/proto/kafka"
 )
 
 func TestServerURL() (*url.URL, error) {
@@ -40,32 +40,46 @@ func (c TestServerClosable) Close() error {
 	return err
 }
 
-func ConnectTestServerBidi(ctx context.Context, url *url.URL, opts ...kgo.Opt) (*TestServerClosable, error) {
+func ConnectTestServerBidi(
+	ctx context.Context,
+	url *url.URL,
+
+	opts ...kgo.Opt,
+) (*TestServerClosable, error) {
 	var bindings *kafka.ServerBindings
-	producer := kafka2.NewProducer([]string{url.Host}, bindings, opts...)
-	consumer := kafka2.NewConsumer([]string{url.Host}, bindings, opts...)
+	producer := kafka.NewProducer([]string{url.Host}, bindings, nil, opts...)
+	consumer := kafka.NewConsumer([]string{url.Host}, bindings, nil, opts...)
 	return &TestServerClosable{
 		TestServer{producer: producer, consumer: consumer},
 	}, nil
 }
 
-func ConnectTestServerProducer(ctx context.Context, url *url.URL, opts ...kgo.Opt) (*TestServerClosable, error) {
+func ConnectTestServerProducer(
+	ctx context.Context,
+	url *url.URL,
+
+	opts ...kgo.Opt,
+) (*TestServerClosable, error) {
 	var bindings *kafka.ServerBindings
-	producer := kafka2.NewProducer([]string{url.Host}, bindings, opts...)
+	producer := kafka.NewProducer([]string{url.Host}, bindings, nil, opts...)
 	return &TestServerClosable{
 		TestServer{producer: producer},
 	}, nil
 }
 
-func ConnectTestServerConsumer(ctx context.Context, url *url.URL, opts ...kgo.Opt) (*TestServerClosable, error) {
+func ConnectTestServerConsumer(
+	ctx context.Context,
+	url *url.URL,
+
+	opts ...kgo.Opt,
+) (*TestServerClosable, error) {
 	var bindings *kafka.ServerBindings
-	consumer := kafka2.NewConsumer([]string{url.Host}, bindings, opts...)
+	consumer := kafka.NewConsumer([]string{url.Host}, bindings, nil, opts...)
 	return &TestServerClosable{
 		TestServer{consumer: consumer},
 	}, nil
 }
 
-// TestServer--Main Kafka broker
 type TestServer struct {
 	producer kafka.Producer
 	consumer kafka.Consumer
@@ -86,25 +100,28 @@ func (s TestServer) Consumer() kafka.Consumer {
 func (s TestServer) OpenAuthChannelKafka(
 	ctx context.Context,
 	params channels.AuthChannelParameters,
+	security run.AnySecurityScheme,
 ) (*channels.AuthChannelKafka, error) {
 	return channels.OpenAuthChannelKafka(
-		ctx, params, s,
+		ctx, s, params, nil, security,
 	)
 }
 
 func (s TestServer) OpenAuthRequestOperationKafka(
 	ctx context.Context,
 	params channels.AuthChannelParameters,
+
 ) (*operations.AuthRequestOperationKafka, error) {
 	return operations.OpenAuthRequestOperationKafka(
-		ctx, params, s,
+		ctx, s, params,
 	)
 }
 func (s TestServer) OpenAuthResponseOperationKafka(
 	ctx context.Context,
 	params channels.AuthChannelParameters,
+
 ) (*operations.AuthResponseOperationKafka, error) {
 	return operations.OpenAuthResponseOperationKafka(
-		ctx, params, s,
+		ctx, s, params,
 	)
 }

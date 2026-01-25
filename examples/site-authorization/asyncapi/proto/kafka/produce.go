@@ -3,33 +3,55 @@
 package kafka
 
 import (
+	"github.com/bdragon300/go-asyncapi/run"
+)
+
+import (
 	"context"
 	"fmt"
-	runKafka "github.com/bdragon300/go-asyncapi/run/kafka"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kversion"
+	"github.com/twmb/franz-go/pkg/sasl"
+	"github.com/twmb/franz-go/pkg/sasl/plain"
 )
 
-func NewProducer(hosts []string, bindings *runKafka.ServerBindings, extraOpts ...kgo.Opt) *ProduceClient {
+func NewProducer(hosts []string, bindings *ServerBindings, security run.AnySecurityScheme, extraOpts ...kgo.Opt) *ProduceClient {
 	return &ProduceClient{
 		hosts:     hosts,
 		bindings:  bindings,
 		extraOpts: extraOpts,
+		security:  security,
 	}
 }
 
 type ProduceClient struct {
 	hosts     []string
-	bindings  *runKafka.ServerBindings
+	bindings  *ServerBindings
 	extraOpts []kgo.Opt
+	security  run.AnySecurityScheme
 }
 
-func (p ProduceClient) Publisher(_ context.Context, address string, chb *runKafka.ChannelBindings, opb *runKafka.OperationBindings) (runKafka.Publisher, error) {
-	// TODO: schema registry https://github.com/twmb/franz-go/blob/master/examples/schema_registry/schema_registry.go
+func (p ProduceClient) Publisher(_ context.Context, address string, chb *ChannelBindings, opb *OperationBindings, security run.AnySecurityScheme) (Publisher, error) {
+	// TODO: schema registry https://github.com/twmb/franz-go/blo6b/master/examples/schema_registry/schema_registry.go
 	var opts []kgo.Opt
 
 	opts = append(opts, kgo.SeedBrokers(p.hosts...))
+
+	var saslMech []sasl.Mechanism
+	for _, sec := range []run.AnySecurityScheme{p.security, security} {
+		if sec == nil {
+			continue
+		}
+		mech, err := toSaslMechanism(sec)
+		if err != nil {
+			return nil, err
+		}
+		saslMech = append(saslMech, mech)
+	}
+	if len(saslMech) > 0 {
+		opts = append(opts, kgo.SASL(saslMech...))
+	}
 
 	topic := address
 	if chb != nil && chb.Topic != "" {
@@ -61,11 +83,11 @@ type ImplementationRecord interface {
 type PublishChannel struct {
 	*kgo.Client
 	Topic             string
-	channelBindings   *runKafka.ChannelBindings
-	operationBindings *runKafka.OperationBindings
+	channelBindings   *ChannelBindings
+	operationBindings *OperationBindings
 }
 
-func (p PublishChannel) Send(ctx context.Context, envelopes ...runKafka.EnvelopeWriter) error {
+func (p PublishChannel) Send(ctx context.Context, envelopes ...EnvelopeWriter) error {
 	records := make([]*kgo.Record, 0, len(envelopes))
 	for _, e := range envelopes {
 		rm := e.(ImplementationRecord)
@@ -77,6 +99,15 @@ func (p PublishChannel) Send(ctx context.Context, envelopes ...runKafka.Envelope
 func (p PublishChannel) Close() error {
 	p.Client.Close()
 	return nil
+}
+
+func toSaslMechanism(security run.AnySecurityScheme) (sasl.Mechanism, error) {
+	switch v := security.(type) {
+	case run.UserPasswordSecurity:
+		u, p := v.UserPassword()
+		return plain.Auth{User: u, Pass: p}.AsMechanism(), nil
+	}
+	return nil, fmt.Errorf("unsupported security scheme: %v", security.AuthType())
 }
 
 func ParseProtocolVersion(protocolVersion string) (*kversion.Versions, error) {
