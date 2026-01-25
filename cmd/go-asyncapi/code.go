@@ -45,7 +45,7 @@ type CodeCmd struct {
 	OnlyPub bool `arg:"--only-pub" help:"Generate only the publisher code"`
 	OnlySub bool `arg:"--only-sub" help:"Generate only the subscriber code"`
 
-	ProjectModule string `arg:"-M,--module" help:"Project module name in the generated code. By default, read get from go.mod in the current working directory" placeholder:"MODULE"`
+	ProjectModule string `arg:"-M,--module" help:"Project module name in the generated code. By default, get from go.mod in the current working directory" placeholder:"MODULE"`
 	RuntimeModule string `arg:"--runtime-module" help:"Runtime module path" placeholder:"MODULE"`
 
 	TemplateDir            string `arg:"-T,--template-dir" help:"User templates directory (excepting the util and implementation code, see config file reference)" placeholder:"DIR"`
