@@ -32,7 +32,7 @@ See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for m
 
 `go-asyncapi` is able to generate the abstract code for any protocol, but for these protocols it also adds the supporting code:
 
-|                                                                             | Protocol       | Library                                                                            |
+|                                                                             | Protocol       | Implementation library                                                             |
 |-----------------------------------------------------------------------------|----------------|------------------------------------------------------------------------------------|
 | {{< figure src="images/amqp.svg" alt="AMQP" class="brand-icon">}}           | AMQP           | [github.com/rabbitmq/amqp091-go](https://github.com/rabbitmq/amqp091-go)           |
 | {{< figure src="images/http.svg" alt="HTTP" class="brand-icon">}}           | HTTP           | [net/http](https://pkg.go.dev/net/http)                                            |
