@@ -1,6 +1,6 @@
 ---
-title: "HOWTOs"
+title: "How To"
 bookCollapseSection: true
-weight: 700
-description: "Recipes for using go-asyncapi"
+weight: 500
+description: "Recipes and use cases"
 ---

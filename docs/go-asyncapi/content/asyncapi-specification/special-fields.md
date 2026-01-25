@@ -1,6 +1,6 @@
 ---
 title: "Special fields"
-weight: 320
+weight: 720
 bookToC: true
 description: "Special fields in the AsyncAPI specification that are used to customize the generated code"
 ---
@@ -107,7 +107,7 @@ components:
 
 ## x-ignore
 
-Applies to: `Channel`, `Operation`, `Message`, `Schema`, `Server`, `Correlation ID`, `JSONSchema object`
+Applies to: `Channel`, `Operation`, `Message`, `Schema`, `Server`, `Correlation ID`, `JSONSchema object`, `Security Scheme`
 
 If `x-ignore` field is set to `true`, the entity is ignored by the `go-asyncapi` tool. All references to this entity
 in the generated Go code are automatically replaced with generic types such as `any`.
@@ -126,7 +126,7 @@ channels:
 
 ## x-go-name
 
-Applies to: `Channel`, `Message`, `Schema`, `Server`, `Parameter`, `JSONSchema object`
+Applies to: `Channel`, `Message`, `Schema`, `Server`, `Parameter`, `JSONSchema object`, `Security Scheme`
 
 This field allows to explicitly set the name of the type in the generated Go code. It overrides any other name, taken
 from document or generated automatically.
@@ -164,9 +164,9 @@ If the value is a list of tag names, they're added to the struct field *with val
 If the value is a key-value mapping, the tags are added with the specified values. 
 If such tag already exists, it is replaced with the new value.
 
-{{< details "Example" open >}}
-{{< tabs "1" >}}
-{{< tab "Definition" >}}
+{{% details "Example" open %}}
+{{% tabs "1" %}}
+{{% tab "Definition" %}}
 ```yaml
 components:
   schemas:
@@ -186,9 +186,9 @@ components:
         count:
           type: integer
 ```
-{{< /tab >}}
+{{% /tab %}}
 
-{{< tab "Produced code" >}}
+{{% tab "Produced code" %}}
 ```go
 package models
 
@@ -198,17 +198,17 @@ type MyModel struct {
 	Count int    `json:"count"`
 }
 ```
-{{< /tab >}}
-{{< /tabs >}}
-{{< /details >}}
+{{% /tab %}}
+{{% /tabs %}}
+{{% /details %}}
 
 ### x-go-tags-values
 
 `x-go-tags-values` is a list of values, that are added *to every tag* in the generated Go struct field.
 
-{{< details "Example" open >}}
-{{< tabs "2" >}}
-{{< tab "Definition" >}}
+{{% details "Example" open %}}
+{{% tabs "2" %}}
+{{% tab "Definition" %}}
 ```yaml
 components:
   schemas:
@@ -225,9 +225,9 @@ components:
         name:
           type: string
 ```
-{{< /tab >}}
+{{% /tab %}}
 
-{{< tab "Produced code" >}}
+{{% tab "Produced code" %}}
 ```go
 package models
 
@@ -236,7 +236,7 @@ type MyModel struct {
     Name string `json:"name"`
 }
 ```
-{{< /tab >}}
-{{< /tabs >}}
-{{< /details >}}
+{{% /tab %}}
+{{% /tabs %}}
+{{% /details %}}
 

@@ -32,3 +32,8 @@
 .text-initial + p {
   margin-top: 0;
 }
+
+/* Make code snippets distinguishable being printed inside hint=default */
+blockquote.default code {
+  background-color: var(--gray-500);
+}

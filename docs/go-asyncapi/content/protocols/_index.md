@@ -1,15 +1,23 @@
 +++
-title = 'Protocols and implementations'
+title = 'Protocols'
 weight = 200
 bookToC = true
-description = 'The list of protocols and their implementations supported by go-asyncapi'
+description = 'Protocols that have built-in support in go-asyncapi'
 +++
 
 # Protocols and implementations
 
+This article describes protocols for which `go-asyncapi` generates the additional protocol-specific code
+(besides the abstract code) to provide basic send-receive functionality. This includes:
+
+* [Bindings](https://www.asyncapi.com/docs/concepts/asyncapi-document/adding-bindings)
+* Message code for marshalling/unmarshalling from/to the protocol-specific envelope
+* Server connect helper functions, protocol-specific code in channels, etc.
+* Implementations based on popular Go libraries for the given protocol
+
 ## AMQP
 
-{{< hint info >}}
+{{% hint default %}}
 
 {{< figure src="/images/amqp.svg" alt="AMQP" class="text-initial" >}}
 
@@ -20,7 +28,9 @@ rules and formats for message queuing, ensuring interoperability and scalability
 
 Some of the most commonly used AMQP products include RabbitMQ, Apache Qpid, ActiveMQ and others.
 
-{{< /hint >}}
+{{% /hint %}}
+
+Default library built in `go-asyncapi` is [github.com/rabbitmq/amqp091-go](https://github.com/rabbitmq/amqp091-go).
 
 | Feature       | Protocol specifics                     |
 |---------------|----------------------------------------|
@@ -31,9 +41,22 @@ Some of the most commonly used AMQP products include RabbitMQ, Apache Qpid, Acti
 
 Protocol bindings are described in https://github.com/asyncapi/bindings/tree/v3.0.0/amqp/README.md
 
+### Security scheme
+
+{{% hint warning %}}
+Security scheme for Operations is not supported
+{{% /hint %}}
+
+The following security schemes are supported by [github.com/rabbitmq/amqp091-go](https://github.com/rabbitmq/amqp091-go):
+
+| Scheme type    | Comment    |
+|----------------|------------|
+| `userPassword` | PLAIN auth |
+
+
 ## Apache Kafka
 
-{{< hint info >}}
+{{% hint default %}}
 
 {{< figure src="/images/kafka.svg" alt="Apache Kafka" class="text-initial" >}}
 
@@ -43,7 +66,9 @@ It enables applications to publish, subscribe to, store, and process streams of 
 scalable manner.
 Kafka is widely used for building real-time data pipelines, streaming analytics, and event-driven architectures.
 
-{{< /hint >}}
+{{% /hint %}}
+
+Default library built in `go-asyncapi` is [github.com/twmb/franz-go](https://github.com/twmb/franz-go).
 
 | Feature       | Protocol specifics |
 |---------------|--------------------|
@@ -54,9 +79,17 @@ Kafka is widely used for building real-time data pipelines, streaming analytics,
 
 Protocol bindings are described in https://github.com/asyncapi/bindings/tree/v3.0.0/kafka/README.md
 
+### Security scheme
+
+The following security schemes are supported by [github.com/twmb/franz-go](https://github.com/twmb/franz-go):
+
+| Scheme type    | Comment         |
+|----------------|-----------------|
+| `userPassword` | SASL PLAIN auth |
+
 ## HTTP
 
-{{< hint info >}}
+{{% hint default %}}
 
 {{< figure src="/images/http.svg" alt="HTTP" class="text-initial" >}}
 
@@ -69,7 +102,9 @@ supports various methods, such as GET, POST, PUT, DELETE, and others, to perform
 
 Some of the most popular HTTP servers include Apache HTTP Server, Nginx, Microsoft IIS, and others.
 
-{{< /hint >}}
+{{% /hint %}}
+
+Default library built in `go-asyncapi` is [net/http](https://pkg.go.dev/net/http).
 
 | Feature       | Protocol specifics    |
 |---------------|-----------------------|
@@ -80,9 +115,18 @@ Some of the most popular HTTP servers include Apache HTTP Server, Nginx, Microso
 
 Protocol bindings are described in https://github.com/asyncapi/bindings/tree/v3.0.0/http/README.md
 
+### Security scheme
+
+The following security schemes are supported by [net/http](https://pkg.go.dev/net/http):
+
+| Scheme type    | Comment         |
+|----------------|-----------------|
+| `userPassword` | HTTP Basic auth |
+| `apiKey`       | HTTP Basic auth |
+
 ## IP RAW sockets
 
-{{< hint info >}}
+{{% hint default %}}
 
 {{< figure src="/images/ip.png" alt="IP RAW sockets" class="text-initial" >}}
 
@@ -94,14 +138,9 @@ RAW sockets are used for low-level network operations, such as network scanning,
 development. They are commonly used by network administrators, security professionals, and developers to perform
 advanced network tasks.
 
-{{< /hint >}}
+{{% /hint %}}
 
-{{< hint warning >}}
-
-**IP RAW sockets** are not described in the AsyncAPI specification. But the specification permits the use of custom protocols,
-and raw sockets can be used in some applications, so they are supported by `go-asyncapi`.
-
-{{< /hint >}}
+Default library built in `go-asyncapi` is [net](https://pkg.go.dev/net).
 
 | Feature       | Protocol specifics |
 |---------------|--------------------|
@@ -128,11 +167,17 @@ Does not support any operation bindings.
 
 Does not support any message bindings.
 
-## MQTT
+### Security scheme
 
-{{< hint info >}}
+{{% hint warning %}}
+Security scheme is not supported
+{{% /hint %}}
 
-{{< figure src="/images/mqtt.svg" alt="MQTT" class="text-initial" >}}
+## MQTT v3
+
+{{% hint default %}}
+
+{{< figure src="/images/mqtt.svg" alt="MQTT v3" class="text-initial" >}}
 
 **[MQTT](https://mqtt.org/)**, or Message Queuing Telemetry Transport, is a lightweight messaging protocol
 designed for constrained devices and low-bandwidth, high-latency, or unreliable networks. It is widely used in
@@ -144,7 +189,9 @@ applications and other scenarios with limited resources.
 
 Some of the most popular MQTT brokers include Mosquitto, HiveMQ, EMQ X and others.
 
-{{< /hint >}}
+{{% /hint %}}
+
+Default library built in `go-asyncapi` is [github.com/eclipse/paho.mqtt.golang](https://github.com/eclipse/paho.mqtt.golang).
 
 | Feature       | Protocol specifics |
 |---------------|--------------------|
@@ -155,9 +202,60 @@ Some of the most popular MQTT brokers include Mosquitto, HiveMQ, EMQ X and other
 
 Protocol bindings are described in https://github.com/asyncapi/bindings/tree/v3.0.0/mqtt/README.md
 
+### Security scheme
+
+{{% hint warning %}}
+Security scheme for Operations is not supported
+{{% /hint %}}
+
+The following security schemes are supported by [github.com/rabbitmq/amqp091-go](https://github.com/rabbitmq/amqp091-go):
+
+| Scheme type    | Comment                |
+|----------------|------------------------|
+| `userPassword` | Username/Password auth |
+
+## MQTT v5
+
+{{% hint default %}}
+
+{{< figure src="/images/mqtt.svg" alt="MQTT v5" class="text-initial" >}}
+
+**[MQTT v5](https://mqtt.org/)** is the latest version of the Message Queuing Telemetry Transport (MQTT) protocol,
+which is a lightweight messaging protocol designed for constrained devices and low-bandwidth, high-latency,
+or unreliable networks. MQTT v5 introduces several enhancements and new features compared to its predecessor,
+MQTT v3, including improved error reporting, enhanced security options, and support for message expiry intervals.
+
+Some of the most popular MQTT brokers include Mosquitto, HiveMQ, EMQ X and others.
+
+{{% /hint %}}
+
+Default library built in `go-asyncapi` is [github.com/eclipse/paho.golang](https://github.com/eclipse-paho/paho.golang).
+
+| Feature       | Protocol specifics |
+|---------------|--------------------|
+| Protocol name | `mqtt5`            |
+| Channel       | Topic              |
+| Server        | MQTT broker        |
+| Envelope      | MQTT Message       |
+
+Protocol bindings are described in https://github.com/asyncapi/bindings/tree/v3.0.0/mqtt/README.md
+
+### Security scheme
+
+{{% hint warning %}}
+Security scheme for Operations is not supported
+{{% /hint %}}
+
+The following security schemes are supported by [github.com/eclipse/paho.golang](https://github.com/eclipse-paho/paho.golang):
+
+| Scheme type    | Comment                |
+|----------------|------------------------|
+| `userPassword` | Username/Password auth |
+| `apiKey`       | Password-only auth     |
+
 ## NATS
 
-{{< hint info >}}
+{{% hint default %}}
 
 {{< figure src="/images/nats.svg" alt="NATS" class="text-initial" >}}
 
@@ -166,7 +264,9 @@ microservices, and distributed systems. NATS supports various messaging patterns
 publish-subscribe, request-reply, and queue groups, making it a versatile choice for building modern applications.
 It also supports NATS Streaming (now known as JetStream), which provides durable message storage and advanced streaming capabilities.
 
-{{< /hint >}}
+{{% /hint %}}
+
+Default library built in `go-asyncapi` is [github.com/nats-io/nats.go](https://github.com/nats-io/nats.go).
 
 | Feature       | Protocol specifics |
 |---------------|--------------------|
@@ -177,9 +277,22 @@ It also supports NATS Streaming (now known as JetStream), which provides durable
 
 Protocol bindings are described in https://github.com/asyncapi/bindings/blob/master/nats/README.md
 
+### Security scheme
+
+{{% hint warning %}}
+Security scheme for Operations is not supported
+{{% /hint %}}
+
+The following security schemes are supported by [github.com/nats-io/nats.go](https://github.com/nats-io/nats.go):
+
+| Scheme type    | Comment                |
+|----------------|------------------------|
+| `userPassword` | Username/Password auth |
+| `apiKey`       | Token auth             |
+
 ## Redis
 
-{{< hint info >}}
+{{% hint default %}}
 
 {{< figure src="/images/redis.svg" alt="Redis" class="text-initial" >}}
 
@@ -188,7 +301,9 @@ cache, and message broker. It supports various data structures such as strings, 
 bitmaps, hyperloglogs, geospatial indexes, and streams. Redis is known for its high performance, scalability,
 and versatility, making it a popular choice for real-time applications, caching, and message queuing.
 
-{{< /hint >}}
+{{% /hint %}}
+
+Default library built in `go-asyncapi` is [github.com/redis/go-redis](https://github.com/redis/go-redis).
 
 | Feature       | Protocol specifics |
 |---------------|--------------------|
@@ -199,9 +314,18 @@ and versatility, making it a popular choice for real-time applications, caching,
 
 Protocol bindings are described in https://github.com/asyncapi/bindings/tree/v3.0.0/redis/README.md
 
+### Security scheme
+
+The following security schemes are supported by [github.com/redis/go-redis](https://github.com/redis/go-redis):
+
+| Scheme type    | Comment                                   |
+|----------------|-------------------------------------------|
+| `userPassword` | `AUTH` command with username and password |
+| `apiKey`       | `AUTH` command with password              |
+
 ## TCP
 
-{{< hint info >}}
+{{% hint default %}}
 
 {{< figure src="/images/tcpudp.svg" alt="TCP" class="text-initial" >}}
 
@@ -209,14 +333,9 @@ Protocol bindings are described in https://github.com/asyncapi/bindings/tree/v3.
 protocol of the Internet Protocol Suite, responsible for establishing and maintaining connections between
 devices on a network. It ensures reliable, ordered, and error-checked delivery of data packets over IP networks.
 
-{{< /hint >}}
+{{% /hint %}}
 
-{{< hint warning >}}
-
-**TCP** is not described in the AsyncAPI specification. But the specification permits the use of custom protocols,
-and pure TCP can be used in many applications, so it is supported by `go-asyncapi`.
-
-{{< /hint >}}
+Default library built in `go-asyncapi` is [net](https://pkg.go.dev/net).
 
 | Feature       | Protocol specifics |
 |---------------|--------------------|
@@ -243,9 +362,15 @@ Does not support any operation bindings.
 
 Does not support any message bindings
 
+### Security scheme
+
+{{% hint warning %}}
+Security scheme is not supported
+{{% /hint %}}
+
 ## UDP
 
-{{< hint info >}}
+{{% hint default %}}
 
 {{< figure src="/images/tcpudp.svg" alt="UDP" class="text-initial" >}}
 
@@ -254,14 +379,9 @@ sends data packets, called datagrams, over the network without establishing a co
 than TCP but does not guarantee the delivery of packets. It is used in applications where speed is more important than
 reliability, such as online games, video streaming, and voice over IP (VoIP).
 
-{{< /hint >}}
+{{% /hint %}}
 
-{{< hint warning >}}
-
-**UDP** is not described in the AsyncAPI specification. But the specification permits the use of custom protocols,
-and pure UDP can be used in many applications, so it is supported by `go-asyncapi`.
-
-{{< /hint >}}
+Default library built in `go-asyncapi` is [net](https://pkg.go.dev/net).
 
 | Feature       | Protocol specifics  |
 |---------------|---------------------|
@@ -288,9 +408,15 @@ Does not support any operation bindings.
 
 Does not support any message bindings.
 
+### Security scheme
+
+{{% hint warning %}}
+Security scheme is not supported
+{{% /hint %}}
+
 ## WebSocket
 
-{{< hint info >}}
+{{% hint default %}}
 
 {{< figure src="/images/websocket.svg" alt="WebSocket" class="text-initial" >}}
 
@@ -303,7 +429,9 @@ chat applications, and other scenarios that require real-time updates.
 WebSocket is supported by most modern web browsers and servers, and it is commonly used in conjunction with
 HTTP to establish a persistent connection between clients and servers.
 
-{{< /hint >}}
+{{% /hint %}}
+
+Default library built in `go-asyncapi` is [github.com/gobwas/ws](https://github.com/gobwas/ws).
 
 | Feature       | Protocol specifics |
 |---------------|--------------------|
@@ -313,3 +441,12 @@ HTTP to establish a persistent connection between clients and servers.
 | Envelope      | Websocket Message  |
 
 Protocol bindings are described in https://github.com/asyncapi/bindings/tree/v3.0.0/websockets/README.md
+
+### Security scheme
+
+The following security schemes are supported by [github.com/gobwas/ws](https://github.com/gobwas/ws):
+
+| Scheme type    | Comment         |
+|----------------|-----------------|
+| `userPassword` | HTTP Basic auth |
+| `apiKey`       | HTTP Basic auth |

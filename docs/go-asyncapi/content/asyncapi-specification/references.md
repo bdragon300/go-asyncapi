@@ -1,6 +1,6 @@
 ---
 title: "References"
-weight: 310
+weight: 710
 description: "External and internal references resolution mechanism description" 
 ---
 
@@ -16,18 +16,18 @@ The reference is an object that is denoted by field `$ref` and contains a
 [JSON Reference](https://tools.ietf.org/html/draft-pbryan-zyp-json-ref-03) to the object that should be used instead of the reference.
 The value of the `$ref` field can point to an object in the same document, another document by file path, or a remote document by URL.
 
-{{< hint info >}}
+{{% hint info %}}
 Because the reference is URI, the symbols in that are non-alphanumeric and not `-`, `.`, `_`, `~`, must be 
 percent-encoded as described in [RFC 3986](https://tools.ietf.org/html/rfc3986#section-2.1)
 ([encoding table](https://www.w3schools.com/tags/ref_urlencode.ASP)).
 
 For example, the reference that points to a channel with name `foo/bar baz` should be written as
 `$ref: "#/components/channels/foo%2Fbar%20baz`.
-{{< /hint >}}
+{{% /hint %}}
 
-{{< hint warning >}}
+{{% hint warning %}}
 Remote references initially are forbidden by security reasons, use `--allow-remote-refs` cli flag to allow it.
-{{< /hint >}}
+{{% /hint %}}
 
 For more information about references, see the 
 [AsyncAPI documentation](https://www.asyncapi.com/docs/concepts/asyncapi-document/reusable-parts).

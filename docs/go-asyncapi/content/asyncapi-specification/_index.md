@@ -1,6 +1,6 @@
 ---
 title: "AsyncAPI specification"
 bookCollapseSection: true
-weight: 300
+weight: 700
 description: "Overview of the AsyncAPI specification support in go-asyncapi"
 ---

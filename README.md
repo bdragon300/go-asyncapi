@@ -3,7 +3,7 @@
 ![GitHub go.mod Go version (subdirectory of monorepo)](https://img.shields.io/github/go-mod/go-version/bdragon300/go-asyncapi)
 ![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/bdragon300/go-asyncapi/commit.yml?branch=master)
 
-`go-asyncapi` is a Go implementation of the [AsyncAPI](https://www.asyncapi.com/) specification.
+`go-asyncapi` is a tool for working with [AsyncAPI](https://www.asyncapi.com/) documents.
 
 > **[AsyncAPI](https://www.asyncapi.com/)** is a specification for defining APIs for event-driven architectures. The
 > AsyncAPI document describes the messages, channels, servers, and other entities that the systems in event-driven
@@ -13,14 +13,13 @@
 
 ## Core features
 
-|                                                                                                                           | Feature                                                                                                                             | Command               |
-|---------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|-----------------------|
-| <img src="https://bdragon300.github.io/go-asyncapi/images/go-logo.svg" style="height: 3em; vertical-align: middle">       | [Generating the Go boilerplate code](https://bdragon300.github.io/go-asyncapi/code-generation/overview)                             | `go-asyncapi code`    |
-| <img src="https://bdragon300.github.io/go-asyncapi/images/terminal-icon.svg" style="height: 3em; vertical-align: middle"> | [Building the zero-code CLI client executable](https://bdragon300.github.io/go-asyncapi/client-application-generation)              | `go-asyncapi client`  |
-| <img src="https://bdragon300.github.io/go-asyncapi/images/infra.svg" style="height: 3em; vertical-align: middle">         | [Generating the Infrastructure-As-Code (IaC) definitions](https://bdragon300.github.io/go-asyncapi/infrastructure-files-generation) | `go-asyncapi infra`   |
-| <img src="https://bdragon300.github.io/go-asyncapi/images/diagram.svg" style="height: 3em; vertical-align: middle">       | [Generating the diagrams](https://bdragon300.github.io/go-asyncapi/visualization/)                                                  | `go-asyncapi diagram` |
-
-Also, `go-asyncapi` contains the built-in **protocol implementations** based on popular libraries, supports the **result customization** using Go templates and more.
+|                                                                                                                           | Feature                                                                                                 | Command               |
+|---------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|-----------------------|
+| <img src="https://bdragon300.github.io/go-asyncapi/images/go-logo.svg" style="height: 3em; vertical-align: middle">       | [Generating the Go boilerplate code](https://bdragon300.github.io/go-asyncapi/command/code)             | `go-asyncapi code`    |
+| <img src="https://bdragon300.github.io/go-asyncapi/images/terminal-icon.svg" style="height: 3em; vertical-align: middle"> | [Building the zero-code CLI client executable](https://bdragon300.github.io/go-asyncapi/command/client) | `go-asyncapi client`  |
+| <img src="https://bdragon300.github.io/go-asyncapi/images/infra.svg" style="height: 3em; vertical-align: middle">         | [Generating the server definitions](https://bdragon300.github.io/go-asyncapi/command/infra)             | `go-asyncapi infra`   |
+| <img src="https://bdragon300.github.io/go-asyncapi/images/diagram.svg" style="height: 3em; vertical-align: middle">       | [Drawing the SVG diagrams](https://bdragon300.github.io/go-asyncapi/command/diagram)                    | `go-asyncapi diagram` |
+| <img src="https://bdragon300.github.io/go-asyncapi/images/ui-icon.svg" style="height: 3em; vertical-align: middle">       | [Serving or generating the web docs UI](https://bdragon300.github.io/command/ui)                        | `go-asyncapi ui`      |
 
 See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for more details.
 
@@ -32,7 +31,8 @@ See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for m
 | <img alt="HTTP" src="https://bdragon300.github.io/go-asyncapi/images/http.svg" style="height: 1.5em; vertical-align: middle">           | HTTP           | [net/http](https://pkg.go.dev/net/http)                                            |
 | <img alt="IP RAW Sockets" src="https://bdragon300.github.io/go-asyncapi/images/ip.png" style="height: 1.5em; vertical-align: middle">   | IP RAW Sockets | [net](https://pkg.go.dev/net)                                                      |
 | <img alt="Apache Kafka" src="https://bdragon300.github.io/go-asyncapi/images/kafka.svg" style="height: 1.5em; vertical-align: middle">  | Apache Kafka   | [github.com/twmb/franz-go](https://github.com/twmb/franz-go)                       |
-| <img alt="MQTT" src="https://bdragon300.github.io/go-asyncapi/images/mqtt.svg" style="height: 1.5em; vertical-align: middle">           | MQTT           | [github.com/eclipse/paho.mqtt.golang](https://github.com/eclipse/paho.mqtt.golang) |
+| <img alt="MQTT v3" src="https://bdragon300.github.io/go-asyncapi/images/mqtt.svg" style="height: 1.5em; vertical-align: middle">        | MQTT v3        | [github.com/eclipse/paho.mqtt.golang](https://github.com/eclipse/paho.mqtt.golang) |
+| <img alt="MQTT v5" src="https://bdragon300.github.io/go-asyncapi/images/mqtt.svg" style="height: 1.5em; vertical-align: middle">        | MQTT v5        | [github.com/eclipse/paho.golang](https://github.com/eclipse-paho/paho.golang)      |
 | <img alt="NATS" src="https://bdragon300.github.io/go-asyncapi/images/nats.svg" style="height: 1.5em; vertical-align: middle">           | NATS           | [github.com/nats-io/nats.go](https://github.com/nats-io/nats.go)                   |
 | <img alt="Redis" src="https://bdragon300.github.io/go-asyncapi/images/redis.svg" style="height: 1.5em; vertical-align: middle">         | Redis          | [github.com/redis/go-redis](https://github.com/redis/go-redis)                     |
 | <img alt="TCP" src="https://bdragon300.github.io/go-asyncapi/images/tcpudp.svg" style="height: 1.5em; vertical-align: middle">          | TCP            | [net](https://pkg.go.dev/net)                                                      |
@@ -41,7 +41,13 @@ See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for m
 
 ## Usage
 
-The following couple of high-level examples show how to use the generated code for sending and receiving messages.
+Demo applications:
+
+* [Site authorization](https://github.com/bdragon300/go-asyncapi/blob/master/examples/site-authorization)
+* [HTTP echo server](https://github.com/bdragon300/go-asyncapi/blob/master/examples/http-server)
+
+These couple of high-level examples show how to use the generated code for sending and receiving messages.
+The low-level functions are also available, which gives more control over the process.
 
 *Publishing*:
 
@@ -73,7 +79,7 @@ msg := messages.MyMessage{
 }
 
 // Send a message
-if err := myChannel.OperationFooBar().PublishMyMessage(ctx, msg); err != nil {
+if err := myChannel.PublishMyMessage(ctx, msg); err != nil {
 	log.Fatalf("send message: %v", err)
 }
 ```
@@ -97,20 +103,13 @@ if err != nil {
 defer myChannel.Close()
 
 // Subscribe to messages
-err := myChannel.OperationFooBar().SubscribeMyMessage(ctx, func(msg messages.MyMessage) {
+err := myChannel.SubscribeMyMessage(ctx, func(msg messages.MyMessage) {
 	log.Printf("received message: %+v", msg)
 })
 if err != nil {
 	log.Fatalf("subscribe: %v", err)
 }
 ```
-
-The low-level functions are also available, which gives more control over the process.
-
-Also, here are some demo applications:
-
-* [Site authorization](https://github.com/bdragon300/go-asyncapi/blob/master/examples/site-authorization)
-* [HTTP echo server](https://github.com/bdragon300/go-asyncapi/blob/master/examples/http-server)
 
 ## Installation
 
@@ -120,38 +119,18 @@ go install github.com/bdragon300/go-asyncapi/cmd/go-asyncapi@latest
 
 ## Project status
 
-The project is in active development and is considered unstable.
-
-This version supports the latest AsyncAPI v3. It doesn't support the previous v2, because v3 introduced some breaking 
-changes, so making the tool that supports both v2 and v3 requires a lot of effort and time with no significant benefits.
-
-## Project versioning
-
-`go-asyncapi` uses [Semantic Versioning](https://semver.org/) for versioning. For example, `1.4.0`.
-
-Releasing a *patch version* contains only bug fixes and minor improvements. You won't need to regenerate the code after
-upgrading the tool. E.g. **1.4.0 &rarr; 1.4.1**.
-
-Releasing a *minor version* means that the generated code may be affected, but without breaking changes. You may need to
-regenerate the code. E.g. **1.4.0 &rarr; 1.5.0**.
-
-*Major version* release typically introduces the breaking changes. You may need to regenerate the code, to fix your
-projects that uses it or to change the tool command line. E.g. **1.4.0 &rarr; 2.0.0**.
-
-*Note, that the project major version 0 (0.x.x) is considered unstable*
+The project is in active development and is considered unstable. API may change.
 
 ## Description
 
 ### Goals
 
-The goal of the project is, on the one hand, to fully implement the AsyncAPI specification and, on the other hand, to help
-the developers, DevOps, QA, and other engineers with making the software in event-driven architectures based on the
-AsyncAPI specification.
+The goal of the project is to help the developers, DevOps, QA, and other engineers with making the software in
+event-driven architectures based on the AsyncAPI.
 
-Another goal is to provide a way to readily use and test the technologies described in the AsyncAPI document —
-everything works out of the box, but each component is optional and can be replaced or omitted.
+Another goal is to provide a way to prototype and test everything described in AsyncAPI document without coding.
 
-In other words, *batteries included, but removable*.
+The third goal is full support of the AsyncAPI specification and to make it available to use with modern protocols.
 
 ### Features overview
 
@@ -167,6 +146,12 @@ testing purposes or for quick prototyping.
 The `go-asyncapi` is able to generate the **infrastructure setup files**, such as Docker Compose files, which are useful
 for setting up the development environment quickly or as the starting point for the infrastructure-as-code deploy configurations.
 
+Another major feature is drawing the **diagrams** showing the relationships between things described in one or more
+AsyncAPI documents. This helps to visualize the architecture.
+
+**Web UI** feature generates the AsyncAPI web docs. Using the [AsyncAPI React Component](https://github.com/asyncapi/asyncapi-react),
+`go-asyncapi` is able to generate a static HTML docs page or even serve it just in one command.
+
 ## FAQ
 
 ### Why do I need another codegen tool? We already have the [official generator](https://github.com/asyncapi/generator)
@@ -175,27 +160,30 @@ Well, `go-asyncapi` provides more features, and it's written in Go.
 
 The official generator is quite specific for many use cases. At the moment, it produces the Go code bound with the
 [Watermill](https://watermill.io/) framework, but not everyone uses the Watermill in
-their projects. Moreover, a project may have a fixed set of dependencies, for example,
+their projects. Furthermore, a project may have a fixed set of dependencies, for example,
 due to the security policies in the company.
 
 Also, the official generator supports only the AMQP protocol.
 
 Instead, `go-asyncapi`:
 
-* produces framework-agnostic code.
-* supports more
-  [protocols](https://bdragon300.github.io/go-asyncapi/features#protocols) and more specific AsyncAPI entities, such as
-  bindings, correlation ids, server variables, etc.
-* has built-in clients for all supported protocols based on popular libraries, that may be used in the generated code.
-* is written in Go, so no need to have node.js or Docker or similar tools to run the generator.
-* can produce IaC files and build the no-code client application.
+* produces the framework-agnostic code for *any protocol* and additional supporting code for built-in
+  [protocols](https://bdragon300.github.io/go-asyncapi/docs/features#protocols).
+* besides the codegen feature, it can
+  [build client application](https://bdragon300.github.io/go-asyncapi/docs/commands/client),
+  [draw diagrams](https://bdragon300.github.io/go-asyncapi/docs/commands/diagram),
+  [generate server definitions](https://bdragon300.github.io/go-asyncapi/docs/command/infra),
+  [produce web docs](https://bdragon300.github.io/go-asyncapi/docs/command/ui).
+* supports some specific AsyncAPI entities, such as protocol bindings, correlation ids, server variables, etc.
+* has built-in clients for supported protocols, that are based on popular libraries.
+* written in Go, so no need to have node.js or Docker or similar tools to run the generator.
 
 *Another reason is that I don't know JavaScript well. And I'm not sure that if we want to support all AsyncAPI features,
 the existing templates would not be rewritten from the ground.*
 
 ### How to contribute?
 
-Just open an issue or a pull request in the [GitHub repository](https://github.com/bdragon300/go-asyncapi)
+Just open an issue or a pull request. Branches `master` is the current release, `dev` is for development (next release).
 
 ## Alternatives
 

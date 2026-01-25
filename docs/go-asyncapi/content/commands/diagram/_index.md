@@ -1,23 +1,35 @@
 ---
-title: "Visualization"
-weight: 650
+title: "diagram"
+weight: 340
 bookToC: true
-description: "Visualizing AsyncAPI documents in diagrams"
+description: "Generating the diagrams"
 ---
 
-# Visualizing AsyncAPI documents
+# Visualizing AsyncAPI documents in diagrams
 
-`go-asyncapi` can generate diagrams from AsyncAPI documents using [D2](https://d2lang.com/) -- a modern diagram scripting 
-language. The resulting diagrams visualize the structure of the AsyncAPI document, including servers, channels,
-operations, messages and their relationships. 
+`diagram` command generate diagrams of AsyncAPI entities, that visualize the structure
+of the AsyncAPI document, including servers, channels, operations, messages and their relationships.
 
-The diagram is generated internally as D2 script. By default, it's additionally converted to SVG format, which allows 
-to embed it in web pages, documentation, or share as a standalone file.
+Under the hood `diagram` command uses the [D2](https://d2lang.com/) diagram scripting language. The diagram is 
+generated internally as D2 script and converted to SVG if requested.
 
+The result is an SVG file or D2 script file placed in the current working directory. By default, the output file name is
+the same as the input file name, but with `.svg` extension.
+
+By default, the diagram shows entities from a passed AsyncAPI document and all documents that were fetched via `$ref` references.
+The output file is named after the passed document with `.svg` or `.d2` extension.
+It is possible to split the result into multiple diagrams, change the diagram layout and appearance using various options.
+
+{{% hint tip %}}
 The result can also be customized in d2 script templates. See 
 [templating guide]({{<relref "/templating-guide/overview">}}) for more details.
+{{% /hint %}}
 
 ## Usage
+
+{{% hint tip %}}
+All command options are duplicated in [configuration]({{<relref "/configuration">}}) file. So, you can set them there as well.
+{{% /hint %}}
 
 To generate a diagram, use the `diagram` subcommand:
 
@@ -29,17 +41,16 @@ Default result (SVG) will look like this:
 
 {{< figure src="images/my-app-default.svg" alt="my-app.svg" >}}
 
-{{% hint tip %}}
-By default, the command generates a file with the same name as the input file, but with `.svg` extension. 
-You can change the output file name with the `--output` option. To generate the diagram in D2 format, use the `--format d2`.
-{{% /hint %}}
+To split the result into multiple diagrams, one per each input document (the passed one and referenced ones), 
+use the `--multiple-files` option:
 
+```bash
+$ go-asyncapi diagram my-app.yaml --multiple-files
+```
 
 ## Customization
 
-The diagram generation process has several built-in customization options.
-
-The default draws operations as "endpoints" and both channels and servers as central nodes. 
+By default, the diagram shows operations as "endpoints" and both channels and servers as central nodes. 
 Arrows between operations and channels indicate the message name and its flow direction.
 
 {{% hint info %}}
