@@ -154,6 +154,9 @@ client/
 ├── operation/
 │   ├── client/operation
 │   └── client/operation/<protocol>/publish/prepareEnvelope *
+├── operationReply
+│   ├── client/operationReply
+│   └── client/operationReply/<protocol>/publish/prepareEnvelope *
 ├── channeloperation/
 │   ├── client/channeloperation/<protocol>/<implementation>/consumer/connect *
 │   ├── client/channeloperation/<protocol>/<implementation>/producer/connect *
@@ -165,7 +168,6 @@ client/
 ├── pubsub/
 │   ├── client/pubsub/proto/serverPubSub
 │   └── client/pubsub/proto/serverPubSub/open
-├── client/operationReply
 ├── client/message/<protocol>/<implementation>/publish *
 └── client/server/<protocol>/cliMixin *
 ```
