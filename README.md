@@ -171,12 +171,12 @@ Also, the official generator supports only the AMQP protocol.
 Instead, `go-asyncapi`:
 
 * produces the framework-agnostic code for *any protocol* and additional supporting code for built-in
-  [protocols](https://bdragon300.github.io/go-asyncapi/docs/features#protocols).
+  [protocols](https://bdragon300.github.io/go-asyncapi/features#protocols).
 * besides the codegen feature, it can
-  [build client application](https://bdragon300.github.io/go-asyncapi/docs/commands/client),
-  [draw diagrams](https://bdragon300.github.io/go-asyncapi/docs/commands/diagram),
-  [generate server definitions](https://bdragon300.github.io/go-asyncapi/docs/command/infra),
-  [produce web docs](https://bdragon300.github.io/go-asyncapi/docs/command/ui).
+  [build client application](https://bdragon300.github.io/go-asyncapi/commands/client),
+  [draw diagrams](https://bdragon300.github.io/go-asyncapi/commands/diagram),
+  [generate server definitions](https://bdragon300.github.io/go-asyncapi/commands/infra),
+  [produce web docs](https://bdragon300.github.io/go-asyncapi/commands/ui).
 * supports some specific AsyncAPI entities, such as protocol bindings, correlation ids, server variables, etc.
 * has built-in clients for supported protocols, that are based on popular libraries.
 * written in Go, so no need to have node.js or Docker or similar tools to run the generator.
