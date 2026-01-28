@@ -17,10 +17,10 @@ import (
 
 type Message struct {
 	Headers       *Object                `json:"headers,omitzero" yaml:"headers" cgen:"data_model"`
-	Payload       *Object                `json:"payload,omitzero" yaml:"payload" cgen:"data_model"` // TODO: other formats
+	Payload       *Object                `json:"payload,omitzero" yaml:"payload" cgen:"data_model"`
 	CorrelationID *CorrelationID         `json:"correlationId,omitzero" yaml:"correlationId"`
 	ContentType   string                 `json:"contentType,omitzero" yaml:"contentType"`
-	Name          string                 `json:"name,omitzero" yaml:"name"` // TODO: use it for naming
+	Name          string                 `json:"name,omitzero" yaml:"name"`
 	Title         string                 `json:"title,omitzero" yaml:"title"`
 	Summary       string                 `json:"summary,omitzero" yaml:"summary"`
 	Description   string                 `json:"description,omitzero" yaml:"description"`
@@ -64,7 +64,7 @@ func (m Message) build(ctx *compile.Context, messageKey string, flags map[common
 
 	msgName, _ := lo.Coalesce(m.XGoName, messageKey)
 	res := render.Message{
-		OriginalName: msgName, // TODO: use ctx.GenerateObjName everywhere or rename OriginalName to smth like GeneratedName where we use ctx.GenerateObjName?
+		OriginalName: msgName,
 		ContentType:  m.ContentType,
 		IsSelectable: isSelectable,
 		IsPublisher:  ctx.CompileOpts.GeneratePublishers,

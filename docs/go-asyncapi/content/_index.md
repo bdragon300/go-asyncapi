@@ -18,13 +18,13 @@ description = 'Go-asyncapi is a tool for working with AsyncAPI documents'
 
 ## Core features
 
-|                                                                                 | Feature                                                                           | Command               |
-|---------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|-----------------------|
-| {{< figure src="images/go-logo.svg" alt="Go code" class="feature-icon">}}       | [Generating the Go boilerplate code]({{< relref "/commands/code" >}})             | `go-asyncapi code`    |
-| {{< figure src="images/terminal-icon.svg" alt="CLI app" class="feature-icon">}} | [Building the zero-code CLI client executable]({{< relref "/commands/client" >}}) | `go-asyncapi client`  |
-| {{< figure src="images/infra.svg" alt="IaC definitions" class="feature-icon">}} | [Generating the server definitions]({{< relref "/commands/infra" >}})             | `go-asyncapi infra`   |
-| {{< figure src="images/diagram.svg" alt="Diagram" class="feature-icon">}}       | [Drawing the SVG diagrams]({{< relref "/commands/diagram" >}})                    | `go-asyncapi diagram` |
-| {{< figure src="images/ui-icon.svg" alt="UI" class="feature-icon">}}            | [Serving or generating the web docs UI]({{< relref "/commands/ui" >}})            | `go-asyncapi ui`      |
+|                                                                                 | Feature                                                                                | Command               |
+|---------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|-----------------------|
+| {{< figure src="images/go-logo.svg" alt="Go code" class="feature-icon">}}       | [Generating the Go boilerplate code for any protocol]({{< relref "/commands/code" >}}) | `go-asyncapi code`    |
+| {{< figure src="images/terminal-icon.svg" alt="CLI app" class="feature-icon">}} | [Building the zero-code CLI client executable]({{< relref "/commands/client" >}})      | `go-asyncapi client`  |
+| {{< figure src="images/infra.svg" alt="IaC definitions" class="feature-icon">}} | [Generating the server definitions]({{< relref "/commands/infra" >}})                  | `go-asyncapi infra`   |
+| {{< figure src="images/diagram.svg" alt="Diagram" class="feature-icon">}}       | [Drawing the SVG diagrams]({{< relref "/commands/diagram" >}})                         | `go-asyncapi diagram` |
+| {{< figure src="images/ui-icon.svg" alt="UI" class="feature-icon">}}            | [Serving or generating the web docs UI]({{< relref "/commands/ui" >}})                 | `go-asyncapi ui`      |
 
 See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for more details.
 

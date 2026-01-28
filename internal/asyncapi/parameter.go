@@ -13,7 +13,7 @@ type Parameter struct {
 	Default     string   `json:"default,omitzero" yaml:"default"`
 	Description string   `json:"description,omitzero" yaml:"description"`
 	Examples    []string `json:"examples,omitzero" yaml:"examples"`
-	Location    string   `json:"location,omitzero" yaml:"location"` // TODO: implement
+	Location    string   `json:"location,omitzero" yaml:"location"`
 
 	XGoName string `json:"x-go-name,omitzero" yaml:"x-go-name"`
 

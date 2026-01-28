@@ -11,9 +11,9 @@ type ServerVariable struct {
 	// OriginalName is the name of the server variable as it was defined in the AsyncAPI document.
 	OriginalName string
 	// Description is an optional server variable description. Renders as Go doc comment.
-	Description string // TODO
+	Description string
 	// Enum is enum of possible values.
-	Enum []string // TODO: implement validation
+	Enum []string
 	// Default is the default value of the server variable.
 	Default string
 }

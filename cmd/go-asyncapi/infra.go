@@ -91,7 +91,6 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	})
 	logger.Debug("Rendering the artifacts", "allArtifacts", len(allArtifacts), "visibleArtifacts", len(visibleArtifacts))
 
-	// TODO: check if all server variables are set in config, error if not
 	serverConfig := getInfraServerConfig(cmdConfig.Infra.ServerOpts)
 
 	if err = renderer.RenderInfra(visibleArtifacts, activeProtocols, cmdConfig.Infra.OutputFile, serverConfig, renderManager); err != nil {

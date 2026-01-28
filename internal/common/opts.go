@@ -88,8 +88,7 @@ type (
 		D2DiagramDirection  D2DiagramDirection
 	}
 
-	UIRenderOpts struct {
-	}
+	UIRenderOpts struct{}
 
 	// UIHTMLResourceOpts represents a CSS or JS resource for UI rendering
 	UIHTMLResourceOpts struct {

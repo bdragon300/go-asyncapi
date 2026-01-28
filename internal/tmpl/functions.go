@@ -518,7 +518,6 @@ func templateGoComment(text string) string {
 //
 // The function returns a list of extract steps. Each step contains one or more lines of Go code and some meta information.
 func generateRuntimeExpressionExtractionCode(mng *manager.TemplateRenderManager, c lang.BaseRuntimeExpression, targetStruct *lang.GoStruct, addValidationCode bool) (items []RuntimeExpressionCodeStep, err error) {
-	// TODO: consider also AdditionalProperties in object and unions
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
 	field, ok := lo.Find(targetStruct.Fields, func(item lang.GoStructField) bool {

@@ -13,13 +13,13 @@
 
 ## Core features
 
-|                                                                                                                           | Feature                                                                                                 | Command               |
-|---------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|-----------------------|
-| <img src="https://bdragon300.github.io/go-asyncapi/images/go-logo.svg" style="height: 3em; vertical-align: middle">       | [Generating the Go boilerplate code](https://bdragon300.github.io/go-asyncapi/command/code)             | `go-asyncapi code`    |
-| <img src="https://bdragon300.github.io/go-asyncapi/images/terminal-icon.svg" style="height: 3em; vertical-align: middle"> | [Building the zero-code CLI client executable](https://bdragon300.github.io/go-asyncapi/command/client) | `go-asyncapi client`  |
-| <img src="https://bdragon300.github.io/go-asyncapi/images/infra.svg" style="height: 3em; vertical-align: middle">         | [Generating the server definitions](https://bdragon300.github.io/go-asyncapi/command/infra)             | `go-asyncapi infra`   |
-| <img src="https://bdragon300.github.io/go-asyncapi/images/diagram.svg" style="height: 3em; vertical-align: middle">       | [Drawing the SVG diagrams](https://bdragon300.github.io/go-asyncapi/command/diagram)                    | `go-asyncapi diagram` |
-| <img src="https://bdragon300.github.io/go-asyncapi/images/ui-icon.svg" style="height: 3em; vertical-align: middle">       | [Serving or generating the web docs UI](https://bdragon300.github.io/command/ui)                        | `go-asyncapi ui`      |
+|                                                                                                                           | Feature                                                                                                      | Command               |
+|---------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|-----------------------|
+| <img src="https://bdragon300.github.io/go-asyncapi/images/go-logo.svg" style="height: 3em; vertical-align: middle">       | [Generating the Go boilerplate code for any protocol](https://bdragon300.github.io/go-asyncapi/command/code) | `go-asyncapi code`    |
+| <img src="https://bdragon300.github.io/go-asyncapi/images/terminal-icon.svg" style="height: 3em; vertical-align: middle"> | [Building the zero-code CLI client executable](https://bdragon300.github.io/go-asyncapi/command/client)      | `go-asyncapi client`  |
+| <img src="https://bdragon300.github.io/go-asyncapi/images/infra.svg" style="height: 3em; vertical-align: middle">         | [Generating the server definitions](https://bdragon300.github.io/go-asyncapi/command/infra)                  | `go-asyncapi infra`   |
+| <img src="https://bdragon300.github.io/go-asyncapi/images/diagram.svg" style="height: 3em; vertical-align: middle">       | [Drawing the SVG diagrams](https://bdragon300.github.io/go-asyncapi/command/diagram)                         | `go-asyncapi diagram` |
+| <img src="https://bdragon300.github.io/go-asyncapi/images/ui-icon.svg" style="height: 3em; vertical-align: middle">       | [Serving or generating the web docs UI](https://bdragon300.github.io/command/ui)                             | `go-asyncapi ui`      |
 
 See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for more details.
 

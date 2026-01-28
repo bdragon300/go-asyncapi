@@ -27,7 +27,6 @@ import (
 //
 // [JSON Schema Specification Draft 07]: https://json-schema.org/specification-links#draft-7
 type Object struct {
-	// TODO: check all fields according to the spec. Ex: missed writeOnly
 	Type                 *types.Union2[string, []string]            `json:"type,omitzero" yaml:"type"`
 	AdditionalItems      *types.Union2[Object, bool]                `json:"additionalItems,omitzero" yaml:"additionalItems"`
 	AdditionalProperties *types.Union2[Object, bool]                `json:"additionalProperties,omitzero" yaml:"additionalProperties"`
@@ -302,12 +301,10 @@ func (o Object) buildLangStruct(ctx *compile.Context, flags map[common.SchemaTag
 	}
 
 	// additionalProperties with typed sub-schema
-	// TODO: unmarshal extra fields somehow somewhere to AdditionalProperties field
 	if o.AdditionalProperties != nil {
 		propName, _ := lo.Coalesce(o.AdditionalProperties.V0.XGoName, o.Title)
 		switch o.AdditionalProperties.Selector {
 		case 0: // "additionalProperties:" is an object
-			// TODO: handle $ref in AdditionalProperties items
 			ctx.Logger.Trace("Object additional properties", "type", "object")
 			ref := ctx.CurrentRefPointer("additionalProperties")
 			prm := lang.NewGolangTypePromise(ref, nil)

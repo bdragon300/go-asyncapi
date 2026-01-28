@@ -28,7 +28,7 @@ func guessDocumentKind(decoder AnyDecoder) (DocumentKind, error) {
 	case test.Asyncapi != "":
 		return DocumentKindAsyncapi, nil
 	case test.Openapi != "":
-		panic("openapi not implemented") // TODO
+		panic("openapi not implemented")
 	}
-	panic("jsonschema not implemented") // TODO
+	panic("jsonschema not implemented")
 }
