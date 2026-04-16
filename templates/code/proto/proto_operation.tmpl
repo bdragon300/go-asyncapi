@@ -53,7 +53,7 @@ type {{ . | goID }}Channel{{.Protocol | goID}} interface {
         {{- end}}
         {{if .IsSubscriber}}
             Unseal{{goID .}}({{goPkgUtil $.Protocol}}EnvelopeReader, {{goPkg $.Channel}}{{ goID $.Channel }}EnvelopeUnmarshaler{{$.Protocol | goID}}) error
-            Subscribe{{goID .}}({{goPkgExt "context"}}Context, func({{ goPkg .InType}}{{ goID .}}Receiver)) error
+            Subscribe{{goID .}}({{goPkgExt "context"}}Context, func({{ goPkg .}}{{ goID .}}Receiver)) error
         {{- end}}
     {{- end}}
 }
@@ -115,7 +115,7 @@ func (c {{. | goID}}{{.Protocol | goID}}) Bindings() {{goPkgUtil .Protocol}}Oper
 
     func (o {{$ | goID}}{{$.Protocol | goID}}) Subscribe{{. | goID}}(
         ctx {{goPkgExt "context"}}Context,
-        cb func(message {{ goPkg .InType}}{{ goID .}}Receiver),
+        cb func(message {{ goPkg .}}{{ goID .}}Receiver),
     ) (err error) {
         return o.Channel.Subscribe{{. | goID}}(ctx, cb)
     }
@@ -138,7 +138,7 @@ func (c {{. | goID}}{{.Protocol | goID}}) Bindings() {{goPkgUtil .Protocol}}Oper
             {{- end}}
             {{if $.IsReplySubscriber}}
                 Unseal{{goID .}}({{goPkgUtil $.Protocol}}EnvelopeReader, {{goPkg $replyCh}}{{ goID $replyCh }}EnvelopeUnmarshaler{{$.Protocol | goID}}) error
-                Subscribe{{goID .}}({{goPkgExt "context"}}Context, func({{ goPkg .InType}}{{ goID .}}Receiver)) error
+                Subscribe{{goID .}}({{goPkgExt "context"}}Context, func({{ goPkg .}}{{ goID .}}Receiver)) error
             {{- end}}
         {{- end}}
     }
@@ -161,14 +161,14 @@ func (c {{. | goID}}{{.Protocol | goID}}) Bindings() {{goPkgUtil .Protocol}}Oper
             func (o {{$ | goID}}{{$.Protocol | goID}}Reply) Reply{{. | goID}}(
                 ctx {{goPkgExt "context"}}Context,
                 {{if not (impl $.Protocol)}}envelope {{goPkgUtil $.Protocol}}EnvelopeWriter,{{end}}
-                {{- with runtimeExpression $.OperationReply.OperationReplyAddress .OutType false}}
+                {{- with runtimeExpression $.OperationReply.OperationReplyAddress .PayloadType .HeadersType false}}
                     message interface{ {{goPkg $replyCh}}{{ goID $replyCh }}EnvelopeMarshaler{{$.Protocol | goID}}; SetReplyAddress{{ $ | goID }}(a {{goUsage .OutputType}}) },
                     replyAddress {{goUsage .OutputType}},
                 {{- else}}
                     message {{goPkg $replyCh}}{{ goID $replyCh }}EnvelopeMarshaler{{$.Protocol | goID}},
                 {{- end}}
             ) error {
-                {{- if runtimeExpression $.OperationReply.OperationReplyAddress .OutType false}}
+                {{- if runtimeExpression $.OperationReply.OperationReplyAddress .PayloadType .HeadersType false}}
                     message.SetReplyAddress{{$ | goID}}(replyAddress)
                 {{- end}}
                 return o.Channel.Publish{{. | goID}}(ctx, {{if not (impl $.Protocol)}}envelope, {{end}}message)
@@ -188,7 +188,7 @@ func (c {{. | goID}}{{.Protocol | goID}}) Bindings() {{goPkgUtil .Protocol}}Oper
 
             func (o {{$ | goID}}{{$.Protocol | goID}}Reply) Subscribe{{. | goID}}(
                 ctx {{goPkgExt "context"}}Context,
-                cb func(message {{ goPkg .InType}}{{ goID .}}Receiver),
+                cb func(message {{ goPkg .}}{{ goID .}}Receiver),
             ) (err error) {
                 return o.Channel.Subscribe{{. | goID}}(ctx, cb)
             }

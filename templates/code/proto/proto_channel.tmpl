@@ -185,13 +185,13 @@ type {{ .Channel | goID }}EnvelopeUnmarshaler{{.Protocol | goID}} interface {
 
     func (c {{$ | goID}}{{$.Protocol | goID}}) Subscribe{{. | goID}}(
         ctx {{goPkgExt "context"}}Context,
-        cb func(message {{ goPkg .InType}}{{ goID .}}Receiver),
+        cb func(message {{ goPkg .}}{{ goID .}}Receiver),
     ) (err error) {
         subCtx, cancel := {{goPkgExt "context"}}WithCancel(ctx)
         defer cancel()
 
         subErr := c.Subscribe(subCtx, func(envelope {{goPkgUtil $.Protocol}}EnvelopeReader) {
-            message := new({{ .InType | goUsage }})
+            message := new({{ goPkg .}}{{goID .}}In)
             if err2 := c.Unseal{{. | goID}}(envelope, message); err2 != nil {
                 err = {{goPkgExt "fmt"}}Errorf("%w: %w", {{goPkgRun}}ErrUnsealEnvelope, err2)
                 cancel()

@@ -17,27 +17,30 @@
 
 {{- if .IsPublisher}}
     type {{ . | goID }}Sender interface {
-        SetPayload(payload {{.PayloadType | goUsage}}) *{{ .OutType | goID }}
-        SetHeaders(headers {{.HeadersType | goUsage}}) *{{ .OutType | goID }}
-        {{- with runtimeExpression .CorrelationID .OutType false}}
-            SetCorrelationID(value {{goUsage .OutputType}}) *{{ $.OutType | goID }}
+        SetPayload(payload {{.PayloadType | goUsage}}) *{{ goID . }}Out
+        SetHeaders(headers {{.HeadersType | goUsage}}) *{{ goID . }}Out
+        {{- with runtimeExpression .CorrelationID .PayloadType .HeadersType false}}
+            SetCorrelationID(value {{goUsage .OutputType}}) *{{ goID $ }}Out
         {{- end}}
     }
 
-    {{.OutType | goDef}}
+    type {{ goID . }}Out struct {
+        payload {{.PayloadType | goUsage}}
+        headers {{.HeadersType | goUsage}}
+    }
 
-    func (m *{{ .OutType | goID }}) SetPayload(payload {{.PayloadType | goUsage}}) *{{ .OutType | goID }} {
+    func (m *{{ goID . }}Out) SetPayload(payload {{.PayloadType | goUsage}}) *{{ goID . }}Out {
         m.Payload = payload
         return m
     }
 
-    func (m *{{ .OutType | goID }}) SetHeaders(headers {{.HeadersType | goUsage}}) *{{ .OutType | goID }} {
+    func (m *{{ goID . }}Out) SetHeaders(headers {{.HeadersType | goUsage}}) *{{ goID . }}Out {
         m.Headers = headers
         return m
     }
 
-    {{- with runtimeExpression .CorrelationID .OutType false}}
-        func (m *{{ $.OutType | goID }}) SetCorrelationID(value {{goUsage .OutputType}}) *{{ goID $.OutType }} {
+    {{- with runtimeExpression .CorrelationID .PayloadType .HeadersType false}}
+        func (m *{{ goID $ }}Out) SetCorrelationID(value {{goUsage .OutputType}}) *{{ goID $ }}Out {
             {{.InputVar}} := m.{{toString .Expression.StructFieldKind | toTitleCase}}
             {{template "code/runtimeExpression/setterBody" .}}
             m.{{toString .Expression.StructFieldKind | toTitleCase}} = {{.InputVar}}
@@ -48,8 +51,8 @@
     {{- range $op := .BoundPubReplyOperations}}
         {{- $opr := $op.OperationReply}}
         {{- if and (isVisible $op) (isVisible $opr) $opr.OperationReplyAddress }}
-            {{- with runtimeExpression $opr.OperationReplyAddress $.OutType false}}
-                func (m *{{ $.OutType | goID }}) SetReplyAddress{{$op | goID}}(value {{goUsage .OutputType}}) {
+            {{- with runtimeExpression $opr.OperationReplyAddress $.PayloadType $.HeadersType false}}
+                func (m *{{ goID $ }}Out) SetReplyAddress{{$op | goID}}(value {{goUsage .OutputType}}) {
                     {{.InputVar}} := m.{{toString .Expression.StructFieldKind | toTitleCase}}
                     {{template "code/runtimeExpression/setterBody" .}}
                     m.{{toString .Expression.StructFieldKind | toTitleCase}} = {{.InputVar}}
@@ -63,23 +66,26 @@
     type {{ $ | goID }}Receiver interface {
         Payload() {{.PayloadType | goUsage}}
         Headers() {{.HeadersType | goUsage}}
-        {{- with runtimeExpression .CorrelationID $.InType false}}
+        {{- with runtimeExpression .CorrelationID $.PayloadType $.HeadersType false}}
             CorrelationID() (value {{goUsage .OutputType}}, err error)
         {{- end}}
     }
 
-    {{.InType | goDef}}
+    type {{ goID $ }}In struct {
+        payload {{.PayloadType | goUsage}}
+        headers {{.HeadersType | goUsage}}
+    }
 
-    func (m *{{ .InType | goID }}) Payload() {{.PayloadType | goUsage}} {
+    func (m *{{ goID . }}In) Payload() {{.PayloadType | goUsage}} {
         return m.payload
     }
 
-    func (m *{{ .InType | goID }}) Headers() {{.HeadersType | goUsage}} {
+    func (m *{{ goID . }}In) Headers() {{.HeadersType | goUsage}} {
         return m.headers
     }
 
-    {{- with runtimeExpression .CorrelationID $.InType true}}
-        func (m {{ $.InType | goID }}) CorrelationID() (value {{goUsage .OutputType}}, err error) {
+    {{- with runtimeExpression .CorrelationID $.PayloadType $.HeadersType true}}
+        func (m {{ goID $ }}In) CorrelationID() (value {{goUsage .OutputType}}, err error) {
             {{.InputVar}} := m.{{.Expression.StructFieldKind}}
             {{template "code/runtimeExpression/getterBody" .}}
             {{if .CodeSteps}}value = {{.OutputVar}}{{end}}
@@ -90,8 +96,8 @@
     {{- range $op := .BoundSubReplyOperations}}
         {{- $opr := $op.OperationReply}}
         {{- if and (isVisible $op) (isVisible $opr) $opr.OperationReplyAddress}}
-            {{- with runtimeExpression $opr.OperationReplyAddress $.InType true}}
-                func (m *{{ $.InType | goID }}) ReplyAddress{{$op | goID}}() (value {{goUsage .OutputType}}, err error) {
+            {{- with runtimeExpression $opr.OperationReplyAddress $.PayloadType $.HeadersType true}}
+                func (m *{{ goID $ }}In) ReplyAddress{{$op | goID}}() (value {{goUsage .OutputType}}, err error) {
                     {{.InputVar}} := m.{{.Expression.StructFieldKind}}
                     {{template "code/runtimeExpression/getterBody" .}}
                     {{if .CodeSteps}}value = {{.OutputVar}}{{end}}

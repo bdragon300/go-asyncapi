@@ -19,7 +19,7 @@ type Channel struct {
 	Description  string                              `json:"description,omitzero" yaml:"description"`
 	Servers      []StandaloneRef                     `json:"servers,omitzero" yaml:"servers"`
 	Parameters   types.OrderedMap[string, Parameter] `json:"parameters,omitzero" yaml:"parameters"`
-	Tags         []Tag                               `json:"tags,omitzero" yaml:"tags"`
+	Tags         any                                 `json:"tags,omitzero" yaml:"tags"`
 	ExternalDocs *ExternalDocumentation              `json:"externalDocs,omitzero" yaml:"externalDocs"`
 	Bindings     *Bindings                           `json:"bindings,omitzero" yaml:"bindings"`
 

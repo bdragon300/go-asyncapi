@@ -7,13 +7,13 @@
 {{if .IsPublisher}}{{block "code/proto/message/marshalMethods" .}}
 {{- range .BoundChannels}}
     {{- if and (isVisible .) .IsPublisher}}
-        func (m *{{ $.OutType | goID }}) Marshal{{. | goID}}{{$.Protocol | goID}}(envelope {{goPkgUtil $.Protocol}}EnvelopeWriter) error {
+        func (m *{{ goID $ }}Out) Marshal{{. | goID}}{{$.Protocol | goID}}(envelope {{goPkgUtil $.Protocol}}EnvelopeWriter) error {
             return m.MarshalEnvelope{{$.Protocol | goID}}(envelope)
         }
     {{- end}}
 {{- end}}
 
-func (m *{{ .OutType | goID }}) MarshalEnvelope{{ .Protocol | goID }}(envelope {{goPkgUtil .Protocol}}EnvelopeWriter) error {
+func (m *{{ goID . }}Out) MarshalEnvelope{{ .Protocol | goID }}(envelope {{goPkgUtil .Protocol}}EnvelopeWriter) error {
     if err := m.Marshal{{ .Protocol | goID }}(envelope); err != nil {
         return err
     }
@@ -31,7 +31,7 @@ func (m *{{ .OutType | goID }}) MarshalEnvelope{{ .Protocol | goID }}(envelope {
     return nil
 }
 
-func (m *{{ .OutType | goID }}) Marshal{{ .Protocol | goID }}(w {{goPkgExt "io"}}Writer) error {
+func (m *{{ goID . }}Out) Marshal{{ .Protocol | goID }}(w {{goPkgExt "io"}}Writer) error {
     {{- block "code/proto/message/encoder" .}}
         // MIME type: {{.EffectiveContentType}}
         {{- with tryTmpl (print "code/proto/mime/messageEncoder/" .EffectiveContentType) .}}
@@ -45,7 +45,7 @@ func (m *{{ .OutType | goID }}) Marshal{{ .Protocol | goID }}(w {{goPkgExt "io"}
 }
 
 {{- if .BindingsProtocols | has .Protocol}}
-    func (c {{.OutType | goUsage}}) Bindings{{.Protocol | goID}}() {{goPkgUtil .Protocol}}MessageBindings {
+    func (c {{ goID . }}Out) Bindings{{.Protocol | goID}}() {{goPkgUtil .Protocol}}MessageBindings {
         return {{goPkg .Message}}{{goID .Message}}Bindings{}.{{.Protocol | goID}}()
     }
 {{- end}}
@@ -55,13 +55,13 @@ func (m *{{ .OutType | goID }}) Marshal{{ .Protocol | goID }}(w {{goPkgExt "io"}
 {{if .IsSubscriber}}{{block "code/proto/message/unmarshalMethods" .}}
 {{- range .BoundChannels}}
     {{- if and (isVisible .) .IsSubscriber}}
-        func (m *{{ $.InType | goID }}) Unmarshal{{. | goID}}{{$.Protocol | goID}}(envelope {{goPkgUtil $.Protocol}}EnvelopeReader) error {
+        func (m *{{ goID $ }}In) Unmarshal{{. | goID}}{{$.Protocol | goID}}(envelope {{goPkgUtil $.Protocol}}EnvelopeReader) error {
             return m.UnmarshalEnvelope{{$.Protocol | goID}}(envelope)
         }
     {{- end}}
 {{- end}}
 
-func (m *{{ .InType | goID }}) UnmarshalEnvelope{{ .Protocol | goID }}(envelope {{goPkgUtil .Protocol}}EnvelopeReader) error {
+func (m *{{ goID . }}In) UnmarshalEnvelope{{ .Protocol | goID }}(envelope {{goPkgUtil .Protocol}}EnvelopeReader) error {
     if err := m.Unmarshal{{ .Protocol | goID }}(envelope); err != nil {
         return err
     }
@@ -81,7 +81,7 @@ func (m *{{ .InType | goID }}) UnmarshalEnvelope{{ .Protocol | goID }}(envelope 
     return nil
 }
 
-func (m *{{ .InType | goID }}) Unmarshal{{ .Protocol | goID }}(r {{goPkgExt "io"}}Reader) error {
+func (m *{{ goID . }}In) Unmarshal{{ .Protocol | goID }}(r {{goPkgExt "io"}}Reader) error {
     {{- block "code/proto/message/decoder" .}}
         // MIME type: {{.EffectiveContentType}}
         {{- with tryTmpl (print "code/proto/mime/messageDecoder/" .EffectiveContentType) .}}
@@ -95,7 +95,7 @@ func (m *{{ .InType | goID }}) Unmarshal{{ .Protocol | goID }}(r {{goPkgExt "io"
 }
 
 {{- if .BindingsProtocols | has .Protocol}}
-    func (c {{.InType | goUsage}}) Bindings{{.Protocol | goID}}() {{goPkgUtil .Protocol}}MessageBindings {
+    func (c {{ goID . }}In) Bindings{{.Protocol | goID}}() {{goPkgUtil .Protocol}}MessageBindings {
         return {{goPkg .Message}}{{goID .Message}}Bindings{}.{{.Protocol | goID}}()
     }
 {{- end}}

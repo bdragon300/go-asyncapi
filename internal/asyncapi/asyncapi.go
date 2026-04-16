@@ -91,7 +91,7 @@ type InfoItem struct {
 	TermsOfService string                `json:"termsOfService,omitzero" yaml:"termsOfService"`
 	Contact        ContactItem           `json:"contact,omitzero" yaml:"contact"`
 	License        LicenseItem           `json:"license,omitzero" yaml:"license"`
-	Tags           []Tag                 `json:"tags,omitzero" yaml:"tags"`
+	Tags           any                   `json:"tags,omitzero" yaml:"tags"`
 	ExternalDocs   ExternalDocumentation `json:"externalDocs,omitzero" yaml:"externalDocs"`
 }
 

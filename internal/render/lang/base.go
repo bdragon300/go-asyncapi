@@ -7,6 +7,7 @@ import (
 
 // BaseJSONPointed holds a JSON Pointer to a current object position in the AsyncAPI document.
 // It is a utility type intended to be embedded in other types, don't use it directly.
+// Every artifact must embed this struct.
 type BaseJSONPointed struct {
 	pointer jsonpointer.JSONPointer
 }

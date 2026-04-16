@@ -27,11 +27,6 @@ type Message struct {
 	// IsSubscriber is true if the generation of subscriber code is enabled
 	IsSubscriber bool
 
-	// OutType is a Go struct for the outgoing message. Usually has name like ``MessageOut''
-	OutType *lang.GoStruct
-	// InType is a Go struct for the incoming message. Usually has name like ``MessageIn''
-	InType *lang.GoStruct
-
 	// HeadersTypePromise is a Go struct for message headers. Nil if headers type is not set in document.
 	HeadersTypePromise *lang.GolangTypePromise
 	// HeadersTypeDefault is a type that is used for headers in message code when headers are not set in the document.

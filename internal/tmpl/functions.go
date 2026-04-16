@@ -57,9 +57,7 @@ func (i ImplementationCodeInfo) Name() string {
 type RuntimeExpressionInfo struct {
 	// Expression contains the runtime expression info
 	Expression  lang.BaseRuntimeExpression
-	// Target is struct to extract a value from according the Expression
-	Target    *lang.GoStruct
-	// CodeSteps contains the code that recursively extracts the variable from Target struct.
+	// CodeSteps contains the code that recursively extracts the variable from payload or headers.
 	CodeSteps []RuntimeExpressionCodeStep
 }
 
@@ -242,8 +240,8 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 				PackageName: s.PackageName,
 			}
 		},
-		"runtimeExpression": func(a runtimeExpressionArtifact, target *lang.GoStruct, addValidationCode bool) *RuntimeExpressionInfo {
-			traceCall("runtimeExpression", a, target)
+		"runtimeExpression": func(a runtimeExpressionArtifact, payloadType, headersType common.GolangType, addValidationCode bool) *RuntimeExpressionInfo {
+			traceCall("runtimeExpression", a, payloadType, headersType)
 			if lo.IsNil(a) {
 				logger.Trace("--> artifact is nil")
 				return nil
@@ -254,7 +252,7 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			}
 			e := a.RuntimeExpressionObject()
 
-			steps, err := generateRuntimeExpressionExtractionCode(renderManager, e, target, addValidationCode)
+			steps, err := generateRuntimeExpressionExtractionCode(renderManager, e, payloadType, headersType, addValidationCode)
 			if err != nil {
 				logger.Warn(fmt.Sprintf("Cannot resolve runtime expression, skipping. Hint: %s has no schema", e.StructFieldKind), "expression", e.OriginalExpression, "err", err)
 				return nil
@@ -262,7 +260,6 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 
 			return &RuntimeExpressionInfo{
 				Expression:  e,
-				Target:      target,
 				CodeSteps:   steps,
 			}
 		},
@@ -517,18 +514,23 @@ func templateGoComment(text string) string {
 // that is typically used for property getter functions.
 //
 // The function returns a list of extract steps. Each step contains one or more lines of Go code and some meta information.
-func generateRuntimeExpressionExtractionCode(mng *manager.TemplateRenderManager, c lang.BaseRuntimeExpression, targetStruct *lang.GoStruct, addValidationCode bool) (items []RuntimeExpressionCodeStep, err error) {
+func generateRuntimeExpressionExtractionCode(mng *manager.TemplateRenderManager, c lang.BaseRuntimeExpression, payloadType, headersType common.GolangType, addValidationCode bool) (items []RuntimeExpressionCodeStep, err error) {
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 
-	field, ok := lo.Find(targetStruct.Fields, func(item lang.GoStructField) bool {
-		return strings.EqualFold(item.OriginalName, string(c.StructFieldKind))
-	})
-	if !ok {
-		return nil, fmt.Errorf("field %q not found in jsonschema object %s", c.StructFieldKind, targetStruct.Pointer())
+	var baseType common.GolangType
+	switch c.StructFieldKind {
+	case lang.RuntimeExpressionStructFieldKindPayload:
+		logger.Trace("Runtime expression struct field kind: payload")
+		baseType = payloadType
+	case lang.RuntimeExpressionStructFieldKindHeaders:
+		logger.Trace("Runtime expression struct field kind: headers")
+		baseType = headersType
+	default:
+		err = fmt.Errorf("unsupported runtime expression field: %q", c.StructFieldKind)
+		return
 	}
 
 	locationPath := c.LocationPath
-	baseType := field.Type
 	for pathIdx := 0; pathIdx < len(locationPath); {
 		var body []string
 		var operator string

@@ -27,7 +27,7 @@ type Operation struct {
 	Summary      string                 `json:"summary,omitzero" yaml:"summary"`
 	Description  string                 `json:"description,omitzero" yaml:"description"`
 	Security     []SecurityScheme       `json:"security,omitzero" yaml:"security"`
-	Tags         []Tag                  `json:"tags,omitzero" yaml:"tags"`
+	Tags         any                    `json:"tags,omitzero" yaml:"tags"`
 	ExternalDocs *ExternalDocumentation `json:"externalDocs,omitzero" yaml:"externalDocs"`
 	Bindings     *Bindings              `json:"bindings,omitzero" yaml:"bindings"`
 	Traits       []OperationTrait       `json:"traits,omitzero" yaml:"traits"`
@@ -125,7 +125,7 @@ type OperationTrait struct {
 	Summary      string                 `json:"summary,omitzero" yaml:"summary"`
 	Description  string                 `json:"description,omitzero" yaml:"description"`
 	Security     []SecurityScheme       `json:"security,omitzero" yaml:"security"`
-	Tags         []Tag                  `json:"tags,omitzero" yaml:"tags"`
+	Tags         any                    `json:"tags,omitzero" yaml:"tags"`
 	ExternalDocs *ExternalDocumentation `json:"externalDocs,omitzero" yaml:"externalDocs"`
 	Bindings     *Bindings              `json:"bindings,omitzero" yaml:"bindings"`
 

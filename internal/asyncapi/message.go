@@ -12,7 +12,6 @@ import (
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render"
-	"github.com/bdragon300/go-asyncapi/internal/utils"
 )
 
 type Message struct {
@@ -24,7 +23,7 @@ type Message struct {
 	Title         string                 `json:"title,omitzero" yaml:"title"`
 	Summary       string                 `json:"summary,omitzero" yaml:"summary"`
 	Description   string                 `json:"description,omitzero" yaml:"description"`
-	Tags          []Tag                  `json:"tags,omitzero" yaml:"tags"`
+	Tags          any                    `json:"tags,omitzero" yaml:"tags"`
 	ExternalDocs  *ExternalDocumentation `json:"externalDocs,omitzero" yaml:"externalDocs"`
 	Bindings      *Bindings              `json:"bindings,omitzero" yaml:"bindings"`
 	Examples      []MessageExample       `json:"examples,omitzero" yaml:"examples"`
@@ -120,7 +119,6 @@ func (m Message) build(ctx *compile.Context, messageKey string, flags map[common
 		res.PayloadTypePromise = lang.NewGolangTypePromise(ref, nil)
 		ctx.PutPromise(res.PayloadTypePromise)
 	}
-	res.InType, res.OutType = m.buildInOutStructs(ctx, res, msgName)
 
 	// Bindings
 	if m.Bindings != nil {
@@ -139,41 +137,6 @@ func (m Message) build(ctx *compile.Context, messageKey string, flags map[common
 	}
 
 	return &res, nil
-}
-
-func (m Message) buildInOutStructs(ctx *compile.Context, message render.Message, msgName string) (in, out *lang.GoStruct) {
-	headerType := message.HeadersTypeDefault
-	if message.HeadersTypePromise != nil {
-		headerType = message.HeadersTypePromise
-	}
-	payloadType := message.PayloadTypeDefault
-	if message.PayloadTypePromise != nil {
-		payloadType = message.PayloadTypePromise
-	}
-	out = &lang.GoStruct{
-		BaseType: lang.BaseType{
-			OriginalName:  ctx.GenerateObjName(msgName, "Out"),
-			Description:   utils.JoinNonemptyStrings("\n", m.Summary+" (Outbound Message)", m.Description),
-			HasDefinition: true,
-		},
-		Fields: []lang.GoStructField{
-			{OriginalName: utils.ToGolangName(string(lang.RuntimeExpressionStructFieldKindPayload), true), Type: payloadType},
-			{OriginalName: utils.ToGolangName(string(lang.RuntimeExpressionStructFieldKindHeaders), true), Type: headerType},
-		},
-	}
-	in = &lang.GoStruct{
-		BaseType: lang.BaseType{
-			OriginalName:  ctx.GenerateObjName(msgName, "In"),
-			Description:   utils.JoinNonemptyStrings("\n", m.Summary+" (Inbound Message)", m.Description),
-			HasDefinition: true,
-		},
-		Fields: []lang.GoStructField{
-			{OriginalName: utils.ToGolangName(string(lang.RuntimeExpressionStructFieldKindPayload), false), Type: payloadType},
-			{OriginalName: utils.ToGolangName(string(lang.RuntimeExpressionStructFieldKindHeaders), false), Type: headerType},
-		},
-	}
-
-	return
 }
 
 type Tag struct {
@@ -199,7 +162,7 @@ type MessageTrait struct {
 	Title         string                 `json:"title,omitzero" yaml:"title"`
 	Summary       string                 `json:"summary,omitzero" yaml:"summary"`
 	Description   string                 `json:"description,omitzero" yaml:"description"`
-	Tags          []Tag                  `json:"tags,omitzero" yaml:"tags"`
+	Tags          any                    `json:"tags,omitzero" yaml:"tags"`
 	ExternalDocs  *ExternalDocumentation `json:"externalDocs,omitzero" yaml:"externalDocs"`
 	Bindings      *Bindings              `json:"bindings,omitzero" yaml:"bindings"`
 	Examples      []MessageExample       `json:"examples,omitzero" yaml:"examples"`

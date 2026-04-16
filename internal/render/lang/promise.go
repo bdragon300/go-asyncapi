@@ -46,7 +46,7 @@ func newPromise[T common.Artifact](
 // The target object can be addresses by ref URL or by a callback function.
 type Promise[T common.Artifact] struct {
 	// AssignErrorNote is the additional note to be shown in error message when assignment fails
-	AssignErrorNote string
+	AssignErrorNote string // TODO: remove
 
 	ref      string
 	origin   common.PromiseOrigin

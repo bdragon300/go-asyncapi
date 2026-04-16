@@ -17,7 +17,7 @@ const (
 	ArtifactKindSecurity  ArtifactKind = "security"
 	// ArtifactKindAsyncAPI represents the root AsyncAPI object.
 	ArtifactKindAsyncAPI ArtifactKind = "asyncapi"
-	// ArtifactKindOther is a utility language object, not intended for selection (type, value, interface, etc.)
+	// ArtifactKindOther is a utility language object, not intended to be selected in Selector (e.g. type, value, interface, etc.)
 	ArtifactKindOther ArtifactKind = ""
 )
 

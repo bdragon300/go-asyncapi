@@ -21,7 +21,7 @@ type Server struct {
 	Description     string                                   `json:"description,omitzero" yaml:"description"`
 	Variables       types.OrderedMap[string, ServerVariable] `json:"variables,omitzero" yaml:"variables"`
 	Security        []SecurityScheme                         `json:"security,omitzero" yaml:"security"`
-	Tags            []Tag                                    `json:"tags,omitzero" yaml:"tags"`
+	Tags            any                                      `json:"tags,omitzero" yaml:"tags"`
 	ExternalDocs    *ExternalDocumentation                   `json:"externalDocs,omitzero" yaml:"externalDocs"`
 	Bindings        *Bindings                                `json:"bindings,omitzero" yaml:"bindings"`
 

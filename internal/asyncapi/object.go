@@ -96,8 +96,6 @@ func (o Object) build(ctx *compile.Context, flags map[common.SchemaTag]string, o
 		return &lang.GoSimple{TypeName: "any", IsInterface: true, StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx)}, nil
 	}
 	if o.Ref != "" {
-		ctx.Logger.Trace("Ref", "$ref", o.Ref)
-
 		refName := objectKey
 		// Ignore the objectKey in definitions other than `components.schemas`, generate a unique name instead
 		if !isSelectable {

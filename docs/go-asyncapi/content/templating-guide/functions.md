@@ -388,15 +388,19 @@ code was generated for "kafka" protocol.
 ### runtimeExpression
 
 ```go
-func runtimeExpression(a tmpl.runtimeExpressionArtifact, target *lang.GoStruct, addValidationCode bool) *tmpl.RuntimeExpressionInfo
+func runtimeExpression(a tmpl.runtimeExpressionArtifact, payloadType, headersType common.GolangType, addValidationCode bool) *tmpl.RuntimeExpressionInfo
 ```
 
-Function compiles the Go code, that recursively extracts a value based on runtime expression and target struct.
+Function produces the Go code, that extracts a value from a variable of given type based on runtime expression.
+
+Payload and headers type arguments are mutually exclusive, so the function uses the one that is meets the runtime expression ignoring the other one.
+Each argument may contain either a recursive type (GoStruct, GoArray, etc.) or simple type (GoSimple).
 
 Arguments are:
 
 1. artifact that contains the runtime expression: `CorrelationID` or `OperationReplyAddress`
-2. struct artifact to extract a value from
+2. payload type; used if the runtime expression points to the payload
+3. headers type; used if the runtime expression points to the headers
 3. flag to include the validation code such as array bound check or map key presence check, that is typically used
    for getter methods
 
@@ -406,8 +410,8 @@ function is also returns `nil`.
 Typical usage:
 
 ```gotemplate
-{{- with runtimeExpression .CorrelationID .OutType false}}
-    func (m *{{ $.OutType | goID }}) SetCorrelationID(value {{goUsage .OutputType}}) *{{ goID $.OutType }} {
+{{- with runtimeExpression .CorrelationID .PayloadType .HeadersType false}}
+    func (m *{{ goID $ }}Out) SetCorrelationID(value {{goUsage .OutputType}}) *{{ goID $ }}Out {
         {{.InputVar}} := m.{{toString .Expression.StructFieldKind | toTitleCase}}
         {{template "code/runtimeExpression/setterBody" .}}
         m.{{toString .Expression.StructFieldKind | toTitleCase}} = {{.InputVar}}
@@ -415,8 +419,8 @@ Typical usage:
     }
 {{- end}}
 
-{{- with runtimeExpression .CorrelationID $.InType false}}
-    func (m {{ $.InType | goID }}) CorrelationID() (value {{goUsage .OutputType}}, err error) {
+{{- with runtimeExpression .CorrelationID $.PayloadType $.HeadersType false}}
+    func (m {{ goID $ }}In) CorrelationID() (value {{goUsage .OutputType}}, err error) {
         {{.InputVar}} := m.{{toString .Expression.StructFieldKind}}
         {{template "code/runtimeExpression/getterBody" .}}
         {{if .CodeSteps}}value = {{.OutputVar}}{{end}}
