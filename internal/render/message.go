@@ -15,8 +15,9 @@ type Message struct {
 	lang.BaseJSONPointed
 	// OriginalName is the name of the message as it was defined in the AsyncAPI document.
 	OriginalName string
-	// ContentType is the message's content type if set.
-	ContentType string
+	// OriginalContentType is the original message's content type defined in document without considering
+	// the global document content type or MessageTrait values. To get the resulting content type, use EffectiveContentType method.
+	OriginalContentType string
 
 	// Dummy is true when message is ignored (x-ignore: true)
 	Dummy bool
@@ -51,7 +52,10 @@ type Message struct {
 	// CorrelationIDPromise is a CorrelationID object defined for the message. Nil if correlationID is not defined.
 	CorrelationIDPromise *lang.Promise[*CorrelationID]
 
-	// AsyncAPIPromise is an AsyncAPI root object.
+	// MessageTraitPromises is a list of promises to MessageTrait objects that are applied to this message. Nil if no message traits are applied.
+	MessageTraitPromises []*lang.Promise[*MessageTrait]
+
+	// AsyncAPIPromise is an AsyncAPI root object. Always non-empty.
 	AsyncAPIPromise *lang.Promise[*AsyncAPI]
 }
 
@@ -61,7 +65,15 @@ func (m *Message) HeadersType() common.GolangType {
 	if m.HeadersTypePromise != nil {
 		return common.DerefArtifact(m.HeadersTypePromise.T()).(common.GolangType)
 	}
-	return m.HeadersTypeDefault
+	return lo.CoalesceOrEmpty(
+		common.LastNonEmptyTargetBy(m.MessageTraitPromises, func(mt *MessageTrait) common.GolangType { return mt.HeadersType() }),
+		m.HeadersTypeDefault,
+	)
+}
+
+// HasHeaders returns true if headers are defined for this message either directly or via message traits.
+func (m *Message) HasHeaders() bool {
+	return m.HeadersTypePromise != nil || common.LastNonEmptyTargetBy(m.MessageTraitPromises, func(mt *MessageTrait) bool { return mt.HasHeaders() })
 }
 
 // PayloadType returns a Go type of payload defined for message in the document.
@@ -78,7 +90,7 @@ func (m *Message) Bindings() *Bindings {
 	if m.BindingsPromise != nil {
 		return m.BindingsPromise.T()
 	}
-	return nil
+	return common.LastNonEmptyTargetBy(m.MessageTraitPromises, func(mt *MessageTrait) *Bindings { return mt.Bindings() })
 }
 
 // CorrelationID returns the CorrelationID object or nil if no correlationID is set.
@@ -86,7 +98,7 @@ func (m *Message) CorrelationID() *CorrelationID {
 	if m.CorrelationIDPromise != nil {
 		return m.CorrelationIDPromise.T()
 	}
-	return nil
+	return common.LastNonEmptyTargetBy(m.MessageTraitPromises, func(mt *MessageTrait) *CorrelationID { return mt.CorrelationID() })
 }
 
 // AsyncAPI returns the AsyncAPI object.
@@ -94,13 +106,17 @@ func (m *Message) AsyncAPI() *AsyncAPI {
 	return m.AsyncAPIPromise.T()
 }
 
-// EffectiveContentType returns the message's content type for the message if set or the content type of the
-// document if set or [DefaultContentType].
+// EffectiveContentType returns the resulting message's content effectively merged from global document's default and
+// [MessageTrait] values. If none of them is set, returns [DefaultContentType].
 func (m *Message) EffectiveContentType() string {
 	if m.Dummy {
 		return ""
 	}
-	res, _ := lo.Coalesce(m.ContentType, m.AsyncAPIPromise.T().EffectiveDefaultContentType())
+	res := lo.CoalesceOrEmpty(
+		m.OriginalContentType,
+		common.LastNonEmptyTargetBy(m.MessageTraitPromises, func(mt *MessageTrait) string { return mt.ContentType }),
+		m.AsyncAPIPromise.T().EffectiveDefaultContentType(),
+	)
 	return res
 }
 

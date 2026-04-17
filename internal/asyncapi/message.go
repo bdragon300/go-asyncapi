@@ -3,6 +3,7 @@ package asyncapi
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
@@ -63,11 +64,11 @@ func (m Message) build(ctx *compile.Context, messageKey string, flags map[common
 
 	msgName, _ := lo.Coalesce(m.XGoName, messageKey)
 	res := render.Message{
-		OriginalName: msgName,
-		ContentType:  m.ContentType,
-		IsSelectable: isSelectable,
-		IsPublisher:  ctx.CompileOpts.GeneratePublishers,
-		IsSubscriber: ctx.CompileOpts.GenerateSubscribers,
+		OriginalName:        msgName,
+		OriginalContentType: m.ContentType,
+		IsSelectable:        isSelectable,
+		IsPublisher:         ctx.CompileOpts.GeneratePublishers,
+		IsSubscriber:        ctx.CompileOpts.GenerateSubscribers,
 		// map[string]any
 		HeadersTypeDefault: &lang.GoMap{
 			KeyType:   &lang.GoSimple{TypeName: "string"},
@@ -76,7 +77,7 @@ func (m Message) build(ctx *compile.Context, messageKey string, flags map[common
 		// any
 		PayloadTypeDefault: &lang.GoSimple{TypeName: "any", IsInterface: true},
 	}
-	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", res.ContentType))
+	ctx.Logger.Trace(fmt.Sprintf("Message content type is %q", res.OriginalContentType))
 
 	// Gather all channels and operations to find out further (after linking) which ones are bound with this message
 	prmCh := lang.NewListCbPromise[common.Artifact](func(item common.Artifact) bool {
@@ -136,6 +137,17 @@ func (m Message) build(ctx *compile.Context, messageKey string, flags map[common
 		ctx.PutPromise(res.CorrelationIDPromise)
 	}
 
+	// Traits
+	if len(m.Traits) > 0 {
+		ctx.Logger.Trace("Message traits")
+		for i := range m.Traits {
+			ref := ctx.CurrentRefPointer("traits", strconv.Itoa(i))
+			prm := lang.NewPromise[*render.MessageTrait](ref, nil)
+			res.MessageTraitPromises = append(res.MessageTraitPromises, prm)
+			ctx.PutPromise(prm)
+		}
+	}
+
 	return &res, nil
 }
 
@@ -168,4 +180,52 @@ type MessageTrait struct {
 	Examples      []MessageExample       `json:"examples,omitzero" yaml:"examples"`
 
 	Ref string `json:"$ref,omitzero" yaml:"$ref"`
+}
+
+func (m MessageTrait) Compile(ctx *compile.Context) error {
+	obj, err := m.build(ctx, ctx.Stack.Top().Key)
+	if err != nil {
+		return err
+	}
+	ctx.PutArtifact(obj)
+	return nil
+}
+
+func (m MessageTrait) build(ctx *compile.Context, messageTraitKey string) (common.Artifact, error) {
+	if m.Ref != "" {
+		return registerRef(ctx, m.Ref, messageTraitKey, nil), nil
+	}
+
+	res := render.MessageTrait{
+		OriginalName: messageTraitKey,
+		ContentType:  m.ContentType,
+	}
+	ctx.Logger.Trace(fmt.Sprintf("MessageTrait content type is %q", res.ContentType))
+
+	// Headers
+	if m.Headers != nil {
+		ctx.Logger.Trace("MessageTrait headers")
+		ref := ctx.CurrentRefPointer("headers")
+		res.HeadersTypePromise = lang.NewGolangTypePromise(ref, nil)
+		res.HeadersTypePromise.AssignErrorNote = "Probably the headers schema has type other than of 'object'?"
+		ctx.PutPromise(res.HeadersTypePromise)
+	}
+
+	// Correlation id
+	if m.CorrelationID != nil {
+		ctx.Logger.Trace("MessageTrait correlationId")
+		ref := ctx.CurrentRefPointer("correlationId")
+		res.CorrelationIDPromise = lang.NewPromise[*render.CorrelationID](ref, nil)
+		ctx.PutPromise(res.CorrelationIDPromise)
+	}
+
+	// Bindings
+	if m.Bindings != nil {
+		ctx.Logger.Trace("MessageTrait bindings")
+		ref := ctx.CurrentRefPointer("bindings")
+		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, nil)
+		ctx.PutPromise(res.BindingsPromise)
+	}
+
+	return &res, nil
 }

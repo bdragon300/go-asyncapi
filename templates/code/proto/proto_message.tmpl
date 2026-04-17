@@ -18,7 +18,7 @@ func (m *{{ goID . }}Out) MarshalEnvelope{{ .Protocol | goID }}(envelope {{goPkg
         return err
     }
     envelope.SetContentType({{.EffectiveContentType | goLit}})
-    {{- if .HeadersTypePromise}}
+    {{- if .HasHeaders}}
         {{- /* Headers schema is defined */}}
         envelope.SetHeaders({{goPkgRun}}Headers{
         {{- range .HeadersType.Fields}}
@@ -65,7 +65,7 @@ func (m *{{ goID . }}In) UnmarshalEnvelope{{ .Protocol | goID }}(envelope {{goPk
     if err := m.Unmarshal{{ .Protocol | goID }}(envelope); err != nil {
         return err
     }
-    {{- if .HeadersTypePromise }}
+    {{- if .HasHeaders }}
         {{- /* Headers schema is defined */}}
         {{- if gt (len .HeadersType.Fields) 0}}
             headers := envelope.Headers()

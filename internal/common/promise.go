@@ -1,5 +1,11 @@
 package common
 
+import (
+	"slices"
+
+	"github.com/samber/lo"
+)
+
 // PromiseOrigin is where the promise come from.
 type PromiseOrigin int
 
@@ -50,3 +56,19 @@ type ObjectListPromise interface {
 }
 
 type PromiseFindCbFunc func(item Artifact) bool
+
+type targeter[TT any] interface {
+	T() TT
+}
+
+// LastNonEmptyTargetBy returns the last non-empty result of the callback function applied to the promise targets.
+// If all results are empty, returns empty value as well.
+func LastNonEmptyTargetBy[T any, P targeter[T], R comparable](promises []P, cb func(target T) R) R {
+	for _, p := range slices.Backward(promises) {
+		res := cb(p.T())
+		if lo.IsNotEmpty(res) {
+			return res
+		}
+	}
+	return lo.Empty[R]()
+}

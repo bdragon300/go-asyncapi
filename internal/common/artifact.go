@@ -4,7 +4,13 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 )
 
-// ArtifactKind is an enumeration of compiled artifact kinds.
+// ArtifactKind is an enumeration of compiled artifact kind.
+//
+// Basically, this enables us to run different rendering logic (templates subtree) for different artifact kinds, e.g.
+// channel or schema model. All artifacts that produce the separate code should have their own ArtifactKind.
+//
+// Other artifacts that don't produce their own code and affect only the code produced by other artifacts
+// (e.g. correlation id or message trait) have ArtifactKindOther kind.
 type ArtifactKind string
 
 const (

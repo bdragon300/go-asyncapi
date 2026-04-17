@@ -63,10 +63,10 @@ func (ss SecurityScheme) build(ctx *compile.Context, securitySchemeKey string) (
 
 	prm = lang.NewListCbPromise[common.Artifact](func(item common.Artifact) bool {
 		v, ok := item.(*render.Operation)
-		return ok && v.Visible() && len(v.SecuritySchemePromises) > 0
+		return ok && v.Visible()
 	}, nil)
 	ctx.PutListPromise(prm)
-	res.AllSecuredOperationsPromise = prm
+	res.AllOperationsPromise = prm
 
 	return &res, nil
 }

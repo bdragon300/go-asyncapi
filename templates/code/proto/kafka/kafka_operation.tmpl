@@ -1,5 +1,5 @@
 {{- /* dot == render.ProtoOperation */}}
-{{define "code/proto/ws/channel/bindings/values"}}
+{{define "code/proto/kafka/operation/bindings/values"}}
 {{- goPkgUtil "kafka"}}OperationBindings{
     {{- with .Bindings.Values.Map.kafka}}
         {{with .clientId }}ClientID: {{toJSON . | goLit }},{{end}}

@@ -23,8 +23,10 @@ type SecurityScheme struct {
 
 	// AllSecuredServersPromise contains all servers with security scheme applied.
 	AllSecuredServersPromise *lang.ListPromise[common.Artifact]
-	// AllSecuredOperationsPromise contains all operations with security scheme applied.
-	AllSecuredOperationsPromise *lang.ListPromise[common.Artifact]
+	// AllOperationsPromise contains all available operations.
+	// Some operations may not have security scheme applied directly but may have it applied via operation traits,
+	// so we collect all operations here instead of only "secured" ones.
+	AllOperationsPromise *lang.ListPromise[common.Artifact]
 }
 
 // SecuritySchemeParams is a struct that holds parameters for different types of security schemes.
@@ -62,7 +64,7 @@ func (s *SecurityScheme) BoundServers() []*Server {
 }
 
 func (s *SecurityScheme) BoundOperations() []*Operation {
-	r := lo.FilterMap(s.AllSecuredOperationsPromise.T(), func(r common.Artifact, _ int) (*Operation, bool) {
+	r := lo.FilterMap(s.AllOperationsPromise.T(), func(r common.Artifact, _ int) (*Operation, bool) {
 		op := common.DerefArtifact(r).(*Operation)
 		return op, lo.ContainsBy(op.SecuritySchemes(), func(item *SecurityScheme) bool {
 			return common.CheckSameArtifacts(s, item)

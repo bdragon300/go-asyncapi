@@ -2,6 +2,7 @@ package render
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/render/lang"
@@ -44,6 +45,9 @@ type Operation struct {
 
 	// SecuritySchemePromises is a promises to the security scheme objects defined for this operation.
 	SecuritySchemePromises []*lang.Promise[*SecurityScheme]
+
+	// OperationTraitPromises is a list of promises to OperationTrait objects that are applied to this operation. Nil if no operation traits are applied.
+	OperationTraitPromises []*lang.Promise[*OperationTrait]
 }
 
 // Channel returns the Channel that this operation is bound with.
@@ -56,7 +60,7 @@ func (o *Operation) Bindings() *Bindings {
 	if o.BindingsPromise != nil {
 		return o.BindingsPromise.T()
 	}
-	return nil
+	return common.LastNonEmptyTargetBy(o.OperationTraitPromises, func(mt *OperationTrait) *Bindings { return mt.Bindings() })
 }
 
 // Messages returns a list of messages defined for this operation. Returns empty list if no messages are set in
@@ -138,7 +142,17 @@ func (o *Operation) BindingsProtocols() []string {
 
 // SecuritySchemes returns the list of security schemes defined for this operation.
 func (o *Operation) SecuritySchemes() []*SecurityScheme {
-	r := lo.Map(o.SecuritySchemePromises, func(item *lang.Promise[*SecurityScheme], _ int) *SecurityScheme {
+	promises := o.SecuritySchemePromises
+	if len(promises) == 0 {
+		// If no security schemes are defined directly on the operation, get them from the last operation trait where it is defined.
+		for _, p := range slices.Backward(o.OperationTraitPromises) {
+			res := p.T().SecuritySchemes()
+			if len(res) > 0 {
+				return res
+			}
+		}
+	}
+	r := lo.Map(promises, func(item *lang.Promise[*SecurityScheme], _ int) *SecurityScheme {
 		return item.T()
 	})
 	return r

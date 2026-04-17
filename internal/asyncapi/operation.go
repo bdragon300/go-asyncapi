@@ -88,7 +88,7 @@ func (o Operation) build(ctx *compile.Context, operationKey string, flags map[co
 
 	// Security
 	if len(o.Security) > 0 {
-		ctx.Logger.Trace("Server security schemes", "count", len(o.Security))
+		ctx.Logger.Trace("Operation security schemes", "count", len(o.Security))
 		for ind := range o.Security {
 			ref := ctx.CurrentRefPointer("security", strconv.Itoa(ind))
 			secPrm := lang.NewPromise[*render.SecurityScheme](ref, nil)
@@ -117,6 +117,16 @@ func (o Operation) build(ctx *compile.Context, operationKey string, flags map[co
 		ctx.PutPromise(res.OperationReplyPromise)
 	}
 
+	if len(o.Traits) > 0 {
+		ctx.Logger.Trace("Operation traits", "count", len(o.Traits))
+		for i := range o.Traits {
+			ref := ctx.CurrentRefPointer("traits", strconv.Itoa(i))
+			prm := lang.NewPromise[*render.OperationTrait](ref, nil)
+			res.OperationTraitPromises = append(res.OperationTraitPromises, prm)
+			ctx.PutPromise(prm)
+		}
+	}
+
 	return res, nil
 }
 
@@ -130,6 +140,46 @@ type OperationTrait struct {
 	Bindings     *Bindings              `json:"bindings,omitzero" yaml:"bindings"`
 
 	Ref string `json:"$ref,omitzero" yaml:"$ref"`
+}
+
+func (o OperationTrait) Compile(ctx *compile.Context) error {
+	obj, err := o.build(ctx, ctx.Stack.Top().Key)
+	if err != nil {
+		return err
+	}
+	ctx.PutArtifact(obj)
+	return nil
+}
+
+func (o OperationTrait) build(ctx *compile.Context, operationTraitKey string) (common.Artifact, error) {
+	if o.Ref != "" {
+		return registerRef(ctx, o.Ref, operationTraitKey, nil), nil
+	}
+
+	res := render.OperationTrait{
+		OriginalName: operationTraitKey,
+	}
+
+	// Security
+	if len(o.Security) > 0 {
+		ctx.Logger.Trace("OperationTrait security schemes", "count", len(o.Security))
+		for ind := range o.Security {
+			ref := ctx.CurrentRefPointer("security", strconv.Itoa(ind))
+			secPrm := lang.NewPromise[*render.SecurityScheme](ref, nil)
+			ctx.PutPromise(secPrm)
+			res.SecuritySchemePromises = append(res.SecuritySchemePromises, secPrm)
+		}
+	}
+
+	// Bindings
+	if o.Bindings != nil {
+		ctx.Logger.Trace("OperationTrait bindings")
+		ref := ctx.CurrentRefPointer("bindings")
+		res.BindingsPromise = lang.NewPromise[*render.Bindings](ref, nil)
+		ctx.PutPromise(res.BindingsPromise)
+	}
+
+	return &res, nil
 }
 
 type OperationReply struct {

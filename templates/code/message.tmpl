@@ -25,8 +25,8 @@
     }
 
     type {{ goID . }}Out struct {
-        payload {{.PayloadType | goUsage}}
-        headers {{.HeadersType | goUsage}}
+        Payload {{.PayloadType | goUsage}}
+        Headers {{.HeadersType | goUsage}}
     }
 
     func (m *{{ goID . }}Out) SetPayload(payload {{.PayloadType | goUsage}}) *{{ goID . }}Out {
