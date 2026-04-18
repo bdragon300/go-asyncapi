@@ -162,8 +162,6 @@ func (o Object) getTypeName(ctx *compile.Context) (typeName string, nullable boo
 }
 
 func (o Object) buildGolangType(ctx *compile.Context, flags map[common.SchemaTag]string, typeName string) (golangType common.GolangType, err error) {
-	var aliasedType *lang.GoSimple
-
 	if o.XGoType != nil {
 		replaceType := o.XGoType.Selector == 0 && o.XGoType.V0 != "" || o.XGoType.Selector == 1 && o.XGoType.V1.Type != ""
 		if replaceType {
@@ -185,6 +183,7 @@ func (o Object) buildGolangType(ctx *compile.Context, flags map[common.SchemaTag
 		return
 	}
 
+	var aliasedType *lang.GoSimple
 	switch typeName {
 	case "array":
 		ctx.Logger.Trace("Object", "type", "array")
@@ -369,31 +368,23 @@ func (o Object) buildLangArray(ctx *compile.Context, flags map[common.SchemaTag]
 	}
 
 	switch {
-	case o.Items != nil && o.Items.Selector == 0: // Only one "type:" of items
-		ctx.Logger.Trace("Object items", "typesCount", "single")
+	case o.Items == nil || o.Items.Selector == 1:
+		// Items with unknown type or tuple.
+		// It's hard to express the tuple in Go (i.e. a type that is natively marshaled/unmarshalled to array and capable
+		// of holding items of different types), so we generate []any.
+		// User may specify x-go-type to set a more specific type.
+		ctx.Logger.Trace("Object items", "items", lo.Ternary(o.Items == nil, "none", "tuple"))
+		res.ItemsType = &lang.GoSimple{TypeName: "any", IsInterface: true}
+		hasAdditionalItems := o.AdditionalItems != nil && (o.AdditionalItems.Selector == 0 || o.AdditionalItems.V1)
+		if o.Items != nil && !hasAdditionalItems {
+			res.Size = len(o.Items.V1)
+		}
+	case o.Items.Selector == 0: // All items have the same schema
+		ctx.Logger.Trace("Object items", "items", "one")
 		ref := ctx.CurrentRefPointer("items")
 		prm := lang.NewGolangTypePromise(ref, nil)
 		ctx.PutPromise(prm)
 		res.ItemsType = prm
-	case o.Items == nil || o.Items.Selector == 1: // No items or Several types for each item sequentially
-		ctx.Logger.Trace("Object items", "typesCount", "zero or several")
-		valTyp := lang.GoTypeDefinition{
-			BaseType: lang.BaseType{
-				OriginalName:  ctx.GenerateObjName(objName, "ItemsItemValue"),
-				Description:   "",
-				HasDefinition: false,
-			},
-			RedefinedType: &lang.GoSimple{TypeName: "any", IsInterface: true},
-		}
-		res.ItemsType = &lang.GoMap{
-			BaseType: lang.BaseType{
-				OriginalName:  ctx.GenerateObjName(objName, "ItemsItem"),
-				Description:   "",
-				HasDefinition: false,
-			},
-			KeyType:   &lang.GoSimple{TypeName: "string"},
-			ValueType: &valTyp,
-		}
 	}
 
 	return &res, nil
