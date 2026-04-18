@@ -56,7 +56,7 @@ func (i ImplementationCodeInfo) Name() string {
 
 type RuntimeExpressionInfo struct {
 	// Expression contains the runtime expression info
-	Expression  lang.BaseRuntimeExpression
+	Expression lang.BaseRuntimeExpression
 	// CodeSteps contains the code that recursively extracts the variable from payload or headers.
 	CodeSteps []RuntimeExpressionCodeStep
 }
@@ -92,23 +92,23 @@ func (r RuntimeExpressionInfo) OutputType() common.GolangType {
 //
 // Struct field extraction:
 //
-//   v1 := v0.Foo
+//	v1 := v0.Foo
 //
 // Slice element extraction with bounds check:
 //
-//   if len(v0) <= 1 {
-//       err = fmt.Errorf("index %q is out of range in array of length %d on expression path /bar/1", "1", len(v0))
-//       return
-//   v1 := v0[1]
+//	if len(v0) <= 1 {
+//	    err = fmt.Errorf("index %q is out of range in array of length %d on expression path /bar/1", "1", len(v0))
+//	    return
+//	v1 := v0[1]
 type RuntimeExpressionCodeStep struct {
 	// ExpressionPart is a part of runtime expression that is used to extract
 	ExpressionPart string
 	// Lines contain the lines of extraction code in Go
-	Lines     []string
+	Lines []string
 	// InputVar is a variable name in the extraction code that keeps the value to extract on this step
-	InputVar   string
+	InputVar string
 	// Operator is a Go code snippet to apply to InputVar: "v1[0]" for array, "v1.foo" for struct, etc.
-	Operator  string
+	Operator string
 	// OutputVar is a variable that is defined in the extraction code and stores the value extracted on this step
 	OutputVar string
 	// OutputType is type representation of OutputVar
@@ -259,8 +259,8 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			}
 
 			return &RuntimeExpressionInfo{
-				Expression:  e,
-				CodeSteps:   steps,
+				Expression: e,
+				CodeSteps:  steps,
 			}
 		},
 
@@ -281,9 +281,6 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 
 			return res, nil
 		},
-
-		// Template namespace
-
 
 		// Other
 		"toQuotable": func(s string) string {
@@ -342,6 +339,22 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 			}
 			val := rval.MapIndex(kval)
 			return val.IsValid(), nil
+		},
+		"get": func(key any, m any) (any, error) { // Overwrites sprout's get to accept any mapping type
+			traceCall("get", key, m)
+			rval := reflect.ValueOf(m)
+			if rval.Kind() != reflect.Map {
+				return nil, fmt.Errorf("argument is not a map, got %[1]T(%[1]v)", m)
+			}
+			kval := reflect.ValueOf(key)
+			if !kval.Type().AssignableTo(rval.Type().Key()) {
+				return nil, fmt.Errorf("key type %s is not assignable to map key type %s", kval.Type(), rval.Type().Key())
+			}
+			val := rval.MapIndex(kval)
+			if !val.IsValid() {
+				return nil, nil // Key not found
+			}
+			return val.Interface(), nil
 		},
 	}
 
@@ -665,11 +678,11 @@ func generateRuntimeExpressionExtractionCode(mng *manager.TemplateRenderManager,
 		pathIdx++
 		item := RuntimeExpressionCodeStep{
 			ExpressionPart: fmt.Sprint(memberName),
-			Lines:      body,
-			InputVar:   input,
-			Operator:   operator,
-			OutputVar:  output,
-			OutputType: baseType,
+			Lines:          body,
+			InputVar:       input,
+			Operator:       operator,
+			OutputVar:      output,
+			OutputType:     baseType,
 		}
 		logger.Trace("-> Runtime expression step", "lines", body, "expression path", locationPath[:pathIdx], "outputType", baseType.String())
 

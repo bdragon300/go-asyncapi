@@ -2,7 +2,7 @@
 {{define "code/proto/amqp/operation/bindings/values"}}
 {{- goPkgUtil "amqp"}}OperationBindings{
     {{- with .Bindings.Values.Map.amqp}}
-        {{with .expiration }}Expiration: {{goPkgExt "time"}}Duration({{goLit .}}*{{goPkgExt "time"}}Milliseconds),{{end}}
+        {{with .expiration }}Expiration: {{goPkgExt "time"}}Duration({{goLit .}}*{{goPkgExt "time"}}Millisecond),{{end}}
         {{with .userId }}UserID: {{goLit .}},{{end}}
         {{with .cc }}CC: []string{ {{ range (toList .)}}{{goLit .}},{{end}} },{{end}}
         {{with .priority }}Priority: {{goLit .}},{{end}}

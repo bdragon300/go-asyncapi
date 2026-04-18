@@ -20,14 +20,14 @@
         {{with .partitions }}Partitions: {{goLit .}},{{end}}
         {{with .replicas }}Replicas: {{goLit .}},{{end}}
         {{with .topicConfiguration }}TopicConfiguration: {{goPkgUtil "kafka"}}TopicConfiguration{
-            {{with .cleanupPolicy }}CleanupPolicy: {{goPkgUtil "kafka"}}TopicCleanupPolicy{
+            {{with get "cleanup.policy" . }}CleanupPolicy: {{goPkgUtil "kafka"}}TopicCleanupPolicy{
                 {{with .delete }}Delete: {{goLit .}},{{end}}
                 {{with .compact }}Compact: {{goLit .}},{{end}}
             },{{end}}
-            {{with .retentionTime }}RetentionTime: {{goPkgExt "time"}}Duration({{goLit .}}*{{goPkgExt "time"}}Milliseconds),{{end}}
-            {{with .retentionBytes }}RetentionBytes: {{goLit .}},{{end}}
-            {{with .deleteRetentionTime }}DeleteRetentionTime: {{goPkgExt "time"}}Duration({{goLit .}}*{{goPkgExt "time"}}Milliseconds),{{end}}
-            {{with .maxMessageBytes }}MaxMessageBytes: {{goLit .}},{{end}}
+            {{with get "retention.ms" . }}RetentionTime: {{goPkgExt "time"}}Duration({{goLit .}}*{{goPkgExt "time"}}Millisecond),{{end}}
+            {{with get "retention.bytes" . }}RetentionBytes: {{goLit .}},{{end}}
+            {{with get "delete.retention.ms" . }}DeleteRetentionTime: {{goPkgExt "time"}}Duration({{goLit .}}*{{goPkgExt "time"}}Millisecond),{{end}}
+            {{with get "max.message.bytes" . }}MaxMessageBytes: {{goLit .}},{{end}}
         },{{end}}
     {{- end}}
 }

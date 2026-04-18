@@ -3,8 +3,8 @@
 {{- goPkgUtil "kafka"}}MessageBindings{
     {{- with .Bindings.Values.Map.kafka}}
         {{with .key }}Key: {{toJSON . | goLit}},{{end}}
-        {{with .schemaIDLocation }}SchemaIDLocation: {{goLit .}},{{end}}
-        {{with .schemaIDPayloadEncoding }}SchemaIDPayloadEncoding: {{goLit .}},{{end}}
+        {{with .schemaIdLocation }}SchemaIDLocation: {{goLit .}},{{end}}
+        {{with .schemaIdPayloadEncoding }}SchemaIDPayloadEncoding: {{goLit .}},{{end}}
         {{with .schemaLookupStrategy }}SchemaLookupStrategy: {{goLit .}},{{end}}
     {{- end}}
 }

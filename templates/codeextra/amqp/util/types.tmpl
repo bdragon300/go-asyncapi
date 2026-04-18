@@ -59,7 +59,7 @@ type (
 		DeliveryMode DeliveryMode
 		Mandatory    bool
 		BCC          []string
-		ReplyTo      string
+		ReplyTo      string  // TODO: remove, asyncapi 3.0.0 only
 		Timestamp    bool
 		Ack          bool
 	}
