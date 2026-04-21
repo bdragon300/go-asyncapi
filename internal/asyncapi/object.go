@@ -566,7 +566,7 @@ func (o Object) getEnums(ctx *compile.Context, typeName string) (primitiveEnums,
 		case typeName == "array" && (kind == reflect.Slice || kind == reflect.Array):
 			fallthrough
 		case typeName == "":
-			complexEnums.Set(fmt.Sprintf("Enum%d", i+1), item)
+			complexEnums.Set(getUniqueSuffix(fmt.Sprintf("Enum%d", i+1)), item)
 		default:
 			ctx.Logger.Warn("Type mismatch between enum value and schema, skipping it", "enum", fmt.Sprintf("%[1]T(%[1]v)", item), "schema_type", typeName)
 		}
