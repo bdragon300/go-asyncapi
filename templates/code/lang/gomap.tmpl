@@ -8,10 +8,10 @@
 {{- end}}
 {{define "code/lang/gomap/usage"}}
     {{- if .HasDefinition }}
-        {{if .Import }}
-            {{ goPkgExt .Import }}{{goID .}}
+        {{- if .Import }}
+            {{- goPkgExt .Import }}{{goID .}}
         {{- else }}
-            {{ goPkg . }}{{ . | goID }}
+            {{- goPkg . }}{{ . | goID }}
         {{- end }}
     {{- else -}}
         map[{{ .KeyType | goUsage }}]{{ .ValueType | goUsage }}

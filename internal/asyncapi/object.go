@@ -199,7 +199,7 @@ func (o Object) buildGolangType(ctx *compile.Context, flags map[common.SchemaTag
 	case "object":
 		ctx.Logger.Trace("Object", "type", "struct")
 		ctx.Logger.NextCallLevel()
-		finalType, err = o.buildLangStruct(ctx, flags)
+		finalType, err = o.buildLangObject(ctx, flags)
 		ctx.Logger.PrevCallLevel()
 		if err != nil {
 			return nil, err
@@ -247,7 +247,10 @@ func (o Object) buildGolangType(ctx *compile.Context, flags map[common.SchemaTag
 		} else {
 			ctx.Logger.Trace("Object has enums, wrapping it into GoEnum")
 			typ := &lang.GoEnum{WrappedType: finalType}
-			if typ.PrimitiveEnums, typ.ComplexEnums, err = o.getEnums(ctx, typeName); err != nil {
+			ctx.Logger.NextCallLevel()
+			typ.PrimitiveEnums, typ.ComplexEnums, err = o.getEnums(ctx, typeName)
+			ctx.Logger.PrevCallLevel()
+			if err != nil {
 				return nil, types.CompileError{Err: err, Path: ctx.CurrentRefPointer()}
 			}
 			finalType = typ
@@ -257,9 +260,23 @@ func (o Object) buildGolangType(ctx *compile.Context, flags map[common.SchemaTag
 	return finalType, nil
 }
 
-func (o Object) buildLangStruct(ctx *compile.Context, flags map[common.SchemaTag]string) (*lang.GoStruct, error) {
+func (o Object) buildLangObject(ctx *compile.Context, flags map[common.SchemaTag]string) (common.GolangType, error) {
 	_, isSelectable := flags[common.SchemaTagSelectable]
 	objName, _ := lo.Coalesce(o.XGoName, o.Title)
+	if o.Properties.Len() == 0 {
+		ctx.Logger.Debug("Object with empty properties, generating a map")
+		return &lang.GoMap{
+			BaseType: lang.BaseType{
+				OriginalName:  ctx.GenerateObjName(objName, ""),
+				Description:   o.Description,
+				HasDefinition: isSelectable,
+				ArtifactKind:  lo.Ternary(isSelectable, common.ArtifactKindSchema, common.ArtifactKindOther),
+			},
+			KeyType:   &lang.GoSimple{TypeName: "string"},
+			ValueType: &lang.GoSimple{TypeName: "any", IsInterface: true},
+		}, nil
+	}
+
 	res := lang.GoStruct{
 		BaseType: lang.BaseType{
 			OriginalName:  ctx.GenerateObjName(objName, ""),
