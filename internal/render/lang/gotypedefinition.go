@@ -11,14 +11,14 @@ import (
 //	type Foo int
 type GoTypeDefinition struct {
 	BaseType
-	RedefinedType common.GolangType
+	WrappedType common.GolangType
 }
 
 func (p *GoTypeDefinition) String() string {
 	if p.Import != "" {
-		return fmt.Sprintf("GoTypeDefinition(%s.%s) -> %s", p.Import, p.OriginalName, p.RedefinedType)
+		return fmt.Sprintf("GoTypeDefinition(%s.%s) -> %s", p.Import, p.OriginalName, p.WrappedType)
 	}
-	return fmt.Sprintf("GoTypeDefinition(%s) -> %s", p.OriginalName, p.RedefinedType)
+	return fmt.Sprintf("GoTypeDefinition(%s) -> %s", p.OriginalName, p.WrappedType)
 }
 
 func (p *GoTypeDefinition) CanBeAddressed() bool {
@@ -30,21 +30,21 @@ func (p *GoTypeDefinition) GoTemplate() string {
 }
 
 func (p *GoTypeDefinition) UnwrapGolangType() common.GolangType {
-	if v, ok := p.RedefinedType.(GolangWrappedType); ok {
+	if v, ok := p.WrappedType.(GolangWrappedType); ok {
 		return v.UnwrapGolangType()
 	}
-	return p.RedefinedType
+	return p.WrappedType
 }
 
 func (p *GoTypeDefinition) IsStruct() bool {
-	if v, ok := any(p.RedefinedType).(golangStructType); ok {
+	if v, ok := any(p.WrappedType).(golangStructType); ok {
 		return v.IsStruct()
 	}
 	return false
 }
 
 func (p *GoTypeDefinition) StructRenderInfo() StructFieldRenderInfo {
-	if v, ok := any(p.RedefinedType).(structFieldRenderer); ok {
+	if v, ok := any(p.WrappedType).(structFieldRenderer); ok {
 		return v.StructRenderInfo()
 	}
 	return StructFieldRenderInfo{}

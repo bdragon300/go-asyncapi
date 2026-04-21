@@ -46,7 +46,7 @@ func ToGolangName(rawString string, exported bool) string {
 		return ""
 	}
 
-	// Remove everything except alphanumerics and '_'
+	// Replace everything except alphanumerics to '_'
 	rawString = string(golangTypeReplaceRe.ReplaceAll([]byte(rawString), []byte("_")))
 
 	// Cut extra "_" that may appear at string endings
@@ -68,6 +68,20 @@ func ToGolangName(rawString string, exported bool) string {
 	if token.IsKeyword(str) {
 		return str + "_"
 	}
+	return str
+}
+
+// ToGolangNameSuffix converts any string to a valid Golang name suffix. The function is similar to ToGolangName, but it
+// does less name transformations, because the rules for Go identifier suffix are less strict.
+func ToGolangNameSuffix(rawString string) string {
+	if rawString == "" {
+		return ""
+	}
+	// Replace everything except alphanumerics to '_'
+	str := string(golangTypeReplaceRe.ReplaceAll([]byte(rawString), []byte("_")))
+
+	str = lo.PascalCase(str)
+	str = transformInitialisms(str)
 	return str
 }
 

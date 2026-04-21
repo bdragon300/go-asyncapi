@@ -4,7 +4,7 @@
     {{- if .Description }}
         {{ print (goID .) "--" .Description | goComment }}
     {{- end }}
-    type {{ . | goID }} {{ .RedefinedType | goDef }}
+    type {{ . | goID }} {{ .WrappedType | goDef }}
 {{- end}}
 {{define "code/lang/gotypedefinition/usage"}}
     {{- if .HasDefinition }}
@@ -14,6 +14,6 @@
             {{- goPkg . }}{{ . | goID }}
         {{- end }}
     {{- else }}
-        {{- .RedefinedType | goUsage }}
+        {{- .WrappedType | goUsage }}
     {{- end }}
 {{- end}}

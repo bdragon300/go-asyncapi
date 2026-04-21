@@ -1,0 +1,36 @@
+{{- /* dot == lang.GoEnum */}}
+
+{{define "code/lang/goenum/definition"}}
+{{ goDef .WrappedType }}
+
+{{- if .ComplexEnums.Len}}
+    var (
+    {{- range $nsuffix, $val := .ComplexEnums.Entries}}
+        {{ goID $ }}{{$nsuffix}} {{ goUsage $.WrappedType }}
+    {{- end }}
+    {{- range $nsuffix, $val := .PrimitiveEnums.Entries}}
+        {{ goID $ }}{{$nsuffix}} {{ goUsage $.WrappedType }} = {{ goLit $val }}
+    {{- end }}
+    )
+
+    func init() {
+        var c string
+    {{- range $nsuffix, $val := .ComplexEnums.Entries}}
+        c = {{ toRawJSON $val | goLit }}
+        if err := {{goPkgExt "encoding/json"}}Unmarshal([]byte(c), &{{ goID $ }}{{$nsuffix}}); err != nil {
+            panic({{goPkgExt "fmt"}}Sprintf("failed to unmarshal enum init value: %s", err.Error()))
+        }
+    {{- end }}
+    }
+{{- else if .PrimitiveEnums.Len}}
+    const (
+    {{- range $nsuffix, $val := .PrimitiveEnums.Entries}}
+        {{ goID $ }}{{$nsuffix}} {{ goUsage $.WrappedType }} = {{ goLit $val }}
+    {{- end }}
+    )
+{{- end}}
+{{- end}}
+
+{{define "code/lang/goenum/usage"}}
+    {{- goUsage .WrappedType }}
+{{- end}}

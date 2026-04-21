@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
 
@@ -40,7 +42,7 @@ type Object struct {
 	Description          string                                     `json:"description,omitzero" yaml:"description"`
 	Discriminator        string                                     `json:"discriminator,omitzero" yaml:"discriminator"`
 	Else                 *Object                                    `json:"else,omitzero" yaml:"else"`
-	Enum                 []types.Union2[json.RawMessage, yaml.Node] `json:"enum,omitzero" yaml:"enum"`
+	Enum                 []any                                      `json:"enum,omitzero" yaml:"enum"`
 	Examples             []types.Union2[json.RawMessage, yaml.Node] `json:"examples,omitzero" yaml:"examples"`
 	ExclusiveMaximum     *types.Union2[bool, json.Number]           `json:"exclusiveMaximum,omitzero" yaml:"exclusiveMaximum"`
 	ExclusiveMinimum     *types.Union2[bool, json.Number]           `json:"exclusiveMinimum,omitzero" yaml:"exclusiveMinimum"`
@@ -120,8 +122,7 @@ func (o Object) build(ctx *compile.Context, flags map[common.SchemaTag]string, o
 		return nil, err
 	}
 
-	// TODO: "type": { "enum": [ "residential", "business" ] }
-	// One type: { "type": "object" }
+	// One type: { "type": "something" }
 	golangType, err := o.buildGolangType(ctx, flags, typeName)
 	if err != nil {
 		return nil, err
@@ -129,11 +130,26 @@ func (o Object) build(ctx *compile.Context, flags map[common.SchemaTag]string, o
 
 	nullable = nullable || lo.FromPtr(o.XNullable)
 	if nullable {
-		ctx.Logger.Trace("Object is nullable, make it pointer")
+		ctx.Logger.Trace("Object is nullable, making it pointer")
 		golangType = &lang.GoPointer{Type: golangType}
 	}
 
 	return golangType, nil
+}
+
+// guessObjectType is backwards compatible, guessing the user intention when they didn't specify a type.
+func (o Object) guessObjectType(ctx *compile.Context) *types.Union2[string, []string] {
+	switch {
+	case o.Ref == "" && o.Properties.Len() > 0:
+		ctx.Logger.Trace("Determined `type: object` because of `properties` presence")
+		return types.ToUnion2[string, []string]("object")
+	case o.Items != nil: // TODO: fix type when AllOf, AnyOf, OneOf
+		ctx.Logger.Trace("Determined `type: array` because of `items` presence")
+		return types.ToUnion2[string, []string]("array")
+	default:
+		ctx.Logger.Trace("Determined `type: object` as a default object type")
+		return types.ToUnion2[string, []string]("object")
+	}
 }
 
 // getTypeName returns the jsonschema type name of the object. It also returns whether the object is nullable.
@@ -161,7 +177,7 @@ func (o Object) getTypeName(ctx *compile.Context) (typeName string, nullable boo
 	return
 }
 
-func (o Object) buildGolangType(ctx *compile.Context, flags map[common.SchemaTag]string, typeName string) (golangType common.GolangType, err error) {
+func (o Object) buildGolangType(ctx *compile.Context, flags map[common.SchemaTag]string, typeName string) (finalType common.GolangType, err error) {
 	if o.XGoType != nil {
 		replaceType := o.XGoType.Selector == 0 && o.XGoType.V0 != "" || o.XGoType.Selector == 1 && o.XGoType.V1.Type != ""
 		if replaceType {
@@ -172,75 +188,73 @@ func (o Object) buildGolangType(ctx *compile.Context, flags map[common.SchemaTag
 		}
 	}
 
-	if typeName == "object" {
+	var wrappedType common.GolangType
+	switch typeName {
+	case "null", "":
+		ctx.Logger.Trace("Object", "type", "any")
+		finalType = &lang.GoSimple{TypeName: "any", IsInterface: true, OriginalType: typeName, OriginalFormat: o.Format, StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx)}
+		if len(o.Enum) > 0 {
+			ctx.Logger.Info("Ignoring object's enums because of null/empty type")
+		}
+	case "object":
 		ctx.Logger.Trace("Object", "type", "struct")
 		ctx.Logger.NextCallLevel()
-		golangType, err = o.buildLangStruct(ctx, flags)
+		finalType, err = o.buildLangStruct(ctx, flags)
 		ctx.Logger.PrevCallLevel()
 		if err != nil {
 			return nil, err
 		}
-		return
-	}
-
-	var aliasedType *lang.GoSimple
-	switch typeName {
 	case "array":
 		ctx.Logger.Trace("Object", "type", "array")
 		ctx.Logger.NextCallLevel()
-		golangType, err = o.buildLangArray(ctx, flags)
+		finalType, err = o.buildLangArray(ctx, flags)
 		ctx.Logger.PrevCallLevel()
 		if err != nil {
 			return nil, err
 		}
-	case "null", "":
-		ctx.Logger.Trace("Object", "type", "any")
-		golangType = &lang.GoSimple{TypeName: "any", IsInterface: true, OriginalType: typeName, OriginalFormat: o.Format, StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx)}
 	case "boolean":
 		ctx.Logger.Trace("Object", "type", "bool")
-		aliasedType = &lang.GoSimple{TypeName: "bool", OriginalType: typeName, OriginalFormat: o.Format, StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx)}
+		wrappedType = &lang.GoSimple{TypeName: "bool", OriginalType: typeName, OriginalFormat: o.Format, StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx)}
 	case "integer":
 		ctx.Logger.Trace("Object", "type", "int")
-		aliasedType = &lang.GoSimple{TypeName: "int", OriginalType: typeName, OriginalFormat: o.Format, StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx)}
+		wrappedType = &lang.GoSimple{TypeName: "int", OriginalType: typeName, OriginalFormat: o.Format, StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx)}
 	case "number":
 		ctx.Logger.Trace("Object", "type", "float64")
-		aliasedType = &lang.GoSimple{TypeName: "float64", OriginalType: typeName, OriginalFormat: o.Format, StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx)}
+		wrappedType = &lang.GoSimple{TypeName: "float64", OriginalType: typeName, OriginalFormat: o.Format, StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx)}
 	case "string":
 		ctx.Logger.Trace("Object", "type", "string")
-		aliasedType = &lang.GoSimple{TypeName: "string", OriginalType: typeName, OriginalFormat: o.Format, StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx)}
+		wrappedType = &lang.GoSimple{TypeName: "string", OriginalType: typeName, OriginalFormat: o.Format, StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx)}
 	default:
 		return nil, types.CompileError{Err: fmt.Errorf("unknown jsonschema type %q", typeName), Path: ctx.CurrentRefPointer()}
 	}
 
-	if aliasedType != nil {
+	if wrappedType != nil {
 		_, isSelectable := flags[common.SchemaTagSelectable]
-		golangType = &lang.GoTypeDefinition{
+		finalType = &lang.GoTypeDefinition{
 			BaseType: lang.BaseType{
 				OriginalName:  ctx.GenerateObjName(o.Title, ""),
 				Description:   o.Description,
 				HasDefinition: isSelectable,
 				ArtifactKind:  lo.Ternary(isSelectable, common.ArtifactKindSchema, common.ArtifactKindOther),
 			},
-			RedefinedType: aliasedType,
+			WrappedType: wrappedType,
 		}
 	}
 
-	return golangType, nil
-}
-
-// guessObjectType is backwards compatible, guessing the user intention when they didn't specify a type.
-func (o Object) guessObjectType(ctx *compile.Context) *types.Union2[string, []string] {
-	switch {
-	case o.Ref == "" && o.Properties.Len() > 0:
-		ctx.Logger.Trace("Determined `type: object` because of `properties` presence")
-		return types.ToUnion2[string, []string]("object")
-	case o.Items != nil: // TODO: fix type when AllOf, AnyOf, OneOf
-		ctx.Logger.Trace("Determined `type: array` because of `items` presence")
-		return types.ToUnion2[string, []string]("array")
-	default:
-		ctx.Logger.Trace("Determined `type: object` as a default object type")
-		return types.ToUnion2[string, []string]("object")
+	if len(o.Enum) > 0 {
+		if !finalType.Selectable() {
+			ctx.Logger.Info("Ignoring enum for inlined jsonschema object. Hint: move it into a separate definition under components.schemas section and reference it with $ref to make enums work")
+		} else {
+			ctx.Logger.Trace("Object has enums, wrapping it into GoEnum")
+			typ := &lang.GoEnum{WrappedType: finalType}
+			if typ.PrimitiveEnums, typ.ComplexEnums, err = o.getEnums(ctx, typeName); err != nil {
+				return nil, types.CompileError{Err: err, Path: ctx.CurrentRefPointer()}
+			}
+			finalType = typ
+		}
 	}
+
+	return finalType, nil
 }
 
 func (o Object) buildLangStruct(ctx *compile.Context, flags map[common.SchemaTag]string) (*lang.GoStruct, error) {
@@ -265,10 +279,25 @@ func (o Object) buildLangStruct(ctx *compile.Context, flags map[common.SchemaTag
 			return ok
 		}, nil)
 		ctx.PutListPromise(messagesPrm)
+		complexEnumsPrm := lang.NewListCbPromise[*lang.GoEnum](func(item common.Artifact) bool {
+			v, ok := item.(*lang.GoEnum)
+			return ok && v.ComplexEnums.Len() > 0
+		}, nil)
+		ctx.PutListPromise(complexEnumsPrm)
 		contentTypesFunc = func() []string {
-			tagNames := lo.Uniq(lo.Map(messagesPrm.T(), func(item *render.Message, _ int) string {
+			tagNames := lo.Map(messagesPrm.T(), func(item *render.Message, _ int) string {
 				return guessTagByContentType(item.EffectiveContentType())
-			}))
+			})
+			if len(complexEnumsPrm.T()) > 0 {
+				// Forcibly add "json" field tag to *all* generated models if at least one enum in document has object value.
+				// We need json in the model and its inner models because such enums are initialized in the generated code
+				// by unmarshalling them from JSON automatically.
+				// Another way could be is to track affected models using CompileContext stack, but it would be slightly
+				// complicated implementation, and also object values in enums is pretty rare case.
+				// But this can be implemented if any issues will arise because of current approach.
+				tagNames = append(tagNames, "json")
+			}
+			tagNames = lo.Uniq(tagNames)
 			slices.Sort(tagNames)
 			return tagNames
 		}
@@ -330,7 +359,7 @@ func (o Object) buildLangStruct(ctx *compile.Context, flags map[common.SchemaTag
 						Description:   "",
 						HasDefinition: false,
 					},
-					RedefinedType: &lang.GoSimple{TypeName: "any", IsInterface: true},
+					WrappedType: &lang.GoSimple{TypeName: "any", IsInterface: true},
 				}
 				f := lang.GoStructField{
 					OriginalName: "AdditionalProperties",
@@ -474,4 +503,56 @@ func (o Object) getStructFieldRenderInfo(ctx *compile.Context) lang.StructFieldR
 	}
 
 	return res
+}
+
+func (o Object) getEnums(ctx *compile.Context, typeName string) (primitiveEnums, complexEnums types.OrderedMap[string, any], err error) {
+	suffixes := make(map[string]int)
+
+	getUniqueSuffix := func(suffix string) string {
+		suffix = utils.ToGolangNameSuffix(suffix)
+		if count, ok := suffixes[suffix]; ok {
+			suffixes[suffix] = count + 1
+			return fmt.Sprintf("%s_%d", suffix, count+1)
+		}
+		suffixes[suffix] = 0
+		return suffix
+	}
+
+	for i, item := range o.Enum {
+		rval := reflect.ValueOf(item)
+		kind := rval.Kind()
+		isInt := lo.Contains([]reflect.Kind{
+			reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		}, kind)
+		ctx.Logger.Trace("Enum", "index", i, "value", item, "type", fmt.Sprintf("%T", item), "reflect_kind", kind)
+
+		switch {
+		case item == nil:
+			ctx.Logger.Debug("Skipping null enum", "index", i)
+			continue
+		case typeName == "boolean":
+			ctx.Logger.Debug("Skipping enum for boolean schema", "index", i, "value", item)
+			continue
+		case (typeName == "integer" || typeName == "number") && isInt:
+			primitiveEnums.Set(getUniqueSuffix(fmt.Sprintf("%d", i)), item)
+		case typeName == "number" && (kind == reflect.Float32 || kind == reflect.Float64):
+			primitiveEnums.Set(getUniqueSuffix(strings.TrimRight(fmt.Sprintf("%.f", item), "0")), item)
+		case typeName == "string" && kind == reflect.String:
+			primitiveEnums.Set(getUniqueSuffix(fmt.Sprintf("%s", item)), item)
+		case typeName == "integer" && (kind == reflect.Float32 || kind == reflect.Float64):
+			// json.Unmarshal unmarshals integers into float64, so this is the most common case for integers
+			primitiveEnums.Set(getUniqueSuffix(fmt.Sprintf("%d", item)), item)
+		case typeName == "object" && kind == reflect.Map:
+			fallthrough
+		case typeName == "array" && (kind == reflect.Slice || kind == reflect.Array):
+			fallthrough
+		case typeName == "":
+			complexEnums.Set(fmt.Sprintf("Enum%d", i+1), item)
+		default:
+			ctx.Logger.Warn("Type mismatch between enum value and schema, skipping it", "enum", fmt.Sprintf("%[1]T(%[1]v)", item), "schema_type", typeName)
+		}
+	}
+
+	return
 }
