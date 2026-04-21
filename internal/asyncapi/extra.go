@@ -10,8 +10,8 @@ type xGoTypeImportPackage struct {
 }
 
 type xGoType struct {
-	Type     string               `json:"type,omitzero" yaml:"type"`
-	Import   xGoTypeImportPackage `json:"import,omitzero" yaml:"import"`
-	Embedded bool                 `json:"embedded,omitzero" yaml:"embedded"`
-	Hint     xGoTypeHint          `json:"hint,omitzero" yaml:"hint"`
+	Type     string      `json:"type,omitzero" yaml:"type"`
+	Import   string      `json:"import,omitzero" yaml:"import"`
+	Embedded bool        `json:"embedded,omitzero" yaml:"embedded"`
+	Hint     xGoTypeHint `json:"hint,omitzero" yaml:"hint"`
 }
