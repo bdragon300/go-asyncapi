@@ -3,8 +3,8 @@
 {{define "code/lang/gosimple/definition"}}
     {{- with tryTmpl (print "code/lang/typeFormat/" .OriginalType "/" .OriginalFormat "/definition") .}}
         {{- .}}
-    {{- else}}
-        {{-  .Name }}
+    {{- else }}
+        type {{ goID . }} {{if .Import}}{{goPkgExt .Import }}{{end}}{{.TypeName}}
     {{- end}}
 {{- end}}
 {{define "code/lang/gosimple/usage"}}

@@ -32,7 +32,7 @@ type BaseType struct {
 	// inline type. Such as inlined `field struct{...}` and separate `field StructName`, or `field []type`
 	// and `field ArrayName`
 	HasDefinition bool
-	// Import is an optional external (or runtime) module to import a type from. E.g. "github.com/your/module"
+	// Import is an optional external (or runtime) module to import a type from. E.g. "github.com/your/module" or "time".
 	Import string
 	// ArtifactKind describes what kind of artifact this type represents.
 	ArtifactKind common.ArtifactKind

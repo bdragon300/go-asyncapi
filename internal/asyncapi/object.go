@@ -181,14 +181,13 @@ func (o Object) buildGolangType(ctx *compile.Context, flags map[common.SchemaTag
 	if o.XGoType != nil {
 		replaceType := o.XGoType.Selector == 0 && o.XGoType.V0 != "" || o.XGoType.Selector == 1 && o.XGoType.V1.Type != ""
 		if replaceType {
-			f := o.buildXGoType(ctx)
-
+			f := o.buildXGoType(ctx, flags)
 			ctx.Logger.Trace("Object with replaced type using x-go-type", "type", f.String())
 			return f, nil
 		}
 	}
 
-	var wrappedType common.GolangType
+	var primitiveType *lang.GoSimple
 	switch typeName {
 	case "null", "":
 		ctx.Logger.Trace("Object", "type", "any")
@@ -214,47 +213,49 @@ func (o Object) buildGolangType(ctx *compile.Context, flags map[common.SchemaTag
 		}
 	case "boolean":
 		ctx.Logger.Trace("Object", "type", "bool")
-		wrappedType = &lang.GoSimple{TypeName: "bool", OriginalType: typeName, OriginalFormat: o.Format, StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx)}
+		primitiveType = &lang.GoSimple{TypeName: "bool"}
 	case "integer":
 		ctx.Logger.Trace("Object", "type", "int")
-		wrappedType = &lang.GoSimple{TypeName: "int", OriginalType: typeName, OriginalFormat: o.Format, StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx)}
+		primitiveType = &lang.GoSimple{TypeName: "int"}
 	case "number":
 		ctx.Logger.Trace("Object", "type", "float64")
-		wrappedType = &lang.GoSimple{TypeName: "float64", OriginalType: typeName, OriginalFormat: o.Format, StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx)}
+		primitiveType = &lang.GoSimple{TypeName: "float64"}
 	case "string":
 		ctx.Logger.Trace("Object", "type", "string")
-		wrappedType = &lang.GoSimple{TypeName: "string", OriginalType: typeName, OriginalFormat: o.Format, StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx)}
+		primitiveType = &lang.GoSimple{TypeName: "string"}
 	default:
 		return nil, types.CompileError{Err: fmt.Errorf("unknown jsonschema type %q", typeName), Path: ctx.CurrentRefPointer()}
 	}
 
-	if wrappedType != nil {
+	if primitiveType != nil {
 		_, isSelectable := flags[common.SchemaTagSelectable]
-		finalType = &lang.GoTypeDefinition{
-			BaseType: lang.BaseType{
-				OriginalName:  ctx.GenerateObjName(o.Title, ""),
-				Description:   o.Description,
-				HasDefinition: isSelectable,
-				ArtifactKind:  lo.Ternary(isSelectable, common.ArtifactKindSchema, common.ArtifactKindOther),
-			},
-			WrappedType: wrappedType,
+		primitiveType.BaseType = lang.BaseType{
+			OriginalName:  ctx.GenerateObjName(o.Title, ""),
+			Description:   o.Description,
+			HasDefinition: isSelectable,
+			ArtifactKind:  lo.Ternary(isSelectable, common.ArtifactKindSchema, common.ArtifactKindOther),
 		}
+		primitiveType.StructFieldRenderInfo = o.getStructFieldRenderInfo(ctx)
+		primitiveType.OriginalType = typeName
+		primitiveType.OriginalFormat = o.Format
+		finalType = primitiveType
 	}
 
 	if len(o.Enum) > 0 {
 		if !finalType.Selectable() {
 			ctx.Logger.Info("Ignoring enum for inlined jsonschema object. Hint: move it into a separate definition under components.schemas section and reference it with $ref to make enums work")
-		} else {
-			ctx.Logger.Trace("Object has enums, wrapping it into GoEnum")
-			typ := &lang.GoEnum{WrappedType: finalType}
-			ctx.Logger.NextCallLevel()
-			typ.PrimitiveEnums, typ.ComplexEnums, err = o.getEnums(ctx, typeName)
-			ctx.Logger.PrevCallLevel()
-			if err != nil {
-				return nil, types.CompileError{Err: err, Path: ctx.CurrentRefPointer()}
-			}
-			finalType = typ
+			return finalType, nil
 		}
+
+		ctx.Logger.Trace("Object has enums, wrapping it into GoEnum")
+		typ := &lang.GoEnum{WrappedType: finalType}
+		ctx.Logger.NextCallLevel()
+		typ.PrimitiveEnums, typ.ComplexEnums, err = o.getEnums(ctx, typeName)
+		ctx.Logger.PrevCallLevel()
+		if err != nil {
+			return nil, types.CompileError{Err: err, Path: ctx.CurrentRefPointer()}
+		}
+		finalType = typ
 	}
 
 	return finalType, nil
@@ -370,14 +371,6 @@ func (o Object) buildLangObject(ctx *compile.Context, flags map[common.SchemaTag
 		case 1:
 			ctx.Logger.Trace("Object additional properties", "type", "boolean")
 			if o.AdditionalProperties.V1 { // "additionalProperties: true" -- allow any additional properties
-				valTyp := lang.GoTypeDefinition{
-					BaseType: lang.BaseType{
-						OriginalName:  ctx.GenerateObjName(propName, "AdditionalPropertiesValue"),
-						Description:   "",
-						HasDefinition: false,
-					},
-					WrappedType: &lang.GoSimple{TypeName: "any", IsInterface: true},
-				}
 				f := lang.GoStructField{
 					OriginalName: "AdditionalProperties",
 					Type: &lang.GoMap{
@@ -387,7 +380,7 @@ func (o Object) buildLangObject(ctx *compile.Context, flags map[common.SchemaTag
 							HasDefinition: false,
 						},
 						KeyType:   &lang.GoSimple{TypeName: "string"},
-						ValueType: &valTyp,
+						ValueType: &lang.GoSimple{TypeName: "any", IsInterface: true},
 					},
 					ContentTypesFunc: contentTypesFunc,
 				}
@@ -481,8 +474,17 @@ func (o Object) buildUnionStruct(ctx *compile.Context, flags map[common.SchemaTa
 }
 
 // buildXGoType builds a GolangType from x-go-type field value
-func (o Object) buildXGoType(ctx *compile.Context) (golangType common.GolangType) {
-	t := &lang.GoSimple{StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx)}
+func (o Object) buildXGoType(ctx *compile.Context, flags map[common.SchemaTag]string) common.GolangType {
+	_, isSelectable := flags[common.SchemaTagSelectable]
+	t := &lang.GoSimple{
+		BaseType: lang.BaseType{
+			OriginalName:  ctx.GenerateObjName(lo.CoalesceOrEmpty(o.XGoName, o.Title), ""),
+			Description:   o.Description,
+			HasDefinition: isSelectable,
+			ArtifactKind:  lo.Ternary(isSelectable, common.ArtifactKindSchema, common.ArtifactKindOther),
+		},
+		StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx),
+	}
 
 	switch o.XGoType.Selector {
 	case 0:
@@ -497,8 +499,7 @@ func (o Object) buildXGoType(ctx *compile.Context) (golangType common.GolangType
 		}
 	}
 
-	golangType = t
-	return
+	return t
 }
 
 func (o Object) getStructFieldRenderInfo(ctx *compile.Context) lang.StructFieldRenderInfo {

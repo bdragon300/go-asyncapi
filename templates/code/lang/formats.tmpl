@@ -1,132 +1,132 @@
 {{/* dot == lang.GoSimple */}}
 {{define "code/lang/typeFormat/string/date-time/definition"}}
-    {{- goPkgExt "time" }}Time
+    type {{ goID . }} {{goPkgExt "time"}}Time
 {{- end}}
 {{define "code/lang/typeFormat/string/date-time/usage"}}
     {{- goPkgExt "time" }}Time
 {{- end}}
 
 {{define "code/lang/typeFormat/string/datetime/definition"}}
-    {{- goPkgExt "time" }}Time
+    type {{ goID . }} {{ goPkgExt "time" }}Time
 {{- end}}
 {{define "code/lang/typeFormat/string/datetime/usage"}}
     {{- goPkgExt "time" }}Time
 {{- end}}
 
 {{define "code/lang/typeFormat/string/ipv4/definition"}}
-    {{- goPkgExt "net" }}IP
+    type {{ goID . }} {{ goPkgExt "net" }}IP
 {{- end}}
 {{define "code/lang/typeFormat/string/ipv4/usage"}}
     {{- goPkgExt "net" }}IP
 {{- end}}
 
 {{define "code/lang/typeFormat/string/ipv6/definition"}}
-    {{- goPkgExt "net" }}IP
+    type {{ goID . }} {{ goPkgExt "net" }}IP
 {{- end}}
 {{define "code/lang/typeFormat/string/ipv6/usage"}}
     {{- goPkgExt "net" }}IP
 {{- end}}
 
 {{define "code/lang/typeFormat/string/uuid/definition"}}
-    {{- goPkgExt "github.com/google/uuid" }}UUID
+    type {{ goID . }} {{ goPkgExt "github.com/google/uuid" }}UUID
 {{- end}}
 {{define "code/lang/typeFormat/string/uuid/usage"}}
     {{- goPkgExt "github.com/google/uuid" }}UUID
 {{- end}}
 
 {{define "code/lang/typeFormat/string/binary/definition" -}}
-    []byte
+    type {{ goID . }} []byte
 {{- end}}
 {{define "code/lang/typeFormat/string/binary/usage" -}}
     []byte
 {{- end}}
 
 {{define "code/lang/typeFormat/string/bytes/definition" -}}
-    []byte
+    type {{ goID . }} []byte
 {{- end}}
 {{define "code/lang/typeFormat/string/bytes/usage" -}}
     []byte
 {{- end}}
 
 {{define "code/lang/typeFormat/integer/int8/definition" -}}
-    int8
+    type {{ goID . }} int8
 {{- end}}
 {{define "code/lang/typeFormat/integer/int8/usage" -}}
     int8
 {{- end}}
 
 {{define "code/lang/typeFormat/integer/int16/definition" -}}
-    int16
+    type {{ goID . }} int16
 {{- end}}
 {{define "code/lang/typeFormat/integer/int16/usage" -}}
     int16
 {{- end}}
 
 {{define "code/lang/typeFormat/integer/int32/definition" -}}
-    int32
+    type {{ goID . }} int32
 {{- end}}
 {{define "code/lang/typeFormat/integer/int32/usage" -}}
     int32
 {{- end}}
 
 {{define "code/lang/typeFormat/integer/int64/definition" -}}
-    int64
+    type {{ goID . }} int64
 {{- end}}
 {{define "code/lang/typeFormat/integer/int64/usage" -}}
     int64
 {{- end}}
 
 {{define "code/lang/typeFormat/integer/uint8/definition" -}}
-    uint8
+    type {{ goID . }} uint8
 {{- end}}
 {{define "code/lang/typeFormat/integer/uint8/usage" -}}
     uint8
 {{- end}}
 
 {{define "code/lang/typeFormat/integer/uint16/definition" -}}
-    uint16
+    type {{ goID . }} uint16
 {{- end}}
 {{define "code/lang/typeFormat/integer/uint16/usage" -}}
     uint16
 {{- end}}
 
 {{define "code/lang/typeFormat/integer/uint32/definition" -}}
-    uint32
+    type {{ goID . }} uint32
 {{- end}}
 {{define "code/lang/typeFormat/integer/uint32/usage" -}}
     uint32
 {{- end}}
 
 {{define "code/lang/typeFormat/integer/uint64/definition" -}}
-    uint64
+    type {{ goID . }} uint64
 {{- end}}
 {{define "code/lang/typeFormat/integer/uint64/usage" -}}
     uint64
 {{- end}}
 
 {{define "code/lang/typeFormat/integer/uint/definition" -}}
-    uint
+    type {{ goID . }} uint
 {{- end}}
 {{define "code/lang/typeFormat/integer/uint/usage" -}}
     uint
 {{- end}}
 
 {{define "code/lang/typeFormat/number/float/definition" -}}
-    float32
+    type {{ goID . }} float32
 {{- end}}
 {{define "code/lang/typeFormat/number/float/usage" -}}
     float32
 {{- end}}
 
 {{define "code/lang/typeFormat/number/double/definition" -}}
-    float64
+    type {{ goID . }} float64
 {{- end}}
 {{define "code/lang/typeFormat/number/double/usage" -}}
     float64
 {{- end}}
 
 {{define "code/lang/typeFormat/number/decimal/definition"}}
-    {{- goPkgExt "github.com/shopspring/decimal" }}Decimal
+    type {{ goID . }} {{ goPkgExt "github.com/shopspring/decimal" }}Decimal
 {{- end}}
 {{define "code/lang/typeFormat/number/decimal/usage"}}
     {{- goPkgExt "github.com/shopspring/decimal" }}Decimal
