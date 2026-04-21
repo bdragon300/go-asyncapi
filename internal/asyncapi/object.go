@@ -560,7 +560,7 @@ func (o Object) getEnums(ctx *compile.Context, typeName string) (primitiveEnums,
 			primitiveEnums.Set(getUniqueSuffix(fmt.Sprintf("%s", item)), item)
 		case typeName == "integer" && (kind == reflect.Float32 || kind == reflect.Float64):
 			// json.Unmarshal unmarshals integers into float64, so this is the most common case for integers
-			primitiveEnums.Set(getUniqueSuffix(fmt.Sprintf("%d", item)), item)
+			primitiveEnums.Set(getUniqueSuffix(fmt.Sprintf("%.0f", item)), item)
 		case typeName == "object" && kind == reflect.Map:
 			fallthrough
 		case typeName == "array" && (kind == reflect.Slice || kind == reflect.Array):
