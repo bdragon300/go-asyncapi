@@ -485,7 +485,14 @@ func (o Object) buildXGoType(ctx *compile.Context, flags map[common.SchemaTag]st
 		t.TypeName = o.XGoType.V0
 	case 1:
 		t.TypeName = o.XGoType.V1.Type
-		t.Import = o.XGoType.V1.Import
+		if o.XGoType.V1.Import != nil {
+			switch o.XGoType.V1.Import.Selector {
+			case 0:
+				t.Import = o.XGoType.V1.Import.V0.Package
+			case 1:
+				t.Import = o.XGoType.V1.Import.V1
+			}
+		}
 		t.IsInterface = o.XGoType.V1.Hint.Kind == "interface"
 
 		if o.XGoType.V1.Hint.Pointer {
