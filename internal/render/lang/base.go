@@ -100,6 +100,11 @@ type GolangReferenceType interface {
 	DerefGolangType() common.GolangType
 }
 
+// golangStructType is used to mark types that render in Go structs.
+// Used primarily to determine if a type can be embedded in another struct as an anonymous field, which is possible
+// only for struct types.
+// Note that IsStruct method can return false for some struct types, e.g. if user set to use the external struct in
+// jsonschema object in x-go-type, but didn't set x-go-type.embedded flag to true.
 type golangStructType interface {
 	IsStruct() bool
 }

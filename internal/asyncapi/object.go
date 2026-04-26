@@ -288,37 +288,12 @@ func (o Object) buildLangObject(ctx *compile.Context, flags map[common.SchemaTag
 		StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx),
 	}
 
-	var contentTypesFunc func() []string
+	// Add content type tags for objects marked as data models.
 	_, isDataModel := flags[common.SchemaTagDataModel]
 	if isDataModel {
 		ctx.Logger.Trace("Object struct is data model")
-		messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.Artifact) bool {
-			_, ok := item.(*render.Message)
-			return ok
-		}, nil)
-		ctx.PutListPromise(messagesPrm)
-		complexEnumsPrm := lang.NewListCbPromise[*lang.GoEnum](func(item common.Artifact) bool {
-			v, ok := item.(*lang.GoEnum)
-			return ok && v.ComplexEnums.Len() > 0
-		}, nil)
-		ctx.PutListPromise(complexEnumsPrm)
-		contentTypesFunc = func() []string {
-			tagNames := lo.Map(messagesPrm.T(), func(item *render.Message, _ int) string {
-				return guessTagByContentType(item.EffectiveContentType())
-			})
-			if len(complexEnumsPrm.T()) > 0 {
-				// Forcibly add "json" field tag to *all* generated models if at least one enum in document has object value.
-				// We need json in the model and its inner models because such enums are initialized in the generated code
-				// by unmarshalling them from JSON automatically.
-				// Another way could be is to track affected models using CompileContext stack, but it would be slightly
-				// complicated implementation, and also object values in enums is pretty rare case.
-				// But this can be implemented if any issues will arise because of current approach.
-				tagNames = append(tagNames, "json")
-			}
-			tagNames = lo.Uniq(tagNames)
-			slices.Sort(tagNames)
-			return tagNames
-		}
+		res.ContentTypeTagsFunc = o.getContentTypeTagsFunc(ctx)
+		res.ContentTypesFunc = o.getContentTypesFunc(ctx)
 	}
 
 	// regular properties
@@ -335,61 +310,79 @@ func (o Object) buildLangObject(ctx *compile.Context, flags map[common.SchemaTag
 
 		propName, _ := lo.Coalesce(v.XGoName, k)
 		f := lang.GoStructField{
-			OriginalName:     utils.ToGolangName(propName, true),
-			MarshalName:      k,
-			Description:      v.Description,
-			Type:             langObj,
-			ContentTypesFunc: contentTypesFunc,
+			OriginalName:        utils.ToGolangName(propName, true),
+			MarshalName:         k,
+			Description:         v.Description,
+			Type:                langObj,
+			ContentTypeTagsFunc: res.ContentTypeTagsFunc,
 		}
 		res.Fields = append(res.Fields, f)
 	}
 
 	// additionalProperties with typed sub-schema
 	if o.AdditionalProperties != nil {
-		propName, _ := lo.Coalesce(o.AdditionalProperties.V0.XGoName, o.Title)
 		switch o.AdditionalProperties.Selector {
-		case 0: // "additionalProperties:" is an object
+		case 0:
 			ctx.Logger.Trace("Object additional properties", "type", "object")
 			ref := ctx.CurrentRefPointer("additionalProperties")
 			prm := lang.NewGolangTypePromise(ref, nil)
 			ctx.PutPromise(prm)
-			f := lang.GoStructField{
-				OriginalName: "AdditionalProperties",
-				Description:  o.AdditionalProperties.V0.Description,
-				Type: &lang.GoMap{
-					BaseType: lang.BaseType{
-						OriginalName:  ctx.GenerateObjName(propName, "AdditionalProperties"),
-						Description:   o.AdditionalProperties.V0.Description,
-						HasDefinition: false,
-					},
-					KeyType:               &lang.GoSimple{TypeName: "string"},
-					ValueType:             prm,
-					StructFieldRenderInfo: o.AdditionalProperties.V0.getStructFieldRenderInfo(ctx),
-				},
-			}
-			res.Fields = append(res.Fields, f)
+			res.AdditionalPropertiesType = prm
 		case 1:
-			ctx.Logger.Trace("Object additional properties", "type", "boolean")
-			if o.AdditionalProperties.V1 { // "additionalProperties: true" -- allow any additional properties
-				f := lang.GoStructField{
-					OriginalName: "AdditionalProperties",
-					Type: &lang.GoMap{
-						BaseType: lang.BaseType{
-							OriginalName:  ctx.GenerateObjName(propName, "AdditionalProperties"),
-							Description:   "",
-							HasDefinition: false,
-						},
-						KeyType:   &lang.GoSimple{TypeName: "string"},
-						ValueType: &lang.GoSimple{TypeName: "any", IsInterface: true},
-					},
-					ContentTypesFunc: contentTypesFunc,
-				}
-				res.Fields = append(res.Fields, f)
+			ctx.Logger.Trace("Object additional properties", "type", "boolean", "value", o.AdditionalProperties.V1)
+			if o.AdditionalProperties.V1 {
+				res.AdditionalPropertiesType = &lang.GoSimple{TypeName: "any", IsInterface: true}
 			}
 		}
 	}
 
 	return &res, nil
+}
+
+func (o Object) getContentTypeTagsFunc(ctx *compile.Context) func() []string {
+	messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.Artifact) bool {
+		_, ok := item.(*render.Message)
+		return ok
+	}, nil)
+	ctx.PutListPromise(messagesPrm)
+	complexEnumsPrm := lang.NewListCbPromise[*lang.GoEnum](func(item common.Artifact) bool {
+		v, ok := item.(*lang.GoEnum)
+		return ok && v.ComplexEnums.Len() > 0
+	}, nil)
+	ctx.PutListPromise(complexEnumsPrm)
+	return func() []string {
+		tagNames := lo.Map(messagesPrm.T(), func(item *render.Message, _ int) string {
+			return guessTagByContentType(item.EffectiveContentType())
+		})
+		if len(complexEnumsPrm.T()) > 0 {
+			// Forcibly add "json" field tag to *all* generated models if at least one enum in document has object value.
+			// We need json in the model and its inner models because such enums are initialized in the generated code
+			// by unmarshalling them from JSON automatically.
+			// Another way could be is to track affected models using CompileContext stack, but it would be slightly
+			// complicated implementation, and also object values in enums is pretty rare case.
+			// But this can be implemented if any issues will arise because of current approach.
+			tagNames = append(tagNames, "json")
+		}
+		tagNames = lo.Uniq(tagNames)
+		slices.Sort(tagNames)
+		return tagNames
+	}
+}
+
+func (o Object) getContentTypesFunc(ctx *compile.Context) func() []string {
+	messagesPrm := lang.NewListCbPromise[*render.Message](func(item common.Artifact) bool {
+		_, ok := item.(*render.Message)
+		return ok
+	}, nil)
+	ctx.PutListPromise(messagesPrm)
+	return func() []string {
+		r := lo.Map(messagesPrm.T(), func(item *render.Message, _ int) string {
+			return item.EffectiveContentType()
+		})
+		r = lo.Uniq(r)
+		slices.Sort(r)
+		return r
+	}
 }
 
 func (o Object) buildLangArray(ctx *compile.Context, flags map[common.SchemaTag]string) (*lang.GoArray, error) {
@@ -442,6 +435,7 @@ func (o Object) buildUnionStruct(ctx *compile.Context, flags map[common.SchemaTa
 			},
 			StructFieldRenderInfo: o.getStructFieldRenderInfo(ctx),
 		},
+		// FIXME: fill ContentTypeTagsFunc
 	}
 
 	// Collect all messages to retrieve struct field tags

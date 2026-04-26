@@ -5,13 +5,35 @@
         {{- print (goID .) "--" .Description | goComment }}
     {{- end }}
     type {{ . | goID }} struct {
+        {{- if .AdditionalPropertiesIsStruct}}
+            {{ goID . }}AdditionalProperties
+        {{- end}}
         {{- range .Fields }}
             {{- if .Description }}
                 {{ print .Name "--" .Description | goComment }}
             {{- end }}
             {{ .Name }} {{ .Type | goUsage }} {{.RenderTags}}
         {{- end }}
+        {{- if .AdditionalPropertiesIsField }}
+            AdditionalProperties {{ goID . }}AdditionalProperties {{.RenderAllContentTypeTagsOmitted}}
+        {{- end }}
     }
+
+    {{- if .AdditionalPropertiesIsStruct }}
+        type {{ goID . }}AdditionalProperties {{ .AdditionalPropertiesType | goUsage }}
+    {{- else if .AdditionalPropertiesIsField }}
+        type {{ goID . }}AdditionalProperties map[string]{{ .AdditionalPropertiesType | goUsage }}
+    {{- end}}
+
+    {{- block "code/lang/gostruct/definition/extra" .}}
+        {{- if .AdditionalPropertiesIsField }}
+            {{- range .AllContentTypes }}
+                {{- with tryTmpl (print "code/lang/gostruct/mime/" .) $}}
+                    {{.}}
+                {{- end }}
+            {{- end }}
+        {{- end}}
+    {{- end}}
 {{- end}}
 {{define "code/lang/gostruct/usage"}}
     {{- if .HasDefinition }}
@@ -30,4 +52,52 @@
             {{- end }}
         }
     {{- end }}
+{{- end}}
+
+{{define "code/lang/gostruct/mime/application/json"}}
+func (v *{{ goID . }}) UnmarshalJSON(b []byte) error {
+    type alias {{ goID . }}
+    var a alias
+    if err := {{goPkgExt "encoding/json"}}Unmarshal(b, &a); err != nil {
+        return err
+    }
+    *v = {{ goID . }}(a)
+    {{- if .AdditionalPropertiesIsField }}
+        if err := {{goPkgExt "encoding/json"}}Unmarshal(b, &v.AdditionalProperties); err != nil {
+            return err
+        }
+        {{- range .Fields }}
+            delete(v.AdditionalProperties, {{.MarshalName | goLit}})
+        {{- end }}
+    {{- end }}
+    return nil
+}
+{{- end}}
+
+{{define "code/lang/gostruct/mime/application/yaml"}}
+func (v *{{ goID . }}) UnmarshalYAML(node *{{goPkgExt "gopkg.in/yaml.v3"}}Node) error {
+    type alias {{ goID . }}
+    var a alias
+    if err := node.Decode(&a); err != nil {
+        return err
+    }
+    *v = {{ goID . }}(a)
+    {{- if .AdditionalPropertiesIsField }}
+        if err := node.Decode(&v.AdditionalProperties); err != nil {
+            return err
+        }
+        {{- range .Fields }}
+            delete(v.AdditionalProperties, {{.MarshalName | goLit}})
+        {{- end }}
+    {{- end }}
+    return nil
+}
+{{- end}}
+
+{{define "code/lang/gostruct/mime/application/x-yaml"}}
+{{template "code/lang/gostruct/mime/application/yaml" .}}
+{{- end}}
+
+{{define "code/lang/gostruct/mime/text/yaml"}}
+{{template "code/lang/gostruct/mime/application/yaml" .}}
 {{- end}}

@@ -45,6 +45,20 @@
     m.payload = {{goPkg .PayloadType}}{{.PayloadType | goID}}(b.String())
 {{- end}}
 
+{{define "code/proto/mime/messageEncoder/application/yaml"}}
+    enc := {{goPkgExt "gopkg.in/yaml.v3"}}NewEncoder(w)
+    if err := enc.Encode(m.Payload); err != nil {
+        return err
+    }
+{{- end}}
+
+{{define "code/proto/mime/messageDecoder/application/yaml"}}
+    dec := {{goPkgExt "gopkg.in/yaml.v3"}}NewDecoder(r)
+    if err := dec.Decode(&m.payload); err != nil {
+        return err
+    }
+{{- end}}
+
 {{define "code/proto/mime/messageEncoder/application/x-yaml"}}
     enc := {{goPkgExt "gopkg.in/yaml.v3"}}NewEncoder(w)
     if err := enc.Encode(m.Payload); err != nil {
