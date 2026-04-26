@@ -28,7 +28,7 @@
     {{- block "code/lang/gostruct/definition/extra" .}}
         {{- if .AdditionalPropertiesIsField }}
             {{- range .AllContentTypes }}
-                {{- with tryTmpl (print "code/lang/gostruct/mime/" .) $}}
+                {{- with tryTmpl (print "code/lang/gostruct/definition/mime/" .) $}}
                     {{.}}
                 {{- end }}
             {{- end }}
@@ -54,7 +54,7 @@
     {{- end }}
 {{- end}}
 
-{{define "code/lang/gostruct/mime/application/json"}}
+{{define "code/lang/gostruct/definition/mime/application/json"}}
 func (v *{{ goID . }}) UnmarshalJSON(b []byte) error {
     type alias {{ goID . }}
     var a alias
@@ -74,7 +74,7 @@ func (v *{{ goID . }}) UnmarshalJSON(b []byte) error {
 }
 {{- end}}
 
-{{define "code/lang/gostruct/mime/application/yaml"}}
+{{define "code/lang/gostruct/definition/mime/application/yaml"}}
 func (v *{{ goID . }}) UnmarshalYAML(node *{{goPkgExt "gopkg.in/yaml.v3"}}Node) error {
     type alias {{ goID . }}
     var a alias
@@ -94,10 +94,10 @@ func (v *{{ goID . }}) UnmarshalYAML(node *{{goPkgExt "gopkg.in/yaml.v3"}}Node) 
 }
 {{- end}}
 
-{{define "code/lang/gostruct/mime/application/x-yaml"}}
-{{template "code/lang/gostruct/mime/application/yaml" .}}
+{{define "code/lang/gostruct/definition/mime/application/x-yaml"}}
+{{template "code/lang/gostruct/definition/mime/application/yaml" .}}
 {{- end}}
 
-{{define "code/lang/gostruct/mime/text/yaml"}}
-{{template "code/lang/gostruct/mime/application/yaml" .}}
+{{define "code/lang/gostruct/definition/mime/text/yaml"}}
+{{template "code/lang/gostruct/definition/mime/application/yaml" .}}
 {{- end}}
