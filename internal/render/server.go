@@ -92,7 +92,7 @@ func (s *Server) FirstSecurityScheme() *SecurityScheme {
 // BoundChannels returns a list of channels that are bound to this server.
 func (s *Server) BoundChannels() []*Channel {
 	r := lo.FilterMap(s.AllActiveChannelsPromise.T(), func(r common.Artifact, _ int) (*Channel, bool) {
-		ch := common.DerefArtifact(r).(*Channel)
+		ch := common.DerefArtifact[*Channel](r)
 		return ch, lo.ContainsBy(ch.BoundServers(), func(item *Server) bool {
 			return common.CheckSameArtifacts(s, item)
 		})

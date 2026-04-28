@@ -248,7 +248,7 @@ func (o Object) buildGolangType(ctx *compile.Context, flags map[common.SchemaTag
 		}
 
 		ctx.Logger.Trace("Object has enums, wrapping it into GoEnum")
-		typ := &lang.GoEnum{WrappedType: finalType}
+		typ := &lang.GoEnum{Type: finalType}
 		ctx.Logger.NextCallLevel()
 		typ.PrimitiveEnums, typ.ComplexEnums, err = o.getEnums(ctx, typeName)
 		ctx.Logger.PrevCallLevel()

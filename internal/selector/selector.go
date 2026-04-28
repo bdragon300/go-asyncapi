@@ -28,7 +28,7 @@ func GatherArtifacts[T artifactStorage](docs ...T) []common.Artifact {
 			if !artifact.Selectable() {
 				return nil, false
 			}
-			return common.DerefArtifact(artifact), true
+			return common.DerefArtifact[common.Artifact](artifact), true
 		})
 	})
 	// Remove duplicates if any artifact was referenced multiple times

@@ -115,13 +115,13 @@ type RuntimeExpressionCodeStep struct {
 	OutputType common.GolangType
 }
 
+type golangTypeWrapper interface {
+	WrappedGolangType() common.GolangType
+}
+
 // GetTemplateFunctions returns a map of functions to use in templates. These functions include all
 // [github.com/go-sprout/sprout] functions and go-asyncapi specific functions.
 func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template.FuncMap {
-	type golangWrapperType interface {
-		UnwrapGolangType() common.GolangType
-	}
-
 	logger := log.GetLogger(log.LoggerPrefixRendering)
 	traceCall := func(funcName string, args ...any) {
 		if logger.GetLevel() > log.TraceLevel {
@@ -170,13 +170,11 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		"goDef": func(r common.GolangType) (string, error) {
 			traceCall("goDef", r)
 			tplName := path.Join(r.GoTemplate(), "definition")
+			r = common.DerefArtifact[common.GolangType](r)
 			if v, ok := r.(pinnable); ok && v.Pinnable() {
 				renderManager.NamespaceManager.DeclareArtifact(r, renderManager, true)
 			} else if logger.GetLevel() <= log.TraceLevel {
 				logger.Debug("---> goDef: skip pinning due to object is not pinnable")
-			}
-			if v, ok := r.(golangReferenceType); ok {
-				r = v.DerefGolangType()
 			}
 			res, err := templateExecTemplate(renderManager, tplName, r)
 			if err != nil {
@@ -211,10 +209,10 @@ func GetTemplateFunctions(renderManager *manager.TemplateRenderManager) template
 		},
 		"innerType": func(val common.GolangType) common.GolangType {
 			traceCall("innerType", val)
-			if v, ok := any(val).(golangWrapperType); ok {
-				return v.UnwrapGolangType()
+			if _, ok := any(val).(golangTypeWrapper); !ok {
+				return nil
 			}
-			return nil
+			return common.UnwrapGolangType[common.GolangType](val)
 		},
 		"impl": func(protocol string) *ImplementationCodeInfo {
 			traceCall("impl", protocol)
@@ -377,10 +375,6 @@ func templateOnce(mng *manager.TemplateRenderManager, o any) any {
 	return o
 }
 
-type golangReferenceType interface {
-	DerefGolangType() common.GolangType
-}
-
 // templateGoUsage returns a Go code snippet that represents the usage of the given Go type. If this type is defined
 // in other module, the necessary import is also added to the current file and the returned value contains the package
 // name as well. If the type is not defined yet, it returns ErrNotPinned.
@@ -397,9 +391,7 @@ type golangReferenceType interface {
 // the function returns "MyStruct". Or "pkg.MyStruct" if the struct is defined in “github.com/path/to/pkg” module.
 func templateGoUsage(mng *manager.TemplateRenderManager, r common.GolangType) (string, error) {
 	tplName := path.Join(r.GoTemplate(), "usage")
-	if v, ok := r.(golangReferenceType); ok {
-		r = v.DerefGolangType()
-	}
+	r = common.DerefArtifact[common.GolangType](r)
 	res, err := templateExecTemplate(mng, tplName, r)
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", r, err)
@@ -522,6 +514,10 @@ func templateGoComment(text string) string {
 	return b.String()
 }
 
+type artifactReferrer interface {
+	ReferredArtifact() common.Artifact
+}
+
 // generateRuntimeExpressionExtractionCode returns the Go code that extracts the value from the targetStruct according to the
 // runtime expression c. If addValidationCode is true, the result also contains the additional error handing code,
 // that is typically used for property getter functions.
@@ -632,12 +628,12 @@ func generateRuntimeExpressionExtractionCode(mng *manager.TemplateRenderManager,
 				return
 			}
 			baseType = typ
-		case lang.GolangWrappedType:
+		case golangTypeWrapper:
 			logger.Trace(
-				"-> GolangWrappedType",
+				"-> GolangTypeWrapper",
 				"expression path", locationPath[:pathIdx], "member", memberName, "object", baseType.String(), "type", fmt.Sprintf("%T", typ),
 			)
-			t := typ.UnwrapGolangType()
+			t := common.UnwrapGolangType[common.GolangType](typ.(common.GolangType))
 			if lo.IsNil(t) {
 				err = fmt.Errorf(
 					"wrapper type %T contains nil; expression path: /%s",
@@ -648,12 +644,12 @@ func generateRuntimeExpressionExtractionCode(mng *manager.TemplateRenderManager,
 			}
 			baseType = t
 			continue
-		case lang.GolangReferenceType:
+		case artifactReferrer:
 			logger.Trace(
-				"-> GolangReferenceType",
+				"-> ArtifactReferrer",
 				"expression path", locationPath[:pathIdx], "member", memberName, "object", baseType.String(), "type", fmt.Sprintf("%T", typ),
 			)
-			t := typ.DerefGolangType()
+			t := common.DerefArtifact[common.GolangType](typ.(common.Artifact))
 			if lo.IsNil(t) {
 				err = fmt.Errorf(
 					"reference type %T contains nil; expression path: /%s",

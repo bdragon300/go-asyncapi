@@ -63,7 +63,7 @@ type Message struct {
 // If headers is not set, returns the HeadersTypeDefault.
 func (m *Message) HeadersType() common.GolangType {
 	if m.HeadersTypePromise != nil {
-		return common.DerefArtifact(m.HeadersTypePromise.T()).(common.GolangType)
+		return common.DerefArtifact[common.GolangType](m.HeadersTypePromise.T())
 	}
 	return lo.CoalesceOrEmpty(
 		common.LastNonEmptyTargetBy(m.MessageTraitPromises, func(mt *MessageTrait) common.GolangType { return mt.HeadersType() }),
@@ -80,7 +80,7 @@ func (m *Message) HasHeaders() bool {
 // If payload is not set, returns the PayloadTypeDefault.
 func (m *Message) PayloadType() common.GolangType {
 	if m.PayloadTypePromise != nil {
-		return common.DerefArtifact(m.PayloadTypePromise.T()).(common.GolangType)
+		return common.DerefArtifact[common.GolangType](m.PayloadTypePromise.T())
 	}
 	return m.PayloadTypeDefault
 }
@@ -128,7 +128,7 @@ func (m *Message) ProtoMessage(protocol string) *ProtoMessage {
 // BoundChannels returns a list of Channel objects that this message is bound to.
 func (m *Message) BoundChannels() []*Channel {
 	r := lo.FilterMap(m.AllActiveChannelsPromise.T(), func(c common.Artifact, _ int) (*Channel, bool) {
-		ch := common.DerefArtifact(c).(*Channel)
+		ch := common.DerefArtifact[*Channel](c)
 		return ch, lo.ContainsBy(ch.BoundMessages(), func(item *Message) bool {
 			return common.CheckSameArtifacts(item, m)
 		})
@@ -141,7 +141,7 @@ func (m *Message) BoundChannels() []*Channel {
 // BoundOperations returns a list of Operation that this message is bound to.
 func (m *Message) BoundOperations() []*Operation {
 	r := lo.FilterMap(m.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (*Operation, bool) {
-		op := common.DerefArtifact(o).(*Operation)
+		op := common.DerefArtifact[*Operation](o)
 		return op, lo.ContainsBy(op.BoundMessages(), func(item *Message) bool {
 			return common.CheckSameArtifacts(item, m)
 		})
@@ -155,7 +155,7 @@ func (m *Message) BoundOperations() []*Operation {
 // including those where the message is bound via OperationReply, and where the Operation or OperationReply is a publisher.
 func (m *Message) BoundAllPubOperations() []*Operation {
 	r := lo.FilterMap(m.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (*Operation, bool) {
-		op := common.DerefArtifact(o).(*Operation)
+		op := common.DerefArtifact[*Operation](o)
 		return op, op.IsPublisher && lo.Contains(op.BoundMessages(), m) || op.IsReplyPublisher && lo.Contains(op.BoundReplyMessages(), m)
 	})
 	return r
@@ -165,7 +165,7 @@ func (m *Message) BoundAllPubOperations() []*Operation {
 // including those where the message is bound via OperationReply, and where the Operation or OperationReply is a subscriber.
 func (m *Message) BoundAllSubOperations() []*Operation {
 	r := lo.FilterMap(m.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (*Operation, bool) {
-		op := common.DerefArtifact(o).(*Operation)
+		op := common.DerefArtifact[*Operation](o)
 		return op, op.IsSubscriber && lo.Contains(op.BoundMessages(), m) || op.IsReplySubscriber && lo.Contains(op.BoundReplyMessages(), m)
 	})
 	return r
@@ -175,7 +175,7 @@ func (m *Message) BoundAllSubOperations() []*Operation {
 // where the OperationReply is for publishing (i.e. Operation is for subscribing).
 func (m *Message) BoundPubReplyOperations() []*Operation {
 	r := lo.FilterMap(m.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (*Operation, bool) {
-		op := common.DerefArtifact(o).(*Operation)
+		op := common.DerefArtifact[*Operation](o)
 		return op, op.IsSubscriber && lo.Contains(op.BoundReplyMessages(), m)
 	})
 	return r
@@ -185,7 +185,7 @@ func (m *Message) BoundPubReplyOperations() []*Operation {
 // where the OperationReply is for subscribing (i.e. Operation is for publishing).
 func (m *Message) BoundSubReplyOperations() []*Operation {
 	r := lo.FilterMap(m.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (*Operation, bool) {
-		op := common.DerefArtifact(o).(*Operation)
+		op := common.DerefArtifact[*Operation](o)
 		return op, op.IsPublisher && lo.Contains(op.BoundReplyMessages(), m)
 	})
 	return r

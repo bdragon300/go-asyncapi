@@ -1,7 +1,10 @@
 package common
 
 import (
+	"fmt"
+
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
+	"github.com/samber/lo"
 )
 
 // ArtifactKind is an enumeration of compiled artifact kind.
@@ -59,21 +62,49 @@ type GolangType interface {
 	GoTemplate() string
 }
 
-type artifactWrapper interface {
-	Unwrap() Artifact
+// artifactReferrer is an interface for artifacts that contain a reference to another artifact (such as Promise, Ref).
+type artifactReferrer interface {
+	// ReferredArtifact returns the artifact that is referred by this artifact. Non-recursive.
+	ReferredArtifact() Artifact
 }
 
-// DerefArtifact returns the artifact, unwrapping it if it's wrapped in a Promise or Ref.
-func DerefArtifact(obj Artifact) Artifact {
+// DerefArtifact recursively extracts the target artifact from the reference a. If a is not a reference, it returns a.
+func DerefArtifact[T Artifact](a Artifact) T {
 	// TODO: detect ref loops to avoid infinite recursion
-	if w, ok := obj.(artifactWrapper); ok {
-		return w.Unwrap()
+	w, ok := a.(artifactReferrer)
+	for ok {
+		a = w.ReferredArtifact()
+		if lo.IsNil(a) {
+			panic(fmt.Sprintf("reference points to nil, cannot dereference: %T", w))
+		}
+		w, ok = a.(artifactReferrer)
 	}
-	return obj
+	return a.(T)
 }
 
-// CheckSameArtifacts checks if two artifacts are the same object. If they are wrapped in Promises or Refs, it unwraps
-// them first.
+// golangTypeWrapper is an interface for Go types (such as pointers, enums) that are able to
+// wrap another [common.GolangType] type.
+type golangTypeWrapper interface {
+	// WrappedGolangType returns the GolangType that is wrapped by this wrapper type. Non-recursive.
+	WrappedGolangType() GolangType
+}
+
+// UnwrapGolangType recursively unwraps the target Go type from Go type t (such as a pointer, enum, etc.).
+// If t is not a wrapper type, it returns t.
+func UnwrapGolangType[T GolangType](t GolangType) T {
+	// TODO: detect ref loops to avoid infinite recursion
+	w, ok := t.(golangTypeWrapper)
+	for ok {
+		t = w.WrappedGolangType()
+		if lo.IsNil(t) {
+			panic(fmt.Sprintf("wrapper type points to nil, cannot unwrap: %T", w))
+		}
+		w, ok = t.(golangTypeWrapper)
+	}
+	return t.(T)
+}
+
+// CheckSameArtifacts checks if two artifacts are the same object or points to the same object through references.
 func CheckSameArtifacts(a, b Artifact) bool {
-	return DerefArtifact(a) == DerefArtifact(b)
+	return DerefArtifact[Artifact](a) == DerefArtifact[Artifact](b)
 }

@@ -40,10 +40,7 @@ func (p *GoPointer) GoTemplate() string {
 	return "code/lang/gopointer"
 }
 
-func (p *GoPointer) UnwrapGolangType() common.GolangType {
-	if v, ok := p.Type.(GolangWrappedType); ok {
-		return v.UnwrapGolangType()
-	}
+func (p *GoPointer) WrappedGolangType() common.GolangType {
 	return p.Type
 }
 

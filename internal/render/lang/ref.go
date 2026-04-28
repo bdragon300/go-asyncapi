@@ -75,6 +75,7 @@ func (r *Ref) String() string {
 	return b.String()
 }
 
-func (r *Ref) Unwrap() common.Artifact {
-	return common.DerefArtifact(r.target)
+// ReferredArtifact returns the target artifact that is referred by this Ref.
+func (r *Ref) ReferredArtifact() common.Artifact {
+	return r.target
 }

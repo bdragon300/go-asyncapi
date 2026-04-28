@@ -22,7 +22,11 @@ type UnionStruct struct {
 // UnionStruct return the Go code of union struct definition.
 func (s *UnionStruct) UnionStruct() common.GolangType {
 	onlyStructs := lo.EveryBy(s.Fields, func(item GoStructField) bool {
-		return isTypeStruct(item.Type)
+		t := common.UnwrapGolangType[common.GolangType](item.Type)
+		if v, ok := any(t).(golangStructType); ok {
+			return v.IsStruct()
+		}
+		return false
 	})
 	if onlyStructs { // Draw simplified union with embedded fields
 		return &s.GoStruct
@@ -49,15 +53,4 @@ func (s *UnionStruct) String() string {
 
 func (s *UnionStruct) GoTemplate() string {
 	return "code/lang/gounion"
-}
-
-func isTypeStruct(typ common.GolangType) bool {
-	switch v := typ.(type) {
-	case golangStructType:
-		return v.IsStruct()
-	case GolangWrappedType:
-		t := v.UnwrapGolangType()
-		return !lo.IsNil(t) && isTypeStruct(t)
-	}
-	return false
 }

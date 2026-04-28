@@ -27,7 +27,7 @@ type MessageTrait struct {
 // If headers is not set, returns nil.
 func (m *MessageTrait) HeadersType() common.GolangType {
 	if m.HeadersTypePromise != nil {
-		return common.DerefArtifact(m.HeadersTypePromise.T()).(common.GolangType)
+		return common.DerefArtifact[common.GolangType](m.HeadersTypePromise.T())
 	}
 	return nil
 }

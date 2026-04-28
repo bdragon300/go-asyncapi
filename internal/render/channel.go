@@ -87,7 +87,7 @@ func (c *Channel) BoundServers() []*Server {
 
 	var res []*Server
 	if len(c.ServersPromises) == 0 {
-		res = lo.Map(c.AllActiveServersPromise.T(), func(a common.Artifact, _ int) *Server { return common.DerefArtifact(a).(*Server) })
+		res = lo.Map(c.AllActiveServersPromise.T(), func(a common.Artifact, _ int) *Server { return common.DerefArtifact[*Server](a) })
 		// ListPromise is filled up by linker, which doesn't guarantee the order. So, sort items by name
 		slices.SortFunc(res, func(a, b *Server) int { return cmp.Compare(a.Name(), b.Name()) })
 	} else {
@@ -109,7 +109,7 @@ func (c *Channel) BoundOperations() []*Operation {
 		return nil
 	}
 	r := lo.FilterMap(c.AllActiveOperationsPromise.T(), func(o common.Artifact, _ int) (*Operation, bool) {
-		op := common.DerefArtifact(o).(*Operation)
+		op := common.DerefArtifact[*Operation](o)
 		return op, op.Channel() == c
 	})
 	// ListPromise is filled up by linker, which doesn't guarantee the order. So, sort items by name

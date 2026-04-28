@@ -1,15 +1,15 @@
 {{- /* dot == lang.GoEnum */}}
 
 {{define "code/lang/goenum/definition"}}
-{{ goDef .WrappedType }}
+{{ goDef .Type }}
 
 {{- if .ComplexEnums.Len}}
     var (
     {{- range $nsuffix, $val := .ComplexEnums.Entries}}
-        {{ goID $ }}{{$nsuffix}} {{ goUsage $.WrappedType }}
+        {{ goID $ }}{{$nsuffix}} {{ goUsage $.Type }}
     {{- end }}
     {{- range $nsuffix, $val := .PrimitiveEnums.Entries}}
-        {{ goID $ }}{{$nsuffix}} {{ goUsage $.WrappedType }} = {{ goLit $val }}
+        {{ goID $ }}{{$nsuffix}} {{ goUsage $.Type }} = {{ goLit $val }}
     {{- end }}
     )
 
@@ -25,12 +25,12 @@
 {{- else if .PrimitiveEnums.Len}}
     const (
     {{- range $nsuffix, $val := .PrimitiveEnums.Entries}}
-        {{ goID $ }}{{$nsuffix}} {{ goUsage $.WrappedType }} = {{ goLit $val }}
+        {{ goID $ }}{{$nsuffix}} {{ goUsage $.Type }} = {{ goLit $val }}
     {{- end }}
     )
 {{- end}}
 {{- end}}
 
 {{define "code/lang/goenum/usage"}}
-    {{- goUsage .WrappedType }}
+    {{- goUsage .Type }}
 {{- end}}

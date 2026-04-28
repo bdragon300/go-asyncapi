@@ -33,59 +33,56 @@ import (
 //	}
 type GoEnum struct {
 	BaseJSONPointed
-	WrappedType common.GolangType
-	// PrimitiveEnums contains unmarshalled enum values of primitive Go types (string, int, etc.) to add for WrappedType.
+	Type common.GolangType
+	// PrimitiveEnums contains unmarshalled enum values of primitive Go types (string, int, etc.) to add for Type.
 	// These values are supposed to be rendered as constants. Key is the constant name suffix.
 	PrimitiveEnums types.OrderedMap[string, any]
-	// ComplexEnums contains unmarshalled enum values of complex types (json object and array) to add for WrappedType.
+	// ComplexEnums contains unmarshalled enum values of complex types (json object and array) to add for Type.
 	// These values are supposed to be rendered as initialization code in init() function. Key is the constant name suffix.
 	ComplexEnums types.OrderedMap[string, any]
 }
 
 func (e *GoEnum) Name() string {
-	return e.WrappedType.Name()
+	return e.Type.Name()
 }
 
 func (e *GoEnum) Kind() common.ArtifactKind {
-	return e.WrappedType.Kind()
+	return e.Type.Kind()
 }
 
 func (e *GoEnum) Selectable() bool {
-	return e.WrappedType.Selectable()
+	return e.Type.Selectable()
 }
 
 func (e *GoEnum) Visible() bool {
-	return e.WrappedType.Visible()
+	return e.Type.Visible()
 }
 
 func (e *GoEnum) CanBeAddressed() bool {
-	return e.WrappedType.CanBeAddressed()
+	return e.Type.CanBeAddressed()
 }
 
 func (e *GoEnum) String() string {
-	return fmt.Sprintf("GoEnum -> %s", e.WrappedType.String())
+	return fmt.Sprintf("GoEnum -> %s", e.Type.String())
 }
 
 func (e *GoEnum) GoTemplate() string {
 	return "code/lang/goenum"
 }
 
-func (e *GoEnum) UnwrapGolangType() common.GolangType {
-	if v, ok := e.WrappedType.(GolangWrappedType); ok {
-		return v.UnwrapGolangType()
-	}
-	return e.WrappedType
+func (e *GoEnum) WrappedGolangType() common.GolangType {
+	return e.Type
 }
 
 func (e *GoEnum) IsStruct() bool {
-	if v, ok := any(e.WrappedType).(golangStructType); ok {
+	if v, ok := any(e.Type).(golangStructType); ok {
 		return v.IsStruct()
 	}
 	return false
 }
 
 func (e *GoEnum) StructRenderInfo() StructFieldRenderInfo {
-	if v, ok := any(e.WrappedType).(structFieldRenderer); ok {
+	if v, ok := any(e.Type).(structFieldRenderer); ok {
 		return v.StructRenderInfo()
 	}
 	return StructFieldRenderInfo{}

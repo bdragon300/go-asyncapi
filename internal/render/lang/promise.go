@@ -99,14 +99,9 @@ func (r *Promise[T]) FindCallback() common.PromiseFindCbFunc {
 	return r.findCb
 }
 
-func (r *Promise[T]) DerefGolangType() common.GolangType {
-	switch v := any(r.target).(type) {
-	case GolangReferenceType:
-		return v.DerefGolangType()
-	case common.GolangType:
-		return v
-	}
-	return nil
+// ReferredArtifact returns the target object.
+func (r *Promise[T]) ReferredArtifact() common.Artifact {
+	return r.target
 }
 
 func (r *Promise[T]) CanBeAddressed() bool {
@@ -178,10 +173,6 @@ func (r *GolangTypePromise) CanBeAddressed() bool {
 
 func (r *GolangTypePromise) GoTemplate() string {
 	return r.target.GoTemplate()
-}
-
-func (r *GolangTypePromise) Unwrap() common.Artifact {
-	return common.DerefArtifact(r.target)
 }
 
 // NewListCbPromise returns a new promise, that uses find callback to find the list of objects. Linker calls this

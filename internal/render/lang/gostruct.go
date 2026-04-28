@@ -65,10 +65,8 @@ func (s *GoStruct) AdditionalPropertiesIsStruct() bool {
 		return false
 	}
 
-	v := common.DerefArtifact(s.AdditionalPropertiesType)
-	if r, ok := v.(GolangReferenceType); ok {
-		v = r.DerefGolangType()
-	}
+	v := common.DerefArtifact[common.GolangType](s.AdditionalPropertiesType)
+	v = common.UnwrapGolangType[common.GolangType](v)
 	r, ok := v.(golangStructType)
 	return ok && r.IsStruct()
 }

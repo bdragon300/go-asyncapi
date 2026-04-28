@@ -55,7 +55,7 @@ type SecuritySchemeOAuthFlowParams struct {
 
 func (s *SecurityScheme) BoundServers() []*Server {
 	r := lo.FilterMap(s.AllSecuredServersPromise.T(), func(r common.Artifact, _ int) (*Server, bool) {
-		srv := common.DerefArtifact(r).(*Server)
+		srv := common.DerefArtifact[*Server](r)
 		return srv, lo.ContainsBy(srv.SecuritySchemes(), func(item *SecurityScheme) bool {
 			return common.CheckSameArtifacts(s, item)
 		})
@@ -65,7 +65,7 @@ func (s *SecurityScheme) BoundServers() []*Server {
 
 func (s *SecurityScheme) BoundOperations() []*Operation {
 	r := lo.FilterMap(s.AllOperationsPromise.T(), func(r common.Artifact, _ int) (*Operation, bool) {
-		op := common.DerefArtifact(r).(*Operation)
+		op := common.DerefArtifact[*Operation](r)
 		return op, lo.ContainsBy(op.SecuritySchemes(), func(item *SecurityScheme) bool {
 			return common.CheckSameArtifacts(s, item)
 		})
