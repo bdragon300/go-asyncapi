@@ -1,6 +1,6 @@
 module github.com/bdragon300/go-asyncapi
 
-go 1.24.9
+go 1.25.0
 
 require (
 	github.com/BobuSumisu/aho-corasick v1.0.3
@@ -10,6 +10,7 @@ require (
 	github.com/charmbracelet/log v0.4.2
 	github.com/go-sprout/sprout v1.0.3
 	github.com/samber/lo v1.52.0
+	github.com/stretchr/testify v1.11.1
 	golang.org/x/exp v0.0.0-20251219203646-944ab1f22d93
 	golang.org/x/mod v0.32.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -33,6 +34,7 @@ require (
 	github.com/clipperhouse/displaywidth v0.6.2 // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/dop251/goja v0.0.0-20260106131823-651366fbe6e3 // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
@@ -47,6 +49,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
@@ -58,8 +61,8 @@ require (
 	golang.org/x/crypto v0.46.0 // indirect
 	golang.org/x/image v0.34.0 // indirect
 	golang.org/x/net v0.48.0 // indirect
-	golang.org/x/sys v0.40.0 // indirect
-	golang.org/x/term v0.39.0 // indirect
+	golang.org/x/sys v0.43.0 // indirect
+	golang.org/x/term v0.42.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect

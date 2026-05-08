@@ -34,6 +34,7 @@ type cli struct {
 	InfraCmd            *InfraCmd   `arg:"subcommand:infra" help:"Generate the infrastructure setup files"`
 	DiagramCmd          *DiagramCmd `arg:"subcommand:diagram" help:"Generate the architecture diagram"`
 	UICmd               *UICmd      `arg:"subcommand:ui" help:"Generate and optionally serve the documentation"`
+	DocCmd              *DocCmd     `arg:"subcommand:doc" help:"Working with AsyncAPI documents: merge, split, etc."`
 	ListImplementations *struct{}   `arg:"subcommand:list-implementations" help:"Show all available protocol implementations"`
 	Verbose             int         `arg:"-v" help:"Verbose output: 1 (debug), 2 (trace)" placeholder:"LEVEL"`
 	Quiet               bool        `help:"Suppress the logging output"`
@@ -96,6 +97,8 @@ func main() {
 		err = cliDiagram(cliArgs.DiagramCmd, mergedConfig)
 	case cliArgs.UICmd != nil:
 		err = cliUI(cliArgs.UICmd, mergedConfig)
+	case cliArgs.DocCmd != nil:
+		err = cliDoc(cliArgs.DocCmd, mergedConfig)
 	default:
 		cliParser.Fail("No subcommand specified. Try --help for more information")
 		os.Exit(1)

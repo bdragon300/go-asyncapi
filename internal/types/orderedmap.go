@@ -93,6 +93,27 @@ func (o *OrderedMap[K, V]) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
+func (o OrderedMap[K, V]) MarshalYAML() (any, error) {
+	mappingNode := &yaml.Node{
+		Kind: yaml.MappingNode,
+	}
+
+	for _, key := range o.keys {
+		keyNode := &yaml.Node{}
+		if err := keyNode.Encode(key); err != nil {
+			return nil, err
+		}
+		valNode := &yaml.Node{}
+		if err := valNode.Encode(o.data[key]); err != nil {
+			return nil, err
+		}
+
+		mappingNode.Content = append(mappingNode.Content, keyNode, valNode)
+	}
+
+	return mappingNode, nil
+}
+
 // Get returns the value for the given key or false if the key is not found.
 func (o OrderedMap[K, V]) Get(key K) (V, bool) {
 	v, ok := o.data[key]

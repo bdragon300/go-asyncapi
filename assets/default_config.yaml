@@ -51,3 +51,8 @@ diagram:
 ui:
   listenAddress: ":8090"
   listenPath: "/"
+
+doc:
+  yamlIndent: 2
+  merge:
+    conflictResolutionStrategy: rename

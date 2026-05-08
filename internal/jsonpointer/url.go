@@ -91,6 +91,15 @@ func (r JSONPointer) String() (s string) {
 	return
 }
 
+// Join returns a new JSONPointer with the given parts joined to the existing pointer. The location is preserved.
+func (r JSONPointer) Join(parts ...string) JSONPointer {
+	return JSONPointer{
+		URI:     r.URI,
+		FSPath:  r.FSPath,
+		Pointer: append(r.Pointer, parts...),
+	}
+}
+
 // PointerString returns the JSON Pointer string representation from the given parts. E.g. “#/path/to/field”.
 func PointerString(parts ...string) string {
 	escapedParts := lo.Map(parts, func(item string, _ int) string {

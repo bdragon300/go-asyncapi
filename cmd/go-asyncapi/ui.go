@@ -60,7 +60,7 @@ func cliUI(cmd *UICmd, globalConfig toolConfig) error {
 	locator := getLocator(cmdConfig)
 	docURL, err := jsonpointer.Parse(cmd.Document)
 	if err != nil {
-		return fmt.Errorf("parse URL: %w", err)
+		return fmt.Errorf("parse path or url: %w", err)
 	}
 
 	//

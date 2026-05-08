@@ -103,7 +103,7 @@ func cliDiagram(cmd *DiagramCmd, globalConfig toolConfig) error {
 	fileLocator := getLocator(cmdConfig)
 	docURL, err := jsonpointer.Parse(cmd.Document)
 	if err != nil {
-		return fmt.Errorf("parse URL: %w", err)
+		return fmt.Errorf("parse path or url: %w", err)
 	}
 	compileOpts := compile.CompilationOpts{
 		AllowRemoteRefs:     cmdConfig.Locator.AllowRemoteReferences,

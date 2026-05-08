@@ -1,11 +1,11 @@
 package types
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
-	"strings"
+
+	"github.com/bdragon300/go-asyncapi/internal/utils"
 )
 
 // CompileError is an error that occurred during the compilation stage. Contains the failed document entity path and
@@ -48,17 +48,5 @@ func (e MultilineError) Unwrap() error {
 
 // ContentLines returns the multiline content with line numbers.
 func (e MultilineError) ContentLines() string {
-	var b strings.Builder
-	rd := bufio.NewReader(bytes.NewReader(e.Content))
-
-	for line := 1; ; line++ {
-		s, err := rd.ReadString('\n')
-		if err != nil {
-			break // Suppose that the only error can appear here is io.EOF
-		}
-		b.WriteString(fmt.Sprintf("%-4d│ ", line))
-		b.WriteString(s)
-	}
-
-	return b.String()
+	return utils.ReadAllWithLineNumbers(bytes.NewReader(e.Content), 0, 6)
 }

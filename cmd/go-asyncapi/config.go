@@ -34,6 +34,7 @@ type (
 		Infra   toolConfigInfra   `yaml:"infra"`
 		Diagram toolConfigDiagram `yaml:"diagram"`
 		UI      toolConfigUI      `yaml:"ui"`
+		Doc     toolConfigDoc     `yaml:"doc"`
 	}
 
 	toolConfigLocator struct {
@@ -167,6 +168,25 @@ type (
 		Bundle        *bool  `yaml:"bundle"`
 		BundleDir     string `yaml:"bundleDir"`
 	}
+
+	toolConfigDoc struct {
+		Merge      toolConfigDocMerge `yaml:"merge"`
+		YAMLIndent int                `yaml:"yamlIndent"`
+	}
+
+	toolConfigDocMerge struct {
+		OutputDocument             string                     `yaml:"outputDocument"`
+		ConflictResolutionStrategy toolConfigDocMergeStrategy `yaml:"conflictResolutionStrategy"`
+		NonInteractive             bool                       `yaml:"nonInteractive"`
+	}
+)
+
+type toolConfigDocMergeStrategy string
+
+const (
+	ToolConfigDocMergeStrategyKeep      toolConfigDocMergeStrategy = "keep"
+	ToolConfigDocMergeStrategyOverwrite toolConfigDocMergeStrategy = "overwrite"
+	ToolConfigDocMergeStrategyRename    toolConfigDocMergeStrategy = "rename"
 )
 
 // ToD2PluginOpts converts the config options to the JSON options of the d2 plugin.
@@ -297,6 +317,11 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 	res.UI.ListenPath = coalesce(userConf.UI.ListenPath, defaultConf.UI.ListenPath)
 	res.UI.Bundle = coalesce(userConf.UI.Bundle, defaultConf.UI.Bundle)
 	res.UI.BundleDir = coalesce(userConf.UI.BundleDir, defaultConf.UI.BundleDir)
+
+	res.Doc.YAMLIndent = coalesce(userConf.Doc.YAMLIndent, defaultConf.Doc.YAMLIndent)
+	res.Doc.Merge.NonInteractive = coalesce(userConf.Doc.Merge.NonInteractive, defaultConf.Doc.Merge.NonInteractive)
+	res.Doc.Merge.ConflictResolutionStrategy = coalesce(userConf.Doc.Merge.ConflictResolutionStrategy, defaultConf.Doc.Merge.ConflictResolutionStrategy)
+	res.Doc.Merge.OutputDocument = coalesce(userConf.Doc.Merge.OutputDocument, defaultConf.Doc.Merge.OutputDocument)
 
 	return res
 }

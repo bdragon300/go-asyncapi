@@ -15,6 +15,10 @@ linters:
     govet:
       disable:
         - composites
+    staticcheck:
+      checks:
+        - all
+        - -QF1012 # Disable preferring using the Fprintf
   exclusions:
     generated: lax
     presets:
