@@ -26,6 +26,7 @@ type (
 		ProjectModule string `yaml:"projectModule"`
 		RuntimeModule string `yaml:"runtimeModule"`
 		TemplatesDir  string `yaml:"templatesDir"`
+		Quiet         bool   `yaml:"quiet"`
 
 		Locator toolConfigLocator `yaml:"locator"`
 
@@ -175,9 +176,9 @@ type (
 	}
 
 	toolConfigDocMerge struct {
-		OutputDocument             string                     `yaml:"outputDocument"`
-		ConflictResolutionStrategy toolConfigDocMergeStrategy `yaml:"conflictResolutionStrategy"`
-		NonInteractive             bool                       `yaml:"nonInteractive"`
+		OutputDocument   string                     `yaml:"outputDocument"`
+		Strategy         toolConfigDocMergeStrategy `yaml:"strategy"`
+		DisableRewriting bool                       `yaml:"disableRewriting"`
 	}
 )
 
@@ -239,6 +240,7 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 	res.ProjectModule = coalesce(userConf.ProjectModule, defaultConf.ProjectModule)
 	res.RuntimeModule = coalesce(userConf.RuntimeModule, defaultConf.RuntimeModule)
 	res.TemplatesDir = coalesce(userConf.TemplatesDir, defaultConf.TemplatesDir)
+	res.Quiet = coalesce(userConf.Quiet, defaultConf.Quiet)
 
 	// *Replace* layout
 	res.Code.Layout = defaultConf.Code.Layout
@@ -319,8 +321,8 @@ func mergeConfig(defaultConf, userConf toolConfig) toolConfig {
 	res.UI.BundleDir = coalesce(userConf.UI.BundleDir, defaultConf.UI.BundleDir)
 
 	res.Doc.YAMLIndent = coalesce(userConf.Doc.YAMLIndent, defaultConf.Doc.YAMLIndent)
-	res.Doc.Merge.NonInteractive = coalesce(userConf.Doc.Merge.NonInteractive, defaultConf.Doc.Merge.NonInteractive)
-	res.Doc.Merge.ConflictResolutionStrategy = coalesce(userConf.Doc.Merge.ConflictResolutionStrategy, defaultConf.Doc.Merge.ConflictResolutionStrategy)
+	res.Doc.Merge.Strategy = coalesce(userConf.Doc.Merge.Strategy, defaultConf.Doc.Merge.Strategy)
+	res.Doc.Merge.DisableRewriting = coalesce(userConf.Doc.Merge.DisableRewriting, defaultConf.Doc.Merge.DisableRewriting)
 	res.Doc.Merge.OutputDocument = coalesce(userConf.Doc.Merge.OutputDocument, defaultConf.Doc.Merge.OutputDocument)
 
 	return res

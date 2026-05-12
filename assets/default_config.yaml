@@ -54,5 +54,3 @@ ui:
 
 doc:
   yamlIndent: 2
-  merge:
-    conflictResolutionStrategy: rename

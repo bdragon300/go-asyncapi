@@ -146,5 +146,7 @@ func loadFullConfig(cliArgs cli) (toolConfig, error) {
 		logger.Debug("No user config, using only built-in defaults")
 	}
 
-	return mergeConfig(builtinConfig, userConfig), err
+	res := mergeConfig(builtinConfig, userConfig)
+	res.Quiet = coalesce(cliArgs.Quiet, res.Quiet)
+	return res, err
 }
