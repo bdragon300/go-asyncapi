@@ -3,13 +3,13 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path"
-	"reflect"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/bdragon300/go-asyncapi/internal/compiler"
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
@@ -27,38 +27,6 @@ const (
 	sideBySideLineNumberPrefixWidth = 6
 )
 
-// mergePaths is paths to fields to merge.
-// First item is jsonpointer, second item is field path in docAsyncAPI which is used for reflection
-var mergePaths = []lo.Tuple2[[]string, []string]{
-	{A: []string{"servers"}, B: []string{"Servers"}},
-	{A: []string{"channels"}, B: []string{"Channels"}},
-	{A: []string{"operations"}, B: []string{"Operations"}},
-
-	{A: []string{"components", "schemas"}, B: []string{"Components", "Schemas"}},
-
-	{A: []string{"components", "servers"}, B: []string{"Components", "Servers"}},
-	{A: []string{"components", "channels"}, B: []string{"Components", "Channels"}},
-	{A: []string{"components", "operations"}, B: []string{"Components", "Operations"}},
-	{A: []string{"components", "messages"}, B: []string{"Components", "Messages"}},
-
-	{A: []string{"components", "securitySchemes"}, B: []string{"Components", "SecuritySchemes"}},
-	{A: []string{"components", "serverVariables"}, B: []string{"Components", "ServerVariables"}},
-	{A: []string{"components", "parameters"}, B: []string{"Components", "Parameters"}},
-	{A: []string{"components", "correlationIds"}, B: []string{"Components", "CorrelationIDs"}},
-	{A: []string{"components", "replies"}, B: []string{"Components", "Replies"}},
-	{A: []string{"components", "replyAddresses"}, B: []string{"Components", "ReplyAddresses"}},
-	{A: []string{"components", "externalDocs"}, B: []string{"Components", "ExternalDocs"}},
-	{A: []string{"components", "tags"}, B: []string{"Components", "Tags"}},
-
-	{A: []string{"components", "operationTraits"}, B: []string{"Components", "OperationTraits"}},
-	{A: []string{"components", "messageTraits"}, B: []string{"Components", "MessageTraits"}},
-
-	{A: []string{"components", "serverBindings"}, B: []string{"Components", "ServerBindings"}},
-	{A: []string{"components", "channelBindings"}, B: []string{"Components", "ChannelBindings"}},
-	{A: []string{"components", "operationBindings"}, B: []string{"Components", "OperationBindings"}},
-	{A: []string{"components", "messageBindings"}, B: []string{"Components", "MessageBindings"}},
-}
-
 type DocCmd struct {
 	Merge      *DocMergeCmd `arg:"subcommand:merge" help:"Merge multiple AsyncAPI documents into one."`
 	YAMLIndent int          `arg:"--yaml-indent" help:"Output YAML document indentation width" placeholder:"SPACES"`
@@ -72,42 +40,58 @@ type DocMergeCmd struct {
 }
 
 type docAsyncAPI struct {
-	Asyncapi           string                                          `json:"asyncapi,omitzero" yaml:"asyncapi,omitempty"`
-	ID                 string                                          `json:"id,omitzero" yaml:"id,omitempty"`
-	Info               types.OrderedMapTree                            `json:"info,omitzero" yaml:"info,omitempty"`
-	Servers            *types.OrderedMap[string, types.OrderedMapTree] `json:"servers,omitzero" yaml:"servers,omitempty"`
-	DefaultContentType string                                          `json:"defaultContentType,omitzero" yaml:"defaultContentType,omitempty"`
-	Channels           *types.OrderedMap[string, types.OrderedMapTree] `json:"channels,omitzero" yaml:"channels,omitempty"`
-	Operations         *types.OrderedMap[string, types.OrderedMapTree] `json:"operations,omitzero" yaml:"operations,omitempty"`
-	Components         *docAsyncAPIComponents                          `json:"components,omitzero" yaml:"components,omitempty"`
-
-	DocumentURL jsonpointer.JSONPointer `json:"-" yaml:"-"`
+	types.RawNode
+	DocumentURL jsonpointer.JSONPointer `yaml:"-" json:"-"`
 }
 
-type docAsyncAPIComponents struct {
-	Schemas *types.OrderedMap[string, types.OrderedMapTree] `json:"schemas,omitzero" yaml:"schemas,omitempty"`
+// CollectRefs collects pointers to all object RawNodes in the document that have a "$ref" key.
+func (d docAsyncAPI) CollectRefs() []*types.RawNode {
+	rootKeys, componentsKeys := d.mergeableKeys()
+	res := lo.FlatMap(rootKeys, func(key string, _ int) []*types.RawNode {
+		node, _ := d.Get(key)
+		return collectRefs(node)
+	})
 
-	Servers    *types.OrderedMap[string, types.OrderedMapTree] `json:"servers,omitzero" yaml:"servers,omitempty"`
-	Channels   *types.OrderedMap[string, types.OrderedMapTree] `json:"channels,omitzero" yaml:"channels,omitempty"`
-	Operations *types.OrderedMap[string, types.OrderedMapTree] `json:"operations,omitzero" yaml:"operations,omitempty"`
-	Messages   *types.OrderedMap[string, types.OrderedMapTree] `json:"messages,omitzero" yaml:"messages,omitempty"`
+	if comp, ok := d.Get("components"); ok {
+		res = append(res, lo.FlatMap(componentsKeys, func(key string, _ int) []*types.RawNode {
+			node, _ := comp.Get(key)
+			return collectRefs(node)
+		})...)
+	}
 
-	SecuritySchemes *types.OrderedMap[string, types.OrderedMapTree] `json:"securitySchemes,omitzero" yaml:"securitySchemes,omitempty"`
-	ServerVariables *types.OrderedMap[string, types.OrderedMapTree] `json:"serverVariables,omitzero" yaml:"serverVariables,omitempty"`
-	Parameters      *types.OrderedMap[string, types.OrderedMapTree] `json:"parameters,omitzero" yaml:"parameters,omitempty"`
-	CorrelationIDs  *types.OrderedMap[string, types.OrderedMapTree] `json:"correlationIds,omitzero" yaml:"correlationIds,omitempty"`
-	Replies         *types.OrderedMap[string, types.OrderedMapTree] `json:"replies,omitzero" yaml:"replies,omitempty"`
-	ReplyAddresses  *types.OrderedMap[string, types.OrderedMapTree] `json:"replyAddresses,omitzero" yaml:"replyAddresses,omitempty"`
-	ExternalDocs    *types.OrderedMap[string, types.OrderedMapTree] `json:"externalDocs,omitzero" yaml:"externalDocs,omitempty"`
-	Tags            *types.OrderedMap[string, types.OrderedMapTree] `json:"tags,omitzero" yaml:"tags,omitempty"`
+	return res
+}
 
-	OperationTraits *types.OrderedMap[string, types.OrderedMapTree] `json:"operationTraits,omitzero" yaml:"operationTraits,omitempty"`
-	MessageTraits   *types.OrderedMap[string, types.OrderedMapTree] `json:"messageTraits,omitzero" yaml:"messageTraits,omitempty"`
+func (d docAsyncAPI) MergeableNodes() []*types.RawNode {
+	rootKeys, componentsKeys := d.mergeableKeys()
+	res := lo.Map(rootKeys, func(key string, _ int) *types.RawNode {
+		node, _ := d.Get(key)
+		return node
+	})
+	if comp, ok := d.Get("components"); ok {
+		res = append(res, lo.Map(componentsKeys, func(key string, _ int) *types.RawNode {
+			node, _ := comp.Get(key)
+			return node
+		})...)
+	}
 
-	ServerBindings    *types.OrderedMap[string, types.OrderedMapTree] `json:"serverBindings,omitzero" yaml:"serverBindings,omitempty"`
-	ChannelBindings   *types.OrderedMap[string, types.OrderedMapTree] `json:"channelBindings,omitzero" yaml:"channelBindings,omitempty"`
-	OperationBindings *types.OrderedMap[string, types.OrderedMapTree] `json:"operationBindings,omitzero" yaml:"operationBindings,omitempty"`
-	MessageBindings   *types.OrderedMap[string, types.OrderedMapTree] `json:"messageBindings,omitzero" yaml:"messageBindings,omitempty"`
+	return res
+}
+
+func (d docAsyncAPI) mergeableKeys() ([]string, []string) {
+	rootKeys := []string{"servers", "channels", "operations"}
+	componentsKeys := []string{
+		"schemas",
+		"servers", "channels", "operations", "messages",
+		"securitySchemes", "serverVariables", "parameters", "correlationIds", "replies", "replyAddresses", "externalDocs", "tags",
+		"operationTraits", "messageTraits",
+		"serverBindings", "channelBindings", "operationBindings", "messageBindings",
+	}
+	return rootKeys, componentsKeys
+}
+
+type docChangeLogEntry struct {
+	Source, Destination *jsonpointer.JSONPointer
 }
 
 func cliDoc(cmd *DocCmd, globalConfig toolConfig) error {
@@ -124,57 +108,53 @@ func cliDoc(cmd *DocCmd, globalConfig toolConfig) error {
 
 func cliDocMerge(cmd *DocMergeCmd, cmdConfig toolConfig) error {
 	logger := log.GetLogger("")
-
 	if len(cmd.Documents) < 2 {
 		return fmt.Errorf("expected two or more documents to be provided")
 	}
 
-	locator := getLocator(cmdConfig)
-	var resultDocument *docAsyncAPI
-	var err error
-	docURLs := lo.Map(cmd.Documents, func(doc string, _ int) jsonpointer.JSONPointer {
-		docURL, e := jsonpointer.Parse(doc)
-		if e != nil {
-			err = errors.Join(err, fmt.Errorf("parse path or url: %w", e))
-		}
-		return lo.FromPtr(docURL)
-	})
-	if err != nil {
-		return err
-	}
-
 	outputPath := cmd.Output
 	if outputPath == "" {
-		fileNames := lo.Map(docURLs, func(docURL jsonpointer.JSONPointer, _ int) string {
-			loc := docURL.Location()
-			ext := path.Ext(loc)
-			res, _ := strings.CutSuffix(path.Base(loc), ext)
-			return res
-		})
-		outputPath = "merged_" + strings.Join(fileNames, "_") + ".yaml"
+		outputPath = fmt.Sprintf("merged_%s.yaml", time.Now().Format(time.RFC3339)) // FIXME: think again
 	}
 	outputPtr, err := jsonpointer.Parse(outputPath)
 	if err != nil {
 		return fmt.Errorf("parse output path as url: %w", err)
 	}
 
-	for _, docURL := range docURLs {
-		var document docAsyncAPI
-		buf, newDecoder, err := compiler.ReadDocument(&docURL, locator, logger)
+	locator := getLocator(cmdConfig)
+	var docURLs []*jsonpointer.JSONPointer
+	var resultDocument *docAsyncAPI
+	var changeLog []docChangeLogEntry
+	for _, doc := range cmd.Documents {
+		docURL, err := jsonpointer.Parse(doc)
+		if err != nil {
+			return fmt.Errorf("parse document url %q: %w", doc, err)
+		}
+		docURLs = append(docURLs, docURL)
+
+		var contents docAsyncAPI
+		logger.Debug("Loading document", "url", docURL)
+		buf, newDecoder, err := compiler.ReadDocument(docURL, locator, logger)
 		if err != nil {
 			return fmt.Errorf("read document: %w", err)
 		}
-		if err = newDecoder(bytes.NewReader(buf)).Decode(&document); err != nil {
+		if err = newDecoder(bytes.NewReader(buf)).Decode(&contents); err != nil {
 			return fmt.Errorf("decode document: %w", err)
 		}
+		contents.DocumentURL = *docURL
+		for _, ref := range contents.CollectRefs() {
+			ref.Meta = docURL // Remember the origin document in ref metadata for later use when fixing $ref nodes
+		}
 
-		document.DocumentURL = docURL
-		logger.Debug("Loaded document", "url", docURL)
-		if resultDocument, err = docMergeDocuments(&document, resultDocument, cmdConfig); err != nil {
+		var changes []docChangeLogEntry
+		if resultDocument, changes, err = docMergeDocuments(&contents, resultDocument, cmdConfig); err != nil {
 			return fmt.Errorf("merge document %q: %w", docURL, err)
 		}
 		resultDocument.DocumentURL = *outputPtr
+		changeLog = append(changeLog, changes...)
 	}
+
+	docRewriteRefs(resultDocument, docURLs, locator, changeLog)
 
 	logger.Info("Writing output file", "file", outputPath)
 	buf := bytes.NewBuffer(nil)
@@ -191,146 +171,158 @@ func cliDocMerge(cmd *DocMergeCmd, cmdConfig toolConfig) error {
 	return nil
 }
 
-func docMergeDocuments(source, dest *docAsyncAPI, cmdConfig toolConfig) (*docAsyncAPI, error) {
-	if dest == nil {
-		return source, nil
+func docMergeDocuments(sourceDoc, destDoc *docAsyncAPI, cmdConfig toolConfig) (*docAsyncAPI, []docChangeLogEntry, error) {
+	logger := log.GetLogger("")
+	if destDoc == nil {
+		return sourceDoc, nil, nil
 	}
-	if source == nil {
-		return dest, nil
+	if sourceDoc == nil {
+		return destDoc, nil, nil
 	}
-	res := *source
 
+	var changeLog []docChangeLogEntry
 	// TODO: handle other fields: Info, DefaultContentType, etc.
 
-	rvals := [2]reflect.Value{
-		reflect.ValueOf(res),
-		reflect.ValueOf(dest),
-	}
-	for _, mergePath := range mergePaths {
-		ptr := mergePath.A
-		var fields [2]reflect.Value
-		var vals [2]types.OrderedMap[string, types.OrderedMapTree]
-		for i, rval := range rvals {
-			for _, f := range mergePath.B {
-				rval = reflect.Indirect(rval).FieldByName(f)
-				if rval.IsZero() {
-					rval.Set(reflect.New(rval.Type().Elem()))
-				}
-			}
-			fields[i] = rval
-			vals[i] = lo.FromPtr(rval.Interface().(*types.OrderedMap[string, types.OrderedMapTree]))
-		}
-		if lo.EveryBy(vals[:], func(val types.OrderedMap[string, types.OrderedMapTree]) bool { return val.Len() == 0 }) {
+	for src, dst := range utils.ZipLongest2(sourceDoc.MergeableNodes(), destDoc.MergeableNodes()) {
+		if src == nil || dst == nil {
 			continue
 		}
-		newValue, err := docMergeMaps(source.DocumentURL.Join(ptr...), vals[0], dest.DocumentURL.Join(ptr...), vals[1], cmdConfig)
-		if err != nil {
-			return nil, fmt.Errorf("merge maps %v: %w", ptr, err)
+		logger.Trace("Merging nodes", "source", src.Path(), "destination", dst.Path())
+		switch {
+		case src.Kind() != types.RawNodeKindObject:
+			return nil, nil, fmt.Errorf("expected an object on path %q in document %q", path.Join(src.Path()...), sourceDoc.DocumentURL)
+		case dst.Kind() != types.RawNodeKindObject:
+			return nil, nil, fmt.Errorf("expected an object on path %q in document %q", path.Join(dst.Path()...), destDoc.DocumentURL)
+		case src.Len() == 0 && dst.Len() == 0:
+			logger.Trace("Both nodes are empty, skipping", "source", src.Path(), "destination", dst.Path())
+			continue
 		}
-		fields[0].Elem().Set(reflect.ValueOf(newValue))
+		changes, err := docMergeMaps(dst, src, destDoc.DocumentURL.Join(src.Path()...), sourceDoc.DocumentURL.Join(dst.Path()...), cmdConfig)
+		if err != nil {
+			return nil, nil, fmt.Errorf("merge maps %v: %w", path.Join(dst.Path()...), err)
+		}
+		changeLog = append(changeLog, changes...)
 	}
 
-	return &res, nil
+	return destDoc, changeLog, nil
 }
 
-func docMergeMaps(
-	source jsonpointer.JSONPointer,
-	sourceMap types.OrderedMap[string, types.OrderedMapTree],
-	dest jsonpointer.JSONPointer,
-	destMap types.OrderedMap[string, types.OrderedMapTree],
-	cmdConfig toolConfig,
-) (types.OrderedMap[string, types.OrderedMapTree], error) {
+func docMergeMaps(destMap, srcMap *types.RawNode, dest, src jsonpointer.JSONPointer, cmdConfig toolConfig) ([]docChangeLogEntry, error) {
 	logger := log.GetLogger("")
-	var err error
+	var changeLog []docChangeLogEntry
 
-	for sk, sv := range sourceMap.Entries() {
-		dv, conflict := destMap.Get(sk)
+	for skey, sval := range srcMap.Entries() {
+		logger.Trace("Merging key", "key", skey, "path", sval.Path())
+
+		skeystr := skey.(string) // Keys in two maps to merge are expected to be strings
+		dval, conflict := destMap.Get(skey)
 		if !conflict {
-			logger.Trace("Add left key", "key", dest.Join(sk), "value", sv)
-			destMap.Set(sk, sv)
+			logger.Trace("Moving object to destination", "key", skeystr, "value", sval)
+			destMap.Set(skey, sval)
+			changeLog = append(changeLog, docChangeLogEntry{Source: lo.ToPtr(src.Join(skeystr)), Destination: lo.ToPtr(dest.Join(skeystr))})
 			continue
-		} else if reflect.DeepEqual(dv, sv) {
-			logger.Info("Drop completely equal right entity", "destination", dest.Join(sk), "source", source.Join(sk))
+		} else if dval.Equal(sval) {
+			logger.Info("Destination is equal to source object, ignoring", "destination", dval.Path(), "source", sval.Path())
+			changeLog = append(changeLog, docChangeLogEntry{Source: lo.ToPtr(src.Join(skeystr)), Destination: lo.ToPtr(dest.Join(skeystr))})
 			continue
 		}
 
-		logger.Info("Entity name conflict", "destination", dest.Join(sk), "source", source.Join(sk))
-		strategy := cmdConfig.Doc.Merge.ConflictResolutionStrategy
-		if !cmdConfig.Doc.Merge.NonInteractive { // TODO: use quiet mode flag
-			// Print entities in YAML format side-by-side and ask user to choose
+		logger.Debug("Conflict", "destination", dest.Join(skeystr), "source", src.Join(skeystr))
+		changeEntry, err := docResolveKeyConflict(dval, sval, dest.Join(skeystr), src.Join(skeystr), cmdConfig)
+		if err != nil {
+			return nil, fmt.Errorf("resolve key conflict for key %q: %w", skeystr, err)
+		}
+		changeLog = append(changeLog, changeEntry)
+
+		// Apply a change
+		if changeEntry.Destination == nil || len(changeEntry.Destination.Pointer) == 0 {
+			logger.Debug("Ignoring source object", "destination", dest.Join(skeystr), "source", src.Join(skeystr))
+			continue
+		}
+		dKey := changeEntry.Destination.Pointer[len(changeEntry.Destination.Pointer)-1]
+		logger.Debug("Moving destination object", "destination", dest.Join(skeystr), "source", src.Join(skeystr), "name", dKey)
+		destMap.Set(dKey, sval)
+	}
+
+	return changeLog, nil
+}
+
+func docResolveKeyConflict(dMap, sMap *types.RawNode, dPath, sPath jsonpointer.JSONPointer, cmdConfig toolConfig) (docChangeLogEntry, error) {
+	logger := log.GetLogger("")
+
+	logMsg := "Auto-resolve conflict"
+	strategy := cmdConfig.Doc.Merge.ConflictResolutionStrategy
+	if !cmdConfig.Doc.Merge.NonInteractive { // TODO: use quiet mode flag
+		answers := map[string]toolConfigDocMergeStrategy{
+			"i": ToolConfigDocMergeStrategyIgnore,
+			"o": ToolConfigDocMergeStrategyOverwrite,
+			"r": ToolConfigDocMergeStrategyRename,
+			"":  ToolConfigDocMergeStrategyRename,
+		}
+		fmt.Printf("Conflict! Object %q exists both in %q and %q\n", sPath.PointerString(), sPath.Location(), dPath.Location())
+
+		for {
+			fmt.Print("Choose option: (s)how diff/(i)gnore/(o)verwrite/(r)ename: [s/i/o/R]: ")
+			var choice string
+			inp := bufio.NewScanner(os.Stdin)
+			if !inp.Scan() {
+				return docChangeLogEntry{}, fmt.Errorf("read user choice: %w", inp.Err())
+			}
+			choice = inp.Text()
+			var ok bool
+			if strategy, ok = answers[strings.ToLower(choice)]; ok {
+				break
+			}
+			if strings.ToLower(choice) != "s" {
+				logger.Error("Invalid input, try again")
+				continue
+			}
+
+			// Print side-by-side diff in YAML format
 			headers := []string{
-				fmt.Sprintf("Source: %s", source.Location()),
-				fmt.Sprintf("Destination: %s", dest.Location()),
+				fmt.Sprintf("Source: %s", sPath.Location()),
+				fmt.Sprintf("Destination: %s", dPath.Location()),
 			}
 			columns := []io.Reader{
-				strings.NewReader(docPrepareDiffContent(headers[0], source.Join(sk).Pointer, sv, cmdConfig.Doc.YAMLIndent)),
-				strings.NewReader(docPrepareDiffContent(headers[1], dest.Join(sk).Pointer, dv, cmdConfig.Doc.YAMLIndent)),
+				strings.NewReader(docFormatDiffContent(headers[0], sPath.Pointer, sMap, cmdConfig.Doc.YAMLIndent)),
+				strings.NewReader(docFormatDiffContent(headers[1], dPath.Pointer, dMap, cmdConfig.Doc.YAMLIndent)),
 			}
 
 			termWidth := getTerminalWidth()
 			logger.Trace("Terminal width", "width", termWidth)
 			colOutput, err := utils.ArrangeInColumns(columns, termWidth-sideBySideLineNumberPrefixWidth, sideBySideColumnSeparator)
 			if err != nil {
-				return destMap, fmt.Errorf("print diff view: %w", err)
+				return docChangeLogEntry{}, fmt.Errorf("format diff view: %w", err)
 			}
 			fmt.Print(utils.ReadAllWithLineNumbers(strings.NewReader(colOutput), 2, sideBySideLineNumberPrefixWidth))
-
-			answers := map[string]toolConfigDocMergeStrategy{
-				"k": ToolConfigDocMergeStrategyKeep,
-				"o": ToolConfigDocMergeStrategyOverwrite,
-				"r": ToolConfigDocMergeStrategyRename,
-				"":  ToolConfigDocMergeStrategyRename,
-			}
-			for {
-				fmt.Print("Naming conflict, choose option (k)eep/(o)verwrite/(r)ename: [k/o/R]: ")
-				var choice string
-				inp := bufio.NewScanner(os.Stdin)
-				if !inp.Scan() {
-					return destMap, fmt.Errorf("read user choice: %w", inp.Err())
-				}
-				choice = inp.Text()
-				var ok bool
-				if strategy, ok = answers[strings.ToLower(choice)]; ok {
-					break
-				}
-				logger.Error("Invalid choice, try again")
-			}
 		}
 
-		if destMap, err = docMergeMapKeys(destMap, sv, dest.Join(sk), source.Join(sk), strategy); err != nil {
-			return destMap, err
-		}
+		logMsg = "Conflict resolved by user"
 	}
 
-	return destMap, nil
-}
-
-func docMergeMapKeys(lMap types.OrderedMap[string, types.OrderedMapTree], rVal types.OrderedMapTree, lPath, rPath jsonpointer.JSONPointer, strategy toolConfigDocMergeStrategy) (types.OrderedMap[string, types.OrderedMapTree], error) {
-	logger := log.GetLogger("")
-
-	key := rPath.Pointer[len(rPath.Pointer)-1]
+	key := sPath.Pointer[len(sPath.Pointer)-1]
 	switch strategy {
-	case ToolConfigDocMergeStrategyKeep:
-		logger.Info("Resolve conflict", "action", "keep", "left", lPath, "right", rPath)
+	case ToolConfigDocMergeStrategyIgnore:
+		logger.Info(logMsg, "action", "ignore", "destination", dPath, "source", sPath)
+		return docChangeLogEntry{Source: &sPath, Destination: nil}, nil
 	case ToolConfigDocMergeStrategyOverwrite:
-		logger.Info("Resolve conflict", "action", "overwrite", "left", lPath, "right", rPath)
-		lMap.Set(key, rVal)
+		logger.Info(logMsg, "action", "overwrite", "destination", dPath, "source", sPath)
+		return docChangeLogEntry{Source: &sPath, Destination: &dPath}, nil
 	case ToolConfigDocMergeStrategyRename:
+		dPath.Pointer = dPath.Pointer[:len(dPath.Pointer)-1]
 		for i := 1; ; i++ {
 			newKey := fmt.Sprintf("%s_%d", key, i)
-			if _, exists := lMap.Get(newKey); !exists {
-				lMap.Set(newKey, rVal)
-				logger.Info("Resolve conflict", "action", "rename", "left", lPath, "newKey", newKey)
-				return lMap, nil
+			if _, exists := dMap.Get(newKey); !exists {
+				logger.Info(logMsg, "action", "rename", "destination", dPath, "source", sPath, "newKey", newKey)
+				return docChangeLogEntry{Source: &sPath, Destination: lo.ToPtr(dPath.Join(newKey))}, nil
 			}
 		}
-	default:
-		return lMap, fmt.Errorf("unknown conflict resolution strategy: %q", strategy)
 	}
-	return lMap, nil
+
+	panic(fmt.Sprintf("unknown conflict resolution strategy: %q", strategy))
 }
 
-func docPrepareDiffContent(header string, ptr []string, contents types.OrderedMapTree, indentWidth int) string {
+func docFormatDiffContent(header string, ptr []string, contents *types.RawNode, indentWidth int) string {
 	var indentLvl int
 	var b strings.Builder
 
@@ -369,6 +361,95 @@ func getTerminalWidth() int {
 		return width
 	}
 	return defaultStdoutWidth
+}
+
+func docRewriteRefs(doc *docAsyncAPI, sourceDocs []*jsonpointer.JSONPointer, locator documentLocator, changeLog []docChangeLogEntry) {
+	logger := log.GetLogger("")
+	getAbsLoc := func(p *jsonpointer.JSONPointer) string {
+		if p.FSPath != "" {
+			return lo.Must(filepath.Abs(p.FSPath))
+		}
+		return p.Location()
+	}
+
+	for _, obj := range doc.CollectRefs() {
+		if obj.Meta == nil {
+			logger.Warn("Found $ref RawNode with empty metadata after merge, this is a bug", "path", obj.Path())
+			continue
+		}
+		originPath := obj.Meta.(*jsonpointer.JSONPointer) // Document path where this $ref was before the merge
+		targetPath := originPath                          // Explicit document path where this $ref pointed to before the merge
+
+		// Extract jsonpointer from value of variant type
+		var rawRef string
+		variant, _ := obj.Get("$ref")
+		if valid := variant.Kind() == types.RawNodeKindScalar; valid {
+			if rawRef, valid = variant.AsScalar().(string); !valid {
+				logger.Error("$ref value is expected to be string, skipping", "path", obj.Path(), "kind", variant.Kind())
+				continue
+			}
+		}
+		ref, err := jsonpointer.Parse(rawRef)
+		if err != nil {
+			logger.Error("Failed to parse $ref, skipping", "path", obj.Path(), "value", rawRef, "error", err)
+			continue
+		}
+		newRef := *ref
+
+		if ref.Location() != "" {
+			// Resolve relative path in $ref against the origin path
+			if targetPath, err = locator.ResolveURL(originPath, ref); err != nil {
+				logger.Error("Failed to rewrite $ref, skipping", "path", obj.Path(), "value", rawRef, "error", err)
+				continue
+			}
+			_, found := lo.Find(sourceDocs, func(docURL *jsonpointer.JSONPointer) bool {
+				return getAbsLoc(docURL) == getAbsLoc(targetPath)
+			})
+			if found {
+				// Make $ref internal (i.e. remove location) if it points to any of merged documents
+				newRef.URI = nil
+				newRef.FSPath = ""
+			} else if newRef.FSPath != "" && doc.DocumentURL.FSPath != "" {
+				// Rewrite $ref to 3rd-party file according to new location of merged document
+				if p, err := filepath.Rel(path.Dir(getAbsLoc(&doc.DocumentURL)), getAbsLoc(targetPath)); err != nil {
+					logger.Error("Failed to rewrite external location in $ref, leave it as-is", "path", obj.Path(), "value", rawRef, "error", err)
+				} else {
+					newRef.FSPath = p
+				}
+			}
+		}
+
+		// Rewrite pointer path in $ref if it points to an object (or its nested part) that was renamed during merge
+		for _, change := range changeLog {
+			rest, match := lo.CutPrefix(ref.Pointer, change.Source.Pointer)
+			if match && getAbsLoc(targetPath) == getAbsLoc(change.Source) && change.Destination != nil {
+				newRef.Pointer = append(change.Destination.Pointer, rest...) // nolint:gocritic
+				break
+			}
+		}
+
+		obj.Set("$ref", types.NewScalarRawNode(variant.Path(), newRef.String()))
+	}
+}
+
+// collectRefs returns a list of pointer to all RawNodes (n itself and all nested objects) that have a "$ref" key.
+func collectRefs(n *types.RawNode) []*types.RawNode {
+	if n == nil {
+		return nil
+	}
+	if n.Kind() == types.RawNodeKindScalar {
+		return nil
+	}
+
+	var res []*types.RawNode
+	for _, v := range n.Entries() {
+		res = append(res, collectRefs(v)...)
+	}
+	if n.Kind() == types.RawNodeKindObject && n.Has("$ref") {
+		res = append(res, n)
+	}
+
+	return res
 }
 
 func cliDocConfig(globalConfig toolConfig, cmd *DocCmd) (toolConfig, error) {

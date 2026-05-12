@@ -184,7 +184,7 @@ type (
 type toolConfigDocMergeStrategy string
 
 const (
-	ToolConfigDocMergeStrategyKeep      toolConfigDocMergeStrategy = "keep"
+	ToolConfigDocMergeStrategyIgnore    toolConfigDocMergeStrategy = "ignore"
 	ToolConfigDocMergeStrategyOverwrite toolConfigDocMergeStrategy = "overwrite"
 	ToolConfigDocMergeStrategyRename    toolConfigDocMergeStrategy = "rename"
 )

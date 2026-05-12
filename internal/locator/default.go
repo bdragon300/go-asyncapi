@@ -134,6 +134,9 @@ func joinBase(rootDir string, base, ref *jsonpointer.JSONPointer) (*jsonpointer.
 		targetPath = path.Clean(path.Join("/", targetPath))
 	}
 	joinedPath := path.Join(basePath, targetPath)
+	if joinedPath == "." {
+		joinedPath = ""
+	}
 
 	return &jsonpointer.JSONPointer{FSPath: joinedPath, Pointer: ref.Pointer}, nil
 }

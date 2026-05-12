@@ -63,6 +63,7 @@ type JSONPointer struct {
 }
 
 // MatchPointer returns true if pointers are equal, without considering their location. Receives the URL-unescaped pointer.
+// TODO: remove
 func (r JSONPointer) MatchPointer(unescapedPointer []string) bool {
 	return slices.Compare(r.Pointer, unescapedPointer) == 0
 }
