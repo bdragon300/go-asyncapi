@@ -22,6 +22,7 @@ const (
 type slot interface {
 	Key() any
 	Value() *RawNode
+	SetValue(value *RawNode)
 }
 
 type yamlSlot struct {
@@ -29,6 +30,7 @@ type yamlSlot struct {
 	value *RawNode
 
 	keyComments, valueComments [3]string // (headComment, lineComment, footComment) for the key and value nodes respectively
+	keyStyle, valueStyle       yaml.Style
 }
 
 func (y yamlSlot) Key() any {
@@ -39,17 +41,25 @@ func (y yamlSlot) Value() *RawNode {
 	return y.value
 }
 
-type jsonSlot struct {
+func (y yamlSlot) SetValue(value *RawNode) {
+	*y.value = *value
+}
+
+type plainSlot struct {
 	key   any
 	value *RawNode
 }
 
-func (j jsonSlot) Key() any {
+func (j plainSlot) Key() any {
 	return j.key
 }
 
-func (j jsonSlot) Value() *RawNode {
+func (j plainSlot) Value() *RawNode {
 	return j.value
+}
+
+func (j plainSlot) SetValue(value *RawNode) {
+	*j.value = *value
 }
 
 func NewScalarRawNode(path []string, value any) *RawNode {
@@ -61,7 +71,7 @@ func NewScalarRawNode(path []string, value any) *RawNode {
 }
 
 // RawNode is a variant data type, which can represent a scalar, array or object value unmarshalled from JSON or YAML.
-// It marshals back to the original content preserving possible comments and key ordering in objects.
+// It marshals back to the original content preserving comments and key ordering in objects.
 type RawNode struct {
 	kind        RawNodeKind
 	path        []string
@@ -116,11 +126,11 @@ func (r *RawNode) Set(key any, value *RawNode) {
 	}
 	for i, sl := range r.slots {
 		if sl.Key() == key {
-			r.slots[i] = jsonSlot{key: key, value: value}
+			r.slots[i].SetValue(value)
 			return
 		}
 	}
-	r.slots = append(r.slots, jsonSlot{key: key, value: value})
+	r.slots = append(r.slots, plainSlot{key: key, value: value})
 }
 
 func (r RawNode) Len() int {
@@ -185,7 +195,7 @@ func (r RawNode) unmarshalJSONValue(data []byte, valType jsonparser.ValueType, n
 			if err != nil {
 				return err
 			}
-			res.slots = append(res.slots, jsonSlot{key: key, value: val})
+			res.slots = append(res.slots, plainSlot{key: key, value: val})
 			return nil
 		})
 	case jsonparser.Array:
@@ -198,7 +208,7 @@ func (r RawNode) unmarshalJSONValue(data []byte, valType jsonparser.ValueType, n
 				innerErr = err2 // The only way to deliver the error from the callback
 				return
 			}
-			res.slots = append(res.slots, jsonSlot{key: idx, value: val})
+			res.slots = append(res.slots, plainSlot{key: idx, value: val})
 			idx++
 		})
 		return res, errors.Join(err, innerErr)
@@ -278,6 +288,8 @@ func (r RawNode) unmarshalYAMLValue(node *yaml.Node, nodePath []string) (res *Ra
 				value:         val,
 				keyComments:   [3]string{keyNode.HeadComment, keyNode.LineComment, keyNode.FootComment},
 				valueComments: [3]string{valueNode.HeadComment, valueNode.LineComment, valueNode.FootComment},
+				keyStyle:      keyNode.Style,
+				valueStyle:    valueNode.Style,
 			}
 			res.slots = append(res.slots, sl)
 		}
@@ -293,6 +305,7 @@ func (r RawNode) unmarshalYAMLValue(node *yaml.Node, nodePath []string) (res *Ra
 				key:           i,
 				value:         val,
 				valueComments: [3]string{itemNode.HeadComment, itemNode.LineComment, itemNode.FootComment},
+				valueStyle:    itemNode.Style,
 			}
 			res.slots = append(res.slots, sl)
 		}
@@ -321,13 +334,13 @@ func (r RawNode) MarshalYAML() (any, error) {
 			if err := valNode.Encode(sl.Value()); err != nil {
 				return nil, err
 			}
-
-			n.Content = append(n.Content, keyNode, valNode)
-
 			if v, ok := sl.(yamlSlot); ok {
 				keyNode.HeadComment, keyNode.LineComment, keyNode.FootComment = v.keyComments[0], v.keyComments[1], v.keyComments[2]
 				valNode.HeadComment, valNode.LineComment, valNode.FootComment = v.valueComments[0], v.valueComments[1], v.valueComments[2]
+				keyNode.Style, valNode.Style = v.keyStyle, v.valueStyle
 			}
+
+			n.Content = append(n.Content, keyNode, valNode)
 		}
 	case RawNodeKindArray:
 		n.Kind = yaml.SequenceNode
@@ -336,12 +349,11 @@ func (r RawNode) MarshalYAML() (any, error) {
 			if err := valNode.Encode(sl.Value()); err != nil {
 				return nil, err
 			}
-
-			n.Content = append(n.Content, valNode)
-
 			if v, ok := sl.(yamlSlot); ok {
 				valNode.HeadComment, valNode.LineComment, valNode.FootComment = v.valueComments[0], v.valueComments[1], v.valueComments[2]
 			}
+
+			n.Content = append(n.Content, valNode)
 		}
 	case RawNodeKindScalar:
 		if err := n.Encode(r.scalarValue); err != nil {

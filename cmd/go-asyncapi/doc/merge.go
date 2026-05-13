@@ -154,6 +154,7 @@ func mergeMaps(destMap, srcMap *types.RawNode, dest, src jsonpointer.JSONPointer
 		logger.Debug("Merge conflict", "destination", dest.Join(skeystr), "source", src.Join(skeystr))
 		if dval.Equal(sval) {
 			logger.Debug("Auto eliminating duplicate", "path", dval.Path())
+			// Automatically apply "overwrite" strategy to let all $refs to source object to be overwritten to the destination object
 			changeLog = append(changeLog, changeLogEntry{Source: lo.ToPtr(src.Join(skeystr)), Destination: lo.ToPtr(dest.Join(skeystr))})
 			continue
 		}
