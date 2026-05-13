@@ -16,8 +16,8 @@ const (
 )
 
 type Cmd struct {
-	Merge      *MergeCmd `arg:"subcommand:merge" help:"Merge multiple AsyncAPI documents into one."`
-	YAMLIndent int       `arg:"--yaml-indent" help:"Output YAML document indentation width" placeholder:"SPACES"`
+	Merge  *MergeCmd `arg:"subcommand:merge" help:"Merge multiple AsyncAPI documents into one."`
+	Indent int       `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
 }
 
 type documentTree struct {
@@ -90,9 +90,10 @@ func CliDoc(cmd *Cmd, globalConfig common2.ToolConfig) error {
 func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, error) {
 	res := globalConfig
 
-	res.Doc.YAMLIndent = common2.Coalesce(cmd.YAMLIndent, globalConfig.Doc.YAMLIndent)
+	res.Doc.Indent = common2.Coalesce(cmd.Indent, globalConfig.Doc.Indent)
 	res.Doc.Merge.Strategy = common2.Coalesce(cmd.Merge.Strategy, globalConfig.Doc.Merge.Strategy)
 	res.Doc.Merge.DisableRewriting = common2.Coalesce(cmd.Merge.DisableRewriting, globalConfig.Doc.Merge.DisableRewriting)
+	res.Doc.Merge.Format = common2.Coalesce(cmd.Merge.Format, globalConfig.Doc.Merge.Format)
 
 	return res, nil
 }

@@ -171,14 +171,15 @@ type (
 	}
 
 	ToolConfigDoc struct {
-		Merge      ToolConfigDocMerge `yaml:"merge"`
-		YAMLIndent int                `yaml:"yamlIndent"`
+		Merge  ToolConfigDocMerge `yaml:"merge"`
+		Indent int                `yaml:"indent"`
 	}
 
 	ToolConfigDocMerge struct {
 		OutputDocument   string                     `yaml:"outputDocument"`
 		Strategy         ToolConfigDocMergeStrategy `yaml:"strategy"`
 		DisableRewriting bool                       `yaml:"disableRewriting"`
+		Format           string                     `yaml:"format"`
 	}
 )
 
@@ -320,10 +321,11 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.UI.Bundle = Coalesce(userConf.UI.Bundle, defaultConf.UI.Bundle)
 	res.UI.BundleDir = Coalesce(userConf.UI.BundleDir, defaultConf.UI.BundleDir)
 
-	res.Doc.YAMLIndent = Coalesce(userConf.Doc.YAMLIndent, defaultConf.Doc.YAMLIndent)
+	res.Doc.Indent = Coalesce(userConf.Doc.Indent, defaultConf.Doc.Indent)
 	res.Doc.Merge.Strategy = Coalesce(userConf.Doc.Merge.Strategy, defaultConf.Doc.Merge.Strategy)
 	res.Doc.Merge.DisableRewriting = Coalesce(userConf.Doc.Merge.DisableRewriting, defaultConf.Doc.Merge.DisableRewriting)
 	res.Doc.Merge.OutputDocument = Coalesce(userConf.Doc.Merge.OutputDocument, defaultConf.Doc.Merge.OutputDocument)
+	res.Doc.Merge.Format = Coalesce(userConf.Doc.Merge.Format, defaultConf.Doc.Merge.Format)
 
 	return res
 }

@@ -147,6 +147,42 @@ func (r RawNode) AsScalar() any {
 	return r.scalarValue
 }
 
+func (r RawNode) AsSlice() []any {
+	if r.kind != RawNodeKindArray {
+		panic("not an array node")
+	}
+	var res []any
+	for _, sl := range r.slots {
+		switch sl.Value().kind {
+		case RawNodeKindScalar:
+			res = append(res, sl.Value().AsScalar())
+		case RawNodeKindArray:
+			res = append(res, sl.Value().AsSlice())
+		case RawNodeKindObject:
+			res = append(res, sl.Value().AsOrderedMap())
+		}
+	}
+	return res
+}
+
+func (r RawNode) AsOrderedMap() OrderedMap[any, any] {
+	if r.kind != RawNodeKindObject {
+		panic("not an object node")
+	}
+	var res OrderedMap[any, any]
+	for _, sl := range r.slots {
+		switch sl.Value().kind {
+		case RawNodeKindScalar:
+			res.Set(sl.Key(), sl.Value().AsScalar())
+		case RawNodeKindArray:
+			res.Set(sl.Key(), sl.Value().AsSlice())
+		case RawNodeKindObject:
+			res.Set(sl.Key(), sl.Value().AsOrderedMap())
+		}
+	}
+	return res
+}
+
 func (r RawNode) Equal(n *RawNode) bool {
 	if n == nil || r.kind != n.kind {
 		return false
@@ -220,42 +256,15 @@ func (r RawNode) unmarshalJSONValue(data []byte, valType jsonparser.ValueType, n
 }
 
 func (r RawNode) MarshalJSON() ([]byte, error) {
-	var buf []byte
-
 	switch r.kind {
 	case RawNodeKindArray:
-		buf = append(buf, '[')
+		return json.Marshal(r.AsSlice())
 	case RawNodeKindObject:
-		buf = append(buf, '{')
+		return json.Marshal(r.AsOrderedMap())
 	case RawNodeKindScalar:
-		return json.Marshal(r.scalarValue)
+		return json.Marshal(r.AsScalar())
 	}
-
-	for i, sl := range r.slots {
-		keyBytes, err := json.Marshal(sl.Key())
-		if err != nil {
-			return nil, err
-		}
-		valBytes, err := json.Marshal(sl.Value())
-		if err != nil {
-			return nil, err
-		}
-
-		if i > 0 {
-			buf = append(buf, ',')
-		}
-		buf = append(buf, keyBytes...)
-		buf = append(buf, ':')
-		buf = append(buf, valBytes...)
-	}
-
-	switch r.kind {
-	case RawNodeKindArray:
-		buf = append(buf, ']')
-	case RawNodeKindObject:
-		buf = append(buf, '}')
-	}
-	return buf, nil
+	return nil, fmt.Errorf("unknown node kind: %s", r.kind)
 }
 
 func (r *RawNode) UnmarshalYAML(value *yaml.Node) error {
