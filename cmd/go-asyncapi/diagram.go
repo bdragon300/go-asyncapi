@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bdragon300/go-asyncapi/cmd/go-asyncapi/common"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/compiler"
 	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
@@ -90,7 +91,7 @@ type DiagramCmdD2DagreOptions struct {
 	EdgeSep *int64 `arg:"--d2-dagre-edge-sep" help:"Dagre engine: number of pixels that separate edges" placeholder:"PIXELS"`
 }
 
-func cliDiagram(cmd *DiagramCmd, globalConfig toolConfig) error {
+func cliDiagram(cmd *DiagramCmd, globalConfig common2.ToolConfig) error {
 	logger := log.GetLogger("")
 	cmdConfig, err := cliDiagramMergeConfig(globalConfig, cmd)
 	if err != nil {
@@ -100,7 +101,7 @@ func cliDiagram(cmd *DiagramCmd, globalConfig toolConfig) error {
 	//
 	// Compilation & linking
 	//
-	fileLocator := getLocator(cmdConfig)
+	fileLocator := common2.GetLocator(cmdConfig)
 	docURL, err := jsonpointer.Parse(cmd.Document)
 	if err != nil {
 		return fmt.Errorf("parse path or url: %w", err)
@@ -125,7 +126,7 @@ func cliDiagram(cmd *DiagramCmd, globalConfig toolConfig) error {
 		logger.Debug("Custom templates location", "directory", cmdConfig.TemplatesDir)
 		templateDirs = append(templateDirs, os.DirFS(cmdConfig.TemplatesDir))
 	}
-	tplLoader := tmpl.NewTemplateLoader(defaultMainTemplateName, templateDirs...)
+	tplLoader := tmpl.NewTemplateLoader(common2.DefaultMainTemplateName, templateDirs...)
 	logger.Trace("Parse templates", "dirs", templateDirs)
 	renderManager.TemplateLoader = tplLoader
 	if err = tplLoader.ParseRecursive(renderManager); err != nil {
@@ -192,7 +193,7 @@ func cliDiagram(cmd *DiagramCmd, globalConfig toolConfig) error {
 	return nil
 }
 
-func postprocessD2Files(buffers map[string]*bytes.Buffer, cmdConfig toolConfig) (map[string]*bytes.Buffer, error) {
+func postprocessD2Files(buffers map[string]*bytes.Buffer, cmdConfig common2.ToolConfig) (map[string]*bytes.Buffer, error) {
 	for fileName, srcBuf := range buffers {
 		log.GetLogger("").Debug("Compiling d2 file", "file", fileName, "size", srcBuf.Len(), "opts", cmdConfig.Diagram.D2)
 		diagramObj, graphObj, err := compileD2(srcBuf.Bytes(), cmdConfig.Diagram.D2)
@@ -229,13 +230,13 @@ func postprocessD2Files(buffers map[string]*bytes.Buffer, cmdConfig toolConfig) 
 	return buffers, nil
 }
 
-func cliDiagramMergeConfig(globalConfig toolConfig, cmd *DiagramCmd) (toolConfig, error) {
+func cliDiagramMergeConfig(globalConfig common2.ToolConfig, cmd *DiagramCmd) (common2.ToolConfig, error) {
 	res := globalConfig
 
 	formats := []common.DiagramOutputFormat{
 		common.DiagramOutputFormatD2, common.DiagramOutputFormatSVG,
 	}
-	res.Diagram.Format = coalesce(common.DiagramOutputFormat(cmd.Format), globalConfig.Diagram.Format)
+	res.Diagram.Format = common2.Coalesce(common.DiagramOutputFormat(cmd.Format), globalConfig.Diagram.Format)
 	if !slices.Contains(formats, res.Diagram.Format) {
 		return res, fmt.Errorf(
 			"unknown diagram format %q, possible values: %s",
@@ -243,30 +244,30 @@ func cliDiagramMergeConfig(globalConfig toolConfig, cmd *DiagramCmd) (toolConfig
 			strings.Join(lo.Map(formats, func(f common.DiagramOutputFormat, _ int) string { return string(f) }), ", "),
 		)
 	}
-	res.Diagram.OutputFile = coalesce(cmd.OutputFile, globalConfig.Diagram.OutputFile)
-	res.Diagram.TargetDir = coalesce(cmd.TargetDir, globalConfig.Diagram.TargetDir)
-	res.Diagram.MultipleFiles = coalesce(cmd.MultipleFiles, globalConfig.Diagram.MultipleFiles)
-	res.Diagram.DisableFormatting = coalesce(cmd.DisableFormatting, globalConfig.Diagram.DisableFormatting)
-	res.Diagram.ServersCentric = coalesce(cmd.ServersCentric, globalConfig.Diagram.ServersCentric)
-	res.Diagram.ChannelsCentric = coalesce(cmd.ChannelsCentric, globalConfig.Diagram.ChannelsCentric)
+	res.Diagram.OutputFile = common2.Coalesce(cmd.OutputFile, globalConfig.Diagram.OutputFile)
+	res.Diagram.TargetDir = common2.Coalesce(cmd.TargetDir, globalConfig.Diagram.TargetDir)
+	res.Diagram.MultipleFiles = common2.Coalesce(cmd.MultipleFiles, globalConfig.Diagram.MultipleFiles)
+	res.Diagram.DisableFormatting = common2.Coalesce(cmd.DisableFormatting, globalConfig.Diagram.DisableFormatting)
+	res.Diagram.ServersCentric = common2.Coalesce(cmd.ServersCentric, globalConfig.Diagram.ServersCentric)
+	res.Diagram.ChannelsCentric = common2.Coalesce(cmd.ChannelsCentric, globalConfig.Diagram.ChannelsCentric)
 	if res.Diagram.ChannelsCentric && res.Diagram.ServersCentric {
 		return res, fmt.Errorf("diagram cannot be both channels-centric and servers-centric")
 	}
-	res.Diagram.DocumentBorders = coalesce(cmd.DocumentBorders, globalConfig.Diagram.DocumentBorders)
+	res.Diagram.DocumentBorders = common2.Coalesce(cmd.DocumentBorders, globalConfig.Diagram.DocumentBorders)
 
-	engines := []d2DiagramEngine{D2DiagramEngineELK, D2DiagramEngineDagre}
-	res.Diagram.D2.Engine = coalesce(d2DiagramEngine(cmd.Engine), globalConfig.Diagram.D2.Engine)
+	engines := []common2.D2DiagramEngine{common2.D2DiagramEngineELK, common2.D2DiagramEngineDagre}
+	res.Diagram.D2.Engine = common2.Coalesce(common2.D2DiagramEngine(cmd.Engine), globalConfig.Diagram.D2.Engine)
 	if !slices.Contains(engines, res.Diagram.D2.Engine) {
 		return res, fmt.Errorf(
 			"unknown D2 diagram engine %q, possible values: %s",
 			cmd.Engine,
-			strings.Join(lo.Map(engines, func(e d2DiagramEngine, _ int) string { return string(e) }), ", "),
+			strings.Join(lo.Map(engines, func(e common2.D2DiagramEngine, _ int) string { return string(e) }), ", "),
 		)
 	}
 	directions := []common.D2DiagramDirection{
 		common.D2DiagramDirectionUp, common.D2DiagramDirectionDown, common.D2DiagramDirectionLeft, common.D2DiagramDirectionRight,
 	}
-	res.Diagram.D2.Direction = coalesce(common.D2DiagramDirection(cmd.Direction), globalConfig.Diagram.D2.Direction)
+	res.Diagram.D2.Direction = common2.Coalesce(common.D2DiagramDirection(cmd.Direction), globalConfig.Diagram.D2.Direction)
 	if !slices.Contains(directions, res.Diagram.D2.Direction) {
 		return res, fmt.Errorf(
 			"unknown D2 diagram direction %q, possible values: %s",
@@ -275,39 +276,39 @@ func cliDiagramMergeConfig(globalConfig toolConfig, cmd *DiagramCmd) (toolConfig
 		)
 	}
 	// General D2 options
-	res.Diagram.D2.ThemeID = coalesce(cmd.ThemeID, globalConfig.Diagram.D2.ThemeID)
-	res.Diagram.D2.DarkThemeID = coalesce(cmd.DarkThemeID, globalConfig.Diagram.D2.DarkThemeID)
-	res.Diagram.D2.Pad = coalesce(cmd.Pad, globalConfig.Diagram.D2.Pad)
-	res.Diagram.D2.Sketch = coalesce(cmd.Sketch, globalConfig.Diagram.D2.Sketch)
-	res.Diagram.D2.Center = coalesce(cmd.Center, globalConfig.Diagram.D2.Center)
-	res.Diagram.D2.Scale = coalesce(cmd.Scale, globalConfig.Diagram.D2.Scale)
+	res.Diagram.D2.ThemeID = common2.Coalesce(cmd.ThemeID, globalConfig.Diagram.D2.ThemeID)
+	res.Diagram.D2.DarkThemeID = common2.Coalesce(cmd.DarkThemeID, globalConfig.Diagram.D2.DarkThemeID)
+	res.Diagram.D2.Pad = common2.Coalesce(cmd.Pad, globalConfig.Diagram.D2.Pad)
+	res.Diagram.D2.Sketch = common2.Coalesce(cmd.Sketch, globalConfig.Diagram.D2.Sketch)
+	res.Diagram.D2.Center = common2.Coalesce(cmd.Center, globalConfig.Diagram.D2.Center)
+	res.Diagram.D2.Scale = common2.Coalesce(cmd.Scale, globalConfig.Diagram.D2.Scale)
 
 	elkAlgorithms := []string{"layered", "force", "radial", "mrtree", "disco", "rectpacking"}
-	res.Diagram.D2.ELK.Algorithm = coalesce(cmd.Algorithm, globalConfig.Diagram.D2.ELK.Algorithm)
+	res.Diagram.D2.ELK.Algorithm = common2.Coalesce(cmd.Algorithm, globalConfig.Diagram.D2.ELK.Algorithm)
 	if !slices.Contains(elkAlgorithms, res.Diagram.D2.ELK.Algorithm) {
 		return res, fmt.Errorf("unknown ELK algorithm %q, possible values: %s", res.Diagram.D2.ELK.Algorithm, strings.Join(elkAlgorithms, ", "))
 	}
-	res.Diagram.D2.ELK.NodeSpacing = *coalesce(cmd.NodeSpacing, &globalConfig.Diagram.D2.ELK.NodeSpacing)
-	res.Diagram.D2.ELK.Padding = coalesce(cmd.Padding, globalConfig.Diagram.D2.ELK.Padding)
-	res.Diagram.D2.ELK.EdgeSpacing = *coalesce(cmd.EdgeSpacing, &globalConfig.Diagram.D2.ELK.EdgeSpacing)
-	res.Diagram.D2.ELK.SelfLoopSpacing = *coalesce(cmd.SelfLoopSpacing, &globalConfig.Diagram.D2.ELK.SelfLoopSpacing)
+	res.Diagram.D2.ELK.NodeSpacing = *common2.Coalesce(cmd.NodeSpacing, &globalConfig.Diagram.D2.ELK.NodeSpacing)
+	res.Diagram.D2.ELK.Padding = common2.Coalesce(cmd.Padding, globalConfig.Diagram.D2.ELK.Padding)
+	res.Diagram.D2.ELK.EdgeSpacing = *common2.Coalesce(cmd.EdgeSpacing, &globalConfig.Diagram.D2.ELK.EdgeSpacing)
+	res.Diagram.D2.ELK.SelfLoopSpacing = *common2.Coalesce(cmd.SelfLoopSpacing, &globalConfig.Diagram.D2.ELK.SelfLoopSpacing)
 
-	res.Diagram.D2.Dagre.NodeSep = *coalesce(cmd.NodeSep, &globalConfig.Diagram.D2.Dagre.NodeSep)
-	res.Diagram.D2.Dagre.EdgeSep = *coalesce(cmd.EdgeSep, &globalConfig.Diagram.D2.Dagre.EdgeSep)
+	res.Diagram.D2.Dagre.NodeSep = *common2.Coalesce(cmd.NodeSep, &globalConfig.Diagram.D2.Dagre.NodeSep)
+	res.Diagram.D2.Dagre.EdgeSep = *common2.Coalesce(cmd.EdgeSep, &globalConfig.Diagram.D2.Dagre.EdgeSep)
 
 	// Code generation
 
-	res.TemplatesDir = coalesce(cmd.TemplateDir, globalConfig.TemplatesDir)
+	res.TemplatesDir = common2.Coalesce(cmd.TemplateDir, globalConfig.TemplatesDir)
 
-	res.Locator.AllowRemoteReferences = coalesce(cmd.AllowRemoteRefs, globalConfig.Locator.AllowRemoteReferences)
-	res.Locator.RootDirectory = coalesce(cmd.LocatorRootDir, globalConfig.Locator.RootDirectory)
-	res.Locator.Timeout = coalesce(cmd.LocatorTimeout, globalConfig.Locator.Timeout)
-	res.Locator.Command = coalesce(cmd.LocatorCommand, globalConfig.Locator.Command)
+	res.Locator.AllowRemoteReferences = common2.Coalesce(cmd.AllowRemoteRefs, globalConfig.Locator.AllowRemoteReferences)
+	res.Locator.RootDirectory = common2.Coalesce(cmd.LocatorRootDir, globalConfig.Locator.RootDirectory)
+	res.Locator.Timeout = common2.Coalesce(cmd.LocatorTimeout, globalConfig.Locator.Timeout)
+	res.Locator.Command = common2.Coalesce(cmd.LocatorCommand, globalConfig.Locator.Command)
 
 	return res, nil
 }
 
-func getDiagramConfig(conf toolConfigDiagram) common.DiagramRenderOpts {
+func getDiagramConfig(conf common2.ToolConfigDiagram) common.DiagramRenderOpts {
 	return common.DiagramRenderOpts{
 		ShowChannels:        !conf.ServersCentric,
 		ShowServers:         !conf.ChannelsCentric,
@@ -316,7 +317,7 @@ func getDiagramConfig(conf toolConfigDiagram) common.DiagramRenderOpts {
 	}
 }
 
-func compileD2(contents []byte, d2opts toolConfigDiagramD2Opts) (*d2target.Diagram, *d2graph.Graph, error) {
+func compileD2(contents []byte, d2opts common2.ToolConfigDiagramD2Opts) (*d2target.Diagram, *d2graph.Graph, error) {
 	engine := string(d2opts.Engine)
 
 	ctx := d2log.With(context.Background(), slog.Default())
@@ -345,7 +346,7 @@ func compileD2(contents []byte, d2opts toolConfigDiagramD2Opts) (*d2target.Diagr
 	return diagramObj, graphObj, nil
 }
 
-func layoutResolver(ctx context.Context, plugins []d2plugin.Plugin, d2opts toolConfigDiagramD2Opts) func(engine string) (d2graph.LayoutGraph, error) {
+func layoutResolver(ctx context.Context, plugins []d2plugin.Plugin, d2opts common2.ToolConfigDiagramD2Opts) func(engine string) (d2graph.LayoutGraph, error) {
 	cached := make(map[string]d2graph.LayoutGraph)
 	return func(engine string) (d2graph.LayoutGraph, error) {
 		if c, ok := cached[engine]; ok {
@@ -362,11 +363,11 @@ func layoutResolver(ctx context.Context, plugins []d2plugin.Plugin, d2opts toolC
 
 		var engineOpts []byte
 		switch d2opts.Engine {
-		case D2DiagramEngineELK:
+		case common2.D2DiagramEngineELK:
 			if engineOpts, err = d2opts.ELK.ToD2PluginOpts(); err != nil {
 				return nil, fmt.Errorf("to %s options: %w", engine, err)
 			}
-		case D2DiagramEngineDagre:
+		case common2.D2DiagramEngineDagre:
 			if engineOpts, err = d2opts.Dagre.ToD2PluginOpts(); err != nil {
 				return nil, fmt.Errorf("to %s options: %w", engine, err)
 			}
@@ -382,7 +383,7 @@ func layoutResolver(ctx context.Context, plugins []d2plugin.Plugin, d2opts toolC
 	}
 }
 
-func getD2RenderOpts(d2opts toolConfigDiagramD2Opts) (d2svg.RenderOpts, error) {
+func getD2RenderOpts(d2opts common2.ToolConfigDiagramD2Opts) (d2svg.RenderOpts, error) {
 	if d2opts.DarkThemeID != nil {
 		match := d2themescatalog.Find(*d2opts.DarkThemeID)
 		if match == (d2themes.Theme{}) {
@@ -399,7 +400,7 @@ func getD2RenderOpts(d2opts toolConfigDiagramD2Opts) (d2svg.RenderOpts, error) {
 		Pad:         d2opts.Pad,
 		Sketch:      d2opts.Sketch,
 		Center:      d2opts.Center,
-		ThemeID:     coalesce(d2opts.ThemeID, d2opts.DarkThemeID),
+		ThemeID:     common2.Coalesce(d2opts.ThemeID, d2opts.DarkThemeID),
 		DarkThemeID: d2opts.DarkThemeID,
 		Scale:       d2opts.Scale,
 	}, nil

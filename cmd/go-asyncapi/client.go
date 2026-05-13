@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bdragon300/go-asyncapi/cmd/go-asyncapi/common"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	chlog "github.com/charmbracelet/log"
 	"github.com/samber/lo"
@@ -43,7 +44,7 @@ type ClientCmd struct {
 	LocatorCommand  string        `arg:"--locator-command" help:"Custom locator command to use instead of built-in locator" placeholder:"COMMAND"`
 }
 
-func cliClient(cmd *ClientCmd, globalConfig toolConfig) error {
+func cliClient(cmd *ClientCmd, globalConfig common2.ToolConfig) error {
 	logger := log.GetLogger("")
 	cmdConfig := cliClientMergeConfig(globalConfig, cmd)
 
@@ -152,24 +153,24 @@ func runGoBuild(sourceFile, outputFile string) error {
 	return nil
 }
 
-func cliClientMergeConfig(globalConfig toolConfig, cmd *ClientCmd) toolConfig {
+func cliClientMergeConfig(globalConfig common2.ToolConfig, cmd *ClientCmd) common2.ToolConfig {
 	res := globalConfig
 
-	res.TemplatesDir = coalesce(cmd.TemplateDir, globalConfig.TemplatesDir)
+	res.TemplatesDir = common2.Coalesce(cmd.TemplateDir, globalConfig.TemplatesDir)
 
-	res.Client.OutputFile = coalesce(cmd.OutputExecFile, globalConfig.Client.OutputFile)
-	res.Client.OutputSourceFile = coalesce(cmd.OutputSourceFile, globalConfig.Client.OutputSourceFile)
-	res.Client.KeepSource = coalesce(cmd.KeepSource, globalConfig.Client.KeepSource)
-	res.Client.GoModTemplate = coalesce(cmd.GoModTemplate, globalConfig.Client.GoModTemplate)
-	res.Client.TempDir = coalesce(cmd.TempDir, globalConfig.Client.TempDir)
+	res.Client.OutputFile = common2.Coalesce(cmd.OutputExecFile, globalConfig.Client.OutputFile)
+	res.Client.OutputSourceFile = common2.Coalesce(cmd.OutputSourceFile, globalConfig.Client.OutputSourceFile)
+	res.Client.KeepSource = common2.Coalesce(cmd.KeepSource, globalConfig.Client.KeepSource)
+	res.Client.GoModTemplate = common2.Coalesce(cmd.GoModTemplate, globalConfig.Client.GoModTemplate)
+	res.Client.TempDir = common2.Coalesce(cmd.TempDir, globalConfig.Client.TempDir)
 
-	res.Code.PreambleTemplate = coalesce(cmd.PreambleTemplate, globalConfig.Code.PreambleTemplate)
+	res.Code.PreambleTemplate = common2.Coalesce(cmd.PreambleTemplate, globalConfig.Code.PreambleTemplate)
 
-	res.RuntimeModule = coalesce(cmd.RuntimeModule, globalConfig.RuntimeModule)
-	res.Locator.AllowRemoteReferences = coalesce(cmd.AllowRemoteRefs, globalConfig.Locator.AllowRemoteReferences)
-	res.Locator.RootDirectory = coalesce(cmd.LocatorRootDir, globalConfig.Locator.RootDirectory)
-	res.Locator.Timeout = coalesce(cmd.LocatorTimeout, globalConfig.Locator.Timeout)
-	res.Locator.Command = coalesce(cmd.LocatorCommand, globalConfig.Locator.Command)
+	res.RuntimeModule = common2.Coalesce(cmd.RuntimeModule, globalConfig.RuntimeModule)
+	res.Locator.AllowRemoteReferences = common2.Coalesce(cmd.AllowRemoteRefs, globalConfig.Locator.AllowRemoteReferences)
+	res.Locator.RootDirectory = common2.Coalesce(cmd.LocatorRootDir, globalConfig.Locator.RootDirectory)
+	res.Locator.Timeout = common2.Coalesce(cmd.LocatorTimeout, globalConfig.Locator.Timeout)
+	res.Locator.Command = common2.Coalesce(cmd.LocatorCommand, globalConfig.Locator.Command)
 
 	return res
 }

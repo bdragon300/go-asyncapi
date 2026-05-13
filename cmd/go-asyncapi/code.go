@@ -6,16 +6,16 @@ import (
 	"go/format"
 	"io"
 	"io/fs"
-	"net/http"
 	"os"
 	"path"
 	"slices"
 	"strings"
 	"time"
 
+	"github.com/bdragon300/go-asyncapi/cmd/go-asyncapi/common"
+	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
-	"github.com/bdragon300/go-asyncapi/internal/locator"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/render"
 	"github.com/bdragon300/go-asyncapi/internal/selector"
@@ -29,7 +29,6 @@ import (
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
 
-	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/compiler"
 	"github.com/bdragon300/go-asyncapi/internal/linker"
 	"github.com/bdragon300/go-asyncapi/internal/renderer"
@@ -62,7 +61,7 @@ type CodeCmd struct {
 	goModTemplate string `arg:"-"`
 }
 
-func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
+func cliCode(cmd *CodeCmd, globalConfig common2.ToolConfig) error {
 	logger := log.GetLogger("")
 	cmdConfig := cliCodeMergeConfig(globalConfig, cmd)
 
@@ -77,14 +76,14 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 	}
 	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Code.TargetDir, true)
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
+		return fmt.Errorf("%w: %w", common2.ErrWrongCliArgs, err)
 	}
 	renderManager := manager.NewTemplateRenderManager(renderOpts)
 
 	//
 	// Compilation & linking
 	//
-	fileLocator := getLocator(cmdConfig)
+	fileLocator := common2.GetLocator(cmdConfig)
 	rootDocumentURL, err := jsonpointer.Parse(cmd.Document)
 	if err != nil {
 		return fmt.Errorf("parse path or url: %w", err)
@@ -128,7 +127,7 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 		logger.Debug("Custom templates location", "directory", cmdConfig.TemplatesDir)
 		templateDirs = append(templateDirs, os.DirFS(cmdConfig.TemplatesDir))
 	}
-	tplLoader := tmpl.NewTemplateLoader(defaultMainTemplateName, templateDirs...)
+	tplLoader := tmpl.NewTemplateLoader(common2.DefaultMainTemplateName, templateDirs...)
 	logger.Trace("Parse templates", "dirs", templateDirs)
 	renderManager.TemplateLoader = tplLoader
 	if err = tplLoader.ParseRecursive(renderManager); err != nil {
@@ -151,7 +150,7 @@ func cliCode(cmd *CodeCmd, globalConfig toolConfig) error {
 			logger.Debug("Custom templates location", "directory", cmdConfig.TemplatesDir)
 			templateDirs = append(templateDirs, os.DirFS(cmdConfig.TemplatesDir))
 		}
-		tplLoader = tmpl.NewTemplateLoader(defaultMainTemplateName, templateDirs...)
+		tplLoader = tmpl.NewTemplateLoader(common2.DefaultMainTemplateName, templateDirs...)
 		logger.Trace("Parse templates", "dirs", templateDirs)
 		renderManager.TemplateLoader = tplLoader
 		if err = tplLoader.ParseRecursive(renderManager); err != nil {
@@ -218,32 +217,32 @@ func collectAllProtocols(documents map[string]*compiler.Document) []string {
 	return r
 }
 
-func cliCodeMergeConfig(globalConfig toolConfig, cmd *CodeCmd) toolConfig {
+func cliCodeMergeConfig(globalConfig common2.ToolConfig, cmd *CodeCmd) common2.ToolConfig {
 	res := globalConfig
 
-	res.ProjectModule = coalesce(cmd.ProjectModule, res.ProjectModule)
-	res.RuntimeModule = coalesce(cmd.RuntimeModule, res.RuntimeModule)
-	res.TemplatesDir = coalesce(cmd.TemplateDir, res.TemplatesDir)
+	res.ProjectModule = common2.Coalesce(cmd.ProjectModule, res.ProjectModule)
+	res.RuntimeModule = common2.Coalesce(cmd.RuntimeModule, res.RuntimeModule)
+	res.TemplatesDir = common2.Coalesce(cmd.TemplateDir, res.TemplatesDir)
 
-	res.Locator.AllowRemoteReferences = coalesce(cmd.AllowRemoteRefs, res.Locator.AllowRemoteReferences)
-	res.Locator.RootDirectory = coalesce(cmd.LocatorRootDir, res.Locator.RootDirectory)
-	res.Locator.Timeout = coalesce(cmd.LocatorTimeout, res.Locator.Timeout)
-	res.Locator.Command = coalesce(cmd.LocatorCommand, res.Locator.Command)
+	res.Locator.AllowRemoteReferences = common2.Coalesce(cmd.AllowRemoteRefs, res.Locator.AllowRemoteReferences)
+	res.Locator.RootDirectory = common2.Coalesce(cmd.LocatorRootDir, res.Locator.RootDirectory)
+	res.Locator.Timeout = common2.Coalesce(cmd.LocatorTimeout, res.Locator.Timeout)
+	res.Locator.Command = common2.Coalesce(cmd.LocatorCommand, res.Locator.Command)
 
-	res.Code.OnlyPublish = coalesce(cmd.OnlyPub, res.Code.OnlyPublish)
-	res.Code.OnlySubscribe = coalesce(cmd.OnlySub, res.Code.OnlySubscribe)
-	res.Code.TargetDir = coalesce(cmd.TargetDir, res.Code.TargetDir)
-	res.Code.PreambleTemplate = coalesce(cmd.PreambleTemplate, res.Code.PreambleTemplate)
-	res.Code.DisableFormatting = coalesce(cmd.DisableFormatting, res.Code.DisableFormatting)
+	res.Code.OnlyPublish = common2.Coalesce(cmd.OnlyPub, res.Code.OnlyPublish)
+	res.Code.OnlySubscribe = common2.Coalesce(cmd.OnlySub, res.Code.OnlySubscribe)
+	res.Code.TargetDir = common2.Coalesce(cmd.TargetDir, res.Code.TargetDir)
+	res.Code.PreambleTemplate = common2.Coalesce(cmd.PreambleTemplate, res.Code.PreambleTemplate)
+	res.Code.DisableFormatting = common2.Coalesce(cmd.DisableFormatting, res.Code.DisableFormatting)
 
-	res.Code.Implementation.Disable = coalesce(cmd.DisableImplementations, res.Code.Implementation.Disable)
+	res.Code.Implementation.Disable = common2.Coalesce(cmd.DisableImplementations, res.Code.Implementation.Disable)
 
-	res.Client.GoModTemplate = coalesce(cmd.goModTemplate, res.Client.GoModTemplate)
+	res.Client.GoModTemplate = common2.Coalesce(cmd.goModTemplate, res.Client.GoModTemplate)
 
 	return res
 }
 
-func getCompileOpts(cfg toolConfig) compile.CompilationOpts {
+func getCompileOpts(cfg common2.ToolConfig) compile.CompilationOpts {
 	// When both flags are not set, both pub and sub are enabled. If one of them is set, only that one is enabled.
 	// If both are set, both are enabled as well, but this is a weird case.
 	isPub := cfg.Code.OnlyPublish || !cfg.Code.OnlySubscribe
@@ -255,14 +254,14 @@ func getCompileOpts(cfg toolConfig) compile.CompilationOpts {
 	}
 }
 
-func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (common.RenderOpts, error) {
+func getRenderOpts(conf common2.ToolConfig, targetDir string, findProjectModule bool) (common.RenderOpts, error) {
 	logger := log.GetLogger("")
 	res := common.RenderOpts{
 		RuntimeModule:    conf.RuntimeModule,
 		PreambleTemplate: conf.Code.PreambleTemplate,
 		UtilCodeOpts: common.UtilCodeOpts{
 			Directory: conf.Code.Util.Directory,
-			Custom: lo.Map(conf.Code.Util.Custom, func(item toolConfigCodeUtilProtocol, _ int) common.UtilCodeCustomOpts {
+			Custom: lo.Map(conf.Code.Util.Custom, func(item common2.ToolConfigCodeUtilProtocol, _ int) common.UtilCodeCustomOpts {
 				return common.UtilCodeCustomOpts{
 					Protocol:          item.Protocol,
 					TemplateDirectory: item.TemplateDirectory,
@@ -272,7 +271,7 @@ func getRenderOpts(conf toolConfig, targetDir string, findProjectModule bool) (c
 		ImplementationCodeOpts: common.ImplementationCodeOpts{
 			Directory: conf.Code.Implementation.Directory,
 			Disable:   conf.Code.Implementation.Disable,
-			Custom: lo.Map(conf.Code.Implementation.Custom, func(item toolConfigImplementationProtocol, _ int) common.ImplementationCodeCustomOpts {
+			Custom: lo.Map(conf.Code.Implementation.Custom, func(item common2.ToolConfigImplementationProtocol, _ int) common.ImplementationCodeCustomOpts {
 				return common.ImplementationCodeCustomOpts{
 					Protocol:          item.Protocol,
 					Name:              item.Name,
@@ -362,32 +361,8 @@ func getProjectModule() (string, error) {
 	return modpath, nil
 }
 
-type documentLocator interface {
-	Locate(docURL *jsonpointer.JSONPointer) (io.ReadCloser, error)
-	ResolveURL(base, target *jsonpointer.JSONPointer) (*jsonpointer.JSONPointer, error)
-}
-
-func getLocator(conf toolConfig) documentLocator {
-	logger := log.GetLogger(log.LoggerPrefixLocating)
-	if conf.Locator.Command != "" {
-		return locator.Subprocess{
-			CommandLine:     conf.Locator.Command,
-			RunTimeout:      conf.Locator.Timeout,
-			ShutdownTimeout: defaultSubprocessLocatorShutdownTimeout,
-			RootDirectory:   conf.Locator.RootDirectory,
-			Logger:          logger,
-		}
-	}
-	res := locator.Default{
-		Client:        &http.Client{Timeout: conf.Locator.Timeout},
-		RootDirectory: conf.Locator.RootDirectory,
-		Logger:        logger,
-	}
-	return res
-}
-
 func runCompilationAndLinking(
-	locator documentLocator,
+	locator common2.DocumentLocator,
 	docURL *jsonpointer.JSONPointer,
 	compileOpts compile.CompilationOpts,
 ) (map[string]*compiler.Document, error) {
@@ -413,7 +388,7 @@ func runCompilationAndLinking(
 func runCompilation(
 	docURL *jsonpointer.JSONPointer,
 	compileContext *compile.Context,
-	locator documentLocator,
+	locator common2.DocumentLocator,
 ) (map[string]*compiler.Document, error) {
 	logger := log.GetLogger(log.LoggerPrefixCompilation)
 	compileQueue := []*jsonpointer.JSONPointer{docURL} // Queue of document urls to compile
@@ -577,10 +552,4 @@ func postprocessGoFiles(files map[string]*bytes.Buffer) error {
 
 	logger.Info("Formatting complete", "files", len(files))
 	return nil
-}
-
-// coalesce return the first non-zero value from the list of arguments.
-func coalesce[T comparable](vals ...T) T {
-	res, _ := lo.Coalesce(vals...)
-	return res
 }

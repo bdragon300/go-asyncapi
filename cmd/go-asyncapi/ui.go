@@ -12,6 +12,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/bdragon300/go-asyncapi/cmd/go-asyncapi/common"
 	"github.com/bdragon300/go-asyncapi/internal/common"
 	"github.com/bdragon300/go-asyncapi/internal/compiler"
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
@@ -46,7 +47,7 @@ type UICmd struct {
 	TemplatesDir string `arg:"-T,--templates-dir" help:"User templates directory" placeholder:"DIR"`
 }
 
-func cliUI(cmd *UICmd, globalConfig toolConfig) error {
+func cliUI(cmd *UICmd, globalConfig common2.ToolConfig) error {
 	logger := log.GetLogger("")
 	cmdConfig, err := cliUIMergeConfig(globalConfig, cmd)
 	if err != nil {
@@ -57,7 +58,7 @@ func cliUI(cmd *UICmd, globalConfig toolConfig) error {
 		return fmt.Errorf("ui bundle directory is set but bundling is disabled. Use --bundle flag to enable bundling")
 	}
 
-	locator := getLocator(cmdConfig)
+	locator := common2.GetLocator(cmdConfig)
 	docURL, err := jsonpointer.Parse(cmd.Document)
 	if err != nil {
 		return fmt.Errorf("parse path or url: %w", err)
@@ -86,7 +87,7 @@ func cliUI(cmd *UICmd, globalConfig toolConfig) error {
 		logger.Debug("Custom templates location", "directory", cmdConfig.TemplatesDir)
 		templateDirs = append(templateDirs, os.DirFS(cmdConfig.TemplatesDir))
 	}
-	tplLoader := tmpl.NewTemplateLoader(defaultMainTemplateName, templateDirs...)
+	tplLoader := tmpl.NewTemplateLoader(common2.DefaultMainTemplateName, templateDirs...)
 	logger.Trace("Parse templates", "dirs", templateDirs)
 	renderManager.TemplateLoader = tplLoader
 	if err = tplLoader.ParseRecursive(renderManager); err != nil {
@@ -316,17 +317,17 @@ func serveUI(address, listenPath string, files map[string]servingUIContent) erro
 	return nil
 }
 
-func cliUIMergeConfig(globalConfig toolConfig, cmd *UICmd) (toolConfig, error) {
+func cliUIMergeConfig(globalConfig common2.ToolConfig, cmd *UICmd) (common2.ToolConfig, error) {
 	res := globalConfig
 
-	res.TemplatesDir = coalesce(cmd.TemplatesDir, globalConfig.TemplatesDir)
+	res.TemplatesDir = common2.Coalesce(cmd.TemplatesDir, globalConfig.TemplatesDir)
 
-	res.UI.OutputFile = coalesce(cmd.Output, globalConfig.UI.OutputFile)
-	res.UI.Listen = coalesce(cmd.Listen, globalConfig.UI.Listen)
-	res.UI.ListenAddress = coalesce(cmd.ListenAddress, globalConfig.UI.ListenAddress)
-	res.UI.ListenPath = coalesce(cmd.ListenPath, globalConfig.UI.ListenPath)
-	res.UI.Bundle = coalesce(cmd.Bundle, globalConfig.UI.Bundle)
-	res.UI.BundleDir = coalesce(cmd.BundleDir, globalConfig.UI.BundleDir)
+	res.UI.OutputFile = common2.Coalesce(cmd.Output, globalConfig.UI.OutputFile)
+	res.UI.Listen = common2.Coalesce(cmd.Listen, globalConfig.UI.Listen)
+	res.UI.ListenAddress = common2.Coalesce(cmd.ListenAddress, globalConfig.UI.ListenAddress)
+	res.UI.ListenPath = common2.Coalesce(cmd.ListenPath, globalConfig.UI.ListenPath)
+	res.UI.Bundle = common2.Coalesce(cmd.Bundle, globalConfig.UI.Bundle)
+	res.UI.BundleDir = common2.Coalesce(cmd.BundleDir, globalConfig.UI.BundleDir)
 
 	return res, nil
 }

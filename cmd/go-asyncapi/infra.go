@@ -7,13 +7,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
-	"github.com/bdragon300/go-asyncapi/internal/selector"
-
+	"github.com/bdragon300/go-asyncapi/cmd/go-asyncapi/common"
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/renderer"
+	"github.com/bdragon300/go-asyncapi/internal/selector"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
 	"github.com/bdragon300/go-asyncapi/templates/infra"
@@ -33,7 +33,7 @@ type InfraCmd struct {
 	LocatorCommand  string        `arg:"--locator-command" help:"Custom locator command to use instead of built-in locator" placeholder:"COMMAND"`
 }
 
-func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
+func cliInfra(cmd *InfraCmd, globalConfig common2.ToolConfig) error {
 	logger := log.GetLogger("")
 	cmdConfig, err := cliInfraMergeConfig(globalConfig, cmd)
 	if err != nil {
@@ -43,7 +43,7 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	//
 	// Compilation & linking
 	//
-	fileLocator := getLocator(cmdConfig)
+	fileLocator := common2.GetLocator(cmdConfig)
 	docURL, err := jsonpointer.Parse(cmd.Document)
 	if err != nil {
 		return fmt.Errorf("parse path or url: %w", err)
@@ -68,7 +68,7 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 	//       Also consider to include add InfraServerOpts (replace RenderOpts to interface in manager?)
 	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Code.TargetDir, false)
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrWrongCliArgs, err)
+		return fmt.Errorf("%w: %w", common2.ErrWrongCliArgs, err)
 	}
 	renderManager := manager.NewTemplateRenderManager(renderOpts)
 
@@ -79,7 +79,7 @@ func cliInfra(cmd *InfraCmd, globalConfig toolConfig) error {
 		logger.Debug("Custom templates location", "directory", cmdConfig.TemplatesDir)
 		templateDirs = append(templateDirs, os.DirFS(cmdConfig.TemplatesDir))
 	}
-	tplLoader := tmpl.NewTemplateLoader(defaultMainTemplateName, templateDirs...)
+	tplLoader := tmpl.NewTemplateLoader(common2.DefaultMainTemplateName, templateDirs...)
 	logger.Trace("Parse templates", "dirs", templateDirs)
 	renderManager.TemplateLoader = tplLoader
 	if err = tplLoader.ParseRecursive(renderManager); err != nil {
@@ -127,12 +127,12 @@ func writeToFile(fileName string, buf io.Reader) error {
 	return nil
 }
 
-func cliInfraMergeConfig(globalConfig toolConfig, cmd *InfraCmd) (toolConfig, error) {
+func cliInfraMergeConfig(globalConfig common2.ToolConfig, cmd *InfraCmd) (common2.ToolConfig, error) {
 	res := globalConfig
 
-	res.TemplatesDir = coalesce(cmd.TemplateDir, globalConfig.TemplatesDir)
+	res.TemplatesDir = common2.Coalesce(cmd.TemplateDir, globalConfig.TemplatesDir)
 
-	res.Infra.Engine = coalesce(cmd.Engine, globalConfig.Infra.Engine)
+	res.Infra.Engine = common2.Coalesce(cmd.Engine, globalConfig.Infra.Engine)
 	var outputFile string
 	switch res.Infra.Engine {
 	case "docker":
@@ -140,17 +140,17 @@ func cliInfraMergeConfig(globalConfig toolConfig, cmd *InfraCmd) (toolConfig, er
 	default:
 		return res, fmt.Errorf("unknown engine: %s", cmd.Engine)
 	}
-	res.Infra.OutputFile = coalesce(cmd.OutputFile, outputFile)
+	res.Infra.OutputFile = common2.Coalesce(cmd.OutputFile, outputFile)
 
-	res.Locator.AllowRemoteReferences = coalesce(cmd.AllowRemoteRefs, globalConfig.Locator.AllowRemoteReferences)
-	res.Locator.RootDirectory = coalesce(cmd.LocatorRootDir, globalConfig.Locator.RootDirectory)
-	res.Locator.Timeout = coalesce(cmd.LocatorTimeout, globalConfig.Locator.Timeout)
-	res.Locator.Command = coalesce(cmd.LocatorCommand, globalConfig.Locator.Command)
+	res.Locator.AllowRemoteReferences = common2.Coalesce(cmd.AllowRemoteRefs, globalConfig.Locator.AllowRemoteReferences)
+	res.Locator.RootDirectory = common2.Coalesce(cmd.LocatorRootDir, globalConfig.Locator.RootDirectory)
+	res.Locator.Timeout = common2.Coalesce(cmd.LocatorTimeout, globalConfig.Locator.Timeout)
+	res.Locator.Command = common2.Coalesce(cmd.LocatorCommand, globalConfig.Locator.Command)
 
 	return res, nil
 }
 
-func getInfraServerConfig(opts []toolConfigInfraServerOpt) []common.InfraServerOpts {
+func getInfraServerConfig(opts []common2.ToolConfigInfraServerOpt) []common.InfraServerOpts {
 	res := make([]common.InfraServerOpts, 0)
 
 	for _, opt := range opts {

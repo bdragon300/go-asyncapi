@@ -4,39 +4,30 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	stdLog "log"
 	"log/slog"
 	"os"
 	"path"
-	"time"
-
-	stdLog "log"
 
 	"github.com/bdragon300/go-asyncapi/assets"
+	"github.com/bdragon300/go-asyncapi/cmd/go-asyncapi/common"
+	"github.com/bdragon300/go-asyncapi/cmd/go-asyncapi/doc"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/types"
-
 	chlog "github.com/charmbracelet/log"
 
 	"github.com/alexflint/go-arg"
 )
 
-const (
-	defaultConfigFileName                   = "default_config.yaml"
-	defaultMainTemplateName                 = "main.tmpl"
-	defaultSubprocessLocatorShutdownTimeout = 3 * time.Second
-)
-
-var ErrWrongCliArgs = errors.New("cli args")
-
 type cli struct {
-	CodeCmd             *CodeCmd    `arg:"subcommand:code" help:"Generate the code"`
+	CodeCmd             *CodeCmd    `arg:"subcommand:code" help:"Generate the Go boilerplate code"`
 	ClientCmd           *ClientCmd  `arg:"subcommand:client" help:"Build the client executable (requires Go toolchain installed)"`
 	InfraCmd            *InfraCmd   `arg:"subcommand:infra" help:"Generate the infrastructure setup files"`
 	DiagramCmd          *DiagramCmd `arg:"subcommand:diagram" help:"Generate the architecture diagram"`
-	UICmd               *UICmd      `arg:"subcommand:ui" help:"Generate and optionally serve the documentation"`
-	DocCmd              *DocCmd     `arg:"subcommand:doc" help:"Working with AsyncAPI documents: merge, split, etc."`
+	UICmd               *UICmd      `arg:"subcommand:ui" help:"Generate or serve the documentation UI"`
+	DocCmd              *doc.Cmd    `arg:"subcommand:doc" help:"Manipulate AsyncAPI documents: merge, validate, etc."`
 	ListImplementations *struct{}   `arg:"subcommand:list-implementations" help:"Show all available protocol implementations"`
-	Verbose             int         `arg:"-v" help:"Verbose output: 1 (debug), 2 (trace)" placeholder:"LEVEL"`
+	Verbose             int         `arg:"-v" help:"Verbose level: 1 or 2" placeholder:"LEVEL"`
 	Quiet               bool        `help:"Suppress the logging output"`
 
 	ConfigFile string `arg:"-c,--config-file" help:"YAML configuration file path" placeholder:"FILE"`
@@ -98,7 +89,7 @@ func main() {
 	case cliArgs.UICmd != nil:
 		err = cliUI(cliArgs.UICmd, mergedConfig)
 	case cliArgs.DocCmd != nil:
-		err = cliDoc(cliArgs.DocCmd, mergedConfig)
+		err = doc.CliDoc(cliArgs.DocCmd, mergedConfig)
 	default:
 		cliParser.Fail("No subcommand specified. Try --help for more information")
 		os.Exit(1)
@@ -107,7 +98,7 @@ func main() {
 	if err != nil {
 		var me types.MultilineError
 		switch {
-		case errors.Is(err, ErrWrongCliArgs):
+		case errors.Is(err, common2.ErrWrongCliArgs):
 			cliParser.WriteHelp(os.Stderr)
 		case chlog.GetLevel() <= chlog.DebugLevel && errors.As(err, &me):
 			chlog.Error(err.Error(), "details", me.ContentLines())
@@ -120,11 +111,11 @@ func main() {
 	chlog.Info("Done")
 }
 
-func loadFullConfig(cliArgs cli) (toolConfig, error) {
+func loadFullConfig(cliArgs cli) (common2.ToolConfig, error) {
 	logger := log.GetLogger("")
-	builtinConfig, err := loadConfig(assets.AssetFS, defaultConfigFileName)
+	builtinConfig, err := common2.LoadConfig(assets.AssetFS, common2.DefaultConfigFileName)
 	if err != nil {
-		return toolConfig{}, fmt.Errorf("load built-in config, this is a bug: %w", err)
+		return common2.ToolConfig{}, fmt.Errorf("load built-in config, this is a bug: %w", err)
 	}
 
 	fileName := cliArgs.ConfigFile
@@ -136,17 +127,17 @@ func loadFullConfig(cliArgs cli) (toolConfig, error) {
 		}
 	}
 
-	var userConfig toolConfig
+	var userConfig common2.ToolConfig
 	if fileName != "" {
 		logger.Debug("Loading user config", "file", fileName)
-		if userConfig, err = loadConfig(os.DirFS(path.Dir(fileName)), path.Base(fileName)); err != nil {
-			return toolConfig{}, fmt.Errorf("load config file %q: %w", fileName, err)
+		if userConfig, err = common2.LoadConfig(os.DirFS(path.Dir(fileName)), path.Base(fileName)); err != nil {
+			return common2.ToolConfig{}, fmt.Errorf("load config file %q: %w", fileName, err)
 		}
 	} else {
 		logger.Debug("No user config, using only built-in defaults")
 	}
 
-	res := mergeConfig(builtinConfig, userConfig)
-	res.Quiet = coalesce(cliArgs.Quiet, res.Quiet)
+	res := common2.MergeConfig(builtinConfig, userConfig)
+	res.Quiet = common2.Coalesce(cliArgs.Quiet, res.Quiet)
 	return res, err
 }
