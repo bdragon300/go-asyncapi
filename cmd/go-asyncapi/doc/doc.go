@@ -2,6 +2,7 @@ package doc
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/bdragon300/go-asyncapi/cmd/go-asyncapi/common"
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
@@ -9,16 +10,15 @@ import (
 	"github.com/samber/lo"
 )
 
-const (
-	defaultStdoutWidth              = 80
-	sideBySideColumnSeparator       = " | "
-	sideBySideLineNumberPrefixWidth = 6
-)
+type anyEncoder interface {
+	Encode(v any) error
+}
 
 type Cmd struct {
-	Merge  *MergeCmd `arg:"subcommand:merge" help:"Merge multiple AsyncAPI documents into one."`
-	Indent int       `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
-	Format string    `arg:"--format,-f" help:"Output format. Possible values: yaml, json" placeholder:"FORMAT"`
+	Merge   *MergeCmd   `arg:"subcommand:merge" help:"Merge multiple AsyncAPI documents into one."`
+	Unmerge *UnmergeCmd `arg:"subcommand:unmerge" help:"Move objects from one AsyncAPI document to another."`
+	Indent  int         `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
+	Format  string      `arg:"--format,-f" help:"Output format. Possible values: yaml, json" placeholder:"FORMAT"`
 }
 
 type documentTree struct {
@@ -28,7 +28,7 @@ type documentTree struct {
 
 // CollectRefs collects pointers to all object RawNodes in the document that have a "$ref" key.
 func (d documentTree) CollectRefs() []*types.RawNode {
-	rootKeys, componentsKeys := d.mergeableKeys()
+	rootKeys, componentsKeys := d.mergeableMaps()
 	res := lo.FlatMap(rootKeys, func(key string, _ int) []*types.RawNode {
 		node, _ := d.Get(key)
 		return collectRefs(node)
@@ -44,8 +44,8 @@ func (d documentTree) CollectRefs() []*types.RawNode {
 	return res
 }
 
-func (d documentTree) MergeableNodes() []*types.RawNode {
-	rootKeys, componentsKeys := d.mergeableKeys()
+func (d documentTree) MergeableMaps() []*types.RawNode {
+	rootKeys, componentsKeys := d.mergeableMaps()
 	res := lo.Map(rootKeys, func(key string, _ int) *types.RawNode {
 		node, _ := d.Get(key)
 		return node
@@ -60,7 +60,7 @@ func (d documentTree) MergeableNodes() []*types.RawNode {
 	return res
 }
 
-func (d documentTree) mergeableKeys() ([]string, []string) {
+func (d documentTree) mergeableMaps() ([]string, []string) {
 	rootKeys := []string{"servers", "channels", "operations"}
 	componentsKeys := []string{
 		"schemas",
@@ -74,6 +74,7 @@ func (d documentTree) mergeableKeys() ([]string, []string) {
 
 type changeLogEntry struct {
 	Source, Destination *jsonpointer.JSONPointer
+	Move                bool
 }
 
 func CliDoc(cmd *Cmd, globalConfig common2.ToolConfig) error {
@@ -82,8 +83,11 @@ func CliDoc(cmd *Cmd, globalConfig common2.ToolConfig) error {
 		return fmt.Errorf("config: %w", err)
 	}
 
-	if cmd.Merge != nil {
+	switch {
+	case cmd.Merge != nil:
 		return cliMerge(cmd.Merge, cmdConfig)
+	case cmd.Unmerge != nil:
+		return cliUnmerge(cmd.Unmerge, cmdConfig)
 	}
 	return fmt.Errorf("%w: unknown doc subcommand", common2.ErrWrongCliArgs)
 }
@@ -93,8 +97,13 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 
 	res.Doc.Indent = common2.Coalesce(cmd.Indent, globalConfig.Doc.Indent)
 	res.Doc.Format = common2.Coalesce(cmd.Format, globalConfig.Doc.Format)
+	res.Doc.Merge.OutputFile = common2.Coalesce(cmd.Merge.Output, globalConfig.Doc.Merge.OutputFile)
 	res.Doc.Merge.Strategy = common2.Coalesce(cmd.Merge.Strategy, globalConfig.Doc.Merge.Strategy)
 	res.Doc.Merge.DisableRewriting = common2.Coalesce(cmd.Merge.DisableRewriting, globalConfig.Doc.Merge.DisableRewriting)
+	res.Doc.Unmerge.OutputFile = common2.Coalesce(cmd.Unmerge.Output, globalConfig.Doc.Unmerge.OutputFile)
+	res.Doc.Unmerge.Copy = common2.Coalesce(cmd.Unmerge.Copy, globalConfig.Doc.Unmerge.Copy)
+	res.Doc.Unmerge.DependencyMode = common2.Coalesce(cmd.Unmerge.DependencyMode, globalConfig.Doc.Unmerge.DependencyMode)
+	res.Doc.Unmerge.DisableRewriting = common2.Coalesce(cmd.Unmerge.DisableRewriting, globalConfig.Doc.Unmerge.DisableRewriting)
 
 	return res, nil
 }
@@ -117,4 +126,12 @@ func collectRefs(n *types.RawNode) []*types.RawNode {
 	}
 
 	return res
+}
+
+// absLocation returns the absolute path to document if p is a file path. Otherwise, if p is an URL, it returns the URL as is.
+func absLocation(p *jsonpointer.JSONPointer) string {
+	if p.FSPath != "" {
+		return lo.Must(filepath.Abs(p.FSPath))
+	}
+	return p.Location()
 }

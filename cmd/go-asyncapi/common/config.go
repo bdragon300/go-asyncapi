@@ -171,15 +171,23 @@ type (
 	}
 
 	ToolConfigDoc struct {
-		Merge  ToolConfigDocMerge `yaml:"merge"`
-		Indent int                `yaml:"indent"`
-		Format string             `yaml:"format"`
+		Merge   ToolConfigDocMerge   `yaml:"merge"`
+		Unmerge ToolConfigDocUnmerge `yaml:"unmerge"`
+		Indent  int                  `yaml:"indent"`
+		Format  string               `yaml:"format"`
 	}
 
 	ToolConfigDocMerge struct {
-		OutputDocument   string                     `yaml:"outputDocument"`
+		OutputFile       string                     `yaml:"outputFile"`
 		Strategy         ToolConfigDocMergeStrategy `yaml:"strategy"`
 		DisableRewriting bool                       `yaml:"disableRewriting"`
+	}
+
+	ToolConfigDocUnmerge struct {
+		DependencyMode   string `yaml:"dependencyMode"`
+		Copy             bool   `yaml:"copy"`
+		OutputFile       string `yaml:"outputFile"`
+		DisableRewriting bool   `yaml:"disableRewriting"`
 	}
 )
 
@@ -325,7 +333,11 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.Format = Coalesce(userConf.Doc.Format, defaultConf.Doc.Format)
 	res.Doc.Merge.Strategy = Coalesce(userConf.Doc.Merge.Strategy, defaultConf.Doc.Merge.Strategy)
 	res.Doc.Merge.DisableRewriting = Coalesce(userConf.Doc.Merge.DisableRewriting, defaultConf.Doc.Merge.DisableRewriting)
-	res.Doc.Merge.OutputDocument = Coalesce(userConf.Doc.Merge.OutputDocument, defaultConf.Doc.Merge.OutputDocument)
+	res.Doc.Merge.OutputFile = Coalesce(userConf.Doc.Merge.OutputFile, defaultConf.Doc.Merge.OutputFile)
+	res.Doc.Unmerge.OutputFile = Coalesce(userConf.Doc.Unmerge.OutputFile, defaultConf.Doc.Unmerge.OutputFile)
+	res.Doc.Unmerge.Copy = Coalesce(userConf.Doc.Unmerge.Copy, defaultConf.Doc.Unmerge.Copy)
+	res.Doc.Unmerge.DependencyMode = Coalesce(userConf.Doc.Unmerge.DependencyMode, defaultConf.Doc.Unmerge.DependencyMode)
+	res.Doc.Unmerge.DisableRewriting = Coalesce(userConf.Doc.Unmerge.DisableRewriting, defaultConf.Doc.Unmerge.DisableRewriting)
 
 	return res
 }

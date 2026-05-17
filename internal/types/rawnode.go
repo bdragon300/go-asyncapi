@@ -133,6 +133,53 @@ func (r *RawNode) Set(key any, value *RawNode) {
 	r.slots = append(r.slots, plainSlot{key: key, value: value})
 }
 
+// SetByPath sets the value at the given path, creating intermediate nodes if necessary.
+func (r *RawNode) SetByPath(path []string, value *RawNode) {
+	if len(path) == 0 {
+		panic("path cannot be empty")
+	}
+	if r.kind != RawNodeKindObject && r.kind != RawNodeKindArray {
+		panic("not an object or array node")
+	}
+	for _, sl := range r.slots {
+		if sl.Key() == path[0] {
+			sl.Value().SetByPath(path[1:], value)
+			return
+		}
+	}
+	newNode := &RawNode{kind: RawNodeKindObject, path: append(r.path, path[0])}
+	newNode.SetByPath(path[1:], value)
+	r.slots = append(r.slots, plainSlot{key: path[0], value: newNode})
+}
+
+// DeleteByPath deletes the node at the given path and returns true if the node was found and deleted, false otherwise.
+func (r *RawNode) DeleteByPath(path []string) bool {
+	if r.kind != RawNodeKindObject && r.kind != RawNodeKindArray {
+		panic("not an object or array node")
+	}
+	if len(path) == 0 {
+		return false
+	}
+	for i, sl := range r.slots {
+		if sl.Key() == path[0] {
+			if len(path) == 1 {
+				r.slots = append(r.slots[:i], r.slots[i+1:]...)
+				return true
+			}
+			return sl.Value().DeleteByPath(path[1:])
+		}
+	}
+	return false
+}
+
+// CloneZero returns the copy of r with zero value, keeping path, kind and metainfo.
+func (r RawNode) CloneZero() *RawNode {
+	r.slots = nil
+	r.scalarValue = nil
+	return &r
+}
+
+// Len returns the number of entries in the object or array node. Panics if called on a scalar node.
 func (r RawNode) Len() int {
 	if r.kind != RawNodeKindObject && r.kind != RawNodeKindArray {
 		panic("not an object or array node")
@@ -140,6 +187,7 @@ func (r RawNode) Len() int {
 	return len(r.slots)
 }
 
+// AsScalar converts r to a scalar value. Panics if called on an array or object node.
 func (r RawNode) AsScalar() any {
 	if r.kind != RawNodeKindScalar {
 		panic("not a scalar node")
@@ -147,6 +195,8 @@ func (r RawNode) AsScalar() any {
 	return r.scalarValue
 }
 
+// AsSlice converts r to a slice value, recursively converting all nested nodes to their corresponding Go types (scalar, slice or map).
+// Panics if called on a scalar or object node.
 func (r RawNode) AsSlice() []any {
 	if r.kind != RawNodeKindArray {
 		panic("not an array node")
@@ -165,6 +215,8 @@ func (r RawNode) AsSlice() []any {
 	return res
 }
 
+// AsOrderedMap converts r to an OrderedMap value, recursively converting all nested nodes to their corresponding Go types (scalar, slice or map).
+// Panics if called on a scalar or array node.
 func (r RawNode) AsOrderedMap() OrderedMap[any, any] {
 	if r.kind != RawNodeKindObject {
 		panic("not an object node")
@@ -183,6 +235,7 @@ func (r RawNode) AsOrderedMap() OrderedMap[any, any] {
 	return res
 }
 
+// Equal checks if the r and n are equal, recursively comparing all nested nodes. It ignores comments and key ordering in maps.
 func (r RawNode) Equal(n *RawNode) bool {
 	if n == nil || r.kind != n.kind {
 		return false
