@@ -21,14 +21,17 @@ type Cmd struct {
 	Format  string      `arg:"--format,-f" help:"Output format. Possible values: yaml, json" placeholder:"FORMAT"`
 }
 
+func newDocumentTree(originDocument *jsonpointer.JSONPointer) *documentTree {
+	return &documentTree{RawNode: *types.NewEmptyRawNode(originDocument)}
+}
+
 type documentTree struct {
 	types.RawNode
-	DocumentURL jsonpointer.JSONPointer `yaml:"-" json:"-"`
 }
 
 // CollectRefs collects pointers to all object RawNodes in the document that have a "$ref" key.
 func (d documentTree) CollectRefs() []*types.RawNode {
-	rootKeys, componentsKeys := d.mergeableMaps()
+	rootKeys, componentsKeys := d.MergeableMapPaths()
 	res := lo.FlatMap(rootKeys, func(key string, _ int) []*types.RawNode {
 		node, _ := d.Get(key)
 		return collectRefs(node)
@@ -45,7 +48,7 @@ func (d documentTree) CollectRefs() []*types.RawNode {
 }
 
 func (d documentTree) MergeableMaps() []*types.RawNode {
-	rootKeys, componentsKeys := d.mergeableMaps()
+	rootKeys, componentsKeys := d.MergeableMapPaths()
 	res := lo.Map(rootKeys, func(key string, _ int) *types.RawNode {
 		node, _ := d.Get(key)
 		return node
@@ -60,7 +63,7 @@ func (d documentTree) MergeableMaps() []*types.RawNode {
 	return res
 }
 
-func (d documentTree) mergeableMaps() ([]string, []string) {
+func (d documentTree) MergeableMapPaths() ([]string, []string) {
 	rootKeys := []string{"servers", "channels", "operations"}
 	componentsKeys := []string{
 		"schemas",
@@ -70,6 +73,10 @@ func (d documentTree) mergeableMaps() ([]string, []string) {
 		"serverBindings", "channelBindings", "operationBindings", "messageBindings",
 	}
 	return rootKeys, componentsKeys
+}
+
+func (d *documentTree) Root() *types.RawNode {
+	return &d.RawNode
 }
 
 type changeLogEntry struct {
@@ -101,14 +108,14 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 	res.Doc.Merge.Strategy = common2.Coalesce(cmd.Merge.Strategy, globalConfig.Doc.Merge.Strategy)
 	res.Doc.Merge.DisableRewriting = common2.Coalesce(cmd.Merge.DisableRewriting, globalConfig.Doc.Merge.DisableRewriting)
 	res.Doc.Unmerge.OutputFile = common2.Coalesce(cmd.Unmerge.Output, globalConfig.Doc.Unmerge.OutputFile)
-	res.Doc.Unmerge.Copy = common2.Coalesce(cmd.Unmerge.Copy, globalConfig.Doc.Unmerge.Copy)
-	res.Doc.Unmerge.DependencyMode = common2.Coalesce(cmd.Unmerge.DependencyMode, globalConfig.Doc.Unmerge.DependencyMode)
+	res.Doc.Unmerge.Scope = common2.Coalesce(cmd.Unmerge.Scope, globalConfig.Doc.Unmerge.Scope)
+	res.Doc.Unmerge.Duplicate = common2.Coalesce(cmd.Unmerge.Duplicate, globalConfig.Doc.Unmerge.Duplicate)
 	res.Doc.Unmerge.DisableRewriting = common2.Coalesce(cmd.Unmerge.DisableRewriting, globalConfig.Doc.Unmerge.DisableRewriting)
 
 	return res, nil
 }
 
-// collectRefs returns a list of pointer to all RawNodes (n itself and all nested objects) that have a "$ref" key.
+// collectRefs recursively collects all n's children RawNodes (including n itself) that have a "$ref" key.
 func collectRefs(n *types.RawNode) []*types.RawNode {
 	if n == nil {
 		return nil
@@ -126,6 +133,23 @@ func collectRefs(n *types.RawNode) []*types.RawNode {
 	}
 
 	return res
+}
+
+func parseRefRawNode(n *types.RawNode) (*jsonpointer.JSONPointer, error) {
+	variant, _ := n.Get("$ref")
+	if variant.Kind() != types.RawNodeKindScalar {
+		return nil, fmt.Errorf("expected scalar node for $ref value, got %s", variant.Kind())
+	}
+	s, ok := variant.AsScalar().(string)
+	if !ok {
+		return nil, fmt.Errorf("expected string value for $ref, got %T", variant.AsScalar())
+	}
+
+	ref, err := jsonpointer.Parse(s)
+	if err != nil {
+		return nil, fmt.Errorf("parse $ref value: %w", err)
+	}
+	return ref, nil
 }
 
 // absLocation returns the absolute path to document if p is a file path. Otherwise, if p is an URL, it returns the URL as is.

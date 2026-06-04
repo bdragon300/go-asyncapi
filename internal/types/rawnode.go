@@ -7,6 +7,7 @@ import (
 	"iter"
 	"strconv"
 
+	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/buger/jsonparser"
 	"gopkg.in/yaml.v3"
 )
@@ -62,11 +63,22 @@ func (j plainSlot) SetValue(value *RawNode) {
 	*j.value = *value
 }
 
-func NewScalarRawNode(path []string, value any) *RawNode {
+func NewEmptyRawNode(originDocument *jsonpointer.JSONPointer) *RawNode {
+	if len(originDocument.Pointer) > 0 {
+		panic(fmt.Errorf("originDocument should point to the root of the document, got %q", originDocument.PointerString()))
+	}
+	return &RawNode{originDocument: originDocument}
+}
+
+func NewScalarRawNode(path []string, value any, originDocument *jsonpointer.JSONPointer) *RawNode {
+	if len(originDocument.Pointer) > 0 {
+		panic(fmt.Errorf("originDocument should point to the root of the document, got %q", originDocument.PointerString()))
+	}
 	return &RawNode{
-		kind:        RawNodeKindScalar,
-		path:        path,
-		scalarValue: value,
+		kind:           RawNodeKindScalar,
+		path:           path,
+		scalarValue:    value,
+		originDocument: originDocument,
 	}
 }
 
@@ -78,8 +90,9 @@ type RawNode struct {
 	slots       []slot
 	scalarValue any
 
-	// Meta is a place to store any additional information related to this node.
-	Meta any
+	// originDocument is a document location where this node is located or was located before being moved or copied
+	// into the parent node.
+	originDocument *jsonpointer.JSONPointer
 }
 
 func (r RawNode) Kind() RawNodeKind {
@@ -88,6 +101,10 @@ func (r RawNode) Kind() RawNodeKind {
 
 func (r RawNode) Path() []string {
 	return r.path
+}
+
+func (r RawNode) OriginDocument() *jsonpointer.JSONPointer {
+	return r.originDocument
 }
 
 func (r RawNode) Entries() iter.Seq2[any, *RawNode] {
@@ -133,6 +150,22 @@ func (r *RawNode) Set(key any, value *RawNode) {
 	r.slots = append(r.slots, plainSlot{key: key, value: value})
 }
 
+// GetByPath returns the node at the given path, or nil if the path does not exist. Panics if called on a scalar node.
+func (r RawNode) GetByPath(path []string) *RawNode {
+	if r.kind != RawNodeKindObject && r.kind != RawNodeKindArray {
+		panic("not an object or array node")
+	}
+	if len(path) == 0 {
+		return &r
+	}
+	for _, sl := range r.slots {
+		if sl.Key() == path[0] {
+			return sl.Value().GetByPath(path[1:])
+		}
+	}
+	return nil
+}
+
 // SetByPath sets the value at the given path, creating intermediate nodes if necessary.
 func (r *RawNode) SetByPath(path []string, value *RawNode) {
 	if len(path) == 0 {
@@ -147,7 +180,7 @@ func (r *RawNode) SetByPath(path []string, value *RawNode) {
 			return
 		}
 	}
-	newNode := &RawNode{kind: RawNodeKindObject, path: append(r.path, path[0])}
+	newNode := &RawNode{kind: RawNodeKindObject, path: append(r.path, path[0]), originDocument: r.originDocument}
 	newNode.SetByPath(path[1:], value)
 	r.slots = append(r.slots, plainSlot{key: path[0], value: newNode})
 }
@@ -273,7 +306,7 @@ func (r *RawNode) UnmarshalJSON(data []byte) error {
 }
 
 func (r RawNode) unmarshalJSONValue(data []byte, valType jsonparser.ValueType, nodePath []string) (res *RawNode, err error) {
-	res = &RawNode{path: nodePath}
+	res = &RawNode{path: nodePath, originDocument: r.originDocument}
 
 	switch valType {
 	case jsonparser.Object:
@@ -331,7 +364,7 @@ func (r *RawNode) UnmarshalYAML(value *yaml.Node) error {
 }
 
 func (r RawNode) unmarshalYAMLValue(node *yaml.Node, nodePath []string) (res *RawNode, err error) {
-	res = &RawNode{path: nodePath}
+	res = &RawNode{path: nodePath, originDocument: r.originDocument}
 
 	switch node.Kind {
 	case yaml.MappingNode:

@@ -54,5 +54,7 @@ ui:
 
 doc:
   indent: 2
-  merge:
-    format: yaml
+  format: yaml
+  unmerge:
+    scope: auto
+    duplicate: offscope-deps

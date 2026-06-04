@@ -75,7 +75,7 @@ func cliMerge(cmd *MergeCmd, cmdConfig common2.ToolConfig) error {
 	}
 
 	locator := common2.GetLocator(cmdConfig)
-	var outputContents *documentTree
+	outputContents := newDocumentTree(outputDoc)
 	var changeLog []changeLogEntry
 	for _, doc := range cmd.Documents {
 		docURL, err := jsonpointer.Parse(doc)
@@ -83,7 +83,7 @@ func cliMerge(cmd *MergeCmd, cmdConfig common2.ToolConfig) error {
 			return fmt.Errorf("parse document url %q: %w", doc, err)
 		}
 
-		var contents documentTree
+		contents := newDocumentTree(docURL)
 		logger.Debug("Loading document", "url", docURL)
 		buf, newDecoder, err := compiler.ReadDocument(docURL, locator, logger)
 		if err != nil {
@@ -92,17 +92,12 @@ func cliMerge(cmd *MergeCmd, cmdConfig common2.ToolConfig) error {
 		if err = newDecoder(bytes.NewReader(buf)).Decode(&contents); err != nil {
 			return fmt.Errorf("decode document: %w", err)
 		}
-		contents.DocumentURL = *docURL
-		for _, ref := range contents.CollectRefs() {
-			ref.Meta = docURL // Remember the origin document in ref metadata for later use in $ref rewriting
-		}
 
-		logger.Debug("Merging documents", "destination", outputDoc, "source", contents.DocumentURL)
+		logger.Debug("Merging documents", "destination", outputDoc, "source", contents.OriginDocument())
 		var changes []changeLogEntry
-		if outputContents, changes, err = mergeDocuments(&contents, outputContents, cmdConfig); err != nil {
+		if outputContents, changes, err = mergeDocuments(contents, outputContents, cmdConfig); err != nil {
 			return fmt.Errorf("merge document %q: %w", docURL, err)
 		}
-		outputContents.DocumentURL = *outputDoc
 		changeLog = append(changeLog, changes...)
 	}
 
@@ -124,11 +119,8 @@ func cliMerge(cmd *MergeCmd, cmdConfig common2.ToolConfig) error {
 
 func mergeDocuments(sourceDoc, destDoc *documentTree, cmdConfig common2.ToolConfig) (*documentTree, []changeLogEntry, error) {
 	logger := log.GetLogger("")
-	if destDoc == nil {
-		return sourceDoc, nil, nil
-	}
-	if sourceDoc == nil {
-		return destDoc, nil, nil
+	if destDoc == nil || sourceDoc == nil {
+		panic("destDoc and sourceDoc should not be nil, this is a bug")
 	}
 
 	var changeLog []changeLogEntry
@@ -137,28 +129,28 @@ func mergeDocuments(sourceDoc, destDoc *documentTree, cmdConfig common2.ToolConf
 		case sMap == nil:
 			continue // Source is empty, nothing to merge
 		case sMap.Kind() != types.RawNodeKindObject:
-			return nil, nil, fmt.Errorf("expected an object on path %q in document %q", path.Join(sMap.Path()...), sourceDoc.DocumentURL)
+			return nil, nil, fmt.Errorf("expected an object on path %q in document %q", path.Join(sMap.Path()...), sourceDoc.OriginDocument())
 		case sMap.Len() == 0:
 			logger.Trace("Source node is empty, skipping", "path", sMap.Path())
 			continue
 		}
 
-		logger.Debug("Merging nodes", "source", sourceDoc.DocumentURL.Join(sMap.Path()...), "destination", destDoc.DocumentURL.Join(sMap.Path()...))
+		logger.Debug("Merging nodes", "source", sourceDoc.OriginDocument().Join(sMap.Path()...), "destination", destDoc.OriginDocument().Join(sMap.Path()...))
 		switch {
 		case dMap == nil:
 			logger.Debug("-> Destination is empty, copying all objects", "path", sMap.Path())
 			destDoc.Set(sMap.Path(), sMap)
 			for _, sNode := range sMap.Entries() {
-				changeLog = append(changeLog, changeLogEntry{Source: lo.ToPtr(sourceDoc.DocumentURL.Join(sNode.Path()...)), Destination: lo.ToPtr(destDoc.DocumentURL.Join(sNode.Path()...)), Move: true})
+				changeLog = append(changeLog, changeLogEntry{Source: lo.ToPtr(sourceDoc.OriginDocument().Join(sNode.Path()...)), Destination: lo.ToPtr(destDoc.OriginDocument().Join(sNode.Path()...)), Move: true})
 			}
 			continue
 		case dMap.Kind() != types.RawNodeKindObject:
-			return nil, nil, fmt.Errorf("expected an object on path %q in document %q", path.Join(dMap.Path()...), destDoc.DocumentURL)
+			return nil, nil, fmt.Errorf("expected an object on path %q in document %q", path.Join(dMap.Path()...), destDoc.OriginDocument())
 		}
 
 		for sKey, sNode := range sMap.Entries() {
 			logger.Debug("-> Copying object", "key", sKey, "path", sNode.Path())
-			change, err := copyNode(sNode, dMap, destDoc.DocumentURL, sourceDoc.DocumentURL, cmdConfig)
+			change, err := copyNode(sNode, dMap, destDoc.OriginDocument(), sourceDoc.OriginDocument(), cmdConfig)
 			if err != nil {
 				return nil, nil, fmt.Errorf("merge maps %v: %w", path.Join(dMap.Path()...), err)
 			}
@@ -172,7 +164,7 @@ func mergeDocuments(sourceDoc, destDoc *documentTree, cmdConfig common2.ToolConf
 	return destDoc, changeLog, nil
 }
 
-func copyNode(sNode, dMap *types.RawNode, dDoc, sDoc jsonpointer.JSONPointer, cmdConfig common2.ToolConfig) (*changeLogEntry, error) {
+func copyNode(sNode, dMap *types.RawNode, dDoc, sDoc *jsonpointer.JSONPointer, cmdConfig common2.ToolConfig) (*changeLogEntry, error) {
 	logger := log.GetLogger("")
 
 	nodeKey := sNode.Path()[len(sNode.Path())-1]
@@ -207,7 +199,7 @@ func copyNode(sNode, dMap *types.RawNode, dDoc, sDoc jsonpointer.JSONPointer, cm
 	return changeEntry, nil
 }
 
-func resolveMergeConflict(dMap, sMap *types.RawNode, dPath, sPath jsonpointer.JSONPointer, cmdConfig common2.ToolConfig) (*changeLogEntry, error) {
+func resolveMergeConflict(dMap, sMap *types.RawNode, dPath, sPath *jsonpointer.JSONPointer, cmdConfig common2.ToolConfig) (*changeLogEntry, error) {
 	logger := log.GetLogger("")
 
 	logMsg := "Auto-resolve conflict"
@@ -271,14 +263,14 @@ func resolveMergeConflict(dMap, sMap *types.RawNode, dPath, sPath jsonpointer.JS
 		return nil, nil
 	case common2.ToolConfigDocMergeStrategyOverwrite:
 		logger.Info(logMsg, "action", "overwrite", "destination", dPath, "source", sPath)
-		return &changeLogEntry{Source: &sPath, Destination: &dPath, Move: true}, nil
+		return &changeLogEntry{Source: sPath, Destination: dPath, Move: true}, nil
 	case common2.ToolConfigDocMergeStrategyRename:
 		dPath.Pointer = dPath.Pointer[:len(dPath.Pointer)-1]
 		for i := 1; ; i++ {
 			newKey := fmt.Sprintf("%s%d", key, i)
 			if _, exists := dMap.Get(newKey); !exists {
 				logger.Info(logMsg, "action", "rename", "destination", dPath.Join(newKey), "source", sPath)
-				return &changeLogEntry{Source: &sPath, Destination: lo.ToPtr(dPath.Join(newKey)), Move: true}, nil
+				return &changeLogEntry{Source: sPath, Destination: lo.ToPtr(dPath.Join(newKey)), Move: true}, nil
 			}
 		}
 	}
@@ -328,35 +320,24 @@ func getTerminalWidth() int {
 }
 
 func rewriteRefs(result *documentTree, locator common2.DocumentLocator, changeLog []changeLogEntry) {
-	var err error
 	logger := log.GetLogger("")
 
 	for _, obj := range result.CollectRefs() {
 		logger.Debug("Processing $ref object", "path", obj.Path())
-		if obj.Meta == nil {
+		if obj.OriginDocument() == nil {
 			logger.Warn("Found a $ref with empty metadata, this is a bug, skipping", "path", obj.Path())
 			continue
 		}
-		originPath := obj.Meta.(*jsonpointer.JSONPointer) // Document path where this $ref was imported from
+		originPath := obj.OriginDocument() // Document path where this $ref was imported from
 		// Explicit document path where this $ref pointed to before been imported. For internal $ref, it's the file itself
 		referredPath := originPath
 
-		// Extract jsonpointer from value of variant type
-		var ref *jsonpointer.JSONPointer
-		variant, _ := obj.Get("$ref")
-		if variant.Kind() != types.RawNodeKindScalar {
-			logger.Error("$ref value kind is expected to be scalar, skipping", "path", obj.Path(), "kind", variant.Kind())
-			continue
-		} else if s, ok := variant.AsScalar().(string); ok {
-			if ref, err = jsonpointer.Parse(s); err != nil {
-				logger.Error("Failed to parse $ref, skipping", "path", obj.Path(), "value", s, "error", err)
-				continue
-			}
-		} else {
-			logger.Error("$ref value is expected to be string, skipping", "path", obj.Path(), "type", fmt.Sprintf("%T", variant.AsScalar()))
+		ref, err := parseRefRawNode(obj)
+		if err != nil {
+			logger.Error("Failed to parse $ref, skipping", "path", obj.Path(), "error", err)
 			continue
 		}
-		logger.Trace("Parsed $ref", "path", variant.Path(), "value", ref, "originDocument", originPath)
+		logger.Trace("Parsed $ref", "path", obj.Path(), "value", ref, "originDocument", originPath)
 		if ref.Location() != "" {
 			// Resolve location in external $ref relative to it's origin document location
 			if referredPath, err = locator.ResolveURL(originPath, ref); err != nil {
@@ -365,14 +346,14 @@ func rewriteRefs(result *documentTree, locator common2.DocumentLocator, changeLo
 			}
 		}
 
-		logger.Debug("Rewriting $ref", "path", variant.Path(), "value", ref, "originDocument", originPath, "referredDocument", referredPath)
+		logger.Debug("Rewriting $ref", "path", obj.Path(), "value", ref, "originDocument", originPath, "referredDocument", referredPath)
 		newRef := rewriteRef(ref, referredPath, originPath, result, changeLog)
 		if newRef == nil {
 			continue
 		}
 
-		logger.Debug("Updating $ref", "path", variant.Path(), "old", ref, "new", newRef)
-		obj.Set("$ref", types.NewScalarRawNode(variant.Path(), newRef.String()))
+		logger.Debug("Updating $ref", "path", obj.Path(), "old", ref, "new", newRef)
+		obj.Set("$ref", types.NewScalarRawNode(obj.Path(), newRef.String(), obj.OriginDocument()))
 	}
 }
 
@@ -391,9 +372,13 @@ func rewriteRef(ref, referredPath, originPath *jsonpointer.JSONPointer, result *
 			continue
 		}
 		pathSuffix, matchPointers := lo.CutPrefix(ref.Pointer, change.Source.Pointer)
-		matched = absLocation(change.Source) == absLocation(referredPath) && matchPointers && absLocation(change.Destination) == absLocation(&result.DocumentURL)
+		matched = absLocation(change.Source) == absLocation(referredPath) && matchPointers && absLocation(change.Destination) == absLocation(result.OriginDocument())
 		if !matched {
 			logger.Trace("--> No match")
+			continue
+		}
+		if !change.Move {
+			logger.Trace("--> Matched changelog entry, but it's not a move, skipping")
 			continue
 		}
 
@@ -413,7 +398,7 @@ func rewriteRef(ref, referredPath, originPath *jsonpointer.JSONPointer, result *
 		return &newRef
 	}
 
-	// Rewriting the $refs that are not in changelog
+	// Rewriting the $ref that are not in changelog
 	p := referredPath
 	pointedToInputDocument := lo.SomeBy(changeLog, func(change changeLogEntry) bool {
 		if change.Source == nil || change.Destination == nil {
@@ -423,26 +408,26 @@ func rewriteRef(ref, referredPath, originPath *jsonpointer.JSONPointer, result *
 	})
 
 	switch {
-	case absLocation(originPath) == absLocation(&result.DocumentURL):
-		// All $refs that weren't imported
+	case absLocation(originPath) == absLocation(result.OriginDocument()):
+		// $ref that wasn't imported
 		logger.Debug("-> Not imported from any input document, skipping")
 		return nil
-	case ref.Location() != "" && absLocation(referredPath) == absLocation(&result.DocumentURL):
-		// External $refs, that explicitly pointed to result document
+	case ref.Location() != "" && absLocation(referredPath) == absLocation(result.OriginDocument()):
+		// External $ref, that explicitly pointed to result document
 		logger.Debug("-> Erasing location to result document", "location", ref.Location())
 		newRef.URI = nil
 		newRef.FSPath = ""
-	case ref.Location() == "" && result.DocumentURL.URI != nil:
-		// Internal $refs that imported from an input document addressed by URL
+	case ref.Location() == "" && result.OriginDocument().URI != nil:
+		// Internal $ref that imported from an input document addressed by URL
 		logger.Debug("-> Setting $ref location to its origin document", "location", originPath.URI)
 		newRef.URI = originPath.URI
-	case ref.Location() == "" && result.DocumentURL.FSPath != "":
-		// Internal $refs that imported from an input document addressed by file path
+	case ref.Location() == "" && result.OriginDocument().FSPath != "":
+		// Internal $ref that imported from an input document addressed by file path
 		p = originPath
 		fallthrough // Add a location part relative to the result document path
 	case ref.FSPath != "" && !pointedToInputDocument:
-		// Imported external $refs that pointed to a 3rd-party document addressed by file path
-		newPath, err := filepath.Rel(path.Dir(absLocation(&result.DocumentURL)), absLocation(p))
+		// Imported external $ref that pointed to a 3rd-party document addressed by file path
+		newPath, err := filepath.Rel(path.Dir(absLocation(result.OriginDocument())), absLocation(p))
 		if err != nil {
 			logger.Error("Failed to rewrite external location in $ref, leaving it as-is", "value", ref, "error", err)
 			return &newRef
@@ -450,7 +435,7 @@ func rewriteRef(ref, referredPath, originPath *jsonpointer.JSONPointer, result *
 		logger.Debug("-> Fixing $ref location to external document", "location", newPath)
 		newRef.FSPath = newPath
 	case ref.Location() != "" && pointedToInputDocument:
-		// External $refs that imported from one input document and pointed to any input document (including the same one)
+		// External $ref that imported from one input document and pointed to any input document (including the same one)
 		logger.Debug("-> Erasing location to one of input documents", "location", ref.Location())
 		newRef.URI = nil
 		newRef.FSPath = ""

@@ -184,8 +184,8 @@ type (
 	}
 
 	ToolConfigDocUnmerge struct {
-		DependencyMode   string `yaml:"dependencyMode"`
-		Copy             bool   `yaml:"copy"`
+		Scope            string `yaml:"scope"`
+		Duplicate        string `yaml:"duplicate"`
 		OutputFile       string `yaml:"outputFile"`
 		DisableRewriting bool   `yaml:"disableRewriting"`
 	}
@@ -335,8 +335,8 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.Merge.DisableRewriting = Coalesce(userConf.Doc.Merge.DisableRewriting, defaultConf.Doc.Merge.DisableRewriting)
 	res.Doc.Merge.OutputFile = Coalesce(userConf.Doc.Merge.OutputFile, defaultConf.Doc.Merge.OutputFile)
 	res.Doc.Unmerge.OutputFile = Coalesce(userConf.Doc.Unmerge.OutputFile, defaultConf.Doc.Unmerge.OutputFile)
-	res.Doc.Unmerge.Copy = Coalesce(userConf.Doc.Unmerge.Copy, defaultConf.Doc.Unmerge.Copy)
-	res.Doc.Unmerge.DependencyMode = Coalesce(userConf.Doc.Unmerge.DependencyMode, defaultConf.Doc.Unmerge.DependencyMode)
+	res.Doc.Unmerge.Scope = Coalesce(userConf.Doc.Unmerge.Scope, defaultConf.Doc.Unmerge.Scope)
+	res.Doc.Unmerge.Duplicate = Coalesce(userConf.Doc.Unmerge.Duplicate, defaultConf.Doc.Unmerge.Duplicate)
 	res.Doc.Unmerge.DisableRewriting = Coalesce(userConf.Doc.Unmerge.DisableRewriting, defaultConf.Doc.Unmerge.DisableRewriting)
 
 	return res
