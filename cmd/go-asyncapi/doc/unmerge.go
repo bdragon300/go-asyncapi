@@ -1,13 +1,17 @@
 package doc
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"hash/crc64"
+	"io"
 	"os"
 	"path"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/bdragon300/go-asyncapi/cmd/go-asyncapi/common"
@@ -92,8 +96,30 @@ func cliUnmerge(cmd *UnmergeCmd, cmdConfig common2.ToolConfig) error {
 		}
 		return g
 	})
+	var selections []*types.RawNode
+	if len(patterns) == 0 {
+		// Interactive mode
+		logger.Debug("No patterns provided, switching to interactive mode")
+		mergeableNodes := lo.FlatMap(inputContents.MergeableMaps(), func(m *types.RawNode, _ int) []*types.RawNode {
+			if m == nil || m.Kind() != types.RawNodeKindObject {
+				return nil
+			}
+			var res []*types.RawNode
+			for _, e := range m.Entries() {
+				res = append(res, e)
+			}
+			return res
+		})
+		selectedIndexes, cancelled := promptSelectMergeableObjects(mergeableNodes, os.Stdout, os.Stdin)
+		if cancelled {
+			logger.Debug("Cancelled, nothing to do")
+			return nil
+		}
+		selections = lo.Map(selectedIndexes, func(i int, _ int) *types.RawNode { return mergeableNodes[i] })
+	}
+
 	outputContents := newDocumentTree(outputDoc)
-	changeLog, err := unmergeDocument(inputContents, outputContents, patterns, cmdConfig)
+	changeLog, err := unmergeDocument(inputContents, outputContents, patterns, selections, cmdConfig)
 	if err != nil {
 		return fmt.Errorf("unmerge documents: %w", err)
 	}
@@ -123,14 +149,14 @@ type mergeableNode struct {
 	isolated    bool
 }
 
-func unmergeDocument(sourceDoc, destDoc *documentTree, patterns []glob.Glob, cmdConfig common2.ToolConfig) ([]changeLogEntry, error) {
+func unmergeDocument(sourceDoc, destDoc *documentTree, patterns []glob.Glob, selections []*types.RawNode, cmdConfig common2.ToolConfig) ([]changeLogEntry, error) {
 	logger := log.GetLogger("")
 	if sourceDoc == nil || destDoc == nil {
 		panic("sourceDoc or destDoc is nil, this is a bug")
 	}
 
 	locator := common2.GetLocator(cmdConfig)
-	mergeables, entries, err := collectMergeableNodes(sourceDoc, destDoc, patterns, locator)
+	mergeables, entries, err := collectMergeableNodes(sourceDoc, destDoc, patterns, selections, locator)
 	if err != nil {
 		return entries, err
 	}
@@ -219,7 +245,7 @@ func unmergeDocument(sourceDoc, destDoc *documentTree, patterns []glob.Glob, cmd
 	return changeLog, nil
 }
 
-func collectMergeableNodes(sourceDoc *documentTree, destDoc *documentTree, patterns []glob.Glob, locator common2.DocumentLocator) ([]mergeableNode, []changeLogEntry, error) {
+func collectMergeableNodes(sourceDoc *documentTree, destDoc *documentTree, patterns []glob.Glob, selections []*types.RawNode, locator common2.DocumentLocator) ([]mergeableNode, []changeLogEntry, error) {
 	var mergeables []mergeableNode
 	logger := log.GetLogger("")
 
@@ -244,15 +270,112 @@ func collectMergeableNodes(sourceDoc *documentTree, destDoc *documentTree, patte
 
 		logger.Trace("Enumerating source map entries", "path", sMap.Path(), "entriesCount", sMap.Len())
 		for sKey, sNode := range sMap.Entries() {
-			nodePath := strings.Join(sNode.Path(), ".")
-			matched := lo.SomeBy(patterns, func(p glob.Glob) bool { return p.Match(nodePath) })
-			logger.Debug("Collecting mergeable dependencies for object", "path", nodePath, "key", sKey, "matched", matched)
+			var matched bool
+			if len(patterns) > 0 {
+				nodePath := strings.Join(sNode.Path(), ".")
+				matched = lo.SomeBy(patterns, func(p glob.Glob) bool { return p.Match(nodePath) })
+			} else {
+				matched = lo.ContainsBy(selections, func(n *types.RawNode) bool { return n.AbsPointerString() == sNode.AbsPointerString() })
+			}
+
+			logger.Debug("Collecting mergeable dependencies for object", "path", sNode.Path(), "key", sKey, "matched", matched)
 			deps := collectMergeableDependencies(sNode, []*documentTree{sourceDoc, destDoc}, locator)
-			logger.Trace("Found object", "path", nodePath, "key", sKey, "path", sNode.Path(), "matched", matched, "dependenciesCount", len(deps))
+			logger.Trace("Found object", "path", sNode.Path(), "key", sKey, "path", sNode.Path(), "matched", matched, "dependenciesCount", len(deps))
 			mergeables = append(mergeables, mergeableNode{node: sNode, destination: dMap, deps: deps, matched: matched, relocated: matched})
 		}
 	}
+
 	return mergeables, nil, nil
+}
+
+// promptSelectMergeableObjects prints the numbered list of mergeable objects and reads the user's selection from in.
+// The user types comma-separated values, each of which is a single number or a number range with optional bounds
+// (e.g. "2-4", "-5", "3-"), then hits Enter to proceed. Pressing Ctrl-D on an empty line cancels: cancelled is true.
+func promptSelectMergeableObjects(nodes []*types.RawNode, out io.Writer, in io.Reader) (indexes []int, cancelled bool) {
+	for {
+		fmt.Fprintln(out, "Select objects:")
+		for i, n := range nodes {
+			mark := lo.Ternary(lo.Contains(indexes, i), "*", " ")
+			fmt.Fprintf(out, "%s %2d: %s\n", mark, i+1, strings.Join(n.Path(), "."))
+		}
+		fmt.Fprintln(out, "Enter numbers or ranges (e.g. 1,3,5-7,-3,4-) or press Ctrl-D to exit: ")
+
+		line, err := bufio.NewReader(in).ReadString('\n')
+		switch {
+		case errors.Is(err, io.EOF):
+			fmt.Fprintln(out, "Aborted.")
+			return nil, true
+		case err != nil:
+			panic(fmt.Errorf("read user input: %w", err))
+		case strings.TrimSpace(line) == "":
+			fmt.Fprintln(out)
+			return nil, true
+		}
+
+		selections, err := parseSelectionRanges(line, len(nodes))
+		switch {
+		case err != nil:
+			fmt.Fprintf(out, "Invalid selection, try again: %s\n", err)
+		case len(selections) == 0:
+			if len(indexes) > 0 {
+				return indexes, false
+			}
+			fmt.Fprintln(out, "Nothing selected, try again or press Ctrl-D to exit")
+		}
+		indexes = lo.Uniq(append(indexes, lo.Map(selections, func(i int, _ int) int { return i - 1 })...))
+	}
+}
+
+// parseSelectionRanges parses a comma-separated list of numbers and ranges into a set of 1-based ordinals.
+// A token is either a single number ("5"), a full range ("2-4"), or a range with an omitted bound: "-5" means
+// 1..5 and "3-" means 3..max. All ordinals must lie within [1, max].
+func parseSelectionRanges(input string, maximum int) ([]int, error) {
+	var selections []int
+	if input == "" {
+		return nil, fmt.Errorf("empty input")
+	}
+	input = strings.TrimSpace(input)
+
+	for _, token := range strings.Split(input, ",") {
+		token = strings.TrimSpace(token)
+		if token == "" {
+			continue
+		}
+
+		var start, end int
+		if strings.Contains(token, "-") {
+			parts := strings.SplitN(token, "-", 2)
+			var vals [2]int
+			for i, p := range parts {
+				if s := strings.TrimSpace(p); s != "" {
+					v, convErr := strconv.Atoi(s)
+					if convErr != nil {
+						return nil, fmt.Errorf("invalid selection %q", token)
+					}
+					vals[i] = v
+				}
+			}
+			start, end = vals[0], vals[1]
+		} else {
+			v, convErr := strconv.Atoi(token)
+			if convErr != nil {
+				return nil, fmt.Errorf("invalid selection %q", token)
+			}
+			start, end = v, v
+		}
+
+		if start > end {
+			return nil, fmt.Errorf("invalid range %q (start greater than end)", token)
+		}
+		if start < 1 || end > maximum {
+			return nil, fmt.Errorf("selection %q is out of range [1, %d]", token, maximum)
+		}
+		for i := start; i <= end; i++ {
+			selections = append(selections, i)
+		}
+	}
+
+	return selections, nil
 }
 
 func collectMergeableDependencies(node *types.RawNode, docs []*documentTree, locator common2.DocumentLocator) []*types.RawNode {
@@ -315,7 +438,7 @@ func collectMergeableDependencies(node *types.RawNode, docs []*documentTree, loc
 
 		queue = append(queue, collectRefs(refNode)...)
 		queue = lo.UniqBy(queue, func(n *types.RawNode) string {
-			return absLocation(n.OriginDocument()) + ":" + jsonpointer.PointerString(n.Path()...)
+			return n.AbsPointerString()
 		})
 	}
 

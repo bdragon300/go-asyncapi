@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"iter"
+	"path/filepath"
 	"strconv"
 
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/buger/jsonparser"
+	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
 )
 
@@ -105,6 +107,18 @@ func (r RawNode) Path() []string {
 
 func (r RawNode) OriginDocument() *jsonpointer.JSONPointer {
 	return r.originDocument
+}
+
+// AbsPointerString returns the JSON pointer string representation of the node's path with the document's absolute
+// location related to the current directory.
+func (r RawNode) AbsPointerString() string {
+	if r.originDocument == nil {
+		return jsonpointer.PointerString(r.path...)
+	}
+	if r.originDocument.FSPath != "" {
+		return lo.Must(filepath.Abs(r.originDocument.FSPath)) + jsonpointer.PointerString(r.path...)
+	}
+	return r.originDocument.Location() + jsonpointer.PointerString(r.path...)
 }
 
 func (r RawNode) Entries() iter.Seq2[any, *RawNode] {
