@@ -44,8 +44,8 @@ func (y yamlSlot) Value() *RawNode {
 	return y.value
 }
 
-func (y yamlSlot) SetValue(value *RawNode) {
-	*y.value = *value
+func (y *yamlSlot) SetValue(value *RawNode) {
+	y.value = value
 }
 
 type plainSlot struct {
@@ -61,24 +61,24 @@ func (j plainSlot) Value() *RawNode {
 	return j.value
 }
 
-func (j plainSlot) SetValue(value *RawNode) {
-	*j.value = *value
+func (j *plainSlot) SetValue(value *RawNode) {
+	j.value = value
 }
 
-func NewEmptyRawNode(originDocument *jsonpointer.JSONPointer) *RawNode {
+func NewEmptyRawNode(kind RawNodeKind, nodePath []string, originDocument *jsonpointer.JSONPointer) *RawNode {
 	if len(originDocument.Pointer) > 0 {
 		panic(fmt.Errorf("originDocument should point to the root of the document, got %q", originDocument.PointerString()))
 	}
-	return &RawNode{originDocument: originDocument}
+	return &RawNode{originDocument: originDocument, kind: kind, path: nodePath}
 }
 
-func NewScalarRawNode(path []string, value any, originDocument *jsonpointer.JSONPointer) *RawNode {
+func NewScalarRawNode(nodePath []string, value any, originDocument *jsonpointer.JSONPointer) *RawNode {
 	if len(originDocument.Pointer) > 0 {
 		panic(fmt.Errorf("originDocument should point to the root of the document, got %q", originDocument.PointerString()))
 	}
 	return &RawNode{
 		kind:           RawNodeKindScalar,
-		path:           path,
+		path:           nodePath,
 		scalarValue:    value,
 		originDocument: originDocument,
 	}
@@ -107,6 +107,37 @@ func (r RawNode) Path() []string {
 
 func (r RawNode) OriginDocument() *jsonpointer.JSONPointer {
 	return r.originDocument
+}
+
+func (r RawNode) IsZero() bool {
+	switch r.kind {
+	case RawNodeKindScalar:
+		return r.scalarValue == nil
+	case RawNodeKindArray, RawNodeKindObject:
+		return len(r.slots) == 0
+	default:
+		return true
+	}
+}
+
+// DeepCopy creates a deep copy of r, recursively cloning all nested nodes.
+// It preserves the original node's kind, path and origin document.
+func (r RawNode) DeepCopy() *RawNode {
+	if r.IsZero() {
+		return NewEmptyRawNode(r.kind, r.path, r.originDocument)
+	}
+	switch r.kind {
+	case RawNodeKindScalar:
+		return NewScalarRawNode(r.path, r.scalarValue, r.originDocument)
+	case RawNodeKindArray, RawNodeKindObject:
+		res := NewEmptyRawNode(r.kind, r.path, r.originDocument)
+		for _, sl := range r.slots {
+			res.slots = append(res.slots, &plainSlot{key: sl.Key(), value: sl.Value().DeepCopy()})
+		}
+		return res
+	default:
+		panic(fmt.Sprintf("unknown node kind: %s", r.kind))
+	}
 }
 
 // AbsPointerString returns the JSON pointer string representation of the node's path with the document's absolute
@@ -161,16 +192,16 @@ func (r *RawNode) Set(key any, value *RawNode) {
 			return
 		}
 	}
-	r.slots = append(r.slots, plainSlot{key: key, value: value})
+	r.slots = append(r.slots, &plainSlot{key: key, value: value})
 }
 
 // GetByPath returns the node at the given path, or nil if the path does not exist. Panics if called on a scalar node.
-func (r RawNode) GetByPath(path []string) *RawNode {
+func (r *RawNode) GetByPath(path []string) *RawNode {
+	if len(path) == 0 {
+		return r
+	}
 	if r.kind != RawNodeKindObject && r.kind != RawNodeKindArray {
 		panic("not an object or array node")
-	}
-	if len(path) == 0 {
-		return &r
 	}
 	for _, sl := range r.slots {
 		if sl.Key() == path[0] {
@@ -180,50 +211,68 @@ func (r RawNode) GetByPath(path []string) *RawNode {
 	return nil
 }
 
-// SetByPath sets the value at the given path, creating intermediate nodes if necessary.
-func (r *RawNode) SetByPath(path []string, value *RawNode) {
-	if len(path) == 0 {
-		panic("path cannot be empty")
+// SetNodeByPath inserts the given node in r at the same path or replaces the existing one.
+// If the path does not exist, it is created. If r or any existing node on the path is not an object, an error is returned.
+func (r *RawNode) SetNodeByPath(node *RawNode) error {
+	if r.kind != RawNodeKindObject {
+		return fmt.Errorf("not an object or array node at path %q", jsonpointer.PointerString(r.path...))
 	}
-	if r.kind != RawNodeKindObject && r.kind != RawNodeKindArray {
-		panic("not an object or array node")
+	if len(node.path) == 0 {
+		*r = *node
+		return nil
 	}
-	for _, sl := range r.slots {
-		if sl.Key() == path[0] {
-			sl.Value().SetByPath(path[1:], value)
-			return
+
+	return r.setNodeByPath(node.path, node)
+}
+
+func (r *RawNode) setNodeByPath(path []string, value *RawNode) error {
+	if r.kind != RawNodeKindObject {
+		return fmt.Errorf("not an object node at path %q", jsonpointer.PointerString(r.path...))
+	}
+
+	var node *RawNode
+	sl, found := lo.Find(r.slots, func(sl slot) bool { return sl.Key() == path[0] })
+	if found {
+		node = sl.Value()
+	} else {
+		node = &RawNode{
+			kind:           RawNodeKindObject,
+			path:           append(r.path, path[0]),
+			originDocument: r.originDocument,
 		}
+		sl = &plainSlot{key: path[0], value: node}
+		r.slots = append(r.slots, sl)
 	}
-	newNode := &RawNode{kind: RawNodeKindObject, path: append(r.path, path[0]), originDocument: r.originDocument}
-	newNode.SetByPath(path[1:], value)
-	r.slots = append(r.slots, plainSlot{key: path[0], value: newNode})
+	if len(path) <= 1 {
+		sl.SetValue(value)
+		return nil
+	}
+
+	if node.kind != RawNodeKindObject {
+		return fmt.Errorf("node is not an object on path %s", jsonpointer.PointerString(path[:len(path)-1]...))
+	}
+	return node.setNodeByPath(path[1:], value)
 }
 
 // DeleteByPath deletes the node at the given path and returns true if the node was found and deleted, false otherwise.
-func (r *RawNode) DeleteByPath(path []string) bool {
+func (r *RawNode) DeleteByPath(path []string) (bool, error) {
 	if r.kind != RawNodeKindObject && r.kind != RawNodeKindArray {
-		panic("not an object or array node")
+		return false, fmt.Errorf("not an object or array node at path %q", jsonpointer.PointerString(r.path...))
 	}
 	if len(path) == 0 {
-		return false
+		return false, fmt.Errorf("empty path")
 	}
+
 	for i, sl := range r.slots {
 		if sl.Key() == path[0] {
 			if len(path) == 1 {
 				r.slots = append(r.slots[:i], r.slots[i+1:]...)
-				return true
+				return true, nil
 			}
 			return sl.Value().DeleteByPath(path[1:])
 		}
 	}
-	return false
-}
-
-// CloneZero returns the copy of r with zero value, keeping path, kind and metainfo.
-func (r RawNode) CloneZero() *RawNode {
-	r.slots = nil
-	r.scalarValue = nil
-	return &r
+	return false, nil
 }
 
 // Len returns the number of entries in the object or array node. Panics if called on a scalar node.
@@ -331,7 +380,7 @@ func (r RawNode) unmarshalJSONValue(data []byte, valType jsonparser.ValueType, n
 			if err != nil {
 				return err
 			}
-			res.slots = append(res.slots, plainSlot{key: key, value: val})
+			res.slots = append(res.slots, &plainSlot{key: key, value: val})
 			return nil
 		})
 	case jsonparser.Array:
@@ -344,7 +393,7 @@ func (r RawNode) unmarshalJSONValue(data []byte, valType jsonparser.ValueType, n
 				innerErr = err2 // The only way to deliver the error from the callback
 				return
 			}
-			res.slots = append(res.slots, plainSlot{key: idx, value: val})
+			res.slots = append(res.slots, &plainSlot{key: idx, value: val})
 			idx++
 		})
 		return res, errors.Join(err, innerErr)
@@ -400,7 +449,7 @@ func (r RawNode) unmarshalYAMLValue(node *yaml.Node, nodePath []string) (res *Ra
 				keyStyle:      keyNode.Style,
 				valueStyle:    valueNode.Style,
 			}
-			res.slots = append(res.slots, sl)
+			res.slots = append(res.slots, &sl)
 		}
 	case yaml.SequenceNode:
 		res.kind = RawNodeKindArray
@@ -416,7 +465,7 @@ func (r RawNode) unmarshalYAMLValue(node *yaml.Node, nodePath []string) (res *Ra
 				valueComments: [3]string{itemNode.HeadComment, itemNode.LineComment, itemNode.FootComment},
 				valueStyle:    itemNode.Style,
 			}
-			res.slots = append(res.slots, sl)
+			res.slots = append(res.slots, &sl)
 		}
 	case yaml.AliasNode:
 		return r.unmarshalYAMLValue(node.Alias, nodePath)
@@ -443,7 +492,7 @@ func (r RawNode) MarshalYAML() (any, error) {
 			if err := valNode.Encode(sl.Value()); err != nil {
 				return nil, err
 			}
-			if v, ok := sl.(yamlSlot); ok {
+			if v, ok := sl.(*yamlSlot); ok {
 				keyNode.HeadComment, keyNode.LineComment, keyNode.FootComment = v.keyComments[0], v.keyComments[1], v.keyComments[2]
 				valNode.HeadComment, valNode.LineComment, valNode.FootComment = v.valueComments[0], v.valueComments[1], v.valueComments[2]
 				keyNode.Style, valNode.Style = v.keyStyle, v.valueStyle
@@ -458,7 +507,7 @@ func (r RawNode) MarshalYAML() (any, error) {
 			if err := valNode.Encode(sl.Value()); err != nil {
 				return nil, err
 			}
-			if v, ok := sl.(yamlSlot); ok {
+			if v, ok := sl.(*yamlSlot); ok {
 				valNode.HeadComment, valNode.LineComment, valNode.FootComment = v.valueComments[0], v.valueComments[1], v.valueComments[2]
 			}
 

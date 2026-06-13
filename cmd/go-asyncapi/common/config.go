@@ -184,10 +184,12 @@ type (
 	}
 
 	ToolConfigDocUnmerge struct {
-		Scope            string `yaml:"scope"`
-		Duplicate        string `yaml:"duplicate"`
-		OutputFile       string `yaml:"outputFile"`
+		IncludeDeps      string `yaml:"includeDeps"`
+		DuplicateObjects string `yaml:"duplicateObjects"`
+		UnmergeTo        string `yaml:"unmergeTo"`
+		Output           string `yaml:"output"`
 		DisableRewriting bool   `yaml:"disableRewriting"`
+		NoInteractive    bool   `yaml:"noInteractive"`
 	}
 )
 
@@ -334,10 +336,12 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.Merge.Strategy = Coalesce(userConf.Doc.Merge.Strategy, defaultConf.Doc.Merge.Strategy)
 	res.Doc.Merge.DisableRewriting = Coalesce(userConf.Doc.Merge.DisableRewriting, defaultConf.Doc.Merge.DisableRewriting)
 	res.Doc.Merge.OutputFile = Coalesce(userConf.Doc.Merge.OutputFile, defaultConf.Doc.Merge.OutputFile)
-	res.Doc.Unmerge.OutputFile = Coalesce(userConf.Doc.Unmerge.OutputFile, defaultConf.Doc.Unmerge.OutputFile)
-	res.Doc.Unmerge.Scope = Coalesce(userConf.Doc.Unmerge.Scope, defaultConf.Doc.Unmerge.Scope)
-	res.Doc.Unmerge.Duplicate = Coalesce(userConf.Doc.Unmerge.Duplicate, defaultConf.Doc.Unmerge.Duplicate)
+	res.Doc.Unmerge.UnmergeTo = Coalesce(userConf.Doc.Unmerge.UnmergeTo, defaultConf.Doc.Unmerge.UnmergeTo)
+	res.Doc.Unmerge.Output = Coalesce(userConf.Doc.Unmerge.Output, defaultConf.Doc.Unmerge.Output)
+	res.Doc.Unmerge.IncludeDeps = Coalesce(userConf.Doc.Unmerge.IncludeDeps, defaultConf.Doc.Unmerge.IncludeDeps)
+	res.Doc.Unmerge.DuplicateObjects = Coalesce(userConf.Doc.Unmerge.DuplicateObjects, defaultConf.Doc.Unmerge.DuplicateObjects)
 	res.Doc.Unmerge.DisableRewriting = Coalesce(userConf.Doc.Unmerge.DisableRewriting, defaultConf.Doc.Unmerge.DisableRewriting)
+	res.Doc.Unmerge.NoInteractive = Coalesce(userConf.Doc.Unmerge.NoInteractive, defaultConf.Doc.Unmerge.NoInteractive)
 
 	return res
 }

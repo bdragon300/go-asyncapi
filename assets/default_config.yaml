@@ -56,5 +56,5 @@ doc:
   indent: 2
   format: yaml
   unmerge:
-    scope: auto
-    duplicate: offscope-deps
+    includeDeps: orphaned-deps
+    duplicateObjects: shared-deps
