@@ -9,8 +9,9 @@ require (
 	github.com/buger/jsonparser v1.1.1
 	github.com/charmbracelet/log v0.4.2
 	github.com/go-sprout/sprout v1.0.3
+	github.com/gobwas/glob v0.2.3
 	github.com/samber/lo v1.52.0
-	github.com/stretchr/testify v1.11.1
+	github.com/sergi/go-diff v1.4.0
 	golang.org/x/exp v0.0.0-20251219203646-944ab1f22d93
 	golang.org/x/mod v0.32.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -34,12 +35,10 @@ require (
 	github.com/clipperhouse/displaywidth v0.6.2 // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/dop251/goja v0.0.0-20260106131823-651366fbe6e3 // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.4+incompatible // indirect
-	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/google/pprof v0.0.0-20260106004452-d7df1bf2cac7 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -50,7 +49,6 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect

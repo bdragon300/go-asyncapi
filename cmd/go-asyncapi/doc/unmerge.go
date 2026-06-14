@@ -91,10 +91,9 @@ func cliUnmerge(cmd *UnmergeCmd, cmdConfig common2.ToolConfig) error {
 			}
 			return res
 		})
-		selectedIndexes, cancelled := promptSelectMergeableObjects(inputDoc, unmergedDoc, mergeableNodes, os.Stdout, os.Stdin)
-		if cancelled {
-			logger.Debug("Cancelled, nothing to do")
-			return nil
+		selectedIndexes, err := promptSelectMergeableObjects(inputDoc, unmergedDoc, mergeableNodes, os.Stdout, os.Stdin)
+		if err != nil {
+			return fmt.Errorf("user prompt: %w", err)
 		}
 		selections = lo.Map(selectedIndexes, func(i int, _ int) *types.RawNode { return mergeableNodes[i] })
 	}
@@ -353,7 +352,9 @@ func collectMergeableNodes(sourceDoc, destDoc *documentTree, patterns []glob.Glo
 // promptSelectMergeableObjects prints the numbered list of mergeable objects and reads the user's selection from in.
 // The user types comma-separated values, each of which is a single number or a number range with optional bounds
 // (e.g. "2-4", "-5", "3-"), then hits Enter to proceed. Pressing Ctrl-D on an empty line cancels: cancelled is true.
-func promptSelectMergeableObjects(inputDoc, outputDoc *jsonpointer.JSONPointer, nodes []*types.RawNode, out io.Writer, in io.Reader) (indexes []int, cancelled bool) {
+func promptSelectMergeableObjects(inputDoc, outputDoc *jsonpointer.JSONPointer, nodes []*types.RawNode, out io.Writer, in io.Reader) ([]int, error) {
+	var indexes []int
+
 	for {
 		fmt.Fprintf(out, "Please select objects to relocate from %s to %s:\n", inputDoc, outputDoc)
 		for i, n := range nodes {
@@ -365,13 +366,13 @@ func promptSelectMergeableObjects(inputDoc, outputDoc *jsonpointer.JSONPointer, 
 		line, err := bufio.NewReader(in).ReadString('\n')
 		switch {
 		case errors.Is(err, io.EOF):
-			fmt.Fprintln(out, "\nAborted.")
-			return nil, true
+			fmt.Fprintln(out, "Aborted.")
+			return nil, common2.ErrInterruptedByUser
 		case err != nil:
-			panic(fmt.Errorf("read user input: %w", err))
+			return nil, fmt.Errorf("read input: %w", err)
 		case strings.TrimSpace(line) == "":
 			if len(indexes) > 0 {
-				return indexes, false
+				return indexes, nil
 			}
 			fmt.Fprint(out, "Nothing selected, try again or press Ctrl-D to exit\n\n")
 			continue

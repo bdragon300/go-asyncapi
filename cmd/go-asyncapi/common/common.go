@@ -2,6 +2,7 @@ package common2
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -18,7 +19,10 @@ const (
 	DefaultSubprocessLocatorShutdownTimeout = 3 * time.Second
 )
 
-var ErrWrongCliArgs = errors.New("cli args")
+var (
+	ErrWrongCliArgs      = errors.New("cli args")
+	ErrInterruptedByUser = fmt.Errorf("interrupted by user")
+)
 
 type DocumentLocator interface {
 	Locate(docURL *jsonpointer.JSONPointer) (io.ReadCloser, error)

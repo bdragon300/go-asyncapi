@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"hash/crc64"
-	"io"
 	"os"
 	"path"
 	"strings"
@@ -16,14 +15,8 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
-	"golang.org/x/term"
+	"github.com/sergi/go-diff/diffmatchpatch"
 	"gopkg.in/yaml.v3"
-)
-
-const (
-	defaultStdoutWidth              = 80
-	sideBySideColumnSeparator       = " | "
-	sideBySideLineNumberPrefixWidth = 6
 )
 
 type MergeCmd struct {
@@ -213,7 +206,11 @@ func resolveMergeConflict(dMap, dNode, sNode *types.RawNode, dDoc, sDoc *jsonpoi
 			var choice string
 			inp := bufio.NewScanner(os.Stdin)
 			if !inp.Scan() {
-				return nil, fmt.Errorf("read user choice: %w", inp.Err())
+				if inp.Err() != nil {
+					return nil, fmt.Errorf("read user choice: %w", inp.Err())
+				}
+				fmt.Println("Aborted.")
+				return nil, common2.ErrInterruptedByUser // EOF, user pressed Ctrl+D
 			}
 			choice = inp.Text()
 			var ok bool
@@ -225,23 +222,13 @@ func resolveMergeConflict(dMap, dNode, sNode *types.RawNode, dDoc, sDoc *jsonpoi
 				continue
 			}
 
-			// Print side-by-side diff in YAML format
-			headers := []string{
-				fmt.Sprintf("Source: %s", sDoc.Location()),
-				fmt.Sprintf("Destination: %s", dDoc.Location()),
-			}
-			columns := []io.Reader{
-				strings.NewReader(formatDiffContent(headers[0], sNode, cmdConfig.Doc.Indent)),
-				strings.NewReader(formatDiffContent(headers[1], dNode, cmdConfig.Doc.Indent)),
-			}
-
-			termWidth := getTerminalWidth()
-			logger.Trace("Terminal width", "width", termWidth)
-			colOutput, err := utils.ArrangeInColumns(columns, termWidth-sideBySideLineNumberPrefixWidth, sideBySideColumnSeparator)
-			if err != nil {
-				return nil, fmt.Errorf("format diff view: %w", err)
-			}
-			fmt.Print(utils.ReadAllWithLineNumbers(strings.NewReader(colOutput), 2, sideBySideLineNumberPrefixWidth))
+			// Print diff in unified patch format
+			dmp := diffmatchpatch.New()
+			diff := dmp.DiffMain(formatDiffContent(dNode, cmdConfig.Doc.Indent), formatDiffContent(sNode, cmdConfig.Doc.Indent), true)
+			diffOutput := dmp.DiffPrettyText(diff)
+			fmt.Printf("\u001B[32m+++ %s\n\u001B[0m", sDoc.String())
+			fmt.Printf("\u001B[31m--- %s\n\u001B[0m", dDoc.String())
+			fmt.Print(diffOutput)
 		}
 
 		logMsg = "Conflict resolved by user"
@@ -269,12 +256,10 @@ func resolveMergeConflict(dMap, dNode, sNode *types.RawNode, dDoc, sDoc *jsonpoi
 	panic(fmt.Sprintf("unknown conflict resolution strategy: %q", strategy))
 }
 
-func formatDiffContent(header string, contents *types.RawNode, indentWidth int) string {
+func formatDiffContent(contents *types.RawNode, indentWidth int) string {
 	var indentLvl int
 	var b strings.Builder
 
-	b.WriteString(header)
-	b.WriteString("\n\n")
 	for _, p := range contents.Path() {
 		b.WriteString(strings.Repeat(" ", indentWidth*indentLvl))
 		b.WriteString(p)
@@ -297,15 +282,4 @@ func formatDiffContent(header string, contents *types.RawNode, indentWidth int) 
 	}
 
 	return b.String()
-}
-
-func getTerminalWidth() int {
-	if term.IsTerminal(int(os.Stdout.Fd())) {
-		width, _, err := term.GetSize(int(os.Stdout.Fd()))
-		if err != nil {
-			panic(fmt.Errorf("get terminal size: %w", err))
-		}
-		return width
-	}
-	return defaultStdoutWidth
 }

@@ -95,7 +95,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err != nil {
+	switch {
+	case errors.Is(err, common2.ErrInterruptedByUser):
+		logger.Debug("Interrupted by user")
+		os.Exit(0)
+	case err != nil:
 		var me types.MultilineError
 		switch {
 		case errors.Is(err, common2.ErrWrongCliArgs):
