@@ -20,8 +20,16 @@ const (
 )
 
 var (
-	ErrWrongCliArgs      = errors.New("cli args")
+	// ErrWrongCliArgs is returned when the CLI arguments are failed to validate. This error is fatal, it causes
+	// displaying the help message and exiting with error code.
+	ErrWrongCliArgs = errors.New("cli args")
+
+	// ErrInterruptedByUser is returned when the user interrupts the execution. Command exits with code 0 in this case.
 	ErrInterruptedByUser = fmt.Errorf("interrupted by user")
+
+	// ErrBadResult indicates that the command has finished without any issues but its result is error.
+	// This is not a fatal error, it just causes exiting with error code.
+	ErrBadResult = fmt.Errorf("bad result")
 )
 
 type DocumentLocator interface {

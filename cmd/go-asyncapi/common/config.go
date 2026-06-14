@@ -171,10 +171,15 @@ type (
 	}
 
 	ToolConfigDoc struct {
-		Merge   ToolConfigDocMerge   `yaml:"merge"`
-		Unmerge ToolConfigDocUnmerge `yaml:"unmerge"`
-		Indent  int                  `yaml:"indent"`
-		Format  string               `yaml:"format"`
+		Merge    ToolConfigDocMerge    `yaml:"merge"`
+		Unmerge  ToolConfigDocUnmerge  `yaml:"unmerge"`
+		Validate ToolConfigDocValidate `yaml:"validate"`
+		Indent   int                   `yaml:"indent"`
+		Format   string                `yaml:"format"`
+	}
+
+	ToolConfigDocValidate struct {
+		Schema string `yaml:"schema"`
 	}
 
 	ToolConfigDocMerge struct {
@@ -342,6 +347,7 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.Unmerge.DuplicateObjects = Coalesce(userConf.Doc.Unmerge.DuplicateObjects, defaultConf.Doc.Unmerge.DuplicateObjects)
 	res.Doc.Unmerge.DisableRewriting = Coalesce(userConf.Doc.Unmerge.DisableRewriting, defaultConf.Doc.Unmerge.DisableRewriting)
 	res.Doc.Unmerge.NoInteractive = Coalesce(userConf.Doc.Unmerge.NoInteractive, defaultConf.Doc.Unmerge.NoInteractive)
+	res.Doc.Validate.Schema = Coalesce(userConf.Doc.Validate.Schema, defaultConf.Doc.Validate.Schema)
 
 	return res
 }

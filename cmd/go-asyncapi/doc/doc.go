@@ -24,10 +24,11 @@ type anyEncoder interface {
 }
 
 type Cmd struct {
-	Merge   *MergeCmd   `arg:"subcommand:merge" help:"Merge multiple AsyncAPI documents into one."`
-	Unmerge *UnmergeCmd `arg:"subcommand:unmerge" help:"Unmerge an AsyncAPI document by relocating the objects to another document."`
-	Indent  int         `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
-	Format  string      `arg:"--format,-f" help:"Output format. Possible values: yaml, json" placeholder:"FORMAT"`
+	Merge    *MergeCmd    `arg:"subcommand:merge" help:"Merge multiple AsyncAPI documents into one."`
+	Unmerge  *UnmergeCmd  `arg:"subcommand:unmerge" help:"Unmerge an AsyncAPI document by relocating the objects to another document."`
+	Validate *ValidateCmd `arg:"subcommand:validate" help:"Validate AsyncAPI documents against the AsyncAPI JSON Schema."`
+	Indent   int          `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
+	Format   string       `arg:"--format,-f" help:"Output format. Possible values: yaml, json" placeholder:"FORMAT"`
 }
 
 func newDocumentTree(originDocument *jsonpointer.JSONPointer) *documentTree {
@@ -116,6 +117,8 @@ func CliDoc(cmd *Cmd, globalConfig common2.ToolConfig) error {
 		return cliMerge(cmd.Merge, cmdConfig)
 	case cmd.Unmerge != nil:
 		return cliUnmerge(cmd.Unmerge, cmdConfig)
+	case cmd.Validate != nil:
+		return cliValidate(cmd.Validate, cmdConfig)
 	}
 	return fmt.Errorf("%w: unknown doc subcommand", common2.ErrWrongCliArgs)
 }
@@ -125,6 +128,7 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 
 	cmdMerge := lo.FromPtr(cmd.Merge)
 	cmdUnmerge := lo.FromPtr(cmd.Unmerge)
+	cmdValidate := lo.FromPtr(cmd.Validate)
 
 	res.Doc.Indent = common2.Coalesce(cmd.Indent, globalConfig.Doc.Indent)
 	res.Doc.Format = common2.Coalesce(cmd.Format, globalConfig.Doc.Format)
@@ -137,6 +141,7 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 	res.Doc.Unmerge.DuplicateObjects = common2.Coalesce(cmdUnmerge.DuplicateObjects, globalConfig.Doc.Unmerge.DuplicateObjects)
 	res.Doc.Unmerge.DisableRewriting = common2.Coalesce(cmdUnmerge.DisableRewriting, globalConfig.Doc.Unmerge.DisableRewriting)
 	res.Doc.Unmerge.NoInteractive = common2.Coalesce(cmdUnmerge.NoInteractive, globalConfig.Doc.Unmerge.NoInteractive)
+	res.Doc.Validate.Schema = common2.Coalesce(cmdValidate.Schema, globalConfig.Doc.Validate.Schema)
 
 	return res, nil
 }

@@ -95,18 +95,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	switch {
-	case errors.Is(err, common2.ErrInterruptedByUser):
-		logger.Debug("Interrupted by user")
-		os.Exit(0)
-	case err != nil:
+	if err != nil {
 		var me types.MultilineError
 		switch {
+		case errors.Is(err, common2.ErrInterruptedByUser):
+			logger.Debug("Interrupted by user")
+			os.Exit(0)
 		case errors.Is(err, common2.ErrWrongCliArgs):
 			cliParser.WriteHelp(os.Stderr)
+		case errors.Is(err, common2.ErrBadResult):
+			chlog.Error(err.Error())
+			os.Exit(1)
 		case chlog.GetLevel() <= chlog.DebugLevel && errors.As(err, &me):
 			chlog.Error(err.Error(), "details", me.ContentLines())
 		}
+		// Command unexpectedly failed and not finished
 		chlog.Error(err.Error())
 		chlog.Fatal("Cannot finish the command. Use -v=1 flag to enable debug output")
 		os.Exit(1)

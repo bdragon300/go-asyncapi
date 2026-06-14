@@ -27,6 +27,12 @@ tasks:
     cmds:
       - go run tools/inflate_codeextra.go -auto-remove {{.CLI_ARGS}}
 
+  fetch-schemas:
+    desc: "Fetch the AsyncAPI JSON Schemas"
+    dir: "assets"
+    cmds:
+      - go run ../tools/fetch_schemas.go -output schemas -versions 3.0.0,3.1.0
+
   lint:
     desc: "Run linters"
     deps:
