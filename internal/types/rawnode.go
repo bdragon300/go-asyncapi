@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"iter"
+	"path"
 	"path/filepath"
 	"strconv"
 
@@ -66,6 +67,9 @@ func (j *plainSlot) SetValue(value *RawNode) {
 }
 
 func NewEmptyRawNode(kind RawNodeKind, nodePath []string, originDocument *jsonpointer.JSONPointer) *RawNode {
+	if originDocument.FSPath != "" && !path.IsAbs(originDocument.FSPath) {
+		panic(fmt.Errorf("originDocument should be an absolute path, got %q", originDocument.FSPath))
+	}
 	if len(originDocument.Pointer) > 0 {
 		panic(fmt.Errorf("originDocument should point to the root of the document, got %q", originDocument.PointerString()))
 	}
@@ -73,6 +77,9 @@ func NewEmptyRawNode(kind RawNodeKind, nodePath []string, originDocument *jsonpo
 }
 
 func NewScalarRawNode(nodePath []string, value any, originDocument *jsonpointer.JSONPointer) *RawNode {
+	if originDocument.FSPath != "" && !path.IsAbs(originDocument.FSPath) {
+		panic(fmt.Errorf("originDocument should be an absolute path, got %q", originDocument.FSPath))
+	}
 	if len(originDocument.Pointer) > 0 {
 		panic(fmt.Errorf("originDocument should point to the root of the document, got %q", originDocument.PointerString()))
 	}
@@ -92,8 +99,7 @@ type RawNode struct {
 	slots       []slot
 	scalarValue any
 
-	// originDocument is a document location where this node is located or was located before being moved or copied
-	// into the parent node.
+	// originDocument is a document *absolute* location where this node is initially was parsed from.
 	originDocument *jsonpointer.JSONPointer
 }
 

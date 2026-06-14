@@ -98,7 +98,8 @@ func cliUnmerge(cmd *UnmergeCmd, cmdConfig common2.ToolConfig) error {
 		selections = lo.Map(selectedIndexes, func(i int, _ int) *types.RawNode { return mergeableNodes[i] })
 	}
 
-	unmergedContents := newDocumentTree(unmergedDoc)
+	absUnmergedPath := lo.Must(jsonpointer.Parse(absLocation(unmergedDoc)))
+	unmergedContents := newDocumentTree(absUnmergedPath)
 	if _, err = os.Stat(unmergedPath); err == nil {
 		if unmergedContents, err = loadDocument(unmergedDoc, locator); err != nil {
 			return fmt.Errorf("load unmerged document: %w", err)

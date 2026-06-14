@@ -48,7 +48,8 @@ func cliMerge(cmd *MergeCmd, cmdConfig common2.ToolConfig) error {
 	}
 
 	locator := common2.GetLocator(cmdConfig)
-	outputContents := newDocumentTree(outputDoc)
+	absOutputPath := lo.Must(jsonpointer.Parse(absLocation(outputDoc)))
+	outputContents := newDocumentTree(absOutputPath)
 	var changeLog []changeLogEntry
 	for _, doc := range cmd.Documents {
 		docURL, err := jsonpointer.Parse(doc)

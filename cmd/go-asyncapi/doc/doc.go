@@ -355,7 +355,8 @@ func relocateEssentialNodes(sourceDoc, destDoc *documentTree) []changeLogEntry {
 func loadDocument(inputDoc *jsonpointer.JSONPointer, locator common2.DocumentLocator) (*documentTree, error) {
 	logger := log.GetLogger("")
 
-	inputContents := newDocumentTree(inputDoc)
+	absInputPath := lo.Must(jsonpointer.Parse(absLocation(inputDoc)))
+	inputContents := newDocumentTree(absInputPath)
 	buf, newDecoder, err := compiler.ReadDocument(inputDoc, locator, logger)
 	if err != nil {
 		return nil, fmt.Errorf("read: %w", err)
