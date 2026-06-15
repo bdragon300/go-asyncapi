@@ -174,12 +174,19 @@ type (
 		Merge    ToolConfigDocMerge    `yaml:"merge"`
 		Unmerge  ToolConfigDocUnmerge  `yaml:"unmerge"`
 		Validate ToolConfigDocValidate `yaml:"validate"`
+		Flatten  ToolConfigDocFlatten  `yaml:"flatten"`
 		Indent   int                   `yaml:"indent"`
 		Format   string                `yaml:"format"`
 	}
 
 	ToolConfigDocValidate struct {
 		Schema string `yaml:"schema"`
+	}
+
+	ToolConfigDocFlatten struct {
+		OutputFile   string `yaml:"outputFile"`
+		WithExternal bool   `yaml:"withExternal"`
+		WithRemote   bool   `yaml:"withRemote"`
 	}
 
 	ToolConfigDocMerge struct {
@@ -348,6 +355,10 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.Unmerge.DisableRewriting = Coalesce(userConf.Doc.Unmerge.DisableRewriting, defaultConf.Doc.Unmerge.DisableRewriting)
 	res.Doc.Unmerge.NoInteractive = Coalesce(userConf.Doc.Unmerge.NoInteractive, defaultConf.Doc.Unmerge.NoInteractive)
 	res.Doc.Validate.Schema = Coalesce(userConf.Doc.Validate.Schema, defaultConf.Doc.Validate.Schema)
+	res.Doc.Flatten.OutputFile = Coalesce(userConf.Doc.Flatten.OutputFile, defaultConf.Doc.Flatten.OutputFile)
+	res.Doc.Flatten.WithExternal = Coalesce(userConf.Doc.Flatten.WithExternal, defaultConf.Doc.Flatten.WithExternal)
+	res.Doc.Flatten.WithRemote = Coalesce(userConf.Doc.Flatten.WithRemote, defaultConf.Doc.Flatten.WithRemote)
+	res.Locator.AllowRemoteReferences = Coalesce(res.Locator.AllowRemoteReferences, res.Doc.Flatten.WithRemote)
 
 	return res
 }

@@ -213,7 +213,7 @@ func relocateNodes(sourceDoc, destDoc *documentTree, patterns []glob.Glob, selec
 			reason = "a dependency"
 		}
 		logger.Info("Relocating object", "path", strings.Join(r.node.Path(), "."), "reason", reason, "action", lo.Ternary(move, "move", "duplicate"))
-		change, err := copyNode(r.node, r.destination, destDoc.OriginDocument(), sourceDoc.OriginDocument(), cmdConfig)
+		change, err := copyNode(r.node, r.destination, destDoc.AbsOriginDocumentPath(), sourceDoc.AbsOriginDocumentPath(), cmdConfig)
 		if err != nil {
 			return nil, fmt.Errorf("copy node %v: %w", jsonpointer.PointerString(r.node.Path()...), err)
 		}
@@ -314,7 +314,7 @@ func collectMergeableNodes(sourceDoc, destDoc *documentTree, patterns []glob.Glo
 		case sMap == nil:
 			continue // Source is empty, nothing to merge
 		case sMap.Kind() != types.RawNodeKindObject:
-			return nil, fmt.Errorf("expected an object on path %q in document %q", path.Join(sMap.Path()...), sourceDoc.OriginDocument())
+			return nil, fmt.Errorf("expected an object on path %q in document %q", path.Join(sMap.Path()...), sourceDoc.AbsOriginDocumentPath())
 		case sMap.Len() == 0:
 			logger.Trace("Source map is empty, skipping", "path", sMap.Path())
 			continue
@@ -322,12 +322,12 @@ func collectMergeableNodes(sourceDoc, destDoc *documentTree, patterns []glob.Glo
 
 		switch {
 		case dMap == nil:
-			dMap = types.NewEmptyRawNode(types.RawNodeKindObject, sMap.Path(), sMap.OriginDocument())
+			dMap = types.NewEmptyRawNode(types.RawNodeKindObject, sMap.Path(), sMap.AbsOriginDocumentPath())
 			if err := destDoc.SetNodeByPath(dMap); err != nil {
-				return nil, fmt.Errorf("create object on path %q in document %q: %w", path.Join(sMap.Path()...), destDoc.OriginDocument(), err)
+				return nil, fmt.Errorf("create object on path %q in document %q: %w", path.Join(sMap.Path()...), destDoc.AbsOriginDocumentPath(), err)
 			}
 		case dMap.Kind() != types.RawNodeKindObject:
-			return nil, fmt.Errorf("expected an object on path %q in document %q", path.Join(dMap.Path()...), destDoc.OriginDocument())
+			return nil, fmt.Errorf("expected an object on path %q in document %q", path.Join(dMap.Path()...), destDoc.AbsOriginDocumentPath())
 		}
 
 		logger.Trace("Enumerating source map entries", "path", sMap.Path(), "entriesCount", sMap.Len())
@@ -457,17 +457,17 @@ func collectDirectMergeableDeps(node *types.RawNode, docs []*documentTree, locat
 		}
 
 		// Explicit document path where this $ref pointed to. For internal $ref, it's the file itself
-		referredPath := r.OriginDocument()
+		referredPath := r.AbsOriginDocumentPath()
 		if ref.Location() != "" {
 			// Resolve location in external $ref relative to it's origin document location
-			if referredPath, err = locator.ResolveURL(r.OriginDocument(), ref); err != nil {
+			if referredPath, err = locator.ResolveURL(r.AbsOriginDocumentPath(), ref); err != nil {
 				logger.Error("Failed to resolve $ref, skipping", "path", r.Path(), "value", ref, "error", err)
 				continue
 			}
 		}
 
 		logger.Trace("Found $ref", "path", r.Path(), "pointer", ref.String())
-		referredDoc, found := lo.Find(docs, func(d *documentTree) bool { return absLocation(d.OriginDocument()) == absLocation(referredPath) })
+		referredDoc, found := lo.Find(docs, func(d *documentTree) bool { return d.AbsOriginDocumentPath().Location() == absLocation(referredPath) })
 		if !found {
 			logger.Trace("-> $ref points to 3rd-party document, skipping", "path", r.Path(), "pointer", ref.String())
 			// 3rd-party document
@@ -494,7 +494,7 @@ func collectDirectMergeableDeps(node *types.RawNode, docs []*documentTree, locat
 			logger.Trace("-> $ref points to non-mergeable or invalid node, skipping", "path", r.Path(), "pointer", ref.String())
 			continue
 		}
-		logger.Debug("Found mergeable dependency node", "path", r.Path(), "pointer", ref.String(), "document", referredDoc.OriginDocument())
+		logger.Debug("Found mergeable dependency node", "path", r.Path(), "pointer", ref.String(), "document", referredDoc.AbsOriginDocumentPath())
 		res = append(res, refNode)
 	}
 

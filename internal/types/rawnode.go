@@ -7,6 +7,7 @@ import (
 	"iter"
 	"path"
 	"path/filepath"
+	"slices"
 	"strconv"
 
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
@@ -111,7 +112,7 @@ func (r RawNode) Path() []string {
 	return r.path
 }
 
-func (r RawNode) OriginDocument() *jsonpointer.JSONPointer {
+func (r RawNode) AbsOriginDocumentPath() *jsonpointer.JSONPointer {
 	return r.originDocument
 }
 
@@ -210,7 +211,11 @@ func (r *RawNode) GetByPath(path []string) *RawNode {
 		panic("not an object or array node")
 	}
 	for _, sl := range r.slots {
-		if sl.Key() == path[0] {
+		k := sl.Key()
+		if r.kind == RawNodeKindArray {
+			k = fmt.Sprintf("%d", k)
+		}
+		if k == path[0] {
 			return sl.Value().GetByPath(path[1:])
 		}
 	}
@@ -237,7 +242,13 @@ func (r *RawNode) setNodeByPath(path []string, value *RawNode) error {
 	}
 
 	var node *RawNode
-	sl, found := lo.Find(r.slots, func(sl slot) bool { return sl.Key() == path[0] })
+	sl, found := lo.Find(r.slots, func(sl slot) bool {
+		k := sl.Key()
+		if r.kind == RawNodeKindArray {
+			k = fmt.Sprintf("%v", k)
+		}
+		return k == path[0]
+	})
 	if found {
 		node = sl.Value()
 	} else {
@@ -270,7 +281,11 @@ func (r *RawNode) DeleteByPath(path []string) (bool, error) {
 	}
 
 	for i, sl := range r.slots {
-		if sl.Key() == path[0] {
+		k := sl.Key()
+		if r.kind == RawNodeKindArray {
+			k = fmt.Sprintf("%d", k)
+		}
+		if k == path[0] {
 			if len(path) == 1 {
 				r.slots = append(r.slots[:i], r.slots[i+1:]...)
 				return true, nil
@@ -375,6 +390,7 @@ func (r *RawNode) UnmarshalJSON(data []byte) error {
 }
 
 func (r RawNode) unmarshalJSONValue(data []byte, valType jsonparser.ValueType, nodePath []string) (res *RawNode, err error) {
+	nodePath = slices.Clone(nodePath)
 	res = &RawNode{path: nodePath, originDocument: r.originDocument}
 
 	switch valType {
@@ -433,6 +449,7 @@ func (r *RawNode) UnmarshalYAML(value *yaml.Node) error {
 }
 
 func (r RawNode) unmarshalYAMLValue(node *yaml.Node, nodePath []string) (res *RawNode, err error) {
+	nodePath = slices.Clone(nodePath)
 	res = &RawNode{path: nodePath, originDocument: r.originDocument}
 
 	switch node.Kind {
@@ -447,6 +464,7 @@ func (r RawNode) unmarshalYAMLValue(node *yaml.Node, nodePath []string) (res *Ra
 				err = err2
 				return
 			}
+
 			sl := yamlSlot{
 				key:           key,
 				value:         val,

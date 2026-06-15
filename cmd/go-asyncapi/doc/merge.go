@@ -62,7 +62,7 @@ func cliMerge(cmd *MergeCmd, cmdConfig common2.ToolConfig) error {
 			return fmt.Errorf("load document %q: %w", docURL, err)
 		}
 
-		logger.Debug("Merging documents", "destination", outputDoc, "source", contents.OriginDocument())
+		logger.Debug("Merging documents", "destination", outputDoc, "source", contents.AbsOriginDocumentPath())
 		var changes []changeLogEntry
 		if outputContents, changes, err = mergeDocuments(contents, outputContents, cmdConfig); err != nil {
 			return fmt.Errorf("merge document %q: %w", docURL, err)
@@ -108,30 +108,30 @@ func mergeDocuments(sourceDoc, destDoc *documentTree, cmdConfig common2.ToolConf
 		case sMap == nil:
 			continue // Source is empty, nothing to merge
 		case sMap.Kind() != types.RawNodeKindObject:
-			return nil, nil, fmt.Errorf("expected an object on path %q in document %q", path.Join(sMap.Path()...), sourceDoc.OriginDocument())
+			return nil, nil, fmt.Errorf("expected an object on path %q in document %q", path.Join(sMap.Path()...), sourceDoc.AbsOriginDocumentPath())
 		case sMap.Len() == 0:
 			logger.Trace("Source node is empty, skipping", "path", sMap.Path())
 			continue
 		}
 
-		logger.Debug("Merging nodes", "source", sourceDoc.OriginDocument().Join(sMap.Path()...), "destination", destDoc.OriginDocument().Join(sMap.Path()...))
+		logger.Debug("Merging nodes", "source", sourceDoc.AbsOriginDocumentPath().Join(sMap.Path()...), "destination", destDoc.AbsOriginDocumentPath().Join(sMap.Path()...))
 		switch {
 		case dMap == nil:
 			logger.Info("Relocating objects", "path", strings.Join(append(sMap.Path(), "*"), "."), "action", "move")
 			if err := destDoc.SetNodeByPath(sMap); err != nil {
-				return nil, nil, fmt.Errorf("copy object on path %q to document %q: %w", path.Join(sMap.Path()...), destDoc.OriginDocument(), err)
+				return nil, nil, fmt.Errorf("copy object on path %q to document %q: %w", path.Join(sMap.Path()...), destDoc.AbsOriginDocumentPath(), err)
 			}
 			for _, sNode := range sMap.Entries() {
-				changeLog = append(changeLog, changeLogEntry{From: lo.ToPtr(sourceDoc.OriginDocument().Join(sNode.Path()...)), To: lo.ToPtr(destDoc.OriginDocument().Join(sNode.Path()...)), Move: true})
+				changeLog = append(changeLog, changeLogEntry{From: lo.ToPtr(sourceDoc.AbsOriginDocumentPath().Join(sNode.Path()...)), To: lo.ToPtr(destDoc.AbsOriginDocumentPath().Join(sNode.Path()...)), Move: true})
 			}
 			continue
 		case dMap.Kind() != types.RawNodeKindObject:
-			return nil, nil, fmt.Errorf("expected an object on path %q in document %q", path.Join(dMap.Path()...), destDoc.OriginDocument())
+			return nil, nil, fmt.Errorf("expected an object on path %q in document %q", path.Join(dMap.Path()...), destDoc.AbsOriginDocumentPath())
 		}
 
 		for _, sNode := range sMap.Entries() {
 			logger.Info("Relocating object", "path", strings.Join(sNode.Path(), "."), "action", "move")
-			change, err := copyNode(sNode, dMap, destDoc.OriginDocument(), sourceDoc.OriginDocument(), cmdConfig)
+			change, err := copyNode(sNode, dMap, destDoc.AbsOriginDocumentPath(), sourceDoc.AbsOriginDocumentPath(), cmdConfig)
 			if err != nil {
 				return nil, nil, fmt.Errorf("merge maps %v: %w", path.Join(dMap.Path()...), err)
 			}

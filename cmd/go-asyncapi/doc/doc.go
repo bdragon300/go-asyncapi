@@ -27,6 +27,7 @@ type Cmd struct {
 	Merge    *MergeCmd    `arg:"subcommand:merge" help:"Merge multiple AsyncAPI documents into one."`
 	Unmerge  *UnmergeCmd  `arg:"subcommand:unmerge" help:"Unmerge an AsyncAPI document by relocating the objects to another document."`
 	Validate *ValidateCmd `arg:"subcommand:validate" help:"Validate AsyncAPI documents against the AsyncAPI JSON Schema."`
+	Flatten  *FlattenCmd  `arg:"subcommand:flatten" help:"Flatten an AsyncAPI document by inlining all $refs with the objects they point to."`
 	Indent   int          `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
 	Format   string       `arg:"--format,-f" help:"Output format. Possible values: yaml, json" placeholder:"FORMAT"`
 }
@@ -101,6 +102,26 @@ func (d documentTree) EssentialNodesPaths() []string {
 	return []string{"asyncapi", "info", "defaultContentType"}
 }
 
+// UnresolvableRefPaths returns the list of paths to $ref nodes that must not be rewritten with the object they point to
+// because of AsyncAPI schema requirements. The result is a list of paths, where each path is a list of keys to navigate from
+// the document root to the $ref node. Empty item in the path matches any key at that level.
+func (d documentTree) UnresolvableRefPaths() [][]string {
+	return [][]string{
+		{"channels", "", "servers", ""},
+		{"components", "channels", "", "servers", ""},
+		{"operations", "", "channel"},
+		{"operations", "", "messages", ""},
+		{"components", "operations", "", "channel"},
+		{"components", "operations", "", "messages", ""},
+		{"operations", "", "reply", "channel"},
+		{"operations", "", "reply", "messages", ""},
+		{"components", "operations", "", "reply", "channel"},
+		{"components", "operations", "", "reply", "messages", ""},
+		{"components", "replies", "", "channel"},
+		{"components", "replies", "", "messages", ""},
+	}
+}
+
 type changeLogEntry struct {
 	From, To *jsonpointer.JSONPointer
 	Move     bool
@@ -119,6 +140,8 @@ func CliDoc(cmd *Cmd, globalConfig common2.ToolConfig) error {
 		return cliUnmerge(cmd.Unmerge, cmdConfig)
 	case cmd.Validate != nil:
 		return cliValidate(cmd.Validate, cmdConfig)
+	case cmd.Flatten != nil:
+		return cliFlatten(cmd.Flatten, cmdConfig)
 	}
 	return fmt.Errorf("%w: unknown doc subcommand", common2.ErrWrongCliArgs)
 }
@@ -129,6 +152,7 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 	cmdMerge := lo.FromPtr(cmd.Merge)
 	cmdUnmerge := lo.FromPtr(cmd.Unmerge)
 	cmdValidate := lo.FromPtr(cmd.Validate)
+	cmdFlatten := lo.FromPtr(cmd.Flatten)
 
 	res.Doc.Indent = common2.Coalesce(cmd.Indent, globalConfig.Doc.Indent)
 	res.Doc.Format = common2.Coalesce(cmd.Format, globalConfig.Doc.Format)
@@ -142,6 +166,15 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 	res.Doc.Unmerge.DisableRewriting = common2.Coalesce(cmdUnmerge.DisableRewriting, globalConfig.Doc.Unmerge.DisableRewriting)
 	res.Doc.Unmerge.NoInteractive = common2.Coalesce(cmdUnmerge.NoInteractive, globalConfig.Doc.Unmerge.NoInteractive)
 	res.Doc.Validate.Schema = common2.Coalesce(cmdValidate.Schema, globalConfig.Doc.Validate.Schema)
+	res.Doc.Flatten.OutputFile = common2.Coalesce(cmdFlatten.Output, globalConfig.Doc.Flatten.OutputFile)
+	res.Doc.Flatten.WithExternal = common2.Coalesce(cmdFlatten.WithExternal, globalConfig.Doc.Flatten.WithExternal)
+	res.Doc.Flatten.WithRemote = common2.Coalesce(cmdFlatten.WithRemote, globalConfig.Doc.Flatten.WithRemote)
+	if cmd.Flatten != nil {
+		res.Locator.AllowRemoteReferences = common2.Coalesce(cmdFlatten.WithRemote, res.Doc.Flatten.WithRemote)
+		res.Locator.Command = common2.Coalesce(cmdFlatten.LocatorCommand, globalConfig.Locator.Command)
+		res.Locator.Timeout = common2.Coalesce(cmdFlatten.LocatorTimeout, globalConfig.Locator.Timeout)
+		res.Locator.RootDirectory = common2.Coalesce(cmdFlatten.LocatorRootDir, globalConfig.Locator.RootDirectory)
+	}
 
 	return res, nil
 }
@@ -209,11 +242,11 @@ func rewriteRefs(doc *documentTree, locator common2.DocumentLocator, changeLog [
 
 	for _, r := range doc.CollectRefs() {
 		logger.Debug("Processing $ref object", "path", r.Path())
-		if r.OriginDocument() == nil {
+		if r.AbsOriginDocumentPath() == nil {
 			logger.Warn("Found a $ref with empty metadata, this is a bug, skipping", "path", r.Path())
 			continue
 		}
-		originPath := r.OriginDocument() // Document path where this $ref was imported from
+		originPath := r.AbsOriginDocumentPath() // Document path where this $ref was imported from
 		// Explicit document path where this $ref pointed to before been imported. For internal $ref, it's the file itself
 		targetPath := originPath
 
@@ -238,7 +271,7 @@ func rewriteRefs(doc *documentTree, locator common2.DocumentLocator, changeLog [
 		}
 
 		logger.Debug("Updating $ref", "path", r.Path(), "old", ref, "new", newRef)
-		r.Set("$ref", types.NewScalarRawNode(r.Path(), newRef.String(), r.OriginDocument()))
+		r.Set("$ref", types.NewScalarRawNode(r.Path(), newRef.String(), r.AbsOriginDocumentPath()))
 	}
 }
 
@@ -251,7 +284,7 @@ func rewriteRef(ref, targetPath, originPath *jsonpointer.JSONPointer, doc *docum
 		return ref
 	}
 	resolveRelPath := func(dt *documentTree, p *jsonpointer.JSONPointer) string {
-		rel, err := filepath.Rel(path.Dir(absLocation(dt.OriginDocument())), absLocation(p))
+		rel, err := filepath.Rel(path.Dir(dt.AbsOriginDocumentPath().Location()), absLocation(p))
 		if err != nil {
 			logger.Error("Failed to rewrite external location in $ref, leaving it as-is", "value", ref, "error", err)
 			return ""
@@ -284,7 +317,7 @@ func rewriteRef(ref, targetPath, originPath *jsonpointer.JSONPointer, doc *docum
 	if inChangeLog {
 		// Target object has been moved or copied, regardless of whether $ref was moved or not
 		switch {
-		case absLocation(change.To) == absLocation(doc.OriginDocument()):
+		case absLocation(change.To) == doc.AbsOriginDocumentPath().Location():
 			// Object has been moved or copied to doc
 			newRef.FSPath = ""
 			newRef.URI = nil
@@ -304,7 +337,7 @@ func rewriteRef(ref, targetPath, originPath *jsonpointer.JSONPointer, doc *docum
 	}
 
 	// Target object has not been moved from its origin
-	refWasMoved := absLocation(originPath) != absLocation(doc.OriginDocument())
+	refWasMoved := absLocation(originPath) != doc.AbsOriginDocumentPath().Location()
 	switch {
 	case !refWasMoved:
 		// Nor $ref nor the object it pointed to was moved, so we don't need to rewrite it
@@ -312,7 +345,7 @@ func rewriteRef(ref, targetPath, originPath *jsonpointer.JSONPointer, doc *docum
 	case absLocation(originPath) == absLocation(targetPath):
 		// Local $ref was moved to doc (because we see it), but the object it pointed to was not moved
 		newRef.FSPath = resolveRelPath(doc, originPath)
-	case absLocation(targetPath) == absLocation(doc.OriginDocument()):
+	case absLocation(targetPath) == doc.AbsOriginDocumentPath().Location():
 		// $ref pointing to doc was moved to doc (because we see it), but the object it pointed to was not moved
 		newRef.FSPath = ""
 		newRef.URI = nil
@@ -348,8 +381,8 @@ func relocateEssentialNodes(sourceDoc, destDoc *documentTree) []changeLogEntry {
 			dNode := sNode.DeepCopy()
 			destDoc.Set(p, dNode)
 			changeLog = append(changeLog, changeLogEntry{
-				From: lo.ToPtr(sourceDoc.OriginDocument().Join(p)),
-				To:   lo.ToPtr(destDoc.OriginDocument().Join(p)),
+				From: lo.ToPtr(sourceDoc.AbsOriginDocumentPath().Join(p)),
+				To:   lo.ToPtr(destDoc.AbsOriginDocumentPath().Join(p)),
 				Move: false,
 			})
 		}
