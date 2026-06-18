@@ -7,8 +7,8 @@ import (
 	"io"
 	"path"
 	"path/filepath"
-	"slices"
 	"strings"
+	"unicode"
 
 	"github.com/bdragon300/go-asyncapi/cmd/go-asyncapi/common"
 	"github.com/bdragon300/go-asyncapi/internal/compiler"
@@ -24,10 +24,9 @@ type anyEncoder interface {
 }
 
 type Cmd struct {
-	Merge    *MergeCmd    `arg:"subcommand:merge" help:"Merge multiple AsyncAPI documents into one."`
-	Unmerge  *UnmergeCmd  `arg:"subcommand:unmerge" help:"Unmerge an AsyncAPI document by relocating the objects to another document."`
+	Cp       *CpCmd       `arg:"subcommand:cp" help:"Copy nodes between AsyncAPI documents."`
 	Validate *ValidateCmd `arg:"subcommand:validate" help:"Validate AsyncAPI documents against the AsyncAPI JSON Schema."`
-	Flatten  *FlattenCmd  `arg:"subcommand:flatten" help:"Flatten an AsyncAPI document by inlining all $refs with the objects they point to."`
+	Flatten  *FlattenCmd  `arg:"subcommand:flatten" help:"Flatten an AsyncAPI document by inlining all $refs with the nodes they point to."`
 	Indent   int          `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
 	Format   string       `arg:"--format,-f" help:"Output format. Possible values: yaml, json" placeholder:"FORMAT"`
 }
@@ -38,88 +37,6 @@ func newDocumentTree(originDocument *jsonpointer.JSONPointer) *documentTree {
 
 type documentTree struct {
 	*types.RawNode
-}
-
-// CollectRefs collects pointers to all object RawNodes in the document that have a "$ref" key.
-func (d documentTree) CollectRefs() []*types.RawNode {
-	rootKeys, componentsKeys := d.MergeableMapPaths()
-	if d.IsZero() {
-		return nil
-	}
-	res := lo.FlatMap(rootKeys, func(key string, _ int) []*types.RawNode {
-		node, _ := d.Get(key)
-		return collectRefs(node)
-	})
-
-	if comp, ok := d.Get("components"); ok {
-		res = append(res, lo.FlatMap(componentsKeys, func(key string, _ int) []*types.RawNode {
-			if comp.IsZero() {
-				return nil
-			}
-			node, _ := comp.Get(key)
-			return collectRefs(node)
-		})...)
-	}
-
-	return res
-}
-
-func (d documentTree) MergeableMaps() []*types.RawNode {
-	rootKeys, componentsKeys := d.MergeableMapPaths()
-	if d.IsZero() {
-		return make([]*types.RawNode, len(rootKeys)+len(componentsKeys))
-	}
-	res := lo.Map(rootKeys, func(key string, _ int) *types.RawNode {
-		node, _ := d.Get(key)
-		return node
-	})
-	if comp, ok := d.Get("components"); ok {
-		res = append(res, lo.Map(componentsKeys, func(key string, _ int) *types.RawNode {
-			if comp.IsZero() {
-				return nil
-			}
-			node, _ := comp.Get(key)
-			return node
-		})...)
-	}
-
-	return res
-}
-
-func (d documentTree) MergeableMapPaths() ([]string, []string) {
-	rootKeys := []string{"servers", "channels", "operations"}
-	componentsKeys := []string{
-		"schemas",
-		"servers", "channels", "operations", "messages",
-		"securitySchemes", "serverVariables", "parameters", "correlationIds", "replies", "replyAddresses", "externalDocs", "tags",
-		"operationTraits", "messageTraits",
-		"serverBindings", "channelBindings", "operationBindings", "messageBindings",
-	}
-	return rootKeys, componentsKeys
-}
-
-func (d documentTree) EssentialNodesPaths() []string {
-	return []string{"asyncapi", "info", "defaultContentType"}
-}
-
-// UnresolvableRefPaths returns the list of paths to $ref nodes that must not be rewritten with the object they point to
-// because of AsyncAPI schema requirements. The result is a list of paths, where each path is a list of keys to navigate from
-// the document root to the $ref node. Empty item in the path matches any key at that level.
-func (d documentTree) UnresolvableRefPaths() [][]string {
-	return [][]string{
-		{"channels", "", "servers", ""},
-		{"components", "channels", "", "servers", ""},
-		{"operations", "", "channel"},
-		{"operations", "", "messages", ""},
-		{"components", "operations", "", "channel"},
-		{"components", "operations", "", "messages", ""},
-		{"operations", "", "reply", "channel"},
-		{"operations", "", "reply", "messages", ""},
-		{"components", "operations", "", "reply", "channel"},
-		{"components", "operations", "", "reply", "messages", ""},
-		{"components", "replies", "", "channel"},
-		{"components", "replies", "", "messages", ""},
-	}
 }
 
 type changeLogEntry struct {
@@ -134,37 +51,25 @@ func CliDoc(cmd *Cmd, globalConfig common2.ToolConfig) error {
 	}
 
 	switch {
-	case cmd.Merge != nil:
-		return cliMerge(cmd.Merge, cmdConfig)
-	case cmd.Unmerge != nil:
-		return cliUnmerge(cmd.Unmerge, cmdConfig)
+	case cmd.Cp != nil:
+		return cliCp(cmd.Cp, cmdConfig)
 	case cmd.Validate != nil:
 		return cliValidate(cmd.Validate, cmdConfig)
 	case cmd.Flatten != nil:
 		return cliFlatten(cmd.Flatten, cmdConfig)
 	}
-	return fmt.Errorf("%w: unknown doc subcommand", common2.ErrWrongCliArgs)
+	return fmt.Errorf("%w: unknown doc subcommand", common2.ErrInvalidCLIArgument)
 }
 
 func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, error) {
 	res := globalConfig
 
-	cmdMerge := lo.FromPtr(cmd.Merge)
-	cmdUnmerge := lo.FromPtr(cmd.Unmerge)
 	cmdValidate := lo.FromPtr(cmd.Validate)
 	cmdFlatten := lo.FromPtr(cmd.Flatten)
+	cmdCp := lo.FromPtr(cmd.Cp)
 
 	res.Doc.Indent = common2.Coalesce(cmd.Indent, globalConfig.Doc.Indent)
 	res.Doc.Format = common2.Coalesce(cmd.Format, globalConfig.Doc.Format)
-	res.Doc.Merge.OutputFile = common2.Coalesce(cmdMerge.Output, globalConfig.Doc.Merge.OutputFile)
-	res.Doc.Merge.Strategy = common2.Coalesce(cmdMerge.Strategy, globalConfig.Doc.Merge.Strategy)
-	res.Doc.Merge.DisableRewriting = common2.Coalesce(cmdMerge.DisableRewriting, globalConfig.Doc.Merge.DisableRewriting)
-	res.Doc.Unmerge.UnmergeTo = common2.Coalesce(cmdUnmerge.UnmergeTo, globalConfig.Doc.Unmerge.UnmergeTo)
-	res.Doc.Unmerge.Output = common2.Coalesce(cmdUnmerge.Output, globalConfig.Doc.Unmerge.Output)
-	res.Doc.Unmerge.IncludeDeps = common2.Coalesce(cmdUnmerge.IncludeDeps, globalConfig.Doc.Unmerge.IncludeDeps)
-	res.Doc.Unmerge.DuplicateObjects = common2.Coalesce(cmdUnmerge.DuplicateObjects, globalConfig.Doc.Unmerge.DuplicateObjects)
-	res.Doc.Unmerge.DisableRewriting = common2.Coalesce(cmdUnmerge.DisableRewriting, globalConfig.Doc.Unmerge.DisableRewriting)
-	res.Doc.Unmerge.NoInteractive = common2.Coalesce(cmdUnmerge.NoInteractive, globalConfig.Doc.Unmerge.NoInteractive)
 	res.Doc.Validate.Schema = common2.Coalesce(cmdValidate.Schema, globalConfig.Doc.Validate.Schema)
 	res.Doc.Flatten.OutputFile = common2.Coalesce(cmdFlatten.Output, globalConfig.Doc.Flatten.OutputFile)
 	res.Doc.Flatten.WithExternal = common2.Coalesce(cmdFlatten.WithExternal, globalConfig.Doc.Flatten.WithExternal)
@@ -175,6 +80,12 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 		res.Locator.Timeout = common2.Coalesce(cmdFlatten.LocatorTimeout, globalConfig.Locator.Timeout)
 		res.Locator.RootDirectory = common2.Coalesce(cmdFlatten.LocatorRootDir, globalConfig.Locator.RootDirectory)
 	}
+	res.Doc.Cp.Shallow = common2.Coalesce(cmdCp.Shallow, globalConfig.Doc.Cp.Shallow)
+	res.Doc.Cp.Recursive = common2.Coalesce(cmdCp.Recursive, globalConfig.Doc.Cp.Recursive)
+	res.Doc.Cp.Headless = common2.Coalesce(cmdCp.Headless, globalConfig.Doc.Cp.Headless)
+	res.Doc.Cp.Force = common2.Coalesce(cmdCp.Force, globalConfig.Doc.Cp.Force)
+	res.Doc.Cp.Interactive = common2.Coalesce(cmdCp.Interactive, globalConfig.Doc.Cp.Interactive)
+	res.Doc.Cp.DisableRewriting = common2.Coalesce(cmdCp.DisableRewriting, globalConfig.Doc.Cp.DisableRewriting)
 
 	return res, nil
 }
@@ -232,7 +143,7 @@ func getDocumentEncoder(w io.Writer, cmdConfig common2.ToolConfig) (anyEncoder, 
 		e.SetIndent(cmdConfig.Doc.Indent)
 		enc = e
 	default:
-		return nil, fmt.Errorf("%w: unknown output format %q", common2.ErrWrongCliArgs, cmdConfig.Doc.Format)
+		return nil, fmt.Errorf("%w: unknown output format %q", common2.ErrInvalidCLIArgument, cmdConfig.Doc.Format)
 	}
 	return enc, nil
 }
@@ -240,8 +151,8 @@ func getDocumentEncoder(w io.Writer, cmdConfig common2.ToolConfig) (anyEncoder, 
 func rewriteRefs(doc *documentTree, locator common2.DocumentLocator, changeLog []changeLogEntry) {
 	logger := log.GetLogger("")
 
-	for _, r := range doc.CollectRefs() {
-		logger.Debug("Processing $ref object", "path", r.Path())
+	for _, r := range collectRefs(doc.RawNode) {
+		logger.Debug("Processing $ref", "path", r.Path())
 		if r.AbsOriginDocumentPath() == nil {
 			logger.Warn("Found a $ref with empty metadata, this is a bug, skipping", "path", r.Path())
 			continue
@@ -264,23 +175,23 @@ func rewriteRefs(doc *documentTree, locator common2.DocumentLocator, changeLog [
 			}
 		}
 
-		logger.Debug("Rewriting $ref", "path", r.Path(), "value", ref, "originDocument", originPath, "referredDocument", targetPath)
+		logger.Trace("Rewriting $ref", "path", r.Path(), "value", ref, "originDocument", originPath, "referredDocument", targetPath)
 		newRef := rewriteRef(ref, targetPath, originPath, doc, changeLog)
 		if newRef == nil {
 			continue
 		}
 
-		logger.Debug("Updating $ref", "path", r.Path(), "old", ref, "new", newRef)
+		logger.Debug("Updating rewritten $ref", "path", r.Path(), "old", ref, "new", newRef)
 		r.Set("$ref", types.NewScalarRawNode(r.Path(), newRef.String(), r.AbsOriginDocumentPath()))
 	}
 }
 
 func rewriteRef(ref, targetPath, originPath *jsonpointer.JSONPointer, doc *documentTree, changeLog []changeLogEntry) *jsonpointer.JSONPointer {
 	logger := log.GetLogger("")
+
 	newRef := *ref
-	// TODO: logging messages
 	if len(ref.Pointer) == 0 {
-		logger.Debug("-> $ref without pointer, skipping")
+		logger.Trace("$ref without pointer, skipping")
 		return ref
 	}
 	resolveRelPath := func(dt *documentTree, p *jsonpointer.JSONPointer) string {
@@ -289,73 +200,84 @@ func rewriteRef(ref, targetPath, originPath *jsonpointer.JSONPointer, doc *docum
 			logger.Error("Failed to rewrite external location in $ref, leaving it as-is", "value", ref, "error", err)
 			return ""
 		}
-		logger.Debug("-> Fixing $ref location to external document", "location", rel)
+		logger.Trace("Fixing $ref location to external document", "location", rel)
 		return rel
 	}
 
 	change, inChangeLog := lo.Find(changeLog, func(c changeLogEntry) bool {
-		logger.Trace("-> Checking changelog entry", "entry", c)
+		logger.Trace("Checking changelog entry", "entry", c)
 		if c.From == nil || len(c.From.Pointer) == 0 || c.To == nil || len(c.To.Pointer) == 0 {
 			return false
 		}
 
 		pointerOk := lo.HasPrefix(ref.Pointer, c.From.Pointer)
-		// Ref points to the old or new location of object (or its child)
-		ok := (absLocation(c.From) == absLocation(targetPath) || absLocation(c.To) == absLocation(targetPath)) && pointerOk
-		if !ok {
-			logger.Trace("--> No match")
-		}
-		return ok
+		// Ref points to the old or new location of node (or its child)
+		return (absLocation(c.From) == absLocation(targetPath) || absLocation(c.To) == absLocation(targetPath)) && pointerOk
 	})
 
-	if inChangeLog && !slices.Equal(change.From.Pointer, change.To.Pointer) {
-		// Replace the pointer prefix if it has been changed in changelog (object rename)
-		pathSuffix, _ := lo.CutPrefix(ref.Pointer, change.From.Pointer)
-		newRef.Pointer = append(change.To.Pointer, pathSuffix...) // nolint:gocritic
-	}
+	// $ref was moved or copied to doc from another document
+	immigratedRef := absLocation(originPath) != doc.AbsOriginDocumentPath().Location()
 
 	if inChangeLog {
-		// Target object has been moved or copied, regardless of whether $ref was moved or not
+		logger.Trace("Found $ref in changelog", "entry", change, "ref", ref)
+		// Keep the $ref's pointer if it's original for doc and points to a node that is still there (i.e. was copied somewhere).
+		keepPointer := !change.Move && !immigratedRef && absLocation(targetPath) == absLocation(change.From)
+		if !keepPointer {
+			// $ref was not relocated, but the target node was relocated away from doc or another external document
+			pathSuffix, _ := lo.CutPrefix(ref.Pointer, change.From.Pointer)
+			newRef.Pointer = append(change.To.Pointer, pathSuffix...) // nolint:gocritic
+			logger.Trace("Updating $ref pointer")
+		}
+
+		// Target node has been relocated, regardless of whether $ref was relocated or not
 		switch {
 		case absLocation(change.To) == doc.AbsOriginDocumentPath().Location():
-			// Object has been moved or copied to doc
+			// Node has been relocated into doc
+			logger.Trace("Node has been relocated into doc")
 			newRef.FSPath = ""
 			newRef.URI = nil
 		case absLocation(change.From) == absLocation(change.To):
-			// Object has only been renamed in the same document
+			// Node has only been renamed without relocation
+			logger.Trace("Node has been renamed without relocation")
 		case change.To.FSPath != "" && change.Move:
-			// Object has been moved away from doc or moved between two external documents or moved from external URL to external file path
+			// Node has been relocated away from doc or relocated between two external documents or relocated from external URL to external file path
+			logger.Trace("Node has been relocated away from doc or relocated between two external documents or relocated from external URL to external file path")
 			newRef.FSPath = resolveRelPath(doc, change.To)
 			newRef.URI = nil
 		case change.To.URI != nil && change.Move:
-			// Object has been moved away from doc or moved between two external documents or moved from external file path to external URL
+			// Node has been relocated away from doc or relocated between two external documents or relocated from external file path to external URL
+			logger.Trace("Node has been relocated away from doc or relocated between two external documents or relocated from external file path to external URL")
 			newRef.FSPath = ""
 			newRef.URI = change.To.URI
 		}
 
+		logger.Trace("Rewrite result for $ref", "old", ref, "new", newRef)
 		return &newRef
 	}
 
-	// Target object has not been moved from its origin
-	refWasMoved := absLocation(originPath) != doc.AbsOriginDocumentPath().Location()
 	switch {
-	case !refWasMoved:
-		// Nor $ref nor the object it pointed to was moved, so we don't need to rewrite it
-		logger.Debug("-> $ref was not moved, skipping")
+	case !immigratedRef:
+		// Neither $ref nor the node it pointed to was relocated, so we don't need to rewrite it
+		logger.Trace("Neither $ref nor the node it pointed to was relocated, skipping")
 	case absLocation(originPath) == absLocation(targetPath):
-		// Local $ref was moved to doc (because we see it), but the object it pointed to was not moved
+		// Local $ref was relocated into doc (because we see it), but the node it pointed to was not relocated
+		logger.Trace("Local $ref was relocated into doc, but the node it pointed to was not relocated")
 		newRef.FSPath = resolveRelPath(doc, originPath)
 	case absLocation(targetPath) == doc.AbsOriginDocumentPath().Location():
-		// $ref pointing to doc was moved to doc (because we see it), but the object it pointed to was not moved
+		// $ref pointing to doc was relocated into doc (because we see it), but the node it pointed to was not relocated
+		logger.Trace("$ref pointing to doc was relocated into doc, but the node it pointed to was not relocated")
 		newRef.FSPath = ""
 		newRef.URI = nil
 	case ref.FSPath != "":
-		// $ref pointing to external document file path was moved to doc (because we see it), but the object it pointed to was not moved
+		// $ref pointing to external document file path was relocate into doc (because we see it), but the node it pointed to was not relocated
+		logger.Trace("$ref pointing to external document file path was relocated into doc, but the node it pointed to was not relocated")
 		newRef.FSPath = resolveRelPath(doc, targetPath)
 	case ref.URI != nil:
-		// $ref pointing to external document URL was moved to doc (because we see it), but the object it pointed to was not moved
+		// $ref pointing to external document URL was relocated into doc (because we see it), but the node it pointed to was not relocated
+		logger.Trace("$ref pointing to external document URL was relocated into doc, but the node it pointed to was not relocated")
 	}
 
+	logger.Trace("Rewrite result for $ref", "old", ref, "new", newRef)
 	return &newRef
 }
 
@@ -367,38 +289,20 @@ func absLocation(p *jsonpointer.JSONPointer) string {
 	return p.Location()
 }
 
-func relocateEssentialNodes(sourceDoc, destDoc *documentTree) []changeLogEntry {
-	logger := log.GetLogger("")
-
-	// Relocate essential nodes if they are not present in destination document
-	var changeLog []changeLogEntry
-	for _, p := range sourceDoc.EssentialNodesPaths() {
-		if destDoc.Has(p) {
-			continue
-		}
-		if sNode, ok := sourceDoc.Get(p); ok {
-			logger.Debug("Relocating object", "path", sNode.Path())
-			dNode := sNode.DeepCopy()
-			destDoc.Set(p, dNode)
-			changeLog = append(changeLog, changeLogEntry{
-				From: lo.ToPtr(sourceDoc.AbsOriginDocumentPath().Join(p)),
-				To:   lo.ToPtr(destDoc.AbsOriginDocumentPath().Join(p)),
-				Move: false,
-			})
-		}
-	}
-	return changeLog
-}
-
 func loadDocument(inputDoc *jsonpointer.JSONPointer, locator common2.DocumentLocator) (*documentTree, error) {
-	logger := log.GetLogger("")
-
 	absInputPath := lo.Must(jsonpointer.Parse(absLocation(inputDoc)))
 	inputContents := newDocumentTree(absInputPath)
-	buf, newDecoder, err := compiler.ReadDocument(inputDoc, locator, logger)
+	buf, newDecoder, err := compiler.ReadDocument(inputDoc, locator, log.GetLogger(""))
 	if err != nil {
 		return nil, fmt.Errorf("read: %w", err)
 	}
+	hasContents := bytes.ContainsFunc(buf, func(r rune) bool {
+		return unicode.IsDigit(r) || unicode.IsLetter(r) || unicode.IsNumber(r) || unicode.IsPunct(r)
+	})
+	if !hasContents {
+		return inputContents, nil
+	}
+
 	if err = newDecoder(bytes.NewReader(buf)).Decode(&inputContents); err != nil {
 		return nil, fmt.Errorf("decode: %w", err)
 	}

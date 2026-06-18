@@ -55,6 +55,3 @@ ui:
 doc:
   indent: 2
   format: yaml
-  unmerge:
-    includeDeps: orphaned-deps
-    duplicateObjects: shared-deps

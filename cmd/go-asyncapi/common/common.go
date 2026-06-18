@@ -20,9 +20,9 @@ const (
 )
 
 var (
-	// ErrWrongCliArgs is returned when the CLI arguments are failed to validate. This error is fatal, it causes
+	// ErrInvalidCLIArgument is returned when the CLI arguments are failed to validate. This error is fatal, it causes
 	// displaying the help message and exiting with error code.
-	ErrWrongCliArgs = errors.New("cli args")
+	ErrInvalidCLIArgument = errors.New("invalid cli argument")
 
 	// ErrInterruptedByUser is returned when the user interrupts the execution. Command exits with code 0 in this case.
 	ErrInterruptedByUser = fmt.Errorf("interrupted by user")

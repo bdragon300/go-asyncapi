@@ -171,8 +171,7 @@ type (
 	}
 
 	ToolConfigDoc struct {
-		Merge    ToolConfigDocMerge    `yaml:"merge"`
-		Unmerge  ToolConfigDocUnmerge  `yaml:"unmerge"`
+		Cp       ToolConfigDocCp       `yaml:"cp"`
 		Validate ToolConfigDocValidate `yaml:"validate"`
 		Flatten  ToolConfigDocFlatten  `yaml:"flatten"`
 		Indent   int                   `yaml:"indent"`
@@ -189,28 +188,14 @@ type (
 		WithRemote   bool   `yaml:"withRemote"`
 	}
 
-	ToolConfigDocMerge struct {
-		OutputFile       string                     `yaml:"outputFile"`
-		Strategy         ToolConfigDocMergeStrategy `yaml:"strategy"`
-		DisableRewriting bool                       `yaml:"disableRewriting"`
+	ToolConfigDocCp struct {
+		Recursive        bool `yaml:"recursive"`
+		Shallow          bool `yaml:"shallow"`
+		Headless         bool `yaml:"headless"`
+		Force            bool `yaml:"force"`
+		Interactive      bool `yaml:"interactive"`
+		DisableRewriting bool `yaml:"disableRewriting"`
 	}
-
-	ToolConfigDocUnmerge struct {
-		IncludeDeps      string `yaml:"includeDeps"`
-		DuplicateObjects string `yaml:"duplicateObjects"`
-		UnmergeTo        string `yaml:"unmergeTo"`
-		Output           string `yaml:"output"`
-		DisableRewriting bool   `yaml:"disableRewriting"`
-		NoInteractive    bool   `yaml:"noInteractive"`
-	}
-)
-
-type ToolConfigDocMergeStrategy string
-
-const (
-	ToolConfigDocMergeStrategyIgnore    ToolConfigDocMergeStrategy = "ignore"
-	ToolConfigDocMergeStrategyOverwrite ToolConfigDocMergeStrategy = "overwrite"
-	ToolConfigDocMergeStrategyRename    ToolConfigDocMergeStrategy = "rename"
 )
 
 // ToD2PluginOpts converts the config options to the JSON options of the d2 plugin.
@@ -345,20 +330,17 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 
 	res.Doc.Indent = Coalesce(userConf.Doc.Indent, defaultConf.Doc.Indent)
 	res.Doc.Format = Coalesce(userConf.Doc.Format, defaultConf.Doc.Format)
-	res.Doc.Merge.Strategy = Coalesce(userConf.Doc.Merge.Strategy, defaultConf.Doc.Merge.Strategy)
-	res.Doc.Merge.DisableRewriting = Coalesce(userConf.Doc.Merge.DisableRewriting, defaultConf.Doc.Merge.DisableRewriting)
-	res.Doc.Merge.OutputFile = Coalesce(userConf.Doc.Merge.OutputFile, defaultConf.Doc.Merge.OutputFile)
-	res.Doc.Unmerge.UnmergeTo = Coalesce(userConf.Doc.Unmerge.UnmergeTo, defaultConf.Doc.Unmerge.UnmergeTo)
-	res.Doc.Unmerge.Output = Coalesce(userConf.Doc.Unmerge.Output, defaultConf.Doc.Unmerge.Output)
-	res.Doc.Unmerge.IncludeDeps = Coalesce(userConf.Doc.Unmerge.IncludeDeps, defaultConf.Doc.Unmerge.IncludeDeps)
-	res.Doc.Unmerge.DuplicateObjects = Coalesce(userConf.Doc.Unmerge.DuplicateObjects, defaultConf.Doc.Unmerge.DuplicateObjects)
-	res.Doc.Unmerge.DisableRewriting = Coalesce(userConf.Doc.Unmerge.DisableRewriting, defaultConf.Doc.Unmerge.DisableRewriting)
-	res.Doc.Unmerge.NoInteractive = Coalesce(userConf.Doc.Unmerge.NoInteractive, defaultConf.Doc.Unmerge.NoInteractive)
 	res.Doc.Validate.Schema = Coalesce(userConf.Doc.Validate.Schema, defaultConf.Doc.Validate.Schema)
 	res.Doc.Flatten.OutputFile = Coalesce(userConf.Doc.Flatten.OutputFile, defaultConf.Doc.Flatten.OutputFile)
 	res.Doc.Flatten.WithExternal = Coalesce(userConf.Doc.Flatten.WithExternal, defaultConf.Doc.Flatten.WithExternal)
 	res.Doc.Flatten.WithRemote = Coalesce(userConf.Doc.Flatten.WithRemote, defaultConf.Doc.Flatten.WithRemote)
 	res.Locator.AllowRemoteReferences = Coalesce(res.Locator.AllowRemoteReferences, res.Doc.Flatten.WithRemote)
+	res.Doc.Cp.Shallow = Coalesce(userConf.Doc.Cp.Shallow, defaultConf.Doc.Cp.Shallow)
+	res.Doc.Cp.Recursive = Coalesce(userConf.Doc.Cp.Recursive, defaultConf.Doc.Cp.Recursive)
+	res.Doc.Cp.Headless = Coalesce(userConf.Doc.Cp.Headless, defaultConf.Doc.Cp.Headless)
+	res.Doc.Cp.Force = Coalesce(userConf.Doc.Cp.Force, defaultConf.Doc.Cp.Force)
+	res.Doc.Cp.Interactive = Coalesce(userConf.Doc.Cp.Interactive, defaultConf.Doc.Cp.Interactive)
+	res.Doc.Cp.DisableRewriting = Coalesce(userConf.Doc.Cp.DisableRewriting, defaultConf.Doc.Cp.DisableRewriting)
 
 	return res
 }

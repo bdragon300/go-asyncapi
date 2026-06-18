@@ -36,7 +36,7 @@ func cliFlatten(cmd *FlattenCmd, cmdConfig common2.ToolConfig) error {
 	// A remote document cannot be rewritten in-place, so the user must provide an explicit output file for it.
 	outputPath := cmdConfig.Doc.Flatten.OutputFile
 	if inputDoc.URI != nil && outputPath == "" {
-		return fmt.Errorf("%w: cannot rewrite a remote document in-place, use the --output option to specify the output file", common2.ErrWrongCliArgs)
+		return fmt.Errorf("%w: cannot rewrite a remote document in-place, use the --output option to specify the output file", common2.ErrInvalidCLIArgument)
 	}
 	if outputPath == "" {
 		outputPath = cmd.Document // Rewrite the original document in-place
@@ -58,7 +58,7 @@ func cliFlatten(cmd *FlattenCmd, cmdConfig common2.ToolConfig) error {
 
 	logger.Debug("Flattening the document", "url", inputDoc)
 	documents := map[string]*documentTree{inputContents.AbsOriginDocumentPath().Location(): inputContents}
-	if _, err = flattenNode(inputContents.RawNode, documents, locator, nil, inputContents.UnresolvableRefPaths(), cmdConfig); err != nil {
+	if _, err = flattenNode(inputContents.RawNode, documents, locator, nil, cmdConfig); err != nil {
 		return fmt.Errorf("flatten document: %w", err)
 	}
 
@@ -83,7 +83,6 @@ func flattenNode(
 	documents map[string]*documentTree,
 	locator common2.DocumentLocator,
 	visited []*types.RawNode,
-	unresolvablePaths [][]string,
 	cmdConfig common2.ToolConfig,
 ) ([]changeLogEntry, error) {
 	logger := log.GetLogger("")
@@ -111,7 +110,7 @@ func flattenNode(
 		v := visited
 
 		if n.Kind() == types.RawNodeKindObject && n.Has("$ref") {
-			unresolvable := lo.SomeBy(unresolvablePaths, func(p []string) bool {
+			unresolvable := lo.SomeBy(asyncapiUnresolvableRefPaths(), func(p []string) bool {
 				return len(p) == len(n.Path()) && lo.EveryBy(lo.Range(len(p)), func(i int) bool { return p[i] == "" || p[i] == n.Path()[i] })
 			})
 			if unresolvable {
@@ -138,7 +137,7 @@ func flattenNode(
 		}
 
 		// Recursively flatten the descendants, including the newly inlined ones, to resolve the nested $refs.
-		clog, err := flattenNode(n, documents, locator, v, unresolvablePaths, cmdConfig)
+		clog, err := flattenNode(n, documents, locator, v, cmdConfig)
 		if err != nil {
 			return nil, err
 		}

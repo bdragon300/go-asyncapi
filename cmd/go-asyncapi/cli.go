@@ -101,7 +101,7 @@ func main() {
 		case errors.Is(err, common2.ErrInterruptedByUser):
 			logger.Debug("Interrupted by user")
 			os.Exit(0)
-		case errors.Is(err, common2.ErrWrongCliArgs):
+		case errors.Is(err, common2.ErrInvalidCLIArgument):
 			cliParser.WriteHelp(os.Stderr)
 		case errors.Is(err, common2.ErrBadResult):
 			chlog.Error(err.Error())

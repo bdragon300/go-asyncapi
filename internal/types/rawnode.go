@@ -202,6 +202,26 @@ func (r *RawNode) Set(key any, value *RawNode) {
 	r.slots = append(r.slots, &plainSlot{key: key, value: value})
 }
 
+func (r *RawNode) SetAtStart(key any, value *RawNode) {
+	if r.kind != RawNodeKindObject && r.kind != RawNodeKindArray {
+		panic("not an object or array node")
+	}
+	for i, sl := range r.slots {
+		if sl.Key() == key {
+			r.slots[i].SetValue(value)
+			return
+		}
+	}
+	r.slots = append([]slot{&plainSlot{key: key, value: value}}, r.slots...)
+}
+
+func (r *RawNode) Append(value *RawNode) {
+	if r.kind != RawNodeKindArray {
+		panic("not an array node")
+	}
+	r.slots = append(r.slots, &plainSlot{key: len(r.slots), value: value})
+}
+
 // GetByPath returns the node at the given path, or nil if the path does not exist. Panics if called on a scalar node.
 func (r *RawNode) GetByPath(path []string) *RawNode {
 	if len(path) == 0 {
@@ -543,5 +563,9 @@ func (r RawNode) MarshalYAML() (any, error) {
 		}
 	}
 
+	if n.Kind == yaml.ScalarNode && n.Tag == "!!str" {
+		// Force quote strings
+		n.Style |= yaml.SingleQuotedStyle
+	}
 	return n, nil
 }

@@ -68,7 +68,7 @@ func cliInfra(cmd *InfraCmd, globalConfig common2.ToolConfig) error {
 	//       Also consider to include add InfraServerOpts (replace RenderOpts to interface in manager?)
 	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Code.TargetDir, false)
 	if err != nil {
-		return fmt.Errorf("%w: %w", common2.ErrWrongCliArgs, err)
+		return fmt.Errorf("%w: %w", common2.ErrInvalidCLIArgument, err)
 	}
 	renderManager := manager.NewTemplateRenderManager(renderOpts)
 

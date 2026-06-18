@@ -76,7 +76,7 @@ func cliCode(cmd *CodeCmd, globalConfig common2.ToolConfig) error {
 	}
 	renderOpts, err := getRenderOpts(cmdConfig, cmdConfig.Code.TargetDir, true)
 	if err != nil {
-		return fmt.Errorf("%w: %w", common2.ErrWrongCliArgs, err)
+		return fmt.Errorf("%w: %w", common2.ErrInvalidCLIArgument, err)
 	}
 	renderManager := manager.NewTemplateRenderManager(renderOpts)
 

@@ -126,11 +126,11 @@ func validateDocument(docURL *jsonpointer.JSONPointer, customSchema *jsonschema.
 				"error", e.ErrorKind.LocalizedString(validationMessagePrinter),
 			)
 		}
-		logger.Error("Document is invalid", "document", docURL, "errors", len(leaves))
+		logger.Debug("Document is invalid", "document", docURL, "errors", len(leaves))
 		return false, nil
 	}
 
-	logger.Info("Document is valid", "document", docURL)
+	logger.Debug("Document is valid", "document", docURL)
 	return true, nil
 }
 
