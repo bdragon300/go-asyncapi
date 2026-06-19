@@ -116,14 +116,15 @@ func (r RawNode) AbsOriginDocumentPath() *jsonpointer.JSONPointer {
 	return r.originDocument
 }
 
+// IsZero returns true if r is an empty, which means zero value for scalar nodes and zero length for array and object nodes.
 func (r RawNode) IsZero() bool {
 	switch r.kind {
 	case RawNodeKindScalar:
 		return r.scalarValue == nil
 	case RawNodeKindArray, RawNodeKindObject:
-		return len(r.slots) == 0
+		return r.Len() == 0
 	default:
-		return true
+		panic("unknown node kind: " + string(r.kind))
 	}
 }
 
@@ -160,10 +161,10 @@ func (r RawNode) AbsPointerString() string {
 }
 
 func (r RawNode) Entries() iter.Seq2[any, *RawNode] {
-	if r.kind != RawNodeKindObject && r.kind != RawNodeKindArray {
-		panic("not an object or array node")
-	}
 	return func(yield func(any, *RawNode) bool) {
+		if r.kind != RawNodeKindObject && r.kind != RawNodeKindArray {
+			return
+		}
 		for _, sl := range r.slots {
 			if !yield(sl.Key(), sl.Value()) {
 				return
@@ -174,7 +175,7 @@ func (r RawNode) Entries() iter.Seq2[any, *RawNode] {
 
 func (r RawNode) Get(key any) (*RawNode, bool) {
 	if r.kind != RawNodeKindObject && r.kind != RawNodeKindArray {
-		panic("not an object or array node")
+		return nil, false
 	}
 	for _, sl := range r.slots {
 		if sl.Key() == key {
@@ -332,9 +333,9 @@ func (r RawNode) AsScalar() any {
 	return r.scalarValue
 }
 
-// AsSlice converts r to a slice value, recursively converting all nested nodes to their corresponding Go types (scalar, slice or map).
+// asSlice converts r to a slice value, recursively converting all nested nodes to their corresponding Go types (scalar, slice or map).
 // Panics if called on a scalar or object node.
-func (r RawNode) AsSlice() []any {
+func (r RawNode) asSlice() []any {
 	if r.kind != RawNodeKindArray {
 		panic("not an array node")
 	}
@@ -344,17 +345,18 @@ func (r RawNode) AsSlice() []any {
 		case RawNodeKindScalar:
 			res = append(res, sl.Value().AsScalar())
 		case RawNodeKindArray:
-			res = append(res, sl.Value().AsSlice())
+			res = append(res, sl.Value().asSlice())
 		case RawNodeKindObject:
-			res = append(res, sl.Value().AsOrderedMap())
+			res = append(res, sl.Value().asOrderedMap())
 		}
 	}
 	return res
 }
 
-// AsOrderedMap converts r to an OrderedMap value, recursively converting all nested nodes to their corresponding Go types (scalar, slice or map).
+// asOrderedMap converts r to an OrderedMap value, recursively converting all nested nodes to their corresponding Go
+// types (scalar, slice or map).
 // Panics if called on a scalar or array node.
-func (r RawNode) AsOrderedMap() OrderedMap[any, any] {
+func (r RawNode) asOrderedMap() OrderedMap[any, any] {
 	if r.kind != RawNodeKindObject {
 		panic("not an object node")
 	}
@@ -364,9 +366,9 @@ func (r RawNode) AsOrderedMap() OrderedMap[any, any] {
 		case RawNodeKindScalar:
 			res.Set(sl.Key(), sl.Value().AsScalar())
 		case RawNodeKindArray:
-			res.Set(sl.Key(), sl.Value().AsSlice())
+			res.Set(sl.Key(), sl.Value().asSlice())
 		case RawNodeKindObject:
-			res.Set(sl.Key(), sl.Value().AsOrderedMap())
+			res.Set(sl.Key(), sl.Value().asOrderedMap())
 		}
 	}
 	return res
@@ -449,9 +451,9 @@ func (r RawNode) unmarshalJSONValue(data []byte, valType jsonparser.ValueType, n
 func (r RawNode) MarshalJSON() ([]byte, error) {
 	switch r.kind {
 	case RawNodeKindArray:
-		return json.Marshal(r.AsSlice())
+		return json.Marshal(r.asSlice())
 	case RawNodeKindObject:
-		return json.Marshal(r.AsOrderedMap())
+		return json.Marshal(r.asOrderedMap())
 	case RawNodeKindScalar:
 		return json.Marshal(r.AsScalar())
 	}
