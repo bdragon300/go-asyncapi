@@ -63,7 +63,9 @@ func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 			return fmt.Errorf("load document %s: %w", pattern.Location(), err)
 		}
 
-		if len(pattern.Pointer) == 0 {
+		// If input document is moved entirely (pattern has only file name) then remove it at the end
+		// (except the corner case when input and output are the same document).
+		if len(pattern.Pointer) == 0 && inputContents.AbsOriginDocumentPath().Location() != outputContents.AbsOriginDocumentPath().Location() {
 			locationsToRemove = append(locationsToRemove, inputContents.AbsOriginDocumentPath().Location())
 		}
 
