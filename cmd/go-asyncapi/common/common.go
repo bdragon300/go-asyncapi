@@ -34,7 +34,7 @@ var (
 
 type DocumentLocator interface {
 	Locate(docURL *jsonpointer.JSONPointer) (io.ReadCloser, error)
-	ResolveURL(base, target *jsonpointer.JSONPointer) (*jsonpointer.JSONPointer, error)
+	ResolveURL(base, ref *jsonpointer.JSONPointer) (*jsonpointer.JSONPointer, error)
 }
 
 func GetLocator(conf ToolConfig) DocumentLocator {

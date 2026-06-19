@@ -172,6 +172,7 @@ type (
 
 	ToolConfigDoc struct {
 		Cp       ToolConfigDocCp       `yaml:"cp"`
+		Mv       ToolConfigDocCp       `yaml:"mv"`
 		Validate ToolConfigDocValidate `yaml:"validate"`
 		Flatten  ToolConfigDocFlatten  `yaml:"flatten"`
 		Indent   int                   `yaml:"indent"`
@@ -341,6 +342,12 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.Cp.Force = Coalesce(userConf.Doc.Cp.Force, defaultConf.Doc.Cp.Force)
 	res.Doc.Cp.Interactive = Coalesce(userConf.Doc.Cp.Interactive, defaultConf.Doc.Cp.Interactive)
 	res.Doc.Cp.DisableRewriting = Coalesce(userConf.Doc.Cp.DisableRewriting, defaultConf.Doc.Cp.DisableRewriting)
+	res.Doc.Mv.Shallow = Coalesce(userConf.Doc.Mv.Shallow, defaultConf.Doc.Mv.Shallow)
+	res.Doc.Mv.Recursive = Coalesce(userConf.Doc.Mv.Recursive, defaultConf.Doc.Mv.Recursive)
+	res.Doc.Mv.Headless = Coalesce(userConf.Doc.Mv.Headless, defaultConf.Doc.Mv.Headless)
+	res.Doc.Mv.Force = Coalesce(userConf.Doc.Mv.Force, defaultConf.Doc.Mv.Force)
+	res.Doc.Mv.Interactive = Coalesce(userConf.Doc.Mv.Interactive, defaultConf.Doc.Mv.Interactive)
+	res.Doc.Mv.DisableRewriting = Coalesce(userConf.Doc.Mv.DisableRewriting, defaultConf.Doc.Mv.DisableRewriting)
 
 	return res
 }

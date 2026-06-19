@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"maps"
 	"os"
 	"slices"
 	"strconv"
@@ -112,7 +113,7 @@ func cliCp(cmd *CpCmd, cmdConfig common2.ToolConfig) error {
 
 	if !outputContents.Has("asyncapi") {
 		logger.Debug("Adding mandatory AsyncAPI entities to the destination document", "path", destPattern.FSPath)
-		changeLog = append(changeLog, addMandatoryNodes(outputContents)...)
+		changeLog = append(changeLog, ensureMandatoryNodes(outputContents)...)
 	}
 
 	if !cmdConfig.Doc.Cp.DisableRewriting {
@@ -137,7 +138,7 @@ func cliCp(cmd *CpCmd, cmdConfig common2.ToolConfig) error {
 	return nil
 }
 
-func addMandatoryNodes(outputContents *documentTree) []changeLogEntry {
+func ensureMandatoryNodes(outputContents *documentTree) []changeLogEntry {
 	logger := log.GetLogger("")
 
 	logger.Trace("Adding a new node", "path", outputContents.AbsOriginDocumentPath().Join("info"))
@@ -148,6 +149,12 @@ func addMandatoryNodes(outputContents *documentTree) []changeLogEntry {
 
 	logger.Trace("Adding a new node", "path", outputContents.AbsOriginDocumentPath().Join("asyncapi"))
 	outputContents.SetAtStart("asyncapi", types.NewScalarRawNode([]string{"asyncapi"}, "3.0.0", outputContents.AbsOriginDocumentPath()))
+
+	// Double-check that all mandatory root keys are present
+	mandatoryExistingKeys := lo.PickByKeys(maps.Collect(outputContents.Entries()), lo.ToAnySlice(asyncapiMandatoryRootPaths()))
+	if len(mandatoryExistingKeys) != len(asyncapiMandatoryRootPaths()) {
+		panic("some mandatory AsyncAPI root keys are missing, this is a bug")
+	}
 
 	return []changeLogEntry{
 		{

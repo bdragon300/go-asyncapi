@@ -25,6 +25,7 @@ type anyEncoder interface {
 
 type Cmd struct {
 	Cp       *CpCmd       `arg:"subcommand:cp" help:"Copy nodes between AsyncAPI documents."`
+	Mv       *MvCmd       `arg:"subcommand:mv" help:"Move nodes between AsyncAPI documents."`
 	Validate *ValidateCmd `arg:"subcommand:validate" help:"Validate AsyncAPI documents against the AsyncAPI JSON Schema."`
 	Flatten  *FlattenCmd  `arg:"subcommand:flatten" help:"Flatten an AsyncAPI document by inlining all $refs with the nodes they point to."`
 	Indent   int          `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
@@ -53,6 +54,8 @@ func CliDoc(cmd *Cmd, globalConfig common2.ToolConfig) error {
 	switch {
 	case cmd.Cp != nil:
 		return cliCp(cmd.Cp, cmdConfig)
+	case cmd.Mv != nil:
+		return cliMv(cmd.Mv, cmdConfig)
 	case cmd.Validate != nil:
 		return cliValidate(cmd.Validate, cmdConfig)
 	case cmd.Flatten != nil:
@@ -67,6 +70,7 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 	cmdValidate := lo.FromPtr(cmd.Validate)
 	cmdFlatten := lo.FromPtr(cmd.Flatten)
 	cmdCp := lo.FromPtr(cmd.Cp)
+	cmdMv := lo.FromPtr(cmd.Mv)
 
 	res.Doc.Indent = common2.Coalesce(cmd.Indent, globalConfig.Doc.Indent)
 	res.Doc.Format = common2.Coalesce(cmd.Format, globalConfig.Doc.Format)
@@ -86,6 +90,12 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 	res.Doc.Cp.Force = common2.Coalesce(cmdCp.Force, globalConfig.Doc.Cp.Force)
 	res.Doc.Cp.Interactive = common2.Coalesce(cmdCp.Interactive, globalConfig.Doc.Cp.Interactive)
 	res.Doc.Cp.DisableRewriting = common2.Coalesce(cmdCp.DisableRewriting, globalConfig.Doc.Cp.DisableRewriting)
+	res.Doc.Mv.Shallow = common2.Coalesce(cmdMv.Shallow, globalConfig.Doc.Mv.Shallow)
+	res.Doc.Mv.Recursive = common2.Coalesce(cmdMv.Recursive, globalConfig.Doc.Mv.Recursive)
+	res.Doc.Mv.Headless = common2.Coalesce(cmdMv.Headless, globalConfig.Doc.Mv.Headless)
+	res.Doc.Mv.Force = common2.Coalesce(cmdMv.Force, globalConfig.Doc.Mv.Force)
+	res.Doc.Mv.Interactive = common2.Coalesce(cmdMv.Interactive, globalConfig.Doc.Mv.Interactive)
+	res.Doc.Mv.DisableRewriting = common2.Coalesce(cmdMv.DisableRewriting, globalConfig.Doc.Mv.DisableRewriting)
 
 	return res, nil
 }

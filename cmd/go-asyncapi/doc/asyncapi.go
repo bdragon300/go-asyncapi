@@ -271,3 +271,7 @@ func asyncapiUnresolvableRefPaths() [][]string {
 		{"components", "replies", "", "messages", ""},
 	}
 }
+
+func asyncapiMandatoryRootPaths() []string {
+	return []string{"asyncapi", "info"}
+}

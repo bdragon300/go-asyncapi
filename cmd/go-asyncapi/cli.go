@@ -105,7 +105,7 @@ func main() {
 			cliParser.WriteHelp(os.Stderr)
 		case errors.Is(err, common2.ErrBadResult):
 			chlog.Error(err.Error())
-			os.Exit(1)
+			os.Exit(2)
 		case chlog.GetLevel() <= chlog.DebugLevel && errors.As(err, &me):
 			chlog.Error(err.Error(), "details", me.ContentLines())
 		}

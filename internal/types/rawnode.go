@@ -540,6 +540,13 @@ func (r RawNode) MarshalYAML() (any, error) {
 				keyNode.HeadComment, keyNode.LineComment, keyNode.FootComment = v.keyComments[0], v.keyComments[1], v.keyComments[2]
 				valNode.HeadComment, valNode.LineComment, valNode.FootComment = v.valueComments[0], v.valueComments[1], v.valueComments[2]
 				keyNode.Style, valNode.Style = v.keyStyle, v.valueStyle
+
+				// YAML supports writing the values in JSON-like syntax, this is called "flow style".
+				// Empty mappings and arrays are always rendered in flow style in YAML as `{}` and `[]`.
+				// And once we unmarshalled an empty mapping/array and added new values to it, it's better to revert the block style.
+				// So, we reset the flow style bit here.
+				keyNode.Style &= ^yaml.FlowStyle
+				valNode.Style &= ^yaml.FlowStyle
 			}
 
 			n.Content = append(n.Content, keyNode, valNode)
@@ -553,6 +560,13 @@ func (r RawNode) MarshalYAML() (any, error) {
 			}
 			if v, ok := sl.(*yamlSlot); ok {
 				valNode.HeadComment, valNode.LineComment, valNode.FootComment = v.valueComments[0], v.valueComments[1], v.valueComments[2]
+				valNode.Style = v.valueStyle
+
+				// YAML supports writing the values in JSON-like syntax, this is called "flow style".
+				// Empty mappings and arrays are always rendered in flow style in YAML as `{}` and `[]`.
+				// And once we unmarshalled an empty mapping/array and added new values to it, it's better to revert the block style.
+				// So, we reset the flow style bit here.
+				valNode.Style &= ^yaml.FlowStyle
 			}
 
 			n.Content = append(n.Content, valNode)
@@ -563,6 +577,7 @@ func (r RawNode) MarshalYAML() (any, error) {
 		}
 	}
 
+	n.Style &= ^yaml.FlowStyle
 	if n.Kind == yaml.ScalarNode && n.Tag == "!!str" {
 		// Force quote strings
 		n.Style |= yaml.SingleQuotedStyle
