@@ -6,6 +6,7 @@ require (
 	github.com/BobuSumisu/aho-corasick v1.0.3
 	github.com/alexflint/go-arg v1.6.1
 	github.com/bdragon300/go-asyncapi/run v0.0.0-20260111064117-e9ede27542aa
+	github.com/brianvoe/gofakeit/v7 v7.15.0
 	github.com/buger/jsonparser v1.1.1
 	github.com/charmbracelet/log v0.4.2
 	github.com/go-sprout/sprout v1.0.3

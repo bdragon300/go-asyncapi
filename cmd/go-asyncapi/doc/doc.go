@@ -24,12 +24,13 @@ type anyEncoder interface {
 }
 
 type Cmd struct {
-	Cp       *CpCmd       `arg:"subcommand:cp" help:"Copy nodes between AsyncAPI documents."`
-	Mv       *MvCmd       `arg:"subcommand:mv" help:"Move nodes between AsyncAPI documents."`
-	Validate *ValidateCmd `arg:"subcommand:validate" help:"Validate AsyncAPI documents against the AsyncAPI JSON Schema."`
-	Flatten  *FlattenCmd  `arg:"subcommand:flatten" help:"Flatten an AsyncAPI document by inlining all $refs with the nodes they point to."`
-	Indent   int          `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
-	Format   string       `arg:"--format,-f" help:"Output format. Possible values: yaml, json" placeholder:"FORMAT"`
+	Cp          *CpCmd          `arg:"subcommand:cp" help:"Copy nodes between AsyncAPI documents."`
+	Mv          *MvCmd          `arg:"subcommand:mv" help:"Move nodes between AsyncAPI documents."`
+	Validate    *ValidateCmd    `arg:"subcommand:validate" help:"Validate AsyncAPI documents against the AsyncAPI JSON Schema."`
+	Flatten     *FlattenCmd     `arg:"subcommand:flatten" help:"Flatten an AsyncAPI document by inlining all $refs with the nodes they point to."`
+	GenExamples *GenExamplesCmd `arg:"subcommand:gen-examples" help:"Generate examples for messages, message traits and schemas in an AsyncAPI document."`
+	Indent      int             `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
+	Format      string          `arg:"--format" help:"Output format. Possible values: yaml, json" placeholder:"FORMAT"`
 }
 
 func newDocumentTree(originDocument *jsonpointer.JSONPointer) *documentTree {
@@ -60,6 +61,8 @@ func CliDoc(cmd *Cmd, globalConfig common2.ToolConfig) error {
 		return cliValidate(cmd.Validate, cmdConfig)
 	case cmd.Flatten != nil:
 		return cliFlatten(cmd.Flatten, cmdConfig)
+	case cmd.GenExamples != nil:
+		return cliGenExamples(cmd.GenExamples, cmdConfig)
 	}
 	return fmt.Errorf("%w: unknown doc subcommand", common2.ErrInvalidCLIArgument)
 }
@@ -71,6 +74,7 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 	cmdFlatten := lo.FromPtr(cmd.Flatten)
 	cmdCp := lo.FromPtr(cmd.Cp)
 	cmdMv := lo.FromPtr(cmd.Mv)
+	cmdGenExamples := lo.FromPtr(cmd.GenExamples)
 
 	res.Doc.Indent = common2.Coalesce(cmd.Indent, globalConfig.Doc.Indent)
 	res.Doc.Format = common2.Coalesce(cmd.Format, globalConfig.Doc.Format)
@@ -96,6 +100,20 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 	res.Doc.Mv.Force = common2.Coalesce(cmdMv.Force, globalConfig.Doc.Mv.Force)
 	res.Doc.Mv.Interactive = common2.Coalesce(cmdMv.Interactive, globalConfig.Doc.Mv.Interactive)
 	res.Doc.Mv.DisableRewriting = common2.Coalesce(cmdMv.DisableRewriting, globalConfig.Doc.Mv.DisableRewriting)
+	res.Doc.GenExamples.OutputFile = common2.Coalesce(cmdGenExamples.Output, globalConfig.Doc.GenExamples.OutputFile)
+	res.Doc.GenExamples.OnlyMessages = common2.Coalesce(cmdGenExamples.OnlyMessages, globalConfig.Doc.GenExamples.OnlyMessages)
+	res.Doc.GenExamples.OnlySchemas = common2.Coalesce(cmdGenExamples.OnlySchemas, globalConfig.Doc.GenExamples.OnlySchemas)
+	res.Doc.GenExamples.Append = common2.Coalesce(cmdGenExamples.Append, globalConfig.Doc.GenExamples.Append)
+	res.Doc.GenExamples.Count = common2.Coalesce(cmdGenExamples.Count, globalConfig.Doc.GenExamples.Count)
+	res.Doc.GenExamples.DateFormat = common2.Coalesce(cmdGenExamples.DateFormat, globalConfig.Doc.GenExamples.DateFormat)
+	res.Doc.GenExamples.TimeFormat = common2.Coalesce(cmdGenExamples.TimeFormat, globalConfig.Doc.GenExamples.TimeFormat)
+	res.Doc.GenExamples.DateTimeFormat = common2.Coalesce(cmdGenExamples.DateTimeFormat, globalConfig.Doc.GenExamples.DateTimeFormat)
+	if cmd.GenExamples != nil {
+		res.Locator.AllowRemoteReferences = common2.Coalesce(cmdGenExamples.AllowRemoteRefs, res.Doc.GenExamples.AllowRemoteReferences)
+		res.Locator.Command = common2.Coalesce(cmdGenExamples.LocatorCommand, globalConfig.Locator.Command)
+		res.Locator.Timeout = common2.Coalesce(cmdGenExamples.LocatorTimeout, globalConfig.Locator.Timeout)
+		res.Locator.RootDirectory = common2.Coalesce(cmdGenExamples.LocatorRootDir, globalConfig.Locator.RootDirectory)
+	}
 
 	return res, nil
 }
@@ -138,6 +156,7 @@ func parseRefRawNode(n *types.RawNode) (*jsonpointer.JSONPointer, error) {
 }
 
 func getDocumentEncoder(w io.Writer, cmdConfig common2.ToolConfig) (anyEncoder, error) {
+	// TODO: auto guess output format based on input files extensions
 	logger := log.GetLogger("")
 
 	var enc anyEncoder
@@ -317,4 +336,40 @@ func loadDocument(inputDoc *jsonpointer.JSONPointer, locator common2.DocumentLoc
 		return nil, fmt.Errorf("decode: %w", err)
 	}
 	return inputContents, nil
+}
+
+func resolveRefNode(ref *jsonpointer.JSONPointer, refNode *types.RawNode, documents map[string]*documentTree, locator common2.DocumentLocator, external, remote bool) (*types.RawNode, error) {
+	logger := log.GetLogger("")
+	var err error
+
+	// Figure out which document the $ref points to. A local $ref (no location part) points to the document it was read
+	// from. An external $ref is resolved relative to its origin document using the locator.
+	targetDoc := refNode.AbsOriginDocumentPath()
+	if ref.Location() != "" {
+		if ref.FSPath != "" && !external {
+			return nil, fmt.Errorf("inlining the objects from external documents are disabled, use the --with-external flag to enable")
+		}
+		if ref.URI != nil && !remote {
+			return nil, fmt.Errorf("inlining the objects from remote documents are disabled, use the --with-remote flag to enable")
+		}
+		if targetDoc, err = locator.ResolveURL(refNode.AbsOriginDocumentPath(), ref); err != nil {
+			return nil, fmt.Errorf("resolve $ref location %q: %w", ref.Location(), err)
+		}
+	}
+
+	targetAbsLoc := absLocation(targetDoc)
+	document, ok := documents[targetAbsLoc]
+	if !ok {
+		logger.Debug("Loading the referenced document", "location", targetAbsLoc)
+		if document, err = loadDocument(targetDoc, locator); err != nil {
+			return nil, fmt.Errorf("load the referenced document: %w", err)
+		}
+		documents[targetAbsLoc] = document
+	}
+
+	n := document.GetByPath(ref.Pointer)
+	if n == nil {
+		return n, fmt.Errorf("pointer %q not found in document %q", ref.PointerString(), targetAbsLoc)
+	}
+	return n, nil
 }

@@ -27,7 +27,7 @@ type CpCmd struct {
 	Recursive        bool   `arg:"--recursive,-r" help:"Copy nodes recursively"`
 	Shallow          bool   `arg:"--shallow,-s" help:"Copy nodes recursively only with direct dependencies"`
 	Headless         bool   `arg:"--headless" help:"Exclude nodes. Makes sense with -r or -s"`
-	Force            bool   `arg:"--force" help:"Overwrite existing nodes on conflict"`
+	Force            bool   `arg:"--force,-f" help:"Overwrite existing nodes on conflict"`
 	Interactive      bool   `arg:"--interactive,-i" help:"Interactive mode"`
 	DisableRewriting bool   `arg:"--disable-rewriting" help:"Do not rewrite $refs"`
 }

@@ -202,37 +202,19 @@ var componentsKeyByKind = map[string]string{
 // It returns an empty string if the path can't be resolved against the AsyncAPI schema, or if the object the path
 // points to has no dedicated "components" section (e.g. the Info Object).
 func asyncapiResolveComponentsKey(p []string) string {
-	if len(p) == 0 {
+	entity := resolveEntity(p)
+	if entity == "" {
 		return ""
 	}
 
-	// kind holds the [asyncapiObjectsStructure] key that describes the node reached so far. The first path item is a
-	// top-level document key, the rest navigate down the schema.
-	kind := p[0]
-	for _, seg := range p[1:] {
-		loc, ok := asyncapiObjectsStructure[kind]
-		if !ok {
-			// Reached a leaf or an unknown object before the whole path was consumed
-			return ""
-		}
-		next, ok := loc[seg]
-		if !ok {
-			// The empty key matches any map key or array index
-			if next, ok = loc[""]; !ok {
-				return ""
-			}
-		}
-		kind = next
-	}
-
-	if strings.HasPrefix(kind, ">") {
+	if strings.HasPrefix(entity, ">") {
 		// "" if this object kind has no dedicated "components" section
-		return componentsKeyByKind[kind]
+		return componentsKeyByKind[entity]
 	}
 	// The path ends on a container key (e.g. on the "servers" array itself). It maps to itself if it's a
 	// "components" section key.
 	for _, ck := range componentsKeyByKind {
-		if ck == kind {
+		if ck == entity {
 			return ck
 		}
 	}
@@ -274,4 +256,36 @@ func asyncapiUnresolvableRefPaths() [][]string {
 
 func asyncapiMandatoryRootPaths() []string {
 	return []string{"asyncapi", "info"}
+}
+
+// resolveEntity resolves a node path of any depth into the tag denotes the entity the path points to.
+// The returned value may be:
+//   - a valid AsyncAPI key if path points to a container of objects (e.g. "channels" or "components")
+//   - a ">"-prefixed key if path points to an object (e.g. ">channel" or ">message")
+//   - an empty string if the path can't be resolved against the AsyncAPI schema or it contains invalid keys.
+func resolveEntity(p []string) string {
+	if len(p) == 0 {
+		return ""
+	}
+
+	// kind holds the [asyncapiObjectsStructure] key that describes the node reached so far. The first path item is a
+	// top-level document key, the rest navigate down the schema.
+	kind := p[0]
+	for _, seg := range p[1:] {
+		loc, ok := asyncapiObjectsStructure[kind]
+		if !ok {
+			// Reached a leaf or an unknown object before the whole path was consumed
+			return ""
+		}
+		next, ok := loc[seg]
+		if !ok {
+			// The empty key matches any map key or array index
+			if next, ok = loc[""]; !ok {
+				return ""
+			}
+		}
+		kind = next
+	}
+
+	return kind
 }

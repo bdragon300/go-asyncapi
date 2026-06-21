@@ -119,12 +119,17 @@ func flattenNode(
 			}
 
 			v = append(v, n)
-			refPointer, targetNode, resolved := resolveRefNode(n, documents, locator, cmdConfig)
-			if !resolved || targetNode == nil {
+			ref, err := parseRefRawNode(n)
+			if err != nil {
+				logger.Warn("Failed to parse $ref, skipping", "path", n.AbsPointerString(), "ref", ref, "error", err.Error())
+			}
+			targetNode, err := resolveRefNode(ref, n, documents, locator, cmdConfig.Doc.Flatten.WithExternal, cmdConfig.Doc.Flatten.WithRemote)
+			if err != nil {
+				logger.Warn(fmt.Sprintf("%s, skipping", err.Error()), "path", n.AbsPointerString())
 				continue // Can't resolve the $ref, skip it
 			}
 			if slices.Contains(v, targetNode) {
-				logger.Warn("Detected a $ref cycle, leaving the $ref unresolved", "path", n.AbsPointerString(), "ref", refPointer)
+				logger.Warn("Detected a $ref cycle, leaving the $ref unresolved", "path", n.AbsPointerString(), "ref", ref)
 				continue
 			}
 			node.Set(e.key, targetNode)
@@ -145,55 +150,4 @@ func flattenNode(
 	}
 
 	return changeLog, nil
-}
-
-func resolveRefNode(node *types.RawNode, documents map[string]*documentTree, locator common2.DocumentLocator, cmdConfig common2.ToolConfig) (*jsonpointer.JSONPointer, *types.RawNode, bool) {
-	logger := log.GetLogger("")
-
-	if node.AbsOriginDocumentPath() == nil {
-		logger.Warn("Found a $ref with empty metadata, this is a bug, skipping", "path", node.AbsPointerString())
-		return nil, node, false
-	}
-
-	ref, err := parseRefRawNode(node)
-	if err != nil {
-		logger.Error("Failed to parse $ref, skipping", "path", node.AbsPointerString(), "error", err)
-		return nil, node, false
-	}
-	logger.Debug("Resolving $ref", "path", node.AbsPointerString(), "ref", ref)
-
-	// Figure out which document the $ref points to. A local $ref (no location part) points to the document it was read
-	// from. An external $ref is resolved relative to its origin document using the locator.
-	targetDoc := node.AbsOriginDocumentPath()
-	if ref.Location() != "" {
-		if ref.FSPath != "" && !cmdConfig.Doc.Flatten.WithExternal {
-			logger.Warn("Inlining the objects from external documents are disabled, use the --with-external flag to enable", "path", node.AbsPointerString(), "ref", ref)
-			return ref, node, false
-		}
-		if ref.URI != nil && !cmdConfig.Doc.Flatten.WithRemote {
-			logger.Warn("Inlining the objects from remote documents are disabled, use the --with-remote flag to enable", "path", node.AbsPointerString(), "ref", ref)
-			return ref, node, false
-		}
-		if targetDoc, err = locator.ResolveURL(node.AbsOriginDocumentPath(), ref); err != nil {
-			logger.Error("Failed to resolve the $ref, skipping", "path", node.AbsPointerString(), "ref", ref, "error", err)
-			return ref, node, false
-		}
-	}
-
-	targetAbsLoc := absLocation(targetDoc)
-	document, ok := documents[targetAbsLoc]
-	if !ok {
-		logger.Debug("Loading the referenced document", "location", targetAbsLoc)
-		if document, err = loadDocument(targetDoc, locator); err != nil {
-			logger.Error("Failed to load the document by $ref, skipping", "path", node.AbsPointerString(), "ref", ref, "error", err)
-			return ref, node, false
-		}
-		documents[targetAbsLoc] = document
-	}
-
-	n := document.GetByPath(ref.Pointer)
-	if n == nil {
-		logger.Error("Failed to resolve $ref, skipping", "path", node.AbsPointerString())
-	}
-	return ref, n, n != nil
 }
