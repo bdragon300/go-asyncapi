@@ -172,7 +172,7 @@ type (
 
 	ToolConfigDoc struct {
 		Cp          ToolConfigDocCp          `yaml:"cp"`
-		Mv          ToolConfigDocCp          `yaml:"mv"` // FIXME
+		Mv          ToolConfigDocMv          `yaml:"mv"`
 		Validate    ToolConfigDocValidate    `yaml:"validate"`
 		Flatten     ToolConfigDocFlatten     `yaml:"flatten"`
 		GenExamples ToolConfigDocGenExamples `yaml:"genExamples"`
@@ -191,6 +191,15 @@ type (
 	}
 
 	ToolConfigDocCp struct {
+		Recursive        bool `yaml:"recursive"`
+		Shallow          bool `yaml:"shallow"`
+		Headless         bool `yaml:"headless"`
+		Force            bool `yaml:"force"`
+		Interactive      bool `yaml:"interactive"`
+		DisableRewriting bool `yaml:"disableRewriting"`
+	}
+
+	ToolConfigDocMv struct {
 		Recursive        bool `yaml:"recursive"`
 		Shallow          bool `yaml:"shallow"`
 		Headless         bool `yaml:"headless"`
