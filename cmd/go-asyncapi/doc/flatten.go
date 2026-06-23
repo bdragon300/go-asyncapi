@@ -17,8 +17,8 @@ import (
 type FlattenCmd struct {
 	Document     string `arg:"positional,required" help:"AsyncAPI document file or URL" placeholder:"FILE"`
 	Output       string `arg:"--output,-o" help:"File where to write the flattened document. By default, the original document is modified in-place" placeholder:"FILE"`
-	WithExternal bool   `arg:"--with-external" help:"Consider the referenced objects located in external documents"`
-	WithRemote   bool   `arg:"--with-remote" help:"Consider the referenced objects located in documents addressed by URLs"`
+	ExternalRefs bool   `arg:"--external-refs" help:"Consider the referenced objects located in external documents"`
+	RemoteRefs   bool   `arg:"--remote-refs" help:"Consider the referenced objects located in documents addressed by URLs"`
 
 	LocatorRootDir string        `arg:"--locator-root-dir" help:"Root directory to search the documents" placeholder:"PATH"`
 	LocatorTimeout time.Duration `arg:"--locator-timeout" help:"Timeout for locator to read a document. Format: 30s, 2m, etc." placeholder:"DURATION"`
@@ -123,7 +123,7 @@ func flattenNode(
 			if err != nil {
 				logger.Warn("Failed to parse $ref, skipping", "path", n.AbsPointerString(), "ref", ref, "error", err.Error())
 			}
-			targetNode, err := resolveRefNode(ref, n, documents, locator, cmdConfig.Doc.Flatten.WithExternal, cmdConfig.Doc.Flatten.WithRemote)
+			targetNode, err := resolveRefNode(ref, n, documents, locator, cmdConfig.Doc.Flatten.ExternalRefs, cmdConfig.Doc.Flatten.RemoteRefs)
 			if err != nil {
 				logger.Warn(fmt.Sprintf("%s, skipping", err.Error()), "path", n.AbsPointerString())
 				continue // Can't resolve the $ref, skip it

@@ -17,8 +17,8 @@ type MvCmd struct {
 	Locations []string `arg:"positional,required" help:"Nodes to move. If -t is omitted, the last LOCATION is considered as DESTINATION. Format: file.{yaml|yml|json}[#/path/to/node | GLOBBING_PATTERN]" placeholder:"LOCATION"`
 
 	To               string `arg:"--to,-t" help:"Move all LOCATION arguments into DESTINATION" placeholder:"DESTINATION"`
-	Recursive        bool   `arg:"--recursive,-r" help:"Move nodes recursively"`
-	Shallow          bool   `arg:"--shallow,-s" help:"Move nodes recursively only with direct dependencies"`
+	FollowRefs       bool   `arg:"--follow-refs,-r" help:"Follow $refs and move the referenced nodes recursively"`
+	ShallowRefs      bool   `arg:"--shallow-refs,-s" help:"Limit the following $refs only one level deep. Requires --follow-refs"`
 	Headless         bool   `arg:"--headless" help:"Exclude nodes. Makes sense with -r or -s"`
 	Force            bool   `arg:"--force,-f" help:"Overwrite existing nodes on conflict"`
 	Interactive      bool   `arg:"--interactive,-i" help:"Interactive mode"`
@@ -27,6 +27,10 @@ type MvCmd struct {
 
 func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 	logger := log.GetLogger("")
+
+	if cmd.ShallowRefs && !cmd.FollowRefs {
+		return fmt.Errorf("%w: --shallow-refs requires --follow-refs", common2.ErrInvalidCLIArgument)
+	}
 
 	sourcePatterns, destPattern, err := parseCliPatterns(cmd.Locations, cmd.To)
 	if err != nil {
@@ -78,10 +82,10 @@ func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 				return relocatedNode{node: n, isDependency: false, isDirectDependency: false}
 			})
 		}
-		if cmdConfig.Doc.Mv.Recursive || cmdConfig.Doc.Mv.Shallow {
-			logger.Trace("Collecting dependencies for matched nodes", "count", len(matchedNodes), "recursive", cmdConfig.Doc.Mv.Recursive, "shallow", cmdConfig.Doc.Mv.Shallow)
+		if cmdConfig.Doc.Mv.FollowRefs {
+			logger.Trace("Collecting dependencies for matched nodes", "count", len(matchedNodes), "followRefs", cmdConfig.Doc.Mv.FollowRefs, "shallowRefs", cmdConfig.Doc.Mv.ShallowRefs)
 			deps := lo.FlatMap(matchedNodes, func(n *types.RawNode, _ int) []relocatedNode {
-				r := collectDependencies(n, []*documentTree{inputContents}, locator, !cmdConfig.Doc.Mv.Shallow)
+				r := collectDependencies(n, []*documentTree{inputContents}, locator, !cmdConfig.Doc.Mv.ShallowRefs)
 				logger.Debug("Found dependencies for node", "path", n.AbsPointerString(), "count", len(r))
 				return r
 			})

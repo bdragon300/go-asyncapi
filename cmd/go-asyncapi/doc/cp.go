@@ -24,8 +24,8 @@ type CpCmd struct {
 	Locations []string `arg:"positional,required" help:"Nodes to copy. If -t is omitted, the last LOCATION is considered as DESTINATION. Format: file.{yaml|yml|json}[#/path/to/node | GLOBBING_PATTERN]" placeholder:"LOCATION"`
 
 	To               string `arg:"--to,-t" help:"Copy all LOCATION arguments into DESTINATION" placeholder:"DESTINATION"`
-	Recursive        bool   `arg:"--recursive,-r" help:"Copy nodes recursively"`
-	Shallow          bool   `arg:"--shallow,-s" help:"Copy nodes recursively only with direct dependencies"`
+	FollowRefs       bool   `arg:"--follow-refs,-r" help:"Follow $refs and copy the referenced nodes recursively"`
+	ShallowRefs      bool   `arg:"--shallow-refs,-s" help:"Limit the following $refs only one level deep. Requires --follow-refs"`
 	Headless         bool   `arg:"--headless" help:"Exclude nodes. Makes sense with -r or -s"`
 	Force            bool   `arg:"--force,-f" help:"Overwrite existing nodes on conflict"`
 	Interactive      bool   `arg:"--interactive,-i" help:"Interactive mode"`
@@ -34,6 +34,10 @@ type CpCmd struct {
 
 func cliCp(cmd *CpCmd, cmdConfig common2.ToolConfig) error {
 	logger := log.GetLogger("")
+
+	if cmd.ShallowRefs && !cmd.FollowRefs {
+		return fmt.Errorf("%w: --shallow-refs requires --follow-refs", common2.ErrInvalidCLIArgument)
+	}
 
 	sourcePatterns, destPattern, err := parseCliPatterns(cmd.Locations, cmd.To)
 	if err != nil {
@@ -68,10 +72,10 @@ func cliCp(cmd *CpCmd, cmdConfig common2.ToolConfig) error {
 				return relocatedNode{node: n, isDependency: false, isDirectDependency: false}
 			})
 		}
-		if cmdConfig.Doc.Cp.Recursive || cmdConfig.Doc.Cp.Shallow {
-			logger.Trace("Collecting dependencies for matched nodes", "count", len(matchedNodes), "recursive", cmdConfig.Doc.Cp.Recursive, "shallow", cmdConfig.Doc.Cp.Shallow)
+		if cmdConfig.Doc.Cp.FollowRefs {
+			logger.Trace("Collecting dependencies for matched nodes", "count", len(matchedNodes), "followRefs", cmdConfig.Doc.Cp.FollowRefs, "shallowRefs", cmdConfig.Doc.Cp.ShallowRefs)
 			deps := lo.FlatMap(matchedNodes, func(n *types.RawNode, _ int) []relocatedNode {
-				r := collectDependencies(n, []*documentTree{inputContents}, locator, !cmdConfig.Doc.Cp.Shallow)
+				r := collectDependencies(n, []*documentTree{inputContents}, locator, !cmdConfig.Doc.Cp.ShallowRefs)
 				logger.Debug("Found dependencies for node", "path", n.AbsPointerString(), "count", len(r))
 				return r
 			})
@@ -342,7 +346,7 @@ func findNodes(node *types.RawNode, pattern cliPattern) []*types.RawNode {
 	return res
 }
 
-func collectDependencies(node *types.RawNode, docs []*documentTree, locator common2.DocumentLocator, recursive bool) []relocatedNode {
+func collectDependencies(node *types.RawNode, docs []*documentTree, locator common2.DocumentLocator, recursiveRefs bool) []relocatedNode {
 	logger := log.GetLogger("")
 
 	if node == nil {
@@ -387,7 +391,7 @@ func collectDependencies(node *types.RawNode, docs []*documentTree, locator comm
 
 		logger.Debug("Found dependency node", "path", r.Path(), "pointer", ref.String(), "document", referredDoc.AbsOriginDocumentPath())
 		res = append(res, relocatedNode{node: refNode, isDependency: true, isDirectDependency: lo.HasPrefix(r.Path(), node.Path())})
-		if recursive {
+		if recursiveRefs {
 			queue = append(queue, collectRefs(refNode)...)
 		}
 		queue = lo.UniqBy(queue, func(n *types.RawNode) string { return n.AbsPointerString() })

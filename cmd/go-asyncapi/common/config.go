@@ -186,13 +186,13 @@ type (
 
 	ToolConfigDocFlatten struct {
 		OutputFile   string `yaml:"outputFile"`
-		WithExternal bool   `yaml:"withExternal"`
-		WithRemote   bool   `yaml:"withRemote"`
+		ExternalRefs bool   `yaml:"externalRefs"`
+		RemoteRefs   bool   `yaml:"remoteRefs"`
 	}
 
 	ToolConfigDocCp struct {
-		Recursive        bool `yaml:"recursive"`
-		Shallow          bool `yaml:"shallow"`
+		FollowRefs       bool `yaml:"followRefs"`
+		ShallowRefs      bool `yaml:"shallowRefs"`
 		Headless         bool `yaml:"headless"`
 		Force            bool `yaml:"force"`
 		Interactive      bool `yaml:"interactive"`
@@ -200,8 +200,8 @@ type (
 	}
 
 	ToolConfigDocMv struct {
-		Recursive        bool `yaml:"recursive"`
-		Shallow          bool `yaml:"shallow"`
+		FollowRefs       bool `yaml:"followRefs"`
+		ShallowRefs      bool `yaml:"shallowRefs"`
 		Headless         bool `yaml:"headless"`
 		Force            bool `yaml:"force"`
 		Interactive      bool `yaml:"interactive"`
@@ -355,17 +355,17 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.Format = Coalesce(userConf.Doc.Format, defaultConf.Doc.Format)
 	res.Doc.Validate.Schema = Coalesce(userConf.Doc.Validate.Schema, defaultConf.Doc.Validate.Schema)
 	res.Doc.Flatten.OutputFile = Coalesce(userConf.Doc.Flatten.OutputFile, defaultConf.Doc.Flatten.OutputFile)
-	res.Doc.Flatten.WithExternal = Coalesce(userConf.Doc.Flatten.WithExternal, defaultConf.Doc.Flatten.WithExternal)
-	res.Doc.Flatten.WithRemote = Coalesce(userConf.Doc.Flatten.WithRemote, defaultConf.Doc.Flatten.WithRemote)
-	res.Locator.AllowRemoteReferences = Coalesce(res.Locator.AllowRemoteReferences, res.Doc.Flatten.WithRemote) // FIXME: rmeove and make a separate config param in locator constructor
-	res.Doc.Cp.Shallow = Coalesce(userConf.Doc.Cp.Shallow, defaultConf.Doc.Cp.Shallow)
-	res.Doc.Cp.Recursive = Coalesce(userConf.Doc.Cp.Recursive, defaultConf.Doc.Cp.Recursive)
+	res.Doc.Flatten.ExternalRefs = Coalesce(userConf.Doc.Flatten.ExternalRefs, defaultConf.Doc.Flatten.ExternalRefs)
+	res.Doc.Flatten.RemoteRefs = Coalesce(userConf.Doc.Flatten.RemoteRefs, defaultConf.Doc.Flatten.RemoteRefs)
+	res.Locator.AllowRemoteReferences = Coalesce(res.Locator.AllowRemoteReferences, res.Doc.Flatten.RemoteRefs) // FIXME: rmeove and make a separate config param in locator constructor
+	res.Doc.Cp.ShallowRefs = Coalesce(userConf.Doc.Cp.ShallowRefs, defaultConf.Doc.Cp.ShallowRefs)
+	res.Doc.Cp.FollowRefs = Coalesce(userConf.Doc.Cp.FollowRefs, defaultConf.Doc.Cp.FollowRefs)
 	res.Doc.Cp.Headless = Coalesce(userConf.Doc.Cp.Headless, defaultConf.Doc.Cp.Headless)
 	res.Doc.Cp.Force = Coalesce(userConf.Doc.Cp.Force, defaultConf.Doc.Cp.Force)
 	res.Doc.Cp.Interactive = Coalesce(userConf.Doc.Cp.Interactive, defaultConf.Doc.Cp.Interactive)
 	res.Doc.Cp.DisableRewriting = Coalesce(userConf.Doc.Cp.DisableRewriting, defaultConf.Doc.Cp.DisableRewriting)
-	res.Doc.Mv.Shallow = Coalesce(userConf.Doc.Mv.Shallow, defaultConf.Doc.Mv.Shallow)
-	res.Doc.Mv.Recursive = Coalesce(userConf.Doc.Mv.Recursive, defaultConf.Doc.Mv.Recursive)
+	res.Doc.Mv.ShallowRefs = Coalesce(userConf.Doc.Mv.ShallowRefs, defaultConf.Doc.Mv.ShallowRefs)
+	res.Doc.Mv.FollowRefs = Coalesce(userConf.Doc.Mv.FollowRefs, defaultConf.Doc.Mv.FollowRefs)
 	res.Doc.Mv.Headless = Coalesce(userConf.Doc.Mv.Headless, defaultConf.Doc.Mv.Headless)
 	res.Doc.Mv.Force = Coalesce(userConf.Doc.Mv.Force, defaultConf.Doc.Mv.Force)
 	res.Doc.Mv.Interactive = Coalesce(userConf.Doc.Mv.Interactive, defaultConf.Doc.Mv.Interactive)
