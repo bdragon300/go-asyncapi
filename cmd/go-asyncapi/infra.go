@@ -39,6 +39,7 @@ func cliInfra(cmd *InfraCmd, globalConfig common2.ToolConfig) error {
 	if err != nil {
 		return fmt.Errorf("config: %w", err)
 	}
+	logger.TraceYAML("Merged config", cmdConfig)
 
 	//
 	// Compilation & linking

@@ -14,10 +14,13 @@ import (
 
 	"github.com/bdragon300/go-asyncapi/cmd/go-asyncapi/common"
 	"github.com/bdragon300/go-asyncapi/internal/common"
+	"github.com/bdragon300/go-asyncapi/internal/compiler"
 	"github.com/bdragon300/go-asyncapi/internal/compiler/compile"
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
+	"github.com/bdragon300/go-asyncapi/internal/linker"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/render"
+	"github.com/bdragon300/go-asyncapi/internal/renderer"
 	"github.com/bdragon300/go-asyncapi/internal/selector"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl"
 	"github.com/bdragon300/go-asyncapi/internal/tmpl/manager"
@@ -26,13 +29,8 @@ import (
 	"github.com/bdragon300/go-asyncapi/templates/client"
 	templates "github.com/bdragon300/go-asyncapi/templates/code"
 	"github.com/bdragon300/go-asyncapi/templates/codeextra"
-	"golang.org/x/exp/maps"
-	"gopkg.in/yaml.v3"
-
-	"github.com/bdragon300/go-asyncapi/internal/compiler"
-	"github.com/bdragon300/go-asyncapi/internal/linker"
-	"github.com/bdragon300/go-asyncapi/internal/renderer"
 	"github.com/samber/lo"
+	"golang.org/x/exp/maps"
 	"golang.org/x/mod/modfile"
 )
 
@@ -64,11 +62,7 @@ type CodeCmd struct {
 func cliCode(cmd *CodeCmd, globalConfig common2.ToolConfig) error {
 	logger := log.GetLogger("")
 	cmdConfig := cliCodeMergeConfig(globalConfig, cmd)
-
-	if logger.GetLevel() == log.TraceLevel {
-		buf := lo.Must(yaml.Marshal(cmdConfig))
-		logger.Trace("Use the merged config", "contents", string(buf))
-	}
+	logger.TraceYAML("Merged config", cmdConfig)
 
 	compileOpts := getCompileOpts(cmdConfig)
 	if compileOpts.GenerateSubscribers != compileOpts.GeneratePublishers {

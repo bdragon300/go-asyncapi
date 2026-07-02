@@ -53,6 +53,7 @@ func cliUI(cmd *UICmd, globalConfig common2.ToolConfig) error {
 	if err != nil {
 		return fmt.Errorf("config: %w", err)
 	}
+	logger.TraceYAML("Merged config", cmdConfig)
 
 	if cmdConfig.UI.BundleDir != "" && !lo.FromPtr(cmdConfig.UI.Bundle) {
 		return fmt.Errorf("ui bundle directory is set but bundling is disabled. Use --bundle flag to enable bundling")

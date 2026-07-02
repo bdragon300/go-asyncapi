@@ -47,6 +47,7 @@ type ClientCmd struct {
 func cliClient(cmd *ClientCmd, globalConfig common2.ToolConfig) error {
 	logger := log.GetLogger("")
 	cmdConfig := cliClientMergeConfig(globalConfig, cmd)
+	logger.TraceYAML("Merged config", cmdConfig)
 
 	projectModule := lo.RandomString(10, lo.LowerCaseLettersCharset)
 	targetDir := cmd.TempDir

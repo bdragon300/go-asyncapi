@@ -9,14 +9,13 @@ import (
 	"os"
 	"path"
 
+	"github.com/alexflint/go-arg"
 	"github.com/bdragon300/go-asyncapi/assets"
 	"github.com/bdragon300/go-asyncapi/cmd/go-asyncapi/common"
 	"github.com/bdragon300/go-asyncapi/cmd/go-asyncapi/doc"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	chlog "github.com/charmbracelet/log"
-
-	"github.com/alexflint/go-arg"
 )
 
 type cli struct {

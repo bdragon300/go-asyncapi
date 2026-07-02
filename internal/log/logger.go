@@ -6,6 +6,8 @@ import (
 	"os"
 
 	chlog "github.com/charmbracelet/log"
+	"github.com/samber/lo"
+	"gopkg.in/yaml.v3"
 )
 
 const TraceLevel chlog.Level = -5
@@ -79,4 +81,12 @@ func (l *Logger) Error(msg any, args ...any) {
 		return
 	}
 	l.Logger.Error(msg, args...)
+}
+
+func (l *Logger) TraceYAML(msg any, contents any) {
+	if l.GetLevel() > TraceLevel {
+		return
+	}
+	buf := lo.Must(yaml.Marshal(contents))
+	l.Trace(msg, "contents", string(buf))
 }

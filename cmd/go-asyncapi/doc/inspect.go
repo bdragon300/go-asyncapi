@@ -332,7 +332,7 @@ func inspectIsNodeVisible(node *entityNode, entities []string, cmdConfig common2
 
 func displayRenderTree(mainDoc *jsonpointer.JSONPointer, node *renderTreeNode, exhausted []bool, cmdConfig common2.ToolConfig) {
 	logger := log.GetLogger("")
-	logger.Trace("Printing render tree node", "entityNode", node.entityNode.node.AbsPointerString(), "unresolvedEntityNode", node.unresolvedEntityNode.node.AbsPointerString(), "visible", node.visible, "levels", exhausted)
+	logger.Trace("Printing render tree node", "entityNode", node.entityNode.node.AbsPointerString(), "unresolvedEntityNode", node.unresolvedEntityNode.node.AbsPointerString(), "visible", node.visible, "exhausted", exhausted)
 
 	if node.visible {
 		displayRenderTreeLine(mainDoc, node, exhausted, cmdConfig)
@@ -347,17 +347,17 @@ func displayRenderTree(mainDoc *jsonpointer.JSONPointer, node *renderTreeNode, e
 	}
 }
 
-func displayRenderTreeLine(mainDoc *jsonpointer.JSONPointer, node *renderTreeNode, levels []bool, cmdConfig common2.ToolConfig) {
-	if len(levels) > 0 {
-		for _, lastNode := range levels[:len(levels)-1] {
+func displayRenderTreeLine(mainDoc *jsonpointer.JSONPointer, node *renderTreeNode, exhausted []bool, cmdConfig common2.ToolConfig) {
+	if len(exhausted) > 0 {
+		for _, lastNode := range exhausted[:len(exhausted)-1] {
 			fmt.Print(lo.Ternary(lastNode, "    ", "│   "))
 		}
-		fmt.Print(lo.Ternary(levels[len(levels)-1], "└── ", "├── "))
+		fmt.Print(lo.Ternary(exhausted[len(exhausted)-1], "└── ", "├── "))
 	}
 
 	if node.unresolvedEntityNode.ref != nil {
 		// If $ref is located in a top-level node, e.g. in "#/channels", print this node as well for readability
-		if len(levels) == 0 {
+		if len(exhausted) == 0 {
 			fmt.Print(formatRenderTreeNode(getRelativePath(mainDoc, node.unresolvedEntityNode), node.unresolvedEntityNode, cmdConfig))
 			fmt.Print(": ")
 		}

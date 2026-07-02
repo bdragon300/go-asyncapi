@@ -50,10 +50,12 @@ type changeLogEntry struct {
 }
 
 func CliDoc(cmd *Cmd, globalConfig common2.ToolConfig) error {
+	logger := log.GetLogger("")
 	cmdConfig, err := cliConfig(globalConfig, cmd)
 	if err != nil {
 		return fmt.Errorf("config: %w", err)
 	}
+	logger.TraceYAML("Merged config", cmdConfig)
 
 	switch {
 	case cmd.Cp != nil:
