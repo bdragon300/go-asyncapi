@@ -47,27 +47,23 @@ func main() {
 	slogOpts := &slog.HandlerOptions{AddSource: false, Level: slog.LevelInfo}
 	switch cliArgs.Verbose {
 	case 0:
-		chlog.SetLevel(chlog.InfoLevel)
 		slogOpts.Level = slog.LevelInfo
 	case 1:
-		chlog.SetLevel(chlog.DebugLevel)
 		slogOpts.Level = slog.LevelDebug
 	case 2:
-		chlog.SetLevel(log.TraceLevel)
 		slogOpts.Level = slog.LevelDebug
 	default:
 		cliParser.Fail("Invalid verbosity level, use 0, 1 or 2")
 	}
-	chlog.SetReportTimestamp(false)
-	chlog.SetOutput(os.Stderr)
+	log.SetVerbose(cliArgs.Verbose)
 	stdLog.SetOutput(os.Stderr)
 	slogHandler := slog.NewTextHandler(os.Stderr, slogOpts)
 	if cliArgs.Quiet {
-		chlog.SetOutput(io.Discard)
 		stdLog.SetOutput(io.Discard)
 		slogHandler = slog.NewTextHandler(io.Discard, slogOpts)
 	}
 	slog.SetDefault(slog.New(slogHandler))
+	log.SetQuietMode(cliArgs.Quiet)
 
 	logger := log.GetLogger("")
 	logger.Info("Logging to stderr", "level", chlog.GetLevel())
@@ -75,6 +71,12 @@ func main() {
 	if err != nil {
 		logger.Error("Cannot load configuration", "error", err)
 		os.Exit(1)
+	}
+	if !cliArgs.Quiet && mergedConfig.Quiet {
+		log.SetQuietMode(true)
+		stdLog.SetOutput(io.Discard)
+		slogHandler = slog.NewTextHandler(io.Discard, slogOpts)
+		slog.SetDefault(slog.New(slogHandler))
 	}
 
 	switch {
@@ -104,18 +106,18 @@ func main() {
 		case errors.Is(err, common2.ErrInvalidCLIArgument):
 			cliParser.WriteHelp(os.Stderr)
 		case errors.Is(err, common2.ErrBadResult):
-			chlog.Error(err.Error())
+			logger.Error(err.Error())
 			os.Exit(2)
-		case chlog.GetLevel() <= chlog.DebugLevel && errors.As(err, &me):
-			chlog.Error(err.Error(), "details", me.ContentLines())
+		case logger.GetLevel() <= chlog.DebugLevel && errors.As(err, &me):
+			logger.Error(err.Error(), "details", me.ContentLines())
 		}
 		// Command unexpectedly failed and not finished
-		chlog.Error(err.Error())
-		chlog.Fatal("Cannot finish the command. Use -v=1 flag to enable debug output")
+		logger.Error(err.Error())
+		logger.Fatal("Cannot finish the command. Use -v=1 flag to enable debug output")
 		os.Exit(1)
 	}
 
-	chlog.Info("Done")
+	logger.Info("Done")
 }
 
 func loadFullConfig(cliArgs cli) (common2.ToolConfig, error) {

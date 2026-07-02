@@ -107,7 +107,6 @@ func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 		flags := copyNodeFlags{
 			force:        cmdConfig.Doc.Mv.Force,
 			interactive:  cmdConfig.Doc.Mv.Interactive,
-			quiet:        cmdConfig.Quiet,
 			formatIndent: cmdConfig.Doc.Indent,
 		}
 		chlog, err := relocateNodes(inputContents, outputContents, relocatees, destPattern, flags)

@@ -95,7 +95,6 @@ func cliCp(cmd *CpCmd, cmdConfig common2.ToolConfig) error {
 		flags := copyNodeFlags{
 			force:        cmdConfig.Doc.Cp.Force,
 			interactive:  cmdConfig.Doc.Cp.Interactive,
-			quiet:        cmdConfig.Quiet,
 			formatIndent: cmdConfig.Doc.Indent,
 		}
 		chlog, err := relocateNodes(inputContents, outputContents, relocatees, destPattern, flags)
@@ -214,7 +213,6 @@ type relocatedNode struct {
 type copyNodeFlags struct {
 	force        bool
 	interactive  bool
-	quiet        bool
 	formatIndent int
 }
 
