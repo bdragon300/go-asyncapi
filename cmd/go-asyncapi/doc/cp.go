@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"maps"
 	"os"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -14,14 +13,13 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/types"
-	"github.com/gobwas/glob"
 	"github.com/samber/lo"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"gopkg.in/yaml.v3"
 )
 
 type CpCmd struct {
-	Locations []string `arg:"positional,required" help:"Nodes to copy. If -t is omitted, the last LOCATION is considered as DESTINATION. Format: file.{yaml|yml|json}[#/path/to/node | GLOBBING_PATTERN]" placeholder:"LOCATION"`
+	Locations []string `arg:"positional,required" help:"Document with optional node path or globbing pattern. If -t is omitted, the last LOCATION is considered as DESTINATION. Format: file.{yaml|yml|json}[#/path/to/node | GLOBBING_PATTERN]" placeholder:"LOCATION"`
 
 	To               string `arg:"--to,-t" help:"Copy all LOCATION arguments into DESTINATION" placeholder:"DESTINATION"`
 	FollowRefs       bool   `arg:"--follow-refs,-r" help:"Follow $refs and copy the referenced nodes recursively"`
@@ -57,14 +55,14 @@ func cliCp(cmd *CpCmd, cmdConfig common2.ToolConfig) error {
 	var relocateesCount int
 	var relocatees []relocatedNode
 	for _, pattern := range sourcePatterns {
-		logger.Debug("Loading document", "path", pattern)
+		logger.Debug("Loading document", "path", pattern.Location())
 		inputContents, err := loadDocument(pattern.JSONPointer, locator)
 		if err != nil {
 			return fmt.Errorf("load document %s: %w", pattern.Location(), err)
 		}
 
 		logger.Trace("Searching for nodes matching the pattern", "pattern", pattern)
-		matchedNodes := findNodes(inputContents.RawNode, pattern)
+		matchedNodes := findNodesByPattern(inputContents.RawNode, pattern)
 		logger.Trace("Found nodes", "count", len(matchedNodes), "pattern", pattern)
 		if !cmdConfig.Doc.Cp.Headless {
 			relocatees = lo.Map(matchedNodes, func(n *types.RawNode, _ int) relocatedNode {
@@ -174,35 +172,11 @@ func ensureMandatoryNodes(outputContents *documentTree) []changeLogEntry {
 	}
 }
 
-type cliPattern struct {
-	*jsonpointer.JSONPointer
-	pattern glob.Glob
-}
-
-func (c cliPattern) MatchPath(p []string) bool {
-	if len(c.Pointer) == 0 || slices.Equal(p, c.Pointer) {
-		return true
-	}
-	return c.pattern.Match(strings.Join(p, "/"))
-}
-
 func parseCliPatterns(args []string, to string) ([]cliPattern, cliPattern, error) {
 	var patterns []cliPattern
 
-	parse := func(arg string) (cliPattern, error) {
-		p, err := jsonpointer.Parse(arg)
-		if err != nil {
-			return cliPattern{}, fmt.Errorf("parse %q: %w", arg, err)
-		}
-		gl, err := glob.Compile(strings.Join(p.Pointer, "/"))
-		if err != nil {
-			return cliPattern{}, fmt.Errorf("compile glob pattern %q: %w", arg, err)
-		}
-		return cliPattern{JSONPointer: p, pattern: gl}, nil
-	}
-
 	for _, a := range args {
-		pt, err := parse(a)
+		pt, err := parseCliPattern(a)
 		if err != nil {
 			return nil, cliPattern{}, err
 		}
@@ -212,7 +186,7 @@ func parseCliPatterns(args []string, to string) ([]cliPattern, cliPattern, error
 		patterns = append(patterns, pt)
 	}
 	if to != "" {
-		toPt, err := parse(to)
+		toPt, err := parseCliPattern(to)
 		if err != nil {
 			return nil, cliPattern{}, fmt.Errorf("parse %q: %w", to, err)
 		}
@@ -325,25 +299,6 @@ func relocateNodes(sourceDoc, destDoc *documentTree, relocatees []relocatedNode,
 	}
 
 	return changeLog, nil
-}
-
-func findNodes(node *types.RawNode, pattern cliPattern) []*types.RawNode {
-	if node == nil {
-		return nil
-	}
-
-	// Exclude the root node from matching, because we copying nodes by keys, and the root node doesn't have a key.
-	if len(node.Path()) > 0 && pattern.MatchPath(node.Path()) {
-		return []*types.RawNode{node}
-	}
-
-	var res []*types.RawNode
-	if node.Kind() == types.RawNodeKindObject || node.Kind() == types.RawNodeKindArray {
-		for _, e := range node.Entries() {
-			res = append(res, findNodes(e, pattern)...)
-		}
-	}
-	return res
 }
 
 func collectDependencies(node *types.RawNode, docs []*documentTree, locator common2.DocumentLocator, recursiveRefs bool) []relocatedNode {
@@ -471,7 +426,6 @@ func promptResolveConflict(dContainer, dNode, sNode *types.RawNode, dDoc, sDoc *
 
 	var action string
 	for {
-		// TODO: fix msg vvv
 		if flags.interactive {
 			fmt.Print("Choose option: show \033[1;4md\033[0miff/\033[1;4mi\033[0mgnore/\033[1;4mo\033[0mverwrite/\033[1;4mr\033[0mename [d/i/o/R]: ")
 			inp := bufio.NewScanner(os.Stdin)

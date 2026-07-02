@@ -19,6 +19,15 @@ const (
 	D2DiagramEngineDagre D2DiagramEngine = "dagre"
 )
 
+type DocInspectPathStyle string
+
+const (
+	DocInspectPathStyleJSONPointer  = "json-pointer"
+	DocInspectPathStyleYq           = "yq"
+	DocInspectPathStyleHuman        = "human"
+	DocInspectPathStyleHumanNoColor = "human-no-color"
+)
+
 // Structures, that represent the tool's configuration file
 type (
 	ToolConfig struct {
@@ -176,8 +185,21 @@ type (
 		Validate    ToolConfigDocValidate    `yaml:"validate"`
 		Flatten     ToolConfigDocFlatten     `yaml:"flatten"`
 		GenExamples ToolConfigDocGenExamples `yaml:"genExamples"`
+		Inspect     ToolConfigDocInspect     `yaml:"inspect"`
 		Indent      int                      `yaml:"indent"`
 		Format      string                   `yaml:"format"`
+	}
+
+	ToolConfigDocInspect struct {
+		Entities              string              `yaml:"entities"`
+		Recursive             bool                `yaml:"recursive"`
+		RecursiveDeep         bool                `yaml:"recursiveDeep"`
+		Components            bool                `yaml:"components"`
+		TopLevel              bool                `yaml:"topLevel"`
+		FollowExternalRefs    bool                `yaml:"followExternalRefs"`
+		AllowRemoteReferences bool                `yaml:"allowRemoteReferences"`
+		Tree                  bool                `yaml:"tree"`
+		EntryStyle            DocInspectPathStyle `yaml:"entryStyle"`
 	}
 
 	ToolConfigDocValidate struct {
@@ -379,6 +401,15 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.GenExamples.TimeFormat = Coalesce(userConf.Doc.GenExamples.TimeFormat, defaultConf.Doc.GenExamples.TimeFormat)
 	res.Doc.GenExamples.DateTimeFormat = Coalesce(userConf.Doc.GenExamples.DateTimeFormat, defaultConf.Doc.GenExamples.DateTimeFormat)
 	res.Locator.AllowRemoteReferences = Coalesce(res.Locator.AllowRemoteReferences, res.Doc.GenExamples.AllowRemoteReferences) // FIXME: rmeove and make a separate config param in locator constructor
+	res.Doc.Inspect.Entities = Coalesce(userConf.Doc.Inspect.Entities, defaultConf.Doc.Inspect.Entities)
+	res.Doc.Inspect.Recursive = Coalesce(userConf.Doc.Inspect.Recursive, defaultConf.Doc.Inspect.Recursive)
+	res.Doc.Inspect.RecursiveDeep = Coalesce(userConf.Doc.Inspect.RecursiveDeep, defaultConf.Doc.Inspect.RecursiveDeep)
+	res.Doc.Inspect.Components = Coalesce(userConf.Doc.Inspect.Components, defaultConf.Doc.Inspect.Components)
+	res.Doc.Inspect.TopLevel = Coalesce(userConf.Doc.Inspect.TopLevel, defaultConf.Doc.Inspect.TopLevel)
+	res.Doc.Inspect.FollowExternalRefs = Coalesce(userConf.Doc.Inspect.FollowExternalRefs, defaultConf.Doc.Inspect.FollowExternalRefs)
+	res.Doc.Inspect.AllowRemoteReferences = Coalesce(userConf.Doc.Inspect.AllowRemoteReferences, defaultConf.Doc.Inspect.AllowRemoteReferences)
+	res.Doc.Inspect.Tree = Coalesce(userConf.Doc.Inspect.Tree, defaultConf.Doc.Inspect.Tree)
+	res.Doc.Inspect.EntryStyle = Coalesce(userConf.Doc.Inspect.EntryStyle, defaultConf.Doc.Inspect.EntryStyle)
 
 	return res
 }

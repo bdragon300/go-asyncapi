@@ -97,6 +97,7 @@ func NewScalarRawNode(nodePath []string, value any, originDocument *jsonpointer.
 type RawNode struct {
 	kind        RawNodeKind
 	path        []string
+	rawPath     []any
 	slots       []slot
 	scalarValue any
 
@@ -110,6 +111,12 @@ func (r RawNode) Kind() RawNodeKind {
 
 func (r RawNode) Path() []string {
 	return r.path
+}
+
+// RawPath returns the path to the node consisting of the keys and indexes in the original types.
+// This is read-only property only on unmarshalled nodes, user-created nodes will have empty rawPath.
+func (r RawNode) RawPath() []any {
+	return r.rawPath
 }
 
 func (r RawNode) AbsOriginDocumentPath() *jsonpointer.JSONPointer {
@@ -333,6 +340,18 @@ func (r RawNode) AsScalar() any {
 	return r.scalarValue
 }
 
+// AsStringSafe converts r to a string value. Returns an empty string if r is not a scalar node or if the scalar value is not a string.
+func (r RawNode) AsStringSafe() string {
+	if r.kind != RawNodeKindScalar {
+		return ""
+	}
+	v, ok := r.scalarValue.(string)
+	if !ok {
+		return ""
+	}
+	return v
+}
+
 // asSlice converts r to a slice value, recursively converting all nested nodes to their corresponding Go types (scalar, slice or map).
 // Panics if called on a scalar or object node.
 func (r RawNode) asSlice() []any {
@@ -402,7 +421,7 @@ func (r *RawNode) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return fmt.Errorf("get type of root JSON value: %w", err)
 	}
-	res, err := r.unmarshalJSONValue(data, typ, nil)
+	res, err := r.unmarshalJSONValue(data, typ, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -411,16 +430,16 @@ func (r *RawNode) UnmarshalJSON(data []byte) error {
 	return err
 }
 
-func (r RawNode) unmarshalJSONValue(data []byte, valType jsonparser.ValueType, nodePath []string) (res *RawNode, err error) {
-	nodePath = slices.Clone(nodePath)
-	res = &RawNode{path: nodePath, originDocument: r.originDocument}
+func (r RawNode) unmarshalJSONValue(data []byte, valType jsonparser.ValueType, stringPath []string, rawPath []any) (res *RawNode, err error) {
+	stringPath = slices.Clone(stringPath)
+	res = &RawNode{path: stringPath, rawPath: rawPath, originDocument: r.originDocument}
 
 	switch valType {
 	case jsonparser.Object:
 		res.kind = RawNodeKindObject
 		err = jsonparser.ObjectEach(data, func(keyData []byte, valueData []byte, valueType jsonparser.ValueType, _ int) error {
 			key := string(keyData)
-			val, err := r.unmarshalJSONValue(valueData, valueType, append(nodePath, key))
+			val, err := r.unmarshalJSONValue(valueData, valueType, append(stringPath, key), append(rawPath, key))
 			if err != nil {
 				return err
 			}
@@ -432,7 +451,7 @@ func (r RawNode) unmarshalJSONValue(data []byte, valType jsonparser.ValueType, n
 		var innerErr error
 		var idx int
 		_, err = jsonparser.ArrayEach(data, func(d []byte, t jsonparser.ValueType, _ int, _ error) {
-			val, err2 := r.unmarshalJSONValue(d, t, append(nodePath, strconv.Itoa(idx)))
+			val, err2 := r.unmarshalJSONValue(d, t, append(stringPath, strconv.Itoa(idx)), append(slices.Clone(rawPath), idx))
 			if err2 != nil {
 				innerErr = err2 // The only way to deliver the error from the callback
 				return
@@ -461,7 +480,7 @@ func (r RawNode) MarshalJSON() ([]byte, error) {
 }
 
 func (r *RawNode) UnmarshalYAML(value *yaml.Node) error {
-	res, err := r.unmarshalYAMLValue(value, nil)
+	res, err := r.unmarshalYAMLValue(value, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -470,9 +489,9 @@ func (r *RawNode) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
-func (r RawNode) unmarshalYAMLValue(node *yaml.Node, nodePath []string) (res *RawNode, err error) {
-	nodePath = slices.Clone(nodePath)
-	res = &RawNode{path: nodePath, originDocument: r.originDocument}
+func (r RawNode) unmarshalYAMLValue(node *yaml.Node, stringPath []string, rawPath []any) (res *RawNode, err error) {
+	stringPath = slices.Clone(stringPath)
+	res = &RawNode{path: stringPath, rawPath: rawPath, originDocument: r.originDocument}
 
 	switch node.Kind {
 	case yaml.MappingNode:
@@ -481,7 +500,7 @@ func (r RawNode) unmarshalYAMLValue(node *yaml.Node, nodePath []string) (res *Ra
 			keyNode, valueNode := node.Content[i], node.Content[i+1]
 
 			key := keyNode.Value
-			val, err2 := r.unmarshalYAMLValue(valueNode, append(nodePath, key))
+			val, err2 := r.unmarshalYAMLValue(valueNode, append(stringPath, key), append(slices.Clone(rawPath), key))
 			if err2 != nil {
 				err = err2
 				return
@@ -500,7 +519,8 @@ func (r RawNode) unmarshalYAMLValue(node *yaml.Node, nodePath []string) (res *Ra
 	case yaml.SequenceNode:
 		res.kind = RawNodeKindArray
 		for i, itemNode := range node.Content {
-			val, err2 := r.unmarshalYAMLValue(itemNode, append(nodePath, strconv.Itoa(i)))
+			i := i
+			val, err2 := r.unmarshalYAMLValue(itemNode, append(stringPath, strconv.Itoa(i)), append(slices.Clone(rawPath), i))
 			if err2 != nil {
 				err = err2
 				return
@@ -514,7 +534,7 @@ func (r RawNode) unmarshalYAMLValue(node *yaml.Node, nodePath []string) (res *Ra
 			res.slots = append(res.slots, &sl)
 		}
 	case yaml.AliasNode:
-		return r.unmarshalYAMLValue(node.Alias, nodePath)
+		return r.unmarshalYAMLValue(node.Alias, stringPath, rawPath)
 	case yaml.ScalarNode:
 		res.kind = RawNodeKindScalar
 		err = node.Decode(&res.scalarValue)

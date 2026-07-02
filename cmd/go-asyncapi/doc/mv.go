@@ -61,7 +61,7 @@ func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 	var relocatees []relocatedNode
 	var locationsToRemove []string
 	for _, pattern := range sourcePatterns {
-		logger.Debug("Loading document", "path", pattern)
+		logger.Debug("Loading document", "path", pattern.Location())
 		inputContents, err := loadDocumentCached(pattern.JSONPointer, docs, locator)
 		if err != nil {
 			return fmt.Errorf("load document %s: %w", pattern.Location(), err)
@@ -74,7 +74,7 @@ func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 		}
 
 		logger.Trace("Searching for nodes matching the pattern", "pattern", pattern)
-		matchedNodes := findNodes(inputContents.RawNode, pattern)
+		matchedNodes := findNodesByPattern(inputContents.RawNode, pattern)
 		logger.Trace("Found nodes", "count", len(matchedNodes), "pattern", pattern)
 		if !cmdConfig.Doc.Mv.Headless {
 			relocatees = lo.Map(matchedNodes, func(n *types.RawNode, _ int) relocatedNode {

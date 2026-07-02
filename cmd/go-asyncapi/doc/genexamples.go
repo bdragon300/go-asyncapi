@@ -210,14 +210,10 @@ func exampleGenerateNode(entity string, node *types.RawNode, docs map[string]*do
 		}
 
 		messageName := lo.PascalCase(strings.Join(node.Path(), "_"))
-		if n, ok := node.Get("name"); ok && n.Kind() == types.RawNodeKindScalar {
-			if s, ok := n.AsScalar().(string); ok && s != "" {
-				messageName = s
-			}
-		} else if n, ok = node.Get("title"); ok && n.Kind() == types.RawNodeKindScalar {
-			if s, ok := n.AsScalar().(string); ok && s != "" {
-				messageName = s
-			}
+		if n, ok := node.Get("name"); ok && n.AsStringSafe() != "" {
+			messageName = n.AsStringSafe()
+		} else if n, ok = node.Get("title"); ok && n.AsStringSafe() != "" {
+			messageName = n.AsStringSafe()
 		}
 		res.SetAtStart("name", types.NewScalarRawNode(nil, fmt.Sprintf("Example for message %s", messageName), originDoc))
 	}
@@ -419,9 +415,8 @@ func exampleGenerateArray(node *types.RawNode, docs map[string]*documentTree, vi
 
 func exampleGenerateScalar(node *types.RawNode, typ string, cmdConfig common2.ToolConfig) any {
 	var format string
-	formatNode, ok := node.Get("format")
-	if ok && formatNode.Kind() == types.RawNodeKindScalar {
-		format, _ = formatNode.AsScalar().(string)
+	if formatNode, ok := node.Get("format"); ok {
+		format = formatNode.AsStringSafe()
 	}
 
 	switch typ {

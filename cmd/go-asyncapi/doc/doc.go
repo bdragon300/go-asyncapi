@@ -7,6 +7,7 @@ import (
 	"io"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/types"
+	"github.com/gobwas/glob"
 	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
 )
@@ -29,6 +31,7 @@ type Cmd struct {
 	Validate    *ValidateCmd    `arg:"subcommand:validate" help:"Validate AsyncAPI documents against the AsyncAPI JSON Schema."`
 	Flatten     *FlattenCmd     `arg:"subcommand:flatten" help:"Flatten an AsyncAPI document by inlining all $refs with the nodes they point to."`
 	GenExamples *GenExamplesCmd `arg:"subcommand:gen-examples" help:"Generate examples for messages, message traits and schemas in an AsyncAPI document."`
+	Inspect     *InspectCmd     `arg:"subcommand:inspect" help:"Print the entities and components contained in AsyncAPI documents."`
 	Indent      int             `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
 	Format      string          `arg:"--format" help:"Output format. Possible values: yaml, json" placeholder:"FORMAT"`
 }
@@ -63,6 +66,8 @@ func CliDoc(cmd *Cmd, globalConfig common2.ToolConfig) error {
 		return cliFlatten(cmd.Flatten, cmdConfig)
 	case cmd.GenExamples != nil:
 		return cliGenExamples(cmd.GenExamples, cmdConfig)
+	case cmd.Inspect != nil:
+		return cliInspect(cmd.Inspect, cmdConfig)
 	}
 	return fmt.Errorf("%w: unknown doc subcommand", common2.ErrInvalidCLIArgument)
 }
@@ -75,6 +80,7 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 	cmdCp := lo.FromPtr(cmd.Cp)
 	cmdMv := lo.FromPtr(cmd.Mv)
 	cmdGenExamples := lo.FromPtr(cmd.GenExamples)
+	cmdInspect := lo.FromPtr(cmd.Inspect)
 
 	res.Doc.Indent = common2.Coalesce(cmd.Indent, globalConfig.Doc.Indent)
 	res.Doc.Format = common2.Coalesce(cmd.Format, globalConfig.Doc.Format)
@@ -113,6 +119,21 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 		res.Locator.Command = common2.Coalesce(cmdGenExamples.LocatorCommand, globalConfig.Locator.Command)
 		res.Locator.Timeout = common2.Coalesce(cmdGenExamples.LocatorTimeout, globalConfig.Locator.Timeout)
 		res.Locator.RootDirectory = common2.Coalesce(cmdGenExamples.LocatorRootDir, globalConfig.Locator.RootDirectory)
+	}
+	res.Doc.Inspect.Entities = common2.Coalesce(cmdInspect.Entities, globalConfig.Doc.Inspect.Entities)
+	res.Doc.Inspect.Recursive = common2.Coalesce(cmdInspect.Recursive, globalConfig.Doc.Inspect.Recursive)
+	res.Doc.Inspect.RecursiveDeep = common2.Coalesce(cmdInspect.RecursiveDeep, globalConfig.Doc.Inspect.RecursiveDeep)
+	res.Doc.Inspect.Components = common2.Coalesce(cmdInspect.Components, globalConfig.Doc.Inspect.Components)
+	res.Doc.Inspect.TopLevel = common2.Coalesce(cmdInspect.TopLevel, globalConfig.Doc.Inspect.TopLevel)
+	res.Doc.Inspect.FollowExternalRefs = common2.Coalesce(cmdInspect.FollowExternalRefs, globalConfig.Doc.Inspect.FollowExternalRefs)
+	res.Doc.Inspect.AllowRemoteReferences = common2.Coalesce(cmdInspect.AllowRemoteRefs, globalConfig.Doc.Inspect.AllowRemoteReferences)
+	res.Doc.Inspect.Tree = common2.Coalesce(cmdInspect.Tree, globalConfig.Doc.Inspect.Tree)
+	res.Doc.Inspect.EntryStyle = common2.Coalesce(cmdInspect.EntryStyle, globalConfig.Doc.Inspect.EntryStyle)
+	if cmd.Inspect != nil {
+		res.Locator.AllowRemoteReferences = common2.Coalesce(cmdInspect.AllowRemoteRefs, res.Doc.Inspect.AllowRemoteReferences)
+		res.Locator.Command = common2.Coalesce(cmdInspect.LocatorCommand, globalConfig.Locator.Command)
+		res.Locator.Timeout = common2.Coalesce(cmdInspect.LocatorTimeout, globalConfig.Locator.Timeout)
+		res.Locator.RootDirectory = common2.Coalesce(cmdInspect.LocatorRootDir, globalConfig.Locator.RootDirectory)
 	}
 
 	return res, nil
@@ -338,7 +359,7 @@ func loadDocument(inputDoc *jsonpointer.JSONPointer, locator common2.DocumentLoc
 	return inputContents, nil
 }
 
-func resolveRefNode(ref *jsonpointer.JSONPointer, refNode *types.RawNode, documents map[string]*documentTree, locator common2.DocumentLocator, external, remote bool) (*types.RawNode, error) {
+func resolveRefNode(ref *jsonpointer.JSONPointer, refNode *types.RawNode, docs map[string]*documentTree, locator common2.DocumentLocator, external, remote bool) (*types.RawNode, error) {
 	logger := log.GetLogger("")
 	var err error
 
@@ -349,6 +370,7 @@ func resolveRefNode(ref *jsonpointer.JSONPointer, refNode *types.RawNode, docume
 		if ref.FSPath != "" && !external {
 			return nil, fmt.Errorf("inlining the objects from external documents are disabled, use the --with-external flag to enable")
 		}
+		// TODO: fix error messages snice this function is shared
 		if ref.URI != nil && !remote {
 			return nil, fmt.Errorf("inlining the objects from remote documents are disabled, use the --with-remote flag to enable")
 		}
@@ -358,13 +380,13 @@ func resolveRefNode(ref *jsonpointer.JSONPointer, refNode *types.RawNode, docume
 	}
 
 	targetAbsLoc := absLocation(targetDoc)
-	document, ok := documents[targetAbsLoc]
+	document, ok := docs[targetAbsLoc]
 	if !ok {
 		logger.Debug("Loading the referenced document", "location", targetAbsLoc)
 		if document, err = loadDocument(targetDoc, locator); err != nil {
 			return nil, fmt.Errorf("load the referenced document: %w", err)
 		}
-		documents[targetAbsLoc] = document
+		docs[targetAbsLoc] = document
 	}
 
 	n := document.GetByPath(ref.Pointer)
@@ -372,4 +394,47 @@ func resolveRefNode(ref *jsonpointer.JSONPointer, refNode *types.RawNode, docume
 		return n, fmt.Errorf("pointer %q not found in document %q", ref.PointerString(), targetAbsLoc)
 	}
 	return n, nil
+}
+
+type cliPattern struct {
+	*jsonpointer.JSONPointer
+	pattern glob.Glob
+}
+
+func (c cliPattern) MatchPath(p []string) bool {
+	if len(c.Pointer) == 0 || slices.Equal(p, c.Pointer) {
+		return true
+	}
+	return c.pattern.Match(strings.Join(p, "/"))
+}
+
+func parseCliPattern(arg string) (cliPattern, error) {
+	p, err := jsonpointer.Parse(arg)
+	if err != nil {
+		return cliPattern{}, fmt.Errorf("parse %q: %w", arg, err)
+	}
+	gl, err := glob.Compile(strings.Join(p.Pointer, "/"))
+	if err != nil {
+		return cliPattern{}, fmt.Errorf("compile glob pattern %q: %w", arg, err)
+	}
+	return cliPattern{JSONPointer: p, pattern: gl}, nil
+}
+
+func findNodesByPattern(node *types.RawNode, pattern cliPattern) []*types.RawNode {
+	if node == nil {
+		return nil
+	}
+
+	// Exclude the root node from matching, because we copying nodes by keys, and the root node doesn't have a key.
+	if len(node.Path()) > 0 && pattern.MatchPath(node.Path()) {
+		return []*types.RawNode{node}
+	}
+
+	var res []*types.RawNode
+	if node.Kind() == types.RawNodeKindObject || node.Kind() == types.RawNodeKindArray {
+		for _, e := range node.Entries() {
+			res = append(res, findNodesByPattern(e, pattern)...)
+		}
+	}
+	return res
 }

@@ -1,6 +1,9 @@
 package doc
 
-import "strings"
+import (
+	"slices"
+	"strings"
+)
 
 // asyncapiObjectsStructure describes the structure of the AsyncAPI objects, so the object kind can be determined by a given
 // node path in the document.
@@ -256,6 +259,18 @@ func asyncapiUnresolvableRefPaths() [][]string {
 
 func asyncapiMandatoryRootPaths() []string {
 	return []string{"asyncapi", "info"}
+}
+
+// asyncapiEntities returns the list of all known AsyncAPI entities (without the ">" prefix), sorted alphabetically.
+func asyncapiEntities() []string {
+	res := make([]string, 0)
+	for k := range asyncapiObjectsStructure {
+		if strings.HasPrefix(k, ">") {
+			res = append(res, strings.TrimPrefix(k, ">"))
+		}
+	}
+	slices.Sort(res)
+	return res
 }
 
 // resolveEntity resolves a node path of any depth into the tag denotes the entity the path points to.

@@ -38,4 +38,4 @@ tasks:
     deps:
       - tools
     cmds:
-      - golangci-lint run --fix
+      - "{{.TOOLS_DIR}}/golangci-lint run --fix"
