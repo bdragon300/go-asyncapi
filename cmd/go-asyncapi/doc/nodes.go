@@ -72,15 +72,21 @@ func cliNodes(cmd *NodesCmd, cmdConfig common2.ToolConfig) error {
 		return fmt.Errorf("load document %s: %w", pattern.Location(), err)
 	}
 
-	logger.Debug("Collecting root nodes", "pattern", pattern)
-	docs := map[string]*documentTree{absLocation(inputContents.AbsOriginDocumentPath()): inputContents}
-	inputNodes := preselectInspectedNodes(inputContents, pattern)
+	var inputNodes []*types.RawNode
+	if len(pattern.Pointer) > 0 {
+		logger.Trace("Collecting nodes by pattern", "pattern", pattern)
+		inputNodes = findNodesByPattern(inputContents.RawNode, pattern)
+	} else {
+		logger.Trace("Collecting nodes from top-level and components sections")
+		inputNodes = collectTopLevelAndComponentsNodes(inputContents)
+	}
 	if len(inputNodes) == 0 {
 		logger.Warn("Nothing to inspect", "pattern", pattern)
 		return nil
 	}
 
 	var renderNodes []*entityNode
+	docs := map[string]*documentTree{absLocation(inputContents.AbsOriginDocumentPath()): inputContents}
 	for _, n := range inputNodes {
 		logger.Debug("Inspecting node", "path", n)
 		inspected, err := inspectNode(
@@ -131,15 +137,7 @@ func parseEntityFilterExpression(s string) ([]string, error) {
 	return res, nil
 }
 
-func preselectInspectedNodes(inputContents *documentTree, pattern cliPattern) []*types.RawNode {
-	logger := log.GetLogger("")
-
-	if len(pattern.Pointer) > 0 {
-		logger.Trace("Collecting nodes by pattern", "pattern", pattern)
-		return findNodesByPattern(inputContents.RawNode, pattern)
-	}
-
-	logger.Trace("Collecting nodes from root and components sections")
+func collectTopLevelAndComponentsNodes(inputContents *documentTree) []*types.RawNode {
 	rootSections, componentsSections := asyncapiEntitiesSectionPaths()
 	entitySections := append(
 		lo.Chunk(rootSections, 1), // [1,2,3] -> [[1],[2],[3]]

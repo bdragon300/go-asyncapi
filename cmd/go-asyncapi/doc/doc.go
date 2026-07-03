@@ -422,7 +422,8 @@ func (c cliPattern) MatchPath(p []string) bool {
 	if len(c.Pointer) == 0 || slices.Equal(p, c.Pointer) {
 		return true
 	}
-	return c.pattern.Match(strings.Join(p, "/"))
+	r := c.pattern.Match(strings.Join(p, "/"))
+	return r
 }
 
 func parseCliPattern(arg string) (cliPattern, error) {
@@ -430,7 +431,7 @@ func parseCliPattern(arg string) (cliPattern, error) {
 	if err != nil {
 		return cliPattern{}, fmt.Errorf("parse %q: %w", arg, err)
 	}
-	gl, err := glob.Compile(strings.Join(p.Pointer, "/"))
+	gl, err := glob.Compile(strings.Join(p.Pointer, "/"), '/')
 	if err != nil {
 		return cliPattern{}, fmt.Errorf("compile glob pattern %q: %w", arg, err)
 	}
@@ -442,7 +443,7 @@ func findNodesByPattern(node *types.RawNode, pattern cliPattern) []*types.RawNod
 		return nil
 	}
 
-	// Exclude the root node from matching, because we copying nodes by keys, and the root node doesn't have a key.
+	// Return a highest level node matched the pattern, don't test its descendants
 	if len(node.Path()) > 0 && pattern.MatchPath(node.Path()) {
 		return []*types.RawNode{node}
 	}
