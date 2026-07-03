@@ -255,7 +255,7 @@ func relocateNodes(sourceDoc, destDoc *documentTree, relocatees []relocatedNode,
 				logger.Trace("Node is dependency not in root section", "path", r.node.Path(), "document", sourceDoc.AbsOriginDocumentPath())
 				componentsKey := asyncapiResolveComponentsKey(r.node.Path())
 				if componentsKey == "" {
-					return nil, fmt.Errorf("cannot determine the components section for the dependency %q", r.node.AbsPointerString())
+					return nil, fmt.Errorf("cannot auto determine the destination node for dependency %q, try to narrow down a pattern or to copy this node manually", r.node.AbsPointerString())
 				}
 				dContainerPath = []string{"components", componentsKey}
 			}
@@ -263,7 +263,7 @@ func relocateNodes(sourceDoc, destDoc *documentTree, relocatees []relocatedNode,
 			logger.Trace("Destination path ends with empty segment, it must exist", "path", destPattern.Pointer, "document", destDoc.AbsOriginDocumentPath())
 			dContainerPath = lo.TrimRight(destPattern.Pointer, []string{""})
 			if len(destPattern.Pointer)-len(dContainerPath) > 1 {
-				return nil, fmt.Errorf("path %q: it cannot end with empty segments", jsonpointer.PointerString(destPattern.Pointer...))
+				return nil, fmt.Errorf("path %q cannot end with several slashes", jsonpointer.PointerString(destPattern.Pointer...))
 			}
 			if destDoc.GetByPath(dContainerPath) == nil {
 				return nil, fmt.Errorf("destination node %q does not exist", destDoc.AbsOriginDocumentPath().Join(dContainerPath...))
@@ -284,7 +284,7 @@ func relocateNodes(sourceDoc, destDoc *documentTree, relocatees []relocatedNode,
 			}
 		}
 		if dContainer.Kind() == types.RawNodeKindScalar {
-			return nil, fmt.Errorf("%q node is scalar, it must be array or object", dContainer.AbsPointerString())
+			return nil, fmt.Errorf("destination node %q is scalar, it must be array or object", dContainer.AbsPointerString())
 		}
 
 		logger.Info("Relocating node", "src", jsonpointer.PointerString(r.node.Path()...), "dest", jsonpointer.PointerString(dContainerPath...), "reason", reason)
@@ -404,7 +404,7 @@ func copyNode(sNode, dContainer *types.RawNode, dDoc, sDoc *jsonpointer.JSONPoin
 			logger.Info("Conflict resolved", "path", sNode, "newPath", newPath)
 		}
 	default:
-		return nil, fmt.Errorf("node %q already exists, use -f flag to force rewrite or -i to resolve the conflict interactively", dNode.AbsPointerString())
+		return nil, fmt.Errorf("node %q already exists, use -f flag to force overwrite or -i to resolve the conflict interactively", dNode.AbsPointerString())
 	}
 	if newPath == nil {
 		logger.Debug("Conflict resolved: skipping node")

@@ -443,12 +443,11 @@ func findNodesByPattern(node *types.RawNode, pattern cliPattern) []*types.RawNod
 		return nil
 	}
 
-	// Return a highest level node matched the pattern, don't test its descendants
+	var res []*types.RawNode
 	if len(node.Path()) > 0 && pattern.MatchPath(node.Path()) {
-		return []*types.RawNode{node}
+		res = append(res, node)
 	}
 
-	var res []*types.RawNode
 	if node.Kind() == types.RawNodeKindObject || node.Kind() == types.RawNodeKindArray {
 		for _, e := range node.Entries() {
 			res = append(res, findNodesByPattern(e, pattern)...)
