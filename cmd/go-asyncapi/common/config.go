@@ -193,8 +193,8 @@ type (
 
 	ToolConfigDocNodes struct {
 		Entities              string            `yaml:"entities"`
-		Recursive             bool              `yaml:"recursive"`
-		RecursiveDeep         bool              `yaml:"recursiveDeep"`
+		Expand                bool              `yaml:"expand"`
+		ExpandAll             bool              `yaml:"expandAll"`
 		Components            bool              `yaml:"components"`
 		TopLevel              bool              `yaml:"topLevel"`
 		FollowExternalRefs    bool              `yaml:"followExternalRefs"`
@@ -408,8 +408,8 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.GenExamples.DateTimeFormat = Coalesce(userConf.Doc.GenExamples.DateTimeFormat, defaultConf.Doc.GenExamples.DateTimeFormat)
 	res.Locator.AllowRemoteReferences = Coalesce(res.Locator.AllowRemoteReferences, res.Doc.GenExamples.AllowRemoteReferences) // FIXME: rmeove and make a separate config param in locator constructor
 	res.Doc.Nodes.Entities = Coalesce(userConf.Doc.Nodes.Entities, defaultConf.Doc.Nodes.Entities)
-	res.Doc.Nodes.Recursive = Coalesce(userConf.Doc.Nodes.Recursive, defaultConf.Doc.Nodes.Recursive)
-	res.Doc.Nodes.RecursiveDeep = Coalesce(userConf.Doc.Nodes.RecursiveDeep, defaultConf.Doc.Nodes.RecursiveDeep)
+	res.Doc.Nodes.Expand = Coalesce(userConf.Doc.Nodes.Expand, defaultConf.Doc.Nodes.Expand)
+	res.Doc.Nodes.ExpandAll = Coalesce(userConf.Doc.Nodes.ExpandAll, defaultConf.Doc.Nodes.ExpandAll)
 	res.Doc.Nodes.Components = Coalesce(userConf.Doc.Nodes.Components, defaultConf.Doc.Nodes.Components)
 	res.Doc.Nodes.TopLevel = Coalesce(userConf.Doc.Nodes.TopLevel, defaultConf.Doc.Nodes.TopLevel)
 	res.Doc.Nodes.FollowExternalRefs = Coalesce(userConf.Doc.Nodes.FollowExternalRefs, defaultConf.Doc.Nodes.FollowExternalRefs)

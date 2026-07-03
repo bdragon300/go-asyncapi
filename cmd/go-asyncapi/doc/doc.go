@@ -127,8 +127,8 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 		res.Locator.RootDirectory = common2.Coalesce(cmdGenExamples.LocatorRootDir, globalConfig.Locator.RootDirectory)
 	}
 	res.Doc.Nodes.Entities = common2.Coalesce(cmdNodes.Entities, globalConfig.Doc.Nodes.Entities)
-	res.Doc.Nodes.Recursive = common2.Coalesce(cmdNodes.Recursive, globalConfig.Doc.Nodes.Recursive)
-	res.Doc.Nodes.RecursiveDeep = common2.Coalesce(cmdNodes.RecursiveDeep, globalConfig.Doc.Nodes.RecursiveDeep)
+	res.Doc.Nodes.Expand = common2.Coalesce(cmdNodes.Expand, globalConfig.Doc.Nodes.Expand)
+	res.Doc.Nodes.ExpandAll = common2.Coalesce(cmdNodes.ExpandAll, globalConfig.Doc.Nodes.ExpandAll)
 	res.Doc.Nodes.Components = common2.Coalesce(cmdNodes.Components, globalConfig.Doc.Nodes.Components)
 	res.Doc.Nodes.TopLevel = common2.Coalesce(cmdNodes.TopLevel, globalConfig.Doc.Nodes.TopLevel)
 	res.Doc.Nodes.FollowExternalRefs = common2.Coalesce(cmdNodes.FollowExternalRefs, globalConfig.Doc.Nodes.FollowExternalRefs)

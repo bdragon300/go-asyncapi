@@ -24,8 +24,8 @@ type NodesCmd struct {
 	Entities           string `arg:"--entities,-e" help:"Comma-separated list of entities to show or 'help' to list all available entities and exit'" placeholder:"ENTITIES"`
 	TopLevel           bool   `arg:"--top-level" help:"Show only servers, channels and operations defined in the top-level sections of the documents"`
 	Components         bool   `arg:"--components" help:"Show only entities defined in components section of the documents"`
-	Recursive          bool   `arg:"--recursive,-r" help:"Recursive output. Show nested entities and resolve $refs."`
-	RecursiveDeep      bool   `arg:"--recursive-deep,-R" help:"Deep recursive output. The same as -r, but also shows all nested jsonschemas and fully resolves $ref trees"`
+	Expand             bool   `arg:"--expand,-x" help:"Expand nodes and resolve $refs."`
+	ExpandAll          bool   `arg:"--expand-all,-X" help:"Expand all nodes. The same as -x, but also shows all nested jsonschema objects and fully unfolds all $refs"`
 	Tree               bool   `arg:"--tree,-t" help:"Show the result as a tree"`
 	FollowExternalRefs bool   `arg:"--follow-external-refs,-f" help:"Follow the $refs pointing to other documents"`
 	AllowRemoteRefs    bool   `arg:"--allow-remote-refs,-F" help:"Follow the $refs pointing to URLs. Implies --follow-external-refs."`
@@ -100,7 +100,7 @@ func cliNodes(cmd *NodesCmd, cmdConfig common2.ToolConfig) error {
 	renderNodes = lo.UniqBy(renderNodes, func(n *entityNode) string {
 		return n.node.AbsPointerString()
 	})
-	logger.Trace("Rendering nodes topology", "nodes", len(renderNodes), "tree", cmdConfig.Doc.Nodes.Tree, "recursive", cmdConfig.Doc.Nodes.Recursive, "recursiveDeep", cmdConfig.Doc.Nodes.RecursiveDeep)
+	logger.Trace("Rendering nodes topology", "nodes", len(renderNodes), "tree", cmdConfig.Doc.Nodes.Tree, "expand", cmdConfig.Doc.Nodes.Expand, "expandAll", cmdConfig.Doc.Nodes.ExpandAll)
 	displayNodesTopology(renderNodes, inputContents.AbsOriginDocumentPath(), entities, cmdConfig)
 
 	return nil
@@ -239,9 +239,9 @@ func displayNodesTopology(renderNodes []*entityNode, docLocation *jsonpointer.JS
 		}
 
 		l := len(renderNodes)
-		if cmdConfig.Doc.Nodes.Recursive || cmdConfig.Doc.Nodes.RecursiveDeep {
+		if cmdConfig.Doc.Nodes.Expand || cmdConfig.Doc.Nodes.ExpandAll {
 			if cmdConfig.Doc.Nodes.Tree {
-				if !cmdConfig.Doc.Nodes.RecursiveDeep {
+				if !cmdConfig.Doc.Nodes.ExpandAll {
 					// Do not extend the output in deep recursive mode, because the tree is already expanded and all nodes are printed
 					renderNodes = append(renderNodes, lo.FilterMap(allRenderNodes, func(n *renderTreeNode, _ int) (*entityNode, bool) {
 						return n.entityNode, n.visible && n.refHops > 0
@@ -249,7 +249,7 @@ func displayNodesTopology(renderNodes []*entityNode, docLocation *jsonpointer.JS
 				}
 			} else {
 				renderNodes = append(renderNodes, lo.FilterMap(allRenderNodes, func(n *renderTreeNode, _ int) (*entityNode, bool) {
-					return n.entityNode, cmdConfig.Doc.Nodes.RecursiveDeep || n.visible
+					return n.entityNode, cmdConfig.Doc.Nodes.ExpandAll || n.visible
 				})...)
 			}
 			renderNodes = lo.UniqBy(renderNodes, func(n *entityNode) string {
@@ -297,7 +297,7 @@ func buildRenderTree(parent *renderTreeNode, node *entityNode, cmdConfig common2
 	}
 	if res.visible && parent != nil {
 		switch {
-		case cmdConfig.Doc.Nodes.RecursiveDeep:
+		case cmdConfig.Doc.Nodes.ExpandAll:
 		case parent.refHops > 0:
 			// Don't expand $refs
 			res.visible = false
