@@ -23,6 +23,9 @@ type MvCmd struct {
 	Force            bool   `arg:"--force,-f" help:"Overwrite existing nodes on conflict"`
 	Interactive      bool   `arg:"--interactive,-i" help:"Interactive mode"`
 	DisableRewriting bool   `arg:"--disable-rewriting" help:"Do not rewrite $refs"`
+
+	Indent int    `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
+	Format string `arg:"--format" help:"Output format. Possible values: yaml, json" placeholder:"FORMAT"`
 }
 
 func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
@@ -107,7 +110,7 @@ func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 		flags := copyNodeFlags{
 			force:        cmdConfig.Doc.Mv.Force,
 			interactive:  cmdConfig.Doc.Mv.Interactive,
-			formatIndent: cmdConfig.Doc.Indent,
+			formatIndent: cmdConfig.Doc.Mv.Indent,
 		}
 		chlog, err := relocateNodes(inputContents, outputContents, relocatees, destPattern, flags)
 		if err != nil {
@@ -161,7 +164,7 @@ func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 
 		logger.Info("Writing file", "file", origin)
 		buf := bytes.NewBuffer(nil)
-		enc, err := getDocumentEncoder(buf, cmdConfig)
+		enc, err := getDocumentEncoder(buf, cmdConfig.Doc.Mv.Format, cmdConfig.Doc.Mv.Indent)
 		if err != nil {
 			return fmt.Errorf("get encoder: %w", err)
 		}

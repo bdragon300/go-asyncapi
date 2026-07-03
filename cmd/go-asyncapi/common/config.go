@@ -187,8 +187,54 @@ type (
 		GenExamples ToolConfigDocGenExamples `yaml:"genExamples"`
 		Nodes       ToolConfigDocNodes       `yaml:"nodes"`
 		Deps        ToolConfigDocDeps        `yaml:"deps"`
-		Indent      int                      `yaml:"indent"`
-		Format      string                   `yaml:"format"`
+	}
+
+	ToolConfigDocCp struct {
+		FollowRefs       bool   `yaml:"followRefs"`
+		ShallowRefs      bool   `yaml:"shallowRefs"`
+		Headless         bool   `yaml:"headless"`
+		Force            bool   `yaml:"force"`
+		Interactive      bool   `yaml:"interactive"`
+		DisableRewriting bool   `yaml:"disableRewriting"`
+		Indent           int    `yaml:"indent"`
+		Format           string `yaml:"format"`
+	}
+
+	ToolConfigDocMv struct {
+		FollowRefs       bool   `yaml:"followRefs"`
+		ShallowRefs      bool   `yaml:"shallowRefs"`
+		Headless         bool   `yaml:"headless"`
+		Force            bool   `yaml:"force"`
+		Interactive      bool   `yaml:"interactive"`
+		DisableRewriting bool   `yaml:"disableRewriting"`
+		Indent           int    `yaml:"indent"`
+		Format           string `yaml:"format"`
+	}
+
+	ToolConfigDocValidate struct {
+		Schema string `yaml:"schema"`
+	}
+
+	ToolConfigDocFlatten struct {
+		OutputFile   string `yaml:"outputFile"`
+		ExternalRefs bool   `yaml:"externalRefs"`
+		RemoteRefs   bool   `yaml:"remoteRefs"`
+		Indent       int    `yaml:"indent"`
+		Format       string `yaml:"format"`
+	}
+
+	ToolConfigDocGenExamples struct {
+		OutputFile            string `yaml:"outputFile"`
+		OnlyMessages          bool   `yaml:"onlyMessages"`
+		OnlySchemas           bool   `yaml:"onlySchemas"`
+		Append                bool   `yaml:"append"`
+		Count                 int    `yaml:"count"`
+		AllowRemoteReferences bool   `yaml:"allowRemoteReferences"`
+		DateFormat            string `yaml:"dateFormat"`
+		TimeFormat            string `yaml:"timeFormat"`
+		DateTimeFormat        string `yaml:"dateTimeFormat"`
+		Indent                int    `yaml:"indent"`
+		Format                string `yaml:"format"`
 	}
 
 	ToolConfigDocNodes struct {
@@ -206,46 +252,6 @@ type (
 	ToolConfigDocDeps struct {
 		Tree                  bool `yaml:"tree"`
 		AllowRemoteReferences bool `yaml:"allowRemoteReferences"`
-	}
-
-	ToolConfigDocValidate struct {
-		Schema string `yaml:"schema"`
-	}
-
-	ToolConfigDocFlatten struct {
-		OutputFile   string `yaml:"outputFile"`
-		ExternalRefs bool   `yaml:"externalRefs"`
-		RemoteRefs   bool   `yaml:"remoteRefs"`
-	}
-
-	ToolConfigDocCp struct {
-		FollowRefs       bool `yaml:"followRefs"`
-		ShallowRefs      bool `yaml:"shallowRefs"`
-		Headless         bool `yaml:"headless"`
-		Force            bool `yaml:"force"`
-		Interactive      bool `yaml:"interactive"`
-		DisableRewriting bool `yaml:"disableRewriting"`
-	}
-
-	ToolConfigDocMv struct {
-		FollowRefs       bool `yaml:"followRefs"`
-		ShallowRefs      bool `yaml:"shallowRefs"`
-		Headless         bool `yaml:"headless"`
-		Force            bool `yaml:"force"`
-		Interactive      bool `yaml:"interactive"`
-		DisableRewriting bool `yaml:"disableRewriting"`
-	}
-
-	ToolConfigDocGenExamples struct {
-		OutputFile            string `yaml:"outputFile"`
-		OnlyMessages          bool   `yaml:"onlyMessages"`
-		OnlySchemas           bool   `yaml:"onlySchemas"`
-		Append                bool   `yaml:"append"`
-		Count                 int    `yaml:"count"`
-		AllowRemoteReferences bool   `yaml:"allowRemoteReferences"`
-		DateFormat            string `yaml:"dateFormat"`
-		TimeFormat            string `yaml:"timeFormat"`
-		DateTimeFormat        string `yaml:"dateTimeFormat"`
 	}
 )
 
@@ -379,12 +385,12 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.UI.Bundle = Coalesce(userConf.UI.Bundle, defaultConf.UI.Bundle)
 	res.UI.BundleDir = Coalesce(userConf.UI.BundleDir, defaultConf.UI.BundleDir)
 
-	res.Doc.Indent = Coalesce(userConf.Doc.Indent, defaultConf.Doc.Indent)
-	res.Doc.Format = Coalesce(userConf.Doc.Format, defaultConf.Doc.Format)
 	res.Doc.Validate.Schema = Coalesce(userConf.Doc.Validate.Schema, defaultConf.Doc.Validate.Schema)
 	res.Doc.Flatten.OutputFile = Coalesce(userConf.Doc.Flatten.OutputFile, defaultConf.Doc.Flatten.OutputFile)
 	res.Doc.Flatten.ExternalRefs = Coalesce(userConf.Doc.Flatten.ExternalRefs, defaultConf.Doc.Flatten.ExternalRefs)
 	res.Doc.Flatten.RemoteRefs = Coalesce(userConf.Doc.Flatten.RemoteRefs, defaultConf.Doc.Flatten.RemoteRefs)
+	res.Doc.Flatten.Indent = Coalesce(userConf.Doc.Flatten.Indent, defaultConf.Doc.Flatten.Indent)
+	res.Doc.Flatten.Format = Coalesce(userConf.Doc.Flatten.Format, defaultConf.Doc.Flatten.Format)
 	res.Locator.AllowRemoteReferences = Coalesce(res.Locator.AllowRemoteReferences, res.Doc.Flatten.RemoteRefs) // FIXME: rmeove and make a separate config param in locator constructor
 	res.Doc.Cp.ShallowRefs = Coalesce(userConf.Doc.Cp.ShallowRefs, defaultConf.Doc.Cp.ShallowRefs)
 	res.Doc.Cp.FollowRefs = Coalesce(userConf.Doc.Cp.FollowRefs, defaultConf.Doc.Cp.FollowRefs)
@@ -392,12 +398,16 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.Cp.Force = Coalesce(userConf.Doc.Cp.Force, defaultConf.Doc.Cp.Force)
 	res.Doc.Cp.Interactive = Coalesce(userConf.Doc.Cp.Interactive, defaultConf.Doc.Cp.Interactive)
 	res.Doc.Cp.DisableRewriting = Coalesce(userConf.Doc.Cp.DisableRewriting, defaultConf.Doc.Cp.DisableRewriting)
+	res.Doc.Cp.Indent = Coalesce(userConf.Doc.Cp.Indent, defaultConf.Doc.Cp.Indent)
+	res.Doc.Cp.Format = Coalesce(userConf.Doc.Cp.Format, defaultConf.Doc.Cp.Format)
 	res.Doc.Mv.ShallowRefs = Coalesce(userConf.Doc.Mv.ShallowRefs, defaultConf.Doc.Mv.ShallowRefs)
 	res.Doc.Mv.FollowRefs = Coalesce(userConf.Doc.Mv.FollowRefs, defaultConf.Doc.Mv.FollowRefs)
 	res.Doc.Mv.Headless = Coalesce(userConf.Doc.Mv.Headless, defaultConf.Doc.Mv.Headless)
 	res.Doc.Mv.Force = Coalesce(userConf.Doc.Mv.Force, defaultConf.Doc.Mv.Force)
 	res.Doc.Mv.Interactive = Coalesce(userConf.Doc.Mv.Interactive, defaultConf.Doc.Mv.Interactive)
 	res.Doc.Mv.DisableRewriting = Coalesce(userConf.Doc.Mv.DisableRewriting, defaultConf.Doc.Mv.DisableRewriting)
+	res.Doc.Mv.Indent = Coalesce(userConf.Doc.Mv.Indent, defaultConf.Doc.Mv.Indent)
+	res.Doc.Mv.Format = Coalesce(userConf.Doc.Mv.Format, defaultConf.Doc.Mv.Format)
 	res.Doc.GenExamples.OutputFile = Coalesce(userConf.Doc.GenExamples.OutputFile, defaultConf.Doc.GenExamples.OutputFile)
 	res.Doc.GenExamples.OnlyMessages = Coalesce(userConf.Doc.GenExamples.OnlyMessages, defaultConf.Doc.GenExamples.OnlyMessages)
 	res.Doc.GenExamples.OnlySchemas = Coalesce(userConf.Doc.GenExamples.OnlySchemas, defaultConf.Doc.GenExamples.OnlySchemas)
@@ -406,6 +416,8 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.GenExamples.DateFormat = Coalesce(userConf.Doc.GenExamples.DateFormat, defaultConf.Doc.GenExamples.DateFormat)
 	res.Doc.GenExamples.TimeFormat = Coalesce(userConf.Doc.GenExamples.TimeFormat, defaultConf.Doc.GenExamples.TimeFormat)
 	res.Doc.GenExamples.DateTimeFormat = Coalesce(userConf.Doc.GenExamples.DateTimeFormat, defaultConf.Doc.GenExamples.DateTimeFormat)
+	res.Doc.GenExamples.Indent = Coalesce(userConf.Doc.GenExamples.Indent, defaultConf.Doc.GenExamples.Indent)
+	res.Doc.GenExamples.Format = Coalesce(userConf.Doc.GenExamples.Format, defaultConf.Doc.GenExamples.Format)
 	res.Locator.AllowRemoteReferences = Coalesce(res.Locator.AllowRemoteReferences, res.Doc.GenExamples.AllowRemoteReferences) // FIXME: rmeove and make a separate config param in locator constructor
 	res.Doc.Nodes.Entities = Coalesce(userConf.Doc.Nodes.Entities, defaultConf.Doc.Nodes.Entities)
 	res.Doc.Nodes.Expand = Coalesce(userConf.Doc.Nodes.Expand, defaultConf.Doc.Nodes.Expand)

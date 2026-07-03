@@ -28,6 +28,9 @@ type CpCmd struct {
 	Force            bool   `arg:"--force,-f" help:"Overwrite existing nodes on conflict"`
 	Interactive      bool   `arg:"--interactive,-i" help:"Interactive mode"`
 	DisableRewriting bool   `arg:"--disable-rewriting" help:"Do not rewrite $refs"`
+
+	Indent int    `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
+	Format string `arg:"--format" help:"Output format. Possible values: yaml, json" placeholder:"FORMAT"`
 }
 
 func cliCp(cmd *CpCmd, cmdConfig common2.ToolConfig) error {
@@ -95,7 +98,7 @@ func cliCp(cmd *CpCmd, cmdConfig common2.ToolConfig) error {
 		flags := copyNodeFlags{
 			force:        cmdConfig.Doc.Cp.Force,
 			interactive:  cmdConfig.Doc.Cp.Interactive,
-			formatIndent: cmdConfig.Doc.Indent,
+			formatIndent: cmdConfig.Doc.Cp.Indent,
 		}
 		chlog, err := relocateNodes(inputContents, outputContents, relocatees, destPattern, flags)
 		if err != nil {
@@ -124,7 +127,7 @@ func cliCp(cmd *CpCmd, cmdConfig common2.ToolConfig) error {
 
 	logger.Info("Writing file", "file", outputContents.AbsOriginDocumentPath())
 	buf := bytes.NewBuffer(nil)
-	enc, err := getDocumentEncoder(buf, cmdConfig)
+	enc, err := getDocumentEncoder(buf, cmdConfig.Doc.Cp.Format, cmdConfig.Doc.Cp.Indent)
 	if err != nil {
 		return fmt.Errorf("get encoder: %w", err)
 	}

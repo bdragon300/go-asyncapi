@@ -20,6 +20,9 @@ type FlattenCmd struct {
 	ExternalRefs bool   `arg:"--external-refs" help:"Consider the referenced objects located in external documents"`
 	RemoteRefs   bool   `arg:"--remote-refs" help:"Consider the referenced objects located in documents addressed by URLs"`
 
+	Indent int    `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
+	Format string `arg:"--format" help:"Output format. Possible values: yaml, json" placeholder:"FORMAT"`
+
 	LocatorRootDir string        `arg:"--locator-root-dir" help:"Root directory to search the documents" placeholder:"PATH"`
 	LocatorTimeout time.Duration `arg:"--locator-timeout" help:"Timeout for locator to read a document. Format: 30s, 2m, etc." placeholder:"DURATION"`
 	LocatorCommand string        `arg:"--locator-command" help:"Custom locator command to use instead of built-in locator" placeholder:"COMMAND"`
@@ -64,7 +67,7 @@ func cliFlatten(cmd *FlattenCmd, cmdConfig common2.ToolConfig) error {
 
 	logger.Info("Writing flattened document", "file", outputPath)
 	buf := bytes.NewBuffer(nil)
-	enc, err := getDocumentEncoder(buf, cmdConfig)
+	enc, err := getDocumentEncoder(buf, cmdConfig.Doc.Flatten.Format, cmdConfig.Doc.Flatten.Indent)
 	if err != nil {
 		return fmt.Errorf("get encoder: %w", err)
 	}
