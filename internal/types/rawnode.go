@@ -123,6 +123,10 @@ func (r RawNode) AbsOriginDocumentPath() *jsonpointer.JSONPointer {
 	return r.originDocument
 }
 
+func (r RawNode) String() string {
+	return r.AbsPointerString()
+}
+
 // IsZero returns true if r is an empty, which means zero value for scalar nodes and zero length for array and object nodes.
 func (r RawNode) IsZero() bool {
 	switch r.kind {

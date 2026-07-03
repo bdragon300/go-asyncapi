@@ -114,22 +114,22 @@ func flattenNode(
 				return len(p) == len(n.Path()) && lo.EveryBy(lo.Range(len(p)), func(i int) bool { return p[i] == "" || p[i] == n.Path()[i] })
 			})
 			if unresolvable {
-				logger.Debug("Skipping resolving a $ref due to AsyncAPI v3 specification rules", "path", n.AbsPointerString())
+				logger.Debug("Skipping resolving a $ref due to AsyncAPI v3 specification rules", "path", n)
 				continue
 			}
 
 			v = append(v, n)
 			ref, err := parseRefRawNode(n)
 			if err != nil {
-				logger.Warn("Failed to parse $ref, skipping", "path", n.AbsPointerString(), "ref", ref, "error", err.Error())
+				logger.Warn("Failed to parse $ref, skipping", "path", n, "ref", ref, "error", err.Error())
 			}
 			targetNode, err := resolveRefNode(ref, n, documents, locator, cmdConfig.Doc.Flatten.ExternalRefs, cmdConfig.Doc.Flatten.RemoteRefs)
 			if err != nil {
-				logger.Warn(fmt.Sprintf("%s, skipping", err.Error()), "path", n.AbsPointerString())
+				logger.Warn(fmt.Sprintf("%s, skipping", err.Error()), "path", n)
 				continue // Can't resolve the $ref, skip it
 			}
 			if slices.Contains(v, targetNode) {
-				logger.Warn("Detected a $ref cycle, leaving the $ref unresolved", "path", n.AbsPointerString(), "ref", ref)
+				logger.Warn("Detected a $ref cycle, leaving the $ref unresolved", "path", n, "ref", ref)
 				continue
 			}
 			node.Set(e.key, targetNode)

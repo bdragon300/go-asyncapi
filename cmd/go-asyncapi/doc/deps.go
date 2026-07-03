@@ -38,7 +38,7 @@ func cliDeps(cmd *DepsCmd, cmdConfig common2.ToolConfig) error {
 		return fmt.Errorf("load document %s: %w", docLocation.Location(), err)
 	}
 
-	logger.Debug("Inspecting node", "path", inputContents.AbsPointerString())
+	logger.Debug("Inspecting node", "path", inputContents)
 	docs := map[string]*documentTree{absLocation(inputContents.AbsOriginDocumentPath()): inputContents}
 	inspectedRoot, err := inspectNode(inputContents.RawNode, nil, docs, 0, common2.GetLocator(cmdConfig), true, cmdConfig.Doc.Deps.AllowRemoteReferences)
 	if err != nil {

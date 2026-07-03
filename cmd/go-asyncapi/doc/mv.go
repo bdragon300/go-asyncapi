@@ -78,7 +78,7 @@ func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 		logger.Trace("Found nodes", "count", len(matchedNodes), "pattern", pattern)
 		if !cmdConfig.Doc.Mv.Headless {
 			relocatees = lo.Map(matchedNodes, func(n *types.RawNode, _ int) relocatedNode {
-				logger.Debug("Found node", "path", n.AbsPointerString(), "pattern", pattern)
+				logger.Debug("Found node", "path", n, "pattern", pattern)
 				return relocatedNode{node: n, isDependency: false, isDirectDependency: false}
 			})
 		}
@@ -86,7 +86,7 @@ func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 			logger.Trace("Collecting dependencies for matched nodes", "count", len(matchedNodes), "followRefs", cmdConfig.Doc.Mv.FollowRefs, "shallowRefs", cmdConfig.Doc.Mv.ShallowRefs)
 			deps := lo.FlatMap(matchedNodes, func(n *types.RawNode, _ int) []relocatedNode {
 				r := collectDependencies(n, []*documentTree{inputContents}, locator, !cmdConfig.Doc.Mv.ShallowRefs)
-				logger.Debug("Found dependencies for node", "path", n.AbsPointerString(), "count", len(r))
+				logger.Debug("Found dependencies for node", "path", n, "count", len(r))
 				return r
 			})
 			deps = lo.UniqBy(deps, func(n relocatedNode) string { return n.node.AbsPointerString() })

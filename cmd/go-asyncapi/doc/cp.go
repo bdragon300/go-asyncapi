@@ -66,7 +66,7 @@ func cliCp(cmd *CpCmd, cmdConfig common2.ToolConfig) error {
 		logger.Trace("Found nodes", "count", len(matchedNodes), "pattern", pattern)
 		if !cmdConfig.Doc.Cp.Headless {
 			relocatees = lo.Map(matchedNodes, func(n *types.RawNode, _ int) relocatedNode {
-				logger.Debug("Found node", "path", n.AbsPointerString(), "pattern", pattern)
+				logger.Debug("Found node", "path", n, "pattern", pattern)
 				return relocatedNode{node: n, isDependency: false, isDirectDependency: false}
 			})
 		}
@@ -74,7 +74,7 @@ func cliCp(cmd *CpCmd, cmdConfig common2.ToolConfig) error {
 			logger.Trace("Collecting dependencies for matched nodes", "count", len(matchedNodes), "followRefs", cmdConfig.Doc.Cp.FollowRefs, "shallowRefs", cmdConfig.Doc.Cp.ShallowRefs)
 			deps := lo.FlatMap(matchedNodes, func(n *types.RawNode, _ int) []relocatedNode {
 				r := collectDependencies(n, []*documentTree{inputContents}, locator, !cmdConfig.Doc.Cp.ShallowRefs)
-				logger.Debug("Found dependencies for node", "path", n.AbsPointerString(), "count", len(r))
+				logger.Debug("Found dependencies for node", "path", n, "count", len(r))
 				return r
 			})
 			deps = lo.UniqBy(deps, func(n relocatedNode) string { return n.node.AbsPointerString() })
@@ -338,7 +338,7 @@ func collectDependencies(node *types.RawNode, docs []*documentTree, locator comm
 		}
 		refNode := referredDoc.GetByPath(ref.Pointer)
 		if refNode == nil {
-			logger.Warn("Invalid $ref, skipping", "path", r.AbsPointerString(), "pointer", ref.PointerString())
+			logger.Warn("Invalid $ref, skipping", "path", r, "pointer", ref.PointerString())
 			continue
 		}
 
@@ -396,9 +396,9 @@ func copyNode(sNode, dContainer *types.RawNode, dDoc, sDoc *jsonpointer.JSONPoin
 			return nil, fmt.Errorf("resolve conflict for key %q: %w", nodeKey, err)
 		}
 		if newPath == nil {
-			logger.Info("Conflict resolved: ignoring the conflicting node", "path", sNode.AbsPointerString())
+			logger.Info("Conflict resolved: ignoring the conflicting node", "path", sNode)
 		} else {
-			logger.Info("Conflict resolved", "path", sNode.AbsPointerString(), "newPath", newPath)
+			logger.Info("Conflict resolved", "path", sNode, "newPath", newPath)
 		}
 	default:
 		return nil, fmt.Errorf("node %q already exists, use -f flag to force rewrite or -i to resolve the conflict interactively", dNode.AbsPointerString())

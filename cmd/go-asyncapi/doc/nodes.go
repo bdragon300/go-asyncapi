@@ -82,7 +82,7 @@ func cliNodes(cmd *NodesCmd, cmdConfig common2.ToolConfig) error {
 
 	var renderNodes []*entityNode
 	for _, n := range inputNodes {
-		logger.Debug("Inspecting node", "path", n.AbsPointerString())
+		logger.Debug("Inspecting node", "path", n)
 		inspected, err := inspectNode(
 			n,
 			nil,
@@ -223,11 +223,11 @@ func displayNodesTopology(renderNodes []*entityNode, docLocation *jsonpointer.JS
 	logger := log.GetLogger("")
 
 	for i := 0; i < len(renderNodes); i++ {
-		logger.Trace("Building render tree", "node", renderNodes[i].node.AbsPointerString())
+		logger.Trace("Building render tree", "node", renderNodes[i].node)
 		renderTree := buildRenderTree(nil, renderNodes[i], cmdConfig)
 		showNode := isNodeVisibleInNodesTopology(renderNodes[i], entities, cmdConfig)
 		allRenderNodes := common2.FlattenTree[*renderTreeNode](renderTree)
-		logger.Trace("Render tree built", "node", renderTree.unresolvedEntityNode.node.AbsPointerString(), "nodes", len(allRenderNodes), "showNode", showNode)
+		logger.Trace("Render tree built", "node", renderTree.unresolvedEntityNode.node, "nodes", len(allRenderNodes), "showNode", showNode)
 
 		if showNode {
 			if cmdConfig.Doc.Nodes.Tree {
@@ -353,7 +353,7 @@ func isNodeVisibleInNodesTopology(node *entityNode, entities []string, cmdConfig
 
 func displayRenderTree(mainDoc *jsonpointer.JSONPointer, node *renderTreeNode, exhausted []bool, cmdConfig common2.ToolConfig) {
 	logger := log.GetLogger("")
-	logger.Trace("Render node", "entityNode", node.entityNode.node.AbsPointerString(), "unresolvedEntityNode", node.unresolvedEntityNode.node.AbsPointerString(), "visible", node.visible, "exhausted", exhausted)
+	logger.Trace("Render node", "entityNode", node.entityNode.node, "unresolvedEntityNode", node.unresolvedEntityNode.node, "visible", node.visible, "exhausted", exhausted)
 
 	if node.visible {
 		displayRenderTreeLine(mainDoc, node, exhausted, cmdConfig)
