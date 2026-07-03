@@ -104,7 +104,7 @@ func cliGenExamples(cmd *GenExamplesCmd, cmdConfig common2.ToolConfig) error {
 			continue
 		}
 
-		entity := resolveEntity(t.Path())
+		entity := asyncapiEntityByPath(t.Path())
 
 		logger.Debug("Generating examples", "path", t.AbsPointerString(), "entity", entity, "count", cmdConfig.Doc.GenExamples.Count, "alreadyHasExample", hasExample)
 		for range cmdConfig.Doc.GenExamples.Count {
@@ -150,7 +150,7 @@ func exampleCollectTargets(node *types.RawNode, visitedTypes []string, schemas, 
 		return nil
 	}
 
-	entity := resolveEntity(node.Path())
+	entity := asyncapiEntityByPath(node.Path())
 	logger.Trace("Visiting node", "path", node.Path(), "entity", entity)
 
 	// Consider only the first occurrence of a node with a given entity in a tree branch.

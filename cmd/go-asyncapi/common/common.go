@@ -61,3 +61,16 @@ func Coalesce[T comparable](vals ...T) T {
 	res, _ := lo.Coalesce(vals...)
 	return res
 }
+
+type treeElement[T any] interface {
+	Children() []T
+}
+
+func FlattenTree[T treeElement[T]](node T) []T {
+	res := []T{node}
+
+	for _, child := range node.Children() {
+		res = append(res, FlattenTree[T](child)...)
+	}
+	return res
+}

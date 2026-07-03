@@ -55,8 +55,9 @@ ui:
 doc:
   indent: 2
   format: yaml
-  inspect:
+  nodes:
     entryStyle: human
+    topology: physical
   genExamples:
     dateFormat: "2006-01-02"
     timeFormat: "15:04:05"

@@ -31,7 +31,8 @@ type Cmd struct {
 	Validate    *ValidateCmd    `arg:"subcommand:validate" help:"Validate AsyncAPI documents against the AsyncAPI JSON Schema."`
 	Flatten     *FlattenCmd     `arg:"subcommand:flatten" help:"Flatten an AsyncAPI document by inlining all $refs with the nodes they point to."`
 	GenExamples *GenExamplesCmd `arg:"subcommand:gen-examples" help:"Generate examples for messages, message traits and schemas in an AsyncAPI document."`
-	Inspect     *InspectCmd     `arg:"subcommand:inspect" help:"Print the entities and components contained in AsyncAPI documents."`
+	Nodes       *NodesCmd       `arg:"subcommand:nodes" help:"Inspect the physical nodes structure of an AsyncAPI document and their relationships."`
+	Deps        *DepsCmd        `arg:"subcommand:deps" help:"Show the document dependencies"`
 	Indent      int             `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
 	Format      string          `arg:"--format" help:"Output format. Possible values: yaml, json" placeholder:"FORMAT"`
 }
@@ -68,8 +69,10 @@ func CliDoc(cmd *Cmd, globalConfig common2.ToolConfig) error {
 		return cliFlatten(cmd.Flatten, cmdConfig)
 	case cmd.GenExamples != nil:
 		return cliGenExamples(cmd.GenExamples, cmdConfig)
-	case cmd.Inspect != nil:
-		return cliInspect(cmd.Inspect, cmdConfig)
+	case cmd.Nodes != nil:
+		return cliNodes(cmd.Nodes, cmdConfig)
+	case cmd.Deps != nil:
+		return cliDeps(cmd.Deps, cmdConfig)
 	}
 	return fmt.Errorf("%w: unknown doc subcommand", common2.ErrInvalidCLIArgument)
 }
@@ -82,7 +85,8 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 	cmdCp := lo.FromPtr(cmd.Cp)
 	cmdMv := lo.FromPtr(cmd.Mv)
 	cmdGenExamples := lo.FromPtr(cmd.GenExamples)
-	cmdInspect := lo.FromPtr(cmd.Inspect)
+	cmdNodes := lo.FromPtr(cmd.Nodes)
+	cmdDeps := lo.FromPtr(cmd.Deps)
 
 	res.Doc.Indent = common2.Coalesce(cmd.Indent, globalConfig.Doc.Indent)
 	res.Doc.Format = common2.Coalesce(cmd.Format, globalConfig.Doc.Format)
@@ -122,20 +126,27 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 		res.Locator.Timeout = common2.Coalesce(cmdGenExamples.LocatorTimeout, globalConfig.Locator.Timeout)
 		res.Locator.RootDirectory = common2.Coalesce(cmdGenExamples.LocatorRootDir, globalConfig.Locator.RootDirectory)
 	}
-	res.Doc.Inspect.Entities = common2.Coalesce(cmdInspect.Entities, globalConfig.Doc.Inspect.Entities)
-	res.Doc.Inspect.Recursive = common2.Coalesce(cmdInspect.Recursive, globalConfig.Doc.Inspect.Recursive)
-	res.Doc.Inspect.RecursiveDeep = common2.Coalesce(cmdInspect.RecursiveDeep, globalConfig.Doc.Inspect.RecursiveDeep)
-	res.Doc.Inspect.Components = common2.Coalesce(cmdInspect.Components, globalConfig.Doc.Inspect.Components)
-	res.Doc.Inspect.TopLevel = common2.Coalesce(cmdInspect.TopLevel, globalConfig.Doc.Inspect.TopLevel)
-	res.Doc.Inspect.FollowExternalRefs = common2.Coalesce(cmdInspect.FollowExternalRefs, globalConfig.Doc.Inspect.FollowExternalRefs)
-	res.Doc.Inspect.AllowRemoteReferences = common2.Coalesce(cmdInspect.AllowRemoteRefs, globalConfig.Doc.Inspect.AllowRemoteReferences)
-	res.Doc.Inspect.Tree = common2.Coalesce(cmdInspect.Tree, globalConfig.Doc.Inspect.Tree)
-	res.Doc.Inspect.EntryStyle = common2.Coalesce(cmdInspect.EntryStyle, globalConfig.Doc.Inspect.EntryStyle)
-	if cmd.Inspect != nil {
-		res.Locator.AllowRemoteReferences = common2.Coalesce(cmdInspect.AllowRemoteRefs, res.Doc.Inspect.AllowRemoteReferences)
-		res.Locator.Command = common2.Coalesce(cmdInspect.LocatorCommand, globalConfig.Locator.Command)
-		res.Locator.Timeout = common2.Coalesce(cmdInspect.LocatorTimeout, globalConfig.Locator.Timeout)
-		res.Locator.RootDirectory = common2.Coalesce(cmdInspect.LocatorRootDir, globalConfig.Locator.RootDirectory)
+	res.Doc.Nodes.Entities = common2.Coalesce(cmdNodes.Entities, globalConfig.Doc.Nodes.Entities)
+	res.Doc.Nodes.Recursive = common2.Coalesce(cmdNodes.Recursive, globalConfig.Doc.Nodes.Recursive)
+	res.Doc.Nodes.RecursiveDeep = common2.Coalesce(cmdNodes.RecursiveDeep, globalConfig.Doc.Nodes.RecursiveDeep)
+	res.Doc.Nodes.Components = common2.Coalesce(cmdNodes.Components, globalConfig.Doc.Nodes.Components)
+	res.Doc.Nodes.TopLevel = common2.Coalesce(cmdNodes.TopLevel, globalConfig.Doc.Nodes.TopLevel)
+	res.Doc.Nodes.FollowExternalRefs = common2.Coalesce(cmdNodes.FollowExternalRefs, globalConfig.Doc.Nodes.FollowExternalRefs)
+	res.Doc.Nodes.AllowRemoteReferences = common2.Coalesce(cmdNodes.AllowRemoteRefs, globalConfig.Doc.Nodes.AllowRemoteReferences)
+	res.Doc.Nodes.Tree = common2.Coalesce(cmdNodes.Tree, globalConfig.Doc.Nodes.Tree)
+	res.Doc.Nodes.EntryStyle = common2.Coalesce(cmdNodes.EntryStyle, globalConfig.Doc.Nodes.EntryStyle)
+	if cmd.Nodes != nil {
+		res.Locator.AllowRemoteReferences = common2.Coalesce(cmdNodes.AllowRemoteRefs, res.Doc.Nodes.AllowRemoteReferences)
+		res.Locator.Command = common2.Coalesce(cmdNodes.LocatorCommand, globalConfig.Locator.Command)
+		res.Locator.Timeout = common2.Coalesce(cmdNodes.LocatorTimeout, globalConfig.Locator.Timeout)
+		res.Locator.RootDirectory = common2.Coalesce(cmdNodes.LocatorRootDir, globalConfig.Locator.RootDirectory)
+	}
+	res.Doc.Deps.Tree = common2.Coalesce(cmdDeps.Tree, globalConfig.Doc.Deps.Tree)
+	if cmd.Deps != nil {
+		res.Locator.AllowRemoteReferences = common2.Coalesce(cmdDeps.AllowRemoteRefs, res.Doc.Deps.AllowRemoteReferences)
+		res.Locator.Command = common2.Coalesce(cmdDeps.LocatorCommand, globalConfig.Locator.Command)
+		res.Locator.Timeout = common2.Coalesce(cmdDeps.LocatorTimeout, globalConfig.Locator.Timeout)
+		res.Locator.RootDirectory = common2.Coalesce(cmdDeps.LocatorRootDir, globalConfig.Locator.RootDirectory)
 	}
 
 	return res, nil
@@ -370,11 +381,11 @@ func resolveRefNode(ref *jsonpointer.JSONPointer, refNode *types.RawNode, docs m
 	targetDoc := refNode.AbsOriginDocumentPath()
 	if ref.Location() != "" {
 		if ref.FSPath != "" && !external {
-			return nil, fmt.Errorf("inlining the objects from external documents are disabled, use the --with-external flag to enable")
+			return nil, fmt.Errorf("objects from external documents are disabled, use the --with-external flag to enable")
 		}
 		// TODO: fix error messages snice this function is shared
 		if ref.URI != nil && !remote {
-			return nil, fmt.Errorf("inlining the objects from remote documents are disabled, use the --with-remote flag to enable")
+			return nil, fmt.Errorf("objects from remote documents are disabled, use the --with-remote flag to enable")
 		}
 		if targetDoc, err = locator.ResolveURL(refNode.AbsOriginDocumentPath(), ref); err != nil {
 			return nil, fmt.Errorf("resolve $ref location %q: %w", ref.Location(), err)

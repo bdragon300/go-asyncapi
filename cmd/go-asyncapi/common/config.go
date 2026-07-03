@@ -19,13 +19,13 @@ const (
 	D2DiagramEngineDagre D2DiagramEngine = "dagre"
 )
 
-type DocInspectPathStyle string
+type DocNodesPathStyle string
 
 const (
-	DocInspectPathStyleJSONPointer  = "json-pointer"
-	DocInspectPathStyleYq           = "yq"
-	DocInspectPathStyleHuman        = "human"
-	DocInspectPathStyleHumanNoColor = "human-no-color"
+	DocNodesPathStyleJSONPointer  = "json-pointer"
+	DocNodesPathStyleYq           = "yq"
+	DocNodesPathStyleHuman        = "human"
+	DocNodesPathStyleHumanNoColor = "human-no-color"
 )
 
 // Structures, that represent the tool's configuration file
@@ -185,21 +185,27 @@ type (
 		Validate    ToolConfigDocValidate    `yaml:"validate"`
 		Flatten     ToolConfigDocFlatten     `yaml:"flatten"`
 		GenExamples ToolConfigDocGenExamples `yaml:"genExamples"`
-		Inspect     ToolConfigDocInspect     `yaml:"inspect"`
+		Nodes       ToolConfigDocNodes       `yaml:"nodes"`
+		Deps        ToolConfigDocDeps        `yaml:"deps"`
 		Indent      int                      `yaml:"indent"`
 		Format      string                   `yaml:"format"`
 	}
 
-	ToolConfigDocInspect struct {
-		Entities              string              `yaml:"entities"`
-		Recursive             bool                `yaml:"recursive"`
-		RecursiveDeep         bool                `yaml:"recursiveDeep"`
-		Components            bool                `yaml:"components"`
-		TopLevel              bool                `yaml:"topLevel"`
-		FollowExternalRefs    bool                `yaml:"followExternalRefs"`
-		AllowRemoteReferences bool                `yaml:"allowRemoteReferences"`
-		Tree                  bool                `yaml:"tree"`
-		EntryStyle            DocInspectPathStyle `yaml:"entryStyle"`
+	ToolConfigDocNodes struct {
+		Entities              string            `yaml:"entities"`
+		Recursive             bool              `yaml:"recursive"`
+		RecursiveDeep         bool              `yaml:"recursiveDeep"`
+		Components            bool              `yaml:"components"`
+		TopLevel              bool              `yaml:"topLevel"`
+		FollowExternalRefs    bool              `yaml:"followExternalRefs"`
+		AllowRemoteReferences bool              `yaml:"allowRemoteReferences"`
+		Tree                  bool              `yaml:"tree"`
+		EntryStyle            DocNodesPathStyle `yaml:"entryStyle"`
+	}
+
+	ToolConfigDocDeps struct {
+		Tree                  bool `yaml:"tree"`
+		AllowRemoteReferences bool `yaml:"allowRemoteReferences"`
 	}
 
 	ToolConfigDocValidate struct {
@@ -401,15 +407,17 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.GenExamples.TimeFormat = Coalesce(userConf.Doc.GenExamples.TimeFormat, defaultConf.Doc.GenExamples.TimeFormat)
 	res.Doc.GenExamples.DateTimeFormat = Coalesce(userConf.Doc.GenExamples.DateTimeFormat, defaultConf.Doc.GenExamples.DateTimeFormat)
 	res.Locator.AllowRemoteReferences = Coalesce(res.Locator.AllowRemoteReferences, res.Doc.GenExamples.AllowRemoteReferences) // FIXME: rmeove and make a separate config param in locator constructor
-	res.Doc.Inspect.Entities = Coalesce(userConf.Doc.Inspect.Entities, defaultConf.Doc.Inspect.Entities)
-	res.Doc.Inspect.Recursive = Coalesce(userConf.Doc.Inspect.Recursive, defaultConf.Doc.Inspect.Recursive)
-	res.Doc.Inspect.RecursiveDeep = Coalesce(userConf.Doc.Inspect.RecursiveDeep, defaultConf.Doc.Inspect.RecursiveDeep)
-	res.Doc.Inspect.Components = Coalesce(userConf.Doc.Inspect.Components, defaultConf.Doc.Inspect.Components)
-	res.Doc.Inspect.TopLevel = Coalesce(userConf.Doc.Inspect.TopLevel, defaultConf.Doc.Inspect.TopLevel)
-	res.Doc.Inspect.FollowExternalRefs = Coalesce(userConf.Doc.Inspect.FollowExternalRefs, defaultConf.Doc.Inspect.FollowExternalRefs)
-	res.Doc.Inspect.AllowRemoteReferences = Coalesce(userConf.Doc.Inspect.AllowRemoteReferences, defaultConf.Doc.Inspect.AllowRemoteReferences)
-	res.Doc.Inspect.Tree = Coalesce(userConf.Doc.Inspect.Tree, defaultConf.Doc.Inspect.Tree)
-	res.Doc.Inspect.EntryStyle = Coalesce(userConf.Doc.Inspect.EntryStyle, defaultConf.Doc.Inspect.EntryStyle)
+	res.Doc.Nodes.Entities = Coalesce(userConf.Doc.Nodes.Entities, defaultConf.Doc.Nodes.Entities)
+	res.Doc.Nodes.Recursive = Coalesce(userConf.Doc.Nodes.Recursive, defaultConf.Doc.Nodes.Recursive)
+	res.Doc.Nodes.RecursiveDeep = Coalesce(userConf.Doc.Nodes.RecursiveDeep, defaultConf.Doc.Nodes.RecursiveDeep)
+	res.Doc.Nodes.Components = Coalesce(userConf.Doc.Nodes.Components, defaultConf.Doc.Nodes.Components)
+	res.Doc.Nodes.TopLevel = Coalesce(userConf.Doc.Nodes.TopLevel, defaultConf.Doc.Nodes.TopLevel)
+	res.Doc.Nodes.FollowExternalRefs = Coalesce(userConf.Doc.Nodes.FollowExternalRefs, defaultConf.Doc.Nodes.FollowExternalRefs)
+	res.Doc.Nodes.AllowRemoteReferences = Coalesce(userConf.Doc.Nodes.AllowRemoteReferences, defaultConf.Doc.Nodes.AllowRemoteReferences)
+	res.Doc.Nodes.Tree = Coalesce(userConf.Doc.Nodes.Tree, defaultConf.Doc.Nodes.Tree)
+	res.Doc.Nodes.EntryStyle = Coalesce(userConf.Doc.Nodes.EntryStyle, defaultConf.Doc.Nodes.EntryStyle)
+	res.Doc.Deps.Tree = Coalesce(userConf.Doc.Deps.Tree, defaultConf.Doc.Deps.Tree)
+	res.Locator.AllowRemoteReferences = Coalesce(res.Locator.AllowRemoteReferences, res.Doc.Deps.AllowRemoteReferences) // FIXME: rmeove and make a separate config param in locator constructor
 
 	return res
 }

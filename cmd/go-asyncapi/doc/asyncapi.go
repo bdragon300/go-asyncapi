@@ -205,7 +205,7 @@ var componentsKeyByKind = map[string]string{
 // It returns an empty string if the path can't be resolved against the AsyncAPI schema, or if the object the path
 // points to has no dedicated "components" section (e.g. the Info Object).
 func asyncapiResolveComponentsKey(p []string) string {
-	entity := resolveEntity(p)
+	entity := asyncapiEntityByPath(p)
 	if entity == "" {
 		return ""
 	}
@@ -273,12 +273,12 @@ func asyncapiEntities() []string {
 	return res
 }
 
-// resolveEntity resolves a node path of any depth into the tag denotes the entity the path points to.
+// asyncapiEntityByPath resolves a node path of any depth into the tag denotes the entity the path points to.
 // The returned value may be:
 //   - a valid AsyncAPI key if path points to a container of objects (e.g. "channels" or "components")
 //   - a ">"-prefixed key if path points to an object (e.g. ">channel" or ">message")
 //   - an empty string if the path can't be resolved against the AsyncAPI schema or it contains invalid keys.
-func resolveEntity(p []string) string {
+func asyncapiEntityByPath(p []string) string {
 	if len(p) == 0 {
 		return ""
 	}
