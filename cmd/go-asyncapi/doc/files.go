@@ -11,7 +11,7 @@ import (
 	"github.com/samber/lo"
 )
 
-type FilesCmd struct {
+type TreeCmd struct {
 	Document string `arg:"positional,required" help:"AsyncAPI document file or url" placeholder:"DOCUMENT"`
 
 	List            bool `arg:"--list,-l" help:"Show the result as a list"`
@@ -22,7 +22,7 @@ type FilesCmd struct {
 	LocatorCommand string        `arg:"--locator-command" help:"Custom locator command to use instead of built-in locator" placeholder:"COMMAND"`
 }
 
-func cliFiles(cmd *FilesCmd, cmdConfig common2.ToolConfig) error {
+func cliTree(cmd *TreeCmd, cmdConfig common2.ToolConfig) error {
 	logger := log.GetLogger("")
 	logger.Info("Hint: Use --quiet to suppress the logging output")
 
@@ -40,7 +40,7 @@ func cliFiles(cmd *FilesCmd, cmdConfig common2.ToolConfig) error {
 
 	logger.Debug("Inspecting node", "path", inputContents)
 	docs := map[string]*common2.DocumentTree{absLocation(inputContents.AbsOriginDocumentPath()): inputContents}
-	inspectedRoot, err := inspectNode(inputContents.RawNode, nil, docs, 0, common2.GetLocator(cmdConfig), true, cmdConfig.Doc.Files.AllowRemoteReferences)
+	inspectedRoot, err := inspectNode(inputContents.RawNode, nil, docs, 0, common2.GetLocator(cmdConfig), true, cmdConfig.Doc.Tree.AllowRemoteReferences)
 	if err != nil {
 		return fmt.Errorf("inspect %s: %w", docLocation.Location(), err)
 	}
@@ -49,7 +49,7 @@ func cliFiles(cmd *FilesCmd, cmdConfig common2.ToolConfig) error {
 	renderDocTree := &renderDocTreeNode{absLocation: inputContents.AbsOriginDocumentPath()}
 	buildRenderDocTree(renderDocTree, nil, inspectedRoot)
 
-	if cmdConfig.Doc.Files.List {
+	if cmdConfig.Doc.Tree.List {
 		renderNodes := common2.FlattenTree[*renderDocTreeNode](renderDocTree)
 		logger.Trace("Rendering document topology as list", "location", docLocation.Location(), "nodes", len(renderNodes))
 		for _, n := range renderNodes {

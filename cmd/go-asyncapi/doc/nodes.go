@@ -16,9 +16,9 @@ import (
 	"github.com/samber/lo"
 )
 
-const maxDescriptionLengthInHumanPath = 80
+const humanEntryStyleMaxDescriptionLength = 80
 
-type NodesCmd struct {
+type InspectCmd struct {
 	Location string `arg:"positional,required" help:"Document with optional node name or globbing pattern. Format: file.{yaml|yml|json}[#/path/to/node | GLOBBING_PATTERN]" placeholder:"LOCATION"`
 
 	Entities           string `arg:"--entities,-e" help:"Comma-separated list of entities to show or 'help' to list all available entities and exit'" placeholder:"ENTITIES"`
@@ -30,23 +30,23 @@ type NodesCmd struct {
 	FollowExternalRefs bool   `arg:"--follow-external-refs,-f" help:"Follow the $refs pointing to other documents"`
 	AllowRemoteRefs    bool   `arg:"--allow-remote-refs,-F" help:"Follow the $refs pointing to URLs. Implies --follow-external-refs."`
 
-	EntryStyle common2.DocNodesPathStyle `arg:"--entry-style,-s" help:"Style of the output entries. Options: human, human-no-color, json-pointer, yq" placeholder:"STYLE"`
+	EntryStyle common2.DocInspectPathStyle `arg:"--entry-style,-s" help:"Style of the output entries. Options: human, human-no-color, json-pointer, yq" placeholder:"STYLE"`
 
 	LocatorRootDir string        `arg:"--locator-root-dir" help:"Root directory to search the documents" placeholder:"PATH"`
 	LocatorTimeout time.Duration `arg:"--locator-timeout" help:"Timeout for locator to read a document. Format: 30s, 2m, etc." placeholder:"DURATION"`
 	LocatorCommand string        `arg:"--locator-command" help:"Custom locator command to use instead of built-in locator" placeholder:"COMMAND"`
 }
 
-func cliNodes(cmd *NodesCmd, cmdConfig common2.ToolConfig) error {
+func cliInspect(cmd *InspectCmd, cmdConfig common2.ToolConfig) error {
 	logger := log.GetLogger("")
 
-	switch cmdConfig.Doc.Nodes.EntryStyle {
-	case common2.DocNodesPathStyleJSONPointer, common2.DocNodesPathStyleYq, common2.DocNodesPathStyleHuman, common2.DocNodesPathStyleHumanNoColor:
+	switch cmdConfig.Doc.Inspect.EntryStyle {
+	case common2.DocInspectPathStyleJSONPointer, common2.DocInspectPathStyleYq, common2.DocInspectPathStyleHuman, common2.DocInspectPathStyleHumanNoColor:
 	default:
-		return fmt.Errorf("%w: unknown path format %q", common2.ErrInvalidCLIArgument, cmdConfig.Doc.Nodes.EntryStyle)
+		return fmt.Errorf("%w: unknown path format %q", common2.ErrInvalidCLIArgument, cmdConfig.Doc.Inspect.EntryStyle)
 	}
 
-	if strings.EqualFold(cmdConfig.Doc.Nodes.Entities, "help") {
+	if strings.EqualFold(cmdConfig.Doc.Inspect.Entities, "help") {
 		fmt.Println("Available entity types: " + strings.Join(asyncapiEntities(), ", ") + ", other")
 		return nil
 	}
@@ -54,7 +54,7 @@ func cliNodes(cmd *NodesCmd, cmdConfig common2.ToolConfig) error {
 	logger.Info("Hint: Use --quiet to suppress the logging output")
 
 	// Parse --entities
-	entities, err := parseEntityFilterExpression(cmdConfig.Doc.Nodes.Entities)
+	entities, err := parseEntityFilterExpression(cmdConfig.Doc.Inspect.Entities)
 	if err != nil {
 		return fmt.Errorf("%w: parse entity arg: %w", common2.ErrInvalidCLIArgument, err)
 	}
@@ -95,8 +95,8 @@ func cliNodes(cmd *NodesCmd, cmdConfig common2.ToolConfig) error {
 			docs,
 			0,
 			common2.GetLocator(cmdConfig),
-			cmdConfig.Doc.Nodes.FollowExternalRefs || cmdConfig.Doc.Nodes.AllowRemoteReferences,
-			cmdConfig.Doc.Nodes.AllowRemoteReferences,
+			cmdConfig.Doc.Inspect.FollowExternalRefs || cmdConfig.Doc.Inspect.AllowRemoteReferences,
+			cmdConfig.Doc.Inspect.AllowRemoteReferences,
 		)
 		if err != nil {
 			return fmt.Errorf("inspect %s: %w", pattern.Location(), err)
@@ -106,7 +106,7 @@ func cliNodes(cmd *NodesCmd, cmdConfig common2.ToolConfig) error {
 	renderNodes = lo.UniqBy(renderNodes, func(n *entityNode) string {
 		return n.node.AbsPointerString()
 	})
-	logger.Trace("Rendering nodes topology", "nodes", len(renderNodes), "list", cmdConfig.Doc.Nodes.List, "recursive", cmdConfig.Doc.Nodes.Recursive, "recursiveExpand", cmdConfig.Doc.Nodes.RecursiveExpand)
+	logger.Trace("Rendering nodes topology", "nodes", len(renderNodes), "list", cmdConfig.Doc.Inspect.List, "recursive", cmdConfig.Doc.Inspect.Recursive, "recursiveExpand", cmdConfig.Doc.Inspect.RecursiveExpand)
 	displayNodesTopology(renderNodes, inputContents.AbsOriginDocumentPath(), entities, cmdConfig)
 
 	return nil
@@ -228,7 +228,7 @@ func displayNodesTopology(renderNodes []*entityNode, docLocation *jsonpointer.JS
 		logger.Trace("Render tree built", "node", renderTree.unresolvedEntityNode.node, "nodes", len(allRenderNodes), "showNode", showNode)
 
 		if showNode {
-			if cmdConfig.Doc.Nodes.List {
+			if cmdConfig.Doc.Inspect.List {
 				relPath := getRelativePath(docLocation, renderNodes[i].node.AbsOriginDocumentPath(), false)
 				fmt.Println(formatRenderTreeNode(relPath, renderNodes[i], cmdConfig))
 			} else {
@@ -237,12 +237,12 @@ func displayNodesTopology(renderNodes []*entityNode, docLocation *jsonpointer.JS
 		}
 
 		l := len(renderNodes)
-		if cmdConfig.Doc.Nodes.Recursive || cmdConfig.Doc.Nodes.RecursiveExpand {
-			if cmdConfig.Doc.Nodes.List {
+		if cmdConfig.Doc.Inspect.Recursive || cmdConfig.Doc.Inspect.RecursiveExpand {
+			if cmdConfig.Doc.Inspect.List {
 				renderNodes = append(renderNodes, lo.FilterMap(allRenderNodes, func(n *renderTreeNode, _ int) (*entityNode, bool) {
-					return n.entityNode, cmdConfig.Doc.Nodes.RecursiveExpand || n.visible
+					return n.entityNode, cmdConfig.Doc.Inspect.RecursiveExpand || n.visible
 				})...)
-			} else if !cmdConfig.Doc.Nodes.RecursiveExpand {
+			} else if !cmdConfig.Doc.Inspect.RecursiveExpand {
 				// Do not show the nested nodes as tree roots in recursive mode, because the tree is already expanded and all nodes are printed
 				renderNodes = append(renderNodes, lo.FilterMap(allRenderNodes, func(n *renderTreeNode, _ int) (*entityNode, bool) {
 					return n.entityNode, n.visible && n.refHops > 0
@@ -293,7 +293,7 @@ func buildRenderTree(parent *renderTreeNode, node *entityNode, cmdConfig common2
 	}
 	if res.visible && parent != nil {
 		switch {
-		case cmdConfig.Doc.Nodes.RecursiveExpand:
+		case cmdConfig.Doc.Inspect.RecursiveExpand:
 		case parent.refHops > 0:
 			// Don't expand $refs
 			res.visible = false
@@ -323,7 +323,7 @@ func isNodeVisibleInNodesTopology(node *entityNode, entities []string, cmdConfig
 		}
 	}
 
-	if !cmdConfig.Doc.Nodes.Main && !cmdConfig.Doc.Nodes.Components {
+	if !cmdConfig.Doc.Inspect.Main && !cmdConfig.Doc.Inspect.Components {
 		return true
 	}
 	rootSections, componentsSections := asyncapiEntitiesSectionPaths()
@@ -337,11 +337,11 @@ func isNodeVisibleInNodesTopology(node *entityNode, entities []string, cmdConfig
 	isComponent := lo.ContainsBy(componentsSections, func(s string) bool { return slices.Equal([]string{"components", s}, parentPath) })
 
 	switch {
-	case cmdConfig.Doc.Nodes.Main && cmdConfig.Doc.Nodes.Components:
+	case cmdConfig.Doc.Inspect.Main && cmdConfig.Doc.Inspect.Components:
 		return isDefinition || isComponent
-	case cmdConfig.Doc.Nodes.Main:
+	case cmdConfig.Doc.Inspect.Main:
 		return isDefinition
-	case cmdConfig.Doc.Nodes.Components:
+	case cmdConfig.Doc.Inspect.Components:
 		return isComponent
 	}
 	return true
@@ -406,19 +406,19 @@ func displayRenderTreeLine(mainDoc *jsonpointer.JSONPointer, node *renderTreeNod
 }
 
 func formatRenderTreeNode(docLocation string, node *entityNode, cmdConfig common2.ToolConfig) string {
-	switch cmdConfig.Doc.Nodes.EntryStyle {
-	case common2.DocNodesPathStyleYq:
+	switch cmdConfig.Doc.Inspect.EntryStyle {
+	case common2.DocInspectPathStyleYq:
 		return formatRenderTreeYqEntryStyle(node.node.RawPath(), docLocation)
-	case common2.DocNodesPathStyleJSONPointer:
+	case common2.DocInspectPathStyleJSONPointer:
 		if docLocation != "" {
 			p := lo.Must(jsonpointer.Parse(docLocation))
 			return p.Join(node.node.Path()...).String()
 		}
 		return jsonpointer.PointerString(node.node.Path()...)
-	case common2.DocNodesPathStyleHuman, common2.DocNodesPathStyleHumanNoColor:
-		return formatRenderTreeHumanEntryStyle(node, docLocation, cmdConfig.Doc.Nodes.EntryStyle == common2.DocNodesPathStyleHuman)
+	case common2.DocInspectPathStyleHuman, common2.DocInspectPathStyleHumanNoColor:
+		return formatRenderTreeHumanEntryStyle(node, docLocation, cmdConfig.Doc.Inspect.EntryStyle == common2.DocInspectPathStyleHuman)
 	default:
-		panic(fmt.Errorf("unknown path format %q", cmdConfig.Doc.Nodes.EntryStyle))
+		panic(fmt.Errorf("unknown path format %q", cmdConfig.Doc.Inspect.EntryStyle))
 	}
 }
 
@@ -576,7 +576,7 @@ func formatRenderTreeHumanEntryStyle(node *entityNode, docLocation string, color
 		b.WriteString(consoleBlue + " [" + strings.Join(tags, ",") + "]")
 	}
 	if description != "" {
-		b.WriteString(consoleGray + " " + lo.Ellipsis(description, maxDescriptionLengthInHumanPath))
+		b.WriteString(consoleGray + " " + lo.Ellipsis(description, humanEntryStyleMaxDescriptionLength))
 	}
 	b.WriteString(consoleReset)
 

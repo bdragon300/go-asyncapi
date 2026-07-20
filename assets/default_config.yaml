@@ -62,7 +62,7 @@ doc:
   flatten:
     indent: 2
     format: yaml
-  nodes:
+  inspect:
     entryStyle: human
   genExamples:
     dateFormat: "2006-01-02"

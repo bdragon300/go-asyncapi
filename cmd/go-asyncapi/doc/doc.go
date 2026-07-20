@@ -31,8 +31,8 @@ type Cmd struct {
 	Validate    *ValidateCmd    `arg:"subcommand:validate" help:"Validate AsyncAPI documents against the AsyncAPI JSON Schema."`
 	Flatten     *FlattenCmd     `arg:"subcommand:flatten" help:"Flatten an AsyncAPI document by inlining all $refs with the nodes they point to."`
 	GenExamples *GenExamplesCmd `arg:"subcommand:gen-examples" help:"Generate examples for messages, message traits and schemas in an AsyncAPI document."`
-	Nodes       *NodesCmd       `arg:"subcommand:nodes" help:"Inspect the physical AsyncAPI entities structure"`
-	Files       *FilesCmd       `arg:"subcommand:files" help:"Show the documents structure"`
+	Inspect     *InspectCmd     `arg:"subcommand:inspect" help:"Inspect the AsyncAPI entities"`
+	Tree        *TreeCmd        `arg:"subcommand:tree" help:"Show the documents tree"`
 }
 
 type changeLogEntry struct {
@@ -59,10 +59,10 @@ func CliDoc(cmd *Cmd, globalConfig common2.ToolConfig) error {
 		return cliFlatten(cmd.Flatten, cmdConfig)
 	case cmd.GenExamples != nil:
 		return cliGenExamples(cmd.GenExamples, cmdConfig)
-	case cmd.Nodes != nil:
-		return cliNodes(cmd.Nodes, cmdConfig)
-	case cmd.Files != nil:
-		return cliFiles(cmd.Files, cmdConfig)
+	case cmd.Inspect != nil:
+		return cliInspect(cmd.Inspect, cmdConfig)
+	case cmd.Tree != nil:
+		return cliTree(cmd.Tree, cmdConfig)
 	}
 	return fmt.Errorf("%w: unknown doc subcommand", common2.ErrInvalidCLIArgument)
 }
@@ -75,8 +75,8 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 	cmdCp := lo.FromPtr(cmd.Cp)
 	cmdMv := lo.FromPtr(cmd.Mv)
 	cmdGenExamples := lo.FromPtr(cmd.GenExamples)
-	cmdNodes := lo.FromPtr(cmd.Nodes)
-	cmdFiles := lo.FromPtr(cmd.Files)
+	cmdInspect := lo.FromPtr(cmd.Inspect)
+	cmdTree := lo.FromPtr(cmd.Tree)
 
 	res.Doc.Validate.Schema = common2.Coalesce(cmdValidate.Schema, globalConfig.Doc.Validate.Schema)
 	res.Doc.Flatten.OutputFile = common2.Coalesce(cmdFlatten.Output, globalConfig.Doc.Flatten.OutputFile)
@@ -122,27 +122,27 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 		res.Locator.Timeout = common2.Coalesce(cmdGenExamples.LocatorTimeout, globalConfig.Locator.Timeout)
 		res.Locator.RootDirectory = common2.Coalesce(cmdGenExamples.LocatorRootDir, globalConfig.Locator.RootDirectory)
 	}
-	res.Doc.Nodes.Entities = common2.Coalesce(cmdNodes.Entities, globalConfig.Doc.Nodes.Entities)
-	res.Doc.Nodes.Recursive = common2.Coalesce(cmdNodes.Recursive, globalConfig.Doc.Nodes.Recursive)
-	res.Doc.Nodes.RecursiveExpand = common2.Coalesce(cmdNodes.RecursiveExpand, globalConfig.Doc.Nodes.RecursiveExpand)
-	res.Doc.Nodes.Components = common2.Coalesce(cmdNodes.Components, globalConfig.Doc.Nodes.Components)
-	res.Doc.Nodes.Main = common2.Coalesce(cmdNodes.Main, globalConfig.Doc.Nodes.Main)
-	res.Doc.Nodes.FollowExternalRefs = common2.Coalesce(cmdNodes.FollowExternalRefs, globalConfig.Doc.Nodes.FollowExternalRefs)
-	res.Doc.Nodes.AllowRemoteReferences = common2.Coalesce(cmdNodes.AllowRemoteRefs, globalConfig.Doc.Nodes.AllowRemoteReferences)
-	res.Doc.Nodes.List = common2.Coalesce(cmdNodes.List, globalConfig.Doc.Nodes.List)
-	res.Doc.Nodes.EntryStyle = common2.Coalesce(cmdNodes.EntryStyle, globalConfig.Doc.Nodes.EntryStyle)
-	if cmd.Nodes != nil {
-		res.Locator.AllowRemoteReferences = common2.Coalesce(cmdNodes.AllowRemoteRefs, res.Doc.Nodes.AllowRemoteReferences)
-		res.Locator.Command = common2.Coalesce(cmdNodes.LocatorCommand, globalConfig.Locator.Command)
-		res.Locator.Timeout = common2.Coalesce(cmdNodes.LocatorTimeout, globalConfig.Locator.Timeout)
-		res.Locator.RootDirectory = common2.Coalesce(cmdNodes.LocatorRootDir, globalConfig.Locator.RootDirectory)
+	res.Doc.Inspect.Entities = common2.Coalesce(cmdInspect.Entities, globalConfig.Doc.Inspect.Entities)
+	res.Doc.Inspect.Recursive = common2.Coalesce(cmdInspect.Recursive, globalConfig.Doc.Inspect.Recursive)
+	res.Doc.Inspect.RecursiveExpand = common2.Coalesce(cmdInspect.RecursiveExpand, globalConfig.Doc.Inspect.RecursiveExpand)
+	res.Doc.Inspect.Components = common2.Coalesce(cmdInspect.Components, globalConfig.Doc.Inspect.Components)
+	res.Doc.Inspect.Main = common2.Coalesce(cmdInspect.Main, globalConfig.Doc.Inspect.Main)
+	res.Doc.Inspect.FollowExternalRefs = common2.Coalesce(cmdInspect.FollowExternalRefs, globalConfig.Doc.Inspect.FollowExternalRefs)
+	res.Doc.Inspect.AllowRemoteReferences = common2.Coalesce(cmdInspect.AllowRemoteRefs, globalConfig.Doc.Inspect.AllowRemoteReferences)
+	res.Doc.Inspect.List = common2.Coalesce(cmdInspect.List, globalConfig.Doc.Inspect.List)
+	res.Doc.Inspect.EntryStyle = common2.Coalesce(cmdInspect.EntryStyle, globalConfig.Doc.Inspect.EntryStyle)
+	if cmd.Inspect != nil {
+		res.Locator.AllowRemoteReferences = common2.Coalesce(cmdInspect.AllowRemoteRefs, res.Doc.Inspect.AllowRemoteReferences)
+		res.Locator.Command = common2.Coalesce(cmdInspect.LocatorCommand, globalConfig.Locator.Command)
+		res.Locator.Timeout = common2.Coalesce(cmdInspect.LocatorTimeout, globalConfig.Locator.Timeout)
+		res.Locator.RootDirectory = common2.Coalesce(cmdInspect.LocatorRootDir, globalConfig.Locator.RootDirectory)
 	}
-	res.Doc.Files.List = common2.Coalesce(cmdFiles.List, globalConfig.Doc.Files.List)
-	if cmd.Files != nil {
-		res.Locator.AllowRemoteReferences = common2.Coalesce(cmdFiles.AllowRemoteRefs, res.Doc.Files.AllowRemoteReferences)
-		res.Locator.Command = common2.Coalesce(cmdFiles.LocatorCommand, globalConfig.Locator.Command)
-		res.Locator.Timeout = common2.Coalesce(cmdFiles.LocatorTimeout, globalConfig.Locator.Timeout)
-		res.Locator.RootDirectory = common2.Coalesce(cmdFiles.LocatorRootDir, globalConfig.Locator.RootDirectory)
+	res.Doc.Tree.List = common2.Coalesce(cmdTree.List, globalConfig.Doc.Tree.List)
+	if cmd.Tree != nil {
+		res.Locator.AllowRemoteReferences = common2.Coalesce(cmdTree.AllowRemoteRefs, res.Doc.Tree.AllowRemoteReferences)
+		res.Locator.Command = common2.Coalesce(cmdTree.LocatorCommand, globalConfig.Locator.Command)
+		res.Locator.Timeout = common2.Coalesce(cmdTree.LocatorTimeout, globalConfig.Locator.Timeout)
+		res.Locator.RootDirectory = common2.Coalesce(cmdTree.LocatorRootDir, globalConfig.Locator.RootDirectory)
 	}
 
 	return res, nil
