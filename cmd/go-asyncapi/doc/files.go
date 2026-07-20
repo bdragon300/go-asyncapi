@@ -11,10 +11,10 @@ import (
 	"github.com/samber/lo"
 )
 
-type DepsCmd struct {
+type FilesCmd struct {
 	Document string `arg:"positional,required" help:"AsyncAPI document file or url" placeholder:"DOCUMENT"`
 
-	List            bool `arg:"--list,-l" help:"Show the result as a List"`
+	List            bool `arg:"--list,-l" help:"Show the result as a list"`
 	AllowRemoteRefs bool `arg:"--allow-remote-refs,-F" help:"Follow the $refs pointing to URLs"`
 
 	LocatorRootDir string        `arg:"--locator-root-dir" help:"Root directory to search the documents" placeholder:"PATH"`
@@ -22,7 +22,7 @@ type DepsCmd struct {
 	LocatorCommand string        `arg:"--locator-command" help:"Custom locator command to use instead of built-in locator" placeholder:"COMMAND"`
 }
 
-func cliDeps(cmd *DepsCmd, cmdConfig common2.ToolConfig) error {
+func cliFiles(cmd *FilesCmd, cmdConfig common2.ToolConfig) error {
 	logger := log.GetLogger("")
 	logger.Info("Hint: Use --quiet to suppress the logging output")
 
@@ -40,7 +40,7 @@ func cliDeps(cmd *DepsCmd, cmdConfig common2.ToolConfig) error {
 
 	logger.Debug("Inspecting node", "path", inputContents)
 	docs := map[string]*common2.DocumentTree{absLocation(inputContents.AbsOriginDocumentPath()): inputContents}
-	inspectedRoot, err := inspectNode(inputContents.RawNode, nil, docs, 0, common2.GetLocator(cmdConfig), true, cmdConfig.Doc.Deps.AllowRemoteReferences)
+	inspectedRoot, err := inspectNode(inputContents.RawNode, nil, docs, 0, common2.GetLocator(cmdConfig), true, cmdConfig.Doc.Files.AllowRemoteReferences)
 	if err != nil {
 		return fmt.Errorf("inspect %s: %w", docLocation.Location(), err)
 	}
@@ -49,7 +49,7 @@ func cliDeps(cmd *DepsCmd, cmdConfig common2.ToolConfig) error {
 	renderDocTree := &renderDocTreeNode{absLocation: inputContents.AbsOriginDocumentPath()}
 	buildRenderDocTree(renderDocTree, nil, inspectedRoot)
 
-	if cmdConfig.Doc.Deps.List {
+	if cmdConfig.Doc.Files.List {
 		renderNodes := common2.FlattenTree[*renderDocTreeNode](renderDocTree)
 		logger.Trace("Rendering document topology as list", "location", docLocation.Location(), "nodes", len(renderNodes))
 		for _, n := range renderNodes {

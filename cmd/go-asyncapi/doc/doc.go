@@ -31,8 +31,8 @@ type Cmd struct {
 	Validate    *ValidateCmd    `arg:"subcommand:validate" help:"Validate AsyncAPI documents against the AsyncAPI JSON Schema."`
 	Flatten     *FlattenCmd     `arg:"subcommand:flatten" help:"Flatten an AsyncAPI document by inlining all $refs with the nodes they point to."`
 	GenExamples *GenExamplesCmd `arg:"subcommand:gen-examples" help:"Generate examples for messages, message traits and schemas in an AsyncAPI document."`
-	Nodes       *NodesCmd       `arg:"subcommand:nodes" help:"Inspect the physical nodes structure of an AsyncAPI document and their relationships."`
-	Deps        *DepsCmd        `arg:"subcommand:deps" help:"Show the document dependencies"`
+	Nodes       *NodesCmd       `arg:"subcommand:nodes" help:"Inspect the physical AsyncAPI entities structure"`
+	Files       *FilesCmd       `arg:"subcommand:files" help:"Show the documents structure"`
 }
 
 type changeLogEntry struct {
@@ -61,8 +61,8 @@ func CliDoc(cmd *Cmd, globalConfig common2.ToolConfig) error {
 		return cliGenExamples(cmd.GenExamples, cmdConfig)
 	case cmd.Nodes != nil:
 		return cliNodes(cmd.Nodes, cmdConfig)
-	case cmd.Deps != nil:
-		return cliDeps(cmd.Deps, cmdConfig)
+	case cmd.Files != nil:
+		return cliFiles(cmd.Files, cmdConfig)
 	}
 	return fmt.Errorf("%w: unknown doc subcommand", common2.ErrInvalidCLIArgument)
 }
@@ -76,7 +76,7 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 	cmdMv := lo.FromPtr(cmd.Mv)
 	cmdGenExamples := lo.FromPtr(cmd.GenExamples)
 	cmdNodes := lo.FromPtr(cmd.Nodes)
-	cmdDeps := lo.FromPtr(cmd.Deps)
+	cmdFiles := lo.FromPtr(cmd.Files)
 
 	res.Doc.Validate.Schema = common2.Coalesce(cmdValidate.Schema, globalConfig.Doc.Validate.Schema)
 	res.Doc.Flatten.OutputFile = common2.Coalesce(cmdFlatten.Output, globalConfig.Doc.Flatten.OutputFile)
@@ -137,12 +137,12 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 		res.Locator.Timeout = common2.Coalesce(cmdNodes.LocatorTimeout, globalConfig.Locator.Timeout)
 		res.Locator.RootDirectory = common2.Coalesce(cmdNodes.LocatorRootDir, globalConfig.Locator.RootDirectory)
 	}
-	res.Doc.Deps.List = common2.Coalesce(cmdDeps.List, globalConfig.Doc.Deps.List)
-	if cmd.Deps != nil {
-		res.Locator.AllowRemoteReferences = common2.Coalesce(cmdDeps.AllowRemoteRefs, res.Doc.Deps.AllowRemoteReferences)
-		res.Locator.Command = common2.Coalesce(cmdDeps.LocatorCommand, globalConfig.Locator.Command)
-		res.Locator.Timeout = common2.Coalesce(cmdDeps.LocatorTimeout, globalConfig.Locator.Timeout)
-		res.Locator.RootDirectory = common2.Coalesce(cmdDeps.LocatorRootDir, globalConfig.Locator.RootDirectory)
+	res.Doc.Files.List = common2.Coalesce(cmdFiles.List, globalConfig.Doc.Files.List)
+	if cmd.Files != nil {
+		res.Locator.AllowRemoteReferences = common2.Coalesce(cmdFiles.AllowRemoteRefs, res.Doc.Files.AllowRemoteReferences)
+		res.Locator.Command = common2.Coalesce(cmdFiles.LocatorCommand, globalConfig.Locator.Command)
+		res.Locator.Timeout = common2.Coalesce(cmdFiles.LocatorTimeout, globalConfig.Locator.Timeout)
+		res.Locator.RootDirectory = common2.Coalesce(cmdFiles.LocatorRootDir, globalConfig.Locator.RootDirectory)
 	}
 
 	return res, nil

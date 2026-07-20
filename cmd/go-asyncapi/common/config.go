@@ -186,7 +186,7 @@ type (
 		Flatten     ToolConfigDocFlatten     `yaml:"flatten"`
 		GenExamples ToolConfigDocGenExamples `yaml:"genExamples"`
 		Nodes       ToolConfigDocNodes       `yaml:"nodes"`
-		Deps        ToolConfigDocDeps        `yaml:"deps"`
+		Files       ToolConfigDocFiles       `yaml:"files"`
 	}
 
 	ToolConfigDocCp struct {
@@ -249,7 +249,7 @@ type (
 		EntryStyle            DocNodesPathStyle `yaml:"entryStyle"`
 	}
 
-	ToolConfigDocDeps struct {
+	ToolConfigDocFiles struct {
 		List                  bool `yaml:"list"`
 		AllowRemoteReferences bool `yaml:"allowRemoteReferences"`
 	}
@@ -428,8 +428,8 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.Nodes.AllowRemoteReferences = Coalesce(userConf.Doc.Nodes.AllowRemoteReferences, defaultConf.Doc.Nodes.AllowRemoteReferences)
 	res.Doc.Nodes.List = Coalesce(userConf.Doc.Nodes.List, defaultConf.Doc.Nodes.List)
 	res.Doc.Nodes.EntryStyle = Coalesce(userConf.Doc.Nodes.EntryStyle, defaultConf.Doc.Nodes.EntryStyle)
-	res.Doc.Deps.List = Coalesce(userConf.Doc.Deps.List, defaultConf.Doc.Deps.List)
-	res.Locator.AllowRemoteReferences = Coalesce(res.Locator.AllowRemoteReferences, res.Doc.Deps.AllowRemoteReferences) // FIXME: rmeove and make a separate config param in locator constructor
+	res.Doc.Files.List = Coalesce(userConf.Doc.Files.List, defaultConf.Doc.Files.List)
+	res.Locator.AllowRemoteReferences = Coalesce(res.Locator.AllowRemoteReferences, res.Doc.Files.AllowRemoteReferences) // FIXME: rmeove and make a separate config param in locator constructor
 
 	return res
 }
