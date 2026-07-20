@@ -60,7 +60,7 @@ func cliFlatten(cmd *FlattenCmd, cmdConfig common2.ToolConfig) error {
 	}
 
 	logger.Debug("Flattening the document", "url", inputDoc)
-	documents := map[string]*documentTree{inputContents.AbsOriginDocumentPath().Location(): inputContents}
+	documents := map[string]*common2.DocumentTree{inputContents.AbsOriginDocumentPath().Location(): inputContents}
 	if _, err = flattenNode(inputContents.RawNode, documents, locator, nil, cmdConfig); err != nil {
 		return fmt.Errorf("flatten document: %w", err)
 	}
@@ -83,7 +83,7 @@ func cliFlatten(cmd *FlattenCmd, cmdConfig common2.ToolConfig) error {
 
 func flattenNode(
 	node *types.RawNode,
-	documents map[string]*documentTree,
+	documents map[string]*common2.DocumentTree,
 	locator common2.DocumentLocator,
 	visited []*types.RawNode,
 	cmdConfig common2.ToolConfig,

@@ -86,7 +86,7 @@ func cliNodes(cmd *NodesCmd, cmdConfig common2.ToolConfig) error {
 	}
 
 	var renderNodes []*entityNode
-	docs := map[string]*documentTree{absLocation(inputContents.AbsOriginDocumentPath()): inputContents}
+	docs := map[string]*common2.DocumentTree{absLocation(inputContents.AbsOriginDocumentPath()): inputContents}
 	for _, n := range inputNodes {
 		logger.Debug("Inspecting node", "path", n)
 		inspected, err := inspectNode(
@@ -137,7 +137,7 @@ func parseEntityFilterExpression(s string) ([]string, error) {
 	return res, nil
 }
 
-func collectTopLevelAndComponentsNodes(inputContents *documentTree) []*types.RawNode {
+func collectTopLevelAndComponentsNodes(inputContents *common2.DocumentTree) []*types.RawNode {
 	rootSections, componentsSections := asyncapiEntitiesSectionPaths()
 	entitySections := append(
 		lo.Chunk(rootSections, 1), // [1,2,3] -> [[1],[2],[3]]
@@ -156,7 +156,7 @@ func collectTopLevelAndComponentsNodes(inputContents *documentTree) []*types.Raw
 	})
 }
 
-func inspectNode(node *types.RawNode, visited []*types.RawNode, docs map[string]*documentTree, level int, locator common2.DocumentLocator, external, remote bool) (*entityNode, error) {
+func inspectNode(node *types.RawNode, visited []*types.RawNode, docs map[string]*common2.DocumentTree, level int, locator common2.DocumentLocator, external, remote bool) (*entityNode, error) {
 	entity := asyncapiEntityByPath(node.Path())
 	res := entityNode{
 		node:   node,

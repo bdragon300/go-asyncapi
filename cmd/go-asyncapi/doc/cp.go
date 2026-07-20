@@ -47,7 +47,7 @@ func cliCp(cmd *CpCmd, cmdConfig common2.ToolConfig) error {
 
 	locator := common2.GetLocator(cmdConfig)
 	absOutputPath := &jsonpointer.JSONPointer{FSPath: absLocation(destPattern.JSONPointer)}
-	outputContents := newDocumentTree(absOutputPath)
+	outputContents := common2.NewDocumentTree(absOutputPath)
 	if _, err = os.Stat(destPattern.FSPath); err == nil {
 		if outputContents, err = loadDocument(destPattern.JSONPointer, locator); err != nil {
 			return fmt.Errorf("load %q: %w", destPattern.FSPath, err)
@@ -76,7 +76,7 @@ func cliCp(cmd *CpCmd, cmdConfig common2.ToolConfig) error {
 		if cmdConfig.Doc.Cp.FollowRefs {
 			logger.Trace("Collecting dependencies for matched nodes", "count", len(matchedNodes), "followRefs", cmdConfig.Doc.Cp.FollowRefs, "shallowRefs", cmdConfig.Doc.Cp.ShallowRefs)
 			deps := lo.FlatMap(matchedNodes, func(n *types.RawNode, _ int) []relocatedNode {
-				r := collectDependencies(n, []*documentTree{inputContents}, locator, !cmdConfig.Doc.Cp.ShallowRefs)
+				r := collectDependencies(n, []*common2.DocumentTree{inputContents}, locator, !cmdConfig.Doc.Cp.ShallowRefs)
 				logger.Debug("Found dependencies for node", "path", n, "count", len(r))
 				return r
 			})
@@ -142,7 +142,7 @@ func cliCp(cmd *CpCmd, cmdConfig common2.ToolConfig) error {
 	return nil
 }
 
-func ensureMandatoryNodes(outputContents *documentTree) []changeLogEntry {
+func ensureMandatoryNodes(outputContents *common2.DocumentTree) []changeLogEntry {
 	logger := log.GetLogger("")
 
 	logger.Trace("Adding a new node", "path", outputContents.AbsOriginDocumentPath().Join("info"))
@@ -219,7 +219,7 @@ type copyNodeFlags struct {
 	formatIndent int
 }
 
-func relocateNodes(sourceDoc, destDoc *documentTree, relocatees []relocatedNode, destPattern cliPattern, flags copyNodeFlags) ([]changeLogEntry, error) {
+func relocateNodes(sourceDoc, destDoc *common2.DocumentTree, relocatees []relocatedNode, destPattern cliPattern, flags copyNodeFlags) ([]changeLogEntry, error) {
 	logger := log.GetLogger("")
 	if sourceDoc == nil || destDoc == nil {
 		panic("sourceDoc or destDoc is nil, this is a bug")
@@ -302,7 +302,7 @@ func relocateNodes(sourceDoc, destDoc *documentTree, relocatees []relocatedNode,
 	return changeLog, nil
 }
 
-func collectDependencies(node *types.RawNode, docs []*documentTree, locator common2.DocumentLocator, recursiveRefs bool) []relocatedNode {
+func collectDependencies(node *types.RawNode, docs []*common2.DocumentTree, locator common2.DocumentLocator, recursiveRefs bool) []relocatedNode {
 	logger := log.GetLogger("")
 
 	if node == nil {
@@ -333,7 +333,9 @@ func collectDependencies(node *types.RawNode, docs []*documentTree, locator comm
 		}
 
 		logger.Trace("Found $ref", "path", r.Path(), "pointer", ref.String())
-		referredDoc, found := lo.Find(docs, func(d *documentTree) bool { return d.AbsOriginDocumentPath().Location() == absLocation(referredPath) })
+		referredDoc, found := lo.Find(docs, func(d *common2.DocumentTree) bool {
+			return d.AbsOriginDocumentPath().Location() == absLocation(referredPath)
+		})
 		if !found {
 			logger.Trace("$ref points to 3rd-party document, skipping", "path", r.Path(), "pointer", ref.String())
 			// 3rd-party document

@@ -35,14 +35,6 @@ type Cmd struct {
 	Deps        *DepsCmd        `arg:"subcommand:deps" help:"Show the document dependencies"`
 }
 
-func newDocumentTree(originDocument *jsonpointer.JSONPointer) *documentTree {
-	return &documentTree{RawNode: types.NewEmptyRawNode(types.RawNodeKindObject, nil, originDocument)}
-}
-
-type documentTree struct {
-	*types.RawNode
-}
-
 type changeLogEntry struct {
 	From, To *jsonpointer.JSONPointer
 	Move     bool
@@ -215,7 +207,7 @@ func getDocumentEncoder(w io.Writer, format string, indent int) (anyEncoder, err
 	return enc, nil
 }
 
-func rewriteRefs(doc *documentTree, locator common2.DocumentLocator, changeLog []changeLogEntry) {
+func rewriteRefs(doc *common2.DocumentTree, locator common2.DocumentLocator, changeLog []changeLogEntry) {
 	logger := log.GetLogger("")
 
 	for _, r := range collectRefs(doc.RawNode) {
@@ -253,7 +245,7 @@ func rewriteRefs(doc *documentTree, locator common2.DocumentLocator, changeLog [
 	}
 }
 
-func rewriteRef(ref, targetPath, originPath *jsonpointer.JSONPointer, doc *documentTree, changeLog []changeLogEntry) *jsonpointer.JSONPointer {
+func rewriteRef(ref, targetPath, originPath *jsonpointer.JSONPointer, doc *common2.DocumentTree, changeLog []changeLogEntry) *jsonpointer.JSONPointer {
 	logger := log.GetLogger("")
 
 	newRef := *ref
@@ -261,7 +253,7 @@ func rewriteRef(ref, targetPath, originPath *jsonpointer.JSONPointer, doc *docum
 		logger.Trace("$ref without pointer, skipping")
 		return ref
 	}
-	resolveRelPath := func(dt *documentTree, p *jsonpointer.JSONPointer) string {
+	resolveRelPath := func(dt *common2.DocumentTree, p *jsonpointer.JSONPointer) string {
 		rel, err := filepath.Rel(path.Dir(dt.AbsOriginDocumentPath().Location()), absLocation(p))
 		if err != nil {
 			logger.Error("Failed to rewrite external location in $ref, leaving it as-is", "value", ref, "error", err)
@@ -356,9 +348,9 @@ func absLocation(p *jsonpointer.JSONPointer) string {
 	return p.Location()
 }
 
-func loadDocument(inputDoc *jsonpointer.JSONPointer, locator common2.DocumentLocator) (*documentTree, error) {
+func loadDocument(inputDoc *jsonpointer.JSONPointer, locator common2.DocumentLocator) (*common2.DocumentTree, error) {
 	absInputPath := lo.Must(jsonpointer.Parse(absLocation(inputDoc)))
-	inputContents := newDocumentTree(absInputPath)
+	inputContents := common2.NewDocumentTree(absInputPath)
 	buf, newDecoder, err := compiler.ReadDocument(inputDoc, locator, log.GetLogger(""))
 	if err != nil {
 		return nil, fmt.Errorf("read: %w", err)
@@ -376,7 +368,7 @@ func loadDocument(inputDoc *jsonpointer.JSONPointer, locator common2.DocumentLoc
 	return inputContents, nil
 }
 
-func resolveRefNode(ref *jsonpointer.JSONPointer, refNode *types.RawNode, docs map[string]*documentTree, locator common2.DocumentLocator, external, remote bool) (*types.RawNode, error) {
+func resolveRefNode(ref *jsonpointer.JSONPointer, refNode *types.RawNode, docs map[string]*common2.DocumentTree, locator common2.DocumentLocator, external, remote bool) (*types.RawNode, error) {
 	logger := log.GetLogger("")
 	var err error
 

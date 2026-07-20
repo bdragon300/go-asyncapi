@@ -45,10 +45,10 @@ func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 	// Keep every loaded document in a cache keyed by its absolute location. A document that is both a source and the
 	// destination (or referenced by several patterns) must be represented by a single tree, so we move nodes out of it
 	// and write it back consistently.
-	docs := make(map[string]*documentTree)
+	docs := make(map[string]*common2.DocumentTree)
 
 	absOutputPath := &jsonpointer.JSONPointer{FSPath: absLocation(destPattern.JSONPointer)}
-	outputContents := newDocumentTree(absOutputPath)
+	outputContents := common2.NewDocumentTree(absOutputPath)
 	if _, err = os.Stat(destPattern.FSPath); err == nil {
 		if outputContents, err = loadDocumentCached(destPattern.JSONPointer, docs, locator); err != nil {
 			return fmt.Errorf("load %q: %w", destPattern.FSPath, err)
@@ -88,7 +88,7 @@ func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 		if cmdConfig.Doc.Mv.FollowRefs {
 			logger.Trace("Collecting dependencies for matched nodes", "count", len(matchedNodes), "followRefs", cmdConfig.Doc.Mv.FollowRefs, "shallowRefs", cmdConfig.Doc.Mv.ShallowRefs)
 			deps := lo.FlatMap(matchedNodes, func(n *types.RawNode, _ int) []relocatedNode {
-				r := collectDependencies(n, []*documentTree{inputContents}, locator, !cmdConfig.Doc.Mv.ShallowRefs)
+				r := collectDependencies(n, []*common2.DocumentTree{inputContents}, locator, !cmdConfig.Doc.Mv.ShallowRefs)
 				logger.Debug("Found dependencies for node", "path", n, "count", len(r))
 				return r
 			})
@@ -180,7 +180,7 @@ func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 	return nil
 }
 
-func applyMoves(docs map[string]*documentTree, changeLog []changeLogEntry) ([]changeLogEntry, error) {
+func applyMoves(docs map[string]*common2.DocumentTree, changeLog []changeLogEntry) ([]changeLogEntry, error) {
 	logger := log.GetLogger("")
 	rootSections, componentsSections := asyncapiEntitiesSectionPaths()
 	entitySections := append(
@@ -253,7 +253,7 @@ func applyMoves(docs map[string]*documentTree, changeLog []changeLogEntry) ([]ch
 	return changeLog, nil
 }
 
-func loadDocumentCached(p *jsonpointer.JSONPointer, docs map[string]*documentTree, locator common2.DocumentLocator) (*documentTree, error) {
+func loadDocumentCached(p *jsonpointer.JSONPointer, docs map[string]*common2.DocumentTree, locator common2.DocumentLocator) (*common2.DocumentTree, error) {
 	key := absLocation(p)
 	if d, ok := docs[key]; ok {
 		return d, nil

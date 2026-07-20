@@ -92,7 +92,7 @@ func cliGenExamples(cmd *GenExamplesCmd, cmdConfig common2.ToolConfig) error {
 
 	originDoc := doc.AbsOriginDocumentPath()
 	var generated int
-	docs := map[string]*documentTree{originDoc.String(): doc}
+	docs := map[string]*common2.DocumentTree{originDoc.String(): doc}
 	for _, t := range targets {
 		examplesNode, hasExample := t.Get("examples")
 		if !hasExample {
@@ -181,7 +181,7 @@ func exampleCollectTargets(node *types.RawNode, visitedTypes []string, schemas, 
 	return res
 }
 
-func exampleGenerateNode(entity string, node *types.RawNode, docs map[string]*documentTree, originDoc *jsonpointer.JSONPointer, locator common2.DocumentLocator, cmdConfig common2.ToolConfig) (*types.RawNode, error) {
+func exampleGenerateNode(entity string, node *types.RawNode, docs map[string]*common2.DocumentTree, originDoc *jsonpointer.JSONPointer, locator common2.DocumentLocator, cmdConfig common2.ToolConfig) (*types.RawNode, error) {
 	res := types.NewEmptyRawNode(types.RawNodeKindObject, nil, originDoc)
 
 	switch entity {
@@ -224,7 +224,7 @@ func exampleGenerateNode(entity string, node *types.RawNode, docs map[string]*do
 	return res, nil
 }
 
-func exampleGenerateSchema(node *types.RawNode, docs map[string]*documentTree, visited []*types.RawNode, originDoc *jsonpointer.JSONPointer, locator common2.DocumentLocator, cmdConfig common2.ToolConfig) (*types.RawNode, error) {
+func exampleGenerateSchema(node *types.RawNode, docs map[string]*common2.DocumentTree, visited []*types.RawNode, originDoc *jsonpointer.JSONPointer, locator common2.DocumentLocator, cmdConfig common2.ToolConfig) (*types.RawNode, error) {
 	if node == nil || node.Kind() != types.RawNodeKindObject {
 		return types.NewScalarRawNode(nil, nil, originDoc), nil
 	}
@@ -346,7 +346,7 @@ func getSchemaType(node *types.RawNode) ([]string, error) {
 	panic(fmt.Errorf("invalid node kind %q", value.Kind()))
 }
 
-func exampleMergeAllOf(node *types.RawNode, docs map[string]*documentTree, visited []*types.RawNode, originDoc *jsonpointer.JSONPointer, locator common2.DocumentLocator, cmdConfig common2.ToolConfig) (*types.RawNode, error) {
+func exampleMergeAllOf(node *types.RawNode, docs map[string]*common2.DocumentTree, visited []*types.RawNode, originDoc *jsonpointer.JSONPointer, locator common2.DocumentLocator, cmdConfig common2.ToolConfig) (*types.RawNode, error) {
 	allOfNode, ok := node.Get("allOf")
 	if !ok || allOfNode.Kind() != types.RawNodeKindArray {
 		return nil, fmt.Errorf("allOf is not an array at %q", node.AbsPointerString())
@@ -374,7 +374,7 @@ func exampleMergeAllOf(node *types.RawNode, docs map[string]*documentTree, visit
 	return res, nil
 }
 
-func exampleGenerateObject(node *types.RawNode, docs map[string]*documentTree, visited []*types.RawNode, originDoc *jsonpointer.JSONPointer, locator common2.DocumentLocator, cmdConfig common2.ToolConfig) (*types.RawNode, error) {
+func exampleGenerateObject(node *types.RawNode, docs map[string]*common2.DocumentTree, visited []*types.RawNode, originDoc *jsonpointer.JSONPointer, locator common2.DocumentLocator, cmdConfig common2.ToolConfig) (*types.RawNode, error) {
 	propsNode, ok := node.Get("properties")
 	if !ok || propsNode.Kind() != types.RawNodeKindObject {
 		return nil, fmt.Errorf("properties node is not an object at %q", node.AbsPointerString())
@@ -396,7 +396,7 @@ func exampleGenerateObject(node *types.RawNode, docs map[string]*documentTree, v
 	return res, nil
 }
 
-func exampleGenerateArray(node *types.RawNode, docs map[string]*documentTree, visited []*types.RawNode, originDoc *jsonpointer.JSONPointer, locator common2.DocumentLocator, cmdConfig common2.ToolConfig) (*types.RawNode, error) {
+func exampleGenerateArray(node *types.RawNode, docs map[string]*common2.DocumentTree, visited []*types.RawNode, originDoc *jsonpointer.JSONPointer, locator common2.DocumentLocator, cmdConfig common2.ToolConfig) (*types.RawNode, error) {
 	itemsNode, ok := node.Get("items")
 	if !ok || itemsNode.Kind() != types.RawNodeKindObject {
 		return nil, fmt.Errorf("items node is not an object at %q", node.AbsPointerString())
