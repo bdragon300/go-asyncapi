@@ -8,6 +8,8 @@ import (
 	"io"
 	"os"
 	"path"
+	"slices"
+	"strings"
 
 	"github.com/bdragon300/go-asyncapi/assets"
 	common2 "github.com/bdragon300/go-asyncapi/cmd/go-asyncapi/common"
@@ -26,12 +28,29 @@ const builtInSchemaDir = "schemas"
 var validationMessagePrinter = message.NewPrinter(language.English)
 
 type ValidateCmd struct {
-	Documents []string `arg:"positional,required" help:"AsyncAPI document file or URL" placeholder:"FILE"`
+	Documents []string `arg:"positional" help:"AsyncAPI document file or URL" placeholder:"FILE"`
 	Schema    string   `arg:"--schema,-s" help:"Custom JSON Schema file to validate against. By default, the built-in AsyncAPI schema matching the document version is used." placeholder:"FILE"`
+	List      bool     `arg:"--list" help:"Print the AsyncAPI versions the built-in schemas are bundled for, one per line, and exit."`
 }
 
 func cliValidate(cmd *ValidateCmd, cmdConfig common2.ToolConfig) error {
 	logger := log.GetLogger("")
+
+	if cmd.List {
+		l, err := listBuiltInSchemas()
+		if err != nil {
+			return fmt.Errorf("list built-in schemas: %w", err)
+		}
+		for _, v := range l {
+			_, _ = fmt.Println(v)
+		}
+		return nil
+	}
+
+	if len(cmd.Documents) == 0 {
+		return fmt.Errorf("%w: no AsyncAPI document specified", common2.ErrInvalidCLIArgument)
+	}
+
 	locator := common2.GetLocator(cmdConfig)
 
 	// Optional custom schema, compiled once and reused for every document.
@@ -142,6 +161,26 @@ func documentVersion(raw any) string {
 	}
 	v, _ := m["asyncapi"].(string)
 	return v
+}
+
+// listBuiltInSchemas prints the AsyncAPI versions the built-in schemas are bundled for,
+// one per line, in sorted order.
+func listBuiltInSchemas() ([]string, error) {
+	entries, err := assets.AssetFS.ReadDir(builtInSchemaDir)
+	if err != nil {
+		return nil, fmt.Errorf("read built-in schemas: %w", err)
+	}
+
+	var versions []string
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		versions = append(versions, strings.TrimSuffix(e.Name(), ".json"))
+	}
+	slices.Sort(versions)
+
+	return versions, nil
 }
 
 func loadBuiltInSchema(version string) (*jsonschema.Schema, error) {
