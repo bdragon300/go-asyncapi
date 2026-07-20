@@ -239,18 +239,18 @@ type (
 
 	ToolConfigDocNodes struct {
 		Entities              string            `yaml:"entities"`
-		Expand                bool              `yaml:"expand"`
-		ExpandAll             bool              `yaml:"expandAll"`
+		Recursive             bool              `yaml:"recursive"`
+		RecursiveExpand       bool              `yaml:"recursiveExpand"`
 		Components            bool              `yaml:"components"`
-		TopLevel              bool              `yaml:"topLevel"`
+		Main                  bool              `yaml:"main"`
 		FollowExternalRefs    bool              `yaml:"followExternalRefs"`
 		AllowRemoteReferences bool              `yaml:"allowRemoteReferences"`
-		Tree                  bool              `yaml:"tree"`
+		List                  bool              `yaml:"list"`
 		EntryStyle            DocNodesPathStyle `yaml:"entryStyle"`
 	}
 
 	ToolConfigDocDeps struct {
-		Tree                  bool `yaml:"tree"`
+		List                  bool `yaml:"list"`
 		AllowRemoteReferences bool `yaml:"allowRemoteReferences"`
 	}
 )
@@ -420,15 +420,15 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.GenExamples.Format = Coalesce(userConf.Doc.GenExamples.Format, defaultConf.Doc.GenExamples.Format)
 	res.Locator.AllowRemoteReferences = Coalesce(res.Locator.AllowRemoteReferences, res.Doc.GenExamples.AllowRemoteReferences) // FIXME: rmeove and make a separate config param in locator constructor
 	res.Doc.Nodes.Entities = Coalesce(userConf.Doc.Nodes.Entities, defaultConf.Doc.Nodes.Entities)
-	res.Doc.Nodes.Expand = Coalesce(userConf.Doc.Nodes.Expand, defaultConf.Doc.Nodes.Expand)
-	res.Doc.Nodes.ExpandAll = Coalesce(userConf.Doc.Nodes.ExpandAll, defaultConf.Doc.Nodes.ExpandAll)
+	res.Doc.Nodes.Recursive = Coalesce(userConf.Doc.Nodes.Recursive, defaultConf.Doc.Nodes.Recursive)
+	res.Doc.Nodes.RecursiveExpand = Coalesce(userConf.Doc.Nodes.RecursiveExpand, defaultConf.Doc.Nodes.RecursiveExpand)
 	res.Doc.Nodes.Components = Coalesce(userConf.Doc.Nodes.Components, defaultConf.Doc.Nodes.Components)
-	res.Doc.Nodes.TopLevel = Coalesce(userConf.Doc.Nodes.TopLevel, defaultConf.Doc.Nodes.TopLevel)
+	res.Doc.Nodes.Main = Coalesce(userConf.Doc.Nodes.Main, defaultConf.Doc.Nodes.Main)
 	res.Doc.Nodes.FollowExternalRefs = Coalesce(userConf.Doc.Nodes.FollowExternalRefs, defaultConf.Doc.Nodes.FollowExternalRefs)
 	res.Doc.Nodes.AllowRemoteReferences = Coalesce(userConf.Doc.Nodes.AllowRemoteReferences, defaultConf.Doc.Nodes.AllowRemoteReferences)
-	res.Doc.Nodes.Tree = Coalesce(userConf.Doc.Nodes.Tree, defaultConf.Doc.Nodes.Tree)
+	res.Doc.Nodes.List = Coalesce(userConf.Doc.Nodes.List, defaultConf.Doc.Nodes.List)
 	res.Doc.Nodes.EntryStyle = Coalesce(userConf.Doc.Nodes.EntryStyle, defaultConf.Doc.Nodes.EntryStyle)
-	res.Doc.Deps.Tree = Coalesce(userConf.Doc.Deps.Tree, defaultConf.Doc.Deps.Tree)
+	res.Doc.Deps.List = Coalesce(userConf.Doc.Deps.List, defaultConf.Doc.Deps.List)
 	res.Locator.AllowRemoteReferences = Coalesce(res.Locator.AllowRemoteReferences, res.Doc.Deps.AllowRemoteReferences) // FIXME: rmeove and make a separate config param in locator constructor
 
 	return res

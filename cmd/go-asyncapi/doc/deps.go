@@ -14,7 +14,7 @@ import (
 type DepsCmd struct {
 	Document string `arg:"positional,required" help:"AsyncAPI document file or url" placeholder:"DOCUMENT"`
 
-	Tree            bool `arg:"--tree,-t" help:"Show the result as a tree"`
+	List            bool `arg:"--list,-l" help:"Show the result as a List"`
 	AllowRemoteRefs bool `arg:"--allow-remote-refs,-F" help:"Follow the $refs pointing to URLs"`
 
 	LocatorRootDir string        `arg:"--locator-root-dir" help:"Root directory to search the documents" placeholder:"PATH"`
@@ -49,18 +49,17 @@ func cliDeps(cmd *DepsCmd, cmdConfig common2.ToolConfig) error {
 	renderDocTree := &renderDocTreeNode{absLocation: inputContents.AbsOriginDocumentPath()}
 	buildRenderDocTree(renderDocTree, nil, inspectedRoot)
 
-	if cmdConfig.Doc.Deps.Tree {
-		logger.Trace("Rendering document topology as tree", "location", docLocation.Location())
-		displayRenderDocTree(renderDocTree, inputContents.AbsOriginDocumentPath(), nil)
+	if cmdConfig.Doc.Deps.List {
+		renderNodes := common2.FlattenTree[*renderDocTreeNode](renderDocTree)
+		logger.Trace("Rendering document topology as list", "location", docLocation.Location(), "nodes", len(renderNodes))
+		for _, n := range renderNodes {
+			fmt.Println(getRelativePath(inputContents.AbsOriginDocumentPath(), n.absLocation, true))
+		}
 		return nil
 	}
 
-	renderNodes := common2.FlattenTree[*renderDocTreeNode](renderDocTree)
-	logger.Trace("Rendering document topology as list", "location", docLocation.Location(), "nodes", len(renderNodes))
-	for _, n := range renderNodes {
-		fmt.Println(getRelativePath(inputContents.AbsOriginDocumentPath(), n.absLocation, true))
-	}
-
+	logger.Trace("Rendering document topology as tree", "location", docLocation.Location())
+	displayRenderDocTree(renderDocTree, inputContents.AbsOriginDocumentPath(), nil)
 	return nil
 }
 

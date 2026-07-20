@@ -123,13 +123,13 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 		res.Locator.RootDirectory = common2.Coalesce(cmdGenExamples.LocatorRootDir, globalConfig.Locator.RootDirectory)
 	}
 	res.Doc.Nodes.Entities = common2.Coalesce(cmdNodes.Entities, globalConfig.Doc.Nodes.Entities)
-	res.Doc.Nodes.Expand = common2.Coalesce(cmdNodes.Expand, globalConfig.Doc.Nodes.Expand)
-	res.Doc.Nodes.ExpandAll = common2.Coalesce(cmdNodes.ExpandAll, globalConfig.Doc.Nodes.ExpandAll)
+	res.Doc.Nodes.Recursive = common2.Coalesce(cmdNodes.Recursive, globalConfig.Doc.Nodes.Recursive)
+	res.Doc.Nodes.RecursiveExpand = common2.Coalesce(cmdNodes.RecursiveExpand, globalConfig.Doc.Nodes.RecursiveExpand)
 	res.Doc.Nodes.Components = common2.Coalesce(cmdNodes.Components, globalConfig.Doc.Nodes.Components)
-	res.Doc.Nodes.TopLevel = common2.Coalesce(cmdNodes.TopLevel, globalConfig.Doc.Nodes.TopLevel)
+	res.Doc.Nodes.Main = common2.Coalesce(cmdNodes.Main, globalConfig.Doc.Nodes.Main)
 	res.Doc.Nodes.FollowExternalRefs = common2.Coalesce(cmdNodes.FollowExternalRefs, globalConfig.Doc.Nodes.FollowExternalRefs)
 	res.Doc.Nodes.AllowRemoteReferences = common2.Coalesce(cmdNodes.AllowRemoteRefs, globalConfig.Doc.Nodes.AllowRemoteReferences)
-	res.Doc.Nodes.Tree = common2.Coalesce(cmdNodes.Tree, globalConfig.Doc.Nodes.Tree)
+	res.Doc.Nodes.List = common2.Coalesce(cmdNodes.List, globalConfig.Doc.Nodes.List)
 	res.Doc.Nodes.EntryStyle = common2.Coalesce(cmdNodes.EntryStyle, globalConfig.Doc.Nodes.EntryStyle)
 	if cmd.Nodes != nil {
 		res.Locator.AllowRemoteReferences = common2.Coalesce(cmdNodes.AllowRemoteRefs, res.Doc.Nodes.AllowRemoteReferences)
@@ -137,7 +137,7 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 		res.Locator.Timeout = common2.Coalesce(cmdNodes.LocatorTimeout, globalConfig.Locator.Timeout)
 		res.Locator.RootDirectory = common2.Coalesce(cmdNodes.LocatorRootDir, globalConfig.Locator.RootDirectory)
 	}
-	res.Doc.Deps.Tree = common2.Coalesce(cmdDeps.Tree, globalConfig.Doc.Deps.Tree)
+	res.Doc.Deps.List = common2.Coalesce(cmdDeps.List, globalConfig.Doc.Deps.List)
 	if cmd.Deps != nil {
 		res.Locator.AllowRemoteReferences = common2.Coalesce(cmdDeps.AllowRemoteRefs, res.Doc.Deps.AllowRemoteReferences)
 		res.Locator.Command = common2.Coalesce(cmdDeps.LocatorCommand, globalConfig.Locator.Command)

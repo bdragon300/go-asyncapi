@@ -22,15 +22,15 @@ type NodesCmd struct {
 	Location string `arg:"positional,required" help:"Document with optional node name or globbing pattern. Format: file.{yaml|yml|json}[#/path/to/node | GLOBBING_PATTERN]" placeholder:"LOCATION"`
 
 	Entities           string `arg:"--entities,-e" help:"Comma-separated list of entities to show or 'help' to list all available entities and exit'" placeholder:"ENTITIES"`
-	TopLevel           bool   `arg:"--top-level" help:"Show only servers, channels and operations defined in the top-level sections of the documents"`
+	Main               bool   `arg:"--main" help:"Show only servers, channels and operations defined in the root sections of the document"`
 	Components         bool   `arg:"--components" help:"Show only entities defined in components section of the documents"`
-	Expand             bool   `arg:"--expand,-x" help:"Expand nodes and resolve $refs."`
-	ExpandAll          bool   `arg:"--expand-all,-X" help:"Expand all nodes. The same as -x, but also shows all nested jsonschema objects and fully unfolds all $refs"`
-	Tree               bool   `arg:"--tree,-t" help:"Show the result as a tree"`
+	Recursive          bool   `arg:"--recursive,-r" help:"Show all nested nodes recursively"`
+	RecursiveExpand    bool   `arg:"--recursive-expand,-R" help:"Show all nested nodes recursively, also expanding all inner jsonschema objects and fully unfolding all $refs"`
+	List               bool   `arg:"--list,-l" help:"Show the result as a list"`
 	FollowExternalRefs bool   `arg:"--follow-external-refs,-f" help:"Follow the $refs pointing to other documents"`
 	AllowRemoteRefs    bool   `arg:"--allow-remote-refs,-F" help:"Follow the $refs pointing to URLs. Implies --follow-external-refs."`
 
-	EntryStyle common2.DocNodesPathStyle `arg:"--entry-style" help:"Style of the output entries. Options: human, human-no-color, json-pointer, yq" placeholder:"STYLE"`
+	EntryStyle common2.DocNodesPathStyle `arg:"--entry-style,-s" help:"Style of the output entries. Options: human, human-no-color, json-pointer, yq" placeholder:"STYLE"`
 
 	LocatorRootDir string        `arg:"--locator-root-dir" help:"Root directory to search the documents" placeholder:"PATH"`
 	LocatorTimeout time.Duration `arg:"--locator-timeout" help:"Timeout for locator to read a document. Format: 30s, 2m, etc." placeholder:"DURATION"`
@@ -106,7 +106,7 @@ func cliNodes(cmd *NodesCmd, cmdConfig common2.ToolConfig) error {
 	renderNodes = lo.UniqBy(renderNodes, func(n *entityNode) string {
 		return n.node.AbsPointerString()
 	})
-	logger.Trace("Rendering nodes topology", "nodes", len(renderNodes), "tree", cmdConfig.Doc.Nodes.Tree, "expand", cmdConfig.Doc.Nodes.Expand, "expandAll", cmdConfig.Doc.Nodes.ExpandAll)
+	logger.Trace("Rendering nodes topology", "nodes", len(renderNodes), "list", cmdConfig.Doc.Nodes.List, "recursive", cmdConfig.Doc.Nodes.Recursive, "recursiveExpand", cmdConfig.Doc.Nodes.RecursiveExpand)
 	displayNodesTopology(renderNodes, inputContents.AbsOriginDocumentPath(), entities, cmdConfig)
 
 	return nil
@@ -228,26 +228,24 @@ func displayNodesTopology(renderNodes []*entityNode, docLocation *jsonpointer.JS
 		logger.Trace("Render tree built", "node", renderTree.unresolvedEntityNode.node, "nodes", len(allRenderNodes), "showNode", showNode)
 
 		if showNode {
-			if cmdConfig.Doc.Nodes.Tree {
-				displayRenderTree(docLocation, renderTree, nil, cmdConfig)
-			} else {
+			if cmdConfig.Doc.Nodes.List {
 				relPath := getRelativePath(docLocation, renderNodes[i].node.AbsOriginDocumentPath(), false)
 				fmt.Println(formatRenderTreeNode(relPath, renderNodes[i], cmdConfig))
+			} else {
+				displayRenderTree(docLocation, renderTree, nil, cmdConfig)
 			}
 		}
 
 		l := len(renderNodes)
-		if cmdConfig.Doc.Nodes.Expand || cmdConfig.Doc.Nodes.ExpandAll {
-			if cmdConfig.Doc.Nodes.Tree {
-				if !cmdConfig.Doc.Nodes.ExpandAll {
-					// Do not extend the output in deep recursive mode, because the tree is already expanded and all nodes are printed
-					renderNodes = append(renderNodes, lo.FilterMap(allRenderNodes, func(n *renderTreeNode, _ int) (*entityNode, bool) {
-						return n.entityNode, n.visible && n.refHops > 0
-					})...)
-				}
-			} else {
+		if cmdConfig.Doc.Nodes.Recursive || cmdConfig.Doc.Nodes.RecursiveExpand {
+			if cmdConfig.Doc.Nodes.List {
 				renderNodes = append(renderNodes, lo.FilterMap(allRenderNodes, func(n *renderTreeNode, _ int) (*entityNode, bool) {
-					return n.entityNode, cmdConfig.Doc.Nodes.ExpandAll || n.visible
+					return n.entityNode, cmdConfig.Doc.Nodes.RecursiveExpand || n.visible
+				})...)
+			} else if !cmdConfig.Doc.Nodes.RecursiveExpand {
+				// Do not show the nested nodes as tree roots in recursive mode, because the tree is already expanded and all nodes are printed
+				renderNodes = append(renderNodes, lo.FilterMap(allRenderNodes, func(n *renderTreeNode, _ int) (*entityNode, bool) {
+					return n.entityNode, n.visible && n.refHops > 0
 				})...)
 			}
 			renderNodes = lo.UniqBy(renderNodes, func(n *entityNode) string {
@@ -295,7 +293,7 @@ func buildRenderTree(parent *renderTreeNode, node *entityNode, cmdConfig common2
 	}
 	if res.visible && parent != nil {
 		switch {
-		case cmdConfig.Doc.Nodes.ExpandAll:
+		case cmdConfig.Doc.Nodes.RecursiveExpand:
 		case parent.refHops > 0:
 			// Don't expand $refs
 			res.visible = false
@@ -325,7 +323,7 @@ func isNodeVisibleInNodesTopology(node *entityNode, entities []string, cmdConfig
 		}
 	}
 
-	if !cmdConfig.Doc.Nodes.TopLevel && !cmdConfig.Doc.Nodes.Components {
+	if !cmdConfig.Doc.Nodes.Main && !cmdConfig.Doc.Nodes.Components {
 		return true
 	}
 	rootSections, componentsSections := asyncapiEntitiesSectionPaths()
@@ -339,9 +337,9 @@ func isNodeVisibleInNodesTopology(node *entityNode, entities []string, cmdConfig
 	isComponent := lo.ContainsBy(componentsSections, func(s string) bool { return slices.Equal([]string{"components", s}, parentPath) })
 
 	switch {
-	case cmdConfig.Doc.Nodes.TopLevel && cmdConfig.Doc.Nodes.Components:
+	case cmdConfig.Doc.Nodes.Main && cmdConfig.Doc.Nodes.Components:
 		return isDefinition || isComponent
-	case cmdConfig.Doc.Nodes.TopLevel:
+	case cmdConfig.Doc.Nodes.Main:
 		return isDefinition
 	case cmdConfig.Doc.Nodes.Components:
 		return isComponent
