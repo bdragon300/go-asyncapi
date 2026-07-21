@@ -65,17 +65,17 @@ func cliCp(cmd *CpCmd, cmdConfig common2.ToolConfig) error {
 		}
 
 		logger.Trace("Searching for nodes matching the pattern", "pattern", pattern)
-		matchedNodes := findNodesByPattern(inputContents.RawNode, pattern)
-		logger.Trace("Found nodes", "count", len(matchedNodes), "pattern", pattern)
+		heads := findNodesByPattern(inputContents.RawNode, pattern)
+		logger.Trace("Found nodes", "count", len(heads), "pattern", pattern)
 		if !cmdConfig.Doc.Cp.Headless {
-			relocatees = lo.Map(matchedNodes, func(n *types.RawNode, _ int) relocatedNode {
+			relocatees = lo.Map(heads, func(n *types.RawNode, _ int) relocatedNode {
 				logger.Debug("Found node", "path", n, "pattern", pattern)
 				return relocatedNode{node: n, isDependency: false, isDirectDependency: false}
 			})
 		}
 		if cmdConfig.Doc.Cp.FollowRefs {
-			logger.Trace("Collecting dependencies for matched nodes", "count", len(matchedNodes), "followRefs", cmdConfig.Doc.Cp.FollowRefs, "shallowRefs", cmdConfig.Doc.Cp.ShallowRefs)
-			deps := lo.FlatMap(matchedNodes, func(n *types.RawNode, _ int) []relocatedNode {
+			logger.Trace("Collecting dependencies for head nodes", "count", len(heads), "followRefs", cmdConfig.Doc.Cp.FollowRefs, "shallowRefs", cmdConfig.Doc.Cp.ShallowRefs)
+			deps := lo.FlatMap(heads, func(n *types.RawNode, _ int) []relocatedNode {
 				r := collectDependencies(n, []*common2.DocumentTree{inputContents}, locator, !cmdConfig.Doc.Cp.ShallowRefs)
 				logger.Debug("Found dependencies for node", "path", n, "count", len(r))
 				return r
@@ -226,6 +226,7 @@ func relocateNodes(sourceDoc, destDoc *common2.DocumentTree, relocatees []reloca
 	}
 
 	var changeLog []changeLogEntry
+	headsCount := lo.CountBy(relocatees, func(r relocatedNode) bool { return !r.isDependency && !r.isDirectDependency })
 	for _, r := range relocatees {
 		reason := "selected"
 		switch {
@@ -236,14 +237,17 @@ func relocateNodes(sourceDoc, destDoc *common2.DocumentTree, relocatees []reloca
 		}
 
 		// Resolve and normalize the destination container path:
-		// - "/foo/bar" -> "/foo/bar", create the node if it does not exists
-		// - "/foo/bar/" -> "/foo/bar", error if node does not exist
+		// - "/foo/dest/": error if destination does not exist
+		// - "/foo/dest":
+		//   - if destination does not exist: if there is only one head relocatee, relocate it with renaming, otherwise error
+		//   - if destination exists, relocate a node as-is
 		// - "/" -> root
 		// - empty path -> same path as the source node
-		// - if it's a dependency located directly in root section ("#/servers", "#/channels", "#/operations"), copy it to the same path
+		// - if it's a dependency located directly in root section ("#/servers", "#/channels", "#/operations"), relocate it to the same path
 		// - if it's a dependency located elsewhere in document, then put it to "components" section depending on its kind
-		// - "/foo/bar//", "//" are invalid
+		// - "/foo/dest//", "//" are invalid
 		dContainerPath := destPattern.Pointer
+		dKey := lo.LastOrEmpty(r.node.Path())
 		var dContainer *types.RawNode
 		switch {
 		case r.isDependency:
@@ -259,14 +263,25 @@ func relocateNodes(sourceDoc, destDoc *common2.DocumentTree, relocatees []reloca
 				}
 				dContainerPath = []string{"components", componentsKey}
 			}
-		case len(destPattern.Pointer) > 0 && lo.LastOrEmpty(destPattern.Pointer) == "":
-			logger.Trace("Destination path ends with empty segment, it must exist", "path", destPattern.Pointer, "document", destDoc.AbsOriginDocumentPath())
+		case len(destPattern.Pointer) > 0:
+			logger.Trace("Destination path is non-empty", "path", destPattern.Pointer, "document", destDoc.AbsOriginDocumentPath(), "headNodes", headsCount)
 			dContainerPath = lo.TrimRight(destPattern.Pointer, []string{""})
 			if len(destPattern.Pointer)-len(dContainerPath) > 1 {
 				return nil, fmt.Errorf("path %q cannot end with several slashes", jsonpointer.PointerString(destPattern.Pointer...))
 			}
 			if destDoc.GetByPath(dContainerPath) == nil {
-				return nil, fmt.Errorf("destination node %q does not exist", destDoc.AbsOriginDocumentPath().Join(dContainerPath...))
+				logger.Trace("Destination node does not exist, evaluating new path", "path", dContainerPath, "document", destDoc.AbsOriginDocumentPath())
+				switch {
+				case lo.LastOrEmpty(destPattern.Pointer) == "":
+					// "/foo/dest/"
+					return nil, fmt.Errorf("destination node %q does not exist", destDoc.AbsOriginDocumentPath().Join(dContainerPath...))
+				case headsCount > 1:
+					return nil, fmt.Errorf("cannot relocate %d nodes from %q to path %q, create it first or pick only one node", headsCount, sourceDoc.AbsOriginDocumentPath(), destDoc.AbsOriginDocumentPath().Join(dContainerPath...))
+				case len(dContainerPath) > 0:
+					// Relocating a node with rename. If destination is empty, keep the original destination
+					dKey = lo.LastOrEmpty(dContainerPath)
+					dContainerPath = dContainerPath[:len(dContainerPath)-1]
+				}
 			}
 		case len(destPattern.Pointer) == 0 && len(r.node.Path()) > 0:
 			logger.Trace("Destination path is empty, using the source node path", "path", r.node.Path(), "document", sourceDoc.AbsOriginDocumentPath())
@@ -288,7 +303,7 @@ func relocateNodes(sourceDoc, destDoc *common2.DocumentTree, relocatees []reloca
 		}
 
 		logger.Info("Relocating node", "src", jsonpointer.PointerString(r.node.Path()...), "dest", jsonpointer.PointerString(dContainerPath...), "reason", reason)
-		change, err := copyNode(r.node.DeepCopy(), dContainer, destDoc.AbsOriginDocumentPath(), sourceDoc.AbsOriginDocumentPath(), flags)
+		change, err := copyNode(r.node.DeepCopy(), dContainer, dKey, destDoc.AbsOriginDocumentPath(), sourceDoc.AbsOriginDocumentPath(), flags)
 		if err != nil {
 			return nil, fmt.Errorf("copy node %v: %w", jsonpointer.PointerString(r.node.Path()...), err)
 		}
@@ -358,7 +373,7 @@ func collectDependencies(node *types.RawNode, docs []*common2.DocumentTree, loca
 	return res
 }
 
-func copyNode(sNode, dContainer *types.RawNode, dDoc, sDoc *jsonpointer.JSONPointer, flags copyNodeFlags) (*changeLogEntry, error) {
+func copyNode(sNode, dContainer *types.RawNode, dKey string, dDoc, sDoc *jsonpointer.JSONPointer, flags copyNodeFlags) (*changeLogEntry, error) {
 	var err error
 	logger := log.GetLogger("")
 
@@ -371,14 +386,13 @@ func copyNode(sNode, dContainer *types.RawNode, dDoc, sDoc *jsonpointer.JSONPoin
 		}, nil
 	}
 
-	nodeKey := lo.LastOrEmpty(sNode.Path())
-	dNode, conflict := dContainer.Get(nodeKey)
+	dNode, conflict := dContainer.Get(dKey)
 	if !conflict {
 		logger.Trace("Copying node", "destination", dDoc.Join(dContainer.Path()...))
-		dContainer.Set(nodeKey, sNode)
+		dContainer.Set(dKey, sNode)
 		return &changeLogEntry{
 			From: lo.ToPtr(sDoc.Join(sNode.Path()...)),
-			To:   lo.ToPtr(dDoc.Join(dContainer.Path()...).Join(nodeKey)),
+			To:   lo.ToPtr(dDoc.Join(dContainer.Path()...).Join(dKey)),
 			Move: false,
 		}, nil
 	}
@@ -398,7 +412,7 @@ func copyNode(sNode, dContainer *types.RawNode, dDoc, sDoc *jsonpointer.JSONPoin
 	case flags.interactive:
 		// Ask user to resolve the conflict
 		if newPath, err = promptResolveConflict(dContainer, dNode, sNode, dDoc, sDoc, flags); err != nil {
-			return nil, fmt.Errorf("resolve conflict for key %q: %w", nodeKey, err)
+			return nil, fmt.Errorf("resolve conflict for key %q: %w", dKey, err)
 		}
 		if newPath == nil {
 			logger.Info("Conflict resolved: ignoring the conflicting node", "path", sNode)
@@ -414,7 +428,7 @@ func copyNode(sNode, dContainer *types.RawNode, dDoc, sDoc *jsonpointer.JSONPoin
 	}
 
 	// Apply a change
-	dKey := lo.LastOrEmpty(newPath.Pointer)
+	dKey = lo.LastOrEmpty(newPath.Pointer)
 	logger.Debug("Copying a node", "source", sNode.Path(), "destination", dContainer.Path())
 	dContainer.Set(dKey, sNode)
 	return &changeLogEntry{

@@ -77,17 +77,17 @@ func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 		}
 
 		logger.Trace("Searching for nodes matching the pattern", "pattern", pattern)
-		matchedNodes := findNodesByPattern(inputContents.RawNode, pattern)
-		logger.Trace("Found nodes", "count", len(matchedNodes), "pattern", pattern)
+		heads := findNodesByPattern(inputContents.RawNode, pattern)
+		logger.Trace("Found nodes", "count", len(heads), "pattern", pattern)
 		if !cmdConfig.Doc.Mv.Headless {
-			relocatees = lo.Map(matchedNodes, func(n *types.RawNode, _ int) relocatedNode {
+			relocatees = lo.Map(heads, func(n *types.RawNode, _ int) relocatedNode {
 				logger.Debug("Found node", "path", n, "pattern", pattern)
 				return relocatedNode{node: n, isDependency: false, isDirectDependency: false}
 			})
 		}
 		if cmdConfig.Doc.Mv.FollowRefs {
-			logger.Trace("Collecting dependencies for matched nodes", "count", len(matchedNodes), "followRefs", cmdConfig.Doc.Mv.FollowRefs, "shallowRefs", cmdConfig.Doc.Mv.ShallowRefs)
-			deps := lo.FlatMap(matchedNodes, func(n *types.RawNode, _ int) []relocatedNode {
+			logger.Trace("Collecting dependencies for head nodes", "count", len(heads), "followRefs", cmdConfig.Doc.Mv.FollowRefs, "shallowRefs", cmdConfig.Doc.Mv.ShallowRefs)
+			deps := lo.FlatMap(heads, func(n *types.RawNode, _ int) []relocatedNode {
 				r := collectDependencies(n, []*common2.DocumentTree{inputContents}, locator, !cmdConfig.Doc.Mv.ShallowRefs)
 				logger.Debug("Found dependencies for node", "path", n, "count", len(r))
 				return r
