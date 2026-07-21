@@ -22,6 +22,7 @@ import (
 type CpCmd struct {
 	Locations []string `arg:"positional,required" help:"Document with optional node path or globbing pattern. If -t is omitted, the last LOCATION is considered as DESTINATION. Format: file.{yaml|yml|json}[#/path/to/node | GLOBBING_PATTERN]" placeholder:"LOCATION"`
 
+	AutoCreate       bool   `arg:"--auto-create,-a" help:"Automatically create a destination node if missing"`
 	FollowRefs       bool   `arg:"--follow-refs,-r" help:"Follow $refs and copy the referenced nodes recursively"`
 	ShallowRefs      bool   `arg:"--shallow-refs,-s" help:"Limit the following $refs only one level deep. Requires --follow-refs"`
 	Headless         bool   `arg:"--headless" help:"Exclude nodes. Makes sense with -r or -s"`
@@ -101,7 +102,7 @@ func cliCp(cmd *CpCmd, cmdConfig common2.ToolConfig) error {
 			interactive:  cmdConfig.Doc.Cp.Interactive,
 			formatIndent: cmdConfig.Doc.Cp.Indent,
 		}
-		chlog, err := relocateNodes(inputContents, outputContents, relocatees, destPattern, flags)
+		chlog, err := relocateNodes(inputContents, outputContents, relocatees, destPattern, flags, cmdConfig.Doc.Cp.AutoCreate)
 		if err != nil {
 			return fmt.Errorf("relocate nodes: %w", err)
 		}
@@ -220,7 +221,7 @@ type copyNodeFlags struct {
 	formatIndent int
 }
 
-func relocateNodes(sourceDoc, destDoc *common2.DocumentTree, relocatees []relocatedNode, destPattern cliPattern, flags copyNodeFlags) ([]changeLogEntry, error) {
+func relocateNodes(sourceDoc, destDoc *common2.DocumentTree, relocatees []relocatedNode, destPattern cliPattern, flags copyNodeFlags, autoCreate bool) ([]changeLogEntry, error) {
 	logger := log.GetLogger("")
 	if sourceDoc == nil || destDoc == nil {
 		panic("sourceDoc or destDoc is nil, this is a bug")
@@ -275,14 +276,14 @@ func relocateNodes(sourceDoc, destDoc *common2.DocumentTree, relocatees []reloca
 			if len(destPattern.Pointer)-len(dContainerPath) > 1 {
 				return nil, fmt.Errorf("path %q cannot end with several slashes", jsonpointer.PointerString(destPattern.Pointer...))
 			}
-			if destDoc.GetByPath(dContainerPath) == nil {
+			if destDoc.GetByPath(dContainerPath) == nil && !autoCreate {
 				logger.Trace("Destination node does not exist, evaluating new path", "path", dContainerPath, "document", destDoc.AbsOriginDocumentPath())
 				switch {
 				case lo.LastOrEmpty(destPattern.Pointer) == "":
 					// "/foo/dest/"
-					return nil, fmt.Errorf("destination %q does not exist", destDoc.AbsOriginDocumentPath().Join(dContainerPath...))
+					return nil, fmt.Errorf("%q does not exist; use -a to auto create", destDoc.AbsOriginDocumentPath().Join(dContainerPath...))
 				case headsCount > 1:
-					return nil, fmt.Errorf("%d nodes from %q: destination %q does not exist: create it, pick only one node or remove the pointer from destination to relocate to the same path", headsCount, sourceDoc.AbsOriginDocumentPath(), destDoc.AbsOriginDocumentPath().Join(dContainerPath...))
+					return nil, fmt.Errorf("%q does not exist; use -a to auto create or pick only one source node", destDoc.AbsOriginDocumentPath().Join(dContainerPath...))
 				case len(dContainerPath) > 0:
 					// Relocating a node with rename. If destination is empty, keep the original destination
 					dKey = lo.LastOrEmpty(dContainerPath)

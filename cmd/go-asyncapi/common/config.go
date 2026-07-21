@@ -190,6 +190,7 @@ type (
 	}
 
 	ToolConfigDocCp struct {
+		AutoCreate       bool   `yaml:"autoCreate"`
 		FollowRefs       bool   `yaml:"followRefs"`
 		ShallowRefs      bool   `yaml:"shallowRefs"`
 		Headless         bool   `yaml:"headless"`
@@ -201,6 +202,7 @@ type (
 	}
 
 	ToolConfigDocMv struct {
+		AutoCreate       bool   `yaml:"autoCreate"`
 		Link             bool   `yaml:"link"`
 		FollowRefs       bool   `yaml:"followRefs"`
 		ShallowRefs      bool   `yaml:"shallowRefs"`
@@ -393,6 +395,7 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.Flatten.Indent = Coalesce(userConf.Doc.Flatten.Indent, defaultConf.Doc.Flatten.Indent)
 	res.Doc.Flatten.Format = Coalesce(userConf.Doc.Flatten.Format, defaultConf.Doc.Flatten.Format)
 	res.Locator.AllowRemoteReferences = Coalesce(res.Locator.AllowRemoteReferences, res.Doc.Flatten.RemoteRefs) // FIXME: rmeove and make a separate config param in locator constructor
+	res.Doc.Cp.AutoCreate = Coalesce(userConf.Doc.Cp.AutoCreate, defaultConf.Doc.Cp.AutoCreate)
 	res.Doc.Cp.ShallowRefs = Coalesce(userConf.Doc.Cp.ShallowRefs, defaultConf.Doc.Cp.ShallowRefs)
 	res.Doc.Cp.FollowRefs = Coalesce(userConf.Doc.Cp.FollowRefs, defaultConf.Doc.Cp.FollowRefs)
 	res.Doc.Cp.Headless = Coalesce(userConf.Doc.Cp.Headless, defaultConf.Doc.Cp.Headless)
@@ -401,6 +404,7 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.Cp.DisableRewriting = Coalesce(userConf.Doc.Cp.DisableRewriting, defaultConf.Doc.Cp.DisableRewriting)
 	res.Doc.Cp.Indent = Coalesce(userConf.Doc.Cp.Indent, defaultConf.Doc.Cp.Indent)
 	res.Doc.Cp.Format = Coalesce(userConf.Doc.Cp.Format, defaultConf.Doc.Cp.Format)
+	res.Doc.Mv.AutoCreate = Coalesce(userConf.Doc.Mv.AutoCreate, defaultConf.Doc.Mv.AutoCreate)
 	res.Doc.Mv.Link = Coalesce(userConf.Doc.Mv.Link, defaultConf.Doc.Mv.Link)
 	res.Doc.Mv.ShallowRefs = Coalesce(userConf.Doc.Mv.ShallowRefs, defaultConf.Doc.Mv.ShallowRefs)
 	res.Doc.Mv.FollowRefs = Coalesce(userConf.Doc.Mv.FollowRefs, defaultConf.Doc.Mv.FollowRefs)

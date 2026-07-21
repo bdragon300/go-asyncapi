@@ -16,6 +16,7 @@ import (
 type MvCmd struct {
 	Locations []string `arg:"positional,required" help:"Nodes to move. If -t is omitted, the last LOCATION is considered as DESTINATION. Format: file.{yaml|yml|json}[#/path/to/node | GLOBBING_PATTERN]" placeholder:"LOCATION"`
 
+	AutoCreate       bool   `arg:"--auto-create,-a" help:"Automatically create a destination node if missing"`
 	Link             bool   `arg:"--link,-l" help:"Insert a $ref into the source location after moving. Does not apply to nodes evaluated recursively"`
 	FollowRefs       bool   `arg:"--follow-refs,-r" help:"Follow $refs and move the referenced nodes recursively"`
 	ShallowRefs      bool   `arg:"--shallow-refs,-s" help:"Limit the following $refs only one level deep. Requires --follow-refs"`
@@ -114,7 +115,7 @@ func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 			interactive:  cmdConfig.Doc.Mv.Interactive,
 			formatIndent: cmdConfig.Doc.Mv.Indent,
 		}
-		chlog, err := relocateNodes(inputContents, outputContents, relocatees, destPattern, flags)
+		chlog, err := relocateNodes(inputContents, outputContents, relocatees, destPattern, flags, cmdConfig.Doc.Mv.AutoCreate)
 		if err != nil {
 			return fmt.Errorf("relocate nodes: %w", err)
 		}
