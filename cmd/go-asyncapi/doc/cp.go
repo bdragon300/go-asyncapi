@@ -13,6 +13,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/types"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"gopkg.in/yaml.v3"
@@ -21,12 +22,12 @@ import (
 type CpCmd struct {
 	Locations []string `arg:"positional,required" help:"Document with optional node path or globbing pattern. If -t is omitted, the last LOCATION is considered as DESTINATION. Format: file.{yaml|yml|json}[#/path/to/node | GLOBBING_PATTERN]" placeholder:"LOCATION"`
 
-	To               string `arg:"--to,-t" help:"Copy all LOCATION arguments into DESTINATION" placeholder:"DESTINATION"`
 	FollowRefs       bool   `arg:"--follow-refs,-r" help:"Follow $refs and copy the referenced nodes recursively"`
 	ShallowRefs      bool   `arg:"--shallow-refs,-s" help:"Limit the following $refs only one level deep. Requires --follow-refs"`
 	Headless         bool   `arg:"--headless" help:"Exclude nodes. Makes sense with -r or -s"`
 	Force            bool   `arg:"--force,-f" help:"Overwrite existing nodes on conflict"`
 	Interactive      bool   `arg:"--interactive,-i" help:"Interactive mode"`
+	To               string `arg:"--to,-t" help:"Copy all LOCATION arguments into DESTINATION" placeholder:"DESTINATION"`
 	DisableRewriting bool   `arg:"--disable-rewriting" help:"Do not rewrite $refs"`
 
 	Indent int    `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
@@ -227,6 +228,7 @@ func relocateNodes(sourceDoc, destDoc *common2.DocumentTree, relocatees []reloca
 
 	var changeLog []changeLogEntry
 	headsCount := lo.CountBy(relocatees, func(r relocatedNode) bool { return !r.isDependency && !r.isDirectDependency })
+	rootSections, _ := asyncapiEntitiesSectionPaths()
 	for _, r := range relocatees {
 		reason := "selected"
 		switch {
@@ -252,16 +254,20 @@ func relocateNodes(sourceDoc, destDoc *common2.DocumentTree, relocatees []reloca
 		switch {
 		case r.isDependency:
 			logger.Trace("Node is dependency", "path", r.node.Path(), "document", sourceDoc.AbsOriginDocumentPath())
-			rootSections, _ := asyncapiEntitiesSectionPaths()
-			rootSection, inRootSection := lo.Find(rootSections, func(s string) bool { return len(r.node.Path()) == 2 && r.node.Path()[0] == s })
+			rootSection, isMain := lo.Find(rootSections, func(s string) bool { return len(r.node.Path()) == 2 && r.node.Path()[0] == s })
+			isComponent := len(r.node.Path()) == 3 && r.node.Path()[0] == "components"
 			dContainerPath = []string{rootSection}
-			if !inRootSection {
+			if !isMain {
 				logger.Trace("Node is dependency not in root section", "path", r.node.Path(), "document", sourceDoc.AbsOriginDocumentPath())
 				componentsKey := asyncapiResolveComponentsKey(r.node.Path())
 				if componentsKey == "" {
 					return nil, fmt.Errorf("cannot auto determine the destination node for dependency %q, try to narrow down a pattern or to copy this node manually", r.node.AbsPointerString())
 				}
 				dContainerPath = []string{"components", componentsKey}
+				if !isComponent {
+					dKey = utils.ToGolangName(strings.Join(r.node.Path(), "_"), false)
+					logger.Warn("Making a component from dependency node", "location", destDoc.AbsOriginDocumentPath().Join(dContainerPath...).Join(dKey))
+				}
 			}
 		case len(destPattern.Pointer) > 0:
 			logger.Trace("Destination path is non-empty", "path", destPattern.Pointer, "document", destDoc.AbsOriginDocumentPath(), "headNodes", headsCount)
@@ -274,9 +280,9 @@ func relocateNodes(sourceDoc, destDoc *common2.DocumentTree, relocatees []reloca
 				switch {
 				case lo.LastOrEmpty(destPattern.Pointer) == "":
 					// "/foo/dest/"
-					return nil, fmt.Errorf("destination node %q does not exist", destDoc.AbsOriginDocumentPath().Join(dContainerPath...))
+					return nil, fmt.Errorf("destination %q does not exist", destDoc.AbsOriginDocumentPath().Join(dContainerPath...))
 				case headsCount > 1:
-					return nil, fmt.Errorf("cannot relocate %d nodes from %q to path %q, create it first or pick only one node", headsCount, sourceDoc.AbsOriginDocumentPath(), destDoc.AbsOriginDocumentPath().Join(dContainerPath...))
+					return nil, fmt.Errorf("%d nodes from %q: destination %q does not exist: create it, pick only one node or remove the pointer from destination to relocate to the same path", headsCount, sourceDoc.AbsOriginDocumentPath(), destDoc.AbsOriginDocumentPath().Join(dContainerPath...))
 				case len(dContainerPath) > 0:
 					// Relocating a node with rename. If destination is empty, keep the original destination
 					dKey = lo.LastOrEmpty(dContainerPath)

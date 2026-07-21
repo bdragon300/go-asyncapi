@@ -16,12 +16,13 @@ import (
 type MvCmd struct {
 	Locations []string `arg:"positional,required" help:"Nodes to move. If -t is omitted, the last LOCATION is considered as DESTINATION. Format: file.{yaml|yml|json}[#/path/to/node | GLOBBING_PATTERN]" placeholder:"LOCATION"`
 
-	To               string `arg:"--to,-t" help:"Move all LOCATION arguments into DESTINATION" placeholder:"DESTINATION"`
+	Link             bool   `arg:"--link,-l" help:"Insert a $ref into the source location after moving. Does not apply to nodes evaluated recursively"`
 	FollowRefs       bool   `arg:"--follow-refs,-r" help:"Follow $refs and move the referenced nodes recursively"`
 	ShallowRefs      bool   `arg:"--shallow-refs,-s" help:"Limit the following $refs only one level deep. Requires --follow-refs"`
 	Headless         bool   `arg:"--headless" help:"Exclude nodes. Makes sense with -r or -s"`
 	Force            bool   `arg:"--force,-f" help:"Overwrite existing nodes on conflict"`
 	Interactive      bool   `arg:"--interactive,-i" help:"Interactive mode"`
+	To               string `arg:"--to,-t" help:"Move all LOCATION arguments into DESTINATION" placeholder:"DESTINATION"`
 	DisableRewriting bool   `arg:"--disable-rewriting" help:"Do not rewrite $refs"`
 
 	Indent int    `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
@@ -63,6 +64,7 @@ func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 	var relocateesCount int
 	var relocatees []relocatedNode
 	var locationsToRemove []string
+	var headNodes []*types.RawNode
 	for _, pattern := range sourcePatterns {
 		logger.Debug("Loading document", "path", pattern.Location())
 		inputContents, err := loadDocumentCached(pattern.JSONPointer, docs, locator)
@@ -117,7 +119,9 @@ func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 			return fmt.Errorf("relocate nodes: %w", err)
 		}
 		changeLog = append(changeLog, chlog...)
+		headNodes = append(headNodes, heads...)
 	}
+	headPaths := lo.UniqMap(headNodes, func(n *types.RawNode, _ int) string { return n.AbsPointerString() })
 
 	// Return error if no nodes were relocated.
 	if relocateesCount == 0 {
@@ -133,7 +137,7 @@ func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 	}
 
 	logger.Trace("Applying moves to the documents", "count", len(changeLog))
-	if changeLog, err = applyMoves(docs, changeLog); err != nil {
+	if changeLog, err = applyMoves(docs, changeLog, headPaths, cmdConfig.Doc.Mv.Link); err != nil {
 		return fmt.Errorf("apply moves: %w", err)
 	}
 
@@ -180,13 +184,8 @@ func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 	return nil
 }
 
-func applyMoves(docs map[string]*common2.DocumentTree, changeLog []changeLogEntry) ([]changeLogEntry, error) {
+func applyMoves(docs map[string]*common2.DocumentTree, changeLog []changeLogEntry, heads []string, createHeadLinks bool) ([]changeLogEntry, error) {
 	logger := log.GetLogger("")
-	rootSections, componentsSections := asyncapiEntitiesSectionPaths()
-	entitySections := append(
-		lo.Chunk(rootSections, 1), // [1,2,3] -> [[1],[2],[3]]
-		lo.Map(componentsSections, func(s string, _ int) []string { return []string{"components", s} })...,
-	)
 	mandatorySections := lo.Chunk(asyncapiMandatoryRootPaths(), 1) // [1,2,3] -> [[1],[2],[3]]
 
 	for i := 0; i < len(changeLog); i++ {
@@ -223,12 +222,9 @@ func applyMoves(docs map[string]*common2.DocumentTree, changeLog []changeLogEntr
 
 		entry.Move = true
 
-		// If node is entity located in root sections ("#/servers", "#/channels", "#/messages") or it's a component
-		// or it's a root section itself, then remove it
-		rootEntityOrComponent := lo.SomeBy(entitySections, func(s []string) bool {
-			return lo.HasPrefix(entry.From.Pointer, s) && len(entry.From.Pointer)-len(s) == 1
-		})
-		if rootEntityOrComponent || len(entry.From.Pointer) == 1 {
+		// Replace the head node with a $ref to its new location if user has requested it.
+		toCreateRef := createHeadLinks && lo.ContainsBy(heads, func(h string) bool { return h == entry.From.String() })
+		if !toCreateRef {
 			logger.Debug("Removing the node", "node", entry.From.String())
 			if _, err := srcDoc.DeleteByPath(entry.From.Pointer); err != nil {
 				return nil, fmt.Errorf("remove node %q: %w", entry.From.String(), err)

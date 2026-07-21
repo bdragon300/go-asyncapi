@@ -98,6 +98,7 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 	res.Doc.Cp.DisableRewriting = common2.Coalesce(cmdCp.DisableRewriting, globalConfig.Doc.Cp.DisableRewriting)
 	res.Doc.Cp.Indent = common2.Coalesce(cmdCp.Indent, globalConfig.Doc.Cp.Indent)
 	res.Doc.Cp.Format = common2.Coalesce(cmdCp.Format, globalConfig.Doc.Cp.Format)
+	res.Doc.Mv.Link = common2.Coalesce(cmdMv.Link, globalConfig.Doc.Mv.Link)
 	res.Doc.Mv.ShallowRefs = common2.Coalesce(cmdMv.ShallowRefs, globalConfig.Doc.Mv.ShallowRefs)
 	res.Doc.Mv.FollowRefs = common2.Coalesce(cmdMv.FollowRefs, globalConfig.Doc.Mv.FollowRefs)
 	res.Doc.Mv.Headless = common2.Coalesce(cmdMv.Headless, globalConfig.Doc.Mv.Headless)

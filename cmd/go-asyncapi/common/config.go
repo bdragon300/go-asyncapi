@@ -201,6 +201,7 @@ type (
 	}
 
 	ToolConfigDocMv struct {
+		Link             bool   `yaml:"link"`
 		FollowRefs       bool   `yaml:"followRefs"`
 		ShallowRefs      bool   `yaml:"shallowRefs"`
 		Headless         bool   `yaml:"headless"`
@@ -400,6 +401,7 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.Cp.DisableRewriting = Coalesce(userConf.Doc.Cp.DisableRewriting, defaultConf.Doc.Cp.DisableRewriting)
 	res.Doc.Cp.Indent = Coalesce(userConf.Doc.Cp.Indent, defaultConf.Doc.Cp.Indent)
 	res.Doc.Cp.Format = Coalesce(userConf.Doc.Cp.Format, defaultConf.Doc.Cp.Format)
+	res.Doc.Mv.Link = Coalesce(userConf.Doc.Mv.Link, defaultConf.Doc.Mv.Link)
 	res.Doc.Mv.ShallowRefs = Coalesce(userConf.Doc.Mv.ShallowRefs, defaultConf.Doc.Mv.ShallowRefs)
 	res.Doc.Mv.FollowRefs = Coalesce(userConf.Doc.Mv.FollowRefs, defaultConf.Doc.Mv.FollowRefs)
 	res.Doc.Mv.Headless = Coalesce(userConf.Doc.Mv.Headless, defaultConf.Doc.Mv.Headless)
