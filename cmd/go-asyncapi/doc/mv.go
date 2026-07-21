@@ -18,12 +18,12 @@ type MvCmd struct {
 
 	AutoCreate       bool   `arg:"--auto-create,-a" help:"Automatically create a destination node if missing"`
 	Link             bool   `arg:"--link,-l" help:"Insert a $ref into the source location after moving. Does not apply to nodes evaluated recursively"`
-	FollowRefs       bool   `arg:"--follow-refs,-r" help:"Follow $refs and move the referenced nodes recursively"`
-	ShallowRefs      bool   `arg:"--shallow-refs,-s" help:"Limit the following $refs only one level deep. Requires --follow-refs"`
-	Headless         bool   `arg:"--headless" help:"Exclude nodes. Makes sense with -r or -s"`
+	Recursive        bool   `arg:"--recursive,-r" help:"Recursively move dependencies by following the $refs."`
+	RecursiveShallow bool   `arg:"--recursive-shallow,-S" help:"Like -r, but move only the first level of dependencies"`
+	Headless         bool   `arg:"--headless,-H" help:"Move only dependencies, excluding the matched nodes"`
 	Force            bool   `arg:"--force,-f" help:"Overwrite existing nodes on conflict"`
-	Interactive      bool   `arg:"--interactive,-i" help:"Interactive mode"`
-	To               string `arg:"--to,-t" help:"Move all LOCATION arguments into DESTINATION" placeholder:"DESTINATION"`
+	Interactive      bool   `arg:"--interactive,-i" help:"Resolve conflicts interactively"`
+	To               string `arg:"--to,-t" help:"Destination location. Once specified, all LOCATION arguments are moved into DESTINATION" placeholder:"DESTINATION"`
 	DisableRewriting bool   `arg:"--disable-rewriting" help:"Do not rewrite $refs"`
 
 	Indent int    `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
@@ -32,10 +32,6 @@ type MvCmd struct {
 
 func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 	logger := log.GetLogger("")
-
-	if cmd.ShallowRefs && !cmd.FollowRefs {
-		return fmt.Errorf("%w: --shallow-refs requires --follow-refs", common2.ErrInvalidCLIArgument)
-	}
 
 	sourcePatterns, destPattern, err := parseCliPatterns(cmd.Locations, cmd.To)
 	if err != nil {
@@ -88,10 +84,10 @@ func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 				return relocatedNode{node: n, isDependency: false, isDirectDependency: false}
 			})
 		}
-		if cmdConfig.Doc.Mv.FollowRefs {
-			logger.Trace("Collecting dependencies for head nodes", "count", len(heads), "followRefs", cmdConfig.Doc.Mv.FollowRefs, "shallowRefs", cmdConfig.Doc.Mv.ShallowRefs)
+		if cmdConfig.Doc.Mv.Recursive || cmdConfig.Doc.Mv.RecursiveShallow {
+			logger.Trace("Collecting dependencies for head nodes", "count", len(heads), "recursive", cmdConfig.Doc.Mv.Recursive, "recursiveShallow", cmdConfig.Doc.Mv.RecursiveShallow)
 			deps := lo.FlatMap(heads, func(n *types.RawNode, _ int) []relocatedNode {
-				r := collectDependencies(n, []*common2.DocumentTree{inputContents}, locator, !cmdConfig.Doc.Mv.ShallowRefs)
+				r := collectDependencies(n, []*common2.DocumentTree{inputContents}, locator, !cmdConfig.Doc.Mv.RecursiveShallow)
 				logger.Debug("Found dependencies for node", "path", n, "count", len(r))
 				return r
 			})

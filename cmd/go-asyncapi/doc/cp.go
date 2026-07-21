@@ -23,12 +23,12 @@ type CpCmd struct {
 	Locations []string `arg:"positional,required" help:"Document with optional node path or globbing pattern. If -t is omitted, the last LOCATION is considered as DESTINATION. Format: file.{yaml|yml|json}[#/path/to/node | GLOBBING_PATTERN]" placeholder:"LOCATION"`
 
 	AutoCreate       bool   `arg:"--auto-create,-a" help:"Automatically create a destination node if missing"`
-	FollowRefs       bool   `arg:"--follow-refs,-r" help:"Follow $refs and copy the referenced nodes recursively"`
-	ShallowRefs      bool   `arg:"--shallow-refs,-s" help:"Limit the following $refs only one level deep. Requires --follow-refs"`
-	Headless         bool   `arg:"--headless" help:"Exclude nodes. Makes sense with -r or -s"`
+	Recursive        bool   `arg:"--recursive,-r" help:"Recursively copy dependencies by following the $refs."`
+	RecursiveShallow bool   `arg:"--recursive-shallow,-S" help:"Like -r, but copy only the first level of dependencies"`
+	Headless         bool   `arg:"--headless,-H" help:"Copy only dependencies, excluding the matched nodes"`
 	Force            bool   `arg:"--force,-f" help:"Overwrite existing nodes on conflict"`
-	Interactive      bool   `arg:"--interactive,-i" help:"Interactive mode"`
-	To               string `arg:"--to,-t" help:"Copy all LOCATION arguments into DESTINATION" placeholder:"DESTINATION"`
+	Interactive      bool   `arg:"--interactive,-i" help:"Resolve conflicts interactively"`
+	To               string `arg:"--to,-t" help:"Destination location. Once specified, all LOCATION arguments are copied into DESTINATION" placeholder:"DESTINATION"`
 	DisableRewriting bool   `arg:"--disable-rewriting" help:"Do not rewrite $refs"`
 
 	Indent int    `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
@@ -37,10 +37,6 @@ type CpCmd struct {
 
 func cliCp(cmd *CpCmd, cmdConfig common2.ToolConfig) error {
 	logger := log.GetLogger("")
-
-	if cmd.ShallowRefs && !cmd.FollowRefs {
-		return fmt.Errorf("%w: --shallow-refs requires --follow-refs", common2.ErrInvalidCLIArgument)
-	}
 
 	sourcePatterns, destPattern, err := parseCliPatterns(cmd.Locations, cmd.To)
 	if err != nil {
@@ -75,10 +71,10 @@ func cliCp(cmd *CpCmd, cmdConfig common2.ToolConfig) error {
 				return relocatedNode{node: n, isDependency: false, isDirectDependency: false}
 			})
 		}
-		if cmdConfig.Doc.Cp.FollowRefs {
-			logger.Trace("Collecting dependencies for head nodes", "count", len(heads), "followRefs", cmdConfig.Doc.Cp.FollowRefs, "shallowRefs", cmdConfig.Doc.Cp.ShallowRefs)
+		if cmdConfig.Doc.Cp.Recursive || cmdConfig.Doc.Cp.RecursiveShallow {
+			logger.Trace("Collecting dependencies for head nodes", "count", len(heads), "recursive", cmdConfig.Doc.Cp.Recursive, "recursiveShallow", cmdConfig.Doc.Cp.RecursiveShallow)
 			deps := lo.FlatMap(heads, func(n *types.RawNode, _ int) []relocatedNode {
-				r := collectDependencies(n, []*common2.DocumentTree{inputContents}, locator, !cmdConfig.Doc.Cp.ShallowRefs)
+				r := collectDependencies(n, []*common2.DocumentTree{inputContents}, locator, !cmdConfig.Doc.Cp.RecursiveShallow)
 				logger.Debug("Found dependencies for node", "path", n, "count", len(r))
 				return r
 			})

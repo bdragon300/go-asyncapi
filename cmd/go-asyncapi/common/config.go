@@ -191,8 +191,8 @@ type (
 
 	ToolConfigDocCp struct {
 		AutoCreate       bool   `yaml:"autoCreate"`
-		FollowRefs       bool   `yaml:"followRefs"`
-		ShallowRefs      bool   `yaml:"shallowRefs"`
+		Recursive        bool   `yaml:"recursive"`
+		RecursiveShallow bool   `yaml:"recursiveShallow"`
 		Headless         bool   `yaml:"headless"`
 		Force            bool   `yaml:"force"`
 		Interactive      bool   `yaml:"interactive"`
@@ -204,8 +204,8 @@ type (
 	ToolConfigDocMv struct {
 		AutoCreate       bool   `yaml:"autoCreate"`
 		Link             bool   `yaml:"link"`
-		FollowRefs       bool   `yaml:"followRefs"`
-		ShallowRefs      bool   `yaml:"shallowRefs"`
+		Recursive        bool   `yaml:"recursive"`
+		RecursiveShallow bool   `yaml:"recursiveShallow"`
 		Headless         bool   `yaml:"headless"`
 		Force            bool   `yaml:"force"`
 		Interactive      bool   `yaml:"interactive"`
@@ -396,8 +396,8 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.Flatten.Format = Coalesce(userConf.Doc.Flatten.Format, defaultConf.Doc.Flatten.Format)
 	res.Locator.AllowRemoteReferences = Coalesce(res.Locator.AllowRemoteReferences, res.Doc.Flatten.RemoteRefs) // FIXME: rmeove and make a separate config param in locator constructor
 	res.Doc.Cp.AutoCreate = Coalesce(userConf.Doc.Cp.AutoCreate, defaultConf.Doc.Cp.AutoCreate)
-	res.Doc.Cp.ShallowRefs = Coalesce(userConf.Doc.Cp.ShallowRefs, defaultConf.Doc.Cp.ShallowRefs)
-	res.Doc.Cp.FollowRefs = Coalesce(userConf.Doc.Cp.FollowRefs, defaultConf.Doc.Cp.FollowRefs)
+	res.Doc.Cp.RecursiveShallow = Coalesce(userConf.Doc.Cp.RecursiveShallow, defaultConf.Doc.Cp.RecursiveShallow)
+	res.Doc.Cp.Recursive = Coalesce(userConf.Doc.Cp.Recursive, defaultConf.Doc.Cp.Recursive)
 	res.Doc.Cp.Headless = Coalesce(userConf.Doc.Cp.Headless, defaultConf.Doc.Cp.Headless)
 	res.Doc.Cp.Force = Coalesce(userConf.Doc.Cp.Force, defaultConf.Doc.Cp.Force)
 	res.Doc.Cp.Interactive = Coalesce(userConf.Doc.Cp.Interactive, defaultConf.Doc.Cp.Interactive)
@@ -406,8 +406,8 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.Cp.Format = Coalesce(userConf.Doc.Cp.Format, defaultConf.Doc.Cp.Format)
 	res.Doc.Mv.AutoCreate = Coalesce(userConf.Doc.Mv.AutoCreate, defaultConf.Doc.Mv.AutoCreate)
 	res.Doc.Mv.Link = Coalesce(userConf.Doc.Mv.Link, defaultConf.Doc.Mv.Link)
-	res.Doc.Mv.ShallowRefs = Coalesce(userConf.Doc.Mv.ShallowRefs, defaultConf.Doc.Mv.ShallowRefs)
-	res.Doc.Mv.FollowRefs = Coalesce(userConf.Doc.Mv.FollowRefs, defaultConf.Doc.Mv.FollowRefs)
+	res.Doc.Mv.RecursiveShallow = Coalesce(userConf.Doc.Mv.RecursiveShallow, defaultConf.Doc.Mv.RecursiveShallow)
+	res.Doc.Mv.Recursive = Coalesce(userConf.Doc.Mv.Recursive, defaultConf.Doc.Mv.Recursive)
 	res.Doc.Mv.Headless = Coalesce(userConf.Doc.Mv.Headless, defaultConf.Doc.Mv.Headless)
 	res.Doc.Mv.Force = Coalesce(userConf.Doc.Mv.Force, defaultConf.Doc.Mv.Force)
 	res.Doc.Mv.Interactive = Coalesce(userConf.Doc.Mv.Interactive, defaultConf.Doc.Mv.Interactive)
