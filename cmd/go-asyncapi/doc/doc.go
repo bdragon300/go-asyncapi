@@ -23,7 +23,7 @@ type Cmd struct {
 	Mv          *MvCmd          `arg:"subcommand:mv" help:"Move nodes between AsyncAPI documents."`
 	Validate    *ValidateCmd    `arg:"subcommand:validate" help:"Validate AsyncAPI documents against the AsyncAPI JSON Schema."`
 	Flatten     *FlattenCmd     `arg:"subcommand:flatten" help:"Flatten an AsyncAPI document by inlining all $refs with the nodes they point to."`
-	GenExamples *GenExamplesCmd `arg:"subcommand:gen-examples" help:"Generate examples for messages, message traits and schemas in an AsyncAPI document."`
+	GenExamples *GenExamplesCmd `arg:"subcommand:gen-examples" help:"Generate examples for messages and schemas in an AsyncAPI document."`
 	Inspect     *InspectCmd     `arg:"subcommand:inspect" help:"Inspect the AsyncAPI entities"`
 	Tree        *TreeCmd        `arg:"subcommand:tree" help:"Show the documents tree"`
 }

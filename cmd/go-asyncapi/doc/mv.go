@@ -18,7 +18,7 @@ type MvCmd struct {
 	Locations []string `arg:"positional,required" help:"Nodes to move. If -t is omitted, the last LOCATION is considered as DESTINATION. Format: file.{yaml|yml|json}[#/path/to/node | GLOBBING_PATTERN]" placeholder:"LOCATION"`
 
 	AutoCreate       bool   `arg:"--auto-create,-a" help:"Automatically create a destination node if missing"`
-	Link             bool   `arg:"--link,-l" help:"Insert a $ref into the source location after moving. Does not apply to nodes evaluated recursively"`
+	Link             bool   `arg:"--link,-l" help:"Embed a $ref into the original location after moving. Does not apply to nodes evaluated recursively"`
 	Recursive        bool   `arg:"--recursive,-r" help:"Recursively move dependencies by following the $refs."`
 	RecursiveShallow bool   `arg:"--recursive-shallow,-S" help:"Like -r, but move only the first level of dependencies"`
 	Headless         bool   `arg:"--headless,-H" help:"Move only dependencies, excluding the matched nodes"`

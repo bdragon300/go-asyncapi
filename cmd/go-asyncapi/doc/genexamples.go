@@ -29,7 +29,7 @@ type GenExamplesCmd struct {
 
 	DateFormat     string `arg:"--date-format" help:"Go date format to use in 'date' fields. See: https://pkg.go.dev/time#pkg-constants" placeholder:"FORMAT_STRING"`
 	TimeFormat     string `arg:"--time-format" help:"Go time format to use in 'time' fields. See: https://pkg.go.dev/time#pkg-constants" placeholder:"FORMAT_STRING"`
-	DateTimeFormat string `arg:"--date-time-format" help:"Go date-time format to use in 'date-time' fields. See: https://pkg.go.dev/time#pkg-constants" placeholder:"FORMAT_STRING"`
+	DateTimeFormat string `arg:"--datetime-format" help:"Go date-time format to use in 'date-time' fields. See: https://pkg.go.dev/time#pkg-constants" placeholder:"FORMAT_STRING"`
 
 	Indent int `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
 
@@ -84,7 +84,7 @@ func cliGenExamples(cmd *GenExamplesCmd, cmdConfig common2.ToolConfig) error {
 		useSchemas, useMessages = true, true // Select all these entities by default
 	}
 	logger.Debug("Collecting target nodes", "useSchemas", useSchemas, "useMessages", useMessages)
-	targets := exampleCollectTargets(subtree, nil, useSchemas, useMessages)
+	targets := collectNodesCanExamples(subtree, nil, useSchemas, useMessages)
 	if len(targets) == 0 {
 		logger.Warn("No matching nodes found, nothing to do")
 		return nil
@@ -144,8 +144,8 @@ func cliGenExamples(cmd *GenExamplesCmd, cmdConfig common2.ToolConfig) error {
 	return nil
 }
 
-// exampleCollectTargets recursively walks the node and returns every nested node that has one of the selected entity types.
-func exampleCollectTargets(node *types.RawNode, visitedTypes []string, schemas, messages bool) []*types.RawNode {
+// collectNodesCanExamples recursively walks the node and returns every nested node that has one of the selected entity types.
+func collectNodesCanExamples(node *types.RawNode, visitedTypes []string, schemas, messages bool) []*types.RawNode {
 	logger := log.GetLogger("")
 
 	if node == nil || node.Kind() == types.RawNodeKindScalar {
@@ -176,7 +176,7 @@ func exampleCollectTargets(node *types.RawNode, visitedTypes []string, schemas, 
 
 	logger.Trace("Iterating node entries", "path", node.Path(), "entity", entity, "visitedTypes", visitedTypes)
 	for _, e := range node.Entries() {
-		res = append(res, exampleCollectTargets(e, visitedTypes, schemas, messages)...)
+		res = append(res, collectNodesCanExamples(e, visitedTypes, schemas, messages)...)
 	}
 	return res
 }
