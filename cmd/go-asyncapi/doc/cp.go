@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/bdragon300/go-asyncapi/cmd/go-asyncapi/common"
+	"github.com/bdragon300/go-asyncapi/internal/compiler"
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/types"
@@ -31,8 +32,7 @@ type CpCmd struct {
 	To               string `arg:"--to,-t" help:"Destination location. Once specified, all LOCATION arguments are copied into DESTINATION" placeholder:"DESTINATION"`
 	DisableRewriting bool   `arg:"--disable-rewriting" help:"Do not rewrite $refs"`
 
-	Indent int    `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
-	Format string `arg:"--format" help:"Output format. Possible values: yaml, json" placeholder:"FORMAT"`
+	Indent int `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
 }
 
 func cliCp(cmd *CpCmd, cmdConfig common2.ToolConfig) error {
@@ -125,12 +125,12 @@ func cliCp(cmd *CpCmd, cmdConfig common2.ToolConfig) error {
 
 	logger.Info("Writing file", "file", outputContents.AbsOriginDocumentPath())
 	buf := bytes.NewBuffer(nil)
-	enc, err := getDocumentEncoder(buf, cmdConfig.Doc.Cp.Format, cmdConfig.Doc.Cp.Indent)
-	if err != nil {
-		return fmt.Errorf("get encoder: %w", err)
+	ef, _, format := compiler.GuessDocumentFormat(outputContents.AbsOriginDocumentPath().Location(), cmdConfig.Doc.Cp.Indent)
+	if format == "" {
+		return fmt.Errorf("cannot determine the output document format: %q", outputContents.AbsOriginDocumentPath().Location())
 	}
 
-	if err = enc.Encode(outputContents); err != nil {
+	if err = ef(buf).Encode(outputContents); err != nil {
 		return fmt.Errorf("marshal document: %w", err)
 	}
 	if err = os.WriteFile(outputContents.AbsOriginDocumentPath().Location(), buf.Bytes(), 0o644); err != nil {

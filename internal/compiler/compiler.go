@@ -43,8 +43,6 @@ import (
 
 	"github.com/bdragon300/go-asyncapi/internal/log"
 
-	"gopkg.in/yaml.v3"
-
 	"github.com/bdragon300/go-asyncapi/internal/common"
 )
 
@@ -167,8 +165,6 @@ func (c *Document) Stats() string {
 	)
 }
 
-type DecoderFactory func(io.Reader) AnyDecoder
-
 // ReadDocument reads a document pointed by u using a given locator. Returns the file contents and the factory
 // function that creates a format-specific decoder.
 func ReadDocument(u *jsonpointer.JSONPointer, locator documentLocator, logger *log.Logger) ([]byte, DecoderFactory, error) {
@@ -183,13 +179,10 @@ func ReadDocument(u *jsonpointer.JSONPointer, locator documentLocator, logger *l
 		return nil, nil, fmt.Errorf("read: %w", err)
 	}
 
-	switch path.Ext(u.Location()) {
-	case ".yaml", ".yml":
-		logger.Debug("File is in YAML format", "name", u.Location())
-		return data, func(rd io.Reader) AnyDecoder { return yaml.NewDecoder(rd) }, nil
-	case ".json":
-		logger.Debug("File is in JSON format", "name", u.Location())
-		return data, func(rd io.Reader) AnyDecoder { return json.NewDecoder(rd) }, nil
+	if _, df, f := GuessDocumentFormat(u.Location(), 2); f != "" {
+		// Indent is not used for decoding, so it may be any value.
+		logger.Debug("Document format determined by extension", "url", u, "format", f)
+		return data, df, nil
 	}
 	return data, nil, fmt.Errorf("cannot determine format by extension %s: %s", path.Ext(u.Location()), u.Location())
 }

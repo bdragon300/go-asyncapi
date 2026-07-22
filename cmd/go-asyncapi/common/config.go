@@ -190,28 +190,26 @@ type (
 	}
 
 	ToolConfigDocCp struct {
-		AutoCreate       bool   `yaml:"autoCreate"`
-		Recursive        bool   `yaml:"recursive"`
-		RecursiveShallow bool   `yaml:"recursiveShallow"`
-		Headless         bool   `yaml:"headless"`
-		Force            bool   `yaml:"force"`
-		Interactive      bool   `yaml:"interactive"`
-		DisableRewriting bool   `yaml:"disableRewriting"`
-		Indent           int    `yaml:"indent"`
-		Format           string `yaml:"format"`
+		AutoCreate       bool `yaml:"autoCreate"`
+		Recursive        bool `yaml:"recursive"`
+		RecursiveShallow bool `yaml:"recursiveShallow"`
+		Headless         bool `yaml:"headless"`
+		Force            bool `yaml:"force"`
+		Interactive      bool `yaml:"interactive"`
+		DisableRewriting bool `yaml:"disableRewriting"`
+		Indent           int  `yaml:"indent"`
 	}
 
 	ToolConfigDocMv struct {
-		AutoCreate       bool   `yaml:"autoCreate"`
-		Link             bool   `yaml:"link"`
-		Recursive        bool   `yaml:"recursive"`
-		RecursiveShallow bool   `yaml:"recursiveShallow"`
-		Headless         bool   `yaml:"headless"`
-		Force            bool   `yaml:"force"`
-		Interactive      bool   `yaml:"interactive"`
-		DisableRewriting bool   `yaml:"disableRewriting"`
-		Indent           int    `yaml:"indent"`
-		Format           string `yaml:"format"`
+		AutoCreate       bool `yaml:"autoCreate"`
+		Link             bool `yaml:"link"`
+		Recursive        bool `yaml:"recursive"`
+		RecursiveShallow bool `yaml:"recursiveShallow"`
+		Headless         bool `yaml:"headless"`
+		Force            bool `yaml:"force"`
+		Interactive      bool `yaml:"interactive"`
+		DisableRewriting bool `yaml:"disableRewriting"`
+		Indent           int  `yaml:"indent"`
 	}
 
 	ToolConfigDocValidate struct {
@@ -223,7 +221,6 @@ type (
 		ExternalRefs bool   `yaml:"externalRefs"`
 		RemoteRefs   bool   `yaml:"remoteRefs"`
 		Indent       int    `yaml:"indent"`
-		Format       string `yaml:"format"`
 	}
 
 	ToolConfigDocGenExamples struct {
@@ -237,7 +234,6 @@ type (
 		TimeFormat            string `yaml:"timeFormat"`
 		DateTimeFormat        string `yaml:"dateTimeFormat"`
 		Indent                int    `yaml:"indent"`
-		Format                string `yaml:"format"`
 	}
 
 	ToolConfigDocInspect struct {
@@ -393,7 +389,6 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.Flatten.ExternalRefs = Coalesce(userConf.Doc.Flatten.ExternalRefs, defaultConf.Doc.Flatten.ExternalRefs)
 	res.Doc.Flatten.RemoteRefs = Coalesce(userConf.Doc.Flatten.RemoteRefs, defaultConf.Doc.Flatten.RemoteRefs)
 	res.Doc.Flatten.Indent = Coalesce(userConf.Doc.Flatten.Indent, defaultConf.Doc.Flatten.Indent)
-	res.Doc.Flatten.Format = Coalesce(userConf.Doc.Flatten.Format, defaultConf.Doc.Flatten.Format)
 	res.Locator.AllowRemoteReferences = Coalesce(res.Locator.AllowRemoteReferences, res.Doc.Flatten.RemoteRefs) // FIXME: rmeove and make a separate config param in locator constructor
 	res.Doc.Cp.AutoCreate = Coalesce(userConf.Doc.Cp.AutoCreate, defaultConf.Doc.Cp.AutoCreate)
 	res.Doc.Cp.RecursiveShallow = Coalesce(userConf.Doc.Cp.RecursiveShallow, defaultConf.Doc.Cp.RecursiveShallow)
@@ -403,7 +398,6 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.Cp.Interactive = Coalesce(userConf.Doc.Cp.Interactive, defaultConf.Doc.Cp.Interactive)
 	res.Doc.Cp.DisableRewriting = Coalesce(userConf.Doc.Cp.DisableRewriting, defaultConf.Doc.Cp.DisableRewriting)
 	res.Doc.Cp.Indent = Coalesce(userConf.Doc.Cp.Indent, defaultConf.Doc.Cp.Indent)
-	res.Doc.Cp.Format = Coalesce(userConf.Doc.Cp.Format, defaultConf.Doc.Cp.Format)
 	res.Doc.Mv.AutoCreate = Coalesce(userConf.Doc.Mv.AutoCreate, defaultConf.Doc.Mv.AutoCreate)
 	res.Doc.Mv.Link = Coalesce(userConf.Doc.Mv.Link, defaultConf.Doc.Mv.Link)
 	res.Doc.Mv.RecursiveShallow = Coalesce(userConf.Doc.Mv.RecursiveShallow, defaultConf.Doc.Mv.RecursiveShallow)
@@ -413,7 +407,6 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.Mv.Interactive = Coalesce(userConf.Doc.Mv.Interactive, defaultConf.Doc.Mv.Interactive)
 	res.Doc.Mv.DisableRewriting = Coalesce(userConf.Doc.Mv.DisableRewriting, defaultConf.Doc.Mv.DisableRewriting)
 	res.Doc.Mv.Indent = Coalesce(userConf.Doc.Mv.Indent, defaultConf.Doc.Mv.Indent)
-	res.Doc.Mv.Format = Coalesce(userConf.Doc.Mv.Format, defaultConf.Doc.Mv.Format)
 	res.Doc.GenExamples.OutputFile = Coalesce(userConf.Doc.GenExamples.OutputFile, defaultConf.Doc.GenExamples.OutputFile)
 	res.Doc.GenExamples.OnlyMessages = Coalesce(userConf.Doc.GenExamples.OnlyMessages, defaultConf.Doc.GenExamples.OnlyMessages)
 	res.Doc.GenExamples.OnlySchemas = Coalesce(userConf.Doc.GenExamples.OnlySchemas, defaultConf.Doc.GenExamples.OnlySchemas)
@@ -423,7 +416,6 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Doc.GenExamples.TimeFormat = Coalesce(userConf.Doc.GenExamples.TimeFormat, defaultConf.Doc.GenExamples.TimeFormat)
 	res.Doc.GenExamples.DateTimeFormat = Coalesce(userConf.Doc.GenExamples.DateTimeFormat, defaultConf.Doc.GenExamples.DateTimeFormat)
 	res.Doc.GenExamples.Indent = Coalesce(userConf.Doc.GenExamples.Indent, defaultConf.Doc.GenExamples.Indent)
-	res.Doc.GenExamples.Format = Coalesce(userConf.Doc.GenExamples.Format, defaultConf.Doc.GenExamples.Format)
 	res.Locator.AllowRemoteReferences = Coalesce(res.Locator.AllowRemoteReferences, res.Doc.GenExamples.AllowRemoteReferences) // FIXME: rmeove and make a separate config param in locator constructor
 	res.Doc.Inspect.Entities = Coalesce(userConf.Doc.Inspect.Entities, defaultConf.Doc.Inspect.Entities)
 	res.Doc.Inspect.Recursive = Coalesce(userConf.Doc.Inspect.Recursive, defaultConf.Doc.Inspect.Recursive)

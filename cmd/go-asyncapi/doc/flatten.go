@@ -8,6 +8,7 @@ import (
 	"time"
 
 	common2 "github.com/bdragon300/go-asyncapi/cmd/go-asyncapi/common"
+	"github.com/bdragon300/go-asyncapi/internal/compiler"
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/types"
@@ -20,8 +21,7 @@ type FlattenCmd struct {
 	ExternalRefs bool   `arg:"--external-refs" help:"Consider the referenced objects located in external documents"`
 	RemoteRefs   bool   `arg:"--remote-refs" help:"Consider the referenced objects located in documents addressed by URLs"`
 
-	Indent int    `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
-	Format string `arg:"--format" help:"Output format. Possible values: yaml, json" placeholder:"FORMAT"`
+	Indent int `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
 
 	LocatorRootDir string        `arg:"--locator-root-dir" help:"Root directory to search the documents" placeholder:"PATH"`
 	LocatorTimeout time.Duration `arg:"--locator-timeout" help:"Timeout for locator to read a document. Format: 30s, 2m, etc." placeholder:"DURATION"`
@@ -67,11 +67,11 @@ func cliFlatten(cmd *FlattenCmd, cmdConfig common2.ToolConfig) error {
 
 	logger.Info("Writing flattened document", "file", outputPath)
 	buf := bytes.NewBuffer(nil)
-	enc, err := getDocumentEncoder(buf, cmdConfig.Doc.Flatten.Format, cmdConfig.Doc.Flatten.Indent)
-	if err != nil {
-		return fmt.Errorf("get encoder: %w", err)
+	ef, _, format := compiler.GuessDocumentFormat(outputPath, cmdConfig.Doc.Flatten.Indent)
+	if format == "" {
+		return fmt.Errorf("cannot determine the output document format: %q", outputPath)
 	}
-	if err = enc.Encode(inputContents); err != nil {
+	if err = ef(buf).Encode(inputContents); err != nil {
 		return fmt.Errorf("marshal document: %w", err)
 	}
 	if err = os.WriteFile(outputPath, buf.Bytes(), 0o644); err != nil {

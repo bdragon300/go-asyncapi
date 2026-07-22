@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	common2 "github.com/bdragon300/go-asyncapi/cmd/go-asyncapi/common"
+	"github.com/bdragon300/go-asyncapi/internal/compiler"
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/types"
@@ -26,8 +27,7 @@ type MvCmd struct {
 	To               string `arg:"--to,-t" help:"Destination location. Once specified, all LOCATION arguments are moved into DESTINATION" placeholder:"DESTINATION"`
 	DisableRewriting bool   `arg:"--disable-rewriting" help:"Do not rewrite $refs"`
 
-	Indent int    `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
-	Format string `arg:"--format" help:"Output format. Possible values: yaml, json" placeholder:"FORMAT"`
+	Indent int `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
 }
 
 func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
@@ -165,11 +165,11 @@ func cliMv(cmd *MvCmd, cmdConfig common2.ToolConfig) error {
 
 		logger.Info("Writing file", "file", origin)
 		buf := bytes.NewBuffer(nil)
-		enc, err := getDocumentEncoder(buf, cmdConfig.Doc.Mv.Format, cmdConfig.Doc.Mv.Indent)
-		if err != nil {
-			return fmt.Errorf("get encoder: %w", err)
+		ef, _, format := compiler.GuessDocumentFormat(origin.Location(), cmdConfig.Doc.Mv.Indent)
+		if format == "" {
+			return fmt.Errorf("cannot determine the output document format: %q", origin.Location())
 		}
-		if err = enc.Encode(d); err != nil {
+		if err = ef(buf).Encode(d); err != nil {
 			return fmt.Errorf("marshal document %q: %w", origin, err)
 		}
 		if err = os.WriteFile(origin.Location(), buf.Bytes(), 0o644); err != nil {

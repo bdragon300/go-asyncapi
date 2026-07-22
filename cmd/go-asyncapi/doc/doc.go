@@ -2,9 +2,7 @@ package doc
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
 	"path"
 	"path/filepath"
 	"slices"
@@ -18,12 +16,7 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/types"
 	"github.com/gobwas/glob"
 	"github.com/samber/lo"
-	"gopkg.in/yaml.v3"
 )
-
-type anyEncoder interface {
-	Encode(v any) error
-}
 
 type Cmd struct {
 	Cp          *CpCmd          `arg:"subcommand:cp" help:"Copy nodes between AsyncAPI documents."`
@@ -83,7 +76,6 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 	res.Doc.Flatten.ExternalRefs = common2.Coalesce(cmdFlatten.ExternalRefs, globalConfig.Doc.Flatten.ExternalRefs)
 	res.Doc.Flatten.RemoteRefs = common2.Coalesce(cmdFlatten.RemoteRefs, globalConfig.Doc.Flatten.RemoteRefs)
 	res.Doc.Flatten.Indent = common2.Coalesce(cmdFlatten.Indent, globalConfig.Doc.Flatten.Indent)
-	res.Doc.Flatten.Format = common2.Coalesce(cmdFlatten.Format, globalConfig.Doc.Flatten.Format)
 	if cmd.Flatten != nil {
 		res.Locator.AllowRemoteReferences = common2.Coalesce(cmdFlatten.RemoteRefs, res.Doc.Flatten.RemoteRefs)
 		res.Locator.Command = common2.Coalesce(cmdFlatten.LocatorCommand, globalConfig.Locator.Command)
@@ -98,7 +90,6 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 	res.Doc.Cp.Interactive = common2.Coalesce(cmdCp.Interactive, globalConfig.Doc.Cp.Interactive)
 	res.Doc.Cp.DisableRewriting = common2.Coalesce(cmdCp.DisableRewriting, globalConfig.Doc.Cp.DisableRewriting)
 	res.Doc.Cp.Indent = common2.Coalesce(cmdCp.Indent, globalConfig.Doc.Cp.Indent)
-	res.Doc.Cp.Format = common2.Coalesce(cmdCp.Format, globalConfig.Doc.Cp.Format)
 	res.Doc.Mv.AutoCreate = common2.Coalesce(cmdMv.AutoCreate, globalConfig.Doc.Mv.AutoCreate)
 	res.Doc.Mv.Link = common2.Coalesce(cmdMv.Link, globalConfig.Doc.Mv.Link)
 	res.Doc.Mv.RecursiveShallow = common2.Coalesce(cmdMv.RecursiveShallow, globalConfig.Doc.Mv.RecursiveShallow)
@@ -108,7 +99,6 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 	res.Doc.Mv.Interactive = common2.Coalesce(cmdMv.Interactive, globalConfig.Doc.Mv.Interactive)
 	res.Doc.Mv.DisableRewriting = common2.Coalesce(cmdMv.DisableRewriting, globalConfig.Doc.Mv.DisableRewriting)
 	res.Doc.Mv.Indent = common2.Coalesce(cmdMv.Indent, globalConfig.Doc.Mv.Indent)
-	res.Doc.Mv.Format = common2.Coalesce(cmdMv.Format, globalConfig.Doc.Mv.Format)
 	res.Doc.GenExamples.OutputFile = common2.Coalesce(cmdGenExamples.Output, globalConfig.Doc.GenExamples.OutputFile)
 	res.Doc.GenExamples.OnlyMessages = common2.Coalesce(cmdGenExamples.OnlyMessages, globalConfig.Doc.GenExamples.OnlyMessages)
 	res.Doc.GenExamples.OnlySchemas = common2.Coalesce(cmdGenExamples.OnlySchemas, globalConfig.Doc.GenExamples.OnlySchemas)
@@ -118,7 +108,6 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 	res.Doc.GenExamples.TimeFormat = common2.Coalesce(cmdGenExamples.TimeFormat, globalConfig.Doc.GenExamples.TimeFormat)
 	res.Doc.GenExamples.DateTimeFormat = common2.Coalesce(cmdGenExamples.DateTimeFormat, globalConfig.Doc.GenExamples.DateTimeFormat)
 	res.Doc.GenExamples.Indent = common2.Coalesce(cmdGenExamples.Indent, globalConfig.Doc.GenExamples.Indent)
-	res.Doc.GenExamples.Format = common2.Coalesce(cmdGenExamples.Format, globalConfig.Doc.GenExamples.Format)
 	if cmd.GenExamples != nil {
 		res.Locator.AllowRemoteReferences = common2.Coalesce(cmdGenExamples.AllowRemoteRefs, res.Doc.GenExamples.AllowRemoteReferences)
 		res.Locator.Command = common2.Coalesce(cmdGenExamples.LocatorCommand, globalConfig.Locator.Command)
@@ -186,28 +175,6 @@ func parseRefRawNode(n *types.RawNode) (*jsonpointer.JSONPointer, error) {
 		return nil, fmt.Errorf("parse $ref value: %w", err)
 	}
 	return ref, nil
-}
-
-func getDocumentEncoder(w io.Writer, format string, indent int) (anyEncoder, error) {
-	// TODO: auto guess output format based on input files extensions
-	logger := log.GetLogger("")
-
-	var enc anyEncoder
-	switch format {
-	case "json":
-		logger.Debug("Using JSON output format", "indent", indent)
-		e := json.NewEncoder(w)
-		e.SetIndent("", strings.Repeat(" ", indent))
-		enc = e
-	case "yaml":
-		logger.Debug("Using YAML output format", "indent", indent)
-		e := yaml.NewEncoder(w)
-		e.SetIndent(indent)
-		enc = e
-	default:
-		return nil, fmt.Errorf("%w: unknown output format %q", common2.ErrInvalidCLIArgument, format)
-	}
-	return enc, nil
 }
 
 func rewriteRefs(doc *common2.DocumentTree, locator common2.DocumentLocator, changeLog []changeLogEntry) {

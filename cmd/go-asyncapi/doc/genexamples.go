@@ -9,6 +9,7 @@ import (
 	"time"
 
 	common2 "github.com/bdragon300/go-asyncapi/cmd/go-asyncapi/common"
+	"github.com/bdragon300/go-asyncapi/internal/compiler"
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/types"
@@ -30,8 +31,7 @@ type GenExamplesCmd struct {
 	TimeFormat     string `arg:"--time-format" help:"Go time format to use in 'time' fields. See: https://pkg.go.dev/time#pkg-constants" placeholder:"FORMAT_STRING"`
 	DateTimeFormat string `arg:"--date-time-format" help:"Go date-time format to use in 'date-time' fields. See: https://pkg.go.dev/time#pkg-constants" placeholder:"FORMAT_STRING"`
 
-	Indent int    `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
-	Format string `arg:"--format" help:"Output format. Possible values: yaml, json" placeholder:"FORMAT"`
+	Indent int `arg:"--indent" help:"Output document indentation width" placeholder:"SPACES"`
 
 	LocatorRootDir string        `arg:"--locator-root-dir" help:"Root directory to search the documents" placeholder:"PATH"`
 	LocatorTimeout time.Duration `arg:"--locator-timeout" help:"Timeout for locator to read a document. Format: 30s, 2m, etc." placeholder:"DURATION"`
@@ -130,11 +130,11 @@ func cliGenExamples(cmd *GenExamplesCmd, cmdConfig common2.ToolConfig) error {
 
 	logger.Info("Writing document", "file", outputPath, "examplesGenerated", generated)
 	buf := bytes.NewBuffer(nil)
-	enc, err := getDocumentEncoder(buf, cmdConfig.Doc.GenExamples.Format, cmdConfig.Doc.GenExamples.Indent)
-	if err != nil {
-		return fmt.Errorf("get encoder: %w", err)
+	ef, _, format := compiler.GuessDocumentFormat(outputPath, cmdConfig.Doc.GenExamples.Indent)
+	if format == "" {
+		return fmt.Errorf("cannot determine the output document format: %q", outputPath)
 	}
-	if err = enc.Encode(doc); err != nil {
+	if err = ef(buf).Encode(doc); err != nil {
 		return fmt.Errorf("marshal document: %w", err)
 	}
 	if err = os.WriteFile(outputPath, buf.Bytes(), 0o644); err != nil {

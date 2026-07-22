@@ -55,13 +55,10 @@ ui:
 doc:
   cp:
     indent: 2
-    format: yaml
   mv:
     indent: 2
-    format: yaml
   flatten:
     indent: 2
-    format: yaml
   inspect:
     entryStyle: human
   genExamples:
@@ -70,4 +67,3 @@ doc:
     dateTimeFormat: "2006-01-02T15:04:05Z07:00"  # RFC3339 format
     count: 1
     indent: 2
-    format: yaml
