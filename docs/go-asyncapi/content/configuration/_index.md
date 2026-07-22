@@ -26,12 +26,14 @@ See also [default configuration file](https://github.com/bdragon300/go-asyncapi/
 | projectModule   | string                              |                                                                                     | Project module name for the generated code. If empty, takes from go.mod in the current working directory |
 | runtimeModule   | string                              | `github.com/bdragon300/go-asyncapi/run`                                             | Path to runtime module with auxiliary code                                                               |
 | templatesDir    | string                              |                                                                                     | Directory with [custom templates]({{< relref "/templating-guide/overview" >}})                           |
+| quiet           | bool                                | `false`                                                                             | If `true`, suppresses the logging output                                                                 |
 | locator         | [Locator](#locator)                 |                                                                                     | [Reference locator]({{< relref "/asyncapi-specification/references#reference-locator" >}}) settings      |
 | code            | [Code](#code)                       |                                                                                     | Code generation settings                                                                                 |
 | client          | [Client](#client)                   |                                                                                     | No-code client building settings                                                                         |
 | infra           | [Infra](#infra)                     |                                                                                     | Infra files generation settings                                                                          |
 | diagram         | [Diagram](#diagram)                 |                                                                                     | Diagram generation settings                                                                              |
 | ui              | [UI](#ui)                           |                                                                                     | Web UI generation settings                                                                               |
+| doc             | [Doc](#doc)                         |                                                                                     | Settings for the `doc` subcommands                                                                       |
 
 ## Locator
 
@@ -205,6 +207,112 @@ Several conditions in one layout rule are joined via **AND** operation.
 | listenPath    | string | `/`     | URL base path to serve the UI in listening mode                                                                                                          |
 | bundle        | bool   | `false` | Make a bundle. See also [Bundling the assets]({{< relref "/commands/ui#bundling-the-assets" >}})                                                         |
 | bundleDir     | string |         | If not empty, get assets to bundle from directory instead of using default assets. See also [Custom assets]({{< relref "/commands/ui#custom-assets" >}}) |
+
+## Doc
+
+Settings for the `doc` subcommand. Each attribute corresponds to a `doc` subcommand.
+
+| Attribute   | Type                              | Default | Description                            |
+|-------------|-----------------------------------|---------|----------------------------------------|
+| cp          | [DocCp](#doccp)                   |         | `doc cp` subcommand settings           |
+| mv          | [DocMv](#docmv)                   |         | `doc mv` subcommand settings           |
+| validate    | [DocValidate](#docvalidate)       |         | `doc validate` subcommand settings     |
+| flatten     | [DocFlatten](#docflatten)         |         | `doc flatten` subcommand settings      |
+| genExamples | [DocGenExamples](#docgenexamples) |         | `doc gen-examples` subcommand settings |
+| inspect     | [DocInspect](#docinspect)         |         | `doc inspect` subcommand settings      |
+| tree        | [DocTree](#doctree)               |         | `doc tree` subcommand settings         |
+
+## DocCp
+
+Settings for the `doc cp` subcommand (copy nodes between AsyncAPI documents).
+
+| Attribute        | Type | Default | Description                                                     |
+|------------------|------|---------|-----------------------------------------------------------------|
+| autoCreate       | bool | `false` | Automatically create a destination node if missing              |
+| recursive        | bool | `false` | Recursively copy dependencies by following the `$ref`s          |
+| recursiveShallow | bool | `false` | Like `recursive`, but copy only the first level of dependencies |
+| headless         | bool | `false` | Copy only dependencies, excluding the matched nodes             |
+| force            | bool | `false` | Overwrite existing nodes on conflict                            |
+| interactive      | bool | `false` | Resolve conflicts interactively                                 |
+| disableRewriting | bool | `false` | Do not rewrite `$ref`s                                          |
+| indent           | int  | `2`     | Output document indentation width in spaces                     |
+
+## DocMv
+
+Settings for the `doc mv` subcommand (move nodes between AsyncAPI documents).
+
+| Attribute        | Type | Default | Description                                                                                        |
+|------------------|------|---------|----------------------------------------------------------------------------------------------------|
+| autoCreate       | bool | `false` | Automatically create a destination node if missing                                                 |
+| link             | bool | `false` | Embed a `$ref` into the original location after moving. Does not apply to nodes evaluated recursively |
+| recursive        | bool | `false` | Recursively move dependencies by following the `$ref`s                                             |
+| recursiveShallow | bool | `false` | Like `recursive`, but move only the first level of dependencies                                    |
+| headless         | bool | `false` | Move only dependencies, excluding the matched nodes                                                |
+| force            | bool | `false` | Overwrite existing nodes on conflict                                                               |
+| interactive      | bool | `false` | Resolve conflicts interactively                                                                    |
+| disableRewriting | bool | `false` | Do not rewrite `$ref`s                                                                             |
+| indent           | int  | `2`     | Output document indentation width in spaces                                                        |
+
+## DocValidate
+
+Settings for the `doc validate` subcommand (validate documents against the AsyncAPI JSON Schema).
+
+| Attribute | Type   | Default | Description                                                                                                                 |
+|-----------|--------|---------|-----------------------------------------------------------------------------------------------------------------------------|
+| schema    | string |         | Custom JSON Schema file to validate against. By default, the built-in AsyncAPI schema matching the document version is used |
+
+## DocFlatten
+
+Settings for the `doc flatten` subcommand (inline all `$ref`s with the nodes they point to).
+
+| Attribute    | Type   | Default | Description                                                                                       |
+|--------------|--------|---------|---------------------------------------------------------------------------------------------------|
+| outputFile   | string |         | File where to write the flattened document. If empty, the original document is modified in-place  |
+| externalRefs | bool   | `false` | Consider the referenced objects located in external documents                                     |
+| remoteRefs   | bool   | `false` | Consider the referenced objects located in documents addressed by URLs                            |
+| indent       | int    | `2`     | Output document indentation width in spaces                                                       |
+
+## DocGenExamples
+
+Settings for the `doc gen-examples` subcommand (generate examples for messages and schemas).
+
+| Attribute             | Type   | Default                     | Description                                                                                        |
+|-----------------------|--------|-----------------------------|----------------------------------------------------------------------------------------------------|
+| outputFile            | string |                             | File where to write the result. If empty, the original document is modified in-place               |
+| onlyMessages          | bool   | `false`                     | Generate examples for messages only                                                                |
+| onlySchemas           | bool   | `false`                     | Generate examples for schemas only (including nested ones in other entities)                       |
+| append                | bool   | `false`                     | Append generated examples to entities that already have examples                                   |
+| count                 | int    | `1`                         | Number of examples to generate for each entity                                                     |
+| allowRemoteReferences | bool   | `false`                     | Allow fetching the documents from remote hosts                                                     |
+| dateFormat            | string | `2006-01-02`                | Go date format to use in `date` fields. See [time package](https://pkg.go.dev/time#pkg-constants)  |
+| timeFormat            | string | `15:04:05`                  | Go time format to use in `time` fields. See [time package](https://pkg.go.dev/time#pkg-constants)  |
+| dateTimeFormat        | string | `2006-01-02T15:04:05Z07:00` | Go date-time format to use in `date-time` fields (RFC3339). See [time package](https://pkg.go.dev/time#pkg-constants) |
+| indent                | int    | `2`                         | Output document indentation width in spaces                                                        |
+
+## DocInspect
+
+Settings for the `doc inspect` subcommand (inspect the AsyncAPI entities).
+
+| Attribute             | Type   | Default | Description                                                                                                     |
+|-----------------------|--------|---------|-----------------------------------------------------------------------------------------------------------------|
+| entities              | string |         | Comma-separated list of entities to show, or `help` to list all available entities and exit                     |
+| recursive             | bool   | `false` | Show all nested nodes recursively                                                                               |
+| recursiveExpand       | bool   | `false` | Show all nested nodes recursively, also expanding all inner jsonschema objects and fully unfolding all `$ref`s  |
+| components            | bool   | `false` | Show only entities defined in the components section of the documents                                           |
+| main                  | bool   | `false` | Show only servers, channels and operations defined in the root sections of the document                         |
+| followExternalRefs    | bool   | `false` | Follow the `$ref`s pointing to other documents                                                                  |
+| allowRemoteReferences | bool   | `false` | Follow the `$ref`s pointing to URLs. Implies `followExternalRefs`                                               |
+| list                  | bool   | `false` | Show the result as a list                                                                                       |
+| entryStyle            | string | `human` | Style of the output entries. Possible values: `human`, `human-no-color`, `json-pointer`, `yq`                   |
+
+## DocTree
+
+Settings for the `doc tree` subcommand (show the documents tree).
+
+| Attribute             | Type | Default | Description                         |
+|-----------------------|------|---------|-------------------------------------|
+| list                  | bool | `false` | Show the result as a list           |
+| allowRemoteReferences | bool | `false` | Follow the `$ref`s pointing to URLs |
 
 
 # Notes

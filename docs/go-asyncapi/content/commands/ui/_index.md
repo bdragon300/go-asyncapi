@@ -1,6 +1,6 @@
 ---
 title: "ui"
-weight: 350
+weight: 340
 description: "Generation the Go AsyncAPI web UI"
 ---
 

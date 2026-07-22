@@ -1,6 +1,6 @@
 ---
 title: "infra"
-weight: 330
+weight: 360
 description: "Generating the server definitions"
 ---
 

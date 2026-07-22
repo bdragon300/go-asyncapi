@@ -1,6 +1,6 @@
 ---
 title: "client"
-weight: 320
+weight: 350
 description: "Generating the client application executable"
 ---
 

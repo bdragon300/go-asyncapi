@@ -1,6 +1,6 @@
 ---
 title: "diagram"
-weight: 340
+weight: 330
 bookToC: true
 description: "Generating the diagrams"
 ---

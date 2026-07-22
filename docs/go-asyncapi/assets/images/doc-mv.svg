@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 680" width="920" height="680"
+     font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+  <defs>
+    <marker id="aLocal" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#2f9e44"/>
+    </marker>
+    <marker id="aCross" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#e8590c"/>
+    </marker>
+    <marker id="aOp" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#adb5bd"/>
+    </marker>
+  </defs>
+
+  <!-- neutral backdrop so the schematic reads on light and dark themes alike -->
+  <rect x="0" y="0" width="920" height="680" rx="10" fill="#ffffff" stroke="#e9ecef" stroke-width="1"/>
+
+  <text x="210" y="46" text-anchor="middle" font-size="16" font-weight="700" fill="#868e96" letter-spacing="2">BEFORE</text>
+  <text x="710" y="46" text-anchor="middle" font-size="16" font-weight="700" fill="#868e96" letter-spacing="2">AFTER</text>
+
+  <!-- ======================= BEFORE ======================= -->
+
+  <!-- source.yaml: holds the foo node and a local $ref to it -->
+  <path d="M40,78 H366 L380,92 V216 H40 Z" fill="#fbfcfd" stroke="#ced4da" stroke-width="1.5"/>
+  <path d="M366,78 V92 H380 Z" fill="#e9ecef" stroke="#ced4da" stroke-width="1.5"/>
+  <text x="56" y="102" font-size="13" font-weight="700" fill="#495057">source.yaml</text>
+
+  <rect x="55" y="110" width="200" height="40" rx="6" fill="#ffffff" stroke="#2f9e44" stroke-width="1.5"/>
+  <text x="67" y="130" font-size="12" fill="#495057">$ref:</text>
+  <text x="67" y="146" font-size="11" fill="#868e96">#/servers/foo</text>
+  <line x1="262" y1="130" x2="352" y2="130" stroke="#eceef1" stroke-width="4" stroke-linecap="round"/>
+
+  <rect x="55" y="160" width="200" height="40" rx="6" fill="#4dabf7" stroke="#1c7ed6" stroke-width="1.5"/>
+  <text x="67" y="180" font-size="12" fill="#ffffff">servers:</text>
+  <text x="79" y="196" font-size="12" font-weight="700" fill="#ffffff">foo:</text>
+  <line x1="262" y1="180" x2="352" y2="180" stroke="#eceef1" stroke-width="4" stroke-linecap="round"/>
+
+  <path d="M255,142 C295,142 295,168 255,168" fill="none" stroke="#2f9e44" stroke-width="2" marker-end="url(#aLocal)"/>
+
+  <!-- dest.yaml: the destination, already holding a cross-document $ref to foo -->
+  <path d="M40,250 H366 L380,264 V430 H40 Z" fill="#fbfcfd" stroke="#ced4da" stroke-width="1.5"/>
+  <path d="M366,250 V264 H380 Z" fill="#e9ecef" stroke="#ced4da" stroke-width="1.5"/>
+  <text x="56" y="274" font-size="13" font-weight="700" fill="#495057">dest.yaml</text>
+  <text x="360" y="274" text-anchor="end" font-size="11" font-style="italic" fill="#adb5bd"
+        font-family="-apple-system, Segoe UI, Roboto, sans-serif">destination</text>
+
+  <rect x="55" y="286" width="250" height="40" rx="6" fill="#ffffff" stroke="#e8590c" stroke-width="1.5"/>
+  <text x="67" y="306" font-size="12" fill="#495057">$ref:</text>
+  <text x="67" y="322" font-size="11" fill="#868e96">source.yaml#/servers/foo</text>
+  <line x1="312" y1="306" x2="352" y2="306" stroke="#eceef1" stroke-width="4" stroke-linecap="round"/>
+
+  <line x1="56" y1="360" x2="300" y2="360" stroke="#eceef1" stroke-width="4" stroke-linecap="round"/>
+  <line x1="56" y1="384" x2="260" y2="384" stroke="#eceef1" stroke-width="4" stroke-linecap="round"/>
+  <line x1="56" y1="404" x2="240" y2="404" stroke="#eceef1" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- dest.yaml points up into source.yaml's foo node -->
+  <path d="M300,286 C330,260 330,225 250,200" fill="none" stroke="#e8590c" stroke-width="2"
+        stroke-dasharray="6 4" marker-end="url(#aCross)"/>
+
+  <!-- file3.yaml: a third document that also references foo -->
+  <path d="M40,464 H366 L380,478 V602 H40 Z" fill="#fbfcfd" stroke="#ced4da" stroke-width="1.5"/>
+  <path d="M366,464 V478 H380 Z" fill="#e9ecef" stroke="#ced4da" stroke-width="1.5"/>
+  <text x="56" y="488" font-size="13" font-weight="700" fill="#495057">file3.yaml</text>
+
+  <rect x="55" y="496" width="250" height="40" rx="6" fill="#ffffff" stroke="#e8590c" stroke-width="1.5"/>
+  <text x="67" y="516" font-size="12" fill="#495057">$ref:</text>
+  <text x="67" y="532" font-size="11" fill="#868e96">source.yaml#/servers/foo</text>
+  <line x1="312" y1="516" x2="352" y2="516" stroke="#eceef1" stroke-width="4" stroke-linecap="round"/>
+
+  <line x1="56" y1="562" x2="300" y2="562" stroke="#eceef1" stroke-width="4" stroke-linecap="round"/>
+  <line x1="56" y1="580" x2="240" y2="580" stroke="#eceef1" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- file3.yaml points into source.yaml's foo node (routed around dest.yaml on the left) -->
+  <path d="M55,516 C20,480 20,210 55,180" fill="none" stroke="#e8590c" stroke-width="2"
+        stroke-dasharray="6 4" marker-end="url(#aCross)"/>
+
+  <!-- ======================= operation ======================= -->
+  <text x="460" y="320" text-anchor="middle" font-size="14" font-weight="700" fill="#495057"
+        font-family="-apple-system, Segoe UI, Roboto, sans-serif">doc mv</text>
+  <text x="460" y="338" text-anchor="middle" font-size="11" fill="#adb5bd"
+        font-family="-apple-system, Segoe UI, Roboto, sans-serif">move node, rewrite $refs</text>
+  <line x1="432" y1="356" x2="488" y2="356" stroke="#adb5bd" stroke-width="3" marker-end="url(#aOp)"/>
+
+  <!-- ======================= AFTER ======================= -->
+
+  <!-- source.yaml: foo removed, its $ref repointed to dest.yaml -->
+  <path d="M540,78 H866 L880,92 V216 H540 Z" fill="#fbfcfd" stroke="#ced4da" stroke-width="1.5"/>
+  <path d="M866,78 V92 H880 Z" fill="#e9ecef" stroke="#ced4da" stroke-width="1.5"/>
+  <text x="556" y="102" font-size="13" font-weight="700" fill="#495057">source.yaml</text>
+  <text x="866" y="102" text-anchor="end" font-size="11" font-style="italic" fill="#adb5bd"
+        font-family="-apple-system, Segoe UI, Roboto, sans-serif">$ref repointed</text>
+
+  <rect x="555" y="110" width="250" height="40" rx="6" fill="#ffffff" stroke="#e8590c" stroke-width="1.5"/>
+  <text x="567" y="130" font-size="12" fill="#495057">$ref:</text>
+  <text x="567" y="146" font-size="11" fill="#868e96">dest.yaml#/servers/foo</text>
+  <line x1="812" y1="130" x2="852" y2="130" stroke="#eceef1" stroke-width="4" stroke-linecap="round"/>
+
+  <line x1="556" y1="170" x2="800" y2="170" stroke="#eceef1" stroke-width="4" stroke-linecap="round"/>
+  <line x1="556" y1="190" x2="740" y2="190" stroke="#eceef1" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- source.yaml -> dest.yaml foo node is drawn after the dest sheet (below) so it stays on top -->
+
+  <!-- dest.yaml: foo moved in; its own $ref became local -->
+  <path d="M540,250 H866 L880,264 V430 H540 Z" fill="#fbfcfd" stroke="#ced4da" stroke-width="1.5"/>
+  <path d="M866,250 V264 H880 Z" fill="#e9ecef" stroke="#ced4da" stroke-width="1.5"/>
+  <text x="556" y="274" font-size="13" font-weight="700" fill="#495057">dest.yaml</text>
+  <text x="866" y="274" text-anchor="end" font-size="11" font-style="italic" fill="#adb5bd"
+        font-family="-apple-system, Segoe UI, Roboto, sans-serif">node moved in</text>
+
+  <rect x="555" y="286" width="200" height="40" rx="6" fill="#4dabf7" stroke="#1c7ed6" stroke-width="1.5"/>
+  <text x="567" y="306" font-size="12" fill="#ffffff">servers:</text>
+  <text x="579" y="322" font-size="12" font-weight="700" fill="#ffffff">foo:</text>
+  <text x="672" y="306" font-size="10" font-style="italic" fill="#d0ebff"
+        font-family="-apple-system, Segoe UI, Roboto, sans-serif">moved</text>
+
+  <rect x="555" y="346" width="200" height="40" rx="6" fill="#ffffff" stroke="#2f9e44" stroke-width="1.5"/>
+  <text x="567" y="366" font-size="12" fill="#495057">$ref:</text>
+  <text x="567" y="382" font-size="11" fill="#868e96">#/servers/foo</text>
+  <line x1="762" y1="366" x2="815" y2="366" stroke="#eceef1" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- dest.yaml's $ref is now local: it resolves to the freshly moved-in node -->
+  <path d="M755,348 C778,348 778,326 755,326" fill="none" stroke="#2f9e44" stroke-width="2" marker-end="url(#aLocal)"/>
+
+  <!-- source.yaml points across into dest.yaml's foo node; comes in from above the block so it stays visible -->
+  <path d="M720,150 C735,205 735,240 720,284" fill="none" stroke="#e8590c" stroke-width="2"
+        stroke-dasharray="6 4" marker-end="url(#aCross)"/>
+
+  <!-- file3.yaml: $ref repointed to dest.yaml -->
+  <path d="M540,464 H866 L880,478 V602 H540 Z" fill="#fbfcfd" stroke="#ced4da" stroke-width="1.5"/>
+  <path d="M866,464 V478 H880 Z" fill="#e9ecef" stroke="#ced4da" stroke-width="1.5"/>
+  <text x="556" y="488" font-size="13" font-weight="700" fill="#495057">file3.yaml</text>
+  <text x="866" y="488" text-anchor="end" font-size="11" font-style="italic" fill="#adb5bd"
+        font-family="-apple-system, Segoe UI, Roboto, sans-serif">$ref repointed</text>
+
+  <rect x="555" y="496" width="250" height="40" rx="6" fill="#ffffff" stroke="#e8590c" stroke-width="1.5"/>
+  <text x="567" y="516" font-size="12" fill="#495057">$ref:</text>
+  <text x="567" y="532" font-size="11" fill="#868e96">dest.yaml#/servers/foo</text>
+  <line x1="812" y1="516" x2="852" y2="516" stroke="#eceef1" stroke-width="4" stroke-linecap="round"/>
+
+  <line x1="556" y1="562" x2="800" y2="562" stroke="#eceef1" stroke-width="4" stroke-linecap="round"/>
+  <line x1="556" y1="580" x2="740" y2="580" stroke="#eceef1" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- file3.yaml now points across into dest.yaml's foo node -->
+  <path d="M795,496 C845,450 845,335 757,312" fill="none" stroke="#e8590c" stroke-width="2"
+        stroke-dasharray="6 4" marker-end="url(#aCross)"/>
+
+  <!-- ======================= legend ======================= -->
+  <g font-family="-apple-system, Segoe UI, Roboto, sans-serif" font-size="12" fill="#868e96">
+    <line x1="285" y1="645" x2="322" y2="645" stroke="#2f9e44" stroke-width="2" marker-end="url(#aLocal)"/>
+    <text x="330" y="649">local $ref</text>
+    <line x1="450" y1="645" x2="487" y2="645" stroke="#e8590c" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#aCross)"/>
+    <text x="495" y="649">cross-document $ref</text>
+  </g>
+</svg>

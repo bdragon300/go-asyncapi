@@ -13,8 +13,8 @@ description = 'asyncapi-go features overview'
     - Extensible [object types and formats](#types-and-formats)
   - [Content types](#content-types)
   - [Automatic resolving]({{< relref "/asyncapi-specification/references" >}}) the `$ref`s
-    - Fetching files from HTTP, local or by executing the user shell command
-  - Specification extensions (`x-` fields), that control the code generation process
+    - Fetching files from HTTP, local file or by executing the user shell command
+  - Specification extensions (`x-*` fields), that control the code generation process
   - [Security schemes](#security-schemes)
 - Generating the [boilerplate code]({{< relref "/commands/code" >}})
   - Abstract code for any protocol, even if it not well-known
@@ -23,7 +23,7 @@ description = 'asyncapi-go features overview'
   - Flexible codegen process control: [excluding entities]({{< relref "/howtos/exclude-an-asyncapi-entity" >}}),
     [publish-only / subscribe-only generation]({{< relref "/howtos/pub-sub-only" >}}), etc.
   - Setting any structure of the generated code using [code layout]({{< relref "/howtos/customize-the-code-layout" >}})
-  - `sync.Pool`-friendly code
+  - Zero allocation support
 - Generating the no-code [CLI application executable]({{< relref "/commands/client" >}}) with basic send-receive 
   functionality
 - Generating the [server definitions]({{< relref "/commands/infra" >}}) for the
@@ -38,6 +38,13 @@ description = 'asyncapi-go features overview'
   - Generating the static HTML
   - [Bundling]({{< relref "/commands/ui#bundling-the-assets" >}}) support
 - Customization the output by [user templates]({{< relref "/templating-guide/overview" >}}) in [text/template](https://pkg.go.dev/text/template) format
+- Manipulating the AsyncAPI documents:
+  - [Validating]({{< relref "/commands/doc/validate" >}}) the documents against the AsyncAPI specification
+  - [Flattening]({{< relref "/commands/doc/flatten" >}}) the documents with resolving all `$ref`s
+  - [Copying]({{< relref "/commands/doc/cp" >}}) and [moving]({{< relref "/commands/doc/mv" >}}) the nodes between documents with automatic fixing all related `$ref`s
+  - [Generating examples]({{< relref "/commands/doc/gen-examples" >}}) for the messages and schemas
+  - [Inspecting]({{< relref "/commands/doc/inspect" >}}) the documents and their nodes
+  - Showing [documents dependency tree]({{< relref "/commands/doc/tree" >}})
 - Configuring via YAML [configuration file]({{< relref "/configuration" >}})
 - Verbose logging in debug and trace levels
 
@@ -86,9 +93,11 @@ For the reference, see [AsyncAPI specification](https://github.com/asyncapi/spec
   - [x] Message object
     - [ ] Message Example object
     - [x] Message Bindings object
+  - [x] Message Trait object
+  - [x] Message Bindings object
 - [x] Operations object
   - [x] Operation object
-    - [ ] Operation Trait object
+    - [x] Operation Trait object
     - [x] Operation Reply object
       - [x] Operation Reply Address object
     - [x] Operation Bindings object
