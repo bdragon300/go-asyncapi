@@ -31,3 +31,36 @@ func ReadAllWithLineNumbers(r io.Reader, skipLines int, placeWidth int) string {
 
 	return b.String()
 }
+
+// TruncateANSIString truncates the string to the specified length, taking into account ANSI escape sequences.
+// It returns the truncated string and a boolean indicating whether the string was truncated.
+func TruncateANSIString(s string, maxLength int) (string, bool) {
+	var b strings.Builder
+	length := 0
+	truncated := false
+
+	for i := 0; i < len(s); {
+		if s[i] == '\033' && i+1 < len(s) && s[i+1] == '[' {
+			// Start of an ANSI escape sequence
+			end := i + 2
+			for end < len(s) && (s[end] < 'A' || s[end] > 'z') {
+				end++
+			}
+			if end < len(s) {
+				end++ // Include the final character of the escape sequence
+			}
+			b.WriteString(s[i:end])
+			i = end
+		} else {
+			if length >= maxLength {
+				truncated = true
+				break
+			}
+			b.WriteByte(s[i])
+			length++
+			i++
+		}
+	}
+
+	return b.String(), truncated
+}

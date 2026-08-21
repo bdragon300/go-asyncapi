@@ -2,6 +2,7 @@ package doc
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 	"slices"
@@ -13,10 +14,10 @@ import (
 	"github.com/bdragon300/go-asyncapi/internal/jsonpointer"
 	"github.com/bdragon300/go-asyncapi/internal/log"
 	"github.com/bdragon300/go-asyncapi/internal/types"
+	"github.com/bdragon300/go-asyncapi/internal/utils"
 	"github.com/samber/lo"
+	"golang.org/x/term"
 )
-
-const humanEntryStyleMaxDescriptionLength = 80
 
 type InspectCmd struct {
 	Location string `arg:"positional,required" help:"Document with optional node name or globbing pattern. Format: file.{yaml|yml|json}[#/path/to/node | GLOBBING_PATTERN]" placeholder:"LOCATION"`
@@ -217,41 +218,43 @@ func collectInnerEntityNodes(node *types.RawNode) []*types.RawNode {
 	return res
 }
 
-func displayNodesTopology(renderNodes []*entityNode, docLocation *jsonpointer.JSONPointer, entities []string, cmdConfig common2.ToolConfig) {
+func displayNodesTopology(nodes []*entityNode, docLocation *jsonpointer.JSONPointer, entities []string, cmdConfig common2.ToolConfig) {
 	logger := log.GetLogger("")
 
-	for i := 0; i < len(renderNodes); i++ {
-		logger.Trace("Building render tree", "node", renderNodes[i].node)
-		renderTree := buildRenderTree(nil, renderNodes[i], cmdConfig)
-		showNode := isNodeVisibleInNodesTopology(renderNodes[i], entities, cmdConfig)
-		allRenderNodes := common2.FlattenTree[*renderTreeNode](renderTree)
-		logger.Trace("Render tree built", "node", renderTree.unresolvedEntityNode.node, "nodes", len(allRenderNodes), "showNode", showNode)
+	fd := int(os.Stdout.Fd())
+	termWidth, _, err := term.GetSize(fd)
+	if err != nil {
+		// Fallback to standard 80 columns if an error occurs (e.g., piped output)
+		logger.Error("Failed to get terminal size, defaulting to unlimited", "error", err)
+		termWidth = 0
+	}
+	logger.Debug("Terminal size", "width", termWidth)
 
-		if showNode {
+	var displayListNodes []*entityNode
+	for i := 0; i < len(nodes); i++ {
+		logger.Trace("Building render tree", "node", nodes[i].node)
+		renderTree := buildRenderTree(nodes[i], cmdConfig)
+		if isNodeVisibleInNodesTopology(nodes[i], entities, cmdConfig) {
 			if cmdConfig.Doc.Inspect.List {
-				relPath := getRelativePath(docLocation, renderNodes[i].node.AbsOriginDocumentPath(), false)
-				fmt.Println(formatRenderTreeNode(relPath, renderNodes[i], cmdConfig))
+				allRenderNodes := common2.FlattenTree[*renderTreeNode](renderTree)
+				displayListNodes = append(displayListNodes, lo.Map(allRenderNodes, func(n *renderTreeNode, _ int) *entityNode {
+					return n.entityNode
+				})...)
 			} else {
-				displayRenderTree(docLocation, renderTree, nil, cmdConfig)
+				displayRenderTree(docLocation, renderTree, nil, termWidth, cmdConfig)
 			}
 		}
+	}
 
-		l := len(renderNodes)
-		if cmdConfig.Doc.Inspect.Recursive || cmdConfig.Doc.Inspect.RecursiveExpand {
-			if cmdConfig.Doc.Inspect.List {
-				renderNodes = append(renderNodes, lo.FilterMap(allRenderNodes, func(n *renderTreeNode, _ int) (*entityNode, bool) {
-					return n.entityNode, cmdConfig.Doc.Inspect.RecursiveExpand || n.visible
-				})...)
-			} else if !cmdConfig.Doc.Inspect.RecursiveExpand {
-				// Do not show the nested nodes as tree roots in recursive mode, because the tree is already expanded and all nodes are printed
-				renderNodes = append(renderNodes, lo.FilterMap(allRenderNodes, func(n *renderTreeNode, _ int) (*entityNode, bool) {
-					return n.entityNode, n.visible && n.refHops > 0
-				})...)
-			}
-			renderNodes = lo.UniqBy(renderNodes, func(n *entityNode) string {
-				return n.node.AbsPointerString()
-			})
-			logger.Trace("Extended rendering nodes slice", "grow", len(renderNodes)-l)
+	if cmdConfig.Doc.Inspect.List {
+		logger.Trace("Showing nodes as list", "nodesCount", len(displayListNodes), "entryStyle", cmdConfig.Doc.Inspect.EntryStyle)
+		renderNodes := lo.UniqBy(displayListNodes, func(n *entityNode) string {
+			return n.node.AbsPointerString()
+		})
+
+		for _, n := range renderNodes {
+			relPath := getRelativePath(docLocation, n.node.AbsOriginDocumentPath(), false)
+			fmt.Println(formatRenderTreeNode(relPath, n, cmdConfig, false))
 		}
 	}
 }
@@ -268,7 +271,6 @@ type entityNode struct {
 type renderTreeNode struct {
 	unresolvedEntityNode *entityNode
 	entityNode           *entityNode
-	visible              bool
 	refHops              int
 	children             []*renderTreeNode
 }
@@ -277,41 +279,63 @@ func (r renderTreeNode) Children() []*renderTreeNode {
 	return r.children
 }
 
-func buildRenderTree(parent *renderTreeNode, node *entityNode, cmdConfig common2.ToolConfig) *renderTreeNode {
-	// Unroll the node to final node through $ref chain, if any.
-	var hops int
+func buildRenderTree(node *entityNode, cmdConfig common2.ToolConfig) *renderTreeNode {
+	res := buildRenderTree2(nil, node, cmdConfig)
+	if len(res) != 1 {
+		panic(fmt.Errorf("expected exactly one render tree node, got %d; this is a bug", len(res)))
+	}
+	return res[0]
+}
+
+func buildRenderTree2(parent *renderTreeNode, node *entityNode, cmdConfig common2.ToolConfig) []*renderTreeNode {
 	targetNode := node
+	n := &renderTreeNode{unresolvedEntityNode: node, entityNode: targetNode}
+	visible := true
+
+	// Collapse the possible $ref chains
+	var hops int
 	for ; targetNode.refTo != nil; hops++ {
 		targetNode = targetNode.refTo
 	}
 
-	res := &renderTreeNode{
-		unresolvedEntityNode: node,
-		entityNode:           targetNode,
-		refHops:              hops,
-		visible:              parent == nil || parent.visible,
-	}
-	if res.visible && parent != nil {
-		switch {
-		case cmdConfig.Doc.Inspect.RecursiveExpand:
-		case parent.refHops > 0:
-			// Don't expand $refs
-			res.visible = false
-		case strings.HasPrefix(node.entity, ">") && parent.entityNode.entity == node.entity && node.ref == nil:
-			// Hide entity that is the same as the parent entity. In particular, this prevents printing subschemas of a schema.
-			res.visible = false
+	switch {
+	case cmdConfig.Doc.Inspect.RecursiveExpand:
+		// Show every $ref hop
+		if hops > 1 {
+			n.refHops = 1
+			n.entityNode = node.refTo
+			n.children = append(n.children, buildRenderTree2(n, node.refTo, cmdConfig)...)
+			return []*renderTreeNode{n}
 		}
+	case parent == nil:
+	case cmdConfig.Doc.Inspect.Recursive:
+		// In recursive mode, show only the $refs hierarchy inside the JSON Schema objects.
+		if parent.unresolvedEntityNode.entity == ">schema" && node.entity == ">schema" {
+			visible = node.ref != nil
+		}
+	case node.ref != nil:
+		// Don't show the $refs in non-recursive mode
+		return nil
 	}
+	n.entityNode = targetNode
+	n.refHops = hops
+
 	if targetNode.node.Kind() == types.RawNodeKindScalar {
-		return res
+		return lo.Ternary(visible, []*renderTreeNode{n}, nil)
 	}
 
+	// Compress the entity tree to contain only the visible nodes
+	visibleParent := lo.Ternary(visible, n, parent)
+	var children []*renderTreeNode
 	for _, child := range targetNode.children {
-		ch := buildRenderTree(res, child, cmdConfig)
-		res.children = append(res.children, ch)
+		ch := buildRenderTree2(visibleParent, child, cmdConfig)
+		children = append(children, ch...)
 	}
-
-	return res
+	if visible {
+		n.children = children
+		return []*renderTreeNode{n}
+	}
+	return children
 }
 
 func isNodeVisibleInNodesTopology(node *entityNode, entities []string, cmdConfig common2.ToolConfig) bool {
@@ -347,65 +371,82 @@ func isNodeVisibleInNodesTopology(node *entityNode, entities []string, cmdConfig
 	return true
 }
 
-func displayRenderTree(mainDoc *jsonpointer.JSONPointer, node *renderTreeNode, exhausted []bool, cmdConfig common2.ToolConfig) {
+func displayRenderTree(mainDoc *jsonpointer.JSONPointer, node *renderTreeNode, tails []bool, termWidth int, cmdConfig common2.ToolConfig) {
 	logger := log.GetLogger("")
-	logger.Trace("Render node", "entityNode", node.entityNode.node, "unresolvedEntityNode", node.unresolvedEntityNode.node, "visible", node.visible, "exhausted", exhausted)
+	logger.Trace("Render node", "entityNode", node.entityNode.node, "unresolvedEntityNode", node.unresolvedEntityNode.node, "tails", tails)
 
-	if node.visible {
-		displayRenderTreeLine(mainDoc, node, exhausted, cmdConfig)
-		fmt.Println()
-	}
+	fmt.Println(renderTreeLine(mainDoc, node, tails, termWidth, cmdConfig))
 
-	_, lastPrintableIdx, _ := lo.FindLastIndexOf(node.children, func(child *renderTreeNode) bool {
-		return child.visible
-	})
 	for i, child := range node.children {
-		displayRenderTree(mainDoc, child, append(slices.Clone(exhausted), i == lastPrintableIdx), cmdConfig)
+		displayRenderTree(mainDoc, child, append(slices.Clone(tails), i == len(node.children)-1), termWidth, cmdConfig)
 	}
 }
 
-func displayRenderTreeLine(mainDoc *jsonpointer.JSONPointer, node *renderTreeNode, exhausted []bool, cmdConfig common2.ToolConfig) {
-	if len(exhausted) > 0 {
-		for _, lastNode := range exhausted[:len(exhausted)-1] {
-			fmt.Print(lo.Ternary(lastNode, "    ", "│   "))
+func renderTreeLine(mainDoc *jsonpointer.JSONPointer, node *renderTreeNode, tails []bool, termWidth int, cmdConfig common2.ToolConfig) string {
+	truncateLine := func(line string, termWidth int, ansiOutput bool) string {
+		// Truncate the line to fit the terminal width, if necessary
+		if termWidth > 0 {
+			if l, ok := utils.TruncateANSIString(line, termWidth-1); ok {
+				line = l + "…"
+				if ansiOutput {
+					line += "\033[0m" // Reset color to avoid color bleeding in the terminal
+				}
+			}
 		}
-		fmt.Print(lo.Ternary(exhausted[len(exhausted)-1], "└── ", "├── "))
+		return line
 	}
 
-	if node.unresolvedEntityNode.ref != nil {
-		// If $ref is located in a top-level node, e.g. in "#/channels", print this node as well for readability
-		if len(exhausted) == 0 {
-			relPath := getRelativePath(mainDoc, node.unresolvedEntityNode.node.AbsOriginDocumentPath(), false)
-			fmt.Print(formatRenderTreeNode(relPath, node.unresolvedEntityNode, cmdConfig))
-			fmt.Print(": ")
+	if len(tails) > 0 {
+		for _, isTail := range tails[:len(tails)-1] {
+			fmt.Print(lo.Ternary(isTail, "    ", "│   "))
 		}
+		fmt.Print(lo.Ternary(tails[len(tails)-1], "└── ", "├── "))
+	}
+	contentWidth := termWidth - len(tails)*4
+	colorfulOutput := cmdConfig.Doc.Inspect.EntryStyle == common2.DocInspectPathStyleHuman
 
-		fmt.Print("$ref ")
+	var contents strings.Builder
+	if node.unresolvedEntityNode.ref != nil {
+		contents.WriteString(formatRenderTreeNode(
+			getRelativePath(mainDoc, node.unresolvedEntityNode.node.AbsOriginDocumentPath(), false),
+			node.unresolvedEntityNode,
+			cmdConfig,
+			true,
+		))
+		contents.WriteString(" ")
 
 		var tags []string
 		if node.refHops > 1 {
 			// More than one $refs between node and $ref's target, indicate that in the output for readability
 			tags = append(tags, fmt.Sprintf("%d more refs", node.refHops-1))
 		}
+		// Mark the node "cycle" if there is a cycle detected between $refs
 		if node.entityNode.cycle {
 			tags = append(tags, "cycle")
 		}
 		if len(tags) > 0 {
-			fmt.Print("-(" + strings.Join(tags, ", ") + ")")
+			contents.WriteString("-(" + strings.Join(tags, ", ") + ")")
 		}
 
-		fmt.Print("-> ")
+		contents.WriteString("-> ")
 		if node.refHops == 0 {
 			// $ref was not resolved into target node, so just print the $ref value
-			fmt.Print("'" + node.unresolvedEntityNode.ref.String() + "'")
-			return
+			contents.WriteString("'" + node.unresolvedEntityNode.ref.String() + "'")
+			return truncateLine(contents.String(), contentWidth, colorfulOutput)
 		}
 	}
 
-	fmt.Print(formatRenderTreeNode(getRelativePath(mainDoc, node.entityNode.node.AbsOriginDocumentPath(), false), node.entityNode, cmdConfig))
+	contents.WriteString(formatRenderTreeNode(
+		getRelativePath(mainDoc, node.entityNode.node.AbsOriginDocumentPath(), false),
+		node.entityNode,
+		cmdConfig,
+		false,
+	))
+
+	return truncateLine(contents.String(), contentWidth, colorfulOutput)
 }
 
-func formatRenderTreeNode(docLocation string, node *entityNode, cmdConfig common2.ToolConfig) string {
+func formatRenderTreeNode(docLocation string, node *entityNode, cmdConfig common2.ToolConfig, isRef bool) string {
 	switch cmdConfig.Doc.Inspect.EntryStyle {
 	case common2.DocInspectPathStyleYq:
 		return formatRenderTreeYqEntryStyle(node.node.RawPath(), docLocation)
@@ -416,7 +457,7 @@ func formatRenderTreeNode(docLocation string, node *entityNode, cmdConfig common
 		}
 		return jsonpointer.PointerString(node.node.Path()...)
 	case common2.DocInspectPathStyleHuman, common2.DocInspectPathStyleHumanNoColor:
-		return formatRenderTreeHumanEntryStyle(node, docLocation, cmdConfig.Doc.Inspect.EntryStyle == common2.DocInspectPathStyleHuman)
+		return formatRenderTreeHumanEntryStyle(node, docLocation, cmdConfig.Doc.Inspect.EntryStyle == common2.DocInspectPathStyleHuman, isRef)
 	default:
 		panic(fmt.Errorf("unknown path format %q", cmdConfig.Doc.Inspect.EntryStyle))
 	}
@@ -459,25 +500,27 @@ func formatRenderTreeYqEntryStyle(p []any, docLocation string) string {
 }
 
 // formatRenderTreeHumanEntryStyle renders an entity in a human-readable format.
-func formatRenderTreeHumanEntryStyle(node *entityNode, docLocation string, color bool) string {
+func formatRenderTreeHumanEntryStyle(node *entityNode, docLocation string, color, isRef bool) string {
 	var (
 		consoleReset = lo.Ternary(color, "\033[0m", "")
 
-		consoleGray        = lo.Ternary(color, "\033[90m", "")
-		consoleYellow      = lo.Ternary(color, "\033[33m", "")
-		consoleGreen       = lo.Ternary(color, "\033[32m", "")
-		consoleBrightWhite = lo.Ternary(color, "\033[97m", "")
-		consoleBlue        = lo.Ternary(color, "\033[34m", "")
+		consoleGray         = lo.Ternary(color, "\033[90m", "")
+		consoleYellow       = lo.Ternary(color, "\033[33m", "")
+		consoleBrightWhite  = lo.Ternary(color, "\033[97m", "")
+		consoleBlue         = lo.Ternary(color, "\033[34m", "")
+		consoleCyan         = lo.Ternary(color, "\033[36m", "")
+		consoleBrightYellow = lo.Ternary(color, "\033[93m", "")
 	)
 
 	var b strings.Builder
 	getProps := func(n *entityNode, addName bool, names ...string) string {
 		for _, name := range names {
 			if v, ok := n.node.Get(name); ok && v.AsStringSafe() != "" {
+				s := strings.Trim(strconv.QuoteToGraphic(v.AsStringSafe()), "\"")
 				if addName {
-					return fmt.Sprintf("%s:%s", name, v.AsStringSafe())
+					s = fmt.Sprintf("%s:%s", name, s)
 				}
-				return v.AsStringSafe()
+				return s
 			}
 		}
 		return ""
@@ -491,7 +534,7 @@ func formatRenderTreeHumanEntryStyle(node *entityNode, docLocation string, color
 		if !ok {
 			return ""
 		}
-		return v
+		return strings.Trim(strconv.QuoteToGraphic(v), "\"")
 	}
 
 	var id, description string
@@ -502,60 +545,59 @@ func formatRenderTreeHumanEntryStyle(node *entityNode, docLocation string, color
 	}
 	switch node.entity {
 	case ">contact":
-		description = getProps(node, true, "name", "email")
+		description = getProps(node, false, "name", "email")
 	case ">info":
-		description = getProps(node, true, "title", "description")
+		description = getProps(node, false, "title", "description")
 	case ">license":
-		description = getProps(node, true, "name", "url")
+		description = getProps(node, false, "name", "url")
 	case ">server":
 		id = getKey(node)
-		tags = append(tags, fmt.Sprintf(
-			"%s://%s",
-			lo.CoalesceOrEmpty(getProps(node, false, "protocol"), "?protocol"),
-			lo.CoalesceOrEmpty(getProps(node, false, "host"), "?host"),
-		))
-		description = getProps(node, true, "title", "summary", "description")
+		tags = append(tags,
+			lo.CoalesceOrEmpty(getProps(node, true, "protocol"), "?protocol"),
+			lo.CoalesceOrEmpty(getProps(node, true, "host"), "?host"),
+		)
+		description = getProps(node, false, "title", "summary", "description")
 	case ">serverVariable":
 		id = getKey(node)
-		description = getProps(node, true, "description")
+		description = getProps(node, false, "description")
 	case ">channel":
 		id = getKey(node)
 		tags = append(tags, lo.CoalesceOrEmpty(getProps(node, true, "address"), "?address"))
-		description = getProps(node, true, "title", "summary", "description")
+		description = getProps(node, false, "title", "summary", "description")
 	case ">operation":
 		id = getKey(node)
 		tags = append(tags, lo.CoalesceOrEmpty(getProps(node, true, "action"), "?action"))
-		description = getProps(node, true, "title", "summary", "description")
+		description = getProps(node, false, "title", "summary", "description")
 	case ">operationTrait":
-		description = getProps(node, true, "title", "summary", "description")
+		description = getProps(node, false, "title", "summary", "description")
 	case ">operationReply":
 	case ">operationReplyAddress":
 		tags = append(tags, lo.CoalesceOrEmpty(getProps(node, true, "location"), "?location"))
-		description = getProps(node, true, "description")
+		description = getProps(node, false, "description")
 	case ">parameter":
 		id = getKey(node)
-		description = getProps(node, true, "description")
+		description = getProps(node, false, "description")
 	case ">serverBindings", ">channelBindings", ">operationBindings", ">messageBindings":
 		for k := range node.node.Entries() {
 			tags = append(tags, fmt.Sprintf("%v", k))
 		}
 	case ">message", ">messageTrait":
 		id = getKey(node)
-		description = getProps(node, true, "title", "summary", "description", "name")
+		description = getProps(node, false, "title", "summary", "description", "name")
 	case ">tag":
-		description = getProps(node, true, "name", "description")
+		description = getProps(node, false, "name", "description")
 	case ">externalDocumentation":
-		description = getProps(node, true, "description", "url")
+		description = getProps(node, false, "description", "url")
 	case ">securityScheme":
 		id = lo.CoalesceOrEmpty(getProps(node, true, "name"), getKey(node), "?name")
 		tags = append(tags,
-			lo.CoalesceOrEmpty(getProps(node, false, "type"), "?type"),
-			lo.CoalesceOrEmpty(getProps(node, false, "in"), "?in"),
+			lo.CoalesceOrEmpty(getProps(node, true, "type"), "?type"),
+			lo.CoalesceOrEmpty(getProps(node, true, "in"), "?in"),
 		)
-		description = getProps(node, true, "description")
+		description = getProps(node, false, "description")
 	case ">schema":
 		id = getKey(node)
-		description = getProps(node, true, "title", "description")
+		description = getProps(node, false, "title", "description")
 	}
 
 	nodeEntity := lo.Ternary(
@@ -563,20 +605,29 @@ func formatRenderTreeHumanEntryStyle(node *entityNode, docLocation string, color
 		lo.PascalCase(strings.TrimPrefix(node.entity, ">")),
 		fmt.Sprintf("?%sNode", lo.Capitalize(string(node.node.Kind()))),
 	)
-	b.WriteString(consoleGreen + nodeEntity)
-	if docLocation != "" {
-		b.WriteString(consoleYellow + "@" + docLocation)
+	b.WriteString(consoleBrightYellow + nodeEntity)
+	if isRef {
+		b.WriteString(consoleBlue + "$ref")
 	}
+	b.WriteString(consoleReset + consoleBrightWhite + "(")
 	if id == "" {
-		b.WriteString(consoleBrightWhite + " '" + jsonpointer.PointerString(node.node.Path()...) + "'")
+		b.WriteString("'" + jsonpointer.PointerString(node.node.Path()...) + "'")
 	} else {
-		b.WriteString(consoleBrightWhite + " " + strconv.Quote(id))
+		b.WriteString(id)
 	}
-	if len(tags) > 0 {
-		b.WriteString(consoleBlue + " [" + strings.Join(tags, ",") + "]")
+	if docLocation != "" {
+		b.WriteString(consoleCyan + "@" + docLocation + consoleBrightWhite)
 	}
-	if description != "" {
-		b.WriteString(consoleGray + " " + lo.Ellipsis(description, humanEntryStyleMaxDescriptionLength))
+	b.WriteString(")" + consoleReset)
+	if !isRef {
+		if len(tags) > 0 {
+			for _, t := range tags {
+				b.WriteString(" " + consoleYellow + "[" + t + "]" + consoleReset)
+			}
+		}
+		if description != "" {
+			b.WriteString(consoleGray + " # " + description)
+		}
 	}
 	b.WriteString(consoleReset)
 
