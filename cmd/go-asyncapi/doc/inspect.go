@@ -218,7 +218,7 @@ func collectInnerEntityNodes(node *types.RawNode) []*types.RawNode {
 	return res
 }
 
-func displayNodesTopology(nodes []*entityNode, docLocation *jsonpointer.JSONPointer, entities []string, cmdConfig common2.ToolConfig) {
+func displayNodesTopology(roots []*entityNode, docLocation *jsonpointer.JSONPointer, entities []string, cmdConfig common2.ToolConfig) {
 	logger := log.GetLogger("")
 
 	fd := int(os.Stdout.Fd())
@@ -230,31 +230,44 @@ func displayNodesTopology(nodes []*entityNode, docLocation *jsonpointer.JSONPoin
 	}
 	logger.Debug("Terminal size", "width", termWidth)
 
-	var displayListNodes []*entityNode
-	for i := 0; i < len(nodes); i++ {
-		logger.Trace("Building render tree", "node", nodes[i].node)
-		renderTree := buildRenderTree(nodes[i], cmdConfig)
-		if isNodeVisibleInNodesTopology(nodes[i], entities, cmdConfig) {
+	var renderTreeNodes []*renderTreeNode
+	for _, root := range roots {
+		// Show a root if none or both flags are set, otherwise check its location in the document
+		show := cmdConfig.Doc.Inspect.Main == cmdConfig.Doc.Inspect.Components || isNodeIsMainOrComponent(root, cmdConfig)
+		if show {
+			logger.Trace("Building render tree", "node", root.node)
+			renderTree := buildRenderTree(root, entities, cmdConfig)
+			if renderTree == nil {
+				logger.Trace("Skipping node due to filtering by entity kind", "node", root.node, "entity", root.entity, "entities", entities)
+				continue
+			}
+
 			if cmdConfig.Doc.Inspect.List {
-				allRenderNodes := common2.FlattenTree[*renderTreeNode](renderTree)
-				displayListNodes = append(displayListNodes, lo.Map(allRenderNodes, func(n *renderTreeNode, _ int) *entityNode {
-					return n.entityNode
-				})...)
+				renderTreeNodes = append(renderTreeNodes, common2.FlattenTree[*renderTreeNode](renderTree)...)
 			} else {
 				displayRenderTree(docLocation, renderTree, nil, termWidth, cmdConfig)
 			}
+		} else {
+			logger.Trace("Skipping node due to filtering by location", "node", root.node, "main", cmdConfig.Doc.Inspect.Main, "components", cmdConfig.Doc.Inspect.Components)
 		}
 	}
 
 	if cmdConfig.Doc.Inspect.List {
-		logger.Trace("Showing nodes as list", "nodesCount", len(displayListNodes), "entryStyle", cmdConfig.Doc.Inspect.EntryStyle)
-		renderNodes := lo.UniqBy(displayListNodes, func(n *entityNode) string {
-			return n.node.AbsPointerString()
+		nodes := lo.UniqBy(renderTreeNodes, func(n *renderTreeNode) string {
+			return n.entityNode.node.AbsPointerString()
 		})
+		logger.Trace("Showing nodes as list", "nodesCount", len(nodes), "entryStyle", cmdConfig.Doc.Inspect.EntryStyle)
 
-		for _, n := range renderNodes {
-			relPath := getRelativePath(docLocation, n.node.AbsOriginDocumentPath(), false)
-			fmt.Println(formatRenderTreeNode(relPath, n, cmdConfig, false))
+		for _, n := range nodes {
+			entity := n.entityNode
+			// Show a node if none or both flags are set, otherwise check its location in the document
+			show := cmdConfig.Doc.Inspect.Main == cmdConfig.Doc.Inspect.Components || isNodeIsMainOrComponent(entity, cmdConfig)
+			if !show || n.dummy {
+				logger.Trace("Skipping node due to filtering", "node", entity.node, "entities", entities, "main", cmdConfig.Doc.Inspect.Main, "components", cmdConfig.Doc.Inspect.Components)
+				continue
+			}
+			relPath := getRelativePath(docLocation, entity.node.AbsOriginDocumentPath(), false)
+			fmt.Println(formatRenderTreeNode(relPath, entity, cmdConfig, false, false))
 		}
 	}
 }
@@ -273,23 +286,33 @@ type renderTreeNode struct {
 	entityNode           *entityNode
 	refHops              int
 	children             []*renderTreeNode
+	dummy                bool
 }
 
 func (r renderTreeNode) Children() []*renderTreeNode {
 	return r.children
 }
 
-func buildRenderTree(node *entityNode, cmdConfig common2.ToolConfig) *renderTreeNode {
-	res := buildRenderTree2(nil, node, cmdConfig)
-	if len(res) != 1 {
-		panic(fmt.Errorf("expected exactly one render tree node, got %d; this is a bug", len(res)))
+func buildRenderTree(root *entityNode, entities []string, cmdConfig common2.ToolConfig) *renderTreeNode {
+	res := buildRenderTree2(nil, root, entities, cmdConfig)
+	if len(res) > 1 {
+		panic(fmt.Errorf("expected exactly zero or one render tree root to be build, got %d; this is a bug", len(res)))
 	}
-	return res[0]
+	v, _ := lo.First(res)
+	return v
 }
 
-func buildRenderTree2(parent *renderTreeNode, node *entityNode, cmdConfig common2.ToolConfig) []*renderTreeNode {
+func buildRenderTree2(parent *renderTreeNode, node *entityNode, entities []string, cmdConfig common2.ToolConfig) []*renderTreeNode {
+	var dummy bool
+	if len(entities) > 0 {
+		match := lo.Contains(entities, node.entity)
+		// Special case for `-e other`, which means "non-entity nodes".
+		nonEntityNodeMatch := !strings.HasPrefix(node.entity, ">") && lo.Contains(entities, "")
+		dummy = !match && !nonEntityNodeMatch
+	}
+
 	targetNode := node
-	n := &renderTreeNode{unresolvedEntityNode: node, entityNode: targetNode}
+	n := &renderTreeNode{unresolvedEntityNode: node, entityNode: targetNode, dummy: dummy}
 	visible := true
 
 	// Collapse the possible $ref chains
@@ -304,7 +327,11 @@ func buildRenderTree2(parent *renderTreeNode, node *entityNode, cmdConfig common
 		if hops > 1 {
 			n.refHops = 1
 			n.entityNode = node.refTo
-			n.children = append(n.children, buildRenderTree2(n, node.refTo, cmdConfig)...)
+			n.children = append(n.children, buildRenderTree2(n, node.refTo, entities, cmdConfig)...)
+			if len(n.children) == 0 && dummy {
+				// Eliminate dummy nodes if they don't have non-dummy children on any level deep.
+				return nil
+			}
 			return []*renderTreeNode{n}
 		}
 	case parent == nil:
@@ -321,6 +348,10 @@ func buildRenderTree2(parent *renderTreeNode, node *entityNode, cmdConfig common
 	n.refHops = hops
 
 	if targetNode.node.Kind() == types.RawNodeKindScalar {
+		if dummy {
+			// Eliminate dummy scalar nodes
+			return nil
+		}
 		return lo.Ternary(visible, []*renderTreeNode{n}, nil)
 	}
 
@@ -328,28 +359,23 @@ func buildRenderTree2(parent *renderTreeNode, node *entityNode, cmdConfig common
 	visibleParent := lo.Ternary(visible, n, parent)
 	var children []*renderTreeNode
 	for _, child := range targetNode.children {
-		ch := buildRenderTree2(visibleParent, child, cmdConfig)
+		ch := buildRenderTree2(visibleParent, child, entities, cmdConfig)
 		children = append(children, ch...)
 	}
-	if visible {
-		n.children = children
-		return []*renderTreeNode{n}
+	if len(children) == 0 && dummy {
+		// Eliminate dummy nodes if they don't have non-dummy children on any level deep.
+		return nil
 	}
-	return children
+	if !visible {
+		// Substitute the node with its children if the node is not visible
+		return children
+	}
+
+	n.children = children
+	return []*renderTreeNode{n}
 }
 
-func isNodeVisibleInNodesTopology(node *entityNode, entities []string, cmdConfig common2.ToolConfig) bool {
-	if len(entities) > 0 {
-		match := lo.Contains(entities, node.entity)
-		nonEntityNodeMatch := !strings.HasPrefix(node.entity, ">") && lo.Contains(entities, "")
-		if !match && !nonEntityNodeMatch {
-			return false
-		}
-	}
-
-	if !cmdConfig.Doc.Inspect.Main && !cmdConfig.Doc.Inspect.Components {
-		return true
-	}
+func isNodeIsMainOrComponent(node *entityNode, cmdConfig common2.ToolConfig) bool {
 	rootSections, componentsSections := asyncapiEntitiesSectionPaths()
 
 	var parentPath []string
@@ -388,10 +414,10 @@ func renderTreeLine(mainDoc *jsonpointer.JSONPointer, node *renderTreeNode, tail
 		if termWidth > 0 {
 			if l, ok := utils.TruncateANSIString(line, termWidth-1); ok {
 				line = l + "…"
-				if ansiOutput {
-					line += "\033[0m" // Reset color to avoid color bleeding in the terminal
-				}
 			}
+		}
+		if ansiOutput {
+			line += "\033[0m" // Reset color to avoid color bleeding in the terminal
 		}
 		return line
 	}
@@ -406,12 +432,16 @@ func renderTreeLine(mainDoc *jsonpointer.JSONPointer, node *renderTreeNode, tail
 	colorfulOutput := cmdConfig.Doc.Inspect.EntryStyle == common2.DocInspectPathStyleHuman
 
 	var contents strings.Builder
+	if node.dummy {
+		contents.WriteString("X ")
+	}
 	if node.unresolvedEntityNode.ref != nil {
 		contents.WriteString(formatRenderTreeNode(
 			getRelativePath(mainDoc, node.unresolvedEntityNode.node.AbsOriginDocumentPath(), false),
 			node.unresolvedEntityNode,
 			cmdConfig,
 			true,
+			node.dummy,
 		))
 		contents.WriteString(" ")
 
@@ -441,12 +471,13 @@ func renderTreeLine(mainDoc *jsonpointer.JSONPointer, node *renderTreeNode, tail
 		node.entityNode,
 		cmdConfig,
 		false,
+		node.dummy,
 	))
 
 	return truncateLine(contents.String(), contentWidth, colorfulOutput)
 }
 
-func formatRenderTreeNode(docLocation string, node *entityNode, cmdConfig common2.ToolConfig, isRef bool) string {
+func formatRenderTreeNode(docLocation string, node *entityNode, cmdConfig common2.ToolConfig, isRef, dimmed bool) string {
 	switch cmdConfig.Doc.Inspect.EntryStyle {
 	case common2.DocInspectPathStyleYq:
 		return formatRenderTreeYqEntryStyle(node.node.RawPath(), docLocation)
@@ -457,7 +488,7 @@ func formatRenderTreeNode(docLocation string, node *entityNode, cmdConfig common
 		}
 		return jsonpointer.PointerString(node.node.Path()...)
 	case common2.DocInspectPathStyleHuman, common2.DocInspectPathStyleHumanNoColor:
-		return formatRenderTreeHumanEntryStyle(node, docLocation, cmdConfig.Doc.Inspect.EntryStyle == common2.DocInspectPathStyleHuman, isRef)
+		return formatRenderTreeHumanEntryStyle(node, docLocation, cmdConfig.Doc.Inspect.EntryStyle == common2.DocInspectPathStyleHuman, isRef, dimmed)
 	default:
 		panic(fmt.Errorf("unknown path format %q", cmdConfig.Doc.Inspect.EntryStyle))
 	}
@@ -500,7 +531,7 @@ func formatRenderTreeYqEntryStyle(p []any, docLocation string) string {
 }
 
 // formatRenderTreeHumanEntryStyle renders an entity in a human-readable format.
-func formatRenderTreeHumanEntryStyle(node *entityNode, docLocation string, color, isRef bool) string {
+func formatRenderTreeHumanEntryStyle(node *entityNode, docLocation string, color, isRef, dimmed bool) string {
 	var (
 		consoleReset = lo.Ternary(color, "\033[0m", "")
 
@@ -510,7 +541,13 @@ func formatRenderTreeHumanEntryStyle(node *entityNode, docLocation string, color
 		consoleBlue         = lo.Ternary(color, "\033[34m", "")
 		consoleCyan         = lo.Ternary(color, "\033[36m", "")
 		consoleBrightYellow = lo.Ternary(color, "\033[93m", "")
+		consoleDimmed       = lo.Ternary(color, "\033[2m", "")
+		consoleDimmedYellow = lo.Ternary(color, "\033[2;33m", "")
 	)
+
+	if dimmed {
+		consoleYellow = consoleDimmedYellow
+	}
 
 	var b strings.Builder
 	getProps := func(n *entityNode, addName bool, names ...string) string {
@@ -600,6 +637,9 @@ func formatRenderTreeHumanEntryStyle(node *entityNode, docLocation string, color
 		description = getProps(node, false, "title", "description")
 	}
 
+	if dimmed {
+		b.WriteString(consoleDimmed)
+	}
 	nodeEntity := lo.Ternary(
 		strings.HasPrefix(node.entity, ">"),
 		lo.PascalCase(strings.TrimPrefix(node.entity, ">")),
