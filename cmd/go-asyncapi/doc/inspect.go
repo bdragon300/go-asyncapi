@@ -26,7 +26,7 @@ type InspectCmd struct {
 	Main               bool   `arg:"--main" help:"Show only servers, channels and operations defined in the root sections of the document"`
 	Components         bool   `arg:"--components" help:"Show only entities defined in components section of the documents"`
 	Recursive          bool   `arg:"--recursive,-r" help:"Show all nested nodes recursively"`
-	RecursiveExpand    bool   `arg:"--recursive-expand,-R" help:"Show all nested nodes recursively, also expanding all inner jsonschema objects and fully unfolding all $refs"`
+	RecursiveAll       bool   `arg:"--recursive-all,-R" help:"Like -r, but also showing all nested JSON Schema objects and fully unfolding $ref chains"`
 	List               bool   `arg:"--list,-l" help:"Show the result as a list"`
 	FollowExternalRefs bool   `arg:"--follow-external-refs,-f" help:"Follow the $refs pointing to other documents"`
 	AllowRemoteRefs    bool   `arg:"--allow-remote-refs,-F" help:"Follow the $refs pointing to URLs. Implies --follow-external-refs."`
@@ -107,7 +107,7 @@ func cliInspect(cmd *InspectCmd, cmdConfig common2.ToolConfig) error {
 	renderNodes = lo.UniqBy(renderNodes, func(n *entityNode) string {
 		return n.node.AbsPointerString()
 	})
-	logger.Trace("Rendering nodes topology", "nodes", len(renderNodes), "list", cmdConfig.Doc.Inspect.List, "recursive", cmdConfig.Doc.Inspect.Recursive, "recursiveExpand", cmdConfig.Doc.Inspect.RecursiveExpand)
+	logger.Trace("Rendering nodes topology", "nodes", len(renderNodes), "list", cmdConfig.Doc.Inspect.List, "recursive", cmdConfig.Doc.Inspect.Recursive, "recursiveAll", cmdConfig.Doc.Inspect.RecursiveAll)
 	displayNodesTopology(renderNodes, inputContents.AbsOriginDocumentPath(), entities, cmdConfig)
 
 	return nil
@@ -225,7 +225,7 @@ func displayNodesTopology(roots []*entityNode, docLocation *jsonpointer.JSONPoin
 	termWidth, _, err := term.GetSize(fd)
 	if err != nil {
 		// Fallback to standard 80 columns if an error occurs (e.g., piped output)
-		logger.Error("Failed to get terminal size, defaulting to unlimited", "error", err)
+		logger.Debug("Failed to get terminal size, disabling the text truncation", "error", err)
 		termWidth = 0
 	}
 	logger.Debug("Terminal size", "width", termWidth)
@@ -322,7 +322,7 @@ func buildRenderTree2(parent *renderTreeNode, node *entityNode, entities []strin
 	}
 
 	switch {
-	case cmdConfig.Doc.Inspect.RecursiveExpand:
+	case cmdConfig.Doc.Inspect.RecursiveAll:
 		// Show every $ref hop
 		if hops > 1 {
 			n.refHops = 1

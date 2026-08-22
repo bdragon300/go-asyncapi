@@ -241,17 +241,17 @@ Settings for the `doc cp` subcommand (copy nodes between AsyncAPI documents).
 
 Settings for the `doc mv` subcommand (move nodes between AsyncAPI documents).
 
-| Attribute        | Type | Default | Description                                                                                        |
-|------------------|------|---------|----------------------------------------------------------------------------------------------------|
-| autoCreate       | bool | `false` | Automatically create a destination node if missing                                                 |
+| Attribute        | Type | Default | Description                                                                                           |
+|------------------|------|---------|-------------------------------------------------------------------------------------------------------|
+| autoCreate       | bool | `false` | Automatically create a destination node if missing                                                    |
 | link             | bool | `false` | Embed a `$ref` into the original location after moving. Does not apply to nodes evaluated recursively |
-| recursive        | bool | `false` | Recursively move dependencies by following the `$ref`s                                             |
-| recursiveShallow | bool | `false` | Like `recursive`, but move only the first level of dependencies                                    |
-| headless         | bool | `false` | Move only dependencies, excluding the matched nodes                                                |
-| force            | bool | `false` | Overwrite existing nodes on conflict                                                               |
-| interactive      | bool | `false` | Resolve conflicts interactively                                                                    |
-| disableRewriting | bool | `false` | Do not rewrite `$ref`s                                                                             |
-| indent           | int  | `2`     | Output document indentation width in spaces                                                        |
+| recursive        | bool | `false` | Recursively move dependencies by following the `$ref`s                                                |
+| recursiveShallow | bool | `false` | Like `recursive`, but move only the first level of dependencies                                       |
+| headless         | bool | `false` | Move only dependencies, excluding the matched nodes                                                   |
+| force            | bool | `false` | Overwrite existing nodes on conflict                                                                  |
+| interactive      | bool | `false` | Resolve conflicts interactively                                                                       |
+| disableRewriting | bool | `false` | Do not rewrite `$ref`s                                                                                |
+| indent           | int  | `2`     | Output document indentation width in spaces                                                           |
 
 ## DocValidate
 
@@ -276,34 +276,34 @@ Settings for the `doc flatten` subcommand (inline all `$ref`s with the nodes the
 
 Settings for the `doc gen-examples` subcommand (generate examples for messages and schemas).
 
-| Attribute             | Type   | Default                     | Description                                                                                        |
-|-----------------------|--------|-----------------------------|----------------------------------------------------------------------------------------------------|
-| outputFile            | string |                             | File where to write the result. If empty, the original document is modified in-place               |
-| onlyMessages          | bool   | `false`                     | Generate examples for messages only                                                                |
-| onlySchemas           | bool   | `false`                     | Generate examples for schemas only (including nested ones in other entities)                       |
-| append                | bool   | `false`                     | Append generated examples to entities that already have examples                                   |
-| count                 | int    | `1`                         | Number of examples to generate for each entity                                                     |
-| allowRemoteReferences | bool   | `false`                     | Allow fetching the documents from remote hosts                                                     |
-| dateFormat            | string | `2006-01-02`                | Go date format to use in `date` fields. See [time package](https://pkg.go.dev/time#pkg-constants)  |
-| timeFormat            | string | `15:04:05`                  | Go time format to use in `time` fields. See [time package](https://pkg.go.dev/time#pkg-constants)  |
+| Attribute             | Type   | Default                     | Description                                                                                                           |
+|-----------------------|--------|-----------------------------|-----------------------------------------------------------------------------------------------------------------------|
+| outputFile            | string |                             | File where to write the result. If empty, the original document is modified in-place                                  |
+| onlyMessages          | bool   | `false`                     | Generate examples for messages only                                                                                   |
+| onlySchemas           | bool   | `false`                     | Generate examples for schemas only (including nested ones in other entities)                                          |
+| append                | bool   | `false`                     | Append generated examples to entities that already have examples                                                      |
+| count                 | int    | `1`                         | Number of examples to generate for each entity                                                                        |
+| allowRemoteReferences | bool   | `false`                     | Allow fetching the documents from remote hosts                                                                        |
+| dateFormat            | string | `2006-01-02`                | Go date format to use in `date` fields. See [time package](https://pkg.go.dev/time#pkg-constants)                     |
+| timeFormat            | string | `15:04:05`                  | Go time format to use in `time` fields. See [time package](https://pkg.go.dev/time#pkg-constants)                     |
 | dateTimeFormat        | string | `2006-01-02T15:04:05Z07:00` | Go date-time format to use in `date-time` fields (RFC3339). See [time package](https://pkg.go.dev/time#pkg-constants) |
-| indent                | int    | `2`                         | Output document indentation width in spaces                                                        |
+| indent                | int    | `2`                         | Output document indentation width in spaces                                                                           |
 
 ## DocInspect
 
 Settings for the `doc inspect` subcommand (inspect the AsyncAPI entities).
 
-| Attribute             | Type   | Default | Description                                                                                                     |
-|-----------------------|--------|---------|-----------------------------------------------------------------------------------------------------------------|
-| entities              | string |         | Comma-separated list of entities to show, or `help` to list all available entities and exit                     |
-| recursive             | bool   | `false` | Show all nested nodes recursively                                                                               |
-| recursiveExpand       | bool   | `false` | Show all nested nodes recursively, also expanding all inner jsonschema objects and fully unfolding all `$ref`s  |
-| components            | bool   | `false` | Show only entities defined in the components section of the documents                                           |
-| main                  | bool   | `false` | Show only servers, channels and operations defined in the root sections of the document                         |
-| followExternalRefs    | bool   | `false` | Follow the `$ref`s pointing to other documents                                                                  |
-| allowRemoteReferences | bool   | `false` | Follow the `$ref`s pointing to URLs. Implies `followExternalRefs`                                               |
-| list                  | bool   | `false` | Show the result as a list                                                                                       |
-| entryStyle            | string | `human` | Style of the output entries. Possible values: `human`, `human-no-color`, `json-pointer`, `yq`                   |
+| Attribute             | Type   | Default | Description                                                                                         |
+|-----------------------|--------|---------|-----------------------------------------------------------------------------------------------------|
+| entities              | string |         | Comma-separated list of entities to show, or `help` to list all available entities and exit         |
+| main                  | bool   | `false` | Show only servers, channels and operations defined in the root sections of the document             |
+| components            | bool   | `false` | Show only entities defined in the components section of the documents                               |
+| recursive             | bool   | `false` | Show all nested nodes recursively                                                                   |
+| recursiveAll          | bool   | `false` | Like `recursive`, but also showing all nested JSON Schema objects and fully unfolding `$ref` chains |
+| list                  | bool   | `false` | Show the result as a list                                                                           |
+| followExternalRefs    | bool   | `false` | Follow the `$ref`s pointing to other documents                                                      |
+| allowRemoteReferences | bool   | `false` | Follow the `$ref`s pointing to URLs. Implies `followExternalRefs`                                   |
+| entryStyle            | string | `human` | Style of the output entries. Possible values: `human`, `human-no-color`, `json-pointer`, `yq`       |
 
 ## DocTree
 

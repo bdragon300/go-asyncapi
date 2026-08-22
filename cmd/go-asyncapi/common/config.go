@@ -239,7 +239,7 @@ type (
 	ToolConfigDocInspect struct {
 		Entities              string              `yaml:"entities"`
 		Recursive             bool                `yaml:"recursive"`
-		RecursiveExpand       bool                `yaml:"recursiveExpand"`
+		RecursiveAll          bool                `yaml:"recursiveAll"`
 		Components            bool                `yaml:"components"`
 		Main                  bool                `yaml:"main"`
 		FollowExternalRefs    bool                `yaml:"followExternalRefs"`
@@ -419,7 +419,7 @@ func MergeConfig(defaultConf, userConf ToolConfig) ToolConfig {
 	res.Locator.AllowRemoteReferences = Coalesce(res.Locator.AllowRemoteReferences, res.Doc.GenExamples.AllowRemoteReferences) // FIXME: rmeove and make a separate config param in locator constructor
 	res.Doc.Inspect.Entities = Coalesce(userConf.Doc.Inspect.Entities, defaultConf.Doc.Inspect.Entities)
 	res.Doc.Inspect.Recursive = Coalesce(userConf.Doc.Inspect.Recursive, defaultConf.Doc.Inspect.Recursive)
-	res.Doc.Inspect.RecursiveExpand = Coalesce(userConf.Doc.Inspect.RecursiveExpand, defaultConf.Doc.Inspect.RecursiveExpand)
+	res.Doc.Inspect.RecursiveAll = Coalesce(userConf.Doc.Inspect.RecursiveAll, defaultConf.Doc.Inspect.RecursiveAll)
 	res.Doc.Inspect.Components = Coalesce(userConf.Doc.Inspect.Components, defaultConf.Doc.Inspect.Components)
 	res.Doc.Inspect.Main = Coalesce(userConf.Doc.Inspect.Main, defaultConf.Doc.Inspect.Main)
 	res.Doc.Inspect.FollowExternalRefs = Coalesce(userConf.Doc.Inspect.FollowExternalRefs, defaultConf.Doc.Inspect.FollowExternalRefs)

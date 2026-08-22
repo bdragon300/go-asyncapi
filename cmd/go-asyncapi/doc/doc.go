@@ -116,7 +116,7 @@ func cliConfig(globalConfig common2.ToolConfig, cmd *Cmd) (common2.ToolConfig, e
 	}
 	res.Doc.Inspect.Entities = common2.Coalesce(cmdInspect.Entities, globalConfig.Doc.Inspect.Entities)
 	res.Doc.Inspect.Recursive = common2.Coalesce(cmdInspect.Recursive, globalConfig.Doc.Inspect.Recursive)
-	res.Doc.Inspect.RecursiveExpand = common2.Coalesce(cmdInspect.RecursiveExpand, globalConfig.Doc.Inspect.RecursiveExpand)
+	res.Doc.Inspect.RecursiveAll = common2.Coalesce(cmdInspect.RecursiveAll, globalConfig.Doc.Inspect.RecursiveAll)
 	res.Doc.Inspect.Components = common2.Coalesce(cmdInspect.Components, globalConfig.Doc.Inspect.Components)
 	res.Doc.Inspect.Main = common2.Coalesce(cmdInspect.Main, globalConfig.Doc.Inspect.Main)
 	res.Doc.Inspect.FollowExternalRefs = common2.Coalesce(cmdInspect.FollowExternalRefs, globalConfig.Doc.Inspect.FollowExternalRefs)
