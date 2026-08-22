@@ -11,7 +11,7 @@ tasks:
   tools:
     desc: "Installing development tools"
     cmds:
-      - go install -v github.com/gohugoio/hugo@latest
+      - go install -v -tags extended github.com/gohugoio/hugo@latest
       - go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 
   docs-server:

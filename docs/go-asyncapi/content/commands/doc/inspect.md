@@ -39,8 +39,8 @@ The `$ref` locator options are described in the
 ### Recursive mode
 
 In recursive mode (`-r` flag) the command follows all `$ref`s and shows the full entity hierarchy.
-`-R` enables recursive mode like `-r`, but additionally shows all inner JSON Schema objects nested in every schema,
-and also expands all possible `$ref`s chains.
+`-R` enables recursive mode like `-r`, but additionally shows the full hierarchy of JSON Schema objects and expands
+possible `$ref` chains. 
 
 In recursive mode the `$ref`s pointing to URLs are forbidden — pass `-F` to allow following them.
 
