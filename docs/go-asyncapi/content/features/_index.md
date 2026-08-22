@@ -40,16 +40,18 @@ description = 'asyncapi-go features overview'
 - Customization the output by [user templates]({{< relref "/templating-guide/overview" >}}) in [text/template](https://pkg.go.dev/text/template) format
 - Manipulating the AsyncAPI documents:
   - [Validating]({{< relref "/commands/doc/validate" >}}) the documents against the AsyncAPI specification
-  - [Flattening]({{< relref "/commands/doc/flatten" >}}) the documents with resolving all `$ref`s
+  - [Flattening]({{< relref "/commands/doc/flatten" >}}) the documents by replacing `$ref`s with the actual content
   - [Copying]({{< relref "/commands/doc/cp" >}}) and [moving]({{< relref "/commands/doc/mv" >}}) the nodes between documents with automatic fixing all related `$ref`s
-  - [Generating examples]({{< relref "/commands/doc/gen-examples" >}}) for the messages and schemas
+  - [Generating synthetic examples]({{< relref "/commands/doc/gen-examples" >}}) for the messages and schemas
   - [Inspecting]({{< relref "/commands/doc/inspect" >}}) the documents and their nodes
   - Showing [documents dependency tree]({{< relref "/commands/doc/tree" >}})
 - Configuring via YAML [configuration file]({{< relref "/configuration" >}})
 - Verbose logging in debug and trace levels
 
 {{% hint warning %}}
-AsyncAPI 2.x is not supported
+AsyncAPI 2.x is not supported and not planned for support in the future, because it has significant differences
+with 3.x version which requires too much effort to make both versions to work in one tool.
+Please, use the [asyncapi converter](https://github.com/asyncapi/converter-js) to convert your 2.x documents to 3.x.
 {{% /hint %}}
 
 ## Protocols
@@ -81,7 +83,7 @@ For the reference, see [AsyncAPI specification](https://github.com/asyncapi/spec
 - [ ] Info object
   - [ ] Contact object
   - [ ] License object
-- [x] Default Content Type
+- [x] Default Content Type[<sup>[1]</sup>](#content-types)
 - [x] Servers object
   - [x] Server object
     - [x] Server Variable object
@@ -107,7 +109,7 @@ For the reference, see [AsyncAPI specification](https://github.com/asyncapi/spec
   - [ ] Tag object
 - [ ] External Documentation object
 - [x] Components object
-- [x] Security Scheme object
+- [x] Security Scheme object[<sup>[2]</sup>](#security-schemes)
 - [ ] OAuth Flows object
   - [ ] OAuth Flow object
 - [x] Correlation ID object
@@ -127,7 +129,7 @@ schema definitions. See [AsyncAPI spec](https://github.com/asyncapi/spec/blob/ma
 
 The following JSONSchema features are supported by `go-asyncapi`:
 
-- [x] `type`: [see below](#types-and-formats)
+- [x] `type`[<sup>[3]</sup>](#types-and-formats)
 - [ ] `additionalItems`
 - [x] `additionalProperties`
 - [x] `allOf`
@@ -145,7 +147,7 @@ The following JSONSchema features are supported by `go-asyncapi`:
 - [ ] `exclusiveMaximum`
 - [ ] `exclusiveMinimum`
 - [ ] `externalDocs`
-- [x] `format`: [see below](#types-and-formats)
+- [x] `format`[<sup>[3]</sup>](#types-and-formats)
 - [ ] `if`
 - [x] `items`
 - [ ] `maxItems`

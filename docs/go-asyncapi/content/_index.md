@@ -18,13 +18,21 @@ description = 'Go-asyncapi is a tool for working with AsyncAPI documents'
 
 ## Core features
 
-|                                                                                 | Feature                                                                                | Command               |
-|---------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|-----------------------|
-| {{< figure src="images/go-logo.svg" alt="Go code" class="feature-icon">}}       | [Generating the Go boilerplate code for any protocol]({{< relref "/commands/code" >}}) | `go-asyncapi code`    |
-| {{< figure src="images/terminal-icon.svg" alt="CLI app" class="feature-icon">}} | [Building the zero-code CLI client executable]({{< relref "/commands/client" >}})      | `go-asyncapi client`  |
-| {{< figure src="images/infra.svg" alt="IaC definitions" class="feature-icon">}} | [Generating the server definitions]({{< relref "/commands/infra" >}})                  | `go-asyncapi infra`   |
-| {{< figure src="images/diagram.svg" alt="Diagram" class="feature-icon">}}       | [Drawing the SVG diagrams]({{< relref "/commands/diagram" >}})                         | `go-asyncapi diagram` |
-| {{< figure src="images/ui-icon.svg" alt="UI" class="feature-icon">}}            | [Serving or generating the web docs UI]({{< relref "/commands/ui" >}})                 | `go-asyncapi ui`      |
+|                                                                                               | Feature                                                                                       | Command                        |
+|-----------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|--------------------------------|
+| {{< figure src="images/go-logo.svg" alt="Go code" class="feature-icon">}}                     | [Generating the Go boilerplate code for any protocol]({{< relref "/commands/code" >}})        | `go-asyncapi code`             |
+| {{< figure src="images/terminal-icon.svg" alt="CLI app" class="feature-icon">}}               | [Building the zero-code CLI client executable]({{< relref "/commands/client" >}})             | `go-asyncapi client`           |
+| {{< figure src="images/infra.svg" alt="IaC definitions" class="feature-icon">}}               | [Generating the server definitions]({{< relref "/commands/infra" >}})                         | `go-asyncapi infra`            |
+| {{< figure src="images/diagram.svg" alt="Diagram" class="feature-icon">}}                     | [Drawing the SVG diagrams]({{< relref "/commands/diagram" >}})                                | `go-asyncapi diagram`          |
+| {{< figure src="images/ui-icon.svg" alt="UI" class="feature-icon">}}                          | [Serving or generating the web docs UI]({{< relref "/commands/ui" >}})                        | `go-asyncapi ui`               |
+| {{< figure src="images/doc-icon.svg" alt="Manipulating the documents" class="feature-icon">}} | [Validating the AsyncAPI documents]({{< relref "/commands/doc/validate" >}})                  | `go-asyncapi doc validate`     |
+| {{< figure src="images/doc-icon.svg" alt="Manipulating the documents" class="feature-icon">}} | [Inspecting the document structure]({{< relref "/commands/doc/inspect" >}})                   | `go-asyncapi doc inspect`      |
+| {{< figure src="images/doc-icon.svg" alt="Manipulating the documents" class="feature-icon">}} | [Copying the nodes]({{< relref "/commands/doc/cp" >}})                                        | `go-asyncapi doc cp`           |
+| {{< figure src="images/doc-icon.svg" alt="Manipulating the documents" class="feature-icon">}} | [Moving the nodes]({{< relref "/commands/doc/mv" >}})                                         | `go-asyncapi doc mv`           |
+| {{< figure src="images/doc-icon.svg" alt="Manipulating the documents" class="feature-icon">}} | [Generating the synthetic examples for entities]({{< relref "/commands/doc/gen-examples" >}}) | `go-asyncapi doc gen-examples` |
+| {{< figure src="images/doc-icon.svg" alt="Manipulating the documents" class="feature-icon">}} | [Flattening the AsyncAPI documents]({{< relref "/commands/doc/flatten" >}})                   | `go-asyncapi doc flatten`      |
+| {{< figure src="images/doc-icon.svg" alt="Manipulating the documents" class="feature-icon">}} | [Showing the documents linked by $refs]({{< relref "/commands/doc/tree" >}})                  | `go-asyncapi doc tree`         |
+
 
 See the [Features](https://bdragon300.github.io/go-asyncapi/features) page for more details.
 

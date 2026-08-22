@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" height="50" width="50" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+	<title>asyncapi-document</title>
+	<style type="text/css">
+		.st0{fill:none;stroke:#000000;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+		.stacc{fill:none;stroke:#00ACD7;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	</style>
+
+	<!-- Document sheet with a folded corner -->
+	<path class="st0" d="M20,3H9C7.9,3,7,3.9,7,5v22c0,1.1,0.9,2,2,2h14c1.1,0,2-0.9,2-2V8L20,3z"/>
+	<path class="st0" d="M20,3v3c0,1.1,0.9,2,2,2h3"/>
+
+	<!-- Text line -->
+	<line class="st0" x1="10.5" y1="11.5" x2="16.5" y2="11.5"/>
+
+	<!-- Asynchronous publish/subscribe arrows -->
+	<line class="stacc" x1="11" y1="16.5" x2="20" y2="16.5"/>
+	<polyline class="stacc" points="18,14.5 20,16.5 18,18.5"/>
+	<line class="stacc" x1="21" y1="22.5" x2="12" y2="22.5"/>
+	<polyline class="stacc" points="14,20.5 12,22.5 14,24.5"/>
+</svg>
